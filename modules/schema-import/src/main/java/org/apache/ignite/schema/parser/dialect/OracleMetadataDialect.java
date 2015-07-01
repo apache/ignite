@@ -189,7 +189,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
      * @param owner DB owner.
      * @param tbl Table name.
      * @return Index columns.
-     * @throws SQLException If failed to retrieve indexe columns.
+     * @throws SQLException If failed to retrieve indexes columns.
      */
     private Map<String, Map<String, Boolean>> indexes(PreparedStatement stmt, String owner, String tbl)
         throws SQLException {

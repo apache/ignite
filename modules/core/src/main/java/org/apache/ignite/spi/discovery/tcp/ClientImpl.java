@@ -1123,7 +1123,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (joinLatch.getCount() > 0) {
                             joinError(new IgniteSpiException("Join process timed out, did not receive response for " +
                                 "join request (consider increasing 'joinTimeout' configuration property) " +
-                                "[joinTimeout=" + spi.joinTimeout + ", sock=" + sock +']'));
+                                "[joinTimeout=" + spi.joinTimeout + ", sock=" + sock + ']'));
 
                             break;
                         }
@@ -1282,17 +1282,21 @@ class ClientImpl extends TcpDiscoveryImpl {
                         "[msg=" + msg + ", locNode=" + locNode + ']');
             }
             else {
-                boolean topChanged = rmtNodes.putIfAbsent(newNodeId, node) == null;
+                if (nodeAdded()) {
+                    boolean topChanged = rmtNodes.putIfAbsent(newNodeId, node) == null;
 
-                if (topChanged) {
-                    if (log.isDebugEnabled())
-                        log.debug("Added new node to topology: " + node);
+                    if (topChanged) {
+                        if (log.isDebugEnabled())
+                            log.debug("Added new node to topology: " + node);
 
-                    Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
+                        Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
 
-                    if (data != null)
-                        spi.onExchange(newNodeId, newNodeId, data, null);
+                        if (data != null)
+                            spi.onExchange(newNodeId, newNodeId, data, null);
+                    }
                 }
+                else if (log.isDebugEnabled())
+                    log.debug("Ignore topology message, local node not added to topology: " + msg);
             }
         }
 
@@ -1332,54 +1336,58 @@ class ClientImpl extends TcpDiscoveryImpl {
                         "[msg=" + msg + ", locNode=" + locNode + ']');
             }
             else {
-                TcpDiscoveryNode node = rmtNodes.get(msg.nodeId());
+                if (nodeAdded()) {
+                    TcpDiscoveryNode node = rmtNodes.get(msg.nodeId());
 
-                if (node == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding node add finished message since node is not found [msg=" + msg + ']');
+                    if (node == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Discarding node add finished message since node is not found [msg=" + msg + ']');
 
-                    return;
+                        return;
+                    }
+
+                    boolean evt = false;
+
+                    long topVer = msg.topologyVersion();
+
+                    assert topVer > 0 : msg;
+
+                    if (!node.visible()) {
+                        node.order(topVer);
+                        node.visible(true);
+
+                        if (spi.locNodeVer.equals(node.version()))
+                            node.version(spi.locNodeVer);
+
+                        evt = true;
+                    }
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Skip node join event, node already joined [msg=" + msg + ", node=" + node + ']');
+
+                        assert node.order() == topVer : node;
+                    }
+
+                    Collection<ClusterNode> top = updateTopologyHistory(topVer, msg);
+
+                    assert top != null && top.contains(node) : "Topology does not contain node [msg=" + msg +
+                        ", node=" + node + ", top=" + top + ']';
+
+                    if (!pending && joinLatch.getCount() > 0) {
+                        if (log.isDebugEnabled())
+                            log.debug("Discarding node add finished message (join process is not finished): " + msg);
+
+                        return;
+                    }
+
+                    if (evt) {
+                        notifyDiscovery(EVT_NODE_JOINED, topVer, node, top);
+
+                        spi.stats.onNodeJoined();
+                    }
                 }
-
-                boolean evt = false;
-
-                long topVer = msg.topologyVersion();
-
-                assert topVer > 0 : msg;
-
-                if (!node.visible()) {
-                    node.order(topVer);
-                    node.visible(true);
-
-                    if (spi.locNodeVer.equals(node.version()))
-                        node.version(spi.locNodeVer);
-
-                    evt = true;
-                }
-                else {
-                    if (log.isDebugEnabled())
-                        log.debug("Skip node join event, node already joined [msg=" + msg + ", node=" + node + ']');
-
-                    assert node.order() == topVer : node;
-                }
-
-                Collection<ClusterNode> top = updateTopologyHistory(topVer, msg);
-
-                assert top != null && top.contains(node) : "Topology does not contain node [msg=" + msg +
-                    ", node=" + node + ", top=" + top + ']';
-
-                if (!pending && joinLatch.getCount() > 0) {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding node add finished message (join process is not finished): " + msg);
-
-                    return;
-                }
-
-                if (evt) {
-                    notifyDiscovery(EVT_NODE_JOINED, topVer, node, top);
-
-                    spi.stats.onNodeJoined();
-                }
+                else if (log.isDebugEnabled())
+                    log.debug("Ignore topology message, local node not added to topology: " + msg);
             }
         }
 
@@ -1397,28 +1405,39 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (spi.getSpiContext().isStopping())
                     return;
 
-                TcpDiscoveryNode node = rmtNodes.remove(msg.creatorNodeId());
+                if (nodeAdded()) {
+                    TcpDiscoveryNode node = rmtNodes.remove(msg.creatorNodeId());
 
-                if (node == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding node left message since node is not found [msg=" + msg + ']');
+                    if (node == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Discarding node left message since node is not found [msg=" + msg + ']');
 
-                    return;
+                        return;
+                    }
+
+                    Collection<ClusterNode> top = updateTopologyHistory(msg.topologyVersion(), msg);
+
+                    if (!pending && joinLatch.getCount() > 0) {
+                        if (log.isDebugEnabled())
+                            log.debug("Discarding node left message (join process is not finished): " + msg);
+
+                        return;
+                    }
+
+                    notifyDiscovery(EVT_NODE_LEFT, msg.topologyVersion(), node, top);
+
+                    spi.stats.onNodeLeft();
                 }
-
-                Collection<ClusterNode> top = updateTopologyHistory(msg.topologyVersion(), msg);
-
-                if (!pending && joinLatch.getCount() > 0) {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding node left message (join process is not finished): " + msg);
-
-                    return;
-                }
-
-                notifyDiscovery(EVT_NODE_LEFT, msg.topologyVersion(), node, top);
-
-                spi.stats.onNodeLeft();
+                else if (log.isDebugEnabled())
+                    log.debug("Ignore topology message, local node not added to topology: " + msg);
             }
+        }
+
+        /**
+         * @return {@code True} if received node added message for local node.
+         */
+        private boolean nodeAdded() {
+            return !topHist.isEmpty();
         }
 
         /**
@@ -1514,9 +1533,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                 return;
 
             if (getLocalNodeId().equals(msg.creatorNodeId())) {
-                assert msg.success() : msg;
-
                 if (reconnector != null) {
+                    assert msg.success() : msg;
+
                     currSock = reconnector.sock;
 
                     sockWriter.setSocket(currSock);
@@ -1529,7 +1548,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     try {
                         for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages()) {
                             if (log.isDebugEnabled())
-                                log.debug("Process message on reconnect [msg=" + pendingMsg + ']');
+                                log.debug("Process pending message on reconnect [msg=" + pendingMsg + ']');
 
                             processDiscoveryMessage(pendingMsg);
                         }
@@ -1538,8 +1557,22 @@ class ClientImpl extends TcpDiscoveryImpl {
                         pending = false;
                     }
                 }
-                else if (log.isDebugEnabled())
-                    log.debug("Discarding reconnect message, reconnect is completed: " + msg);
+                else {
+                    if (joinLatch.getCount() > 0) {
+                        if (msg.success()) {
+                            for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages()) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Process pending message on connect [msg=" + pendingMsg + ']');
+
+                                processDiscoveryMessage(pendingMsg);
+                            }
+
+                            assert joinLatch.getCount() == 0 : msg;
+                        }
+                    }
+                    else if (log.isDebugEnabled())
+                        log.debug("Discarding reconnect message, reconnect is completed: " + msg);
+                }
             }
             else if (log.isDebugEnabled())
                 log.debug("Discarding reconnect message for another client: " + msg);
