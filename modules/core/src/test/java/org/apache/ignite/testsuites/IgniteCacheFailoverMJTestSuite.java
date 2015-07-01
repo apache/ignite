@@ -18,7 +18,10 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
 
 /**
  * Test suite.
@@ -34,23 +37,23 @@ public class IgniteCacheFailoverMJTestSuite extends TestSuite {
         // Failure consistency tests.
         suite.addTestSuite(GridCacheAtomicRemoveFailureMJTest.class);
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderRemoveFailureMJTest.class);
-//        suite.addTestSuite(GridCacheAtomicClientRemoveFailureMJTest.class);
-//
-//        suite.addTestSuite(GridCacheDhtAtomicRemoveFailureMJTest.class);
-//        suite.addTestSuite(GridCacheDhtRemoveFailureMJTest.class);
-//        suite.addTestSuite(GridCacheDhtClientRemoveFailureMJTest.class);
-//        suite.addTestSuite(GridCacheNearRemoveFailureMJTest.class);
-//        suite.addTestSuite(GridCacheAtomicNearRemoveFailureMJTest.class);
-//        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderNearRemoveFailureMJTest.class);
-//
-//        // From part 2
-//        suite.addTestSuite(GridCacheAtomicFailoverSelfMJTest.class);
-//        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderFailoverSelfMJTest.class);
-//        suite.addTestSuite(GridCacheAtomicReplicatedFailoverSelfMJTest.class);
-//
-//        suite.addTestSuite(GridCachePartitionedFailoverSelfMJTest.class);
-//        suite.addTestSuite(GridCacheColocatedFailoverSelfMJTest.class);
-//        suite.addTestSuite(GridCacheReplicatedFailoverSelfMJTest.class);
+        suite.addTestSuite(GridCacheAtomicClientRemoveFailureMJTest.class);
+
+        suite.addTestSuite(GridCacheDhtAtomicRemoveFailureMJTest.class);
+        suite.addTestSuite(GridCacheDhtRemoveFailureMJTest.class);
+        suite.addTestSuite(GridCacheDhtClientRemoveFailureMJTest.class);
+        suite.addTestSuite(GridCacheNearRemoveFailureMJTest.class);
+        suite.addTestSuite(GridCacheAtomicNearRemoveFailureMJTest.class);
+        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderNearRemoveFailureMJTest.class);
+
+        // From part 2
+        suite.addTestSuite(GridCacheAtomicFailoverSelfMJTest.class);
+        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderFailoverSelfMJTest.class);
+        suite.addTestSuite(GridCacheAtomicReplicatedFailoverSelfMJTest.class);
+
+        suite.addTestSuite(GridCachePartitionedFailoverSelfMJTest.class);
+        suite.addTestSuite(GridCacheColocatedFailoverSelfMJTest.class);
+        suite.addTestSuite(GridCacheReplicatedFailoverSelfMJTest.class);
 
         return suite;
     }
