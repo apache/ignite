@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -15,8 +16,24 @@
 # limitations under the License.
 #
 
-ignite.version=1.2.1-SNAPSHOT
-ignite.build=0
-ignite.revision=DEV
-ignite.rel.date=01011970
-ignite.update.status.params=test=vfvfvskfkeievskjv
+if [ -z $GIT_REPO ]; then
+  echo Users git repo is not provided.
+
+  exit 0
+fi
+
+git clone $GIT_REPO user-repo
+
+cd user-repo
+
+if [ ! -z $GIT_BRANCH ]; then
+  git checkout $GIT_BRANCH
+fi
+
+if [ ! -z "$BUILD_CMD" ]; then
+  echo "Starting to execute build command: $BUILD_CMD"
+
+  eval "$BUILD_CMD"
+else
+  mvn clean package
+fi
