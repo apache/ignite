@@ -130,6 +130,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     TypeDescriptor desc = new TypeDescriptor();
 
+                    // TODO IGNITE-950 need class to check enableFieldsIndexing, but class may be absent on server node.
+                    // TODO use old code if class is available on server node. CacheIndexedObjectImpl.
                     Class<?> keyCls = meta.getKeyType() != null ? U.classForName(meta.getKeyType(), null) : null;
                     Class<?> valCls = meta.getValueType() != null ? U.classForName(meta.getValueType(), null) : null;
 
