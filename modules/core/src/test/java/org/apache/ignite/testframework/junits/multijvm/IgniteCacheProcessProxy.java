@@ -168,8 +168,12 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isLocalLocked(K key, boolean byCurrThread) {
-        throw new UnsupportedOperationException("Method should be supported.");
+    @Override public boolean isLocalLocked(final K key, final boolean byCurrThread) {
+        return compute.call(new IgniteCallable<Boolean>() {
+            @Override public Boolean call() throws Exception {
+                return cache().isLocalLocked(key, byCurrThread);
+            }
+        });
     }
 
     /** {@inheritDoc} */
