@@ -141,7 +141,7 @@ public class IgniteNodeRunner {
             // TODO delete logging.
             X.println(">>>>> IgniteNodeRunner.killAll");
 
-            MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier("localhost"));
+            MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier((String)null));
 
             Set<Integer> jvms = monitoredHost.activeVms();
 
@@ -195,7 +195,7 @@ public class IgniteNodeRunner {
         try {
             X.println(">>>>> IgniteNodeRunner.jps");
 
-            MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier("localhost"));
+            MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier((String)null));
 
             Set<Integer> jvms = monitoredHost.activeVms();
 
