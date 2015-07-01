@@ -340,31 +340,32 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public Object field(Object obj, String fieldName, Field field) throws IgniteFieldNotFoundException {
+    @Override public Object field(Object obj, String fieldName) throws IgniteFieldNotFoundException {
         assert indexingMgr != null;
 
-        try {
-            return ((CacheIndexedObjectImpl)obj).field(fieldName, optMarsh, field);
+        if (obj instanceof CacheIndexedObjectImpl) {
+            try {
+                return ((CacheIndexedObjectImpl)obj).field(fieldName, optMarsh);
+            }
+            catch (IgniteFieldNotFoundException e) {
+                throw e;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
-        catch (IgniteFieldNotFoundException e) {
-            throw e;
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-        catch (ClassCastException e) {
+        else
             throw new IgniteFieldNotFoundException("Object doesn't have field [obj=" + obj + ", field=" + fieldName
                 + "]");
-        }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasField(Object obj, String fieldName, Field field) {
+    @Override public boolean hasField(Object obj, String fieldName) {
         if (obj instanceof CacheIndexedObjectImpl) {
             assert indexingMgr != null;
 
             try {
-                return ((CacheIndexedObjectImpl)obj).hasField(fieldName, optMarsh, null);
+                return ((CacheIndexedObjectImpl)obj).hasField(fieldName, optMarsh);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
