@@ -265,7 +265,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Suppress warning if at least one ATOMIC cache found.
         perf.add("Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)",
-                 cfg.getAtomicityMode() == ATOMIC);
+            cfg.getAtomicityMode() == ATOMIC);
 
         // Suppress warning if at least one non-FULL_SYNC mode found.
         perf.add("Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)",
@@ -341,8 +341,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "Serializable transactions are disabled while default transaction isolation is SERIALIZABLE " +
                     "(most likely misconfiguration - either update 'isTxSerializableEnabled' or " +
                     "'defaultTxIsolationLevel' properties) for cache: " + U.maskName(cc.getName()),
-                    "Serializable transactions are disabled while default transaction isolation is SERIALIZABLE " +
-                        "for cache: " + U.maskName(cc.getName()));
+                "Serializable transactions are disabled while default transaction isolation is SERIALIZABLE " +
+                    "for cache: " + U.maskName(cc.getName()));
 
         if (cc.isWriteBehindEnabled()) {
             if (cfgStore == null)
@@ -527,8 +527,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked"})
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
+        if (ctx.config().isDaemon()) {
+            sharedCtx = createSharedContext(ctx, CU.startStoreSessionListeners(ctx, null));
+
+            for (GridCacheSharedManager mgr : sharedCtx.managers())
+                mgr.start(sharedCtx);
+
             return;
+        }
 
         DeploymentMode depMode = ctx.config().getDeploymentMode();
 
@@ -667,8 +673,45 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
         try {
-            if (ctx.config().isDaemon())
+            if (ctx.config().isDaemon()) {
+                for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()) {
+                    if (CU.isMarshallerCache(ccfg.getName())) {
+                        CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
+
+                        initialize(ccfg, cacheObjCtx);
+
+                        GridCacheContext ctx = createCache(ccfg, null, CacheType.MARSHALLER, cacheObjCtx, true);
+
+                        ctx.dynamicDeploymentId(IgniteUuid.randomUuid());
+
+                        sharedCtx.addCacheContext(ctx);
+
+                        GridCacheAdapter cache = ctx.cache();
+
+                        String name = ccfg.getName();
+
+                        caches.put(maskNull(name), cache);
+
+                        startCache(cache);
+
+                        break;
+                    }
+                }
+
+                marshallerCache().context().preloader().syncFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
+                    @Override public void applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
+                        ctx.marshallerContext().onMarshallerCachePreloaded(ctx);
+                    }
+                });
+
+                for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
+                    mgr.onKernalStart();
+
+                for (GridCacheAdapter<?, ?> cache : caches.values())
+                    onKernalStart(cache);
+
                 return;
+            }
 
             ClusterNode locNode = ctx.discovery().localNode();
 
@@ -808,9 +851,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
         for (String cacheName : stopSeq) {
             GridCacheAdapter<?, ?> cache = caches.remove(maskNull(cacheName));
 
@@ -849,9 +889,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     @Override public void onKernalStop(boolean cancel) {
         cacheStartedLatch.countDown();
-
-        if (ctx.config().isDaemon())
-            return;
 
         for (String cacheName : stopSeq) {
             GridCacheAdapter<?, ?> cache = caches.get(maskNull(cacheName));
@@ -1390,6 +1427,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<DynamicCacheChangeRequest> reqs,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
+        if (ctx.isDaemon())
+            return;
+
         for (DynamicCacheChangeRequest req : reqs) {
             assert req.start() : req;
             assert req.cacheType() != null : req;
