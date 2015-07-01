@@ -2332,7 +2332,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 LT.warn(log, null, "Local node has detected failed nodes and started cluster-wide procedure. " +
                         "To speed up failure detection please see 'Failure Detection' section under javadoc" +
-                        "for 'TcpDiscoverySpi'");
+                        " for 'TcpDiscoverySpi'");
             }
         }
 
