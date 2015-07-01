@@ -141,12 +141,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     TypeId typeId;
 
                     if (valCls == null || ctx.cacheObjects().isPortableEnabled()) {
-                        processCacheTypeMeta(meta, desc, PORTABLE_PROPERTY, keyCls, valCls);
+                        processCacheTypeMeta(meta, desc, PORTABLE_PROPERTY);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
                     }
                     else if (ctx.cacheObjects().enableFieldsIndexing(valCls)) {
-                        processCacheTypeMeta(meta, desc, INDEXED_FIELDS_PROPERTY, keyCls, valCls);
+                        processCacheTypeMeta(meta, desc, INDEXED_FIELDS_PROPERTY);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(valCls.getName()));
                     }
@@ -1239,18 +1239,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param meta Declared metadata.
      * @param d Type descriptor.
      * @param propType PropertyType.
-     * @param keyCls Key class.
-     * @param valCls Value class.
      * @throws IgniteCheckedException If failed.
      */
-    private void processCacheTypeMeta(CacheTypeMetadata meta, TypeDescriptor d, PropertyType propType,
-        @Nullable Class<?> keyCls, @Nullable Class<?> valCls) throws IgniteCheckedException {
+    private void processCacheTypeMeta(CacheTypeMetadata meta, TypeDescriptor d, PropertyType propType)
+        throws IgniteCheckedException {
         assert propType != CLASS_PROPERTY;
 
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
             Property prop = propType == PORTABLE_PROPERTY ?
                 buildPortableProperty(entry.getKey(), entry.getValue()) :
-                buildIndexedFieldsProperty(entry.getKey(), entry.getValue(), keyCls, valCls);
+                buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
 
             d.addProperty(prop, false);
 
@@ -1264,7 +1262,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
             Property prop = propType == PORTABLE_PROPERTY ?
                 buildPortableProperty(entry.getKey(), entry.getValue()) :
-                buildIndexedFieldsProperty(entry.getKey(), entry.getValue(), keyCls, valCls);
+                buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
 
             d.addProperty(prop, false);
 
@@ -1278,7 +1276,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (String txtIdx : meta.getTextFields()) {
             Property prop = propType == PORTABLE_PROPERTY ?
                 buildPortableProperty(txtIdx, String.class) :
-                buildIndexedFieldsProperty(txtIdx, String.class, keyCls, valCls);
+                buildIndexedFieldsProperty(txtIdx, String.class);
 
             d.addProperty(prop, false);
 
@@ -1298,7 +1296,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
                     Property prop = propType == PORTABLE_PROPERTY ?
                         buildPortableProperty(idxField.getKey(), idxField.getValue().get1()) :
-                        buildIndexedFieldsProperty(idxField.getKey(), idxField.getValue().get1(), keyCls, valCls);
+                        buildIndexedFieldsProperty(idxField.getKey(), idxField.getValue().get1());
 
                     d.addProperty(prop, false);
 
@@ -1314,7 +1312,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
             Property prop = propType == PORTABLE_PROPERTY ?
                 buildPortableProperty(entry.getKey(), entry.getValue()) :
-                buildIndexedFieldsProperty(entry.getKey(), entry.getValue(), keyCls, valCls);
+                buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
 
             if (!d.props.containsKey(prop.name()))
                 d.addProperty(prop, false);
@@ -1421,18 +1419,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param pathStr String representing path to the property. May contains dots '.' to identify
      *      nested fields.
      * @param resType Result type.
-     * @param keyCls Key class.
-     * @param valCls Value class.
      * @return Portable property.
      */
-    private IndexedFieldsProperty buildIndexedFieldsProperty(String pathStr, Class<?> resType,
-        @Nullable Class<?> keyCls, @Nullable Class<?> valCls) {
+    private IndexedFieldsProperty buildIndexedFieldsProperty(String pathStr, Class<?> resType) {
         String[] path = pathStr.split("\\.");
 
         IndexedFieldsProperty res = null;
 
         for (String prop : path)
-            res = new IndexedFieldsProperty(prop, res, resType, keyCls, valCls);
+            res = new IndexedFieldsProperty(prop, res, resType);
 
         return res;
     }
@@ -1702,9 +1697,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (isKeyProp0 == 0) {
                     // Key is allowed to be a non-portable object here.
                     // We check key before value consistently with ClassProperty.
-                    if (ctx.cacheObjects().isPortableObject(key) && ctx.cacheObjects().hasField(key, propName, null))
+                    if (ctx.cacheObjects().isPortableObject(key) && ctx.cacheObjects().hasField(key, propName))
                         isKeyProp = isKeyProp0 = 1;
-                    else if (ctx.cacheObjects().hasField(val, propName, null))
+                    else if (ctx.cacheObjects().hasField(val, propName))
                         isKeyProp = isKeyProp0 = -1;
                     else {
                         U.warn(log, "Neither key nor value have property " +
@@ -1717,7 +1712,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 obj = isKeyProp0 == 1 ? key : val;
             }
 
-            return ctx.cacheObjects().field(obj, propName, null);
+            return ctx.cacheObjects().field(obj, propName);
         }
 
         /** {@inheritDoc} */
@@ -1744,49 +1739,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** Result class. */
         private Class<?> type;
 
-        /** Key field */
-        private Field keyField;
-
-        /** Value field */
-        private Field valueField;
-
         /**
          * Constructor.
          *
          * @param propName Property name.
          * @param parent Parent property.
          * @param type Result type.
-         * @param keyCls Key class.
-         * @param valCls Value class.
          */
-        private IndexedFieldsProperty(String propName, IndexedFieldsProperty parent, Class<?> type,
-            @Nullable Class<?> keyCls, @Nullable Class<?> valCls) {
+        private IndexedFieldsProperty(String propName, IndexedFieldsProperty parent, Class<?> type) {
             this.propName = propName;
             this.parent = parent;
             this.type = type;
-
-            /*if (keyCls != null) {
-                try {
-                    keyField = keyCls.getDeclaredField(propName);
-
-                    keyField.setAccessible(true);
-                } catch (NoSuchFieldException e) {
-                    // No-op
-                }
-            }
-            else if (valCls != null && keyField == null) {
-                try {
-                    valueField = valCls.getDeclaredField(propName);
-
-                    valueField.setAccessible(true);
-                } catch (NoSuchFieldException e) {
-                    // No-op
-                }
-            }
-
-            if ((keyCls != null || valCls != null) && keyField == null && valueField == null)
-                U.warn(log, "Neither key nor value class has field " +
-                    "[fieldName=" + propName + ", key=" + keyCls + ", val=" + valCls + "]");*/
         }
 
         /** {@inheritDoc} */
@@ -1803,42 +1766,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     throw new IgniteCheckedException("Non-indexed object received as a result of property extraction " +
                         "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
 
-                return ctx.cacheObjects().field(obj, propName, keyField != null ? keyField : valueField);
+                return ctx.cacheObjects().field(obj, propName);
             }
             else {
-                if (key instanceof CacheIndexedObjectImpl) {
-                    try {
+                try {
 
-                        return ctx.cacheObjects().field(key, propName, keyField);
-                    }
-                    catch (IgniteFieldNotFoundException e) {
-                        // Ignore
-                    }
+                    return ctx.cacheObjects().field(key, propName);
                 }
-                else if (keyField != null) {
-                    try {
-                        return keyField.get(key);
-                    }
-                    catch (Exception e) {
-                        throw new IgniteCheckedException(e);
-                    }
+                catch (IgniteFieldNotFoundException e) {
+                    // Ignore
                 }
 
-                if (val instanceof CacheIndexedObjectImpl) {
-                    try {
-                        return ctx.cacheObjects().field(val, propName, valueField);
-                    }
-                    catch (IgniteFieldNotFoundException e) {
-                        // Ignore
-                    }
+                try {
+                    return ctx.cacheObjects().field(val, propName);
                 }
-                else if (valueField != null) {
-                    try {
-                        return valueField.get(val);
-                    }
-                    catch (Exception e) {
-                        throw new IgniteCheckedException(e);
-                    }
+                catch (IgniteFieldNotFoundException e) {
+                    // Ignore
                 }
 
                 U.warn(log, "Neither key nor value has property " +

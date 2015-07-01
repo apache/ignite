@@ -88,21 +88,19 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      *
      * @param obj Object to get field from.
      * @param fieldName Field name.
-     * @param field Field instance to get access through reflection.
      * @throws IgniteFieldNotFoundException In case if there is no such a field.
      * @return Field value.
      */
-    public Object field(Object obj, String fieldName, @Nullable Field field) throws IgniteFieldNotFoundException;
+    public Object field(Object obj, String fieldName) throws IgniteFieldNotFoundException;
 
     /**
      * Checks whether field is set in the object. Object should be an instance of {@link CacheObject}.
      *
      * @param obj Object.
      * @param fieldName Field name.
-     * @param field Field instance to get access through reflection.
      * @return {@code true} if field is set.
      */
-    public boolean hasField(Object obj, String fieldName, @Nullable Field field);
+    public boolean hasField(Object obj, String fieldName);
 
     /**
      * Checks whether this functionality is globally supported.
@@ -116,7 +114,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * Footer contains information about fields location in the serialized form, thus enabling fast queries without
      * a need to deserialize the object.
      *
-     * Indexing is enabled with {@link OptimizedMarshallerExt#enableFieldsIndexing(Class)}.
+     * Indexing is enabled with {@link OptimizedMarshallerIndexingHandler#enableFieldsIndexingForClass(Class)}.
      *
      * @param cls Class.
      * @return {@code true} if the footer is enabled.

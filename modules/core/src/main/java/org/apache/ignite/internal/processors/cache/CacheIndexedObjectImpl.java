@@ -165,21 +165,10 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      *
      * @param fieldName Field name.
      * @param marsh Marshaller.
-     * @param field Field instance to get access through reflection.
      * @return {@code true} if has.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean hasField(String fieldName, OptimizedMarshaller marsh, Field field) throws IgniteCheckedException {
-        if (field != null && val != null) {
-            try {
-                field.get(val);
-                return true;
-            }
-            catch (Exception e) {
-                return false;
-            }
-        }
-
+    public boolean hasField(String fieldName, OptimizedMarshaller marsh) throws IgniteCheckedException {
         assert valBytes != null;
 
         return marsh.hasField(fieldName, valBytes, start, len);
@@ -190,22 +179,11 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      *
      * @param fieldName Field name.
      * @param marsh Marshaller.
-     * @param field Field instance to get access through reflection.
      * @return Field.
      * @throws IgniteFieldNotFoundException In case if there is no such a field.
      * @throws IgniteCheckedException In case of error.
      */
-    public Object field(String fieldName, OptimizedMarshaller marsh, Field field) throws IgniteCheckedException {
-        if (field != null && val != null) {
-            try {
-                return field.get(val);
-            }
-            catch (Exception e) {
-                throw new IgniteFieldNotFoundException("Object doesn't have the field [obj=" + val + ", field="
-                    + fieldName + "]", e);
-            }
-        }
-
+    public Object field(String fieldName, OptimizedMarshaller marsh) throws IgniteCheckedException {
         assert valBytes != null;
 
         return marsh.readField(fieldName, valBytes, start, len, val != null ? val.getClass().getClassLoader() : null);
