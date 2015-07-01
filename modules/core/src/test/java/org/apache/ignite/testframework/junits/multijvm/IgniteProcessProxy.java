@@ -43,7 +43,7 @@ import java.util.concurrent.*;
 @SuppressWarnings("TransientFieldInNonSerializableClass")
 public class IgniteProcessProxy implements IgniteEx {
     /** Grid proxies. */
-    private static final transient Map<String, IgniteProcessProxy> gridProxies = new HashMap<>();
+    private static final transient ConcurrentMap<String, IgniteProcessProxy> gridProxies = new ConcurrentHashMap<>();
 
     /** Jvm process with ignite instance. */
     private final transient GridJavaProcess proc;
