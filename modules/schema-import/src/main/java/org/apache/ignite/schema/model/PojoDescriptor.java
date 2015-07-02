@@ -304,6 +304,8 @@ public class PojoDescriptor {
 
     /**
      * Gets indexes groups.
+     *
+     * @return Map with indexes.
      */
     public Map<String, Map<String, IndexItem>> groups() {
         Map<String, Map<String, Boolean>> idxs = tbl.indexes();
