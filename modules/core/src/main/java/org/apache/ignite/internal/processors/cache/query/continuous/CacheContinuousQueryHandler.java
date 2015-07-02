@@ -353,8 +353,8 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         Iterable<CacheEntryEvent<? extends K, ? extends V>> evts = F.viewReadOnly(entries,
             new C1<CacheContinuousQueryEntry, CacheEntryEvent<? extends K, ? extends V>>() {
                 @Override public CacheEntryEvent<? extends K, ? extends V> apply(CacheContinuousQueryEntry e) {
-                    return new CacheContinuousQueryEvent<K, V>(cache, cctx, e);
-                };
+                    return new CacheContinuousQueryEvent<>(cache, cctx, e);
+                }
             }
         );
 
