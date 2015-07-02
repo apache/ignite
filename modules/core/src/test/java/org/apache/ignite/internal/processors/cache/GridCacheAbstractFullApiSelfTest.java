@@ -4362,6 +4362,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testLocalClearKeys() throws Exception {
+        if (isMultiJvm()) // TODO: IGNITE-648, test should be fixed and enabled.
+            return;
+
         Map<String, List<String>> keys = addKeys();
 
         Ignite g = grid(0);
