@@ -114,6 +114,9 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
 
     /** {@inheritDoc} */
     @Override public void testEvictExpired() throws Exception {
+        if (isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+
         IgniteCache<String, Integer> cache = jcache();
 
         String key = primaryKeysForCache(cache, 1).get(0);

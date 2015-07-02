@@ -151,6 +151,24 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
+     * @param gridName Grid name.
+     * @param cancel Cacnel flag.
+     */
+    public static void stop(final String gridName, final boolean cancel) {
+        IgniteProcessProxy proxy = gridProxies.get(gridName);
+
+        if (proxy != null) {
+            proxy.remoteCompute().run(new IgniteRunnable() {
+                @Override public void run() {
+                    G.stop(gridName, cancel);
+                }
+            });
+
+            gridProxies.remove(gridName, proxy);
+        }
+    }
+
+    /**
      * For usage in closures.
      *
      * @return Ignite instance.

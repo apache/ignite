@@ -88,6 +88,9 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings( {"unchecked"})
     public void testTxCleanup() throws Exception {
+        if (isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+
         backups = 1;
 
         Ignite ignite = startGrids(GRID_CNT);
@@ -104,9 +107,9 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
             assert backupNode != otherNode;
             assert priNode != otherNode;
 
-            Ignite priIgnite = G.ignite(priNode.id());
-            Ignite backupIgnite = G.ignite(backupNode.id());
-            Ignite otherIgnite = G.ignite(otherNode.id());
+            final Ignite priIgnite = grid(priNode);
+            Ignite backupIgnite = grid(backupNode);
+            Ignite otherIgnite = grid(otherNode);
 
             List<Ignite> ignites = F.asList(otherIgnite, priIgnite, backupIgnite);
 
@@ -152,8 +155,8 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
                 tx.close();
             }
 
-            G.stop(priIgnite.name(), true);
-            G.stop(backupIgnite.name(), true);
+            stopGrid(priIgnite.name(), true);
+            stopGrid(backupIgnite.name(), true);
 
             Ignite newIgnite = startGrid(GRID_CNT);
 

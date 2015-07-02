@@ -3187,7 +3187,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param oldEntry {@code True} to check TTL on old entry, {@code false} on new.
      * @throws Exception If failed.
      */
-    private void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
+    protected void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
         if (memoryMode() == OFFHEAP_TIERED)
             return;
 
@@ -4362,6 +4362,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testLocalClearKeys() throws Exception {
+        if (isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+
         Map<String, List<String>> keys = addKeys();
 
         Ignite g = grid(0);

@@ -125,7 +125,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         return F.view(super.affinityNodes(), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
-                return !F.eq(G.ignite(n.id()).name(), grid(nearIdx).name());
+                return !F.eq(grid(n).name(), grid(nearIdx).name());
             }
         });
     }
@@ -135,6 +135,14 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
      */
     @Override protected IgniteCache<String, Integer> fullCache() {
         return nearIdx == 0 ? jcache(1) : jcache(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
+        if (isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+
+        super.checkTtl(inTx, oldEntry);
     }
 
     /**
@@ -211,6 +219,9 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
      * @throws Exception If failed.
      */
     private void checkReaderTtl(boolean inTx) throws Exception {
+        if (isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+
         int ttl = 1000;
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));

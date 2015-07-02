@@ -256,8 +256,19 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             boolean nearEnabled = nearEnabled(c);
 
-            if (nearEnabled)
-                assertTrue(((IgniteKernal)ignite(i)).internalCache().context().isNear());
+            if (nearEnabled) {
+                if (!isMultiJvmAndNodeIsRemote(i))
+                    assertTrue(((IgniteKernal)ignite(i)).internalCache().context().isNear());
+                else {
+                    final int iCopy = i;
+
+                    ((IgniteProcessProxy)grid(i)).remoteCompute().run(new IgniteRunnable() {
+                        @Override public void run() {
+                            assertTrue(((IgniteKernal)ignite(iCopy)).internalCache().context().isNear());
+                        }
+                    });
+                }
+            }
 
             Integer nearPeekVal = nearEnabled ? 1 : null;
 
@@ -316,6 +327,9 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
      */
     @SuppressWarnings("unchecked")
     public void testNearDhtKeySize() throws Exception {
+        if (isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+
         List<String> keys = new ArrayList<>(5);
 
         info("Generating keys for test...");

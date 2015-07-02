@@ -572,6 +572,9 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected final Ignite startGridsMultiThreaded(int init, int cnt) throws Exception {
+        if (isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+
         assert init >= 0;
         assert cnt > 0;
 
@@ -746,13 +749,16 @@ public abstract class GridAbstractTest extends TestCase {
     @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String gridName, boolean cancel) {
         try {
-            Ignite ignite = G.ignite(gridName);
+            Ignite ignite = grid(gridName);
 
             assert ignite != null : "Ignite returned null grid for name: " + gridName;
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 
-            G.stop(gridName, cancel);
+            if (!isMultiJvmAndNodeIsRemote(gridName))
+                G.stop(gridName, cancel);
+            else
+                IgniteProcessProxy.stop(gridName, cancel);
         }
         catch (IllegalStateException ignored) {
             // Ignore error if grid already stopped.
@@ -775,26 +781,30 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      */
     protected void stopAllGrids(boolean cancel) {
-        Collection<Ignite> clients = new ArrayList<>();
-        Collection<Ignite> srvs = new ArrayList<>();
+        try {
+            Collection<Ignite> clients = new ArrayList<>();
+            Collection<Ignite> srvs = new ArrayList<>();
 
-        for (Ignite g : G.allGrids()) {
-            if (g.configuration().getDiscoverySpi().isClientMode())
-                clients.add(g);
-            else
-                srvs.add(g);
+            for (Ignite g : G.allGrids()) {
+                if (g.configuration().getDiscoverySpi().isClientMode())
+                    clients.add(g);
+                else
+                    srvs.add(g);
+            }
+
+            for (Ignite g : clients)
+                stopGrid(g.name(), cancel);
+
+            for (Ignite g : srvs)
+                stopGrid(g.name(), cancel);
+
+            assert G.allGrids().isEmpty();
+        }
+        finally {
+            IgniteProcessProxy.killAll(); // In multi jvm case.
+            IgniteNodeRunner.killAll();
         }
 
-        for (Ignite g : clients)
-            stopGrid(g.name(), cancel);
-
-        for (Ignite g : srvs)
-            stopGrid(g.name(), cancel);
-
-        if (isMultiJvm())
-            IgniteNodeRunner.killAll();
-
-        assert G.allGrids().isEmpty();
     }
 
     /**
@@ -910,8 +920,15 @@ public abstract class GridAbstractTest extends TestCase {
     protected final Ignite grid(ClusterNode node) {
         if (!isMultiJvm())
             return G.ignite(node.id());
-        else
-            return IgniteProcessProxy.ignite(node.id());
+        else {
+            try {
+                return IgniteProcessProxy.ignite(node.id());
+            }
+            catch (Exception ignore) {
+                // A hack if it is local grid.
+                return G.ignite(node.id());
+            }
+        }
     }
 
     /**
