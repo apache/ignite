@@ -15,23 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.multijvm;
+package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
+import org.apache.ignite.plugin.*;
+
+import java.util.concurrent.*;
 
 /**
- * Multy Jvm tests.
+ * The interface of IO Messaging Pool Extension.
  */
-public class GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest extends
-    GridCacheReplicatedNearOnlyMultiNodeFullApiSelfTest {
-    /** {@inheritDoc} */
-    protected boolean isMultiJvm() {
-        return true;
-    }
+public interface IoPool extends Extension {
+    /**
+     * Gets the numeric identifier of the pool. This identifier is to be taken from serialized
+     * message and used to find the appropriate executor pool to process it.
+     *
+     * @return The id.
+     */
+    public byte id();
 
-    /** {@inheritDoc} */
-    @Override public void testNearDhtKeySize() throws Exception {
-        if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
-    }
+    /**
+     * Gets the Executor for this Pool. Cannot be null.
+     *
+     * @return The executor.
+     */
+    public Executor executor();
 }

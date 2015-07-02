@@ -986,7 +986,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @throws IgniteCheckedException If sending failed.
      */
     private void sendMessage(Collection<? extends ClusterNode> nodes, GridTopic topic,
-        GridEventStorageMessage msg, GridIoPolicy plc) throws IgniteCheckedException {
+        GridEventStorageMessage msg, byte plc) throws IgniteCheckedException {
         ClusterNode locNode = F.find(nodes, null, F.localNode(ctx.localNodeId()));
 
         Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(ctx.localNodeId()));
