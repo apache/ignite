@@ -100,7 +100,7 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
             return fut.cancel();
         }
         catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            throw convertException(e);
         }
     }
 
@@ -110,7 +110,7 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
             return fut.get();
         }
         catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            throw convertException(e);
         }
     }
 
@@ -120,7 +120,7 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
             return fut.get(timeout);
         }
         catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            throw convertException(e);
         }
     }
 
@@ -130,8 +130,18 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
             return fut.get(timeout, unit);
         }
         catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            throw convertException(e);
         }
+    }
+
+    /**
+     * Convert internal exception to public exception.
+     *
+     * @param e Internal exception.
+     * @return Public excpetion.
+     */
+    protected RuntimeException convertException(IgniteCheckedException e) {
+        return U.convertException(e);
     }
 
     /** {@inheritDoc} */

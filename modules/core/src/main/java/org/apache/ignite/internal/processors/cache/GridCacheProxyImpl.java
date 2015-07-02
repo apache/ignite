@@ -118,7 +118,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            return opCtx != null ? opCtx.skipStore() : false;
+            return opCtx != null && opCtx.skipStore();
         }
         finally {
             gate.leave(prev);
@@ -198,7 +198,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     /** {@inheritDoc} */
     @Override public GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
         return new GridCacheProxyImpl<>(ctx, delegate,
-            opCtx != null ? opCtx.forSubjectId(subjId) : new CacheOperationContext(false, subjId, false, null));
+            opCtx != null ? opCtx.forSubjectId(subjId) : new CacheOperationContext(false, subjId, false, null, false));
     }
 
     /** {@inheritDoc} */
@@ -210,7 +210,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                 return this;
 
             return new GridCacheProxyImpl<>(ctx, delegate,
-                opCtx != null ? opCtx.setSkipStore(skipStore) : new CacheOperationContext(true, null, false, null));
+                opCtx != null ? opCtx.setSkipStore(skipStore) : new CacheOperationContext(true, null, false, null, false));
         }
         finally {
             gate.leave(prev);
@@ -224,7 +224,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, 
             (GridCacheAdapter<K1, V1>)delegate,
-            opCtx != null ? opCtx.keepPortable() : new CacheOperationContext(false, null, true, null));
+            opCtx != null ? opCtx.keepPortable() : new CacheOperationContext(false, null, true, null, false));
     }
 
     /** {@inheritDoc} */
@@ -1515,7 +1515,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
         try {
             return new GridCacheProxyImpl<>(ctx, delegate,
-                opCtx != null ? opCtx.withExpiryPolicy(plc) : new CacheOperationContext(false, null, false, plc));
+                opCtx != null ? opCtx.withExpiryPolicy(plc) : new CacheOperationContext(false, null, false, plc, false));
         }
         finally {
             gate.leave(prev);

@@ -110,6 +110,7 @@
                 <exclude>org.apache.ignite:ignite-tools</exclude>
                 <exclude>org.apache.ignite:ignite-extdata-p2p</exclude>
                 <exclude>org.apache.ignite:ignite-extdata-uri</exclude>
+                <exclude>org.apache.ignite:ignite-extdata-uri-dep</exclude>
                 <exclude>org.apache.ignite:ignite-examples</exclude>
                 <exclude>org.apache.ignite:ignite-indexing</exclude>
                 <exclude>org.apache.ignite:ignite-visor-console</exclude>

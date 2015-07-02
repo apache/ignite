@@ -309,7 +309,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param plc grid io policy.
      */
     private void sendResponseOnFailedMessage(UUID nodeId, GridCacheMessage res, GridCacheSharedContext cctx,
-        GridIoPolicy plc) {
+        byte plc) {
         try {
             cctx.io().send(nodeId, res, plc);
         }
@@ -580,7 +580,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @throws ClusterTopologyCheckedException If receiver left.
      */
     @SuppressWarnings("unchecked")
-    public void send(ClusterNode node, GridCacheMessage msg, GridIoPolicy plc) throws IgniteCheckedException {
+    public void send(ClusterNode node, GridCacheMessage msg, byte plc) throws IgniteCheckedException {
         assert !node.isLocal();
 
         onSend(msg, node.id());
@@ -627,7 +627,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @throws IgniteCheckedException If send failed.
      */
     @SuppressWarnings({"BusyWait", "unchecked"})
-    public boolean safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage msg, GridIoPolicy plc,
+    public boolean safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage msg, byte plc,
         @Nullable IgnitePredicate<ClusterNode> fallback) throws IgniteCheckedException {
         assert nodes != null;
         assert msg != null;
@@ -739,7 +739,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param plc IO policy.
      * @throws IgniteCheckedException If sending failed.
      */
-    public void send(UUID nodeId, GridCacheMessage msg, GridIoPolicy plc) throws IgniteCheckedException {
+    public void send(UUID nodeId, GridCacheMessage msg, byte plc) throws IgniteCheckedException {
         ClusterNode n = cctx.discovery().node(nodeId);
 
         if (n == null)
@@ -757,7 +757,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param timeout Timeout to keep a message on receiving queue.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void sendOrderedMessage(ClusterNode node, Object topic, GridCacheMessage msg, GridIoPolicy plc,
+    public void sendOrderedMessage(ClusterNode node, Object topic, GridCacheMessage msg, byte plc,
         long timeout) throws IgniteCheckedException {
         onSend(msg, node.id());
 
@@ -807,7 +807,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     public void sendNoRetry(ClusterNode node,
         GridCacheMessage msg,
-        GridIoPolicy plc)
+        byte plc)
         throws IgniteCheckedException
     {
         assert node != null;

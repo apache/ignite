@@ -585,11 +585,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void failNode(UUID nodeId, @Nullable String warning) {
-        ClusterNode node = ring.node(nodeId);
+        TcpDiscoveryNode node = ring.node(nodeId);
 
         if (node != null) {
             TcpDiscoveryNodeFailedMessage msg = new TcpDiscoveryNodeFailedMessage(getLocalNodeId(),
-                node.id(), node.order());
+                node.id(),
+                node.internalOrder());
 
             msg.warning(warning);
 
@@ -2332,7 +2333,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 LT.warn(log, null, "Local node has detected failed nodes and started cluster-wide procedure. " +
                         "To speed up failure detection please see 'Failure Detection' section under javadoc" +
-                        "for 'TcpDiscoverySpi'");
+                        " for 'TcpDiscoverySpi'");
             }
         }
 

@@ -777,7 +777,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 }
                 catch (IOException e) {
                     if (!isInterrupted()) {
-                        U.error(log, "Failed to send/receive address message (will try to reconnect).", e);
+                        LT.warn(log, e, "Failed to send/receive address message (will try to reconnect).");
 
                         synchronized (this) {
                             U.close(sock);
