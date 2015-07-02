@@ -14,33 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-
-import java.util.*;
+import org.apache.ignite.cache.*;
 
 /**
- * Update future for atomic cache.
+ *
  */
-public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
-    /**
-     * @return Future topology version.
-     */
-    public AffinityTopologyVersion topologyVersion();
+public class IgniteCachePutRetryAtomicSelfTest extends IgniteCachePutRetryAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
+    }
 
-    /**
-     * Gets future that will be completed when it is safe when update is finished on the given version of topology.
-     *
-     * @param topVer Topology version to finish.
-     * @return Future or {@code null} if no need to wait.
-     */
-    public IgniteInternalFuture<Void> completeFuture(AffinityTopologyVersion topVer);
-
-    /**
-     * @return Future keys.
-     */
-    public Collection<?> keys();
+    /** {@inheritDoc} */
+    @Override protected int keysCount() {
+        return 60_000;
+    }
 }

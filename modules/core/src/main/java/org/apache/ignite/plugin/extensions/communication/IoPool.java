@@ -15,32 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.plugin.*;
 
-import java.util.*;
+import java.util.concurrent.*;
 
 /**
- * Update future for atomic cache.
+ * The interface of IO Messaging Pool Extension.
  */
-public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
+public interface IoPool extends Extension {
     /**
-     * @return Future topology version.
-     */
-    public AffinityTopologyVersion topologyVersion();
-
-    /**
-     * Gets future that will be completed when it is safe when update is finished on the given version of topology.
+     * Gets the numeric identifier of the pool. This identifier is to be taken from serialized
+     * message and used to find the appropriate executor pool to process it.
      *
-     * @param topVer Topology version to finish.
-     * @return Future or {@code null} if no need to wait.
+     * @return The id.
      */
-    public IgniteInternalFuture<Void> completeFuture(AffinityTopologyVersion topVer);
+    public byte id();
 
     /**
-     * @return Future keys.
+     * Gets the Executor for this Pool. Cannot be null.
+     *
+     * @return The executor.
      */
-    public Collection<?> keys();
+    public Executor executor();
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -105,7 +104,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private boolean sys;
 
     /** IO policy. */
-    private GridIoPolicy plc;
+    private byte plc;
 
     /**
      * Required by {@link Externalizable}.
@@ -163,7 +162,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /**
      * @return IO policy.
      */
-    public GridIoPolicy policy() {
+    public byte policy() {
         return plc;
     }
 
@@ -377,7 +376,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeByte("plc", plc != null ? (byte)plc.ordinal() : -1))
+                if (!writer.writeByte("plc", plc))
                     return false;
 
                 writer.incrementState();
@@ -510,7 +509,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 if (!reader.isLastRead())
                     return false;
 
-                plc = GridIoPolicy.fromOrdinal(plcOrd);
+                plc = plcOrd;
 
                 reader.incrementState();
 

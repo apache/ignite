@@ -246,7 +246,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             CacheOperationContext prj0 = opCtx != null ? opCtx.withExpiryPolicy(plc) :
-                new CacheOperationContext(false, null, false, plc);
+                new CacheOperationContext(false, null, false, plc, false);
 
             return new IgniteCacheProxy<>(ctx, delegate, prj0, isAsync(), lock);
         }
@@ -258,6 +258,30 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withSkipStore() {
         return skipStore();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withNoRetries() {
+        CacheOperationContext prev = onEnter(opCtx);
+
+        try {
+            boolean noRetries = opCtx != null && opCtx.noRetries();
+
+            if (noRetries)
+                return this;
+
+            CacheOperationContext opCtx0 = opCtx != null ? opCtx.setNoRetries(true) :
+                new CacheOperationContext(false, null, false, null, true);
+
+            return new IgniteCacheProxy<>(ctx,
+                delegate,
+                opCtx0,
+                isAsync(),
+                lock);
+        }
+        finally {
+            onLeave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1498,10 +1522,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             CacheOperationContext opCtx0 =
                 new CacheOperationContext(
-                    opCtx != null ? opCtx.skipStore() : false,
+                    opCtx != null && opCtx.skipStore(),
                     opCtx != null ? opCtx.subjectId() : null,
                     true,
-                    opCtx != null ? opCtx.expiry() : null);
+                    opCtx != null ? opCtx.expiry() : null,
+                    opCtx != null && opCtx.noRetries());
 
             return new IgniteCacheProxy<>((GridCacheContext<K1, V1>)ctx,
                 (GridCacheAdapter<K1, V1>)delegate,
@@ -1529,8 +1554,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             CacheOperationContext opCtx0 =
                 new CacheOperationContext(true,
                     opCtx != null ? opCtx.subjectId() : null,
-                    opCtx != null ? opCtx.isKeepPortable() : false,
-                    opCtx != null ? opCtx.expiry() : null);
+                    opCtx != null && opCtx.isKeepPortable(),
+                    opCtx != null ? opCtx.expiry() : null,
+                    opCtx != null && opCtx.noRetries());
 
             return new IgniteCacheProxy<>(ctx,
                 delegate,

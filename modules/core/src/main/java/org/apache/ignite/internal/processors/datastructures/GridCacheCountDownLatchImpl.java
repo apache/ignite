@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.internal.util.typedef.internal.CU.*;
 
 /**
  * Cache count down latch implementation.
@@ -179,12 +180,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
     /** {@inheritDoc} */
     @Override public int countDown() {
-        try {
-            return CU.outTx(new CountDownCallable(1), ctx);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+        return countDown(1);
     }
 
     /** {@inheritDoc} */
@@ -192,7 +188,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         A.ensure(val > 0, "val should be positive");
 
         try {
-            return CU.outTx(new CountDownCallable(val), ctx);
+            return CU.outTx(retryTopologySafe(new CountDownCallable(val)), ctx);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -202,7 +198,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     /** {@inheritDoc}*/
     @Override public void countDownAll() {
         try {
-            CU.outTx(new CountDownCallable(0), ctx);
+            CU.outTx(retryTopologySafe(new CountDownCallable(0)), ctx);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -248,7 +244,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         if (initGuard.compareAndSet(false, true)) {
             try {
                 internalLatch = CU.outTx(
-                    new Callable<CountDownLatch>() {
+                    retryTopologySafe(new Callable<CountDownLatch>() {
                         @Override public CountDownLatch call() throws Exception {
                             try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
                                 GridCacheCountDownLatchValue val = latchView.get(key);
@@ -267,7 +263,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                                 return new CountDownLatch(val.get());
                             }
                         }
-                    },
+                    }),
                     ctx
                 );
 
