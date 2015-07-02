@@ -303,3 +303,10 @@ JTidy
 ==============================================================================
 This product bundles JTidy, which is available under MIT license.
 For details, see http://jtidy.sourceforge.net/license.html.
+
+==============================================================================
+Tomcat Servlet API
+==============================================================================
+This product bundles Tomcat Servlet API, which is available under Apache License, Version 2.0 and
+Common Development And Distribution License (CDDL) Version 1.0.
+For details, see http://www.opensource.org/licenses/cddl1.txt.
