@@ -225,6 +225,9 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     private void checkNearAndPrimary(int gridCnt, int priThreads, int nearThreads) throws Exception {
+        if (isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+
         assert gridCnt > 0;
         assert priThreads >= 0;
         assert nearThreads >= 0;
