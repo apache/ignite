@@ -285,7 +285,8 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceS
             byte[] val = data.remove(key);
 
             if (val != null) {
-                c.apply(val);
+                if (c != null)
+                    c.apply(val);
 
                 fireEvent(EVT_SWAP_SPACE_DATA_REMOVED, name, key.keyBytes());
             }
