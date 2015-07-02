@@ -44,7 +44,7 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
         UriDeploymentSpi deploymentSpi = new UriDeploymentSpi();
 
         deploymentSpi.setUriList(
-            Arrays.asList(U.resolveIgniteUrl("modules/core/src/test/resources/").toURI().toString()));
+            Arrays.asList(U.resolveIgniteUrl("modules/extdata/uri/target/resources/").toURI().toString()));
 
         if (gridName.endsWith("2")) {
             // Delay deployment for 2nd grid only.
@@ -91,17 +91,10 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
 
             info(">>> Starting task.");
 
-            executeAsync(compute(g.cluster().forPredicate(F.equalTo(F.first(g.cluster().forRemotes().nodes())))),
-                "GridGarHelloWorldTask", "HELLOWORLD.MSG").get(60000);
+            assert "2".equals(executeAsync(compute(g.cluster().forPredicate(F.equalTo(F.first(g.cluster().forRemotes().nodes())))),
+                "GarHelloWorldTask", "HELLOWORLD.MSG").get(60000));
 
             f.get();
-        }
-        catch (Exception e) {
-            error("Test failed.", e);
-
-            // With former version of GridDeploymentLocalStore test hangs forever.
-            // So, we need to forcibly exit.
-            // System.exit(1);
         }
         finally {
             stopAllGrids();

@@ -73,7 +73,7 @@ public abstract class ComputeTaskSplitAdapter<T, R> extends ComputeTaskAdapter<T
 
     /** Load balancer. */
     @LoadBalancerResource
-    private transient ComputeLoadBalancer balancer;
+    private ComputeLoadBalancer balancer;
 
     /**
      * This is a simplified version of {@link ComputeTask#map(List, Object)} method.

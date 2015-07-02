@@ -1555,7 +1555,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param fut Future for async operation.
      */
     private <R> void setFuture(IgniteInternalFuture<R> fut) {
-        curFut.set(new IgniteFutureImpl<>(fut));
+        curFut.set(new IgniteCacheFutureImpl<>(fut));
     }
 
     /**
