@@ -69,6 +69,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Disconnect listeners. */
     private final Collection<GridDisconnectListener> disconnectLsnrs = new ConcurrentLinkedQueue<>();
 
+    /** Map of {@link IoPool}-s injected by Ignite plugins. */
+    private final IoPool[] ioPools = new IoPool[128];
+
     /** Public pool. */
     private ExecutorService pubPool;
 
@@ -255,6 +258,41 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
+
+        registerIoPoolExtensions();
+    }
+
+    /**
+     * Processes IO messaging pool extensions.
+     * @throws IgniteCheckedException On error.
+     */
+    private void registerIoPoolExtensions() throws IgniteCheckedException {
+        // Process custom IO messaging pool extensions:
+        final IoPool[] executorExtensions = ctx.plugins().extensions(IoPool.class);
+
+        if (executorExtensions != null) {
+            // Store it into the map and check for duplicates:
+            for (IoPool ex : executorExtensions) {
+                final byte id = ex.id();
+
+                // 1. Check the pool id is non-negative:
+                if (id < 0)
+                    throw new IgniteCheckedException("Failed to register IO executor pool because its Id is negative " +
+                        "[id=" + id + ']');
+
+                // 2. Check the pool id is in allowed range:
+                if (isReservedGridIoPolicy(id))
+                    throw new IgniteCheckedException("Failed to register IO executor pool because its Id in in the " +
+                        "reserved range (0-31) [id=" + id + ']');
+
+                // 3. Check the pool for duplicates:
+                if (ioPools[id] != null)
+                    throw new IgniteCheckedException("Failed to register IO executor pool because its " +
+                        "Id as already used [id=" + id + ']');
+
+                ioPools[id] = ex;
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -451,6 +489,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
+
+        Arrays.fill(ioPools, null);
     }
 
     /**
@@ -518,7 +558,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             // If message is P2P, then process in P2P service.
             // This is done to avoid extra waiting and potential deadlocks
             // as thread pool may not have any available threads to give.
-            GridIoPolicy plc = msg.policy();
+            byte plc = msg.policy();
 
             switch (plc) {
                 case P2P_POOL: {
@@ -532,7 +572,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case MANAGEMENT_POOL:
                 case AFFINITY_POOL:
                 case UTILITY_CACHE_POOL:
-                case MARSH_CACHE_POOL: {
+                case MARSH_CACHE_POOL:
+                {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
                     else
@@ -540,6 +581,18 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     break;
                 }
+
+                default:
+                    assert plc >= 0 : "Negative policy: " + plc;
+
+                    if (isReservedGridIoPolicy(plc))
+                        throw new IgniteCheckedException("Failed to process message with policy of reserved range. " +
+                            "[policy=" + plc + ']');
+
+                    if (msg.isOrdered())
+                        processOrderedMessage(nodeId, msg, plc, msgC);
+                    else
+                        processRegularMessage(nodeId, msg, plc, msgC);
             }
         }
         catch (IgniteCheckedException e) {
@@ -556,7 +609,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param plc Policy.
      * @return Execution pool.
      */
-    private Executor pool(GridIoPolicy plc) {
+    private Executor pool(byte plc) throws IgniteCheckedException {
         switch (plc) {
             case P2P_POOL:
                 return p2pPool;
@@ -580,10 +633,27 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return marshCachePool;
 
             default: {
-                assert false : "Invalid communication policy: " + plc;
+                assert plc >= 0 : "Negative policy: " + plc;
 
-                // Never reached.
-                return null;
+                if (isReservedGridIoPolicy(plc))
+                    throw new IgniteCheckedException("Failed to process message with policy of reserved" +
+                        " range (0-31), [policy=" + plc + ']');
+
+                IoPool pool = ioPools[plc];
+
+                if (pool == null)
+                    throw new IgniteCheckedException("Failed to process message because no pool is registered " +
+                        "for policy. [policy=" + plc + ']');
+
+                assert plc == pool.id();
+
+                Executor ex = pool.executor();
+
+                if (ex == null)
+                    throw new IgniteCheckedException("Failed to process message because corresponding executor " +
+                        "is null. [id=" + plc + ']');
+
+                return ex;
             }
         }
     }
@@ -643,9 +713,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private void processRegularMessage(
         final UUID nodeId,
         final GridIoMessage msg,
-        GridIoPolicy plc,
+        byte plc,
         final IgniteRunnable msgC
-    ) {
+    ) throws IgniteCheckedException {
         Runnable c = new Runnable() {
             @Override public void run() {
                 try {
@@ -701,9 +771,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private void processOrderedMessage(
         final UUID nodeId,
         final GridIoMessage msg,
-        final GridIoPolicy plc,
+        final byte plc,
         @Nullable final IgniteRunnable msgC
-    ) {
+    ) throws IgniteCheckedException {
         assert msg != null;
 
         long timeout = msg.timeout();
@@ -908,7 +978,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Object topic,
         int topicOrd,
         Message msg,
-        GridIoPolicy plc,
+        byte plc,
         boolean ordered,
         long timeout,
         boolean skipOnTimeout
@@ -916,7 +986,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert node != null;
         assert topic != null;
         assert msg != null;
-        assert plc != null;
 
         GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
 
@@ -956,7 +1025,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param plc Type of processing.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void send(UUID nodeId, Object topic, Message msg, GridIoPolicy plc)
+    public void send(UUID nodeId, Object topic, Message msg, byte plc)
         throws IgniteCheckedException {
         ClusterNode node = ctx.discovery().node(nodeId);
 
@@ -974,7 +1043,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public void send(UUID nodeId, GridTopic topic, Message msg, GridIoPolicy plc)
+    public void send(UUID nodeId, GridTopic topic, Message msg, byte plc)
         throws IgniteCheckedException {
         ClusterNode node = ctx.discovery().node(nodeId);
 
@@ -991,7 +1060,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param plc Type of processing.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void send(ClusterNode node, Object topic, Message msg, GridIoPolicy plc)
+    public void send(ClusterNode node, Object topic, Message msg, byte plc)
         throws IgniteCheckedException {
         send(node, topic, -1, msg, plc, false, 0, false);
     }
@@ -1003,7 +1072,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param plc Type of processing.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void send(ClusterNode node, GridTopic topic, Message msg, GridIoPolicy plc)
+    public void send(ClusterNode node, GridTopic topic, Message msg, byte plc)
         throws IgniteCheckedException {
         send(node, topic, topic.ordinal(), msg, plc, false, 0, false);
     }
@@ -1021,7 +1090,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ClusterNode node,
         Object topic,
         Message msg,
-        GridIoPolicy plc,
+        byte plc,
         long timeout,
         boolean skipOnTimeout
     ) throws IgniteCheckedException {
@@ -1043,7 +1112,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         UUID nodeId,
         Object topic,
         Message msg,
-        GridIoPolicy plc,
+        byte plc,
         long timeout,
         boolean skipOnTimeout
     ) throws IgniteCheckedException {
@@ -1070,7 +1139,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Collection<? extends ClusterNode> nodes,
         Object topic,
         Message msg,
-        GridIoPolicy plc,
+        byte plc,
         long timeout,
         boolean skipOnTimeout
     )
@@ -1091,7 +1160,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Collection<? extends ClusterNode> nodes,
         Object topic,
         Message msg,
-        GridIoPolicy plc
+        byte plc
     ) throws IgniteCheckedException {
         send(nodes, topic, -1, msg, plc, false, 0, false);
     }
@@ -1107,7 +1176,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Collection<? extends ClusterNode> nodes,
         GridTopic topic,
         Message msg,
-        GridIoPolicy plc
+        byte plc
     ) throws IgniteCheckedException {
         send(nodes, topic, topic.ordinal(), msg, plc, false, 0, false);
     }
@@ -1247,7 +1316,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Object topic,
         int topicOrd,
         Message msg,
-        GridIoPolicy plc,
+        byte plc,
         boolean ordered,
         long timeout,
         boolean skipOnTimeout
@@ -1255,7 +1324,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert nodes != null;
         assert topic != null;
         assert msg != null;
-        assert plc != null;
 
         if (!ordered)
             assert F.find(nodes, null, F.localNode(locNodeId)) == null :
@@ -1370,6 +1438,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 for (GridCommunicationMessageSet msgSet : msgSets)
                     unwindMessageSet(msgSet, lsnr);
+            }
+            catch (IgniteCheckedException ice) {
+                throw new IgniteException(ice);
             }
         }
     }
@@ -1840,7 +1911,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private final Object topic;
 
         /** */
-        private final GridIoPolicy plc;
+        private final byte plc;
 
         /** */
         @GridToStringInclude
@@ -1868,7 +1939,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
          * @param msgC Message closure (may be {@code null}).
          */
         GridCommunicationMessageSet(
-            GridIoPolicy plc,
+            byte plc,
             Object topic,
             UUID nodeId,
             long timeout,
@@ -1878,7 +1949,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ) {
             assert nodeId != null;
             assert topic != null;
-            assert plc != null;
             assert msg != null;
 
             this.plc = plc;
@@ -1971,7 +2041,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /**
          * @return Communication policy.
          */
-        GridIoPolicy policy() {
+        byte policy() {
             return plc;
         }
 

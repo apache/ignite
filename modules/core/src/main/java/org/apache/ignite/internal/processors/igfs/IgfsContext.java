@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -148,7 +147,7 @@ public class IgfsContext {
      * @param plc Policy.
      * @throws IgniteCheckedException In case of error.
      */
-    public void send(UUID nodeId, Object topic, IgfsCommunicationMessage msg, GridIoPolicy plc)
+    public void send(UUID nodeId, Object topic, IgfsCommunicationMessage msg, byte plc)
         throws IgniteCheckedException {
         if (!kernalContext().localNodeId().equals(nodeId))
             msg.prepareMarshal(kernalContext().config().getMarshaller());
@@ -163,7 +162,7 @@ public class IgfsContext {
      * @param plc Policy.
      * @throws IgniteCheckedException In case of error.
      */
-    public void send(ClusterNode node, Object topic, IgfsCommunicationMessage msg, GridIoPolicy plc)
+    public void send(ClusterNode node, Object topic, IgfsCommunicationMessage msg, byte plc)
         throws IgniteCheckedException {
         if (!kernalContext().localNodeId().equals(node.id()))
             msg.prepareMarshal(kernalContext().config().getMarshaller());
