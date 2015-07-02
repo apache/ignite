@@ -27,10 +27,12 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.multijvm.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
@@ -270,13 +272,45 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param isolation Isolation level.
      * @throws IgniteCheckedException If failed.
      */
-    private void put(Ignite ignite,
-        IgniteCache<String, Integer> cache,
+    private void put(final Ignite ignite,
+        final IgniteCache<String, Integer> cache,
         final int cnt,
-        TransactionConcurrency concurrency,
-        TransactionIsolation isolation)
+        final TransactionConcurrency concurrency,
+        final TransactionIsolation isolation)
         throws Exception
     {
+        if (!(ignite instanceof IgniteProcessProxy))
+            put0(ignite, cache, cnt, concurrency, isolation);
+        else {
+            IgniteProcessProxy proxy = (IgniteProcessProxy)ignite;
+
+            final UUID id = proxy.getId();
+
+            final String cacheName = cache.getName();
+
+            proxy.remoteCompute().run(new CAX() {
+                @Override public void applyx() throws IgniteCheckedException {
+                    Ignite ignite = Ignition.ignite(id);
+
+                    IgniteCache<String, Integer> cache = ignite.cache(cacheName);
+
+                    put0(ignite, cache, cnt, concurrency, isolation);
+                }
+            });
+        }
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param cache Cache.
+     * @param cnt Entry count.
+     * @param concurrency Concurrency control.
+     * @param isolation Isolation level.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void put0(Ignite ignite, IgniteCache<String, Integer> cache, final int cnt,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation) throws IgniteCheckedException {
         try {
             info("Putting values to cache [0," + cnt + ')');
 
@@ -321,7 +355,31 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @throws IgniteCheckedException If failed.
      */
     private void remove(Ignite ignite, IgniteCache<String, Integer> cache, final int cnt,
-        TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
+        final TransactionConcurrency concurrency, final TransactionIsolation isolation) throws Exception {
+        if (!(ignite instanceof IgniteProcessProxy))
+            remove0(ignite, cache, cnt, concurrency, isolation);
+        else {
+            IgniteProcessProxy proxy = (IgniteProcessProxy)ignite;
+
+            final UUID id = proxy.getId();
+
+            final String cacheName = cache.getName();
+
+            proxy.remoteCompute().run(new CAX() {
+                @Override public void applyx() throws IgniteCheckedException {
+                    Ignite ignite = Ignition.ignite(id);
+
+                    IgniteCache<String, Integer> cache = ignite.cache(cacheName);
+
+                    remove0(ignite, cache, cnt, concurrency, isolation);
+                }
+            });
+        }
+    }
+
+    private void remove0(Ignite ignite, IgniteCache<String, Integer> cache, final int cnt,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation) throws IgniteCheckedException {
         try {
             info("Removing values form cache [0," + cnt + ')');
 
