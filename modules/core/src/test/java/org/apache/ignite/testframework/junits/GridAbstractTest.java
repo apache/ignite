@@ -909,8 +909,15 @@ public abstract class GridAbstractTest extends TestCase {
     protected final Ignite grid(ClusterNode node) {
         if (!isMultiJvm())
             return G.ignite(node.id());
-        else
-            return IgniteProcessProxy.ignite(node.id());
+        else {
+            try {
+                return IgniteProcessProxy.ignite(node.id());
+            }
+            catch (Exception ignore) {
+                // A hack if it is local grid.
+                return G.ignite(node.id());
+            }
+        }
     }
 
     /**

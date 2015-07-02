@@ -125,7 +125,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         return F.view(super.affinityNodes(), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
-                return !F.eq(G.ignite(n.id()).name(), grid(nearIdx).name());
+                return !F.eq(grid(n).name(), grid(nearIdx).name());
             }
         });
     }
