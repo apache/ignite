@@ -20,6 +20,7 @@ package org.apache.ignite.visor.commands.start
 import org.apache.ignite.visor.visor
 import org.scalatest._
 
+import org.apache.ignite.visor.commands.open.VisorOpenCommand._
 import org.apache.ignite.visor.commands.start.VisorStartCommand._
 import org.apache.ignite.visor.commands.top.VisorTopologyCommand._
 
