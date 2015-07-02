@@ -310,11 +310,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
                 f.get();
 
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return kernal0.cache(DYNAMIC_CACHE_NAME);
-                }
-            }, IllegalArgumentException.class, null);
+            assertNull(kernal0.cache(DYNAMIC_CACHE_NAME));
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -368,11 +364,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
                     f.get();
 
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return kernal0.cache(DYNAMIC_CACHE_NAME);
-                    }
-                }, IllegalArgumentException.class, null);
+                assertNull(kernal0.cache(DYNAMIC_CACHE_NAME));
             }
         }
         finally {
