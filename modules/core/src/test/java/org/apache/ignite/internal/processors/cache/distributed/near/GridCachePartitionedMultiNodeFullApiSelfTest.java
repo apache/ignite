@@ -327,9 +327,6 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
      */
     @SuppressWarnings("unchecked")
     public void testNearDhtKeySize() throws Exception {
-        if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
-
         List<String> keys = new ArrayList<>(5);
 
         info("Generating keys for test...");
