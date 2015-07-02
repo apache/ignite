@@ -86,7 +86,7 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
      */
     public void testEvictAndRemove() throws Exception {
         final int KEYS_CNT = 3000;
-        final int THREADS_CNT = 50;
+        final int THREADS_CNT = 250;
 
         final IgniteCache<Integer,Integer> c = startGrid().cache(null);
 
