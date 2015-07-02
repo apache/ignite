@@ -28,7 +28,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.lang.reflect.*;
-import java.security.*;
 import java.util.*;
 
 /**
@@ -176,7 +175,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Print plugin information.
+     * Print plugins information.
      */
     private void ackPluginsInfo() {
         U.quietAndInfo(log, "Configured plugins:");

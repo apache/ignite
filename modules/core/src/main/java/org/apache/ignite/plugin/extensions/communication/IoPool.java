@@ -15,14 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.plugin.extensions.communication;
+
+import org.apache.ignite.plugin.*;
+
+import java.util.concurrent.*;
 
 /**
- * Multi-threaded tests for cache queries.
+ * The interface of IO Messaging Pool Extension.
  */
-public class IgniteCacheQueryOffheapEvictsMultiThreadedSelfTest extends IgniteCacheQueryOffheapMultiThreadedSelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean evictsEnabled() {
-        return true;
-    }
+public interface IoPool extends Extension {
+    /**
+     * Gets the numeric identifier of the pool. This identifier is to be taken from serialized
+     * message and used to find the appropriate executor pool to process it.
+     *
+     * @return The id.
+     */
+    public byte id();
+
+    /**
+     * Gets the Executor for this Pool. Cannot be null.
+     *
+     * @return The executor.
+     */
+    public Executor executor();
 }

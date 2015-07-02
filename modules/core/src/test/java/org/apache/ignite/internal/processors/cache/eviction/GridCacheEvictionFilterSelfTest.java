@@ -185,8 +185,6 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPartitionedMixed() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-820");
-
         mode = PARTITIONED;
         nearEnabled = false;
 
