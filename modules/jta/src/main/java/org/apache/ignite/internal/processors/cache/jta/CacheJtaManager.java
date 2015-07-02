@@ -17,23 +17,34 @@
 
 package org.apache.ignite.internal.processors.cache.jta;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.jta.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.jta.CacheTmLookup;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.jetbrains.annotations.Nullable;
 
-import javax.transaction.*;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
+import java.lang.ref.WeakReference;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * Implementation of {@link CacheJtaManagerAdapter}.
  */
 public class CacheJtaManager extends CacheJtaManagerAdapter {
     /** */
-    private final static ThreadLocal<GridCacheXAResource> xaRsrc = new ThreadLocal<>();
+    private static final Map<TransactionManager, ThreadLocal<WeakReference<GridCacheXAResource>>> threadLocals =
+            new WeakHashMap<>();
 
     /** */
-    private TransactionManager jtaTm;
+    private volatile TransactionManager jtaTm;
+
+    /** */
+    private ThreadLocal<WeakReference<GridCacheXAResource>> xaRsrc;
 
     /** */
     private CacheTmLookup tmLookup;
@@ -54,55 +65,76 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void checkJta() throws IgniteCheckedException {
+        TransactionManager jtaTm = this.jtaTm;
+
         if (jtaTm == null) {
             try {
                 jtaTm = tmLookup.getTm();
+
+                if (jtaTm == null)
+                    return;
+
+                synchronized (threadLocals) {
+                    if (this.jtaTm != null)
+                        jtaTm = this.jtaTm;
+                    else {
+                        xaRsrc = threadLocals.get(jtaTm);
+
+                        if (xaRsrc == null) {
+                            xaRsrc = new ThreadLocal<>();
+
+                            threadLocals.put(jtaTm, xaRsrc);
+                        }
+
+                        this.jtaTm = jtaTm;
+                    }
+                }
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to get transaction manager: " + e, e);
             }
         }
 
-        if (jtaTm != null) {
-            GridCacheXAResource rsrc = xaRsrc.get();
+        WeakReference<GridCacheXAResource> rsrcRef = xaRsrc.get();
 
-            if (rsrc == null || rsrc.isFinished()) {
-                try {
-                    Transaction jtaTx = jtaTm.getTransaction();
+        GridCacheXAResource rsrc = rsrcRef == null ? null : rsrcRef.get();
 
-                    if (jtaTx != null) {
-                        IgniteInternalTx tx = cctx.tm().userTx();
+        if (rsrc == null || rsrc.isFinished()) {
+            try {
+                Transaction jtaTx = jtaTm.getTransaction();
 
-                        if (tx == null) {
-                            TransactionConfiguration tCfg = cctx.kernalContext().config()
-                                .getTransactionConfiguration();
+                if (jtaTx != null) {
+                    IgniteInternalTx tx = cctx.tm().userTx();
 
-                            tx = cctx.tm().newTx(
-                                /*implicit*/false,
-                                /*implicit single*/false,
-                                null,
-                                tCfg.getDefaultTxConcurrency(),
-                                tCfg.getDefaultTxIsolation(),
-                                tCfg.getDefaultTxTimeout(),
-                                /*store enabled*/true,
-                                /*tx size*/0
-                            );
-                        }
+                    if (tx == null) {
+                        TransactionConfiguration tCfg = cctx.kernalContext().config()
+                            .getTransactionConfiguration();
 
-                        rsrc = new GridCacheXAResource(tx, cctx.kernalContext());
-
-                        if (!jtaTx.enlistResource(rsrc))
-                            throw new IgniteCheckedException("Failed to enlist XA resource to JTA user transaction.");
-
-                        xaRsrc.set(rsrc);
+                        tx = cctx.tm().newTx(
+                            /*implicit*/false,
+                            /*implicit single*/false,
+                            null,
+                            tCfg.getDefaultTxConcurrency(),
+                            tCfg.getDefaultTxIsolation(),
+                            tCfg.getDefaultTxTimeout(),
+                            /*store enabled*/true,
+                            /*tx size*/0
+                        );
                     }
+
+                    rsrc = new GridCacheXAResource(tx, cctx.kernalContext());
+
+                    if (!jtaTx.enlistResource(rsrc))
+                        throw new IgniteCheckedException("Failed to enlist XA resource to JTA user transaction.");
+
+                    xaRsrc.set(new WeakReference<>(rsrc));
                 }
-                catch (SystemException e) {
-                    throw new IgniteCheckedException("Failed to obtain JTA transaction.", e);
-                }
-                catch (RollbackException e) {
-                    throw new IgniteCheckedException("Failed to enlist XAResource to JTA transaction.", e);
-                }
+            }
+            catch (SystemException e) {
+                throw new IgniteCheckedException("Failed to obtain JTA transaction.", e);
+            }
+            catch (RollbackException e) {
+                throw new IgniteCheckedException("Failed to enlist XAResource to JTA transaction.", e);
             }
         }
     }
