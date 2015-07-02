@@ -33,6 +33,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.internal.util.typedef.internal.CU.*;
 
 /**
  * Cache atomic stamped implementation.
@@ -68,7 +69,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     private GridCacheContext ctx;
 
     /** Callable for {@link #get()} operation */
-    private final Callable<IgniteBiTuple<T, S>> getCall = new Callable<IgniteBiTuple<T, S>>() {
+    private final Callable<IgniteBiTuple<T, S>> getCall = retryTopologySafe(new Callable<IgniteBiTuple<T, S>>() {
         @Override public IgniteBiTuple<T, S> call() throws Exception {
             GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
 
@@ -77,10 +78,10 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
 
             return stmp.get();
         }
-    };
+    });
 
     /** Callable for {@link #value()} operation */
-    private final Callable<T> valCall = new Callable<T>() {
+    private final Callable<T> valCall = retryTopologySafe(new Callable<T>() {
         @Override public T call() throws Exception {
             GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
 
@@ -89,10 +90,10 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
 
             return stmp.value();
         }
-    };
+    });
 
     /** Callable for {@link #stamp()} operation */
-    private final Callable<S> stampCall = new Callable<S>() {
+    private final Callable<S> stampCall = retryTopologySafe(new Callable<S>() {
         @Override public S call() throws Exception {
             GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
 
@@ -101,7 +102,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
 
             return stmp.stamp();
         }
-    };
+    });
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -254,7 +255,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
      * @return Callable for execution in async and sync mode.
      */
     private Callable<Boolean> internalSet(final T val, final S stamp) {
-        return new Callable<Boolean>() {
+        return retryTopologySafe(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
@@ -276,7 +277,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
                     throw e;
                 }
             }
-        };
+        });
     }
 
     /**
@@ -292,7 +293,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     private Callable<Boolean> internalCompareAndSet(final IgnitePredicate<T> expValPred,
         final IgniteClosure<T, T> newValClos, final IgnitePredicate<S> expStampPred,
         final IgniteClosure<S, S> newStampClos) {
-        return new Callable<Boolean>() {
+        return retryTopologySafe(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
@@ -323,7 +324,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
                     throw e;
                 }
             }
-        };
+        });
     }
 
     /** {@inheritDoc} */

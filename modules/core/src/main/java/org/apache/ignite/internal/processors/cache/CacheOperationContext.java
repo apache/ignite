@@ -36,6 +36,10 @@ public class CacheOperationContext implements Serializable {
     @GridToStringInclude
     private final boolean skipStore;
 
+    /** No retries flag. */
+    @GridToStringInclude
+    private final boolean noRetries;
+
     /** Client ID which operates over this projection. */
     private final UUID subjId;
 
@@ -56,6 +60,8 @@ public class CacheOperationContext implements Serializable {
         keepPortable = false;
 
         expiryPlc = null;
+
+        noRetries = false;
     }
 
     /**
@@ -68,7 +74,8 @@ public class CacheOperationContext implements Serializable {
         boolean skipStore,
         @Nullable UUID subjId,
         boolean keepPortable,
-        @Nullable ExpiryPolicy expiryPlc) {
+        @Nullable ExpiryPolicy expiryPlc,
+        boolean noRetries) {
         this.skipStore = skipStore;
 
         this.subjId = subjId;
@@ -76,6 +83,8 @@ public class CacheOperationContext implements Serializable {
         this.keepPortable = keepPortable;
 
         this.expiryPlc = expiryPlc;
+
+        this.noRetries = noRetries;
     }
 
     /**
@@ -95,7 +104,8 @@ public class CacheOperationContext implements Serializable {
             skipStore,
             subjId,
             true,
-            expiryPlc);
+            expiryPlc,
+            noRetries);
     }
 
     /**
@@ -118,7 +128,8 @@ public class CacheOperationContext implements Serializable {
             skipStore,
             subjId,
             keepPortable,
-            expiryPlc);
+            expiryPlc,
+            noRetries);
     }
 
     /**
@@ -139,7 +150,8 @@ public class CacheOperationContext implements Serializable {
             skipStore,
             subjId,
             keepPortable,
-            expiryPlc);
+            expiryPlc,
+            noRetries);
     }
 
     /**
@@ -160,7 +172,29 @@ public class CacheOperationContext implements Serializable {
             skipStore,
             subjId,
             true,
-            plc);
+            plc,
+            noRetries);
+    }
+
+    /**
+     * @param noRetries No retries flag.
+     * @return Operation context.
+     */
+    public CacheOperationContext setNoRetries(boolean noRetries) {
+        return new CacheOperationContext(
+            skipStore,
+            subjId,
+            keepPortable,
+            expiryPlc,
+            noRetries
+        );
+    }
+
+    /**
+     * @return No retries flag.
+     */
+    public boolean noRetries() {
+        return noRetries;
     }
 
     /** {@inheritDoc} */
