@@ -385,7 +385,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testRemoveAllSkipStore() throws Exception {
         if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+            fail("https://issues.apache.org/jira/browse/IGNITE-1088");
 
         IgniteCache<String, Integer> jcache = jcache();
 
@@ -3189,7 +3189,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     protected void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
         if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+            fail("https://issues.apache.org/jira/browse/IGNITE-1089");
 
         if (memoryMode() == OFFHEAP_TIERED)
             return;
@@ -4512,7 +4512,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testWithSkipStore() throws Exception {
         if(isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+            fail("https://issues.apache.org/jira/browse/IGNITE-1088");
 
         IgniteCache<String, Integer> cache = grid(0).cache(null);
 
@@ -4724,7 +4724,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testWithSkipStoreRemoveAll() throws Exception {
         if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+            fail("https://issues.apache.org/jira/browse/IGNITE-1088");
 
         if (atomicityMode() == TRANSACTIONAL || (atomicityMode() == ATOMIC && nearEnabled())) // TODO IGNITE-373.
             return;

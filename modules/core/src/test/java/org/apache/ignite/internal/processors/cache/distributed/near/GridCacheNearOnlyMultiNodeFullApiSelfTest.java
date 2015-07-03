@@ -212,7 +212,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
      */
     private void checkReaderTtl(boolean inTx) throws Exception {
         if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+            fail("https://issues.apache.org/jira/browse/IGNITE-1089");
 
         int ttl = 1000;
 
