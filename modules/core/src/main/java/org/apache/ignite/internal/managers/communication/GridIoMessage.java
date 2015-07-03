@@ -33,7 +33,7 @@ public class GridIoMessage implements Message {
     private static final long serialVersionUID = 0L;
 
     /** Policy. */
-    private GridIoPolicy plc;
+    private byte plc;
 
     /** Message topic. */
     @GridToStringInclude
@@ -76,7 +76,7 @@ public class GridIoMessage implements Message {
      * @param skipOnTimeout Whether message can be skipped on timeout.
      */
     public GridIoMessage(
-        GridIoPolicy plc,
+        byte plc,
         Object topic,
         int topicOrd,
         Message msg,
@@ -84,7 +84,6 @@ public class GridIoMessage implements Message {
         long timeout,
         boolean skipOnTimeout
     ) {
-        assert plc != null;
         assert topic != null;
         assert topicOrd <= Byte.MAX_VALUE;
         assert msg != null;
@@ -101,7 +100,7 @@ public class GridIoMessage implements Message {
     /**
      * @return Policy.
      */
-    GridIoPolicy policy() {
+    byte policy() {
         return plc;
     }
 
@@ -203,7 +202,7 @@ public class GridIoMessage implements Message {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByte("plc", plc != null ? (byte)plc.ordinal() : -1))
+                if (!writer.writeByte("plc", plc))
                     return false;
 
                 writer.incrementState();
@@ -262,14 +261,14 @@ public class GridIoMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                byte plcOrd;
+                byte plc0;
 
-                plcOrd = reader.readByte("plc");
+                plc0 = reader.readByte("plc");
 
                 if (!reader.isLastRead())
                     return false;
 
-                plc = GridIoPolicy.fromOrdinal(plcOrd);
+                plc = plc0;
 
                 reader.incrementState();
 
