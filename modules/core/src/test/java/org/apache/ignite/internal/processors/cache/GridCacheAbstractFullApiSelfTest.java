@@ -385,7 +385,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testRemoveAllSkipStore() throws Exception {
         if (isMultiJvm())
-            return;
+            fail("https://issues.apache.org/jira/browse/IGNITE-648");
 
         IgniteCache<String, Integer> jcache = jcache();
 
@@ -3188,6 +3188,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     protected void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
+        if (isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+
         if (memoryMode() == OFFHEAP_TIERED)
             return;
 
@@ -3256,20 +3259,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                if (!isMultiJvmAndNodeIsRemote(i)) {
-                    GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
 
-                    if (cache.context().isNear())
-                        cache = cache.context().near().dht();
+                if (cache.context().isNear())
+                    cache = cache.context().near().dht();
 
-                    GridCacheEntryEx curEntry = cache.peekEx(key);
+                GridCacheEntryEx curEntry = cache.peekEx(key);
 
-                    assertEquals(ttl, curEntry.ttl());
+                assertEquals(ttl, curEntry.ttl());
 
-                    assert curEntry.expireTime() > startTime;
+                assert curEntry.expireTime() > startTime;
 
-                    expireTimes[i] = curEntry.expireTime();
-                }
+                expireTimes[i] = curEntry.expireTime();
             }
         }
 
@@ -3291,20 +3292,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                if (!isMultiJvmAndNodeIsRemote(i)) {
-                    GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
 
-                    if (cache.context().isNear())
-                        cache = cache.context().near().dht();
+                if (cache.context().isNear())
+                    cache = cache.context().near().dht();
 
-                    GridCacheEntryEx curEntry = cache.peekEx(key);
+                GridCacheEntryEx curEntry = cache.peekEx(key);
 
-                    assertEquals(ttl, curEntry.ttl());
+                assertEquals(ttl, curEntry.ttl());
 
-                    assert curEntry.expireTime() > startTime;
+                assert curEntry.expireTime() > startTime;
 
-                    expireTimes[i] = curEntry.expireTime();
-                }
+                expireTimes[i] = curEntry.expireTime();
             }
         }
 
@@ -3326,20 +3325,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                if (!isMultiJvmAndNodeIsRemote(i)) {
-                    GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
 
-                    if (cache.context().isNear())
-                        cache = cache.context().near().dht();
+                if (cache.context().isNear())
+                    cache = cache.context().near().dht();
 
-                    GridCacheEntryEx curEntry = cache.peekEx(key);
+                GridCacheEntryEx curEntry = cache.peekEx(key);
 
-                    assertEquals(ttl, curEntry.ttl());
+                assertEquals(ttl, curEntry.ttl());
 
-                    assert curEntry.expireTime() > startTime;
+                assert curEntry.expireTime() > startTime;
 
-                    expireTimes[i] = curEntry.expireTime();
-                }
+                expireTimes[i] = curEntry.expireTime();
             }
         }
 
@@ -3365,17 +3362,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                if (!isMultiJvmAndNodeIsRemote(i)) {
-                    GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
 
-                    if (cache.context().isNear())
-                        cache = cache.context().near().dht();
+                if (cache.context().isNear())
+                    cache = cache.context().near().dht();
 
-                    GridCacheEntryEx curEntry = cache.peekEx(key);
+                GridCacheEntryEx curEntry = cache.peekEx(key);
 
-                    assertEquals(ttl, curEntry.ttl());
-                    assertEquals(expireTimes[i], curEntry.expireTime());
-                }
+                assertEquals(ttl, curEntry.ttl());
+                assertEquals(expireTimes[i], curEntry.expireTime());
             }
         }
 
@@ -4152,8 +4147,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         checkIteratorRemove(cache, entries);
 
-        if(!isMultiJvm())
-            checkIteratorEmpty(cache);
+        checkIteratorEmpty(cache);
     }
 
     /**
@@ -4261,13 +4255,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     private void checkIteratorsCleared() {
         for (int j = 0; j < gridCount(); j++) {
+            runOnLocalOrRemoteJvm(j, new IndexSerializableJob() {
+                @Override public void run(int i) throws Exception {
+                    GridCacheQueryManager queries = context(i).queries();
 
-            GridCacheQueryManager queries = context(j).queries();
+                    Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
 
-            Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
-
-            for (Object obj : map.values())
-                assertEquals("Iterators not removed for grid " + j, 0, ((Map) obj).size());
+                    for (Object obj : map.values())
+                        assertEquals("Iterators not removed for grid " + i, 0, ((Map)obj).size());
+                }
+            });
         }
     }
 
@@ -4515,7 +4512,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testWithSkipStore() throws Exception {
         if(isMultiJvm())
-            return;
+            fail("https://issues.apache.org/jira/browse/IGNITE-648");
 
         IgniteCache<String, Integer> cache = grid(0).cache(null);
 
@@ -4727,7 +4724,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testWithSkipStoreRemoveAll() throws Exception {
         if (isMultiJvm())
-            return;
+            fail("https://issues.apache.org/jira/browse/IGNITE-648");
 
         if (atomicityMode() == TRANSACTIONAL || (atomicityMode() == ATOMIC && nearEnabled())) // TODO IGNITE-373.
             return;

@@ -1366,6 +1366,14 @@ public abstract class GridAbstractTest extends TestCase {
      * Gets flag whether nodes will run in one jvm or in separate jvms.
      *
      * @return <code>True</code> to run nodes in separate jvms.
+     * @see IgniteNodeRunner
+     * @see IgniteProcessProxy
+     * @see #runRemotely(int, IndexSerializableJob)
+     * @see #runRemotely(IgniteProcessProxy, IgniteSerializableJob)
+     * @see #runRemotely(IgniteCacheProcessProxy, CacheSerializiableJob)
+     * @see #runOnLocalOrRemoteJvm(int, IndexSerializableJob)
+     * @see #runOnLocalOrRemoteJvm(Ignite, IgniteSerializableJob)
+     * @see #runOnLocalOrRemoteJvm(IgniteCache, CacheSerializiableJob)
      */
     protected boolean isMultiJvm() {
         return false;
@@ -1392,6 +1400,156 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected boolean weAreOnRemoteJvm() {
         return IgniteNodeRunner.hasStartedInstance();
+    }
+
+    /**
+     * @param cache Cache.
+     * @return <code>True</code> if cache is an instance of {@link IgniteCacheProcessProxy}
+     */
+    public static boolean isMultiJvmObject(IgniteCache cache) {
+        return cache instanceof IgniteCacheProcessProxy;
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @return <code>True</code> if cache is an instance of {@link IgniteProcessProxy}
+     */
+    public static boolean isMultiJvmObject(Ignite ignite) {
+        return ignite instanceof IgniteProcessProxy;
+    }
+
+    /**
+     * Runs job on local jvm or on remote jvm in multi jvm case.
+     *
+     * @param idx Grid index.
+     * @param job Job.
+     */
+    public void runOnLocalOrRemoteJvm(final int idx, final IndexSerializableJob job) {
+        IgniteEx ignite = grid(idx);
+
+        if (!isMultiJvmObject(ignite))
+            try {
+                job.run(idx);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        else
+            runRemotely(idx, job);
+    }
+
+    /**
+     * Runs job on local jvm or on remote jvm in multi jvm case.
+     *
+     * @param ignite Ignite.
+     * @param job Job.
+     */
+    public void runOnLocalOrRemoteJvm(Ignite ignite, final IgniteSerializableJob job) {
+        if (!isMultiJvmObject(ignite))
+            try {
+                job.run(ignite);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        else
+            runRemotely((IgniteProcessProxy)ignite, job);
+    }
+
+    /**
+     * Runs job on local jvm or on remote jvm in multi jvm case.
+     *
+     * @param cache Cache.
+     * @param job Job.
+     */
+    public <K,V> void runOnLocalOrRemoteJvm(IgniteCache<K,V> cache, CacheSerializiableJob<K,V> job) {
+        Ignite ignite = cache.unwrap(Ignite.class);
+
+        if (!isMultiJvmObject(ignite))
+            try {
+                job.run(ignite, cache);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        else
+            runRemotely((IgniteCacheProcessProxy<K, V>)cache, job);
+    }
+
+    /**
+     * Runs job on remote jvm.
+     *
+     * @param idx Grid index.
+     * @param job Job.
+     */
+    public void runRemotely(final int idx, final IndexSerializableJob job) {
+        IgniteEx ignite = grid(idx);
+
+        if (!isMultiJvmObject(ignite))
+            throw new IllegalArgumentException("Ignite have to be process proxy.");
+
+        IgniteProcessProxy proxy = (IgniteProcessProxy)ignite;
+
+        proxy.remoteCompute().run(new CAX() {
+            @Override public void applyx() throws IgniteCheckedException {
+                try {
+                    job.run(idx);
+                }
+                catch (Exception e) {
+                    throw new IgniteCheckedException(e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Runs job on remote jvm.
+     *
+     * @param proxy Ignite.
+     * @param job Job.
+     */
+    public static void runRemotely(IgniteProcessProxy proxy, final IgniteSerializableJob job) {
+        final UUID id = proxy.getId();
+
+        proxy.remoteCompute().run(new CAX() {
+            @Override public void applyx() throws IgniteCheckedException {
+                Ignite ignite = Ignition.ignite(id);
+
+                try {
+                    job.run(ignite);
+                }
+                catch (Exception e) {
+                    throw new IgniteCheckedException(e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Runs job on remote jvm.
+     *
+     * @param cache Cache.
+     * @param job Job.
+     */
+    public static <K, V> void runRemotely(IgniteCacheProcessProxy<K, V> cache, final CacheSerializiableJob<K,V> job) {
+        IgniteProcessProxy proxy = (IgniteProcessProxy)cache.unwrap(Ignite.class);
+
+        final UUID id = proxy.getId();
+        final String cacheName = cache.getName();
+
+        proxy.remoteCompute().run(new CAX() {
+            @Override public void applyx() throws IgniteCheckedException {
+                Ignite ignite = Ignition.ignite(id);
+                IgniteCache<K,V> cache = ignite.cache(cacheName);
+
+                try {
+                    job.run(ignite, cache);
+                }
+                catch (Exception e) {
+                    throw new IgniteCheckedException(e);
+                }
+            }
+        });
     }
 
     /**
@@ -1706,5 +1864,36 @@ public abstract class GridAbstractTest extends TestCase {
 
             return numOfTests;
         }
+    }
+
+    /**
+     * Serializable runnable.
+     */
+    public static interface IgniteSerializableJob extends Serializable {
+        /**
+         * @param ignite Ignite.
+         */
+        void run(Ignite ignite) throws Exception;
+    }
+
+    /**
+     * Serializiable runnable.
+     */
+    public static interface IndexSerializableJob extends Serializable {
+        /**
+         * @param idx Grid index.
+         */
+        void run(int idx) throws Exception;
+    }
+
+    /**
+     * Serializiable runnable.
+     */
+    public static interface CacheSerializiableJob<K, V> extends Serializable {
+        /**
+         * @param ignite Ignite.
+         * @param cache Cache.
+         */
+        void run(Ignite ignite, IgniteCache<K, V> cache) throws Exception;
     }
 }
