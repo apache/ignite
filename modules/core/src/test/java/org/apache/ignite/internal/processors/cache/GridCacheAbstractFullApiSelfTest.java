@@ -36,7 +36,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.swapspace.inmemory.*;
 import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.multijvm.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -289,35 +288,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            if (!isMultiJvmAndNodeIsRemote(i)) {
-                GridCacheContext<String, Integer> ctx = context(i);
+            executeOnLocalOrRemoteJvm(i, new TestIgniteIdxRunnable() {
+                @Override public void run(int idx) throws Exception {
+                    GridCacheContext<String, Integer> ctx = context(idx);
 
-                int sum = 0;
+                    int sum = 0;
 
-                for (String key : map.keySet())
-                    if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
-                        sum++;
+                    for (String key : map.keySet())
+                        if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
+                            sum++;
 
-                assertEquals("Incorrect key size on cache #" + i, sum, jcache(i).localSize(ALL));
-            }
-            else {
-                final int iCopy = i;
-
-                ((IgniteProcessProxy)grid(i)).remoteCompute().run(new IgniteRunnable() {
-                    @Override public void run() {
-                        GridCacheContext<String, Integer> ctx = context(iCopy);
-
-                        int sum = 0;
-
-                        for (String key : map.keySet())
-                            if (ctx.affinity().localNode(key,
-                                new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
-                                sum++;
-
-                        assertEquals("Incorrect key size on cache #" + iCopy, sum, jcache(iCopy).localSize(ALL));
-                    }
-                });
-            }
+                    assertEquals("Incorrect key size on cache #" + idx, sum, jcache(idx).localSize(ALL));
+                }
+            });
         }
 
         for (int i = 0; i < gridCount(); i++) {
@@ -2305,7 +2288,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testDeletedEntriesFlag() throws Exception {
         if (cacheMode() != LOCAL && cacheMode() != REPLICATED && memoryMode() != OFFHEAP_TIERED) {
-            int cnt = 3;
+            final int cnt = 3;
 
             IgniteCache<String, Integer> cache = jcache();
 
@@ -2316,51 +2299,37 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 cache.remove(String.valueOf(i));
 
             for (int g = 0; g < gridCount(); g++) {
-                for (int i = 0; i < cnt; i++) {
-                    if (!isMultiJvmAndNodeIsRemote(g))
-                        checkDeletedEntriesFlag(g, i);
-                    else {
-                        IgniteProcessProxy proxy = (IgniteProcessProxy)grid(g);
+                executeOnLocalOrRemoteJvm(g, new TestIgniteIdxRunnable() {
+                    @Override public void run(int idx) throws Exception {
+                        for (int i = 0; i < cnt; i++) {
+                            String key = String.valueOf(i);
 
-                        final int idx = g;
-                        final int key = i;
+                            GridCacheContext<String, Integer> cctx = context(idx);
 
-                        proxy.remoteCompute().run(new GridAbsClosureX() {
-                            @Override public void applyx() throws IgniteCheckedException {
-                                checkDeletedEntriesFlag(idx, key);
+                            GridCacheEntryEx entry = cctx.isNear() ? cctx.near().dht().peekEx(key) :
+                                cctx.cache().peekEx(key);
+
+                            if (grid(idx).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(idx).localNode())) {
+                                assertNotNull(entry);
+                                assertTrue(entry.deleted());
                             }
-                        });
+                            else
+                                assertNull(entry);
+                        }
                     }
-                }
+                });
             }
         }
-    }
-
-    /**
-     * @param idx Grid index.
-     * @param keyN Key.
-     */
-    private void checkDeletedEntriesFlag(int idx, int keyN) {
-        String key = String.valueOf(keyN);
-
-        GridCacheContext<String, Integer> cctx = context(idx);
-
-        GridCacheEntryEx entry = cctx.isNear() ? cctx.near().dht().peekEx(key) :
-            cctx.cache().peekEx(key);
-
-        if (grid(idx).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(idx).localNode())) {
-            assertNotNull(entry);
-            assertTrue(entry.deleted());
-        }
-        else
-            assertNull(entry);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testRemoveLoad() throws Exception {
-        final int cnt = 10;
+        if (isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-1088");
+
+        int cnt = 10;
 
         Set<String> keys = new HashSet<>();
 
@@ -2376,15 +2345,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             grid(g).cache(null).localLoadCache(null);
 
         for (int g = 0; g < gridCount(); g++) {
-            if (!isMultiJvmAndNodeIsRemote(g)) {
-                for (int i = 0; i < cnt; i++) {
-                    String key = String.valueOf(i);
+            for (int i = 0; i < cnt; i++) {
+                String key = String.valueOf(i);
 
-                    if (grid(0).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode()))
-                        assertEquals((Integer)i, peek(jcache(g), key));
-                    else
-                        assertNull(peek(jcache(g), key));
-                }
+                if (grid(0).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode()))
+                    assertEquals((Integer)i, peek(jcache(g), key));
+                else
+                    assertNull(peek(jcache(g), key));
             }
         }
     }
@@ -3187,7 +3154,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param oldEntry {@code True} to check TTL on old entry, {@code false} on new.
      * @throws Exception If failed.
      */
-    protected void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
+    private void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
         if (isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-1089");
 
@@ -3874,57 +3841,30 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertEquals(keys.size(), jcache().localSize(CachePeekMode.ALL));
         else {
             for (int i = 0; i < gridCount(); i++) {
-                if (!isMultiJvmAndNodeIsRemote(i)) {
-                    GridCacheContext<String, Integer> ctx = context(i);
+                executeOnLocalOrRemoteJvm(i, new TestIgniteIdxRunnable() {
+                    @Override public void run(int idx) throws Exception {
+                        GridCacheContext<String, Integer> ctx = context(idx);
 
-                    if (ctx.cache().configuration().getMemoryMode() == OFFHEAP_TIERED)
-                        continue;
+                        if (ctx.cache().configuration().getMemoryMode() == OFFHEAP_TIERED)
+                            return;
 
-                    int size = 0;
+                        int size = 0;
 
-                    for (String key : keys) {
-                        if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
-                            GridCacheEntryEx e =
-                                ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
+                        for (String key : keys) {
+                            if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
+                                GridCacheEntryEx e =
+                                    ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
-                            assert e != null : "Entry is null [idx=" + i + ", key=" + key + ", ctx=" + ctx + ']';
-                            assert !e.deleted() : "Entry is deleted: " + e;
+                                assert e != null : "Entry is null [idx=" + idx + ", key=" + key + ", ctx=" + ctx + ']';
+                                assert !e.deleted() : "Entry is deleted: " + e;
 
-                            size++;
-                        }
-                    }
-
-                    assertEquals("Incorrect size on cache #" + i, size, jcache(i).localSize(ALL));
-                }
-                else {
-                    final int iCopy = i;
-
-                    ((IgniteProcessProxy)grid(i)).remoteCompute().run(new IgniteRunnable() {
-                        @Override public void run() {
-                            GridCacheContext<String, Integer> ctx = context(iCopy);
-
-                            if (ctx.cache().configuration().getMemoryMode() == OFFHEAP_TIERED)
-                                return;
-
-                            int size = 0;
-
-                            for (String key : keys) {
-                                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
-                                    GridCacheEntryEx e =
-                                        ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
-
-                                    assert e != null : "Entry is null [idx=" + iCopy + ", key=" + key
-                                        + ", ctx=" + ctx + ']';
-                                    assert !e.deleted() : "Entry is deleted: " + e;
-
-                                    size++;
-                                }
+                                size++;
                             }
-
-                            assertEquals("Incorrect size on cache #" + iCopy, size, jcache(iCopy).localSize(ALL));
                         }
-                    });
-                }
+
+                        assertEquals("Incorrect size on cache #" + idx, size, jcache(idx).localSize(ALL));
+                    }
+                });
             }
         }
     }
@@ -3939,34 +3879,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 keys.size(), jcache().localSize(ALL));
         else {
             for (int i = 0; i < gridCount(); i++) {
-                if (!isMultiJvmAndNodeIsRemote(i)) {
-                    GridCacheContext<String, Integer> ctx = context(i);
+                executeOnLocalOrRemoteJvm(i, new TestIgniteIdxRunnable() {
+                    @Override public void run(int idx) throws Exception {
+                        GridCacheContext<String, Integer> ctx = context(idx);
 
-                    int size = 0;
+                        int size = 0;
 
-                    for (String key : keys)
-                        if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
-                            size++;
+                        for (String key : keys)
+                            if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
+                                size++;
 
-                    assertEquals("Incorrect key size on cache #" + i, size, jcache(i).localSize(ALL));
-                }
-                else {
-                    final int iCopy = i;
-
-                    ((IgniteProcessProxy)grid(i)).remoteCompute().run(new IgniteRunnable() {
-                        @Override public void run() {
-                            GridCacheContext<String, Integer> ctx = context(iCopy);
-
-                            int size = 0;
-
-                            for (String key : keys)
-                                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
-                                    size++;
-
-                            assertEquals("Incorrect key size on cache #" + iCopy, size, jcache(iCopy).localSize(ALL));
-                        }
-                    });
-                }
+                        assertEquals("Incorrect key size on cache #" + idx, size, jcache(idx).localSize(ALL));
+                    }
+                });
             }
         }
     }

@@ -803,7 +803,6 @@ public abstract class GridAbstractTest extends TestCase {
         finally {
             IgniteProcessProxy.killAll(); // In multi jvm case.
         }
-
     }
 
     /**
