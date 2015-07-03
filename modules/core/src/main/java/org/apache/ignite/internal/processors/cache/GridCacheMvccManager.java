@@ -338,7 +338,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     public void addAtomicFuture(GridCacheVersion futVer, GridCacheAtomicFuture<?> fut) {
         IgniteInternalFuture<?> old = atomicFuts.put(futVer, fut);
 
-        assert old == null;
+        assert old == null : "Old future is not null [futVer=" + futVer + ", fut=" + fut + ", old=" + old + ']';
     }
 
     /**
@@ -1002,8 +1002,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         res.ignoreChildFailures(ClusterTopologyCheckedException.class, CachePartialUpdateCheckedException.class);
 
         for (GridCacheAtomicFuture<?> fut : atomicFuts.values()) {
-            if (fut.waitForPartitionExchange() && fut.topologyVersion().compareTo(topVer) < 0)
-                res.add((IgniteInternalFuture<Object>)fut);
+            IgniteInternalFuture<Void> complete = fut.completeFuture(topVer);
+
+            if (complete != null)
+                res.add((IgniteInternalFuture)complete);
         }
 
         res.markInitialized();
