@@ -1905,7 +1905,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /** */
-    public abstract static class TestTestCacheRunnable<K, V> implements TestCacheCallable<K, V, Object> {
+    public abstract static class TestCacheRunnable<K, V> implements TestCacheCallable<K, V, Object> {
         /** {@inheritDoc} */
         @Override public Object call(Ignite ignite, IgniteCache cache) throws Exception {
             run(ignite, cache);
