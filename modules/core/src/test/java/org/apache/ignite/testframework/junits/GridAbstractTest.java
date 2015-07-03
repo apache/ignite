@@ -1416,7 +1416,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs job on local jvm or on remote jvm in multi jvm case.
+     * Calls job on local jvm or on remote jvm in multi jvm case.
      *
      * @param idx Grid index.
      * @param job Job.
@@ -1436,12 +1436,12 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs job on local jvm or on remote jvm in multi jvm case.
+     * Calls job on local jvm or on remote jvm in multi jvm case.
      *
      * @param ignite Ignite.
      * @param job Job.
      */
-    public <R> R executeOnLocalOrRemoteJvm(Ignite ignite, final TestIgniteCallable<R> job) {
+    public static <R> R executeOnLocalOrRemoteJvm(Ignite ignite, final TestIgniteCallable<R> job) {
         if (!isMultiJvmObject(ignite))
             try {
                 return job.call(ignite);
@@ -1459,7 +1459,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cache Cache.
      * @param job Job.
      */
-    public <K,V,R> R executeOnLocalOrRemoteJvm(IgniteCache<K,V> cache, TestCacheCallable<K,V,R> job) {
+    public static <K,V,R> R executeOnLocalOrRemoteJvm(IgniteCache<K,V> cache, TestCacheCallable<K,V,R> job) {
         Ignite ignite = cache.unwrap(Ignite.class);
 
         if (!isMultiJvmObject(ignite))
@@ -1474,7 +1474,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs job on remote jvm.
+     * Calls job on remote jvm.
      *
      * @param idx Grid index.
      * @param job Job.
@@ -1495,7 +1495,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs job on remote jvm.
+     * Calls job on remote jvm.
      *
      * @param proxy Ignite.
      * @param job Job.
