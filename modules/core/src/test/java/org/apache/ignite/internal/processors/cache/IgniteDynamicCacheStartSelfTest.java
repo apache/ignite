@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,6 +36,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -1335,5 +1337,33 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         }, nodeCount(), "start-stop-cache");
 
         fut.get();
+    }
+
+    /**
+     *
+     */
+    public void testBrokenStoreFactory() {
+        final CacheConfiguration<Integer, String> cacheConfiguration = new CacheConfiguration<>();
+
+        cacheConfiguration.setName("brokenCache");
+        cacheConfiguration.setCacheStoreFactory(new BrokenStoreFactory());
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(0).createCache(cacheConfiguration);
+
+                return null;
+            }
+        }, CacheException.class, null);
+    }
+
+    /**
+     *
+     */
+    private static class BrokenStoreFactory implements Factory<CacheStore<Integer, String>> {
+        /** {@inheritDoc} */
+        @Override public CacheStore<Integer, String> create() {
+            throw new RuntimeException("This store factory is broken");
+        }
     }
 }
