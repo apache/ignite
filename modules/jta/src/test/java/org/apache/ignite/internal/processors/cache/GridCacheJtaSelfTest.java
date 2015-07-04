@@ -193,7 +193,12 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
         assertEquals(1, (int)cache2.get("key"));
     }
     
+    /**
+     *
+     */
     public void testUncompatibleTmLookup() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1094");
+        
         final IgniteEx ignite = grid(0);
         
         final CacheConfiguration cacheCfg = new CacheConfiguration();
