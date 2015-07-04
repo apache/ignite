@@ -21,37 +21,60 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.lifecycle.*;
 import org.jetbrains.annotations.*;
 
 import javax.transaction.*;
-import java.lang.ref.*;
-import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Implementation of {@link CacheJtaManagerAdapter}.
  */
 public class CacheJtaManager extends CacheJtaManagerAdapter {
     /** */
-    private static final Map<TransactionManager, ThreadLocal<WeakReference<GridCacheXAResource>>> threadLocals =
-            new WeakHashMap<>();
+    private final ThreadLocal<GridCacheXAResource> xaRsrc = new ThreadLocal<>();
 
     /** */
     private volatile TransactionManager jtaTm;
 
     /** */
-    private ThreadLocal<WeakReference<GridCacheXAResource>> xaRsrc;
-
-    /** */
-    private CacheTmLookup tmLookup;
+    private final AtomicReference<CacheTmLookup> tmLookupRef = new AtomicReference<>();
 
     /** {@inheritDoc} */
-    @Override public void createTmLookup(CacheConfiguration ccfg) throws IgniteCheckedException {
-        assert ccfg.getTransactionManagerLookupClassName() != null;
+    @Override protected void start0() throws IgniteCheckedException {
+        super.start0();
 
+        if (cctx.txConfig() != null) {
+            String txLookupClsName = cctx.txConfig().getTxManagerLookupClassName();
+            
+            if (txLookupClsName != null)
+                tmLookupRef.set(createTmLookup(txLookupClsName));
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel) {
+        CacheTmLookup tmLookup = tmLookupRef.get();
+        
+        if (tmLookup instanceof LifecycleAware)
+            ((LifecycleAware)tmLookup).stop();
+    }
+
+    /**
+     * @throws IgniteCheckedException
+     */
+    private CacheTmLookup createTmLookup(String tmLookupClsName) throws IgniteCheckedException {
         try {
-            Class<?> cls = Class.forName(ccfg.getTransactionManagerLookupClassName());
+            Class<?> cls = Class.forName(tmLookupClsName);
 
-            tmLookup = (CacheTmLookup)cls.newInstance();
+            CacheTmLookup res = (CacheTmLookup)cls.newInstance();
+
+            cctx.kernalContext().resource().injectGeneric(res);
+            
+            if (res instanceof LifecycleAware)
+                ((LifecycleAware)res).start();
+            
+            return res;
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to instantiate transaction manager lookup.", e);
@@ -60,82 +83,90 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void checkJta() throws IgniteCheckedException {
-        TransactionManager jtaTm = this.jtaTm;
-
         if (jtaTm == null) {
             try {
-                jtaTm = tmLookup.getTm();
-
-                if (jtaTm == null)
+                CacheTmLookup tmLookup = tmLookupRef.get();
+                
+                if (tmLookup == null)
                     return;
-
-                synchronized (threadLocals) {
-                    if (this.jtaTm != null)
-                        jtaTm = this.jtaTm;
-                    else {
-                        xaRsrc = threadLocals.get(jtaTm);
-
-                        if (xaRsrc == null) {
-                            xaRsrc = new ThreadLocal<>();
-
-                            threadLocals.put(jtaTm, xaRsrc);
-                        }
-
-                        this.jtaTm = jtaTm;
-                    }
-                }
+                
+                jtaTm = tmLookup.getTm();
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to get transaction manager: " + e, e);
             }
         }
 
-        WeakReference<GridCacheXAResource> rsrcRef = xaRsrc.get();
+        if (jtaTm != null) {
+            GridCacheXAResource rsrc = xaRsrc.get();
 
-        GridCacheXAResource rsrc = rsrcRef == null ? null : rsrcRef.get();
+            if (rsrc == null || rsrc.isFinished()) {
+                try {
+                    Transaction jtaTx = jtaTm.getTransaction();
 
-        if (rsrc == null || rsrc.isFinished()) {
-            try {
-                Transaction jtaTx = jtaTm.getTransaction();
+                    if (jtaTx != null) {
+                        IgniteInternalTx tx = cctx.tm().userTx();
 
-                if (jtaTx != null) {
-                    IgniteInternalTx tx = cctx.tm().userTx();
+                        if (tx == null) {
+                            TransactionConfiguration tCfg = cctx.kernalContext().config()
+                                .getTransactionConfiguration();
 
-                    if (tx == null) {
-                        TransactionConfiguration tCfg = cctx.kernalContext().config()
-                            .getTransactionConfiguration();
+                            tx = cctx.tm().newTx(
+                                /*implicit*/false,
+                                /*implicit single*/false,
+                                null,
+                                tCfg.getDefaultTxConcurrency(),
+                                tCfg.getDefaultTxIsolation(),
+                                tCfg.getDefaultTxTimeout(),
+                                /*store enabled*/true,
+                                /*tx size*/0
+                            );
+                        }
 
-                        tx = cctx.tm().newTx(
-                            /*implicit*/false,
-                            /*implicit single*/false,
-                            null,
-                            tCfg.getDefaultTxConcurrency(),
-                            tCfg.getDefaultTxIsolation(),
-                            tCfg.getDefaultTxTimeout(),
-                            /*store enabled*/true,
-                            /*tx size*/0
-                        );
+                        rsrc = new GridCacheXAResource(tx, cctx.kernalContext());
+
+                        if (!jtaTx.enlistResource(rsrc))
+                            throw new IgniteCheckedException("Failed to enlist XA resource to JTA user transaction.");
+
+                        xaRsrc.set(rsrc);
                     }
-
-                    rsrc = new GridCacheXAResource(tx, cctx.kernalContext());
-
-                    if (!jtaTx.enlistResource(rsrc))
-                        throw new IgniteCheckedException("Failed to enlist XA resource to JTA user transaction.");
-
-                    xaRsrc.set(new WeakReference<>(rsrc));
                 }
-            }
-            catch (SystemException e) {
-                throw new IgniteCheckedException("Failed to obtain JTA transaction.", e);
-            }
-            catch (RollbackException e) {
-                throw new IgniteCheckedException("Failed to enlist XAResource to JTA transaction.", e);
+                catch (SystemException e) {
+                    throw new IgniteCheckedException("Failed to obtain JTA transaction.", e);
+                }
+                catch (RollbackException e) {
+                    throw new IgniteCheckedException("Failed to enlist XAResource to JTA transaction.", e);
+                }
             }
         }
     }
 
     /** {@inheritDoc} */
+    @Override public void registerCache(CacheConfiguration<?, ?> cfg) throws IgniteCheckedException {
+        String cacheLookupClsName = cfg.getTransactionManagerLookupClassName();
+        
+        if (cacheLookupClsName != null) {
+            CacheTmLookup tmLookup = tmLookupRef.get();
+            
+            if (tmLookup == null) {
+                tmLookup = createTmLookup(cacheLookupClsName);
+                
+                if (tmLookupRef.compareAndSet(null, tmLookup))
+                    return;
+                
+                tmLookup = tmLookupRef.get();
+            }
+
+            if (!cacheLookupClsName.equals(tmLookup.getClass().getName()))
+                throw new IgniteCheckedException("Failed to start cache with CacheTmLookup that specified in cache " +
+                    "configuration, because node uses another CacheTmLookup [cache" + cfg.getName() +
+                    ", tmLookupClassName=" + cacheLookupClsName + ", tmLookupUsedByNode=" 
+                    + tmLookup.getClass().getName() + ']');
+        }
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public Object tmLookup() {
-        return tmLookup;
+        return tmLookupRef.get();
     }
 }
