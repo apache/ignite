@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -34,6 +35,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -1141,5 +1143,34 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         }, nodeCount(), "start-stop-cache");
 
         fut.get();
+    }
+
+    
+    /**
+     *
+     */
+    public void testBrokenStoreFactory() {
+        final CacheConfiguration<Integer, String> cacheConfiguration = new CacheConfiguration<>();
+        
+        cacheConfiguration.setName("brokenCache");
+        cacheConfiguration.setCacheStoreFactory(new BrokenStoreFactory());
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(0).createCache(cacheConfiguration);
+
+                return null;
+            }
+        }, CacheException.class, null);
+    }
+
+    /**
+     * 
+     */
+    private static class BrokenStoreFactory implements Factory<CacheStore<Integer, String>> {
+        /** {@inheritDoc} */
+        @Override public CacheStore<Integer, String> create() {
+            throw new RuntimeException("This store factory is broken");
+        }
     }
 }
