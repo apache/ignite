@@ -83,6 +83,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridKernalConcurrentAccessStopSelfTest.class);
         suite.addTestSuite(GridUpdateNotifierSelfTest.class);
         suite.addTestSuite(GridLocalEventListenerSelfTest.class);
+        suite.addTestSuite(IgniteTopologyPrintFormatSelfTest.class);
 
         // Managed Services.
         suite.addTestSuite(GridServiceProcessorSingleNodeSelfTest.class);
