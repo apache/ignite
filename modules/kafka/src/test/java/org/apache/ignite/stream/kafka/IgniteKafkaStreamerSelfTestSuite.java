@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.stream.kafka;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import junit.framework.*;
 
 /**
- * Failover tests for partitioned cache.
+ * Apache Kafka streamer tests.
  */
-public class GridCachePartitionedFailoverSelfTest extends GridCacheAbstractFailoverTxSelfTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1092");
-    }
+public class IgniteKafkaStreamerSelfTestSuite extends TestSuite {
+    /**
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Apache Kafka streamer Test Suite");
 
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+        suite.addTest(new TestSuite(KafkaIgniteStreamerSelfTest.class));
+
+        return suite;
     }
 }

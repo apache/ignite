@@ -15,24 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.stream.kafka;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import kafka.producer.*;
+import kafka.utils.*;
 
 /**
- * Failover tests for partitioned cache.
+ * Simple partitioner for Kafka.
  */
-public class GridCachePartitionedFailoverSelfTest extends GridCacheAbstractFailoverTxSelfTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1092");
+@SuppressWarnings("UnusedDeclaration")
+public class SimplePartitioner implements Partitioner {
+    /**
+     * Constructs instance.
+     *
+     * @param props Properties.
+     */
+    public SimplePartitioner(VerifiableProperties props) {
+        // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+    /**
+     * Partitions the key based on the key value.
+     *
+     * @param key Key.
+     * @param partSize Partition size.
+     * @return partition Partition.
+     */
+    public int partition(Object key, int partSize) {
+        String keyStr = (String)key;
+
+        String[] keyValues = keyStr.split("\\.");
+
+        Integer intKey = Integer.parseInt(keyValues[3]);
+
+        return intKey > 0 ? intKey % partSize : 0;
     }
 }
