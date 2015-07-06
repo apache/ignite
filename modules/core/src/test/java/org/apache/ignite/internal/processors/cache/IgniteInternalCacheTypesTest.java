@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -146,7 +145,7 @@ public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
     private void checkCache(
         Ignite ignite,
         String name,
-        GridIoPolicy plc,
+        byte plc,
         boolean user,
         boolean sysTx) {
         GridCacheAdapter cache = ((IgniteKernal)ignite).context().cache().internalCache(name);

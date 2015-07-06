@@ -158,7 +158,8 @@ public final class CommandLineStartup {
                 "    Where:",
                 "    ?, /help, -help, - show this message.",
                 "    -v               - verbose mode (quiet by default).",
-                "    -np              - no pause on exit (pause by default)");
+                "    -np              - no pause on exit (pause by default)",
+                "    -nojmx           - disable JMX monitoring (enabled by default)");
 
             if (ignite) {
                 X.error(

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -111,7 +110,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean commit,
         boolean invalidate,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         boolean sysInvalidate,
         boolean syncCommit,
         boolean syncRollback,

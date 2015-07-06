@@ -22,6 +22,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.internal.visor.util.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -47,12 +48,25 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
         @Nullable VisorTaskArgument<Map<UUID, Collection<String>>> arg) {
         Set<UUID> nodeIds = taskArg.keySet();
 
+        if (nodeIds.isEmpty())
+            throw new VisorClusterGroupEmptyException("Nothing to clear. List with node IDs is empty!");
+
         Map<ComputeJob, ClusterNode> map = U.newHashMap(nodeIds.size());
 
         try {
             for (ClusterNode node : subgrid)
                 if (nodeIds.contains(node.id()))
                     map.put(new VisorQueryCleanupJob(taskArg.get(node.id()), debug), node);
+
+            if (map.isEmpty()) {
+                String notFoundNodes = "";
+
+                for (UUID nid : nodeIds)
+                    notFoundNodes = notFoundNodes + (notFoundNodes.isEmpty() ? "" : ",")  + U.id8(nid);
+
+                throw new VisorClusterGroupEmptyException("Failed to clear query results. Nodes are not available: [" +
+                    notFoundNodes + "]");
+            }
 
             return map;
         }
