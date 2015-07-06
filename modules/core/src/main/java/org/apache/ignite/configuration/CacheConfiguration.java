@@ -1674,6 +1674,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setIndexedTypes(Class<?>... indexedTypes) {
+        A.notNull(indexedTypes, "indexedTypes");
+
         int len = indexedTypes.length;
 
         A.ensure(len > 0, "Array of indexed types can not be empty.");
@@ -1685,8 +1687,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         Class<?>[] newIndexedTypes = new Class<?>[len];
 
-        for (int i = 0; i < len; i++)
+        for (int i = 0; i < len; i++) {
+            if (indexedTypes[i] == null)
+                throw new NullPointerException("Indexed types array contains null at index: " + i);
+
             newIndexedTypes[i] = U.box(indexedTypes[i]);
+        }
 
         if (typeMeta == null)
             typeMeta = new ArrayList<>();
