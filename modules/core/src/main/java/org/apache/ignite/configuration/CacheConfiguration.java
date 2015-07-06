@@ -40,6 +40,7 @@ import java.lang.reflect.*;
 import java.util.*;
 
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.*;
+import static org.apache.ignite.internal.processors.query.GridQueryProcessor.*;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
@@ -1830,9 +1831,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> grp = new LinkedHashMap<>();
 
                 for (String fieldName : idx.fields()) {
-                    ClassProperty prop = desc.props.get(fieldName);
+                    Class<?> cls;
 
-                    Class<?> cls = mask(prop.type());
+                    if (_VAL.equals(fieldName))
+                        cls = desc.valueClass();
+                    else {
+                        ClassProperty prop = desc.props.get(fieldName);
+
+                        assert prop != null : fieldName;
+
+                        cls = prop.type();
+                    }
+
+                    cls = mask(cls);
 
                     grp.put(fieldName, new IgniteBiTuple<Class<?>, Boolean>(cls, idx.descending(fieldName)));
                 }
@@ -1841,17 +1852,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             }
         }
 
+        meta.setGroups(grps);
+
         if (desc.valueTextIndex())
-            txtFields.add("_val");
+            txtFields.add(_VAL);
 
         if (!txtFields.isEmpty())
             meta.setTextFields(txtFields);
-
-        meta.setGroups(grps);
-
-        // Index primitive types.
-        if (GridQueryProcessor.isSqlType(desc.valueClass()))
-            meta.setAscendingFields(Collections.<String, Class<?>>singletonMap("_val", desc.valueClass()));
 
         // Aliases.
         Map<String,String> aliases = null;
@@ -1881,7 +1888,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private static Class<?> mask(Class<?> cls) {
         assert cls != null;
 
-        return GridQueryProcessor.isSqlType(cls) ? cls : Object.class;
+        return isSqlType(cls) ? cls : Object.class;
     }
 
     /**
@@ -1914,13 +1921,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     private static void processAnnotationsInClass(boolean key, Class<?> cls, TypeDescriptor type,
         @Nullable ClassProperty parent) {
-        if (U.isJdk(cls) || GridQueryProcessor.isGeometryClass(cls)) {
-            if (parent == null && !key && GridQueryProcessor.isSqlType(cls) ) { // We have to index primitive _val.
-                String idxName = "_val_idx";
+        if (U.isJdk(cls) || isGeometryClass(cls)) {
+            if (parent == null && !key && isSqlType(cls)) { // We have to index primitive _val.
+                String idxName = _VAL + "_idx";
 
-                type.addIndex(idxName, GridQueryProcessor.isGeometryClass(cls) ? GEO_SPATIAL : SORTED);
+                type.addIndex(idxName, isGeometryClass(cls) ? GEO_SPATIAL : SORTED);
 
-                type.addFieldToIndex(idxName, "_val", 0, false);
+                type.addFieldToIndex(idxName, _VAL, 0, false);
             }
 
             return;
@@ -1954,7 +1961,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 QueryTextField txtAnn = field.getAnnotation(QueryTextField.class);
 
                 if (sqlAnn != null || txtAnn != null) {
-                    ClassProperty prop = new ClassProperty(field, key);
+                    ClassProperty prop = new ClassProperty(field);
 
                     prop.parent(parent);
 
@@ -1973,7 +1980,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                         throw new CacheException("Getter with QuerySqlField " +
                             "annotation cannot have parameters: " + mtd);
 
-                    ClassProperty prop = new ClassProperty(mtd, key);
+                    ClassProperty prop = new ClassProperty(mtd);
 
                     prop.parent(parent);
 
@@ -2004,26 +2011,26 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 prop.alias(sqlAnn.name());
 
             if (sqlAnn.index()) {
-                String idxName = prop.name() + "_idx";
+                String idxName = prop.alias() + "_idx";
 
-                desc.addIndex(idxName, GridQueryProcessor.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+                desc.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
 
-                desc.addFieldToIndex(idxName, prop.name(), 0, sqlAnn.descending());
+                desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
             }
 
             if (!F.isEmpty(sqlAnn.groups())) {
                 for (String group : sqlAnn.groups())
-                    desc.addFieldToIndex(group, prop.name(), 0, false);
+                    desc.addFieldToIndex(group, prop.fullName(), 0, false);
             }
 
             if (!F.isEmpty(sqlAnn.orderedGroups())) {
                 for (QuerySqlField.Group idx : sqlAnn.orderedGroups())
-                    desc.addFieldToIndex(idx.name(), prop.name(), idx.order(), idx.descending());
+                    desc.addFieldToIndex(idx.name(), prop.fullName(), idx.order(), idx.descending());
             }
         }
 
         if (txtAnn != null)
-            desc.addFieldToTextIndex(prop.name());
+            desc.addFieldToTextIndex(prop.fullName());
     }
 
     /** {@inheritDoc} */
@@ -2172,7 +2179,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          * @param failOnDuplicate Fail on duplicate flag.
          */
         public void addProperty(ClassProperty prop, boolean failOnDuplicate) {
-            String name = prop.name();
+            String name = prop.fullName();
 
             if (props.put(name, prop) != null && failOnDuplicate)
                 throw new CacheException("Property with name '" + name + "' already exists.");
@@ -2297,7 +2304,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          *
          * @param member Element.
          */
-        ClassProperty(Member member, boolean key) {
+        ClassProperty(Member member) {
             this.member = member;
 
             name = member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
@@ -2314,10 +2321,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         }
 
         /**
-         * @return Name.
+         * @return Alias.
          */
-        public String name() {
-            return name;
+        String alias() {
+            return F.isEmpty(alias) ? name : alias;
         }
 
         /**
