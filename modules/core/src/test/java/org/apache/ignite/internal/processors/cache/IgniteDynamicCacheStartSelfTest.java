@@ -1105,4 +1105,41 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         fut.get();
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartStopSameCacheMultinode() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-993");
+
+        final AtomicInteger idx = new AtomicInteger();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int node = idx.getAndIncrement();
+
+                Ignite ignite = ignite(node);
+
+                Thread.currentThread().setName("start-stop-" + ignite.name());
+
+                CacheConfiguration ccfg = new CacheConfiguration();
+
+                ccfg.setName("testStartStop");
+
+                for (int i = 0; i < 1000; i++) {
+                    log.info("Start cache: " + i);
+
+                    try (IgniteCache<Object, Object> cache = ignite.getOrCreateCache(ccfg)) {
+                        // No-op.
+                    }
+
+                    log.info("Stopped cache: " + i);
+                }
+
+                return null;
+            }
+        }, nodeCount(), "start-stop-cache");
+
+        fut.get();
+    }
 }

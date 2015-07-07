@@ -65,9 +65,11 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTest(IgniteStreamSelfTestSuite.suite());
 
         suite.addTest(new TestSuite(GridSelfTest.class));
-        GridTestUtils.addTestIfNeeded(suite, GridProjectionSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridMessagingSelfTest.class, ignoredTests);
+        suite.addTest(new TestSuite(ClusterGroupHostsSelfTest.class));
         suite.addTest(new TestSuite(IgniteMessagingWithClientTest.class));
+
+        GridTestUtils.addTestIfNeeded(suite, ClusterGroupSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridMessagingSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridMessagingNoPeerClassLoadingSelfTest.class, ignoredTests);
 
         if (U.isLinux() || U.isMacOs())
@@ -91,6 +93,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridMessageListenSelfTest.class);
         suite.addTestSuite(GridFailFastNodeFailureDetectionSelfTest.class);
         suite.addTestSuite(OffHeapTieredTransactionSelfTest.class);
+        suite.addTestSuite(IgniteSlowClientDetectionSelfTest.class);
+        suite.addTestSuite(IgniteDaemonNodeMarshallerCacheTest.class);
 
         return suite;
     }

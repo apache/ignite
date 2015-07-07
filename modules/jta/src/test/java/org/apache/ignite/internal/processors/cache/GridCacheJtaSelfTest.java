@@ -152,7 +152,7 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     @SuppressWarnings("ConstantConditions")
     public void testJtaTwoCaches() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-591");
-        
+
         UserTransaction jtaTx = jotm.getUserTransaction();
 
         IgniteEx ignite = grid(0);

@@ -25,6 +25,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.counter.*;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
+import org.apache.ignite.internal.processors.hadoop.v2.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.*;
 
@@ -48,10 +49,14 @@ public class IgniteHadoopFileSystemCounterWriter implements HadoopCounterWriter 
     private static final String DEFAULT_COUNTER_WRITER_DIR = "/user/" + USER_MACRO;
 
     /** {@inheritDoc} */
-    @Override public void write(HadoopJobInfo jobInfo, HadoopJobId jobId, HadoopCounters cntrs)
+    @Override public void write(HadoopJob job, HadoopCounters cntrs)
         throws IgniteCheckedException {
 
         Configuration hadoopCfg = HadoopUtils.safeCreateConfiguration();
+
+        final HadoopJobInfo jobInfo = job.info();
+
+        final HadoopJobId jobId = job.id();
 
         for (Map.Entry<String, String> e : ((HadoopDefaultJobInfo)jobInfo).properties().entrySet())
             hadoopCfg.set(e.getKey(), e.getValue());
@@ -72,7 +77,7 @@ public class IgniteHadoopFileSystemCounterWriter implements HadoopCounterWriter 
         try {
             hadoopCfg.set(MRJobConfig.USER_NAME, user);
 
-            FileSystem fs = HadoopUtils.fileSystemForMrUser(jobStatPath.toUri(), hadoopCfg, true);
+            FileSystem fs = ((HadoopV2Job)job).fileSystem(jobStatPath.toUri(), hadoopCfg);
 
             fs.mkdirs(jobStatPath);
 

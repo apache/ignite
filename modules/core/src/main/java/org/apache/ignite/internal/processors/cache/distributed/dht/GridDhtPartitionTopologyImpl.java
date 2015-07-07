@@ -620,7 +620,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         lock.readLock().lock();
 
         try {
-            assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer=" + topVer +
+            assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer1=" + topVer +
+                ", topVer2=" + this.topVer +
+                ", cache=" + cctx.name() +
                 ", node2part=" + node2part + ']';
 
             Collection<ClusterNode> nodes = null;

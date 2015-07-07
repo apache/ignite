@@ -147,6 +147,24 @@ class IgniteRddSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
                 sc.stop()
             }
         }
+
+        it("should successfully start spark context with XML configuration") {
+            val sc = new SparkContext("local[*]", "test")
+
+            try {
+                val ic = new IgniteContext[String, String](sc,
+                    "modules/core/src/test/config/spark/spark-config.xml")
+
+                val cache: IgniteRDD[String, String] = ic.fromCache(PARTITIONED_CACHE_NAME)
+
+                cache.savePairs(sc.parallelize(1 to 1000, 2).map(i ⇒ (String.valueOf(i), "val" + i)))
+
+                assert(1000 == cache.count())
+            }
+            finally {
+                sc.stop()
+            }
+        }
     }
 
     override protected def beforeEach() = {

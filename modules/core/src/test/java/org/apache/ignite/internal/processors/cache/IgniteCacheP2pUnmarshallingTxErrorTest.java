@@ -26,11 +26,13 @@ import org.apache.ignite.transactions.*;
 import javax.cache.*;
 import java.io.*;
 
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
+
 /**
  * Checks behavior on exception while unmarshalling key.
  */
 public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmarshallingErrorTest {
-
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL;
@@ -41,7 +43,7 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (!gridName.endsWith("0"))
-            cfg.getCacheConfiguration()[0].setRebalanceDelay(-1); //allows to check GridDhtLockRequest fail.
+            cfg.getCacheConfiguration()[0].setRebalanceDelay(-1); // Allows to check GridDhtLockRequest fail.
 
         return cfg;
     }
@@ -52,8 +54,7 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
     protected void failOptimistic() {
         IgniteCache<Object, Object> cache = jcache(0);
 
-        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.OPTIMISTIC,
-            TransactionIsolation.REPEATABLE_READ)) {
+        try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
 
             cache.put(new TestKey(String.valueOf(++key)), "");
 
@@ -65,7 +66,7 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
             assert X.hasCause(e, IOException.class);
         }
 
-        assert readCnt.get() == 0; //ensure we have read count as expected.
+        assert readCnt.get() == 0; // Ensure we have read count as expected.
     }
 
     /**
@@ -74,8 +75,8 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
     protected void failPessimictic() {
         IgniteCache<Object, Object> cache = jcache(0);
 
-        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC,
-            TransactionIsolation.REPEATABLE_READ)) {
+        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC,
+            REPEATABLE_READ)) {
 
             cache.put(new TestKey(String.valueOf(++key)), "");
 
@@ -85,7 +86,7 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
             assert X.hasCause(e, IOException.class);
         }
 
-        assert readCnt.get() == 0; //ensure we have read count as expected.
+        assert readCnt.get() == 0; // Ensure we have read count as expected.
     }
 
     /** {@inheritDoc} */
@@ -108,7 +109,7 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
         //GridDhtLockRequest unmarshalling failed test
         readCnt.set(3);
 
-        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             jcache(0).put(new TestKey(String.valueOf(++key)), ""); //No failure at client side.
         }
     }

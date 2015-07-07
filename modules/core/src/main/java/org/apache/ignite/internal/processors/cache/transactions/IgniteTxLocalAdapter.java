@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -128,7 +127,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -500,12 +499,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     List<Object> rmvCol = null;
                     CacheStoreManager writeStore = null;
 
-                    boolean skipNear = near() && isWriteToStoreFromDht;
+                    boolean skipNonPrimary = near() && isWriteToStoreFromDht;
 
                     for (IgniteTxEntry e : writeEntries) {
-                        boolean skip = (skipNear && e.cached().isNear()) ||
-                            e.skipStore() ||
-                            (e.context().store().isLocal() && !e.context().affinityNode());
+                        boolean skip = e.skipStore();
+
+                        if (!skip && skipNonPrimary) {
+                            skip = e.cached().isNear() ||
+                                e.cached().detached() ||
+                                !e.context().affinity().primary(e.cached().partition(), topologyVersion()).isLocal();
+                        }
 
                         if (skip)
                             continue;

@@ -24,7 +24,9 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -106,11 +108,14 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /** */
     private int maxMissedClientHbs = TcpDiscoverySpi.DFLT_MAX_MISSED_CLIENT_HEARTBEATS;
 
+    /** */
+    private IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi disco = new TestTcpDiscoverySpi();
+        TestTcpDiscoverySpi disco = new TestTcpDiscoverySpi();
 
         disco.setMaxMissedClientHeartbeats(maxMissedClientHbs);
 
@@ -153,6 +158,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         disco.setJoinTimeout(joinTimeout);
         disco.setNetworkTimeout(netTimeout);
+
+        disco.afterWrite(afterWrite);
 
         cfg.setDiscoverySpi(disco);
 
@@ -1016,6 +1023,189 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testJoinError3() throws Exception {
+        startServerNodes(1);
+
+        Ignite ignite = G.ignite("server-0");
+
+        TestTcpDiscoverySpi srvSpi = ((TestTcpDiscoverySpi)ignite.configuration().getDiscoverySpi());
+
+        srvSpi.failNodeAddFinishedMessage();
+
+        startClientNodes(1);
+
+        checkNodes(1, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJoinErrorMissedAddFinishedMessage1() throws Exception {
+        missedAddFinishedMessage(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJoinErrorMissedAddFinishedMessage2() throws Exception {
+        missedAddFinishedMessage(false);
+    }
+
+    /**
+     * @param singleSrv If {@code true} starts one server node two otherwise.
+     * @throws Exception If failed.
+     */
+    private void missedAddFinishedMessage(boolean singleSrv) throws Exception {
+        int srvs = singleSrv ? 1 : 2;
+
+        startServerNodes(srvs);
+
+        afterWrite = new CIX2<TcpDiscoveryAbstractMessage, Socket>() {
+            private boolean first = true;
+
+            @Override public void applyx(TcpDiscoveryAbstractMessage msg, Socket sock) throws IgniteCheckedException {
+                if (first && (msg instanceof TcpDiscoveryJoinRequestMessage)) {
+                    first = false;
+
+                    log.info("Close socket after message write [msg=" + msg + "]");
+
+                    try {
+                        sock.close();
+                    }
+                    catch (IOException e) {
+                        throw new IgniteCheckedException(e);
+                    }
+
+                    log.info("Delay after message write [msg=" + msg + "]");
+
+                    U.sleep(5000); // Wait when server process join request.
+                }
+            }
+        };
+
+        Ignite srv = singleSrv ? G.ignite("server-0") : G.ignite("server-1");
+
+        TcpDiscoveryNode srvNode = (TcpDiscoveryNode)srv.cluster().localNode();
+
+        assertEquals(singleSrv ? 1 : 2, srvNode.order());
+
+        clientIpFinder = new TcpDiscoveryVmIpFinder();
+
+        clientIpFinder.setAddresses(Collections.singleton("localhost:" + srvNode.discoveryPort()));
+
+        startClientNodes(1);
+
+        TcpDiscoveryNode clientNode = (TcpDiscoveryNode)G.ignite("client-0").cluster().localNode();
+
+        assertEquals(srvNode.id(), clientNode.clientRouterNodeId());
+
+        checkNodes(srvs, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientMessageWorkerStartSingleServer() throws Exception {
+        clientMessageWorkerStart(1, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientMessageWorkerStartTwoServers1() throws Exception {
+        clientMessageWorkerStart(2, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientMessageWorkerStartTwoServers2() throws Exception {
+        clientMessageWorkerStart(2, 2);
+    }
+
+    /**
+     * @param srvs Number of server nodes.
+     * @param connectTo What server connect to.
+     * @throws Exception If failed.
+     */
+    private void clientMessageWorkerStart(int srvs, int connectTo) throws Exception {
+        startServerNodes(srvs);
+
+        Ignite srv = G.ignite("server-" + (connectTo - 1));
+
+        final TcpDiscoveryNode srvNode = (TcpDiscoveryNode)srv.cluster().localNode();
+
+        assertEquals((long)connectTo, srvNode.order());
+
+        TestTcpDiscoverySpi srvSpi = ((TestTcpDiscoverySpi)srv.configuration().getDiscoverySpi());
+
+        final String client0 = "client-" + clientIdx.getAndIncrement();
+
+        srvSpi.delayJoinAckFor = client0;
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                clientIpFinder = new TcpDiscoveryVmIpFinder();
+
+                clientIpFinder.setAddresses(Collections.singleton("localhost:" + srvNode.discoveryPort()));
+
+                Ignite client = startGrid(client0);
+
+                clientIpFinder = null;
+
+                clientNodeIds.add(client.cluster().localNode().id());
+
+                TestTcpDiscoverySpi clientSpi = ((TestTcpDiscoverySpi)client.configuration().getDiscoverySpi());
+
+                assertFalse(clientSpi.invalidResponse());
+
+                TcpDiscoveryNode clientNode = (TcpDiscoveryNode)client.cluster().localNode();
+
+                assertEquals(srvNode.id(), clientNode.clientRouterNodeId());
+
+                return null;
+            }
+        });
+
+        final String client1 = "client-" + clientIdx.getAndIncrement();
+
+        while (!fut.isDone()) {
+            startGrid(client1);
+
+            stopGrid(client1);
+        }
+
+        fut.get();
+
+        checkNodes(srvs, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJoinMutlithreaded() throws Exception {
+        startServerNodes(1);
+
+        final int CLIENTS = 30;
+
+        clientsPerSrv = CLIENTS;
+
+        GridTestUtils.runMultiThreaded(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                Ignite g = startGrid("client-" + clientIdx.getAndIncrement());
+
+                clientNodeIds.add(g.cluster().localNode().id());
+
+                return null;
+            }
+        }, CLIENTS, "start-client");
+
+        checkNodes(1, CLIENTS);
+    }
+
+    /**
      * @param clientIdx Client index.
      * @param srvIdx Server index.
      * @throws Exception In case of error.
@@ -1267,7 +1457,19 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         private AtomicInteger failNodeAdded = new AtomicInteger();
 
         /** */
+        private AtomicInteger failNodeAddFinished = new AtomicInteger();
+
+        /** */
         private AtomicInteger failClientReconnect = new AtomicInteger();
+
+        /** */
+        private IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite;
+
+        /** */
+        private volatile boolean invalidRes;
+
+        /** */
+        private volatile String delayJoinAckFor;
 
         /**
          * @param lock Lock.
@@ -1287,10 +1489,31 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /**
+         * @param afterWrite After write callback.
+         */
+        void afterWrite(IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite) {
+            this.afterWrite = afterWrite;
+        }
+
+        /**
+         * @return {@code True} if received unexpected ack.
+         */
+        boolean invalidResponse() {
+            return invalidRes;
+        }
+
+        /**
          *
          */
         void failNodeAddedMessage() {
             failNodeAdded.set(1);
+        }
+
+        /**
+         *
+         */
+        void failNodeAddFinishedMessage() {
+            failNodeAddFinished.set(1);
         }
 
         /**
@@ -1322,6 +1545,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
             if (msg instanceof TcpDiscoveryNodeAddedMessage)
                 fail = failNodeAdded.getAndDecrement() > 0;
+            else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage)
+                fail = failNodeAddFinished.getAndDecrement() > 0;
             else if (msg instanceof TcpDiscoveryClientReconnectMessage)
                 fail = failClientReconnect.getAndDecrement() > 0;
 
@@ -1332,6 +1557,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             }
 
             super.writeToSocket(sock, msg, bout);
+
+            if (afterWrite != null)
+                afterWrite.apply(msg, sock);
         }
 
         /** {@inheritDoc} */
@@ -1364,6 +1592,41 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             pauseResumeOperation(false, openSockLock, writeLock);
 
             impl.workerThread().resume();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res) throws IOException {
+            if (delayJoinAckFor != null && msg instanceof TcpDiscoveryJoinRequestMessage) {
+                TcpDiscoveryJoinRequestMessage msg0 = (TcpDiscoveryJoinRequestMessage)msg;
+
+                if (delayJoinAckFor.equals(msg0.node().attribute(IgniteNodeAttributes.ATTR_GRID_NAME))) {
+                    log.info("Delay response [sock=" + sock + ", msg=" + msg0 + ", res=" + res + ']');
+
+                    delayJoinAckFor = null;
+
+                    try {
+                        Thread.sleep(2000);
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+
+            super.writeToSocket(msg, sock, res);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected int readReceipt(Socket sock, long timeout) throws IOException {
+            int res = super.readReceipt(sock, timeout);
+
+            if (res != TcpDiscoveryImpl.RES_OK) {
+                invalidRes = true;
+
+                log.info("Received unexpected response: " + res);
+            }
+
+            return res;
         }
     }
 }

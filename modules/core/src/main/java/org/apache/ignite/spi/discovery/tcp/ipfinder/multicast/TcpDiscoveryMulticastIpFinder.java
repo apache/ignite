@@ -26,7 +26,6 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.jetbrains.annotations.*;
@@ -278,7 +277,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
         addrSnds = new ArrayList<>(locAddrs.size());
 
-        Collection<InetAddress> reqItfs = new ArrayList<>(locAddrs.size()); // Interfaces used to send requests.
+        Set<InetAddress> reqItfs = new HashSet<>(locAddrs.size()); // Interfaces used to send requests.
 
         for (String locAddr : locAddrs) {
             InetAddress addr;
@@ -309,6 +308,8 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             }
         }
 
+        boolean mcastErr = false;
+
         if (!clientMode) {
             if (addrSnds.isEmpty()) {
                 try {
@@ -317,13 +318,31 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                     addrSnds.add(new AddressSender(mcastAddr, null, addrs));
                 }
                 catch (IOException e) {
-                    throw new IgniteSpiException("Failed to create multicast socket [mcastAddr=" + mcastAddr +
-                        ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ']', e);
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to create multicast socket [mcastAddr=" + mcastAddr +
+                            ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ", err=" + e + ']');
+                }
+
+                if (addrSnds.isEmpty()) {
+                    try {
+                        addrSnds.add(new AddressSender(mcastAddr, mcastAddr, addrs));
+
+                        reqItfs.add(mcastAddr);
+                    }
+                    catch (IOException e) {
+                        log.debug("Failed to create multicast socket [mcastAddr=" + mcastAddr +
+                            ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ", locAddr=" + mcastAddr +
+                            ", err=" + e + ']');
+                    }
                 }
             }
 
-            for (AddressSender addrSnd : addrSnds)
-                addrSnd.start();
+            if (!addrSnds.isEmpty()) {
+                for (AddressSender addrSnd : addrSnds)
+                    addrSnd.start();
+            }
+            else
+                mcastErr = true;
         }
         else
             assert addrSnds.isEmpty() : addrSnds;
@@ -358,10 +377,30 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 }
             }
         }
-        else
-            ret = requestAddresses(mcastAddr, F.first(reqItfs));
+        else {
+            T2<Collection<InetSocketAddress>, Boolean> res = requestAddresses(mcastAddr, F.first(reqItfs));
 
-        if (!ret.isEmpty())
+            ret = res.get1();
+
+            mcastErr |= res.get2();
+        }
+
+        if (ret.isEmpty()) {
+            if (mcastErr) {
+                if (getRegisteredAddresses().isEmpty()) {
+                    InetSocketAddress addr = new InetSocketAddress("localhost", TcpDiscoverySpi.DFLT_PORT);
+
+                    U.quietAndWarn(log, "TcpDiscoveryMulticastIpFinder failed to initialize multicast, " +
+                        "will use default address: " + addr);
+
+                    registerAddresses(Collections.singleton(addr));
+                }
+                else
+                    U.quietAndWarn(log, "TcpDiscoveryMulticastIpFinder failed to initialize multicast, " +
+                        "will use pre-configured addresses.");
+            }
+        }
+        else
             registerAddresses(ret);
     }
 
@@ -379,10 +418,15 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      *
      * @param mcastAddr Multicast address where to send request.
      * @param sockItf Optional interface multicast socket should be bound to.
-     * @return Collection of received addresses.
+     * @return Tuple where first value is collection of received addresses, second is boolean which is
+     *      {@code true} if got error on send.
      */
-    private Collection<InetSocketAddress> requestAddresses(InetAddress mcastAddr, @Nullable InetAddress sockItf) {
+    private T2<Collection<InetSocketAddress>, Boolean> requestAddresses(InetAddress mcastAddr,
+        @Nullable InetAddress sockItf)
+    {
         Collection<InetSocketAddress> rmtAddrs = new HashSet<>();
+
+        boolean sndErr = false;
 
         try {
             DatagramPacket reqPckt = new DatagramPacket(MSG_ADDR_REQ_DATA, MSG_ADDR_REQ_DATA.length,
@@ -414,6 +458,8 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                         sock.send(reqPckt);
                     }
                     catch (IOException e) {
+                        sndErr = true;
+
                         if (!handleNetworkError(e))
                             break;
 
@@ -486,14 +532,14 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             if (rmtAddrs.isEmpty() && sndError)
                 U.quietAndWarn(log, "Failed to send multicast message (is multicast enabled on this node?).");
 
-            return rmtAddrs;
+            return new T2<>(rmtAddrs, sndErr);
         }
         catch (IgniteInterruptedCheckedException ignored) {
             U.warn(log, "Got interrupted while sending address request.");
 
             Thread.currentThread().interrupt();
 
-            return rmtAddrs;
+            return new T2<>(rmtAddrs, sndErr);
         }
     }
 
@@ -610,7 +656,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
-            addrs = requestAddresses(mcastAddr, sockAddr);
+            addrs = requestAddresses(mcastAddr, sockAddr).get1();
         }
 
         /**
@@ -731,7 +777,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 }
                 catch (IOException e) {
                     if (!isInterrupted()) {
-                        U.error(log, "Failed to send/receive address message (will try to reconnect).", e);
+                        LT.warn(log, e, "Failed to send/receive address message (will try to reconnect).");
 
                         synchronized (this) {
                             U.close(sock);

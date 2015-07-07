@@ -62,9 +62,20 @@ public class GridClockServer {
             int startPort = ctx.config().getTimeServerPortBase();
             int endPort = startPort + ctx.config().getTimeServerPortRange() - 1;
 
-            InetAddress locHost = !F.isEmpty(ctx.config().getLocalHost()) ?
-                InetAddress.getByName(ctx.config().getLocalHost()) :
-                U.getLocalHost();
+            InetAddress locHost;
+
+            if (F.isEmpty(ctx.config().getLocalHost())) {
+                try {
+                    locHost = U.getLocalHost();
+                }
+                catch (IOException e) {
+                    locHost = InetAddress.getLoopbackAddress();
+
+                    U.warn(log, "Failed to get local host address, will use loopback address: " + locHost);
+                }
+            }
+            else
+                locHost = InetAddress.getByName(ctx.config().getLocalHost());
 
             for (int p = startPort; p <= endPort; p++) {
                 try {
@@ -83,8 +94,8 @@ public class GridClockServer {
             }
 
             if (sock == null)
-                throw new IgniteCheckedException("Failed to bind time server socket within specified port range [locHost=" +
-                    locHost + ", startPort=" + startPort + ", endPort=" + endPort + ']');
+                throw new IgniteCheckedException("Failed to bind time server socket within specified port range " +
+                    "[locHost=" + locHost + ", startPort=" + startPort + ", endPort=" + endPort + ']');
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to start time server (failed to get local host address)", e);

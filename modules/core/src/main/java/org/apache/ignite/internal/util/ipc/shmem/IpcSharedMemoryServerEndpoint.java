@@ -531,7 +531,9 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
 
             while (true) {
                 try {
-                    Thread.sleep(GC_FREQ);
+                    // Sleep only if not cancelled.
+                    if (lastRunNeeded)
+                        Thread.sleep(GC_FREQ);
                 }
                 catch (InterruptedException ignored) {
                     // No-op.
@@ -559,8 +561,12 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
                 }
 
                 if (isCancelled()) {
-                    if (lastRunNeeded)
+                    if (lastRunNeeded) {
                         lastRunNeeded = false;
+
+                        // Clear interrupted status.
+                        Thread.interrupted();
+                    }
                     else {
                         Thread.currentThread().interrupt();
 

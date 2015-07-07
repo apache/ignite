@@ -98,6 +98,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     };
 
+    /** Predicate filtering client nodes. */
+    private static final IgnitePredicate<ClusterNode> clientFilter = new P1<ClusterNode>() {
+        @Override public boolean apply(ClusterNode n) {
+            return CU.clientNode(n);
+        }
+    };
+
     /** Disco history entries comparator. */
     private static final Comparator<Map.Entry<AffinityTopologyVersion, DiscoCache>> histCmp =
         new Comparator<Map.Entry<AffinityTopologyVersion, DiscoCache>>() {
@@ -326,6 +333,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 U.warn(log, "Configuration parameter 'segmentCheckFrequency' is too low " +
                     "(at least 2000 ms recommended): " + segChkFreq);
 
+            int segResAttemp = ctx.config().getSegmentationResolveAttempts();
+
+            if (segResAttemp < 1)
+                throw new IgniteCheckedException(
+                    "Segment resolve attempts cannot be negative or zero: " + segResAttemp);
+
             checkSegmentOnStart();
         }
 
@@ -386,9 +399,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         verChanged = false;
                 }
                 else {
-                    minorTopVer = 0;
+                    if (type != EVT_NODE_SEGMENTED) {
+                        minorTopVer = 0;
 
-                    verChanged = true;
+                        verChanged = true;
+                    }
+                    else
+                        verChanged = false;
                 }
 
                 AffinityTopologyVersion nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
@@ -923,6 +940,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Collection<ClusterNode> rmtNodes = discoCache.remoteNodes();
 
+        Collection<ClusterNode> serverNodes = F.view(discoCache.allNodes(), F.not(clientFilter));
+
+        Collection<ClusterNode> clientNodes = F.view(discoCache.allNodes(), clientFilter);
+
         ClusterNode locNode = discoCache.localNode();
 
         Collection<ClusterNode> allNodes = discoCache.allNodes();
@@ -939,7 +960,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         double heap = U.heapSize(allNodes, 2);
 
         if (log.isQuiet())
-            U.quiet(false, topologySnapshotMessage(rmtNodes.size(), totalCpus, heap));
+            U.quiet(false, topologySnapshotMessage(serverNodes.size(), clientNodes.size(), totalCpus, heap));
 
         if (log.isDebugEnabled()) {
             String dbg = "";
@@ -949,7 +970,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ">>> " + PREFIX + "." + U.nl() +
                 ">>> +----------------+" + U.nl() +
                 ">>> Grid name: " + (ctx.gridName() == null ? "default" : ctx.gridName()) + U.nl() +
-                ">>> Number of nodes: " + (rmtNodes.size() + 1) + U.nl() +
+                ">>> Number of server nodes: " + serverNodes.size() + U.nl() +
+                ">>> Number of client nodes: " + clientNodes.size() + U.nl() +
                 (discoOrdered ? ">>> Topology version: " + topVer + U.nl() : "") +
                 ">>> Topology hash: 0x" + Long.toHexString(hash).toUpperCase() + U.nl();
 
@@ -982,19 +1004,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             log.debug(dbg);
         }
         else if (log.isInfoEnabled())
-            log.info(topologySnapshotMessage(rmtNodes.size(), totalCpus, heap));
+            log.info(topologySnapshotMessage(serverNodes.size(), clientNodes.size(), totalCpus, heap));
     }
 
     /**
-     * @param rmtNodesNum Remote nodes number.
+     * @param serverNodesNum Server nodes number.
+     * @param clientNodesNum Client nodes number.
      * @param totalCpus Total cpu number.
      * @param heap Heap size.
      * @return Topology snapshot message.
      */
-    private String topologySnapshotMessage(int rmtNodesNum, int totalCpus, double heap) {
+    private String topologySnapshotMessage(int serverNodesNum, int clientNodesNum, int totalCpus, double heap) {
         return PREFIX + " [" +
             (discoOrdered ? "ver=" + topSnap.get().topVer.topologyVersion() + ", " : "") +
-            "nodes=" + (rmtNodesNum + 1) +
+            "server nodes=" + serverNodesNum +
+            ", client nodes=" + clientNodesNum +
             ", CPUs=" + totalCpus +
             ", heap=" + heap + "GB" +
             ']';
@@ -1481,15 +1505,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /**
      * @param nodeId Node ID.
+     * @param warning Warning message to be shown on all nodes.
      * @return Whether node is failed.
      */
-    public boolean tryFailNode(UUID nodeId) {
+    public boolean tryFailNode(UUID nodeId, @Nullable String warning) {
         if (!busyLock.enterBusy())
             return false;
 
         try {
             if (!getSpi().pingNode(nodeId)) {
-                getSpi().failNode(nodeId);
+                getSpi().failNode(nodeId, warning);
 
                 return true;
             }
@@ -1502,9 +1527,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * @param nodeId Node ID to fail.
+     * @param warning Warning message to be shown on all nodes.
+     */
+    public void failNode(UUID nodeId, @Nullable String warning) {
+        if (!busyLock.enterBusy())
+            return;
+
+        try {
+            getSpi().failNode(nodeId, warning);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
      * Updates topology version if current version is smaller than updated.
      *
      * @param updated Updated topology version.
+     * @param discoCache Discovery cache.
      * @return {@code True} if topology was updated.
      */
     private boolean updateTopologyVersionIfGreater(AffinityTopologyVersion updated, DiscoCache discoCache) {

@@ -139,6 +139,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
+     * @return Operation context.
+     */
+    @Nullable public CacheOperationContext operationContext() {
+        return opCtx;
+    }
+
+    /**
      * Gets cache proxy which does not acquire read lock on gateway enter, should be
      * used only if grid read lock is externally acquired.
      *
@@ -239,7 +246,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             CacheOperationContext prj0 = opCtx != null ? opCtx.withExpiryPolicy(plc) :
-                new CacheOperationContext(false, null, false, plc);
+                new CacheOperationContext(false, null, false, plc, false);
 
             return new IgniteCacheProxy<>(ctx, delegate, prj0, isAsync(), lock);
         }
@@ -251,6 +258,30 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withSkipStore() {
         return skipStore();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withNoRetries() {
+        CacheOperationContext prev = onEnter(opCtx);
+
+        try {
+            boolean noRetries = opCtx != null && opCtx.noRetries();
+
+            if (noRetries)
+                return this;
+
+            CacheOperationContext opCtx0 = opCtx != null ? opCtx.setNoRetries(true) :
+                new CacheOperationContext(false, null, false, null, true);
+
+            return new IgniteCacheProxy<>(ctx,
+                delegate,
+                opCtx0,
+                isAsync(),
+                lock);
+        }
+        finally {
+            onLeave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -549,6 +580,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             !(qry instanceof ContinuousQuery))
             throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name() +
                 ". Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.");
+
+        if (!ctx.kernalContext().query().moduleEnabled() &&
+            (qry instanceof SqlQuery || qry instanceof SqlFieldsQuery || qry instanceof TextQuery))
+            throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
+                "of all Ignite nodes.");
     }
 
     /** {@inheritDoc} */
@@ -1486,10 +1522,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             CacheOperationContext opCtx0 =
                 new CacheOperationContext(
-                    opCtx != null ? opCtx.skipStore() : false,
+                    opCtx != null && opCtx.skipStore(),
                     opCtx != null ? opCtx.subjectId() : null,
                     true,
-                    opCtx != null ? opCtx.expiry() : null);
+                    opCtx != null ? opCtx.expiry() : null,
+                    opCtx != null && opCtx.noRetries());
 
             return new IgniteCacheProxy<>((GridCacheContext<K1, V1>)ctx,
                 (GridCacheAdapter<K1, V1>)delegate,
@@ -1517,8 +1554,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             CacheOperationContext opCtx0 =
                 new CacheOperationContext(true,
                     opCtx != null ? opCtx.subjectId() : null,
-                    opCtx != null ? opCtx.isKeepPortable() : false,
-                    opCtx != null ? opCtx.expiry() : null);
+                    opCtx != null && opCtx.isKeepPortable(),
+                    opCtx != null ? opCtx.expiry() : null,
+                    opCtx != null && opCtx.noRetries());
 
             return new IgniteCacheProxy<>(ctx,
                 delegate,
@@ -1543,7 +1581,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param fut Future for async operation.
      */
     private <R> void setFuture(IgniteInternalFuture<R> fut) {
-        curFut.set(new IgniteFutureImpl<>(fut));
+        curFut.set(new IgniteCacheFutureImpl<>(fut));
     }
 
     /**

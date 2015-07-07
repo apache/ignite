@@ -43,27 +43,19 @@ public class GridResultPage {
     private final int rowsInPage;
 
     /** */
-    private final boolean last;
-
-    /** */
     private Iterator<Value[]> rows;
 
     /**
      * @param ctx Kernal context.
      * @param src Source.
      * @param res Response.
-     * @param last If this is the globally last page.
      */
     @SuppressWarnings("unchecked")
-    public GridResultPage(final GridKernalContext ctx, UUID src, GridQueryNextPageResponse res, boolean last) {
+    public GridResultPage(final GridKernalContext ctx, UUID src, GridQueryNextPageResponse res) {
         assert src != null;
 
         this.src = src;
         this.res = res;
-        this.last = last;
-
-        if (last)
-            assert res == null : "The last page must be dummy.";
 
         // res == null means that it is a terminating dummy page for the given source node ID.
         if (res != null) {
@@ -117,10 +109,17 @@ public class GridResultPage {
     }
 
     /**
+     * @return {@code true} If this is a dummy fail page.
+     */
+    public boolean isFail() {
+        return false;
+    }
+
+    /**
      * @return {@code true} If this is a dummy last page for all the sources.
      */
     public boolean isLast() {
-        return last;
+        return false;
     }
 
     /**
@@ -161,7 +160,7 @@ public class GridResultPage {
      * Request next page.
      */
     public void fetchNextPage() {
-        throw new UnsupportedOperationException();
+        throw new CacheException("Failed to fetch data from node: " + src);
     }
 
     /** {@inheritDoc} */

@@ -31,6 +31,16 @@ public class IgniteCacheAtomicReplicatedNodeRestartSelfTest extends GridCacheRep
     }
 
     /** {@inheritDoc} */
+    @Override public void testRestartWithPutSixNodesTwoBackups() throws Throwable {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1095");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithPutEightNodesTwoBackups() throws Throwable {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1095");
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
