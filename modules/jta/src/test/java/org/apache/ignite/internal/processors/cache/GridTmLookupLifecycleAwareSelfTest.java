@@ -44,21 +44,20 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
 
     /** */
     private boolean configureGlobalTmLookup;
-    
+
     /**
      */
     @SuppressWarnings("PublicInnerClass")
     public static class TestTxLookup extends GridAbstractLifecycleAwareSelfTest.TestLifecycleAware
         implements CacheTmLookup {
-
         /** */
         @IgniteInstanceResource
         Ignite ignite;
-        
+
         /** {@inheritDoc} */
         @Override public void start() {
             super.start();
-            
+
             assertNotNull(ignite);
         }
 

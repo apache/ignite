@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.jta;
 
 import org.apache.ignite.*;
-import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.configuration.*;
 import org.jetbrains.annotations.*;
 
 import javax.transaction.*;
