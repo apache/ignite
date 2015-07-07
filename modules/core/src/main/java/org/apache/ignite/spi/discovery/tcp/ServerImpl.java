@@ -2076,6 +2076,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         boolean nextNew = (msg instanceof TcpDiscoveryNodeAddedMessage &&
                                             ((TcpDiscoveryNodeAddedMessage)msg).node().id().equals(nextId));
 
+                                        if (!nextNew)
+                                            nextNew = hasPendingAddMessage(nextId);
+
                                         if (!nextNew) {
                                             if (log.isDebugEnabled())
                                                 log.debug("Failed to restore ring because next node order received " +
@@ -2361,6 +2364,29 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Pending message has been registered: " + msg.id());
             }
+        }
+
+        /**
+         * Checks whether pending messages queue contains unprocessed {@link TcpDiscoveryNodeAddedMessage} for
+         * the node with {@code nodeId}.
+         *
+         * @param nodeId Node ID.
+         * @return {@code true} if contains, {@code false} otherwise.
+         */
+        private boolean hasPendingAddMessage(UUID nodeId) {
+            if (pendingMsgs.msgs.isEmpty())
+                return false;
+
+            for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs.msgs) {
+                if (pendingMsg instanceof TcpDiscoveryNodeAddedMessage) {
+                    TcpDiscoveryNodeAddedMessage addMsg = (TcpDiscoveryNodeAddedMessage)pendingMsg;
+
+                    if (addMsg.node().id().equals(nodeId) && addMsg.id().compareTo(pendingMsgs.discardId) > 0)
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         /**

@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.stream.kafka;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import junit.framework.*;
 
 /**
- * Failover tests for replicated cache.
+ * Apache Kafka streamer tests.
  */
-public class GridCacheReplicatedFailoverSelfTest extends GridCacheAbstractFailoverTxSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
+public class IgniteKafkaStreamerSelfTestSuite extends TestSuite {
+    /**
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Apache Kafka streamer Test Suite");
 
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+        suite.addTest(new TestSuite(KafkaIgniteStreamerSelfTest.class));
+
+        return suite;
     }
 }
