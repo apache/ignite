@@ -1333,7 +1333,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
             else {
                 in.position(range.start);
 
-                F obj = (F)readObject();
+                F obj = (F)readObjectOverride();
 
                 in.position(start);
 
@@ -1449,7 +1449,13 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
          */
         public FieldRange() {
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(FieldRange.class, this);
+        }
     }
+
     /** {@inheritDoc} */
     @Override public void registerValidation(ObjectInputValidation obj, int pri) {
         // No-op.

@@ -1741,6 +1741,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** Result class. */
         private Class<?> type;
 
+        /** */
+        private volatile int isKeyProp;
+
         /**
          * Constructor.
          *
@@ -1771,25 +1774,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 return ctx.cacheObjects().field(obj, propName);
             }
             else {
-                try {
+                int isKeyProp0 = isKeyProp;
 
-                    return ctx.cacheObjects().field(key, propName);
-                }
-                catch (IgniteFieldNotFoundException e) {
-                    // Ignore
+                if (isKeyProp0 == 0) {
+                    // Key is allowed to be a non-portable object here.
+                    // We check key before value consistently with ClassProperty.
+                    if (ctx.cacheObjects().hasField(key, propName))
+                        isKeyProp = isKeyProp0 = 1;
+                    else if (ctx.cacheObjects().hasField(val, propName))
+                        isKeyProp = isKeyProp0 = -1;
+                    else {
+                        U.warn(log, "Neither key nor value have property " +
+                            "[propName=" + propName + ", key=" + key + ", val=" + val + "]");
+
+                        return null;
+                    }
                 }
 
-                try {
-                    return ctx.cacheObjects().field(val, propName);
-                }
-                catch (IgniteFieldNotFoundException e) {
-                    // Ignore
-                }
+                obj = isKeyProp0 == 1 ? key : val;
 
-                U.warn(log, "Neither key nor value has property " +
-                    "[propName=" + propName + ", key=" + key + ", val=" + val + "]");
-
-                return null;
+                return ctx.cacheObjects().field(obj, propName);
             }
         }
 
