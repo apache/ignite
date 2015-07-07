@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.cache;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests for partitioned cache query metrics.
+ * Tests for local cache query metrics.
  */
-public class CachePartitionedQueryMetricsSelfTest extends CacheAbstractQueryMetricsSelfTest {
+public class CacheLocalQueryMetricsSelfTest extends CacheAbstractQueryMetricsSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        cacheMode = PARTITIONED;
+        gridCnt = 1;
+        cacheMode = LOCAL;
 
         super.beforeTest();
     }

@@ -50,6 +50,9 @@ public class InteropIgnition {
      */
     public static synchronized InteropProcessor start(@Nullable String springCfgPath, @Nullable String gridName,
         int factoryId, long envPtr, long dataPtr) {
+        if (envPtr <= 0)
+            throw new IgniteException("Environment pointer must be positive.");
+
         ClassLoader oldClsLdr = Thread.currentThread().getContextClassLoader();
 
         Thread.currentThread().setContextClassLoader(InteropIgnition.class.getClassLoader());
@@ -83,10 +86,22 @@ public class InteropIgnition {
      * Get instance by environment pointer.
      *
      * @param gridName Grid name.
-     * @return Instance or {@code null} if it doesn't exists (never started or stopped).
+     * @return Instance or {@code null} if it doesn't exist (never started or stopped).
      */
     @Nullable public static synchronized InteropProcessor instance(@Nullable String gridName) {
         return instances.get(gridName);
+    }
+
+    /**
+     * Get environment pointer of the given instance.
+     *
+     * @param gridName Grid name.
+     * @return Environment pointer or {@code 0} in case grid with such name doesn't exist.
+     */
+    public static synchronized long environmentPointer(@Nullable String gridName) {
+        InteropProcessor proc = instance(gridName);
+
+        return proc != null ? proc.environmentPointer() : 0;
     }
 
     /**
