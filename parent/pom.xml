@@ -41,6 +41,7 @@
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
         <git.exec>git</git.exec>
+        <jetty.version>9.2.11.v20150529</jetty.version>
     </properties>
 
     <groupId>org.apache.ignite</groupId>

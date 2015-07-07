@@ -767,11 +767,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             filter,
             subjId,
             taskNameHash,
-            opCtx != null && opCtx.skipStore());
+            opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+            waitTopFut);
 
         return asyncOp(new CO<IgniteInternalFuture<Object>>() {
             @Override public IgniteInternalFuture<Object> apply() {
-                updateFut.map(waitTopFut);
+                updateFut.map();
 
                 return updateFut;
             }
@@ -830,14 +832,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             filter,
             subjId,
             taskNameHash,
-            opCtx != null && opCtx.skipStore());
+            opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+            true);
 
         if (statsEnabled)
             updateFut.listen(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
 
         return asyncOp(new CO<IgniteInternalFuture<Object>>() {
             @Override public IgniteInternalFuture<Object> apply() {
-                updateFut.map(true);
+                updateFut.map();
 
                 return updateFut;
             }
@@ -2272,9 +2276,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.filter(),
             req.subjectId(),
             req.taskNameHash(),
-            req.skipStore());
+            req.skipStore(),
+            MAX_RETRIES,
+            true);
 
-        updateFut.map(true);
+        updateFut.map();
     }
 
     /**

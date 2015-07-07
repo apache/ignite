@@ -71,6 +71,7 @@
         <module>modules/gce</module>
         <module>modules/cloud</module>
         <module>modules/mesos</module>
+        <module>modules/kafka</module>
     </modules>
 
     <profiles>

@@ -50,24 +50,33 @@ public class InteropIgnition {
      */
     public static synchronized InteropProcessor start(@Nullable String springCfgPath, @Nullable String gridName,
         int factoryId, long envPtr, long dataPtr) {
-        IgniteConfiguration cfg = configuration(springCfgPath);
+        ClassLoader oldClsLdr = Thread.currentThread().getContextClassLoader();
 
-        if (gridName != null)
-            cfg.setGridName(gridName);
-        else
-            gridName = cfg.getGridName();
+        Thread.currentThread().setContextClassLoader(InteropIgnition.class.getClassLoader());
 
-        InteropBootstrap bootstrap = bootstrap(factoryId);
+        try {
+            IgniteConfiguration cfg = configuration(springCfgPath);
 
-        InteropProcessor proc = bootstrap.start(cfg, envPtr, dataPtr);
+            if (gridName != null)
+                cfg.setGridName(gridName);
+            else
+                gridName = cfg.getGridName();
 
-        trackFinalization(proc);
+            InteropBootstrap bootstrap = bootstrap(factoryId);
 
-        InteropProcessor old = instances.put(gridName, proc);
+            InteropProcessor proc = bootstrap.start(cfg, envPtr, dataPtr);
 
-        assert old == null;
+            trackFinalization(proc);
 
-        return proc;
+            InteropProcessor old = instances.put(gridName, proc);
+
+            assert old == null;
+
+            return proc;
+        }
+        finally {
+            Thread.currentThread().setContextClassLoader(oldClsLdr);
+        }
     }
 
     /**
