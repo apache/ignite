@@ -24,15 +24,15 @@
 // ------------------------------------------------------------------
 #foreach ( $organizationName in $projectsSortedByOrganization.keySet() )
 #foreach ( $project in $projectsSortedByOrganization.get( $organizationName ) )
-##if($project.licenses.size() == 1 && $project.licenses.get(0).name.contains("Apache Software License"))#else
+#if($project.licenses.size() == 1 && $project.licenses.get(0).url.contains("www.apache.org/licenses/LICENSE-2.0") && !$project.licenses.get(0).url.contains("and"))#else
   - $project.name #if ($project.url)($project.url)#end $project.artifact
 #foreach ( $license in $project.licenses )
     License: $license.name #if ($license.url) ($license.url)#end
+
 #end
 #if ($project.licenses.size() == 0)    No licenses.#end
 
-
-##end
+#end
 #end
 #end
 

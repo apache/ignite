@@ -585,7 +585,6 @@
                                         <resourceBundle>org.apache.ignite:ignite-apache-license-gen:${project.version}</resourceBundle>
                                     </resourceBundles>
                                     <excludeTransitive>true</excludeTransitive>
-                                    <excludeGroupIds>org.apache</excludeGroupIds>
                                 </configuration>
                             </execution>
                         </executions>
