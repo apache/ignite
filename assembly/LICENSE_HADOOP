@@ -236,35 +236,3 @@ This eBook is for the use of anyone anywhere at no cost and with
 almost no restrictions whatsoever.  You may copy it, give it away or
 re-use it under the terms of the Project Gutenberg License included
 with this eBook or online at www.gutenberg.org
-
-==============================================================================
-JCraft
-==============================================================================
-This product bundles JCraft, which is available under a BSD license.
-For details, see http://www.jcraft.com/jsch/LICENSE.txt.
-
-==============================================================================
-JLine
-==============================================================================
-This product bundles JLine, which is available under a "2-clause BSD" license.
-For details, see http://opensource.org/licenses/bsd-license.php.
-
-==============================================================================
-Scala
-==============================================================================
-This product bundles Scala, which is available under a BSD license.
-For details, see http://www.scala-lang.org/license.html.
-
-==============================================================================
-JCache-API (JSR-107)
-==============================================================================
-This product bundles JCache-API, which is available under a JSR-000107 JCACHE 2.9 Public Review - Updated Specification
-License.
-For details, see https://raw.githubusercontent.com/jsr107/jsr107spec/master/LICENSE.txt.
-
-==============================================================================
-ASM
-==============================================================================
-This product bundles ASM, which is available under a BSD license.
-For details, see http://asm.ow2.org/license.html.
-
