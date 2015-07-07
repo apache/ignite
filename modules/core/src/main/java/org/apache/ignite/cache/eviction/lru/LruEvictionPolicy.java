@@ -200,11 +200,6 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
                 // If node was unlinked by concurrent shrink() call, we must repeat the whole cycle.
                 else if (!entry.removeMeta(node))
                     return false;
-                else {
-                    memSize.add(-entry.size());
-
-                    return true;
-                }
             }
         }
         else if (queue.unlinkx(node)) {
