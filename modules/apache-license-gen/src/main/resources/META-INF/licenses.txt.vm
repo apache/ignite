@@ -34,7 +34,8 @@ This product bundles $project.name which is available under a:
 $license.name.replaceAll("[ ]{2,}"," ").replaceAll("\n",""). #if ($license.url)For details, see $license.url.replaceAll("[ ]{2,}"," ").replaceAll("\n","").#end
 
 #end
-#if ($project.licenses.size() == 0)    No licenses.#end
+#if ($project.licenses.size() == 0)No licenses.
+#end
 
 #end
 #end

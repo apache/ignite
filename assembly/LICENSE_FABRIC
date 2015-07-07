@@ -236,3 +236,82 @@ This eBook is for the use of anyone anywhere at no cost and with
 almost no restrictions whatsoever.  You may copy it, give it away or
 re-use it under the terms of the Project Gutenberg License included
 with this eBook or online at www.gutenberg.org
+
+==============================================================================
+For JSR107 API and SPI (https://github.com/jsr107/jsr107spec) javax.cache:cache-api:jar:1.0.0
+==============================================================================
+This product bundles JSR107 API and SPI which is available under a:
+JSR-000107 JCACHE 2.9 Public Review - Updated Specification License. For details, see https://raw.github.com/jsr107/jsr107spec/master/LICENSE.txt.
+
+==============================================================================
+For JSch (http://www.jcraft.com/jsch/) com.jcraft:jsch:jar:0.1.50
+==============================================================================
+This product bundles JSch which is available under a:
+Revised BSD. For details, see http://www.jcraft.com/jsch/LICENSE.txt.
+
+==============================================================================
+For JLine (http://nexus.sonatype.org/oss-repository-hosting.html/jline) jline:jline:jar:2.12.1
+==============================================================================
+This product bundles JLine which is available under a:
+The BSD License. For details, see http://www.opensource.org/licenses/bsd-license.php.
+
+==============================================================================
+For Scala Library (http://www.scala-lang.org/) org.scala-lang:scala-library:jar:2.11.2
+==============================================================================
+This product bundles Scala Library which is available under a:
+BSD 3-Clause. For details, see http://www.scala-lang.org/license.html.
+
+==============================================================================
+For H2 Database Engine (http://www.h2database.com) com.h2database:h2:jar:1.3.175
+==============================================================================
+This product bundles H2 Database Engine which is available under a:
+The H2 License, Version 1.0. For details, see http://h2database.com/html/license.html.
+
+==============================================================================
+For JTidy (http://jtidy.sourceforge.net) net.sf.jtidy:jtidy:jar:r938
+==============================================================================
+This product bundles JTidy which is available under a:
+Java HTML Tidy License. For details, see http://jtidy.svn.sourceforge.net/viewvc/jtidy/trunk/jtidy/LICENSE.txt?revision=95.
+
+==============================================================================
+For tomcat-servlet-api (http://tomcat.apache.org/) org.apache.tomcat:tomcat-servlet-api:jar:8.0.23
+==============================================================================
+This product bundles tomcat-servlet-api which is available under a:
+Apache License, Version 2.0 and Common Development And Distribution License (CDDL) Version 1.0. For details, see http://www.apache.org/licenses/LICENSE-2.0.txt and http://www.opensource.org/licenses/cddl1.txt.
+
+==============================================================================
+For AOP alliance (http://aopalliance.sourceforge.net) aopalliance:aopalliance:jar:1.0
+==============================================================================
+This product bundles AOP alliance which is available under a:
+Public Domain.
+
+==============================================================================
+For AspectJ (http://www.aspectj.org) org.aspectj:*:jar:1.7.2
+==============================================================================
+This product bundles AspectJ which is available under a:
+Eclipse Public License - v 1.0. For details, see http://www.eclipse.org/legal/epl-v10.html.
+
+==============================================================================
+For Java Transaction API (http://java.sun.com/products/jta) javax.transaction:jta:jar:1.1
+==============================================================================
+This product bundles Java Transaction API which is available under a:
+No licenses.
+
+==============================================================================
+For ASM All (http://asm.objectweb.org/asm-all/) org.ow2.asm:asm-all:jar:4.2
+==============================================================================
+This product bundles ASM All which is available under a:
+BSD. For details, see http://asm.objectweb.org/license.html.
+
+==============================================================================
+For Jetty (http://www.eclipse.org/jetty) org.eclipse.jetty:*:jar:9.2.11.v20150529
+==============================================================================
+This product bundles Jetty which is available under a:
+Apache Software License - Version 2.0. For details, see http://www.apache.org/licenses/LICENSE-2.0.
+Eclipse Public License - Version 1.0. For details, see http://www.eclipse.org/org/documents/epl-v10.php.
+
+==============================================================================
+For SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:1.6.4
+==============================================================================
+This product bundles SLF4J API Module which is available under a:
+MIT License. For details, see http://www.opensource.org/licenses/mit-license.php.

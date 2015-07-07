@@ -236,3 +236,35 @@ This eBook is for the use of anyone anywhere at no cost and with
 almost no restrictions whatsoever.  You may copy it, give it away or
 re-use it under the terms of the Project Gutenberg License included
 with this eBook or online at www.gutenberg.org
+
+==============================================================================
+For JSR107 API and SPI (https://github.com/jsr107/jsr107spec) javax.cache:cache-api:jar:1.0.0
+==============================================================================
+This product bundles JSR107 API and SPI which is available under a:
+JSR-000107 JCACHE 2.9 Public Review - Updated Specification License. For details, see https://raw.github.com/jsr107/jsr107spec/master/LICENSE.txt.
+
+==============================================================================
+For JSch (http://www.jcraft.com/jsch/) com.jcraft:jsch:jar:0.1.50
+==============================================================================
+This product bundles JSch which is available under a:
+Revised BSD. For details, see http://www.jcraft.com/jsch/LICENSE.txt.
+
+==============================================================================
+For JLine (http://nexus.sonatype.org/oss-repository-hosting.html/jline) jline:jline:jar:2.12.1
+==============================================================================
+This product bundles JLine which is available under a:
+The BSD License. For details, see http://www.opensource.org/licenses/bsd-license.php.
+
+==============================================================================
+For Scala Library (http://www.scala-lang.org/) org.scala-lang:scala-library:jar:2.11.2
+==============================================================================
+This product bundles Scala Library which is available under a:
+BSD 3-Clause. For details, see http://www.scala-lang.org/license.html.
+
+==============================================================================
+For ASM All (http://asm.objectweb.org/asm-all/) org.ow2.asm:asm-all:jar:4.2
+==============================================================================
+This product bundles ASM All which is available under a:
+BSD. For details, see http://asm.objectweb.org/license.html.
+
+
