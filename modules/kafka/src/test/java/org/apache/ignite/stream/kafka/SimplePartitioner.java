@@ -15,18 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.stream.kafka;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import kafka.producer.*;
+import kafka.utils.*;
 
 /**
- * Tests for replicated cache query metrics.
+ * Simple partitioner for Kafka.
  */
-public class CacheReplicatedQueryMetricsSelfTest extends CacheAbstractQueryMetricsSelfTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        cacheMode = REPLICATED;
+@SuppressWarnings("UnusedDeclaration")
+public class SimplePartitioner implements Partitioner {
+    /**
+     * Constructs instance.
+     *
+     * @param props Properties.
+     */
+    public SimplePartitioner(VerifiableProperties props) {
+        // No-op.
+    }
 
-        super.beforeTest();
+    /**
+     * Partitions the key based on the key value.
+     *
+     * @param key Key.
+     * @param partSize Partition size.
+     * @return partition Partition.
+     */
+    public int partition(Object key, int partSize) {
+        String keyStr = (String)key;
+
+        String[] keyValues = keyStr.split("\\.");
+
+        Integer intKey = Integer.parseInt(keyValues[3]);
+
+        return intKey > 0 ? intKey % partSize : 0;
     }
 }

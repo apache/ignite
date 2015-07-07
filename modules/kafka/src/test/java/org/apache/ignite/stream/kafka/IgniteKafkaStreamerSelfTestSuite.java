@@ -15,18 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.stream.kafka;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import junit.framework.*;
 
 /**
- * Tests for partitioned cache query metrics.
+ * Apache Kafka streamer tests.
  */
-public class CachePartitionedQueryMetricsSelfTest extends CacheAbstractQueryMetricsSelfTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        cacheMode = PARTITIONED;
+public class IgniteKafkaStreamerSelfTestSuite extends TestSuite {
+    /**
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Apache Kafka streamer Test Suite");
 
-        super.beforeTest();
+        suite.addTest(new TestSuite(KafkaIgniteStreamerSelfTest.class));
+
+        return suite;
     }
 }

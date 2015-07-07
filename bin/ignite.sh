@@ -71,7 +71,11 @@ RESTART_SUCCESS_OPT="-DIGNITE_SUCCESS_FILE=${RESTART_SUCCESS_FILE}"
 #
 # You can specify IGNITE_JMX_PORT environment variable for overriding automatically found JMX port
 #
-findAvailableJmxPort
+# This is executed when -nojmx is not specified
+#
+if [ "${NOJMX}" == "0" ] ; then
+    findAvailableJmxPort
+fi
 
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`
