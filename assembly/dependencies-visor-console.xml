@@ -46,6 +46,11 @@
                     </fileSet>
 
                     <fileSet>
+                        <directory>${basedir}/target/licenses</directory>
+                        <outputDirectory>/licenses</outputDirectory>
+                    </fileSet>
+
+                    <fileSet>
                         <directory>target/libs</directory>
                         <outputDirectory>/visorcmd</outputDirectory>
                         <excludes>
@@ -93,6 +98,11 @@
                         <includes>
                             <include>licenses/**</include>
                         </includes>
+                    </fileSet>
+
+                    <fileSet>
+                        <directory>${basedir}/target/licenses</directory>
+                        <outputDirectory>/licenses</outputDirectory>
                     </fileSet>
 
                     <fileSet>

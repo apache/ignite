@@ -47,6 +47,10 @@
                         </includes>
                     </fileSet>
                     <fileSet>
+                        <directory>${basedir}/target/licenses</directory>
+                        <outputDirectory>/licenses</outputDirectory>
+                    </fileSet>
+                    <fileSet>
                         <directory>target/libs</directory>
                         <outputDirectory>/</outputDirectory>
                     </fileSet>
@@ -80,6 +84,10 @@
                             <include>README.txt</include>
                             <include>licenses/**</include>
                         </includes>
+                    </fileSet>
+                    <fileSet>
+                        <directory>${basedir}/target/licenses</directory>
+                        <outputDirectory>/licenses</outputDirectory>
                     </fileSet>
                     <fileSet>
                         <directory>target/libs</directory>
@@ -132,6 +140,10 @@
                             <include>README.txt</include>
                             <include>licenses/**</include>
                         </includes>
+                    </fileSet>
+                    <fileSet>
+                        <directory>${basedir}/target/licenses</directory>
+                        <outputDirectory>/licenses</outputDirectory>
                     </fileSet>
                     <fileSet>
                         <directory>target/libs</directory>
