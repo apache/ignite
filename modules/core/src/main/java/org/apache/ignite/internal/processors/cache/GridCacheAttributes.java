@@ -186,7 +186,10 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Transaction manager lookup class name.
+     * @deprecated Transaction manager lookup must be configured in 
+     *  {@link TransactionConfiguration#getTxManagerLookupClassName()}.
      */
+    @Deprecated
     public String transactionManagerLookupClassName() {
         return ccfg.getTransactionManagerLookupClassName();
     }

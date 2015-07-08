@@ -30,35 +30,12 @@ public class Person1 implements Serializable {
     private int val1;
 
     /**
-     * Empty constructor.
-     */
-    public Person1() {
-        // No-op.
-    }
-
-    /**
      * Constructs.
      *
-     * @param val1 Indexed value.
+     * @param val Indexed value.
      */
-    public Person1(int val1) {
-        this.val1 = val1;
-    }
-
-    /**
-     * @return Get value.
-     */
-    public int getVal1() {
-        return val1;
-    }
-
-    /**
-     * Set value.
-     *
-     * @param val1 Value.
-     */
-    public void setVal1(int val1) {
-        this.val1 = val1;
+    public Person1(int val) {
+        this.val1 = val;
     }
 
     /** {@inheritDoc} */
