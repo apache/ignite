@@ -1483,23 +1483,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isSqlType(Class<?> cls) {
-        switch (DBTypeEnum.fromClass(cls)) {
-            case OTHER:
-            case ARRAY:
-                return false;
-
-            default:
-                return true;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isGeometryClass(Class<?> cls) {
-        return DataType.isGeometryClass(cls);
-    }
-
     /**
      * Enum that helps to map java types to database types.
      */
@@ -1584,8 +1567,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             map.put(Timestamp.class, TIMESTAMP);
             map.put(java.util.Date.class, TIMESTAMP);
             map.put(java.sql.Date.class, DATE);
-            map.put(char.class, CHAR);
-            map.put(Character.class, CHAR);
             map.put(String.class, VARCHAR);
             map.put(UUID.class, UUID);
             map.put(byte[].class, BINARY);

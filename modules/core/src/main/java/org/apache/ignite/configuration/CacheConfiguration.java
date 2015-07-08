@@ -25,6 +25,9 @@ import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
@@ -33,7 +36,11 @@ import org.jetbrains.annotations.*;
 import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
+import java.lang.reflect.*;
 import java.util.*;
+
+import static org.apache.ignite.internal.processors.query.GridQueryIndexType.*;
+import static org.apache.ignite.internal.processors.query.GridQueryProcessor.*;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
@@ -298,7 +305,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private boolean sqlEscapeAll;
 
     /** */
-    private Class<?>[] indexedTypes;
+    private transient Class<?>[] indexedTypes;
 
     /** */
     private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
@@ -1507,7 +1514,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setTypeMetadata(Collection<CacheTypeMetadata> typeMeta) {
-        this.typeMeta = typeMeta;
+        if (this.typeMeta == null)
+            this.typeMeta = new ArrayList<>(typeMeta);
+        else if (indexedTypes != null)
+            this.typeMeta.addAll(typeMeta);
+        else
+            throw new CacheException("Type metadata can be set only once.");
 
         return this;
     }
@@ -1662,21 +1674,37 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setIndexedTypes(Class<?>... indexedTypes) {
-        A.ensure(indexedTypes == null || (indexedTypes.length & 1) == 0,
+        A.notNull(indexedTypes, "indexedTypes");
+
+        int len = indexedTypes.length;
+
+        A.ensure(len > 0, "Array of indexed types can not be empty.");
+        A.ensure((len & 1) == 0,
             "Number of indexed types is expected to be even. Refer to method javadoc for details.");
 
-        if (indexedTypes != null) {
-            int len = indexedTypes.length;
+        if (this.indexedTypes != null)
+            throw new CacheException("Indexed types can be set only once.");
 
-            Class<?>[] newIndexedTypes = new Class<?>[len];
+        Class<?>[] newIndexedTypes = new Class<?>[len];
 
-            for (int i = 0; i < len; i++)
-                newIndexedTypes[i] = U.box(indexedTypes[i]);
+        for (int i = 0; i < len; i++) {
+            if (indexedTypes[i] == null)
+                throw new NullPointerException("Indexed types array contains null at index: " + i);
 
-            this.indexedTypes = newIndexedTypes;
+            newIndexedTypes[i] = U.box(indexedTypes[i]);
         }
-        else
-            this.indexedTypes = null;
+
+        if (typeMeta == null)
+            typeMeta = new ArrayList<>();
+
+        for (int i = 0; i < len; i += 2) {
+            Class<?> keyCls = newIndexedTypes[i];
+            Class<?> valCls = newIndexedTypes[i + 1];
+
+            TypeDescriptor desc = processKeyAndValueClasses(keyCls, valCls);
+
+            typeMeta.add(convert(desc));
+        }
 
         return this;
     }
@@ -1774,6 +1802,243 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         return this;
     }
 
+    /**
+     * @param desc Type descriptor.
+     * @return Type metadata.
+     */
+    private static CacheTypeMetadata convert(TypeDescriptor desc) {
+        CacheTypeMetadata meta = new CacheTypeMetadata();
+
+        // Key and val types.
+        meta.setKeyType(desc.keyClass());
+        meta.setValueType(desc.valueClass());
+
+        // Query fields.
+        Map<String, Class<?>> qryFields = new HashMap<>();
+
+        for (ClassProperty prop : desc.props.values())
+            qryFields.put(prop.fullName(), mask(prop.type()));
+
+        meta.setQueryFields(qryFields);
+
+        // Indexes.
+        Collection<String> txtFields = new ArrayList<>();
+        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = new HashMap<>();
+
+        for (Map.Entry<String,GridQueryIndexDescriptor> idxEntry : desc.indexes().entrySet()) {
+            GridQueryIndexDescriptor idx = idxEntry.getValue();
+
+            if (idx.type() == FULLTEXT) {
+                assert txtFields.isEmpty();
+
+                txtFields.addAll(idx.fields());
+            }
+            else {
+                LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> grp = new LinkedHashMap<>();
+
+                for (String fieldName : idx.fields()) {
+                    Class<?> cls;
+
+                    if (_VAL.equals(fieldName))
+                        cls = desc.valueClass();
+                    else {
+                        ClassProperty prop = desc.props.get(fieldName);
+
+                        assert prop != null : fieldName;
+
+                        cls = prop.type();
+                    }
+
+                    cls = mask(cls);
+
+                    grp.put(fieldName, new IgniteBiTuple<Class<?>, Boolean>(cls, idx.descending(fieldName)));
+                }
+
+                grps.put(idxEntry.getKey(), grp);
+            }
+        }
+
+        meta.setGroups(grps);
+
+        if (desc.valueTextIndex())
+            txtFields.add(_VAL);
+
+        if (!txtFields.isEmpty())
+            meta.setTextFields(txtFields);
+
+        // Aliases.
+        Map<String,String> aliases = null;
+
+        for (ClassProperty prop : desc.props.values()) {
+            while (prop != null) {
+                if (!F.isEmpty(prop.alias)) {
+                    if (aliases == null)
+                        aliases = new HashMap<>();
+
+                    aliases.put(prop.fullName(), prop.alias);
+                }
+
+                prop = prop.parent;
+            }
+        }
+
+        meta.setAliases(aliases);
+
+        return meta;
+    }
+
+    /**
+     * @param cls Class.
+     * @return Masked class.
+     */
+    private static Class<?> mask(Class<?> cls) {
+        assert cls != null;
+
+        return isSqlType(cls) ? cls : Object.class;
+    }
+
+    /**
+     * @param keyCls Key class.
+     * @param valCls Value class.
+     * @return Type descriptor.
+     */
+    private static TypeDescriptor processKeyAndValueClasses(
+        Class<?> keyCls,
+        Class<?> valCls
+    ) {
+        TypeDescriptor d = new TypeDescriptor();
+
+        d.keyClass(keyCls);
+        d.valueClass(valCls);
+
+        processAnnotationsInClass(true, d.keyCls, d, null);
+        processAnnotationsInClass(false, d.valCls, d, null);
+
+        return d;
+    }
+
+    /**
+     * Process annotations for class.
+     *
+     * @param key If given class relates to key.
+     * @param cls Class.
+     * @param type Type descriptor.
+     * @param parent Parent in case of embeddable.
+     */
+    private static void processAnnotationsInClass(boolean key, Class<?> cls, TypeDescriptor type,
+        @Nullable ClassProperty parent) {
+        if (U.isJdk(cls) || isGeometryClass(cls)) {
+            if (parent == null && !key && isSqlType(cls)) { // We have to index primitive _val.
+                String idxName = _VAL + "_idx";
+
+                type.addIndex(idxName, isGeometryClass(cls) ? GEO_SPATIAL : SORTED);
+
+                type.addFieldToIndex(idxName, _VAL, 0, false);
+            }
+
+            return;
+        }
+
+        if (parent != null && parent.knowsClass(cls))
+            throw new CacheException("Recursive reference found in type: " + cls.getName());
+
+        if (parent == null) { // Check class annotation at top level only.
+            QueryTextField txtAnnCls = cls.getAnnotation(QueryTextField.class);
+
+            if (txtAnnCls != null)
+                type.valueTextIndex(true);
+
+            QueryGroupIndex grpIdx = cls.getAnnotation(QueryGroupIndex.class);
+
+            if (grpIdx != null)
+                type.addIndex(grpIdx.name(), SORTED);
+
+            QueryGroupIndex.List grpIdxList = cls.getAnnotation(QueryGroupIndex.List.class);
+
+            if (grpIdxList != null && !F.isEmpty(grpIdxList.value())) {
+                for (QueryGroupIndex idx : grpIdxList.value())
+                    type.addIndex(idx.name(), SORTED);
+            }
+        }
+
+        for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+            for (Field field : c.getDeclaredFields()) {
+                QuerySqlField sqlAnn = field.getAnnotation(QuerySqlField.class);
+                QueryTextField txtAnn = field.getAnnotation(QueryTextField.class);
+
+                if (sqlAnn != null || txtAnn != null) {
+                    ClassProperty prop = new ClassProperty(field);
+
+                    prop.parent(parent);
+
+                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
+
+                    type.addProperty(prop, true);
+                }
+            }
+
+            for (Method mtd : c.getDeclaredMethods()) {
+                QuerySqlField sqlAnn = mtd.getAnnotation(QuerySqlField.class);
+                QueryTextField txtAnn = mtd.getAnnotation(QueryTextField.class);
+
+                if (sqlAnn != null || txtAnn != null) {
+                    if (mtd.getParameterTypes().length != 0)
+                        throw new CacheException("Getter with QuerySqlField " +
+                            "annotation cannot have parameters: " + mtd);
+
+                    ClassProperty prop = new ClassProperty(mtd);
+
+                    prop.parent(parent);
+
+                    processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
+
+                    type.addProperty(prop, true);
+                }
+            }
+        }
+    }
+
+    /**
+     * Processes annotation at field or method.
+     *
+     * @param key If given class relates to key.
+     * @param sqlAnn SQL annotation, can be {@code null}.
+     * @param txtAnn H2 text annotation, can be {@code null}.
+     * @param cls Class of field or return type for method.
+     * @param prop Current property.
+     * @param desc Class description.
+     */
+    private static void processAnnotation(boolean key, QuerySqlField sqlAnn, QueryTextField txtAnn,
+        Class<?> cls, ClassProperty prop, TypeDescriptor desc) {
+        if (sqlAnn != null) {
+            processAnnotationsInClass(key, cls, desc, prop);
+
+            if (!sqlAnn.name().isEmpty())
+                prop.alias(sqlAnn.name());
+
+            if (sqlAnn.index()) {
+                String idxName = prop.alias() + "_idx";
+
+                desc.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+
+                desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
+            }
+
+            if (!F.isEmpty(sqlAnn.groups())) {
+                for (String group : sqlAnn.groups())
+                    desc.addFieldToIndex(group, prop.fullName(), 0, false);
+            }
+
+            if (!F.isEmpty(sqlAnn.orderedGroups())) {
+                for (QuerySqlField.Group idx : sqlAnn.orderedGroups())
+                    desc.addFieldToIndex(idx.name(), prop.fullName(), idx.order(), idx.descending());
+            }
+        }
+
+        if (txtAnn != null)
+            desc.addFieldToTextIndex(prop.fullName());
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheConfiguration.class, this);
@@ -1793,10 +2058,318 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            if (obj == null)
-                return false;
+            return obj != null && obj.getClass().equals(this.getClass());
+        }
+    }
 
-            return obj.getClass().equals(this.getClass());
+    /**
+     * Descriptor of type.
+     */
+    private static class TypeDescriptor {
+        /** Value field names and types with preserved order. */
+        @GridToStringInclude
+        private final Map<String, Class<?>> fields = new LinkedHashMap<>();
+
+        /** */
+        @GridToStringExclude
+        private final Map<String, ClassProperty> props = new HashMap<>();
+
+        /** */
+        @GridToStringInclude
+        private final Map<String, IndexDescriptor> indexes = new HashMap<>();
+
+        /** */
+        private IndexDescriptor fullTextIdx;
+
+        /** */
+        private Class<?> keyCls;
+
+        /** */
+        private Class<?> valCls;
+
+        /** */
+        private boolean valTextIdx;
+
+        /**
+         * @return Indexes.
+         */
+        public Map<String, GridQueryIndexDescriptor> indexes() {
+            return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(indexes);
+        }
+
+        /**
+         * Adds index.
+         *
+         * @param idxName Index name.
+         * @param type Index type.
+         * @return Index descriptor.
+         */
+        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) {
+            IndexDescriptor idx = new IndexDescriptor(type);
+
+            if (indexes.put(idxName, idx) != null)
+                throw new CacheException("Index with name '" + idxName + "' already exists.");
+
+            return idx;
+        }
+
+        /**
+         * Adds field to index.
+         *
+         * @param idxName Index name.
+         * @param field Field name.
+         * @param orderNum Fields order number in index.
+         * @param descending Sorting order.
+         */
+        public void addFieldToIndex(String idxName, String field, int orderNum,
+            boolean descending) {
+            IndexDescriptor desc = indexes.get(idxName);
+
+            if (desc == null)
+                desc = addIndex(idxName, SORTED);
+
+            desc.addField(field, orderNum, descending);
+        }
+
+        /**
+         * Adds field to text index.
+         *
+         * @param field Field name.
+         */
+        public void addFieldToTextIndex(String field) {
+            if (fullTextIdx == null) {
+                fullTextIdx = new IndexDescriptor(FULLTEXT);
+
+                indexes.put(null, fullTextIdx);
+            }
+
+            fullTextIdx.addField(field, 0, false);
+        }
+
+        /**
+         * @return Value class.
+         */
+        public Class<?> valueClass() {
+            return valCls;
+        }
+
+        /**
+         * Sets value class.
+         *
+         * @param valCls Value class.
+         */
+        void valueClass(Class<?> valCls) {
+            this.valCls = valCls;
+        }
+
+        /**
+         * @return Key class.
+         */
+        public Class<?> keyClass() {
+            return keyCls;
+        }
+
+        /**
+         * Set key class.
+         *
+         * @param keyCls Key class.
+         */
+        void keyClass(Class<?> keyCls) {
+            this.keyCls = keyCls;
+        }
+
+        /**
+         * Adds property to the type descriptor.
+         *
+         * @param prop Property.
+         * @param failOnDuplicate Fail on duplicate flag.
+         */
+        public void addProperty(ClassProperty prop, boolean failOnDuplicate) {
+            String name = prop.fullName();
+
+            if (props.put(name, prop) != null && failOnDuplicate)
+                throw new CacheException("Property with name '" + name + "' already exists.");
+
+            fields.put(name, prop.type());
+        }
+
+        /**
+         * @return {@code true} If we need to have a fulltext index on value.
+         */
+        public boolean valueTextIndex() {
+            return valTextIdx;
+        }
+
+        /**
+         * Sets if this value should be text indexed.
+         *
+         * @param valTextIdx Flag value.
+         */
+        public void valueTextIndex(boolean valTextIdx) {
+            this.valTextIdx = valTextIdx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TypeDescriptor.class, this);
+        }
+    }
+
+    /**
+     * Index descriptor.
+     */
+    private static class IndexDescriptor implements GridQueryIndexDescriptor {
+        /** Fields sorted by order number. */
+        private final Collection<T2<String, Integer>> fields = new TreeSet<>(
+            new Comparator<T2<String, Integer>>() {
+                @Override public int compare(T2<String, Integer> o1, T2<String, Integer> o2) {
+                    if (o1.get2().equals(o2.get2())) // Order is equal, compare field names to avoid replace in Set.
+                        return o1.get1().compareTo(o2.get1());
+
+                    return o1.get2() < o2.get2() ? -1 : 1;
+                }
+            });
+
+        /** Fields which should be indexed in descending order. */
+        private Collection<String> descendings;
+
+        /** */
+        private final GridQueryIndexType type;
+
+        /**
+         * @param type Type.
+         */
+        private IndexDescriptor(GridQueryIndexType type) {
+            assert type != null;
+
+            this.type = type;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<String> fields() {
+            Collection<String> res = new ArrayList<>(fields.size());
+
+            for (T2<String, Integer> t : fields)
+                res.add(t.get1());
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean descending(String field) {
+            return descendings != null && descendings.contains(field);
+        }
+
+        /**
+         * Adds field to this index.
+         *
+         * @param field Field name.
+         * @param orderNum Field order number in this index.
+         * @param descending Sort order.
+         */
+        public void addField(String field, int orderNum, boolean descending) {
+            fields.add(new T2<>(field, orderNum));
+
+            if (descending) {
+                if (descendings == null)
+                    descendings  = new HashSet<>();
+
+                descendings.add(field);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridQueryIndexType type() {
+            return type;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(IndexDescriptor.class, this);
+        }
+    }
+
+    /**
+     * Description of type property.
+     */
+    private static class ClassProperty {
+        /** */
+        private final Member member;
+
+        /** */
+        private ClassProperty parent;
+
+        /** */
+        private String name;
+
+        /** */
+        private String alias;
+
+        /**
+         * Constructor.
+         *
+         * @param member Element.
+         */
+        ClassProperty(Member member) {
+            this.member = member;
+
+            name = member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
+                member.getName().substring(3) : member.getName();
+
+            ((AccessibleObject) member).setAccessible(true);
+        }
+
+        /**
+         * @param alias Alias.
+         */
+        public void alias(String alias) {
+            this.alias = alias;
+        }
+
+        /**
+         * @return Alias.
+         */
+        String alias() {
+            return F.isEmpty(alias) ? name : alias;
+        }
+
+        /**
+         * @return Type.
+         */
+        public Class<?> type() {
+            return member instanceof Field ? ((Field)member).getType() : ((Method)member).getReturnType();
+        }
+
+        /**
+         * @param parent Parent property if this is embeddable element.
+         */
+        public void parent(ClassProperty parent) {
+            this.parent = parent;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ClassProperty.class, this);
+        }
+
+        /**
+         * @param cls Class.
+         * @return {@code true} If this property or some parent relates to member of the given class.
+         */
+        public boolean knowsClass(Class<?> cls) {
+            return member.getDeclaringClass() == cls || (parent != null && parent.knowsClass(cls));
+        }
+
+        /**
+         * @return Full name with all parents in dot notation.
+         */
+        public String fullName() {
+            assert name != null;
+
+            if (parent == null)
+                return name;
+
+            return parent.fullName() + '.' + name;
         }
     }
 }

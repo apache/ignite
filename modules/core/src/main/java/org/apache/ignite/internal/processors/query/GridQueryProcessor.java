@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -42,6 +41,8 @@ import org.jsr166.*;
 
 import javax.cache.*;
 import java.lang.reflect.*;
+import java.math.*;
+import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -54,6 +55,31 @@ import static org.apache.ignite.internal.processors.query.GridQueryProcessor.Pro
  * Indexing processor.
  */
 public class GridQueryProcessor extends GridProcessorAdapter {
+    /** */
+    public static final String _VAL = "_val";
+
+    /** */
+    private static final Class<?> GEOMETRY_CLASS = U.classForName("com.vividsolutions.jts.geom.Geometry", null);
+
+    /** */
+    private static Set<Class<?>> SQL_TYPES = new HashSet<>(F.<Class<?>>asList(
+        Integer.class,
+        Boolean.class,
+        Byte.class,
+        Short.class,
+        Long.class,
+        BigDecimal.class,
+        Double.class,
+        Float.class,
+        Time.class,
+        Timestamp.class,
+        java.util.Date.class,
+        java.sql.Date.class,
+        String.class,
+        UUID.class,
+        byte[].class
+    ));
+
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;
 
@@ -130,12 +156,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     TypeDescriptor desc = new TypeDescriptor();
 
+                    // Key and value classes still can be available if they are primitive or JDK part.
+                    // We need that to set correct types for _key and _val columns.
+                    Class<?> keyCls = U.classForName(meta.getKeyType(), null);
+                    Class<?> valCls = U.classForName(meta.getValueType(), null);
                     // TODO IGNITE-950 need class to check enableFieldsIndexing, but class may be absent on server node.
                     // TODO use old code if class is available on server node. CacheIndexedObjectImpl.
-                    Class<?> keyCls = meta.getKeyType() != null ? U.classForName(meta.getKeyType(), null) : null;
-                    Class<?> valCls = meta.getValueType() != null ? U.classForName(meta.getValueType(), null) : null;
 
-                    desc.name(valCls != null ? typeName(valCls) : meta.getValueType());
+                    desc.name(meta.getSimpleValueType());
 
                     desc.valueClass(valCls != null ? valCls : Object.class);
                     desc.keyClass(keyCls != null ? keyCls : Object.class);
@@ -165,21 +193,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
 
-            Class<?>[] clss = ccfg.getIndexedTypes();
-
-            if (!F.isEmpty(clss)) {
-                for (int i = 0; i < clss.length; i += 2) {
-                    Class<?> keyCls = clss[i];
-                    Class<?> valCls = clss[i + 1];
-
-                    TypeDescriptor desc = processKeyAndValueClasses(keyCls, valCls);
-
-                    addTypeByName(ccfg, desc);
-                    types.put(new TypeId(ccfg.getName(), valCls), desc);
-
-                    desc.registered(idx.registerType(ccfg.getName(), desc));
-                }
-            }
+            // Indexed types must be translated to CacheTypeMetadata in CacheConfiguration.
         }
         catch (IgniteCheckedException | RuntimeException e) {
             idx.unregisterCache(ccfg);
@@ -197,33 +211,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (typesByName.putIfAbsent(new TypeName(ccfg.getName(), desc.name()), desc) != null)
             throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
                 "in cache '" + ccfg.getName() + "'.");
-    }
-
-    /**
-     * @param keyCls Key class.
-     * @param valCls Value class.
-     * @return Type descriptor.
-     * @throws IgniteCheckedException If failed.
-     */
-    private TypeDescriptor processKeyAndValueClasses(
-        Class<?> keyCls,
-        Class<?> valCls
-    )
-        throws IgniteCheckedException {
-        TypeDescriptor d = new TypeDescriptor();
-
-        d.keyClass(keyCls);
-        d.valueClass(valCls);
-
-        processAnnotationsInClass(true, d.keyCls, d, null);
-
-        String valTypeName = typeName(valCls);
-
-        d.name(valTypeName);
-
-        processAnnotationsInClass(false, d.valCls, d, null);
-
-        return d;
     }
 
     /** {@inheritDoc} */
@@ -809,6 +796,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Checks if the given class can be mapped to a simple SQL type.
+     *
+     * @param cls Class.
+     * @return {@code true} If can.
+     */
+    public static boolean isSqlType(Class<?> cls) {
+        cls = U.box(cls);
+
+        return SQL_TYPES.contains(cls) || isGeometryClass(cls);
+    }
+
+    /**
+     * Checks if the given class is GEOMETRY.
+     *
+     * @param cls Class.
+     * @return {@code true} If this is geometry.
+     */
+    public static boolean isGeometryClass(Class<?> cls) {
+        return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
+    }
+
+    /**
      * Gets type name by class.
      *
      * @param cls Class.
@@ -1014,130 +1023,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Process annotations for class.
-     *
-     * @param key If given class relates to key.
-     * @param cls Class.
-     * @param type Type descriptor.
-     * @param parent Parent in case of embeddable.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private void processAnnotationsInClass(boolean key, Class<?> cls, TypeDescriptor type,
-        @Nullable ClassProperty parent) throws IgniteCheckedException {
-        if (U.isJdk(cls) || idx.isGeometryClass(cls)) {
-            if (parent == null && !key && idx.isSqlType(cls) ) { // We have to index primitive _val.
-                String idxName = "_val_idx";
-
-                type.addIndex(idxName, idx.isGeometryClass(cls) ? GEO_SPATIAL : SORTED);
-
-                type.addFieldToIndex(idxName, "_VAL", 0, false);
-            }
-
-            return;
-        }
-
-        if (parent != null && parent.knowsClass(cls))
-            throw new IgniteCheckedException("Recursive reference found in type: " + cls.getName());
-
-        if (parent == null) { // Check class annotation at top level only.
-            QueryTextField txtAnnCls = cls.getAnnotation(QueryTextField.class);
-
-            if (txtAnnCls != null)
-                type.valueTextIndex(true);
-
-            QueryGroupIndex grpIdx = cls.getAnnotation(QueryGroupIndex.class);
-
-            if (grpIdx != null)
-                type.addIndex(grpIdx.name(), SORTED);
-
-            QueryGroupIndex.List grpIdxList = cls.getAnnotation(QueryGroupIndex.List.class);
-
-            if (grpIdxList != null && !F.isEmpty(grpIdxList.value())) {
-                for (QueryGroupIndex idx : grpIdxList.value())
-                    type.addIndex(idx.name(), SORTED);
-            }
-        }
-
-        for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-            for (Field field : c.getDeclaredFields()) {
-                QuerySqlField sqlAnn = field.getAnnotation(QuerySqlField.class);
-                QueryTextField txtAnn = field.getAnnotation(QueryTextField.class);
-
-                if (sqlAnn != null || txtAnn != null) {
-                    ClassProperty prop = new ClassProperty(field, key);
-
-                    prop.parent(parent);
-
-                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
-
-                    type.addProperty(prop, true);
-                }
-            }
-
-            for (Method mtd : c.getDeclaredMethods()) {
-                QuerySqlField sqlAnn = mtd.getAnnotation(QuerySqlField.class);
-                QueryTextField txtAnn = mtd.getAnnotation(QueryTextField.class);
-
-                if (sqlAnn != null || txtAnn != null) {
-                    if (mtd.getParameterTypes().length != 0)
-                        throw new IgniteCheckedException("Getter with QuerySqlField " +
-                            "annotation cannot have parameters: " + mtd);
-
-                    ClassProperty prop = new ClassProperty(mtd, key);
-
-                    prop.parent(parent);
-
-                    processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
-
-                    type.addProperty(prop, true);
-                }
-            }
-        }
-    }
-
-    /**
-     * Processes annotation at field or method.
-     *
-     * @param key If given class relates to key.
-     * @param sqlAnn SQL annotation, can be {@code null}.
-     * @param txtAnn H2 text annotation, can be {@code null}.
-     * @param cls Class of field or return type for method.
-     * @param prop Current property.
-     * @param desc Class description.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private void processAnnotation(boolean key, QuerySqlField sqlAnn, QueryTextField txtAnn,
-        Class<?> cls, ClassProperty prop, TypeDescriptor desc) throws IgniteCheckedException {
-        if (sqlAnn != null) {
-            processAnnotationsInClass(key, cls, desc, prop);
-
-            if (!sqlAnn.name().isEmpty())
-                prop.name(sqlAnn.name());
-
-            if (sqlAnn.index()) {
-                String idxName = prop.name() + "_idx";
-
-                desc.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
-
-                desc.addFieldToIndex(idxName, prop.name(), 0, sqlAnn.descending());
-            }
-
-            if (!F.isEmpty(sqlAnn.groups())) {
-                for (String group : sqlAnn.groups())
-                    desc.addFieldToIndex(group, prop.name(), 0, false);
-            }
-
-            if (!F.isEmpty(sqlAnn.orderedGroups())) {
-                for (QuerySqlField.Group idx : sqlAnn.orderedGroups())
-                    desc.addFieldToIndex(idx.name(), prop.name(), idx.order(), idx.descending());
-            }
-        }
-
-        if (txtAnn != null)
-            desc.addFieldToTextIndex(prop.name());
-    }
-
-    /**
      * Processes declarative metadata for class.
      *
      * @param meta Type metadata.
@@ -1146,55 +1031,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private void processClassMeta(CacheTypeMetadata meta, TypeDescriptor d)
         throws IgniteCheckedException {
+        Map<String,String> aliases = meta.getAliases();
+
+        if (aliases == null)
+            aliases = Collections.emptyMap();
+
         Class<?> keyCls = d.keyClass();
         Class<?> valCls = d.valueClass();
 
         assert keyCls != null;
         assert valCls != null;
 
-        for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            ClassProperty prop = buildClassProperty(
-                keyCls,
-                valCls,
-                entry.getKey(),
-                entry.getValue());
+        for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet())
+            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.ASC, null, aliases);
 
-            d.addProperty(prop, false);
+        for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet())
+            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.DESC, null, aliases);
 
-            String idxName = prop.name() + "_idx";
-
-            d.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
-
-            d.addFieldToIndex(idxName, prop.name(), 0, false);
-        }
-
-        for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            ClassProperty prop = buildClassProperty(
-                keyCls,
-                valCls,
-                entry.getKey(),
-                entry.getValue());
-
-            d.addProperty(prop, false);
-
-            String idxName = prop.name() + "_idx";
-
-            d.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
-
-            d.addFieldToIndex(idxName, prop.name(), 0, true);
-        }
-
-        for (String txtIdx : meta.getTextFields()) {
-            ClassProperty prop = buildClassProperty(
-                keyCls,
-                valCls,
-                txtIdx,
-                String.class);
-
-            d.addProperty(prop, false);
-
-            d.addFieldToTextIndex(prop.name());
-        }
+        for (String txtField : meta.getTextFields())
+            addToIndex(d, keyCls, valCls, txtField, String.class, 0, IndexType.TEXT, null, aliases);
 
         Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
 
@@ -1207,17 +1062,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 int order = 0;
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    ClassProperty prop = buildClassProperty(
-                        keyCls,
-                        valCls,
-                        idxField.getKey(),
-                        idxField.getValue().get1());
-
-                    d.addProperty(prop, false);
-
                     Boolean descending = idxField.getValue().get2();
 
-                    d.addFieldToIndex(idxName, prop.name(), order, descending != null && descending);
+                    if (descending == null)
+                        descending = false;
+
+                    addToIndex(d, keyCls, valCls, idxField.getKey(), idxField.getValue().get1(), order,
+                        descending ? IndexType.DESC : IndexType.ASC, idxName, aliases);
 
                     order++;
                 }
@@ -1229,14 +1080,73 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 keyCls,
                 valCls,
                 entry.getKey(),
-                entry.getValue());
+                entry.getValue(),
+                aliases);
 
             d.addProperty(prop, false);
         }
     }
 
     /**
-     * Processes declarative metadata.
+     * @param d Type descriptor.
+     * @param keyCls Key class.
+     * @param valCls Value class.
+     * @param pathStr Path string.
+     * @param resType Result type.
+     * @param idxOrder Order number in index or {@code -1} if no need to index.
+     * @param idxType Index type.
+     * @param idxName Index name.
+     * @param aliases Aliases.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void addToIndex(
+        TypeDescriptor d,
+        Class<?> keyCls,
+        Class<?> valCls,
+        String pathStr,
+        Class<?> resType,
+        int idxOrder,
+        IndexType idxType,
+        String idxName,
+        Map<String,String> aliases
+    ) throws IgniteCheckedException {
+        String propName;
+        Class<?> propCls;
+
+        if (_VAL.equals(pathStr)) {
+            propName = _VAL;
+            propCls = valCls;
+        }
+        else {
+            ClassProperty prop = buildClassProperty(
+                keyCls,
+                valCls,
+                pathStr,
+                resType,
+                aliases);
+
+            d.addProperty(prop, false);
+
+            propName = prop.name();
+            propCls = prop.type();
+        }
+
+        if (idxType != null) {
+            if (idxName == null)
+                idxName = propName + "_idx";
+
+            if (idxOrder == 0) // Add index only on the first field.
+                d.addIndex(idxName, isGeometryClass(propCls) ? GEO_SPATIAL : SORTED);
+
+            if (idxType == IndexType.TEXT)
+                d.addFieldToTextIndex(propName);
+            else
+                d.addFieldToIndex(idxName, propName, idxOrder, idxType == IndexType.DESC);
+        }
+    }
+
+    /**
+     * Processes declarative metadata for portable object.
      *
      * @param meta Declared metadata.
      * @param d Type descriptor.
@@ -1247,38 +1157,43 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         assert propType != CLASS_PROPERTY;
 
+        Map<String,String> aliases = meta.getAliases();
+
+        if (aliases == null)
+            aliases = Collections.emptyMap();
+
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
             Property prop = propType == PORTABLE_PROPERTY ?
-                buildPortableProperty(entry.getKey(), entry.getValue()) :
-                buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
+                buildPortableProperty(entry.getKey(), entry.getValue(), aliases) :
+                buildIndexedFieldsProperty(entry.getKey(), entry.getValue(), aliases);
 
             d.addProperty(prop, false);
 
             String idxName = prop.name() + "_idx";
 
-            d.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
 
             d.addFieldToIndex(idxName, prop.name(), 0, false);
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
             Property prop = propType == PORTABLE_PROPERTY ?
-                buildPortableProperty(entry.getKey(), entry.getValue()) :
-                buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
+                buildPortableProperty(entry.getKey(), entry.getValue(), aliases) :
+                buildIndexedFieldsProperty(entry.getKey(), entry.getValue(), aliases);
 
             d.addProperty(prop, false);
 
             String idxName = prop.name() + "_idx";
 
-            d.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
 
             d.addFieldToIndex(idxName, prop.name(), 0, true);
         }
 
         for (String txtIdx : meta.getTextFields()) {
             Property prop = propType == PORTABLE_PROPERTY ?
-                buildPortableProperty(txtIdx, String.class) :
-                buildIndexedFieldsProperty(txtIdx, String.class);
+                buildPortableProperty(txtIdx, String.class, aliases) :
+                buildIndexedFieldsProperty(txtIdx, String.class, aliases);
 
             d.addProperty(prop, false);
 
@@ -1297,8 +1212,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
                     Property prop = propType == PORTABLE_PROPERTY ?
-                        buildPortableProperty(idxField.getKey(), idxField.getValue().get1()) :
-                        buildIndexedFieldsProperty(idxField.getKey(), idxField.getValue().get1());
+                        buildPortableProperty(idxField.getKey(), idxField.getValue().get1(), aliases) :
+                        buildIndexedFieldsProperty(idxField.getKey(), idxField.getValue().get1(), aliases);
 
                     d.addProperty(prop, false);
 
@@ -1313,8 +1228,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
             Property prop = propType == PORTABLE_PROPERTY ?
-                buildPortableProperty(entry.getKey(), entry.getValue()) :
-                buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
+                buildPortableProperty(entry.getKey(), entry.getValue(), aliases) :
+                buildIndexedFieldsProperty(entry.getKey(), entry.getValue(), aliases);
 
             if (!d.props.containsKey(prop.name()))
                 d.addProperty(prop, false);
@@ -1327,15 +1242,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param pathStr String representing path to the property. May contains dots '.' to identify
      *      nested fields.
      * @param resType Result type.
+     * @param aliases Aliases.
      * @return Portable property.
      */
-    private PortableProperty buildPortableProperty(String pathStr, Class<?> resType) {
+    private PortableProperty buildPortableProperty(String pathStr, Class<?> resType, Map<String,String> aliases) {
         String[] path = pathStr.split("\\.");
 
         PortableProperty res = null;
 
-        for (String prop : path)
-            res = new PortableProperty(prop, res, resType);
+        StringBuilder fullName = new StringBuilder();
+
+        for (String prop : path) {
+            if (fullName.length() != 0)
+                fullName.append('.');
+
+            fullName.append(prop);
+
+            String alias = aliases.get(fullName.toString());
+
+            res = new PortableProperty(prop, res, resType, alias);
+        }
 
         return res;
     }
@@ -1345,19 +1271,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param valCls Value class.
      * @param pathStr Path string.
      * @param resType Result type.
+     * @param aliases Aliases.
      * @return Class property.
      * @throws IgniteCheckedException If failed.
      */
-    private static ClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr, Class<?> resType)
-        throws IgniteCheckedException {
+    private static ClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr, Class<?> resType,
+        Map<String,String> aliases) throws IgniteCheckedException {
         ClassProperty res = buildClassProperty(
             true,
             keyCls,
             pathStr,
-            resType);
+            resType,
+            aliases);
 
         if (res == null) // We check key before value consistently with PortableProperty.
-            res = buildClassProperty(false, valCls, pathStr, resType);
+            res = buildClassProperty(false, valCls, pathStr, resType, aliases);
 
         if (res == null)
             throw new IgniteCheckedException("Failed to initialize property '" + pathStr + "' for " +
@@ -1372,16 +1300,27 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cls Source type class.
      * @param pathStr String representing path to the property. May contains dots '.' to identify nested fields.
      * @param resType Expected result type.
+     * @param aliases Aliases.
      * @return Property instance corresponding to the given path.
      * @throws IgniteCheckedException If property cannot be created.
      */
-    static ClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType)
+    static ClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
+        Map<String,String> aliases)
         throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         ClassProperty res = null;
 
+        StringBuilder fullName = new StringBuilder();
+
         for (String prop : path) {
+            if (fullName.length() != 0)
+                fullName.append('.');
+
+            fullName.append(prop);
+
+            String alias = aliases.get(fullName.toString());
+
             ClassProperty tmp;
 
             try {
@@ -1391,11 +1330,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
 
-                tmp = new ClassProperty(cls.getMethod(bld.toString()), key);
+                tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias);
             }
             catch (NoSuchMethodException ignore) {
                 try {
-                    tmp = new ClassProperty(cls.getDeclaredField(prop), key);
+                    tmp = new ClassProperty(cls.getDeclaredField(prop), key, alias);
                 }
                 catch (NoSuchFieldException ignored) {
                     return null;
@@ -1578,11 +1517,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          *
          * @param member Element.
          */
-        ClassProperty(Member member, boolean key) {
+        ClassProperty(Member member, boolean key, String name) {
             this.member = member;
             this.key = key;
 
-            name = member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
+            this.name = !F.isEmpty(name) ? name :
+                member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
                 member.getName().substring(3) : member.getName();
 
             ((AccessibleObject) member).setAccessible(true);
@@ -1615,13 +1555,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             catch (Exception e) {
                 throw new IgniteCheckedException(e);
             }
-        }
-
-        /**
-         * @param name Property name.
-         */
-        public void name(String name) {
-            this.name = name;
         }
 
         /** {@inheritDoc} */
@@ -1662,6 +1595,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** Property name. */
         private String propName;
 
+        /** */
+        private String alias;
+
         /** Parent property. */
         private PortableProperty parent;
 
@@ -1678,8 +1614,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param parent Parent property.
          * @param type Result type.
          */
-        private PortableProperty(String propName, PortableProperty parent, Class<?> type) {
+        private PortableProperty(String propName, PortableProperty parent, Class<?> type, String alias) {
             this.propName = propName;
+            this.alias = F.isEmpty(alias) ? propName : alias;
             this.parent = parent;
             this.type = type;
         }
@@ -1724,7 +1661,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public String name() {
-            return propName;
+            return alias;
         }
 
         /** {@inheritDoc} */
@@ -2198,6 +2135,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @Override public String toString() {
             return S.toString(TypeName.class, this);
         }
+    }
+
+    /**
+     * The way to index.
+     */
+    private enum IndexType {
+        ASC, DESC, TEXT
     }
 
     /**
