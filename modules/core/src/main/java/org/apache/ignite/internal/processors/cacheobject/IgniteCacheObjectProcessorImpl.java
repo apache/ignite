@@ -335,6 +335,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isIndexedObject(Object obj) {
+        return obj instanceof CacheIndexedObjectImpl;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isPortableEnabled() {
         return false;
     }

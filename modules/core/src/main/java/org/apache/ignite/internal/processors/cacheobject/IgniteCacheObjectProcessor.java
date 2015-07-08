@@ -77,6 +77,14 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public boolean isPortableObject(Object obj);
 
     /**
+     * Checks whether objects supports index fields extraction.
+     *
+     * @param obj Object to check.
+     * @return {@code True} if object is indexed object, {@code false} otherwise.
+     */
+    public boolean isIndexedObject(Object obj);
+
+    /**
      * Checks whether given class is portable.
      *
      * @return {@code true} If portable objects are enabled.
