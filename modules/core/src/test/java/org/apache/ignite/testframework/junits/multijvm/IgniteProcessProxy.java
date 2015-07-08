@@ -101,7 +101,7 @@ public class IgniteProcessProxy implements IgniteEx {
             System.getProperty("surefire.test.class.path")
         );
 
-        assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node with id=" + id + " didn't join.";
+        assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node has not joined [id=" + id + ']';
 
         gridProxies.put(cfg.getGridName(), this);
     }
@@ -117,7 +117,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
         /**
          * @param id Id.
-         * @param rmtNodeStartedLatch Remotenode started latch.
+         * @param rmtNodeStartedLatch Remote node started latch.
          */
         NodeStartedListener(UUID id, CountDownLatch rmtNodeStartedLatch) {
             this.id = id;

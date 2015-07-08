@@ -1377,7 +1377,7 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * @param gridName Grid name.
-     * @return <code>True</code> if test was run in multy jvm mode and grid at another jvm.
+     * @return <code>True</code> if test was run in multi-JVM mode and grid at another jvm.
      */
     protected boolean isMultiJvmAndNodeIsRemote(String gridName) {
         return isMultiJvm() && !gridName.endsWith("0");
@@ -1512,7 +1512,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs job on remote jvm.
+     * Runs job on remote JVM.
      *
      * @param cache Cache.
      * @param job Job.
