@@ -129,7 +129,7 @@ public class IgniteNodeRunner {
     public static List<Integer> killAll() {
         jps();
 
-        X.println(">>>>> IgniteProcessProxy.killAll()");
+        X.println("***** IgniteProcessProxy.killAll() *****");
 
         IgniteProcessProxy.killAll();
 
@@ -139,7 +139,7 @@ public class IgniteNodeRunner {
 
         try {
             // TODO delete logging.
-            X.println(">>>>> IgniteNodeRunner.killAll");
+            X.println("***** IgniteNodeRunner.killAll *****");
 
             MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier((String)null));
 
@@ -193,7 +193,7 @@ public class IgniteNodeRunner {
     // TODO delete this method.
     public static void jps() {
         try {
-            X.println(">>>>> IgniteNodeRunner.jps");
+            X.println("***** IgniteNodeRunner.jps *****");
 
             MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier((String)null));
 
