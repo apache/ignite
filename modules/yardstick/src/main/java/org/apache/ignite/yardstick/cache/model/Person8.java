@@ -58,152 +58,19 @@ public class Person8 implements Serializable {
     private int val8;
 
     /**
-     * Empty constructor.
-     */
-    public Person8() {
-        // No-op.
-    }
-
-    /**
      * Constructs.
-     */
-    public Person8(int val1, int val2, int val3, int val4, int val5, int val6, int val7, int val8) {
-        this.val1 = val1;
-        this.val2 = val2;
-        this.val3 = val3;
-        this.val4 = val4;
-        this.val5 = val5;
-        this.val6 = val6;
-        this.val7 = val7;
-        this.val8 = val8;
-    }
-
-    /**
-     * @return Get value.
-     */
-    public int getVal1() {
-        return val1;
-    }
-
-    /**
-     * Set value.
      *
-     * @param val1 Value.
+     * @param val Indexed value.
      */
-    public void setVal1(int val1) {
-        this.val1 = val1;
-    }
-
-    /**
-     * @return Get value.
-     */
-    public int getVal2() {
-        return val2;
-    }
-
-    /**
-     * Set value.
-     *
-     * @param val2 Value.
-     */
-    public void setVal2(int val2) {
-        this.val2 = val2;
-    }
-
-    /**
-     * @return Get value.
-     */
-    public int getVal3() {
-        return val3;
-    }
-
-    /**
-     * Set value.
-     *
-     * @param val3 Value.
-     */
-    public void setVal3(int val3) {
-        this.val3 = val3;
-    }
-
-    /**
-     * @return Get value.
-     */
-    public int getVal4() {
-        return val4;
-    }
-
-    /**
-     * Set value.
-     *
-     * @param val4 Value.
-     */
-    public void setVal4(int val4) {
-        this.val4 = val4;
-    }
-
-    /**
-     * @return Get value.
-     */
-    public int getVal5() {
-        return val5;
-    }
-
-    /**
-     * Set value.
-     *
-     * @param val5 Value.
-     */
-    public void setVal5(int val5) {
-        this.val5 = val5;
-    }
-
-    /**
-     * @return Get value.
-     */
-    public int getVal6() {
-        return val6;
-    }
-
-    /**
-     * Set value.
-     *
-     * @param val6 Value.
-     */
-    public void setVal6(int val6) {
-        this.val6 = val6;
-    }
-
-    /**
-     * @return Get value.
-     */
-    public int getVal7() {
-        return val7;
-    }
-
-    /**
-     * Set value.
-     *
-     * @param val7 Value.
-     */
-    public void setVal7(int val7) {
-        this.val7 = val7;
-    }
-
-    /**
-     * @return Get value.
-     */
-    public int getVal8() {
-        return val8;
-    }
-
-    /**
-     * Set value.
-     *
-     * @param val8 Value.
-     */
-    public void setVal8(int val8) {
-        this.val8 = val8;
+    public Person8(int val) {
+        this.val1 = val;
+        this.val2 = val + 1;
+        this.val3 = val + 2;
+        this.val4 = val + 3;
+        this.val5 = val + 4;
+        this.val6 = val + 5;
+        this.val7 = val + 6;
+        this.val8 = val + 7;
     }
 
     /** {@inheritDoc} */

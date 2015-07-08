@@ -25,12 +25,12 @@ import java.util.*;
 /**
  * Ignite benchmark that performs put operations for entity with indexed fields.
  */
-public class IgnitePutIndex2Benchmark extends IgniteCacheAbstractBenchmark {
+public class IgnitePutIndexedValue1Benchmark extends IgniteCacheAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
 
-        cache.put(key, new Person2(key, key + 1));
+        cache.put(key, new Person1(key));
 
         return true;
     }
