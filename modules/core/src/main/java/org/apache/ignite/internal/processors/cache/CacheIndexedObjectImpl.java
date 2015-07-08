@@ -19,16 +19,13 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import java.io.*;
-import java.lang.reflect.*;
 import java.nio.*;
-import java.util.concurrent.*;
 
 /**
  * Cache object implementation for classes that support footer injection is their serialized form thus enabling fields
@@ -341,11 +338,12 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      * @param checkCls Check class definition presence on node flag.
      * @return {@code true} if keep, {@code false} otherwise.
      */
+    @SuppressWarnings("SimplifiableIfStatement")
     protected boolean keepDeserialized(CacheObjectContext ctx, boolean checkCls) {
         if (ctx.copyOnGet())
             return false;
 
-        return checkCls ? hasClassOnNode(ctx) : true;
+        return !checkCls || hasClassOnNode(ctx);
     }
 
     /**
@@ -368,7 +366,7 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
 
             hasClass = cls != null;
         }
-        catch (Exception e) {
+        catch (Exception ignore) {
             hasClass = false;
         }
 
