@@ -32,6 +32,13 @@ public interface InteropProcessor {
     public Ignite ignite();
 
     /**
+     * Get environment pointer associated with this processor.
+     *
+     * @return Environment pointer.
+     */
+    public long environmentPointer();
+
+    /**
      * Get stop runnable to perform cleanup when interop is not longer used.
      * <p/>
      * <b>NOTE!</b> This runnable is called when current instance of interop processor is eligible for garbage

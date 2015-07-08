@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache.multijvm;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
 /**
- * Multy Jvm tests.
+ * Multi-JVM tests.
  */
-public class GridCachePartitionedMultiJvmCounterSelfTest extends 
+public class GridCachePartitionedMultiJvmCounterSelfTest extends
     GridCachePartitionedMultiNodeCounterSelfTest {
     /** {@inheritDoc} */
     protected boolean isMultiJvm() {

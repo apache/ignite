@@ -2076,6 +2076,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         boolean nextNew = (msg instanceof TcpDiscoveryNodeAddedMessage &&
                                             ((TcpDiscoveryNodeAddedMessage)msg).node().id().equals(nextId));
 
+                                        if (!nextNew)
+                                            nextNew = hasPendingAddMessage(nextId);
+
                                         if (!nextNew) {
                                             if (log.isDebugEnabled())
                                                 log.debug("Failed to restore ring because next node order received " +
@@ -2361,6 +2364,29 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Pending message has been registered: " + msg.id());
             }
+        }
+
+        /**
+         * Checks whether pending messages queue contains unprocessed {@link TcpDiscoveryNodeAddedMessage} for
+         * the node with {@code nodeId}.
+         *
+         * @param nodeId Node ID.
+         * @return {@code true} if contains, {@code false} otherwise.
+         */
+        private boolean hasPendingAddMessage(UUID nodeId) {
+            if (pendingMsgs.msgs.isEmpty())
+                return false;
+
+            for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs.msgs) {
+                if (pendingMsg instanceof TcpDiscoveryNodeAddedMessage) {
+                    TcpDiscoveryNodeAddedMessage addMsg = (TcpDiscoveryNodeAddedMessage)pendingMsg;
+
+                    if (addMsg.node().id().equals(nodeId) && addMsg.id().compareTo(pendingMsgs.discardId) > 0)
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         /**
@@ -2855,6 +2881,24 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 msg.verify(locNodeId);
             }
+            else if (!locNodeId.equals(node.id()) && ring.node(node.id()) != null) {
+                // Local node already has node from message in local topology.
+                // Just pass it to coordinator via the ring.
+                if (ring.hasRemoteNodes())
+                    sendMessageAcrossRing(msg);
+
+                if (log.isDebugEnabled())
+                    log.debug("Local node already has node being added. Passing TcpDiscoveryNodeAddedMessage to " +
+                                  "coordinator for final processing [ring=" + ring + ", node=" + node + ", locNode="
+                                  + locNode + ", msg=" + msg + ']');
+
+                if (debugMode)
+                    debugLog("Local node already has node being added. Passing TcpDiscoveryNodeAddedMessage to " +
+                                 "coordinator for final processing [ring=" + ring + ", node=" + node + ", locNode="
+                                 + locNode + ", msg=" + msg + ']');
+
+                return;
+            }
 
             if (msg.verified() && !locNodeId.equals(node.id())) {
                 if (node.internalOrder() <= ring.maxInternalOrder()) {
@@ -3136,6 +3180,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (msg.verified() && locNodeId.equals(nodeId) && spiStateCopy() == CONNECTING) {
                 assert node != null;
+
+                assert topVer > 0 : "Invalid topology version: " + msg;
 
                 ring.topologyVersion(topVer);
 

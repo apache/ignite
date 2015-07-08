@@ -19,6 +19,6 @@
 #
 # Git patch-file maker/applier properties.
 #
-IGNITE_DEFAULT_BRANCH='ignite-sprint-7'
+IGNITE_DEFAULT_BRANCH='master'
 
 PATCHES_HOME=${IGNITE_HOME}

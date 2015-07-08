@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.*;
-import org.apache.ignite.testframework.junits.multijvm.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -117,7 +116,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> GridCacheAdapter<K, V> internalCache(IgniteCache<K, V> cache) {
-        if (cache instanceof IgniteCacheProcessProxy)
+        if (isMultiJvmObject(cache))
             throw new UnsupportedOperationException("Oparetion can't be supported automatically for multi jvm " +
                 "(send closure instead).");
 
@@ -207,23 +206,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return {@code True} if near cache is enabled.
      */
     protected static <K, V> boolean nearEnabled(final IgniteCache<K,V> cache) {
-        final Ignite ignite = cache.unwrap(Ignite.class);
-
-        CacheConfiguration cfg;
-
-        if (!(ignite instanceof IgniteProcessProxy))
-            cfg = ((IgniteKernal)ignite).<K, V>internalCache(cache.getName()).context().config();
-        else {
-            final String cacheName = cache.getName();
-
-            cfg = ((IgniteProcessProxy)ignite).remoteCompute().call(new IgniteCallable<CacheConfiguration>() {
-                @Override public CacheConfiguration call() throws Exception {
-                    IgniteEx grid = IgniteNodeRunner.startedInstance();
-
-                    return ((IgniteKernal)grid).<K, V>internalCache(cacheName).context().config();
-                }
-            });
-        }
+        CacheConfiguration cfg = GridAbstractTest.executeOnLocalOrRemoteJvm(cache,
+            new TestCacheCallable<K, V, CacheConfiguration>() {
+            @Override public CacheConfiguration call(Ignite ignite, IgniteCache<K, V> cache) throws Exception {
+                return ((IgniteKernal)ignite).<K, V>internalCache(cache.getName()).context().config();
+            }
+        });
 
         return isNearEnabled(cfg);
     }
@@ -259,59 +247,32 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @throws Exception If failed.
      */
     protected static <K> void loadAll(Cache<K, ?> cache, final Set<K> keys, final boolean replaceExistingValues) throws Exception {
-        Ignite ignite = cache.unwrap(Ignite.class);
+        IgniteCache<K, Object> cacheCp = (IgniteCache<K, Object>)cache;
 
-        if (!(ignite instanceof IgniteProcessProxy))
-            loadAll0(cache, keys, replaceExistingValues);
-        else {
-            IgniteProcessProxy proxy = (IgniteProcessProxy)ignite;
+        GridAbstractTest.executeOnLocalOrRemoteJvm(cacheCp, new TestCacheRunnable<K, Object>() {
+            @Override public void run(Ignite ignite, IgniteCache<K, Object> cache) throws Exception {
+                final AtomicReference<Exception> ex = new AtomicReference<>();
 
-            final UUID id = proxy.getId();
+                final CountDownLatch latch = new CountDownLatch(1);
 
-            final String cacheName = cache.getName();
-
-            final Set<Object> keysCp = (Set<Object>)keys;
-
-            proxy.remoteCompute().run(new CAX() {
-                @Override public void applyx() throws IgniteCheckedException {
-                    try {
-                        loadAll0(Ignition.ignite(id).cache(cacheName), keysCp, replaceExistingValues);
+                cache.loadAll(keys, replaceExistingValues, new CompletionListener() {
+                    @Override public void onCompletion() {
+                        latch.countDown();
                     }
-                    catch (Exception e) {
-                        throw new IgniteCheckedException(e);
+
+                    @Override public void onException(Exception e) {
+                        ex.set(e);
+
+                        latch.countDown();
                     }
-                }
-            });
-        }
-    }
+                });
 
-    /**
-     * @param cache Cache.
-     * @param keys Keys.
-     * @param replaceExistingValues Replace existing values.
-     * @throws Exception If failed.
-     */
-    private static <K> void loadAll0(Cache<K, ?> cache, Set<K> keys, boolean replaceExistingValues) throws Exception {
-        final AtomicReference<Exception> ex = new AtomicReference<>();
+                latch.await();
 
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        cache.loadAll(keys, replaceExistingValues, new CompletionListener() {
-            @Override public void onCompletion() {
-                latch.countDown();
-            }
-
-            @Override public void onException(Exception e) {
-                ex.set(e);
-
-                latch.countDown();
+                if (ex.get() != null)
+                    throw ex.get();
             }
         });
-
-        latch.await();
-
-        if (ex.get() != null)
-            throw ex.get();
     }
 
     /**

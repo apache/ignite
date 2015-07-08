@@ -28,7 +28,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Proxy class for cluster at another jvm.
+ * Proxy class for cluster at another JVM.
  */
 @SuppressWarnings("TransientFieldInNonSerializableClass")
 public class IgniteClusterProcessProxy implements IgniteClusterEx {

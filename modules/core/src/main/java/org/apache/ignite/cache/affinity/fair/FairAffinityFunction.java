@@ -31,7 +31,8 @@ import java.util.*;
  * Fair affinity function which tries to ensure that all nodes get equal number of partitions with
  * minimum amount of reassignments between existing nodes.
  * <p>
- * Cache affinity can be configured for individual caches via {@link CacheConfiguration#setAffinity(AffinityFunction)} method.
+ * Cache affinity can be configured for individual caches via
+ * {@link CacheConfiguration#setAffinity(AffinityFunction)} method.
  */
 @AffinityCentralizedFunction
 public class FairAffinityFunction implements AffinityFunction {

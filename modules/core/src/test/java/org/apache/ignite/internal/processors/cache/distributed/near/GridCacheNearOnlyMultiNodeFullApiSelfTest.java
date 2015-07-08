@@ -137,14 +137,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         return nearIdx == 0 ? jcache(1) : jcache(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
-        if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
-
-        super.checkTtl(inTx, oldEntry);
-    }
-
     /**
      * @return For the purpose of this test returns the near-only instance.
      */
@@ -220,7 +212,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
      */
     private void checkReaderTtl(boolean inTx) throws Exception {
         if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
+            fail("https://issues.apache.org/jira/browse/IGNITE-1089");
 
         int ttl = 1000;
 

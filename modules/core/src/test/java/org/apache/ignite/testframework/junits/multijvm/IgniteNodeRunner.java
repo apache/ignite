@@ -67,7 +67,7 @@ public class IgniteNodeRunner {
     }
 
     /**
-     * @return <code>True</code> if there is ignite node started via {@link IgniteNodeRunner} at this jvm.
+     * @return <code>True</code> if there is ignite node started via {@link IgniteNodeRunner} at this JVM.
      */
     public static boolean hasStartedInstance() {
         return ignite != null;

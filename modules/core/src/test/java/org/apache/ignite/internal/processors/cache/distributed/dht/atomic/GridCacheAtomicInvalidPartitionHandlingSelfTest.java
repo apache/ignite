@@ -41,6 +41,7 @@ import org.jsr166.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -340,12 +341,12 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                         }
                         catch (AssertionError e) {
                             if (r == 9) {
-                                System.err.println("Failed to verify cache contents: " + e.getMessage());
+                                info("Failed to verify cache contents: " + e.getMessage());
 
                                 throw e;
                             }
 
-                            System.err.println("Failed to verify cache contents, will retry: " + e.getMessage());
+                            info("Failed to verify cache contents, will retry: " + e.getMessage());
 
                             // Give some time to finish async updates.
                             U.sleep(1000);

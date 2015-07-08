@@ -132,6 +132,10 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
+    @Override public IgniteCache<K, V> withNoRetries() {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
     /** {@inheritDoc} */
     @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
         throw new UnsupportedOperationException("Method should be supported.");

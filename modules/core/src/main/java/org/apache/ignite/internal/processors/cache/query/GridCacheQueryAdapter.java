@@ -36,6 +36,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
 /**
@@ -413,12 +414,19 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     @SuppressWarnings("IfMayBeConditional")
     private <R> CacheQueryFuture<R> execute(@Nullable IgniteReducer<T, R> rmtReducer,
         @Nullable IgniteClosure<T, R> rmtTransform, @Nullable Object... args) {
-        Collection<ClusterNode> nodes = nodes();
+        Collection<ClusterNode> nodes;
+
+        try {
+            nodes = nodes();
+        }
+        catch (IgniteCheckedException e) {
+            return queryErrorFuture(cctx, e, log);
+        }
 
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (nodes.isEmpty())
-            return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), new ClusterGroupEmptyCheckedException());
+            return queryErrorFuture(cctx, new ClusterGroupEmptyCheckedException(), log);
 
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
@@ -429,7 +437,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 cctx.deploy().registerClasses(args);
             }
             catch (IgniteCheckedException e) {
-                return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);
+                return queryErrorFuture(cctx, e, log);
             }
         }
 
@@ -457,7 +465,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Nodes to execute on.
      */
-    private Collection<ClusterNode> nodes() {
+    private Collection<ClusterNode> nodes() throws IgniteCheckedException {
         CacheMode cacheMode = cctx.config().getCacheMode();
 
         switch (cacheMode) {
@@ -465,6 +473,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 if (prj != null)
                     U.warn(log, "Ignoring query projection because it's executed over LOCAL cache " +
                         "(only local node will be queried): " + this);
+
+                if (type == SCAN && cctx.config().getCacheMode() == LOCAL &&
+                    partition() != null && partition() >= cctx.affinity().partitions())
+                    throw new IgniteCheckedException("Invalid partition number: " + partition());
 
                 return Collections.singletonList(cctx.localNode());
 
@@ -511,6 +523,21 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                     (part == null || owners.contains(n));
             }
         });
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param e Exception.
+     * @param log Logger.
+     */
+    private static <T> GridCacheQueryErrorFuture<T> queryErrorFuture(GridCacheContext<?, ?> cctx,
+        Exception e, IgniteLogger log) {
+
+        GridCacheQueryMetricsAdapter metrics = (GridCacheQueryMetricsAdapter)cctx.queries().metrics();
+
+        GridQueryProcessor.onExecuted(cctx, metrics, null, e, 0, 0, log);
+
+        return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);
     }
 
     /** {@inheritDoc} */

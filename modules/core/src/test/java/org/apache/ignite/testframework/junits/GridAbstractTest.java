@@ -211,7 +211,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return logger.
      */
     protected IgniteLogger log() {
-        if (weAreOnRemoteJvm())
+        if (isRemoteJvm())
             return IgniteNodeRunner.startedInstance().log();
 
         return log;
@@ -676,7 +676,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        if (!isMultiJvmAndNodeIsRemote(gridName)) {
+        if (!isRemoteJvm(gridName)) {
             startingGrid.set(gridName);
 
             try {
@@ -755,7 +755,7 @@ public abstract class GridAbstractTest extends TestCase {
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 
-            if (!isMultiJvmAndNodeIsRemote(gridName))
+            if (!isRemoteJvm(gridName))
                 G.stop(gridName, cancel);
             else
                 IgniteProcessProxy.stop(gridName, cancel);
@@ -801,10 +801,8 @@ public abstract class GridAbstractTest extends TestCase {
             assert G.allGrids().isEmpty();
         }
         finally {
-            IgniteProcessProxy.killAll(); // In multi jvm case.
-            IgniteNodeRunner.killAll();
+            IgniteProcessProxy.killAll(); // In multi-JVM case.
         }
-
     }
 
     /**
@@ -873,10 +871,10 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid instance.
      */
     protected IgniteEx grid(String name) {
-        if (!isMultiJvmAndNodeIsRemote(name))
+        if (!isRemoteJvm(name))
             return (IgniteEx)G.ignite(name);
         else {
-            if (weAreOnRemoteJvm())
+            if (isRemoteJvm())
                 return IgniteNodeRunner.startedInstance();
             else
                 return IgniteProcessProxy.ignite(name);
@@ -958,7 +956,7 @@ public abstract class GridAbstractTest extends TestCase {
     protected Ignite startGrid(String gridName, IgniteConfiguration cfg) throws Exception {
         cfg.setGridName(gridName);
 
-        if (!isMultiJvmAndNodeIsRemote(gridName))
+        if (!isRemoteJvm(gridName))
             return G.start(cfg);
         else
             return startRemoteGrid(gridName, cfg, null);
@@ -1364,9 +1362,17 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Gets flag whether nodes will run in one jvm or in separate jvms.
+     * Gets flag whether nodes will run in one JVM or in separate JVMs.
      *
-     * @return <code>True</code> to run nodes in separate jvms.
+     * @return <code>True</code> to run nodes in separate JVMs.
+     * @see IgniteNodeRunner
+     * @see IgniteProcessProxy
+     * @see #isRemoteJvm()
+     * @see #isRemoteJvm(int)
+     * @see #isRemoteJvm(String)
+     * @see #executeOnLocalOrRemoteJvm(int, TestIgniteIdxCallable)
+     * @see #executeOnLocalOrRemoteJvm(Ignite, TestIgniteCallable)
+     * @see #executeOnLocalOrRemoteJvm(IgniteCache, TestCacheCallable)
      */
     protected boolean isMultiJvm() {
         return false;
@@ -1374,25 +1380,162 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * @param gridName Grid name.
-     * @return <code>True</code> if test was run in multy jvm mode and grid at another jvm.
+     * @return <code>True</code> if test was run in multi-JVM mode and grid with this name was started at another JVM.
      */
-    protected boolean isMultiJvmAndNodeIsRemote(String gridName) {
+    protected boolean isRemoteJvm(String gridName) {
         return isMultiJvm() && !gridName.endsWith("0");
     }
 
     /**
      * @param idx Grid index.
-     * @return <code>True</code> if test was run in multy jvm mode and grid at another jvm.
+     * @return <code>True</code> if test was run in multi-JVM mode and grid with this ID was started at another JVM.
      */
-    protected boolean isMultiJvmAndNodeIsRemote(int idx) {
+    protected boolean isRemoteJvm(int idx) {
         return isMultiJvm() && idx != 0;
     }
 
     /**
-     * @return <code>True</code> if current jvm contains remote started node.
+     * @return <code>True</code> if current JVM contains remote started node
+     * (It differs from JVM where tests executing).
      */
-    protected boolean weAreOnRemoteJvm() {
+    protected boolean isRemoteJvm() {
         return IgniteNodeRunner.hasStartedInstance();
+    }
+
+    /**
+     * @param cache Cache.
+     * @return <code>True</code> if cache is an instance of {@link IgniteCacheProcessProxy}
+     */
+    public static boolean isMultiJvmObject(IgniteCache cache) {
+        return cache instanceof IgniteCacheProcessProxy;
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @return <code>True</code> if cache is an instance of {@link IgniteProcessProxy}
+     */
+    public static boolean isMultiJvmObject(Ignite ignite) {
+        return ignite instanceof IgniteProcessProxy;
+    }
+
+    /**
+     * Calls job on local JVM or on remote JVM in multi-JVM case.
+     *
+     * @param idx Grid index.
+     * @param job Job.
+     */
+    public <R> R executeOnLocalOrRemoteJvm(final int idx, final TestIgniteIdxCallable<R> job) {
+        IgniteEx ignite = grid(idx);
+
+        if (!isMultiJvmObject(ignite))
+            try {
+                return job.call(idx);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        else
+            return executeRemotely(idx, job);
+    }
+
+    /**
+     * Calls job on local JVM or on remote JVM in multi-JVM case.
+     *
+     * @param ignite Ignite.
+     * @param job Job.
+     */
+    public static <R> R executeOnLocalOrRemoteJvm(Ignite ignite, final TestIgniteCallable<R> job) {
+        if (!isMultiJvmObject(ignite))
+            try {
+                return job.call(ignite);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        else
+            return executeRemotely((IgniteProcessProxy)ignite, job);
+    }
+
+    /**
+     * Calls job on local JVM or on remote JVM in multi-JVM case.
+     *
+     * @param cache Cache.
+     * @param job Job.
+     */
+    public static <K,V,R> R executeOnLocalOrRemoteJvm(IgniteCache<K,V> cache, TestCacheCallable<K,V,R> job) {
+        Ignite ignite = cache.unwrap(Ignite.class);
+
+        if (!isMultiJvmObject(ignite))
+            try {
+                return job.call(ignite, cache);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        else
+            return executeRemotely((IgniteCacheProcessProxy<K, V>)cache, job);
+    }
+
+    /**
+     * Calls job on remote JVM.
+     *
+     * @param idx Grid index.
+     * @param job Job.
+     */
+    public <R> R executeRemotely(final int idx, final TestIgniteIdxCallable<R> job) {
+        IgniteEx ignite = grid(idx);
+
+        if (!isMultiJvmObject(ignite))
+            throw new IllegalArgumentException("Ignite have to be process proxy.");
+
+        IgniteProcessProxy proxy = (IgniteProcessProxy)ignite;
+
+        return proxy.remoteCompute().call(new IgniteCallable<R>() {
+            @Override public R call() throws Exception {
+                return job.call(idx);
+            }
+        });
+    }
+
+    /**
+     * Calls job on remote JVM.
+     *
+     * @param proxy Ignite.
+     * @param job Job.
+     */
+    public static <R> R executeRemotely(IgniteProcessProxy proxy, final TestIgniteCallable<R> job) {
+        final UUID id = proxy.getId();
+
+        return proxy.remoteCompute().call(new IgniteCallable<R>() {
+            @Override public R call() throws Exception {
+                Ignite ignite = Ignition.ignite(id);
+
+                return job.call(ignite);
+            }
+        });
+    }
+
+    /**
+     * Runs job on remote JVM.
+     *
+     * @param cache Cache.
+     * @param job Job.
+     */
+    public static <K, V, R> R executeRemotely(IgniteCacheProcessProxy<K, V> cache,
+        final TestCacheCallable<K, V, R> job) {
+        IgniteProcessProxy proxy = (IgniteProcessProxy)cache.unwrap(Ignite.class);
+
+        final UUID id = proxy.getId();
+        final String cacheName = cache.getName();
+
+        return proxy.remoteCompute().call(new IgniteCallable<R>() {
+            @Override public R call() throws Exception {
+                Ignite ignite = Ignition.ignite(id);
+                IgniteCache<K,V> cache = ignite.cache(cacheName);
+
+                return job.call(ignite, cache);
+            }
+        });
     }
 
     /**
@@ -1707,5 +1850,76 @@ public abstract class GridAbstractTest extends TestCase {
 
             return numOfTests;
         }
+    }
+
+    /** */
+    public static interface TestIgniteCallable<R> extends Serializable {
+        /**
+         * @param ignite Ignite.
+         */
+        R call(Ignite ignite) throws Exception;
+    }
+
+    /** */
+    public abstract static class TestIgniteRunnable implements TestIgniteCallable<Object> {
+        /** {@inheritDoc} */
+        @Override public Object call(Ignite ignite) throws Exception {
+            run(ignite);
+
+            return null;
+        }
+
+        /**
+         * @param ignite Ignite.
+         */
+        public abstract void run(Ignite ignite) throws Exception;
+    }
+
+    /** */
+    public static interface TestIgniteIdxCallable<R> extends Serializable {
+        /**
+         * @param idx Grid index.
+         */
+        R call(int idx) throws Exception;
+    }
+
+    /** */
+    public abstract static class TestIgniteIdxRunnable implements TestIgniteIdxCallable<Object> {
+        /** {@inheritDoc} */
+        @Override public Object call(int idx) throws Exception {
+            run(idx);
+
+            return null;
+        }
+
+        /**
+         * @param idx Index.
+         */
+        public abstract void run(int idx) throws Exception;
+    }
+
+    /** */
+    public static interface TestCacheCallable<K, V, R> extends Serializable {
+        /**
+         * @param ignite Ignite.
+         * @param cache Cache.
+         */
+        R call(Ignite ignite, IgniteCache<K, V> cache) throws Exception;
+    }
+
+    /** */
+    public abstract static class TestCacheRunnable<K, V> implements TestCacheCallable<K, V, Object> {
+        /** {@inheritDoc} */
+        @Override public Object call(Ignite ignite, IgniteCache cache) throws Exception {
+            run(ignite, cache);
+
+            return null;
+        }
+
+        /**
+         * @param ignite Ignite.
+         * @param cache Cache.
+         */
+        public abstract void run(Ignite ignite, IgniteCache<K, V> cache) throws Exception;
     }
 }

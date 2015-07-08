@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache.multijvm;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 
 /**
- * Multy Jvm tests.
+ * Multi-JVM tests.
  */
-public class GridCachePartitionedNearDisabledMultiJvmFullApiSelfTest extends 
+public class GridCachePartitionedNearDisabledMultiJvmFullApiSelfTest extends
     GridCachePartitionedNearDisabledMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
     protected boolean isMultiJvm() {

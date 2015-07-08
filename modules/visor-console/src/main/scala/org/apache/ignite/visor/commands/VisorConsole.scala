@@ -71,6 +71,7 @@ class VisorConsole {
         org.apache.ignite.visor.commands.gc.VisorGcCommand
         org.apache.ignite.visor.commands.kill.VisorKillCommand
         org.apache.ignite.visor.commands.node.VisorNodeCommand
+        org.apache.ignite.visor.commands.open.VisorOpenCommand
         org.apache.ignite.visor.commands.ping.VisorPingCommand
         org.apache.ignite.visor.commands.start.VisorStartCommand
         org.apache.ignite.visor.commands.tasks.VisorTasksCommand
@@ -178,7 +179,7 @@ class VisorConsole {
                     buf.append(line.dropRight(1))
                 }
                 else {
-                    if (buf.size != 0) {
+                    if (buf.nonEmpty) {
                         buf.append(line)
 
                         line = buf.toString()
