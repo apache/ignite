@@ -26,17 +26,17 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
  */
 public class IgniteCacheAtomicReplicatedNodeRestartSelfTest extends GridCacheReplicatedNodeRestartSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-747");
-    }
-
-    /** {@inheritDoc} */
     @Override public void testRestartWithPutSixNodesTwoBackups() throws Throwable {
         fail("https://issues.apache.org/jira/browse/IGNITE-1095");
     }
 
     /** {@inheritDoc} */
     @Override public void testRestartWithPutEightNodesTwoBackups() throws Throwable {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1095");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithPutTenNodesTwoBackups() throws Throwable {
         fail("https://issues.apache.org/jira/browse/IGNITE-1095");
     }
 

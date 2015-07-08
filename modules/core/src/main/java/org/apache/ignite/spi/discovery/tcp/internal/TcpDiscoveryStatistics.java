@@ -256,7 +256,10 @@ public class TcpDiscoveryStatistics {
             if (maxMsgQueueTime < duration)
                 maxMsgQueueTime = duration;
 
-            avgMsgQueueTime = (avgMsgQueueTime * (totalReceivedMessages() -1)) / totalProcessedMessages();
+            int totalProcMsgs = totalProcessedMessages();
+
+            if (totalProcMsgs != 0)
+                avgMsgQueueTime = (avgMsgQueueTime * (totalProcMsgs - 1)) / totalProcMsgs;
         }
 
         msgsProcStartTs.put(msg.id(), U.currentTimeMillis());
@@ -275,7 +278,10 @@ public class TcpDiscoveryStatistics {
         if (startTs != null) {
             long duration = U.currentTimeMillis() - startTs;
 
-            avgMsgProcTime = (avgMsgProcTime * (totalProcessedMessages() - 1) + duration) / totalProcessedMessages();
+            int totalProcMsgs = totalProcessedMessages();
+
+            if (totalProcMsgs != 0)
+                avgMsgProcTime = (avgMsgProcTime * (totalProcMsgs - 1) + duration) / totalProcMsgs;
 
             if (duration > maxMsgProcTime) {
                 maxMsgProcTime = duration;
