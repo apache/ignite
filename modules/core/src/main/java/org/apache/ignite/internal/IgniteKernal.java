@@ -1486,9 +1486,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     "  /  _/ ___/ |/ /  _/_  __/ __/ ",
                     " _/ // (7 7    // /  / / / _/   ",
                     "/___/\\___/_/|_/___/ /_/ /___/  ",
-                    " ",
+                    "",
                     ver,
                     COPYRIGHT,
+                    "",
+                    "Ignite documentation: " + "http://" + SITE,
                     "",
                     "Quiet mode.");
 
@@ -1508,7 +1510,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
                         ">>> " + NL +
                         ">>> " + ver + NL +
-                        ">>> " + COPYRIGHT + NL
+                        ">>> " + COPYRIGHT + NL +
+                        ">>> " + NL +
+                        ">>> Ignite documentation: " + "http://" + SITE + NL
                 );
             }
         }
@@ -1556,8 +1560,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     "]" + NL +
                     ">>> Local node addresses: " + U.addressesAsString(locNode) + NL +
                     ">>> Local ports: " + sb + NL;
-
-            str += ">>> Ignite documentation: http://" + SITE + NL;
 
             log.info(str);
         }
