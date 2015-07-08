@@ -15,33 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.yardstick.cache.model;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.annotations.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import java.io.*;
 
 /**
- *
+ * Value used for indexed put test.
  */
-public class IgniteCacheAtomicReplicatedNodeRestartSelfTest extends GridCacheReplicatedNodeRestartSelfTest {
-    /** {@inheritDoc} */
-    @Override public void testRestartWithPutSixNodesTwoBackups() throws Throwable {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1095");
+public class Person1 implements Serializable {
+    /** Value. */
+    @QuerySqlField(index = true)
+    private int val1;
+
+    /**
+     * Constructs.
+     *
+     * @param val Indexed value.
+     */
+    public Person1(int val) {
+        this.val1 = val;
     }
 
     /** {@inheritDoc} */
-    @Override public void testRestartWithPutEightNodesTwoBackups() throws Throwable {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1095");
+    @Override public boolean equals(Object o) {
+        return this == o || (o instanceof Person1) && val1 == ((Person1)o).val1;
     }
 
     /** {@inheritDoc} */
-    @Override public void testRestartWithPutTenNodesTwoBackups() throws Throwable {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1095");
+    @Override public int hashCode() {
+        return val1;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+    @Override public String toString() {
+        return "IndexedValue1 [val1=" + val1 + ']';
     }
 }
