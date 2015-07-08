@@ -24,7 +24,7 @@
 #
 # Default branch name. Need to use last version of "jiraslurp" scripts.
 #
-DEFAULT_BRANCH='ignite-sprint-5'
+DEFAULT_BRANCH='master'
 
 #
 # TC URL. It is 10.30.0.229 for public TC from agents.

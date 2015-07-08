@@ -2881,6 +2881,24 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 msg.verify(locNodeId);
             }
+            else if (!locNodeId.equals(node.id()) && ring.node(node.id()) != null) {
+                // Local node already has node from message in local topology.
+                // Just pass it to coordinator via the ring.
+                if (ring.hasRemoteNodes())
+                    sendMessageAcrossRing(msg);
+
+                if (log.isDebugEnabled())
+                    log.debug("Local node already has node being added. Passing TcpDiscoveryNodeAddedMessage to " +
+                                  "coordinator for final processing [ring=" + ring + ", node=" + node + ", locNode="
+                                  + locNode + ", msg=" + msg + ']');
+
+                if (debugMode)
+                    debugLog("Local node already has node being added. Passing TcpDiscoveryNodeAddedMessage to " +
+                                 "coordinator for final processing [ring=" + ring + ", node=" + node + ", locNode="
+                                 + locNode + ", msg=" + msg + ']');
+
+                return;
+            }
 
             if (msg.verified() && !locNodeId.equals(node.id())) {
                 if (node.internalOrder() <= ring.maxInternalOrder()) {
@@ -3162,6 +3180,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (msg.verified() && locNodeId.equals(nodeId) && spiStateCopy() == CONNECTING) {
                 assert node != null;
+
+                assert topVer > 0 : "Invalid topology version: " + msg;
 
                 ring.topologyVersion(topVer);
 

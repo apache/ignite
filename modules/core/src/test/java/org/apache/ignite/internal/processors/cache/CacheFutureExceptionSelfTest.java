@@ -19,16 +19,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
 import java.io.*;
-import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
@@ -39,9 +34,11 @@ import static java.util.concurrent.TimeUnit.*;
 public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = StartNode.createConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        cfg.setGridName(gridName);
 
-        cfg.setClientMode(true);
+        if (gridName.equals(getTestGridName(1)))
+            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -50,68 +47,39 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAsyncCacheFuture() throws Exception {
-        final CountDownLatch readyLatch = new CountDownLatch(1);
+        Ignite srv = startGrid(0);
 
-        GridJavaProcess node1 = null;
+        IgniteCache<String, NotSerializableClass> cache = srv.getOrCreateCache("CACHE");
+        cache.put("key", new NotSerializableClass());
 
-        Collection<String> jvmArgs = Arrays.asList("-ea", "-DIGNITE_QUIET=false");
+        Ignite client = startGrid(1);
 
-        try {
-            node1 = GridJavaProcess.exec(
-                StartNode.class.getName(), null,
-                log,
-                new CI1<String>() {
-                    @Override public void apply(String s) {
-                        info("Server node1: " + s);
+        IgniteCache<String, NotSerializableClass> asyncCache = client.<String, NotSerializableClass>cache("CACHE").withAsync();
 
-                        if (s.contains("Topology snapshot"))
-                            readyLatch.countDown();
-                    }
-                },
-                null,
-                jvmArgs,
-                null
-            );
+        System.setProperty("FAIL", "true");
 
-            assertTrue(readyLatch.await(60, SECONDS));
+        asyncCache.get("key");
 
-            Ignite client = startGrid(0);
+        final CountDownLatch futLatch = new CountDownLatch(1);
 
-            IgniteCache<String, NotSerializableClass> cache = client.getOrCreateCache("CACHE");
+        asyncCache.future().listen(new IgniteInClosure<IgniteFuture<Object>>() {
+            @Override public void apply(IgniteFuture<Object> fut) {
+                assertTrue(fut.isDone());
 
-            cache.put("key", new NotSerializableClass());
+                try {
+                    fut.get();
 
-            System.setProperty("FAIL", "true");
-
-            IgniteCache<String, NotSerializableClass> asyncCache = cache.withAsync();
-
-            asyncCache.get("key");
-
-            final CountDownLatch futLatch = new CountDownLatch(1);
-
-            asyncCache.future().listen(new IgniteInClosure<IgniteFuture<Object>>() {
-                @Override public void apply(IgniteFuture<Object> fut) {
-                    assertTrue(fut.isDone());
-
-                    try {
-                        fut.get();
-
-                        fail();
-                    }
-                    catch (CacheException e) {
-                        log.info("Expected error: " + e);
-
-                        futLatch.countDown();
-                    }
+                    fail();
                 }
-            });
+                catch (CacheException e) {
+                    log.info("Expected error: " + e);
 
-            assertTrue(futLatch.await(60, SECONDS));
-        }
-        finally {
-            if (node1 != null)
-                node1.killProcess();
-        }
+                    futLatch.countDown();
+                }
+            }
+        });
+
+        assertTrue(futLatch.await(60, SECONDS));
     }
 
     /**
@@ -131,41 +99,4 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
             in.readObject();
         }
     }
-
-    /**
-     * Test class.
-     */
-    public static class StartNode {
-        /**
-         * @return Configuration.
-         */
-        public static IgniteConfiguration createConfiguration() {
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            cfg.setPeerClassLoadingEnabled(true);
-
-            cfg.setLocalHost("127.0.0.1");
-
-            TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-            disco.setIpFinderCleanFrequency(1000);
-
-            TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-
-            ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
-
-            disco.setIpFinder(ipFinder);
-
-            cfg.setDiscoverySpi(disco);
-
-            return cfg;
-        }
-
-        /**
-         * @param args Main parameters.
-         */
-        public static void main(String[] args) {
-            Ignition.start(createConfiguration());
-        }
-    }
-}
+}	
