@@ -27,6 +27,7 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.jta.*;
 import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -53,6 +54,9 @@ public class GridCacheSharedContext<K, V> {
 
     /** Cache transaction manager. */
     private IgniteTxManager txMgr;
+
+    /** JTA manager. */
+    private CacheJtaManagerAdapter jtaMgr;
 
     /** Partition exchange manager. */
     private GridCachePartitionExchangeManager<K, V> exchMgr;
@@ -94,12 +98,14 @@ public class GridCacheSharedContext<K, V> {
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         GridCacheIoManager ioMgr,
-        Collection<CacheStoreSessionListener> storeSesLsnrs
+        Collection<CacheStoreSessionListener> storeSesLsnrs,
+        CacheJtaManagerAdapter jtaMgr
     ) {
         this.kernalCtx = kernalCtx;
         this.mvccMgr = add(mvccMgr);
         this.verMgr = add(verMgr);
         this.txMgr = add(txMgr);
+        this.jtaMgr = add(jtaMgr);
         this.depMgr = add(depMgr);
         this.exchMgr = add(exchMgr);
         this.ioMgr = add(ioMgr);
@@ -278,6 +284,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public IgniteTxManager tm() {
         return txMgr;
+    }
+
+    /**
+     * @return JTA manager.
+     */
+    public CacheJtaManagerAdapter jta() {
+        return jtaMgr;
     }
 
     /**
