@@ -50,34 +50,58 @@ public class InteropIgnition {
      */
     public static synchronized InteropProcessor start(@Nullable String springCfgPath, @Nullable String gridName,
         int factoryId, long envPtr, long dataPtr) {
-        IgniteConfiguration cfg = configuration(springCfgPath);
+        if (envPtr <= 0)
+            throw new IgniteException("Environment pointer must be positive.");
 
-        if (gridName != null)
-            cfg.setGridName(gridName);
-        else
-            gridName = cfg.getGridName();
+        ClassLoader oldClsLdr = Thread.currentThread().getContextClassLoader();
 
-        InteropBootstrap bootstrap = bootstrap(factoryId);
+        Thread.currentThread().setContextClassLoader(InteropIgnition.class.getClassLoader());
 
-        InteropProcessor proc = bootstrap.start(cfg, envPtr, dataPtr);
+        try {
+            IgniteConfiguration cfg = configuration(springCfgPath);
 
-        trackFinalization(proc);
+            if (gridName != null)
+                cfg.setGridName(gridName);
+            else
+                gridName = cfg.getGridName();
 
-        InteropProcessor old = instances.put(gridName, proc);
+            InteropBootstrap bootstrap = bootstrap(factoryId);
 
-        assert old == null;
+            InteropProcessor proc = bootstrap.start(cfg, envPtr, dataPtr);
 
-        return proc;
+            trackFinalization(proc);
+
+            InteropProcessor old = instances.put(gridName, proc);
+
+            assert old == null;
+
+            return proc;
+        }
+        finally {
+            Thread.currentThread().setContextClassLoader(oldClsLdr);
+        }
     }
 
     /**
      * Get instance by environment pointer.
      *
      * @param gridName Grid name.
-     * @return Instance or {@code null} if it doesn't exists (never started or stopped).
+     * @return Instance or {@code null} if it doesn't exist (never started or stopped).
      */
     @Nullable public static synchronized InteropProcessor instance(@Nullable String gridName) {
         return instances.get(gridName);
+    }
+
+    /**
+     * Get environment pointer of the given instance.
+     *
+     * @param gridName Grid name.
+     * @return Environment pointer or {@code 0} in case grid with such name doesn't exist.
+     */
+    public static synchronized long environmentPointer(@Nullable String gridName) {
+        InteropProcessor proc = instance(gridName);
+
+        return proc != null ? proc.environmentPointer() : 0;
     }
 
     /**

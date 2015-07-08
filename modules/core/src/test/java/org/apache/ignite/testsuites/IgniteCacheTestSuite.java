@@ -132,6 +132,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheObjectToStringSelfTest.class);
         suite.addTestSuite(GridCacheLoadOnlyStoreAdapterSelfTest.class);
         suite.addTestSuite(GridCacheGetStoreErrorSelfTest.class);
+        suite.addTestSuite(CacheFutureExceptionSelfTest.class);
         suite.addTestSuite(GridCacheAsyncOperationsLimitSelfTest.class);
         suite.addTestSuite(GridCacheTtlManagerSelfTest.class);
         suite.addTestSuite(GridCacheLifecycleAwareSelfTest.class);
