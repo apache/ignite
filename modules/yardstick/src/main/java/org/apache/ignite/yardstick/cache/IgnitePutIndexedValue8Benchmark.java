@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Ignite benchmark that performs put operations for entity with indexed fields.
  */
-public class IgnitePutIndex8Benchmark extends IgniteCacheAbstractBenchmark {
+public class IgnitePutIndexedValue8Benchmark extends IgniteCacheAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
