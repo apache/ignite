@@ -28,4 +28,9 @@ public class GridCacheReplicatedOffHeapTieredMultiJvmFullApiSelfTest
     protected boolean isMultiJvm() {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testLocalClearKeys() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1107");
+    }
 }
