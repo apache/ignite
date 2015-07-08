@@ -24,6 +24,7 @@ import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.eviction.sorted.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -273,14 +274,24 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
             info("Test results [threadCnt=" + threadCnt + ", iterCnt=" + ITERATION_CNT + ", cacheSize=" + cache.size() +
                 ", internalQueueSize" + queue.size() + ", duration=" + (System.currentTimeMillis() - start) + ']');
 
+            boolean detached = false;
+
             for (Cache.Entry<Integer, Integer> e : queue) {
                 Integer rmv = cache.getAndRemove(e.getKey());
 
-                if (rmv == null)
-                    fail("Eviction policy contains key that is not present in cache: " + e);
+                CacheEvictableEntryImpl unwrapped = e.unwrap(CacheEvictableEntryImpl.class);
+
+                if (rmv == null && (unwrapped.meta() != null || unwrapped.isCached())) {
+                    U.warn(log, "Detached entry: " + e);
+
+                    detached = true;
+                }
                 else
                     info("Entry removed: " + rmv);
             }
+
+            if (detached)
+                fail("Eviction policy contains keys that are not present in cache");
 
             if (!(cache.localSize() == 0)) {
                 boolean zombies = false;

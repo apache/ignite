@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  */
 public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
-    private static final int GRID_CNT = 2;
+    protected int gridCnt;
 
     /** Cache mode. */
     protected CacheMode cacheMode;
@@ -43,7 +43,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGridsMultiThreaded(GRID_CNT);
+        startGridsMultiThreaded(gridCnt);
     }
 
     /** {@inheritDoc} */
@@ -122,6 +122,57 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
     }
 
     /**
+     * Test metrics for failed SQL queries.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testSqlFieldsQueryFailedMetrics() throws Exception {
+        IgniteCache<String, Integer> cache = grid(0).context().cache().jcache("A");
+
+        // Execute query.
+        SqlFieldsQuery qry = new SqlFieldsQuery("select * from UNKNOWN");
+
+        try {
+            cache.query(qry).getAll();
+        }
+        catch (Exception e) {
+            // No-op.
+        }
+
+        QueryMetrics m = cache.queryMetrics();
+
+        assert m != null;
+
+        info("Metrics: " + m);
+
+        assertEquals(1, m.executions());
+        assertEquals(1, m.fails());
+        assertTrue(m.averageTime() >= 0);
+        assertTrue(m.maximumTime() >= 0);
+        assertTrue(m.minimumTime() >= 0);
+
+        // Execute again with the same parameters.
+        try {
+            cache.query(qry).getAll();
+        }
+        catch (Exception e) {
+            // No-op.
+        }
+
+        m = cache.queryMetrics();
+
+        assert m != null;
+
+        info("Metrics: " + m);
+
+        assertEquals(2, m.executions());
+        assertEquals(2, m.fails());
+        assertTrue(m.averageTime() >= 0);
+        assertTrue(m.maximumTime() >= 0);
+        assertTrue(m.minimumTime() >= 0);
+    }
+
+    /**
      * Test metrics for Scan queries.
      *
      * @throws Exception In case of error.
@@ -163,6 +214,57 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
     }
 
     /**
+     * Test metrics for failed Scan queries.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testScanQueryFailedMetrics() throws Exception {
+        IgniteCache<String, Integer> cache = grid(0).context().cache().jcache("A");
+
+        // Execute query.
+        ScanQuery<String, Integer> qry = new ScanQuery<>(Integer.MAX_VALUE);
+
+        try {
+            cache.query(qry).getAll();
+        }
+        catch (Exception e) {
+            // No-op.
+        }
+
+        QueryMetrics m = cache.queryMetrics();
+
+        assert m != null;
+
+        info("Metrics: " + m);
+
+        assertEquals(1, m.executions());
+        assertEquals(1, m.fails());
+        assertTrue(m.averageTime() >= 0);
+        assertTrue(m.maximumTime() >= 0);
+        assertTrue(m.minimumTime() >= 0);
+
+        // Execute again with the same parameters.
+        try {
+            cache.query(qry).getAll();
+        }
+        catch (Exception e) {
+            // No-op.
+        }
+
+        m = cache.queryMetrics();
+
+        assert m != null;
+
+        info("Metrics: " + m);
+
+        assertEquals(2, m.executions());
+        assertEquals(2, m.fails());
+        assertTrue(m.averageTime() >= 0);
+        assertTrue(m.maximumTime() >= 0);
+        assertTrue(m.minimumTime() >= 0);
+    }
+
+    /**
      * Test metrics for SQL cross cache queries.
      *
      * @throws Exception In case of error.
@@ -198,6 +300,57 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
 
         assertEquals(2, m.executions());
         assertEquals(0, m.fails());
+        assertTrue(m.averageTime() >= 0);
+        assertTrue(m.maximumTime() >= 0);
+        assertTrue(m.minimumTime() >= 0);
+    }
+
+    /**
+     * Test metrics for failed SQL cross cache queries.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testSqlCrossCacheQueryFailedMetrics() throws Exception {
+        IgniteCache<String, Integer> cache = grid(0).context().cache().jcache("A");
+
+        // Execute query.
+        SqlFieldsQuery qry = new SqlFieldsQuery("select * from \"G\".Integer");
+
+        try {
+            cache.query(qry).getAll();
+        }
+        catch (Exception e) {
+            // No-op
+        }
+
+        QueryMetrics m = cache.queryMetrics();
+
+        assert m != null;
+
+        info("Metrics: " + m);
+
+        assertEquals(1, m.executions());
+        assertEquals(1, m.fails());
+        assertTrue(m.averageTime() >= 0);
+        assertTrue(m.maximumTime() >= 0);
+        assertTrue(m.minimumTime() >= 0);
+
+        // Execute again with the same parameters.
+        try {
+            cache.query(qry).getAll();
+        }
+        catch (Exception e) {
+            // No-op.
+        }
+
+        m = cache.queryMetrics();
+
+        assert m != null;
+
+        info("Metrics: " + m);
+
+        assertEquals(2, m.executions());
+        assertEquals(2, m.fails());
         assertTrue(m.averageTime() >= 0);
         assertTrue(m.maximumTime() >= 0);
         assertTrue(m.minimumTime() >= 0);

@@ -15,25 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
-
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
+package org.apache.ignite.internal.processors.cache;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Failover tests for replicated cache.
+ * Tests for replicated distributed cache query metrics.
  */
-public class GridCacheReplicatedFailoverSelfTest extends GridCacheAbstractFailoverTxSelfTest {
+public class CacheReplicatedQueryMetricsDistributedSelfTest extends CacheAbstractQueryMetricsSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
+    @Override protected void beforeTest() throws Exception {
+        gridCnt = 2;
+        cacheMode = REPLICATED;
 
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+        super.beforeTest();
     }
 }

@@ -41,11 +41,6 @@ import java.util.*;
  * to used the same TransactionManager).
  */
 public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-591");
-    }
-
     /** */
     private static Jotm jotm;
 

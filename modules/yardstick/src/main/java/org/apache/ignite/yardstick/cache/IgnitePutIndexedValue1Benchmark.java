@@ -15,25 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.yardstick.cache;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.*;
+import org.apache.ignite.yardstick.cache.model.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import java.util.*;
 
 /**
- * Failover tests for replicated cache.
+ * Ignite benchmark that performs put operations for entity with indexed fields.
  */
-public class GridCacheReplicatedFailoverSelfTest extends GridCacheAbstractFailoverTxSelfTest {
+public class IgnitePutIndexedValue1Benchmark extends IgniteCacheAbstractBenchmark {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        int key = nextRandom(args.range());
+
+        cache.put(key, new Person1(key));
+
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+    @Override protected IgniteCache<Integer, Object> cache() {
+        return ignite().cache("atomic-index");
     }
 }
