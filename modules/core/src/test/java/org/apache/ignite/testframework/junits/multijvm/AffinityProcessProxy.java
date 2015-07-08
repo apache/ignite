@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Proxy class for affinity at another jvm.
+ * Proxy class for affinity at another JVM.
  */
 @SuppressWarnings("TransientFieldInNonSerializableClass")
 public class AffinityProcessProxy<K> implements Affinity<K> {

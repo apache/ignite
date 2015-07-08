@@ -369,7 +369,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Cache context.
      */
     protected GridCacheContext<String, Integer> context(final int idx) {
-        if (isMultiJvmAndNodeIsRemote(idx) && !weAreOnRemoteJvm())
+        if (isRemoteJvm(idx) && !isRemoteJvm())
             throw new UnsupportedOperationException("Operation can't be done automatically via proxy. " +
                 "Send task with this logic on remote jvm instead.");
 

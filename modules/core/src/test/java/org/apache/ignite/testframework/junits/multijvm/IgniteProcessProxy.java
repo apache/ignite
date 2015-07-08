@@ -51,7 +51,7 @@ public class IgniteProcessProxy implements IgniteEx {
     /** Configuration. */
     private final transient IgniteConfiguration cfg;
 
-    /** Local jvm grid. */
+    /** Local JVM grid. */
     private final transient Ignite locJvmGrid;
 
     /** Logger. */
@@ -63,7 +63,7 @@ public class IgniteProcessProxy implements IgniteEx {
     /**
      * @param cfg Configuration.
      * @param log Logger.
-     * @param locJvmGrid Local jvm grid.
+     * @param locJvmGrid Local JVM grid.
      */
     public IgniteProcessProxy(final IgniteConfiguration cfg, final IgniteLogger log, final Ignite locJvmGrid)
         throws Exception {
@@ -101,7 +101,7 @@ public class IgniteProcessProxy implements IgniteEx {
             System.getProperty("surefire.test.class.path")
         );
 
-        assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node with id=" + id + " didn't join.";
+        assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node is not joined [id=" + id + "]";
 
         gridProxies.put(cfg.getGridName(), this);
     }

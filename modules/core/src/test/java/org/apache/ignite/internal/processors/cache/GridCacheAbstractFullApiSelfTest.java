@@ -207,7 +207,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cfg.setCacheConfiguration();
 
-        if (!isMultiJvmAndNodeIsRemote(gridName))
+        if (!isRemoteJvm(gridName))
             return IgnitionEx.start(optimize(cfg), ctx);
         else
             return startRemoteGrid(gridName, optimize(cfg), ctx);

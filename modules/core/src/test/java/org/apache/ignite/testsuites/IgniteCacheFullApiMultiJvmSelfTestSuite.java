@@ -21,11 +21,11 @@ import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.multijvm.*;
 
 /**
- * Multi jvm test suite.
+ * Multi-JVM test suite.
  */
 public class IgniteCacheFullApiMultiJvmSelfTestSuite extends TestSuite {
     /**
-     * @return Multi JVM tests suite.
+     * @return Multi-JVM tests suite.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
@@ -69,10 +69,6 @@ public class IgniteCacheFullApiMultiJvmSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheNearOnlyFairAffinityMultiJvmFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicClientOnlyFairAffinityMultiJvmFullApiSelfTest.class);
 
-//        suite.addTestSuite(GridCacheNearReloadAllSelfTest.class);
-//        suite.addTestSuite(GridCacheColocatedReloadAllSelfTest.class);
-//        suite.addTestSuite(GridCacheAtomicReloadAllSelfTest.class);
-//        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderReloadAllSelfTest.class);
         suite.addTestSuite(GridCacheNearTxMultiJvmSelfTest.class);
         suite.addTestSuite(GridCachePartitionedMultiJvmCounterSelfTest.class);
 
@@ -90,10 +86,6 @@ public class IgniteCacheFullApiMultiJvmSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicPrimaryWrityOrderOffHeapTieredMultiJvmFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledOffHeapTieredMultiJvmFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledAtomicOffHeapTieredMultiJvmFullApiSelfTest.class);
-
-        // Multithreaded
-//        suite.addTestSuite(GridCacheReplicatedFullApiMultithreadedSelfTest.class);
-//        suite.addTestSuite(GridCachePartitionedFullApiMultithreadedSelfTest.class);
 
         return suite;
     }

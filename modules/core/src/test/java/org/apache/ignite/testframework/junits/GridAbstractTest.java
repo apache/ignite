@@ -211,7 +211,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return logger.
      */
     protected IgniteLogger log() {
-        if (weAreOnRemoteJvm())
+        if (isRemoteJvm())
             return IgniteNodeRunner.startedInstance().log();
 
         return log;
@@ -676,7 +676,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        if (!isMultiJvmAndNodeIsRemote(gridName)) {
+        if (!isRemoteJvm(gridName)) {
             startingGrid.set(gridName);
 
             try {
@@ -755,7 +755,7 @@ public abstract class GridAbstractTest extends TestCase {
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 
-            if (!isMultiJvmAndNodeIsRemote(gridName))
+            if (!isRemoteJvm(gridName))
                 G.stop(gridName, cancel);
             else
                 IgniteProcessProxy.stop(gridName, cancel);
@@ -801,7 +801,7 @@ public abstract class GridAbstractTest extends TestCase {
             assert G.allGrids().isEmpty();
         }
         finally {
-            IgniteProcessProxy.killAll(); // In multi jvm case.
+            IgniteProcessProxy.killAll(); // In multi-JVM case.
         }
     }
 
@@ -871,10 +871,10 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid instance.
      */
     protected IgniteEx grid(String name) {
-        if (!isMultiJvmAndNodeIsRemote(name))
+        if (!isRemoteJvm(name))
             return (IgniteEx)G.ignite(name);
         else {
-            if (weAreOnRemoteJvm())
+            if (isRemoteJvm())
                 return IgniteNodeRunner.startedInstance();
             else
                 return IgniteProcessProxy.ignite(name);
@@ -956,7 +956,7 @@ public abstract class GridAbstractTest extends TestCase {
     protected Ignite startGrid(String gridName, IgniteConfiguration cfg) throws Exception {
         cfg.setGridName(gridName);
 
-        if (!isMultiJvmAndNodeIsRemote(gridName))
+        if (!isRemoteJvm(gridName))
             return G.start(cfg);
         else
             return startRemoteGrid(gridName, cfg, null);
@@ -1362,11 +1362,14 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Gets flag whether nodes will run in one jvm or in separate jvms.
+     * Gets flag whether nodes will run in one JVM or in separate JVMs.
      *
-     * @return <code>True</code> to run nodes in separate jvms.
+     * @return <code>True</code> to run nodes in separate JVMs.
      * @see IgniteNodeRunner
      * @see IgniteProcessProxy
+     * @see #isRemoteJvm()
+     * @see #isRemoteJvm(int)
+     * @see #isRemoteJvm(String)
      * @see #executeOnLocalOrRemoteJvm(int, TestIgniteIdxCallable)
      * @see #executeOnLocalOrRemoteJvm(Ignite, TestIgniteCallable)
      * @see #executeOnLocalOrRemoteJvm(IgniteCache, TestCacheCallable)
@@ -1377,24 +1380,25 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * @param gridName Grid name.
-     * @return <code>True</code> if test was run in multy jvm mode and grid at another jvm.
+     * @return <code>True</code> if test was run in multi-JVM mode and grid with this name was started at another JVM.
      */
-    protected boolean isMultiJvmAndNodeIsRemote(String gridName) {
+    protected boolean isRemoteJvm(String gridName) {
         return isMultiJvm() && !gridName.endsWith("0");
     }
 
     /**
      * @param idx Grid index.
-     * @return <code>True</code> if test was run in multy jvm mode and grid at another jvm.
+     * @return <code>True</code> if test was run in multi-JVM mode and grid with this ID was started at another JVM.
      */
-    protected boolean isMultiJvmAndNodeIsRemote(int idx) {
+    protected boolean isRemoteJvm(int idx) {
         return isMultiJvm() && idx != 0;
     }
 
     /**
-     * @return <code>True</code> if current jvm contains remote started node.
+     * @return <code>True</code> if current JVM contains remote started node
+     * (It differs from JVM where tests executing).
      */
-    protected boolean weAreOnRemoteJvm() {
+    protected boolean isRemoteJvm() {
         return IgniteNodeRunner.hasStartedInstance();
     }
 
@@ -1415,7 +1419,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Calls job on local jvm or on remote jvm in multi jvm case.
+     * Calls job on local JVM or on remote JVM in multi-JVM case.
      *
      * @param idx Grid index.
      * @param job Job.
@@ -1435,7 +1439,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Calls job on local jvm or on remote jvm in multi jvm case.
+     * Calls job on local JVM or on remote JVM in multi-JVM case.
      *
      * @param ignite Ignite.
      * @param job Job.
@@ -1453,7 +1457,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Calls job on local jvm or on remote jvm in multi jvm case.
+     * Calls job on local JVM or on remote JVM in multi-JVM case.
      *
      * @param cache Cache.
      * @param job Job.
@@ -1473,7 +1477,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Calls job on remote jvm.
+     * Calls job on remote JVM.
      *
      * @param idx Grid index.
      * @param job Job.
@@ -1494,7 +1498,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Calls job on remote jvm.
+     * Calls job on remote JVM.
      *
      * @param proxy Ignite.
      * @param job Job.
@@ -1512,7 +1516,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs job on remote jvm.
+     * Runs job on remote JVM.
      *
      * @param cache Cache.
      * @param job Job.
