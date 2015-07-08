@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
@@ -32,10 +35,23 @@ import static java.util.concurrent.TimeUnit.*;
  * Cache future self test.
  */
 public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static volatile boolean fail;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
+
         cfg.setGridName(gridName);
+
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+
+        spi.setIpFinder(IP_FINDER);
+
+        cfg.setDiscoverySpi(spi);
 
         if (gridName.equals(getTestGridName(1)))
             cfg.setClientMode(true);
@@ -43,20 +59,58 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testAsyncCacheFuture() throws Exception {
-        Ignite srv = startGrid(0);
+        startGrid(0);
 
-        IgniteCache<String, NotSerializableClass> cache = srv.getOrCreateCache("CACHE");
+        startGrid(1);
+
+        testGet(false, false);
+
+        testGet(false, true);
+
+        testGet(true, false);
+
+        testGet(true, true);
+    }
+
+    /**
+     * @param nearCache If {@code true} creates near cache on client.
+     * @param cpyOnRead Cache copy on read flag.
+     * @throws Exception If failed.
+     */
+    private void testGet(boolean nearCache, boolean cpyOnRead) throws Exception {
+        fail = false;
+
+        Ignite srv = grid(0);
+
+        Ignite client = grid(1);
+
+        final String cacheName = nearCache ? ("NEAR-CACHE-" + cpyOnRead) : ("CACHE-" + cpyOnRead);
+
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+
+        ccfg.setCopyOnRead(cpyOnRead);
+
+        ccfg.setName(cacheName);
+
+        IgniteCache<Object, Object> cache = srv.createCache(ccfg);
+
         cache.put("key", new NotSerializableClass());
 
-        Ignite client = startGrid(1);
+        IgniteCache<Object, Object> clientCache = nearCache ? client.createNearCache(cacheName,
+            new NearCacheConfiguration<>()) : client.cache(cacheName);
 
-        IgniteCache<String, NotSerializableClass> asyncCache = client.<String, NotSerializableClass>cache("CACHE").withAsync();
+        IgniteCache<Object, Object> asyncCache = clientCache.withAsync();
 
-        System.setProperty("FAIL", "true");
+        fail = true;
 
         asyncCache.get("key");
 
@@ -79,7 +133,9 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        assertTrue(futLatch.await(60, SECONDS));
+        assertTrue(futLatch.await(5, SECONDS));
+
+        srv.destroyCache(cache.getName());
     }
 
     /**
@@ -93,10 +149,10 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc}*/
         private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-            if (System.getProperty("FAIL") != null)
+            if (fail)
                 throw new RuntimeException("Deserialization failed.");
 
             in.readObject();
         }
     }
-}	
+}
