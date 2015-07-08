@@ -20,11 +20,12 @@ package org.apache.ignite.internal.processors.cache;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests for replicated cache query metrics.
+ * Tests for replicated distributed cache query metrics.
  */
-public class CacheReplicatedQueryMetricsSelfTest extends CacheAbstractQueryMetricsSelfTest {
+public class CacheReplicatedQueryMetricsDistributedSelfTest extends CacheAbstractQueryMetricsSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        gridCnt = 2;
         cacheMode = REPLICATED;
 
         super.beforeTest();
