@@ -69,19 +69,53 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         Map<Integer, Integer> putMap = new LinkedHashMap<>();
 
-        int size = 100;
+        final int size = 100;
 
         for (int i = 0; i < size; i++)
             putMap.put(i, i * i);
 
-        IgniteCache<Object, Object> c0 = grid(0).cache(null);
-        IgniteCache<Object, Object> c1 = grid(1).cache(null);
+        IgniteCache<Object, Object> c0 = grid(1).cache(null);
+        IgniteCache<Object, Object> c1 = grid(2).cache(null);
 
         c0.putAll(putMap);
 
         atomicClockModeDelay(c0);
 
+        Thread.sleep(10_000);
+
         c1.removeAll(putMap.keySet());
+
+        Thread.sleep(10_000);
+
+        Affinity<Object> affinity = grid(0).affinity(null);
+
+        for (int i = 0; i < size; i++) {
+            Collection<ClusterNode> nodes = affinity.mapKeyToPrimaryAndBackups(i);
+            System.out.print(">>>>>> Affinity for i=" + i + " ");
+
+            for (ClusterNode node : nodes)
+                System.out.print(node.id() + " ");
+
+            System.out.println();
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            System.out.println("*********** Grid " + i + " ***************");
+
+            executeOnLocalOrRemoteJvm(grid(i).cache(null), new TestCacheRunnable<Object, Object>() {
+                @Override public void run(Ignite ignite, IgniteCache<Object, Object> cache) throws Exception {
+                    for (int i = 0; i < size; i++) {
+                        if (i==12)
+                            cache.get(i);
+
+                        System.out.println(">>>>> i=" + i + " v=" + cache.get(i));
+                    }
+
+                    for (Cache.Entry<Object, Object> entry : cache)
+                        System.out.println(">>>>> Entry=" + entry);
+                }
+            });
+        }
 
         for (int i = 0; i < size; i++) {
             assertNull(c0.get(i));
