@@ -1277,45 +1277,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... args)
         throws EntryProcessorException {
-        try {
-            CacheOperationContext prev = onEnter(opCtx);
-
-            try {
-                if (isAsync()) {
-                    IgniteInternalFuture<EntryProcessorResult<T>> fut = delegate.invokeAsync(key, entryProcessor, args);
-
-                    IgniteInternalFuture<T> fut0 = fut.chain(new CX1<IgniteInternalFuture<EntryProcessorResult<T>>, T>() {
-                        @Override public T applyx(IgniteInternalFuture<EntryProcessorResult<T>> fut)
-                            throws IgniteCheckedException {
-
-                            try {
-                                EntryProcessorResult<T> res = fut.get();
-
-                                return res != null ? res.get() : null;
-                            }
-                            catch (RuntimeException e) {
-                                throw new GridClosureException(e);
-                            }
-                        }
-                    });
-
-                    setFuture(fut0);
-
-                    return null;
-                }
-                else {
-                    EntryProcessorResult<T> res = delegate.invoke(key, entryProcessor, args);
-
-                    return res != null ? res.get() : null;
-                }
-            }
-            finally {
-                onLeave(prev);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
+        return invoke(key, (EntryProcessor<K, V, T>)entryProcessor, args);
     }
 
     /** {@inheritDoc} */
