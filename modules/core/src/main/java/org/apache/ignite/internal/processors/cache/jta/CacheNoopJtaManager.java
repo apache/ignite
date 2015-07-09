@@ -31,7 +31,7 @@ public class CacheNoopJtaManager extends CacheJtaManagerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void createTmLookup(CacheConfiguration ccfg) throws IgniteCheckedException {
+    @Override public void registerCache(CacheConfiguration<?, ?> cfg) {
         // No-op.
     }
 

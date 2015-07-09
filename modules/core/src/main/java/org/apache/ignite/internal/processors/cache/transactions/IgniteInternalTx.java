@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -246,7 +245,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     /**
      * @return Pool where message for the given transaction must be processed.
      */
-    public GridIoPolicy ioPolicy();
+    public byte ioPolicy();
 
     /**
      * @return Last recorded topology version.

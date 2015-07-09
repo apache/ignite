@@ -133,9 +133,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Replication manager. */
     private GridCacheDrManager drMgr;
 
-    /** JTA manager. */
-    private CacheJtaManagerAdapter jtaMgr;
-
     /** Conflict resolver manager. */
     private CacheConflictResolutionManager rslvrMgr;
 
@@ -170,7 +167,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CacheType cacheType;
 
     /** IO policy. */
-    private GridIoPolicy plc;
+    private byte plc;
 
     /** Default expiry policy. */
     private ExpiryPolicy expiryPlc;
@@ -223,7 +220,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param dataStructuresMgr Cache dataStructures manager.
      * @param ttlMgr TTL manager.
      * @param drMgr Data center replication manager.
-     * @param jtaMgr JTA manager.
      * @param rslvrMgr Conflict resolution manager.
      * @param pluginMgr Cache plugin manager.
      */
@@ -251,7 +247,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheDataStructuresManager dataStructuresMgr,
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
-        CacheJtaManagerAdapter jtaMgr,
         CacheConflictResolutionManager<K, V> rslvrMgr,
         CachePluginManager pluginMgr
     ) {
@@ -292,7 +287,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.dataStructuresMgr = add(dataStructuresMgr);
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
-        this.jtaMgr = add(jtaMgr);
         this.rslvrMgr = add(rslvrMgr);
         this.pluginMgr = add(pluginMgr);
 
@@ -459,7 +453,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return IO policy for the given cache.
      */
-    public GridIoPolicy ioPolicy() {
+    public byte ioPolicy() {
         return plc;
     }
 
@@ -1018,7 +1012,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return JTA manager.
      */
     public CacheJtaManagerAdapter jta() {
-        return jtaMgr;
+        return sharedCtx.jta();
     }
 
     /**

@@ -22,10 +22,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.Transaction;
 import org.objectweb.jotm.*;
 
 import javax.transaction.*;
+
+import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.TransactionState.*;
@@ -65,18 +68,11 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
-
-        cfg.setTransactionManagerLookupClassName(TestTmLookup.class.getName());
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.getTransactionConfiguration().setTxManagerLookupClassName(TestTmLookup.class.getName());
+        
         CacheConfiguration cfg1 = cacheConfiguration(gridName);
 
         CacheConfiguration cfg2 = cacheConfiguration(gridName);
@@ -96,6 +92,17 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
         /** {@inheritDoc} */
         @Override public TransactionManager getTm() {
             return jotm.getTransactionManager();
+        }
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class TestTmLookup2 implements CacheTmLookup {
+        /** {@inheritDoc} */
+        @Override public TransactionManager getTm() {
+            return null;
         }
     }
 
@@ -145,14 +152,10 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /**
-     * TODO: IGNITE-591.
-     *
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
     public void testJtaTwoCaches() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-591");
-
         UserTransaction jtaTx = jotm.getUserTransaction();
 
         IgniteEx ignite = grid(0);
@@ -188,5 +191,28 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
 
         assertEquals(1, (int)cache1.get("key"));
         assertEquals(1, (int)cache2.get("key"));
+    }
+    
+    /**
+     *
+     */
+    public void testUncompatibleTmLookup() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1094");
+        
+        final IgniteEx ignite = grid(0);
+        
+        final CacheConfiguration cacheCfg = new CacheConfiguration();
+        
+        cacheCfg.setName("Foo");
+        cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cacheCfg.setTransactionManagerLookupClassName(TestTmLookup2.class.getName());
+        
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws IgniteException {
+                ignite.createCache(cacheCfg);
+                
+                return null;
+            }
+        }, IgniteException.class, null);
     }
 }
