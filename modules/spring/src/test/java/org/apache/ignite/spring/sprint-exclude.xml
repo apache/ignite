@@ -29,6 +29,25 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="fileSystemConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
+                    <property name="name" value="test"/>
+                    <property name="metaCacheName" value="meta"/>
+                    <property name="dataCacheName" value="data"/>
+
+                    <property name="maxSpaceSize" value="#{100L * 1024 * 1024}"/>
+
+                    <!-- Loopback endpoint. -->
+                    <property name="ipcEndpointConfiguration">
+                        <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">
+                            <property name="type" value="TCP" />
+                        </bean>
+                    </property>
+                </bean>
+            </list>
+        </property>
+
         <!-- Cache configurations (all properties are optional). -->
         <property name="cacheConfiguration">
             <list>
