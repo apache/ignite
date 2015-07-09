@@ -37,9 +37,22 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     /** */
     public static final int IDLE_CONN_TIMEOUT = 2000;
 
+    /** */
+    private final boolean useShmem;
+
+    /**
+     * @param useShmem Use shared mem flag.
+     */
+    protected GridTcpCommunicationSpiAbstractTest(boolean useShmem) {
+        this.useShmem = useShmem;
+    }
+
     /** {@inheritDoc} */
     @Override protected CommunicationSpi getSpi(int idx) {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
+
+        if (!useShmem)
+            spi.setSharedMemoryPort(-1);
 
         spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         spi.setIdleConnectionTimeout(IDLE_CONN_TIMEOUT);
@@ -64,7 +77,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
 
         // Test idle clients remove.
         for (CommunicationSpi spi : spis.values()) {
-            ConcurrentMap<UUID, GridTcpCommunicationClient> clients = U.field(spi, "clients");
+            ConcurrentMap<UUID, GridCommunicationClient> clients = U.field(spi, "clients");
 
             assertEquals(2, clients.size());
 
@@ -77,7 +90,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
         super.afterTest();
 
         for (CommunicationSpi spi : spis.values()) {
-            ConcurrentMap<UUID, GridTcpCommunicationClient> clients = U.field(spi, "clients");
+            ConcurrentMap<UUID, GridCommunicationClient> clients = U.field(spi, "clients");
 
             for (int i = 0; i < 20 && !clients.isEmpty(); i++) {
                 info("Check failed for SPI [grid=" +

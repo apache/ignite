@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
 
 /**
  * Test suite for near-only cache.
@@ -33,12 +32,17 @@ public class IgniteCacheNearOnlySelfTestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Near-only cache test suite.");
 
-        suite.addTest(new TestSuite(GridCacheNearOnlySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheAtomicNearOnlySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheClientOnlySelfTest.class));
+        suite.addTest(new TestSuite(GridCacheClientOnlySelfTest.CasePartitionedAtomic.class));
+        suite.addTest(new TestSuite(GridCacheClientOnlySelfTest.CasePartitionedTransactional.class));
+        suite.addTest(new TestSuite(GridCacheClientOnlySelfTest.CaseReplicatedAtomic.class));
+        suite.addTest(new TestSuite(GridCacheClientOnlySelfTest.CaseReplicatedTransactional.class));
+
         suite.addTest(new TestSuite(GridCacheNearOnlyTopologySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheReplicatedClientOnlySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheReplicatedNearOnlySelfTest.class));
+
+        suite.addTest(new TestSuite(GridCacheNearOnlySelfTest.CasePartitionedAtomic.class));
+        suite.addTest(new TestSuite(GridCacheNearOnlySelfTest.CasePartitionedTransactional.class));
+        suite.addTest(new TestSuite(GridCacheNearOnlySelfTest.CaseReplicatedAtomic.class));
+        suite.addTest(new TestSuite(GridCacheNearOnlySelfTest.CaseReplicatedTransactional.class));
 
         return suite;
     }

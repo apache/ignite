@@ -38,7 +38,7 @@ import static java.util.concurrent.TimeUnit.*;
  */
 public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstractSelfTest {
     /** */
-    private static final int KEY_CNT = 50;
+    private static final int KEY_CNT = 500;
 
     /** {@inheritDoc} */
     @Override protected boolean swapEnabled() {
@@ -163,24 +163,18 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
-        cache.put(1, 1);
-        cache.put(2, 2);
+        for (int i = 0; i < KEY_CNT; i++)
+            cache.put(i, i);
 
         assertEquals(cache.metrics().getAverageRemoveTime(), 0.0, 0.0);
 
-        cacheAsync.getAndRemove(1);
+        for (int i = 0; i < KEY_CNT; i++) {
+            cacheAsync.getAndRemove(i);
 
-        IgniteFuture<Object> fut = cacheAsync.future();
+            IgniteFuture<Object> fut = cacheAsync.future();
 
-        assertEquals(1, (int)fut.get());
-
-        assert cache.metrics().getAverageRemoveTime() > 0;
-
-        cacheAsync.getAndRemove(2);
-
-        fut = cacheAsync.future();
-
-        assertEquals(2, (int)fut.get());
+            fut.get();
+        }
 
         assert cache.metrics().getAverageRemoveTime() > 0;
     }
@@ -221,18 +215,13 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testRemoveAvgTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
-        cache.put(1, 1);
-        cache.put(2, 2);
+        for (int i = 0; i < KEY_CNT; i++)
+            cache.put(i, i);
 
         assertEquals(cache.metrics().getAverageRemoveTime(), 0.0, 0.0);
 
-        cache.remove(1);
-
-        float avgRmvTime = cache.metrics().getAverageRemoveTime();
-
-        assert avgRmvTime > 0;
-
-        cache.remove(2);
+        for (int i = 0; i < KEY_CNT; i++)
+            cache.remove(i);
 
         assert cache.metrics().getAverageRemoveTime() > 0;
     }
@@ -378,17 +367,12 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(0.0, cache.metrics().getAveragePutTime(), 0.0);
         assertEquals(0, cache.metrics().getCachePuts());
 
-        cache.put(1, 1);
+        for (int i = 0; i < KEY_CNT; i++)
+            cache.put(i, i);
 
-        float avgPutTime = cache.metrics().getAveragePutTime();
+        assert cache.metrics().getAveragePutTime() > 0;
 
-        assert avgPutTime >= 0;
-
-        assertEquals(1, cache.metrics().getCachePuts());
-
-        cache.put(2, 2);
-
-        assert cache.metrics().getAveragePutTime() >= 0;
+        assertEquals(KEY_CNT, cache.metrics().getCachePuts());
     }
 
     /**

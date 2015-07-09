@@ -184,6 +184,7 @@ public class PojoField {
 
     /**
      * @param jdbcType String name for JDBC type.
+     * @return String name for JDBC type.
      */
     private static String jdbcTypeName(int jdbcType) {
         switch (jdbcType) {

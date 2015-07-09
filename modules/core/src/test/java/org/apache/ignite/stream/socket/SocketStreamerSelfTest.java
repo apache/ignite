@@ -58,14 +58,11 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /** Port. */
     private static int port;
 
-    /** Ignite. */
-    private static Ignite ignite;
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg = cacheConfiguration(cfg, null);
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -81,8 +78,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        ignite = startGrids(GRID_CNT);
-        ignite.<Integer, String>getOrCreateCache(defaultCacheConfiguration());
+        startGrids(GRID_CNT);
 
         try (ServerSocket sock = new ServerSocket(0)) {
             port = sock.getLocalPort();
@@ -92,11 +88,6 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        ignite.cache(null).clear();
     }
 
     /**
@@ -235,14 +226,18 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     {
         SocketStreamer<Tuple, Integer, String> sockStmr = null;
 
+        Ignite ignite = grid(0);
+
+        IgniteCache<Integer, String> cache = ignite.cache(null);
+
+        cache.clear();
+
         try (IgniteDataStreamer<Integer, String> stmr = ignite.dataStreamer(null)) {
 
             stmr.allowOverwrite(true);
             stmr.autoFlushFrequency(10);
 
             sockStmr = new SocketStreamer<>();
-
-            IgniteCache<Integer, String> cache = ignite.cache(null);
 
             sockStmr.setIgnite(ignite);
 
@@ -279,10 +274,10 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
             latch.await();
 
-            assertEquals(CNT, cache.size(CachePeekMode.PRIMARY));
-
             for (int i = 0; i < CNT; i++)
                 assertEquals(Integer.toString(i), cache.get(i));
+
+            assertEquals(CNT, cache.size(CachePeekMode.PRIMARY));
         }
         finally {
             if (sockStmr != null)

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.plugin.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
@@ -626,6 +627,26 @@ public abstract class IgniteUtils {
         });
 
         return m;
+    }
+
+    /**
+     * Gets all plugin providers.
+     *
+     * @return Plugins.
+     */
+    public static List<PluginProvider> allPluginProviders() {
+        return AccessController.doPrivileged(new PrivilegedAction<List<PluginProvider>>() {
+            @Override public List<PluginProvider> run() {
+                List<PluginProvider> providers = new ArrayList<>();
+
+                ServiceLoader<PluginProvider> ldr = ServiceLoader.load(PluginProvider.class);
+
+                for (PluginProvider provider : ldr)
+                    providers.add(provider);
+
+                return providers;
+            }
+        });
     }
 
     /**
@@ -1637,10 +1658,10 @@ public abstract class IgniteUtils {
 
         String ipAddr = addr.getHostAddress();
 
-        hostName = F.isEmpty(hostName) || hostName.equals(ipAddr) || addr.isLoopbackAddress() ? "" : hostName;
-
         addrs.add(ipAddr);
-        hostNames.add(hostName);
+
+        if (!F.isEmpty(hostName) && !addr.isLoopbackAddress())
+            hostNames.add(hostName);
     }
 
     /**
@@ -7872,6 +7893,9 @@ public abstract class IgniteUtils {
         if (cls != null)
             return cls;
 
+        if (ldr == null)
+            ldr = gridClassLoader;
+
         ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
 
         if (ldrMap == null) {
@@ -8024,9 +8048,13 @@ public abstract class IgniteUtils {
     public static String consistentId(Collection<String> addrs, int port) {
         assert !F.isEmpty(addrs);
 
+        List<String> sortedAddrs = new ArrayList<>(addrs);
+
+        Collections.sort(sortedAddrs);
+
         StringBuilder sb = new StringBuilder();
 
-        for (String addr : addrs)
+        for (String addr : sortedAddrs)
             sb.append(addr).append(',');
 
         sb.delete(sb.length() - 1, sb.length());
@@ -9025,11 +9053,11 @@ public abstract class IgniteUtils {
                 hasShmem = false;
             else {
                 try {
-                    IpcSharedMemoryNativeLoader.load();
+                    IpcSharedMemoryNativeLoader.load(null);
 
                     hasShmem = true;
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException ignore) {
                     hasShmem = false;
                 }
             }

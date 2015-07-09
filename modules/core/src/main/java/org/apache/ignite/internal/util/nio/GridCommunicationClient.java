@@ -38,58 +38,58 @@ public interface GridCommunicationClient {
      * @param handshakeC Handshake.
      * @throws IgniteCheckedException If handshake failed.
      */
-    void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws IgniteCheckedException;
+    public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws IgniteCheckedException;
 
     /**
      * @return {@code True} if client has been closed by this call,
      *      {@code false} if failed to close client (due to concurrent reservation or concurrent close).
      */
-    boolean close();
+    public boolean close();
 
     /**
      * Forces client close.
      */
-    void forceClose();
+    public void forceClose();
 
     /**
      * @return {@code True} if client is closed;
      */
-    boolean closed();
+    public boolean closed();
 
     /**
      * @return {@code True} if client was reserved, {@code false} otherwise.
      */
-    boolean reserve();
+    public boolean reserve();
 
     /**
      * Releases this client by decreasing reservations.
      */
-    void release();
+    public void release();
 
     /**
      * @return {@code True} if client was reserved.
      */
-    boolean reserved();
+    public boolean reserved();
 
     /**
      * Gets idle time of this client.
      *
      * @return Idle time of this client.
      */
-    long getIdleTime();
+    public long getIdleTime();
 
     /**
      * @param data Data to send.
      * @throws IgniteCheckedException If failed.
      */
-    void sendMessage(ByteBuffer data) throws IgniteCheckedException;
+    public void sendMessage(ByteBuffer data) throws IgniteCheckedException;
 
     /**
      * @param data Data to send.
      * @param len Length.
      * @throws IgniteCheckedException If failed.
      */
-    void sendMessage(byte[] data, int len) throws IgniteCheckedException;
+    public void sendMessage(byte[] data, int len) throws IgniteCheckedException;
 
     /**
      * @param nodeId Node ID (provided only if versions of local and remote nodes are different).
@@ -97,16 +97,10 @@ public interface GridCommunicationClient {
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if should try to resend message.
      */
-    boolean sendMessage(@Nullable UUID nodeId, Message msg) throws IgniteCheckedException;
-
-    /**
-     * @param timeout Timeout.
-     * @throws IOException If failed.
-     */
-    void flushIfNeeded(long timeout) throws IOException;
+    public boolean sendMessage(@Nullable UUID nodeId, Message msg) throws IgniteCheckedException;
 
     /**
      * @return {@code True} if send is asynchronous.
      */
-    boolean async();
+    public boolean async();
 }

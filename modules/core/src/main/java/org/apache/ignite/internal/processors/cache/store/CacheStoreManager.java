@@ -68,6 +68,11 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
     public boolean isWriteThrough();
 
     /**
+     * @return {@code True} is write-behind is enabled.
+     */
+    public boolean isWriteBehind();
+
+    /**
      * @return Whether DHT transaction can write to store from DHT.
      */
     public boolean isWriteToStoreFromDht();
@@ -160,7 +165,7 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
      * @param commit Commit.
      * @throws IgniteCheckedException If failed.
      */
-    public void sessionEnd(IgniteInternalTx tx, boolean commit) throws IgniteCheckedException;
+    public void sessionEnd(IgniteInternalTx tx, boolean commit, boolean last) throws IgniteCheckedException;
 
     /**
      * End session initiated by write-behind store.

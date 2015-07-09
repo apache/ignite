@@ -101,19 +101,28 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         grid(0).cache("cacheA").removeAll();
         grid(0).cache("cacheB").removeAll();
         grid(0).cache("cacheC").removeAll();
+
+        for (CacheStore store : firstStores.values())
+            ((TestStore)store).clear();
+
+        for (CacheStore store : secondStores.values())
+            ((TestStore)store).clear();
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testWriteThrough() throws Exception {
+    public void testSameStore() throws Exception {
         IgniteEx grid = grid(0);
 
         TestStore firstStore = (TestStore)firstStores.get(grid.name());
+        TestStore secondStore = (TestStore)secondStores.get(grid.name());
 
         assertNotNull(firstStore);
+        assertNotNull(secondStore);
 
-        Collection<String> evts = firstStore.events();
+        Collection<String> firstStoreEvts = firstStore.events();
+        Collection<String> secondStoreEvts = secondStore.events();
 
         try (Transaction tx = grid.transactions().txStart()) {
             IgniteCache<Object, Object> cacheA = grid.cache("cacheA");
@@ -138,82 +147,122 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         }
 
         assertEqualsCollections(F.asList(
-                "writeAll cacheA 2",
-                "writeAll cacheB 2",
-                "deleteAll cacheA 2",
-                "deleteAll cacheB 2",
-                "write cacheA",
-                "delete cacheA",
-                "write cacheB",
-                "sessionEnd true"
-            ),
-            evts);
+            "writeAll cacheA 2",
+            "writeAll cacheB 2",
+            "deleteAll cacheA 2",
+            "deleteAll cacheB 2",
+            "write cacheA",
+            "delete cacheA",
+            "write cacheB",
+            "sessionEnd true"
+        ),
+        firstStoreEvts);
+
+        assertEquals(0, secondStoreEvts.size());
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIncompatibleCaches1() throws Exception {
+    public void testDifferentStores() throws Exception {
         IgniteEx grid = grid(0);
 
-        try (Transaction ignored = grid.transactions().txStart()) {
+        TestStore firstStore = (TestStore)firstStores.get(grid.name());
+        TestStore secondStore = (TestStore)secondStores.get(grid.name());
+
+        assertNotNull(firstStore);
+        assertNotNull(secondStore);
+
+        Collection<String> firstStoreEvts = firstStore.events();
+        Collection<String> secondStoreEvts = secondStore.events();
+
+        try (Transaction tx = grid.transactions().txStart()) {
             IgniteCache<Object, Object> cacheA = grid.cache("cacheA");
             IgniteCache<Object, Object> cacheC = grid.cache("cacheC");
 
-            cacheA.put("1", "2");
+            cacheA.put("1", "1");
+            cacheA.put("2", "2");
+            cacheC.put("1", "1");
+            cacheC.put("2", "2");
 
-            cacheC.put("1", "2");
+            cacheA.remove("3");
+            cacheA.remove("4");
+            cacheC.remove("3");
+            cacheC.remove("4");
 
-            fail("Must not allow to enlist caches with different stores to one transaction");
+            cacheA.put("5", "5");
+            cacheA.remove("6");
+
+            cacheC.put("7", "7");
+
+            tx.commit();
         }
-        catch (CacheException e) {
-            assertTrue(e.getMessage().contains("Failed to enlist new cache to existing transaction"));
-        }
+
+        assertEqualsCollections(F.asList(
+            "writeAll cacheA 2",
+            "deleteAll cacheA 2",
+            "write cacheA",
+            "delete cacheA",
+            "sessionEnd true"
+        ),
+        firstStoreEvts);
+
+        assertEqualsCollections(F.asList(
+            "writeAll cacheC 2",
+            "deleteAll cacheC 2",
+            "write cacheC",
+            "sessionEnd true"
+        ),
+        secondStoreEvts);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIncompatibleCaches2() throws Exception {
+    public void testNonPersistentCache() throws Exception {
         IgniteEx grid = grid(0);
 
-        try (Transaction ignored = grid.transactions().txStart()) {
+        TestStore firstStore = (TestStore)firstStores.get(grid.name());
+        TestStore secondStore = (TestStore)secondStores.get(grid.name());
+
+        assertNotNull(firstStore);
+        assertNotNull(secondStore);
+
+        Collection<String> firstStoreEvts = firstStore.events();
+        Collection<String> secondStoreEvts = secondStore.events();
+
+        try (Transaction tx = grid.transactions().txStart()) {
             IgniteCache<Object, Object> cacheA = grid.cache("cacheA");
-            IgniteCache<Object, Object> cacheC = grid.cache("cacheD");
+            IgniteCache<Object, Object> cacheD = grid.cache("cacheD");
 
-            cacheA.put("1", "2");
+            cacheA.put("1", "1");
+            cacheA.put("2", "2");
+            cacheD.put("1", "1");
+            cacheD.put("2", "2");
 
-            cacheC.put("1", "2");
+            cacheA.remove("3");
+            cacheA.remove("4");
+            cacheD.remove("3");
+            cacheD.remove("4");
 
-            fail("Must not allow to enlist caches with different stores to one transaction");
+            cacheA.put("5", "5");
+            cacheA.remove("6");
+
+            cacheD.put("7", "7");
+
+            tx.commit();
         }
-        catch (CacheException e) {
-            assertTrue(e.getMessage().contains("Failed to enlist new cache to existing transaction"));
-        }
-    }
 
-    /**
-     * @param col1 Collection 1.
-     * @param col2 Collection 2.
-     */
-    private static void assertEqualsCollections(Collection<?> col1, Collection<?> col2) {
-        if (col1.size() != col2.size())
-            fail("Collections are not equal:\nExpected:\t" + col1 + "\nActual:\t" + col2);
+        assertEqualsCollections(F.asList(
+            "writeAll cacheA 2",
+            "deleteAll cacheA 2",
+            "write cacheA",
+            "delete cacheA",
+            "sessionEnd true"
+        ),
+        firstStoreEvts);
 
-        Iterator<?> it1 = col1.iterator();
-        Iterator<?> it2 = col2.iterator();
-
-        int idx = 0;
-
-        while (it1.hasNext()) {
-            Object item1 = it1.next();
-            Object item2 = it2.next();
-
-            if (!F.eq(item1, item2))
-                fail("Collections are not equal (position " + idx + "):\nExpected: " + col1 + "\nActual:   " + col2);
-
-            idx++;
-        }
+        assertEquals(0, secondStoreEvts.size());
     }
 
     /**

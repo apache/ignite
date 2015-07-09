@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.swapspace.inmemory.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
@@ -129,6 +130,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES)
             cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
@@ -350,6 +353,21 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 lock.unlock();
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoveAllSkipStore() throws Exception {
+        IgniteCache<String, Integer> jcache = jcache();
+
+        jcache.putAll(F.asMap("1", 1, "2", 2, "3", 3));
+
+        jcache.withSkipStore().removeAll();
+
+        assertEquals((Integer)1, jcache.get("1"));
+        assertEquals((Integer)2, jcache.get("2"));
+        assertEquals((Integer)3, jcache.get("3"));
     }
 
     /**
@@ -1002,25 +1020,27 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
+        final String key = primaryKeysForCache(cache, 1).get(0);
+
         Transaction tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, READ_COMMITTED) : null;
 
         try {
             if (startVal)
-                cache.put("key", 2);
+                cache.put(key, 2);
             else
-                assertEquals(null, cache.get("key"));
+                assertEquals(null, cache.get(key));
 
-            Integer expectedRes = startVal ? 2 : null;
+            Integer expRes = startVal ? 2 : null;
 
-            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
+            assertEquals(String.valueOf(expRes), cache.invoke(key, INCR_PROCESSOR));
 
-            expectedRes = startVal ? 3 : 1;
+            expRes = startVal ? 3 : 1;
 
-            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
+            assertEquals(String.valueOf(expRes), cache.invoke(key, INCR_PROCESSOR));
 
-            expectedRes++;
+            expRes++;
 
-            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
+            assertEquals(String.valueOf(expRes), cache.invoke(key, INCR_PROCESSOR));
 
             if (tx != null)
                 tx.commit();
@@ -1032,11 +1052,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Integer exp = (startVal ? 2 : 0) + 3;
 
-        assertEquals(exp, cache.get("key"));
+        assertEquals(exp, cache.get(key));
 
         for (int i = 0; i < gridCount(); i++) {
-            if (ignite(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), "key"))
-                assertEquals(exp, peek(jcache(i), "key"));
+            if (ignite(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key))
+                assertEquals(exp, peek(jcache(i), key));
         }
     }
 
@@ -3913,6 +3933,33 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    public void testIterator() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+
+        final int KEYS = 1000;
+
+        for (int i = 0; i < KEYS; i++)
+            cache.put(i, i);
+
+        // Try to initialize readers in case when near cache is enabled.
+        for (int i = 0; i < gridCount(); i++) {
+            cache = grid(i).cache(null);
+
+            for (int k = 0; k < KEYS; k++)
+                assertEquals((Object)k, cache.get(k));
+        }
+
+        int cnt = 0;
+
+        for (Cache.Entry e : cache)
+            cnt++;
+
+        assertEquals(KEYS, cnt);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testIgniteCacheIterator() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 
@@ -4860,6 +4907,89 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             return CacheStartMode.ONE_BY_ONE;
 
         return CacheStartMode.STATIC;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetOutTx() throws Exception {
+        checkGetOutTx(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetOutTxAsync() throws Exception {
+        checkGetOutTx(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkGetOutTx(boolean async) throws Exception {
+        final AtomicInteger lockEvtCnt = new AtomicInteger();
+
+        IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                lockEvtCnt.incrementAndGet();
+
+                return true;
+            }
+        };
+
+        try {
+            IgniteCache<String, Integer> cache = grid(0).cache(null);
+
+            List<String> keys = primaryKeysForCache(cache, 2);
+
+            assertEquals(2, keys.size());
+
+            cache.put(keys.get(0), 0);
+            cache.put(keys.get(1), 1);
+
+            grid(0).events().localListen(lsnr, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
+
+            if (async)
+                cache = cache.withAsync();
+
+            try (Transaction tx = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                Integer val0 = cache.get(keys.get(0));
+
+                if (async)
+                    val0 = cache.<Integer>future().get();
+
+                assertEquals(0, val0.intValue());
+
+                Map<String, Integer> allOutTx = cache.getAllOutTx(F.asSet(keys.get(1)));
+
+                if (async)
+                    allOutTx = cache.<Map<String, Integer>>future().get();
+
+                assertEquals(1, allOutTx.size());
+
+                assertTrue(allOutTx.containsKey(keys.get(1)));
+
+                assertEquals(1, allOutTx.get(keys.get(1)).intValue());
+            }
+
+            assertTrue(GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    info("Lock event count: " + lockEvtCnt.get());
+                    if (atomicityMode() == ATOMIC)
+                        return lockEvtCnt.get() == 0;
+
+                    if (cacheMode() == PARTITIONED && nearEnabled()) {
+                        if (!grid(0).configuration().isClientMode())
+                            return lockEvtCnt.get() == 4;
+                    }
+
+                    return lockEvtCnt.get() == 2;
+                }
+            }, 15000));
+        }
+        finally {
+            grid(0).events().stopLocalListen(lsnr, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
+        }
     }
 
     /**

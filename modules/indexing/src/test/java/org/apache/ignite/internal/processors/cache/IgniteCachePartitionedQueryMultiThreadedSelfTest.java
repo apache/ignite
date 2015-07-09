@@ -78,7 +78,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         cc.setRebalanceMode(CacheRebalanceMode.SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setIndexedTypes(
-            UUID.class, Person.class
+            UUID.class, PersonObj.class
         );
 
         c.setCacheConfiguration(cc);
@@ -126,12 +126,12 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         long duration = 10 * 1000;
         final int logMod = 100;
 
-        final Person p1 = new Person("Jon", 1500, "Master");
-        final Person p2 = new Person("Jane", 2000, "Master");
-        final Person p3 = new Person("Mike", 1800, "Bachelor");
-        final Person p4 = new Person("Bob", 1900, "Bachelor");
+        final PersonObj p1 = new PersonObj("Jon", 1500, "Master");
+        final PersonObj p2 = new PersonObj("Jane", 2000, "Master");
+        final PersonObj p3 = new PersonObj("Mike", 1800, "Bachelor");
+        final PersonObj p4 = new PersonObj("Bob", 1900, "Bachelor");
 
-        final IgniteCache<UUID, Person> cache0 = grid(0).cache(null);
+        final IgniteCache<UUID, PersonObj> cache0 = grid(0).cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -150,10 +150,10 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         IgniteInternalFuture<?> futLucene = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
-                    QueryCursor<Cache.Entry<UUID, Person>> master =
-                        cache0.query(new TextQuery(Person.class, "Master"));
+                    QueryCursor<Cache.Entry<UUID, PersonObj>> master =
+                        cache0.query(new TextQuery(PersonObj.class, "Master"));
 
-                    Collection<Cache.Entry<UUID, Person>> entries = master.getAll();
+                    Collection<Cache.Entry<UUID, PersonObj>> entries = master.getAll();
 
                     checkResult(entries, p1, p2);
 
@@ -171,10 +171,10 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         IgniteInternalFuture<?> futSql = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
-                    QueryCursor<Cache.Entry<UUID, Person>> bachelors =
-                            cache0.query(new SqlQuery(Person.class, "degree = 'Bachelor'"));
+                    QueryCursor<Cache.Entry<UUID, PersonObj>> bachelors =
+                            cache0.query(new SqlQuery(PersonObj.class, "degree = 'Bachelor'"));
 
-                    Collection<Cache.Entry<UUID, Person>> entries = bachelors.getAll();
+                    Collection<Cache.Entry<UUID, PersonObj>> entries = bachelors.getAll();
 
                     checkResult(entries, p3, p4);
 
@@ -198,8 +198,8 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
      * @param entries Queried result.
      * @param persons Persons that should be in the result.
      */
-    private void checkResult(Iterable<Cache.Entry<UUID, Person>> entries, Person... persons) {
-        for (Cache.Entry<UUID, Person> entry : entries) {
+    private void checkResult(Iterable<Cache.Entry<UUID, PersonObj>> entries, PersonObj... persons) {
+        for (Cache.Entry<UUID, PersonObj> entry : entries) {
             assertEquals(entry.getKey(), entry.getValue().id());
 
             assert F.asList(persons).contains(entry.getValue());
@@ -207,7 +207,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
     }
 
     /** Test class. */
-    private static class Person implements Externalizable {
+    private static class PersonObj implements Externalizable {
         /** */
         @GridToStringExclude
         private UUID id = UUID.randomUUID();
@@ -226,7 +226,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         private String degree;
 
         /** Required by {@link Externalizable}. */
-        public Person() {
+        public PersonObj() {
             // No-op.
         }
 
@@ -235,7 +235,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
          * @param salary Salary.
          * @param degree Degree.
          */
-        Person(String name, int salary, String degree) {
+        PersonObj(String name, int salary, String degree) {
             assert name != null;
             assert salary > 0;
             assert degree != null;
@@ -291,17 +291,17 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
             if (obj == this)
                 return true;
 
-            if (!(obj instanceof Person))
+            if (!(obj instanceof PersonObj))
                 return false;
 
-            Person that = (Person)obj;
+            PersonObj that = (PersonObj)obj;
 
             return that.id.equals(id) && that.name.equals(name) && that.salary == salary && that.degree.equals(degree);
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(Person.class, this);
+            return S.toString(PersonObj.class, this);
         }
     }
 }

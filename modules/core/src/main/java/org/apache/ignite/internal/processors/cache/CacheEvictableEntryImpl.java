@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -84,6 +85,36 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
         }
         catch (GridCacheEntryRemovedException e) {
             return null;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    public int size() {
+        try {
+            GridCacheContext<Object, Object> cctx = cached.context();
+
+            KeyCacheObject key = cached.key();
+
+            byte[] keyBytes = key.valueBytes(cctx.cacheObjectContext());
+
+            byte[] valBytes = null;
+
+            if (cctx.useOffheapEntry())
+                valBytes = cctx.offheap().get(cctx.swap().spaceName(), cached.partition(), key, keyBytes);
+            else {
+                CacheObject cacheObj = cached.valueBytes();
+
+                if (cacheObj != null)
+                    valBytes = cacheObj.valueBytes(cctx.cacheObjectContext());
+            }
+
+            return valBytes == null ? keyBytes.length : keyBytes.length + valBytes.length;
+        }
+        catch (GridCacheEntryRemovedException e) {
+            return 0;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

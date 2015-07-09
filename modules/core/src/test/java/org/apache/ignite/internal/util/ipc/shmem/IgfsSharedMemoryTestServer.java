@@ -49,6 +49,8 @@ public class IgfsSharedMemoryTestServer {
 
             srv.start();
 
+            System.out.println("IPC shared memory server endpoint started");
+
             IpcEndpoint clientEndpoint = srv.accept();
 
             is = clientEndpoint.inputStream();

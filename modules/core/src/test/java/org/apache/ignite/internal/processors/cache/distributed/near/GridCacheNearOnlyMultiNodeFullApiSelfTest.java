@@ -83,6 +83,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             info("Use grid '" + gridName + "' as near-only.");
 
             cfg.setClientMode(true);
+
+            cfg.setCacheConfiguration();
         }
 
         return cfg;
@@ -188,11 +190,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /** {@inheritDoc} */
     @Override public void testLoadAll() throws Exception {
         // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testNearDhtKeySize() throws Exception {
-        // TODO fix this test for client mode.
     }
 
     /**

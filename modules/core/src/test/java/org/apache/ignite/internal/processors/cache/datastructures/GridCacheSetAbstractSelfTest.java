@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
@@ -45,15 +44,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 4;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMarshaller(new OptimizedMarshaller(false));
-
-        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -562,20 +552,26 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     }
 
     /**
-     * TODO: IGNITE-584.
-     *  
      * @throws Exception If failed.
      */
     public void testNodeJoinsAndLeaves() throws Exception {
+        if (collectionCacheMode() == LOCAL)
+            return;
+
+        fail("https://issues.apache.org/jira/browse/IGNITE-584");
+
         testNodeJoinsAndLeaves(false);
     }
 
     /**
-     * TODO: IGNITE-584.
-     *
      * @throws Exception If failed.
      */
     public void testNodeJoinsAndLeavesCollocated() throws Exception {
+        if (collectionCacheMode() == LOCAL)
+            return;
+
+        fail("https://issues.apache.org/jira/browse/IGNITE-584");
+
         testNodeJoinsAndLeaves(true);
     }
 
@@ -584,9 +580,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @throws Exception If failed.
      */
     private void testNodeJoinsAndLeaves(boolean collocated) throws Exception {
-        if (collectionCacheMode() == LOCAL)
-            return;
-
         CollectionConfiguration colCfg = config(collocated);
 
         Set<Integer> set0 = grid(0).set(SET_NAME, colCfg);
@@ -760,7 +753,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteInternalFuture<?> fut;
 
         try {
-                fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     try {
                         while (!stop.get()) {
@@ -790,7 +783,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         for (int i = 0; i < gridCount(); i++) {
             Iterator<GridCacheEntryEx> entries =
-                    ((IgniteKernal)grid(i)).context().cache().internalCache(cctx.name()).map().allEntries0().iterator();
+                (grid(i)).context().cache().internalCache(cctx.name()).map().allEntries0().iterator();
 
             while (entries.hasNext()) {
                 GridCacheEntryEx entry = entries.next();

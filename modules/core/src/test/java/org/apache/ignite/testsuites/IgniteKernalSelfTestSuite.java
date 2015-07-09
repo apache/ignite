@@ -29,6 +29,9 @@ import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.spi.communication.*;
+import org.apache.ignite.testframework.*;
+
+import java.util.*;
 
 /**
  * Kernal self test suite.
@@ -39,6 +42,15 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Tests don't include in the execution.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Kernal Test Suite");
 
         suite.addTestSuite(GridSameVmStartupSelfTest.class);
@@ -55,20 +67,23 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheMessageSelfTest.class);
         suite.addTestSuite(GridDeploymentManagerStopSelfTest.class);
         suite.addTestSuite(GridManagerStopSelfTest.class);
-        suite.addTestSuite(GridDiscoveryManagerAttributesSelfTest.class);
+        suite.addTestSuite(GridDiscoveryManagerAttributesSelfTest.RegularDiscovery.class);
+        suite.addTestSuite(GridDiscoveryManagerAttributesSelfTest.ClientDiscovery.class);
         suite.addTestSuite(GridDiscoveryManagerAliveCacheSelfTest.class);
-        suite.addTestSuite(GridDiscoveryManagerSelfTest.class);
+        suite.addTestSuite(GridDiscoveryManagerSelfTest.RegularDiscovery.class);
+        suite.addTestSuite(GridDiscoveryManagerSelfTest.ClientDiscovery.class);
         suite.addTestSuite(GridDiscoveryEventSelfTest.class);
         suite.addTestSuite(GridPortProcessorSelfTest.class);
         suite.addTestSuite(GridHomePathSelfTest.class);
-        suite.addTestSuite(GridStartupWithSpecifiedWorkDirectorySelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridStartupWithSpecifiedWorkDirectorySelfTest.class, ignoredTests);
         suite.addTestSuite(GridStartupWithUndefinedIgniteHomeSelfTest.class);
-        suite.addTestSuite(GridVersionSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridVersionSelfTest.class, ignoredTests);
         suite.addTestSuite(GridListenActorSelfTest.class);
         suite.addTestSuite(GridNodeLocalSelfTest.class);
         suite.addTestSuite(GridKernalConcurrentAccessStopSelfTest.class);
         suite.addTestSuite(GridUpdateNotifierSelfTest.class);
         suite.addTestSuite(GridLocalEventListenerSelfTest.class);
+        suite.addTestSuite(IgniteTopologyPrintFormatSelfTest.class);
 
         // Managed Services.
         suite.addTestSuite(GridServiceProcessorSingleNodeSelfTest.class);
@@ -76,6 +91,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridServiceProcessorMultiNodeConfigSelfTest.class);
         suite.addTestSuite(GridServiceProcessorProxySelfTest.class);
         suite.addTestSuite(GridServiceReassignmentSelfTest.class);
+        suite.addTestSuite(GridServiceClientNodeTest.class);
 
         return suite;
     }

@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.local.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -335,14 +336,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cnt Count.
-     * @param awaitPartitionMapExchange If we need to await partition map exchange.
+     * @param awaitPartMapExchange If we need to await partition map exchange.
      * @return Ignite.
      * @throws Exception If failed.
      */
-    protected final Ignite startGridsMultiThreaded(int cnt, boolean awaitPartitionMapExchange) throws Exception {
+    protected final Ignite startGridsMultiThreaded(int cnt, boolean awaitPartMapExchange) throws Exception {
         Ignite g = super.startGridsMultiThreaded(cnt);
 
-        if (awaitPartitionMapExchange)
+        if (awaitPartMapExchange)
             awaitPartitionMapExchange();
 
         return g;
@@ -378,18 +379,43 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                             int exp = affNodes.size();
 
-                            Collection<ClusterNode> owners = top.nodes(p, AffinityTopologyVersion.NONE);
+                            GridDhtTopologyFuture topFut = top.topologyVersionFuture();
+
+                            Collection<ClusterNode> owners = (topFut != null && topFut.isDone()) ?
+                                top.nodes(p, AffinityTopologyVersion.NONE) : Collections.<ClusterNode>emptyList();
 
                             int actual = owners.size();
 
                             if (affNodes.size() != owners.size() || !affNodes.containsAll(owners)) {
-                                LT.warn(log(), null, "Waiting for topology map update [grid=" + g.name() +
-                                    ", p=" + p + ", nodes=" + exp + ", owners=" + actual +
-                                    ", affNodes=" + affNodes + ", owners=" + owners +
-                                    ", locNode=" + g.cluster().localNode().id() + ']');
+                                LT.warn(log(), null, "Waiting for topology map update [" +
+                                    "grid=" + g.name() +
+                                    ", cache=" + cfg.getName() +
+                                    ", cacheId=" + dht.context().cacheId() +
+                                    ", topVer=" + top.topologyVersion() +
+                                    ", topFut=" + topFut +
+                                    ", p=" + p +
+                                    ", affNodesCnt=" + exp +
+                                    ", ownersCnt=" + actual +
+                                    ", affNodes=" + affNodes +
+                                    ", owners=" + owners +
+                                    ", locNode=" + g.cluster().localNode() + ']');
 
                                 if (i == 0)
                                     start = System.currentTimeMillis();
+
+                                if (System.currentTimeMillis() - start > 30_000)
+                                    throw new IgniteException("Timeout of waiting for topology map update [" +
+                                        "grid=" + g.name() +
+                                        ", cache=" + cfg.getName() +
+                                        ", cacheId=" + dht.context().cacheId() +
+                                        ", topVer=" + top.topologyVersion() +
+                                        ", topFut=" + topFut +
+                                        ", p=" + p +
+                                        ", affNodesCnt=" + exp +
+                                        ", ownersCnt=" + actual +
+                                        ", affNodes=" + affNodes +
+                                        ", owners=" + owners +
+                                        ", locNode=" + g.cluster().localNode() + ']');
 
                                 Thread.sleep(200); // Busy wait.
 
@@ -406,6 +432,38 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 }
             }
         }
+    }
+
+    /**
+     * @param ignite Node.
+     */
+    public void dumpCacheDebugInfo(Ignite ignite) {
+        GridKernalContext ctx = ((IgniteKernal)ignite).context();
+
+        log.error("Cache information update [node=" + ignite.name() +
+            ", client=" + ignite.configuration().isClientMode() + ']');
+
+        GridCacheSharedContext cctx = ctx.cache().context();
+
+        log.error("Pending transactions:");
+
+        for (IgniteInternalTx tx : cctx.tm().activeTransactions())
+            log.error(">>> " + tx);
+
+        log.error("Pending explicit locks:");
+
+        for (GridCacheExplicitLockSpan lockSpan : cctx.mvcc().activeExplicitLocks())
+            log.error(">>> " + lockSpan);
+
+        log.error("Pending cache futures:");
+
+        for (GridCacheFuture<?> fut : cctx.mvcc().activeFutures())
+            log.error(">>> " + fut);
+
+        log.error("Pending atomic cache futures:");
+
+        for (GridCacheFuture<?> fut : cctx.mvcc().atomicFutures())
+            log.error(">>> " + fut);
     }
 
     /**
@@ -857,5 +915,29 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC &&
             ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
             U.sleep(50);
+    }
+
+    /**
+     * @param exp Expected.
+     * @param act Actual.
+     */
+    protected void assertEqualsCollections(Collection<?> exp, Collection<?> act) {
+        if (exp.size() != act.size())
+            fail("Collections are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
+
+        Iterator<?> it1 = exp.iterator();
+        Iterator<?> it2 = act.iterator();
+
+        int idx = 0;
+
+        while (it1.hasNext()) {
+            Object item1 = it1.next();
+            Object item2 = it2.next();
+
+            if (!F.eq(item1, item2))
+                fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
+
+            idx++;
+        }
     }
 }

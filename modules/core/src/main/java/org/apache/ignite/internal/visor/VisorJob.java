@@ -47,6 +47,7 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
      * Create job with specified argument.
      *
      * @param arg Job argument.
+     * @param debug Flag indicating whether debug information should be printed into node log.
      */
     protected VisorJob(@Nullable A arg, boolean debug) {
         super(arg);
@@ -77,6 +78,7 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
      *
      * @param arg Task argument.
      * @return Result.
+     * @throws IgniteException In case of error.
      */
     protected abstract R run(@Nullable A arg) throws IgniteException;
 }

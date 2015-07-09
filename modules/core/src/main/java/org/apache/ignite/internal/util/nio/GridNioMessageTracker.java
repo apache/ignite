@@ -56,9 +56,26 @@ public class GridNioMessageTracker implements IgniteRunnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        int cnt = msgCnt.decrementAndGet();
+        // In case of ordered messages this may be called twice for 1 message.
+        // Example: message arrives, but listener has not been installed yet.
+        // Message set is created, but message does not get actually processed.
+        // If this is not called, connection may be paused which causes hang.
+        // It seems acceptable to have the following logic accounting the aforementioned.
+        int cnt = 0;
 
-        assert cnt >= 0 : "Invalid count: " + cnt;
+        for (;;) {
+            int cur = msgCnt.get();
+
+            if (cur == 0)
+                break;
+
+            cnt = cur - 1;
+
+            if (msgCnt.compareAndSet(cur, cnt))
+                break;
+        }
+
+        assert cnt >= 0 : "Invalid count [cnt=" + cnt + ", this=" + this + ']';
 
         if (cnt < msgQueueLimit && paused && lock.tryLock()) {
             try {
@@ -116,6 +133,6 @@ public class GridNioMessageTracker implements IgniteRunnable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNioMessageTracker.class, this, super.toString());
+        return S.toString(GridNioMessageTracker.class, this, "hash", System.identityHashCode(this));
     }
 }

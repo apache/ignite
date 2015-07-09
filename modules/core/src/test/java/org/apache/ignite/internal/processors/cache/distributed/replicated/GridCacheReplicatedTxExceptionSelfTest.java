@@ -28,6 +28,11 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 public class GridCacheReplicatedTxExceptionSelfTest extends IgniteTxExceptionAbstractSelfTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-257");
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }

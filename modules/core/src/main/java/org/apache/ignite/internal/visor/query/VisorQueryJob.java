@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.internal.visor.util.*;
 import org.apache.ignite.lang.*;
 
 import javax.cache.*;
@@ -36,7 +37,7 @@ import static org.apache.ignite.internal.visor.query.VisorQueryUtils.*;
 /**
  * Job for execute SCAN or SQL query and get first page of results.
  */
-public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? extends Exception, VisorQueryResultEx>> {
+public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? extends VisorExceptionWrapper, VisorQueryResultEx>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -61,11 +62,11 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteBiTuple<? extends Exception, VisorQueryResultEx> run(VisorQueryArg arg) {
+    @Override protected IgniteBiTuple<? extends VisorExceptionWrapper, VisorQueryResultEx> run(VisorQueryArg arg) {
         try {
             UUID nid = ignite.localNode().id();
 
-            boolean scan = arg.queryTxt().toUpperCase().startsWith("SCAN");
+            boolean scan = arg.queryTxt() == null;
 
             String qryId = (scan ? SCAN_QRY_NAME : SQL_QRY_NAME) + "-" +
                 UUID.randomUUID();
@@ -110,8 +111,8 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
                 Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 
                 if (meta == null)
-                    return new IgniteBiTuple<Exception, VisorQueryResultEx>(
-                        new SQLException("Fail to execute query. No metadata available."), null);
+                    return new IgniteBiTuple<>(
+                        new VisorExceptionWrapper(new SQLException("Fail to execute query. No metadata available.")), null);
                 else {
                     List<VisorQueryField> names = new ArrayList<>(meta.size());
 
@@ -138,7 +139,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
             }
         }
         catch (Exception e) {
-            return new IgniteBiTuple<>(e, null);
+            return new IgniteBiTuple<>(new VisorExceptionWrapper(e), null);
         }
     }
 

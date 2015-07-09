@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.eviction.random;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.random.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -50,6 +51,7 @@ public class RandomEvictionPolicyCacheSizeSelfTest extends GridCommonAbstractTes
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
+        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setNearConfiguration(null);
         ccfg.setEvictionPolicy(new RandomEvictionPolicy(PLC_MAX_SIZE));
 
@@ -66,6 +68,10 @@ public class RandomEvictionPolicyCacheSizeSelfTest extends GridCommonAbstractTes
 
         for (int i = 0; i < KEYS_CNT; i++)
             cache.put(i, i);
+
+        // Ensure that all entries accessed without data races and cache size will correct
+        for (int i = 0; i < KEYS_CNT; i++)
+            cache.get(i);
 
         assertEquals(PLC_MAX_SIZE * GRID_CNT, cache.size());
     }

@@ -47,6 +47,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
         disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
         disco.setIpFinder(IP_FINDER);
+        disco.setForceServerMode(true);
 
         cfg.setDiscoverySpi(disco);
 

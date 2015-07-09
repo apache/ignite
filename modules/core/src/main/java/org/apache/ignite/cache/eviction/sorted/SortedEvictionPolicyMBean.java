@@ -63,4 +63,26 @@ public interface SortedEvictionPolicyMBean {
      */
     @MXBeanDescription("Current sorted key set size.")
     public int getCurrentSize();
+
+    /**
+     * Gets maximum allowed cache size in bytes.
+     *
+     * @return maximum allowed cache size in bytes.
+     */
+    @MXBeanDescription("Maximum allowed cache size in bytes.")
+    public long getMaxMemorySize();
+
+    /**
+     * Sets maximum allowed cache size in bytes.
+     */
+    @MXBeanDescription("Set maximum allowed cache size in bytes.")
+    public void setMaxMemorySize(long maxMemSize);
+
+    /**
+     * Gets current sorted entries queue size in bytes.
+     *
+     * @return current sorted entries queue size in bytes.
+     */
+    @MXBeanDescription("Current sorted entries set size in bytes.")
+    public long getCurrentMemorySize();
 }

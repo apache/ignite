@@ -35,6 +35,9 @@ import java.util.*;
  */
 @SuppressWarnings("UnusedDeclaration")
 public class InteropIgnition {
+    /** Map with active instances. */
+    private static final HashMap<String, InteropProcessor> instances = new HashMap<>();
+
     /**
      * Start Ignite node in interop mode.
      *
@@ -42,22 +45,94 @@ public class InteropIgnition {
      * @param gridName Grid name.
      * @param factoryId Factory ID.
      * @param envPtr Environment pointer.
+     * @param dataPtr Optional pointer to additional data required for startup.
      * @return Ignite instance.
      */
-    public static InteropProcessor start(@Nullable String springCfgPath, @Nullable String gridName, int factoryId,
-        long envPtr) {
-        IgniteConfiguration cfg = configuration(springCfgPath);
+    public static synchronized InteropProcessor start(@Nullable String springCfgPath, @Nullable String gridName,
+        int factoryId, long envPtr, long dataPtr) {
+        if (envPtr <= 0)
+            throw new IgniteException("Environment pointer must be positive.");
 
-        if (gridName != null)
-            cfg.setGridName(gridName);
+        ClassLoader oldClsLdr = Thread.currentThread().getContextClassLoader();
 
-        InteropBootstrap bootstrap = bootstrap(factoryId);
+        Thread.currentThread().setContextClassLoader(InteropIgnition.class.getClassLoader());
 
-        InteropProcessor proc = bootstrap.start(cfg, envPtr);
+        try {
+            IgniteConfiguration cfg = configuration(springCfgPath);
 
-        trackFinalization(proc);
+            if (gridName != null)
+                cfg.setGridName(gridName);
+            else
+                gridName = cfg.getGridName();
 
-        return proc;
+            InteropBootstrap bootstrap = bootstrap(factoryId);
+
+            InteropProcessor proc = bootstrap.start(cfg, envPtr, dataPtr);
+
+            trackFinalization(proc);
+
+            InteropProcessor old = instances.put(gridName, proc);
+
+            assert old == null;
+
+            return proc;
+        }
+        finally {
+            Thread.currentThread().setContextClassLoader(oldClsLdr);
+        }
+    }
+
+    /**
+     * Get instance by environment pointer.
+     *
+     * @param gridName Grid name.
+     * @return Instance or {@code null} if it doesn't exist (never started or stopped).
+     */
+    @Nullable public static synchronized InteropProcessor instance(@Nullable String gridName) {
+        return instances.get(gridName);
+    }
+
+    /**
+     * Get environment pointer of the given instance.
+     *
+     * @param gridName Grid name.
+     * @return Environment pointer or {@code 0} in case grid with such name doesn't exist.
+     */
+    public static synchronized long environmentPointer(@Nullable String gridName) {
+        InteropProcessor proc = instance(gridName);
+
+        return proc != null ? proc.environmentPointer() : 0;
+    }
+
+    /**
+     * Stop single instance.
+     *
+     * @param gridName Grid name,
+     * @param cancel Cancel flag.
+     * @return {@code True} if instance was found and stopped.
+     */
+    public static synchronized boolean stop(@Nullable String gridName, boolean cancel) {
+        if (Ignition.stop(gridName, cancel)) {
+            InteropProcessor old = instances.remove(gridName);
+
+            assert old != null;
+
+            return true;
+        }
+        else
+            return false;
+    }
+
+    /**
+     * Stop all instances.
+     *
+     * @param cancel Cancel flag.
+     */
+    public static synchronized void stopAll(boolean cancel) {
+        for (InteropProcessor proc : instances.values())
+            Ignition.stop(proc.ignite().name(), cancel);
+
+        instances.clear();
     }
 
     /**

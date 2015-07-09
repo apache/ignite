@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -29,17 +30,20 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import java.io.*;
@@ -113,13 +117,6 @@ public class GridCacheUtils {
                 return p.state();
             }
         };
-
-    /** Not evicted partitions. */
-    private static final IgnitePredicate PART_NOT_EVICTED = new P1<GridDhtLocalPartition>() {
-        @Override public boolean apply(GridDhtLocalPartition p) {
-            return p.state() != GridDhtPartitionState.EVICTED;
-        }
-    };
 
     /** */
     private static final IgniteClosure<Integer, GridCacheVersion[]> VER_ARR_FACTORY =
@@ -395,30 +392,20 @@ public class GridCacheUtils {
     }
 
     /**
+     * Gets public cache name substituting null name by {@code 'default'}.
+     *
+     * @return Public cache name substituting null name by {@code 'default'}.
+     */
+    public static String namexx(@Nullable String name) {
+        return name == null ? "default" : name;
+    }
+
+    /**
      * @return Partition to state transformer.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<GridDhtLocalPartition, GridDhtPartitionState> part2state() {
+    public static IgniteClosure<GridDhtLocalPartition, GridDhtPartitionState> part2state() {
         return PART2STATE;
-    }
-
-    /**
-     * @return Not evicted partitions.
-     */
-    @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgnitePredicate<GridDhtLocalPartition> notEvicted() {
-        return PART_NOT_EVICTED;
-    }
-
-    /**
-     * Gets all nodes on which cache with the same name is started.
-     *
-     * @param ctx Cache context.
-     * @return All nodes on which cache with the same name is started (including nodes
-     *      that may have already left).
-     */
-    public static Collection<ClusterNode> allNodes(GridCacheContext ctx) {
-        return allNodes(ctx, AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -446,59 +433,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets alive nodes.
-     *
-     * @param ctx Cache context.
-     * @param topOrder Maximum allowed node order.
-     * @return Affinity nodes.
-     */
-    public static Collection<ClusterNode> aliveNodes(final GridCacheContext ctx, AffinityTopologyVersion topOrder) {
-        return ctx.discovery().aliveCacheNodes(ctx.namex(), topOrder);
-    }
-
-    /**
-     * Gets remote nodes on which cache with the same name is started.
-     *
-     * @param ctx Cache context.
-     * @return Remote nodes on which cache with the same name is started.
-     */
-    public static Collection<ClusterNode> remoteNodes(final GridCacheContext ctx) {
-        return remoteNodes(ctx, AffinityTopologyVersion.NONE);
-    }
-
-    /**
-     * Gets remote node with at least one cache configured.
-     *
-     * @param ctx Shared cache context.
-     * @return Collection of nodes with at least one cache configured.
-     */
-    public static Collection<ClusterNode> remoteNodes(GridCacheSharedContext ctx) {
-        return remoteNodes(ctx, AffinityTopologyVersion.NONE);
-    }
-
-    /**
-     * Gets remote nodes on which cache with the same name is started.
-     *
-     * @param ctx Cache context.
-     * @param topOrder Maximum allowed node order.
-     * @return Remote nodes on which cache with the same name is started.
-     */
-    public static Collection<ClusterNode> remoteNodes(final GridCacheContext ctx, AffinityTopologyVersion topOrder) {
-        return ctx.discovery().remoteCacheNodes(ctx.namex(), topOrder);
-    }
-
-    /**
-     * Gets alive nodes.
-     *
-     * @param ctx Cache context.
-     * @param topOrder Maximum allowed node order.
-     * @return Affinity nodes.
-     */
-    public static Collection<ClusterNode> aliveRemoteNodes(final GridCacheContext ctx, AffinityTopologyVersion topOrder) {
-        return ctx.discovery().aliveRemoteCacheNodes(ctx.namex(), topOrder);
-    }
-
-    /**
      * Gets remote nodes with at least one cache configured.
      *
      * @param ctx Cache shared context.
@@ -510,25 +444,15 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets alive nodes with at least one cache configured.
-     *
-     * @param ctx Cache context.
-     * @param topOrder Maximum allowed node order.
-     * @return Affinity nodes.
-     */
-    public static Collection<ClusterNode> aliveCacheNodes(final GridCacheSharedContext ctx, AffinityTopologyVersion topOrder) {
-        return ctx.discovery().aliveNodesWithCaches(topOrder);
-    }
-
-    /**
      * Gets alive remote nodes with at least one cache configured.
      *
      * @param ctx Cache context.
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<ClusterNode> aliveRemoteCacheNodes(final GridCacheSharedContext ctx, AffinityTopologyVersion topOrder) {
-        return ctx.discovery().aliveRemoteNodesWithCaches(topOrder);
+    public static Collection<ClusterNode> aliveRemoteServerNodesWithCaches(final GridCacheSharedContext ctx,
+        AffinityTopologyVersion topOrder) {
+        return ctx.discovery().aliveRemoteServerNodesWithCaches(topOrder);
     }
 
     /**
@@ -577,89 +501,33 @@ public class GridCacheUtils {
     }
 
     /**
-     * Checks if given node has specified cache started.
+     * Gets oldest alive server node with at least one cache configured for specified topology version.
      *
-     * @param cacheName Cache name.
-     * @param node Node to check.
-     * @return {@code True} if given node has specified cache started.
+     * @param ctx Context.
+     * @param topVer Maximum allowed topology version.
+     * @return Oldest alive cache server node.
      */
-    public static boolean cacheNode(String cacheName, ClusterNode node) {
-        return cacheNode(cacheName, (GridCacheAttributes[])node.attribute(ATTR_CACHE));
+    @Nullable public static ClusterNode oldestAliveCacheServerNode(GridCacheSharedContext ctx,
+        AffinityTopologyVersion topVer) {
+        Collection<ClusterNode> nodes = ctx.discovery().aliveServerNodesWithCaches(topVer);
+
+        if (nodes.isEmpty())
+            return null;
+
+        return oldest(nodes);
     }
 
     /**
-     * Checks if given attributes relate the the node which has (or had) specified cache started.
-     *
-     * @param cacheName Cache name.
-     * @param caches Node cache attributes.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean cacheNode(String cacheName, GridCacheAttributes[] caches) {
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return true;
-
-        return false;
-    }
-
-    /**
-     * Gets oldest alive node for specified topology version.
-     *
-     * @param cctx Cache context.
-     * @return Oldest node for the current topology version.
-     */
-    public static ClusterNode oldest(GridCacheContext cctx) {
-        return oldest(cctx, AffinityTopologyVersion.NONE);
-    }
-
-    /**
-     * Gets oldest alive node across nodes with at least one cache configured.
-     *
-     * @param ctx Cache context.
-     * @return Oldest node.
-     */
-    public static ClusterNode oldest(GridCacheSharedContext ctx) {
-        return oldest(ctx, AffinityTopologyVersion.NONE);
-    }
-
-    /**
-     * Gets oldest alive node for specified topology version.
-     *
-     * @param cctx Cache context.
-     * @param topOrder Maximum allowed node order.
+     * @param nodes Nodes.
      * @return Oldest node for the given topology version.
      */
-    public static ClusterNode oldest(GridCacheContext cctx, AffinityTopologyVersion topOrder) {
+    @Nullable public static ClusterNode oldest(Collection<ClusterNode> nodes) {
         ClusterNode oldest = null;
 
-        for (ClusterNode n : aliveNodes(cctx, topOrder))
-            if (oldest == null || n.order() < oldest.order())
-                oldest = n;
-
-        assert oldest != null : "Failed to find oldest node for cache context [name=" + cctx.name() + ", topOrder=" + topOrder + ']';
-        assert oldest.order() <= topOrder.topologyVersion() || AffinityTopologyVersion.NONE.equals(topOrder);
-
-        return oldest;
-    }
-
-    /**
-     * Gets oldest alive node with at least one cache configured for specified topology version.
-     *
-     * @param cctx Shared cache context.
-     * @param topOrder Maximum allowed node order.
-     * @return Oldest node for the given topology version.
-     */
-    public static ClusterNode oldest(GridCacheSharedContext cctx, AffinityTopologyVersion topOrder) {
-        ClusterNode oldest = null;
-
-        for (ClusterNode n : aliveCacheNodes(cctx, topOrder)) {
+        for (ClusterNode n : nodes) {
             if (oldest == null || n.order() < oldest.order())
                 oldest = n;
         }
-
-        assert oldest != null : "Failed to find oldest node with caches: " + topOrder;
-        assert oldest.order() <= topOrder.topologyVersion() || AffinityTopologyVersion.NONE.equals(topOrder);
 
         return oldest;
     }
@@ -715,30 +583,6 @@ public class GridCacheUtils {
      */
     public static boolean isAlwaysTrue0(@Nullable CacheEntryPredicate[] p) {
         return p != null && p.length == 1 && p[0]  == ALWAYS_TRUE0;
-    }
-
-    /**
-     * @return Closure that converts tx entry to key.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<IgniteTxEntry, K> tx2key() {
-        return (IgniteClosure<IgniteTxEntry, K>)tx2key;
-    }
-
-    /**
-     * @return Closure that converts tx entry collection to key collection.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<Collection<IgniteTxEntry>, Collection<K>> txCol2Key() {
-        return (IgniteClosure<Collection<IgniteTxEntry>, Collection<K>>)txCol2key;
-    }
-
-    /**
-     * @return Converts transaction entry to cache entry.
-     */
-    @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgniteClosure<IgniteTxEntry, GridCacheEntryEx> tx2entry() {
-        return (IgniteClosure<IgniteTxEntry, GridCacheEntryEx>)tx2entry;
     }
 
     /**
@@ -1451,13 +1295,7 @@ public class GridCacheUtils {
     }
 
     /**
-     * @return Cache ID for utility cache.
-     */
-    public static int utilityCacheId() {
-        return cacheId(UTILITY_CACHE_NAME);
-    }
-
-    /**
+     * @param cacheName Cache name.
      * @return Cache ID.
      */
     public static int cacheId(String cacheName) {
@@ -1688,7 +1526,7 @@ public class GridCacheUtils {
     /**
      * @param aff Affinity.
      * @param n Node.
-     * @return Predicate that evaulates to {@code true} if entry is primary for node.
+     * @return Predicate that evaluates to {@code true} if entry is primary for node.
      */
     public static CacheEntryPredicate cachePrimary(
         final Affinity aff,
@@ -1789,5 +1627,118 @@ public class GridCacheUtils {
         }
 
         return res;
+    }
+
+    /**
+     * @param node Node.
+     * @return {@code True} if given node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).
+     */
+    public static boolean clientNode(ClusterNode node) {
+        Boolean clientModeAttr = node.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+
+        assert clientModeAttr != null : node;
+
+        return clientModeAttr != null && clientModeAttr;
+    }
+
+    /**
+     * @param node Node.
+     * @param filter Node filter.
+     * @return {@code True} if node is not client node and pass given filter.
+     */
+    public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
+        return !clientNode(node) && filter.apply(node);
+    }
+
+    /**
+     * Creates and starts store session listeners.
+     *
+     * @param ctx Kernal context.
+     * @param factories Factories.
+     * @return Listeners.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public static Collection<CacheStoreSessionListener> startStoreSessionListeners(GridKernalContext ctx,
+        Factory<CacheStoreSessionListener>[] factories) throws IgniteCheckedException {
+        if (factories == null)
+            return null;
+
+        Collection<CacheStoreSessionListener> lsnrs = new ArrayList<>(factories.length);
+
+        for (Factory<CacheStoreSessionListener> factory : factories) {
+            CacheStoreSessionListener lsnr = factory.create();
+
+            if (lsnr != null) {
+                ctx.resource().injectGeneric(lsnr);
+
+                if (lsnr instanceof LifecycleAware)
+                    ((LifecycleAware)lsnr).start();
+
+                lsnrs.add(lsnr);
+            }
+        }
+
+        return lsnrs;
+    }
+
+    /**
+     * Stops store session listeners.
+     *
+     * @param ctx Kernal context.
+     * @param sesLsnrs Session listeners.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public static void stopStoreSessionListeners(GridKernalContext ctx, Collection<CacheStoreSessionListener> sesLsnrs)
+        throws IgniteCheckedException {
+        if (sesLsnrs == null)
+            return;
+
+        for (CacheStoreSessionListener lsnr : sesLsnrs) {
+            if (lsnr instanceof LifecycleAware)
+                ((LifecycleAware)lsnr).stop();
+
+            ctx.resource().cleanupGeneric(lsnr);
+        }
+    }
+
+    /**
+     * @param c Closure to retry.
+     * @param <S> Closure type.
+     * @return Wrapped closure.
+     */
+    public static <S> Callable<S> retryTopologySafe(final Callable<S> c ) {
+        return new Callable<S>() {
+            @Override public S call() throws Exception {
+                int retries = GridCacheAdapter.MAX_RETRIES;
+
+                IgniteCheckedException err = null;
+
+                for (int i = 0; i < retries; i++) {
+                    try {
+                        return c.call();
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (X.hasCause(e, ClusterTopologyCheckedException.class) ||
+                            X.hasCause(e, IgniteTxRollbackCheckedException.class) ||
+                            X.hasCause(e, CachePartialUpdateCheckedException.class)) {
+                            if (i < retries - 1) {
+                                err = e;
+
+                                U.sleep(1);
+
+                                continue;
+                            }
+
+                            throw e;
+                        }
+                        else
+                            throw e;
+                    }
+                }
+
+                // Should never happen.
+                throw err;
+            }
+        };
     }
 }

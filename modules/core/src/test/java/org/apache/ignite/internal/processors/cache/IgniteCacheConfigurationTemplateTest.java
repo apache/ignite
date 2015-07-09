@@ -59,7 +59,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
 
         if (addTemplate) {
             CacheConfiguration dfltCfg = new CacheConfiguration();
@@ -420,29 +420,9 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
                 }
             }, IllegalStateException.class, null);
 
-            GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    ignite.cache(TEMPLATE1);
-
-                    return null;
-                }
-            }, IllegalArgumentException.class, null);
-
-            GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    ignite.cache(TEMPLATE2);
-
-                    return null;
-                }
-            }, IllegalArgumentException.class, null);
-
-            GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    ignite.cache(TEMPLATE3);
-
-                    return null;
-                }
-            }, IllegalArgumentException.class, null);
+            assertNull(ignite.cache(TEMPLATE1));
+            assertNull(ignite.cache(TEMPLATE2));
+            assertNull(ignite.cache(TEMPLATE3));
         }
     }
 }

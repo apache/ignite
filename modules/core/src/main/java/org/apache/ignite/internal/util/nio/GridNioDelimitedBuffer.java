@@ -85,7 +85,7 @@ public class GridNioDelimitedBuffer {
                         idx++;
                     }
                     else {
-                        pos = cnt - idx;
+                        pos = cnt - (i - pos) - 1;
 
                         idx = 0;
                     }

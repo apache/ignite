@@ -43,9 +43,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Thread pool for supplying partitions to demanding nodes.
  */
-class GridDhtPartitionSupplyPool<K, V> {
+class GridDhtPartitionSupplyPool {
     /** */
-    private final GridCacheContext<K, V> cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** */
     private final IgniteLogger log;
@@ -72,7 +72,7 @@ class GridDhtPartitionSupplyPool<K, V> {
      * @param cctx Cache context.
      * @param busyLock Shutdown lock.
      */
-    GridDhtPartitionSupplyPool(GridCacheContext<K, V> cctx, ReadWriteLock busyLock) {
+    GridDhtPartitionSupplyPool(GridCacheContext<?, ?> cctx, ReadWriteLock busyLock) {
         assert cctx != null;
         assert busyLock != null;
 
@@ -83,16 +83,18 @@ class GridDhtPartitionSupplyPool<K, V> {
 
         top = cctx.dht().topology();
 
-        int poolSize = cctx.rebalanceEnabled() ? cctx.config().getRebalanceThreadPoolSize() : 0;
+        if (!cctx.kernalContext().clientNode()) {
+            int poolSize = cctx.rebalanceEnabled() ? cctx.config().getRebalanceThreadPoolSize() : 0;
 
-        for (int i = 0; i < poolSize; i++)
-            workers.add(new SupplyWorker());
+            for (int i = 0; i < poolSize; i++)
+                workers.add(new SupplyWorker());
 
-        cctx.io().addHandler(cctx.cacheId(), GridDhtPartitionDemandMessage.class, new CI2<UUID, GridDhtPartitionDemandMessage>() {
-            @Override public void apply(UUID id, GridDhtPartitionDemandMessage m) {
-                processDemandMessage(id, m);
-            }
-        });
+            cctx.io().addHandler(cctx.cacheId(), GridDhtPartitionDemandMessage.class, new CI2<UUID, GridDhtPartitionDemandMessage>() {
+                @Override public void apply(UUID id, GridDhtPartitionDemandMessage m) {
+                    processDemandMessage(id, m);
+                }
+            });
+        }
 
         depEnabled = cctx.gridDeploy().enabled();
     }
@@ -248,11 +250,6 @@ class GridDhtPartitionSupplyPool<K, V> {
             boolean ack = false;
 
             try {
-                // Partition map exchange is finished which means that all near transactions with given
-                // topology version are committed. We can wait for local locks here as it will not take
-                // much time.
-                cctx.mvcc().finishLocks(d.topologyVersion()).get();
-
                 for (int part : d.partitions()) {
                     GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
 

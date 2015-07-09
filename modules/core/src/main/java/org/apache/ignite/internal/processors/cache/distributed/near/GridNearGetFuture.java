@@ -223,7 +223,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param nodeId Sender.
      * @param res Result.
      */
-    void onResult(UUID nodeId, GridNearGetResponse res) {
+    public void onResult(UUID nodeId, GridNearGetResponse res) {
         for (IgniteInternalFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
@@ -274,7 +274,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         if (affNodes.isEmpty()) {
             assert !cctx.affinityNode();
 
-            onDone(new ClusterTopologyCheckedException("Failed to map keys for near-only cache (all partition " +
+            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for near-only cache (all partition " +
                 "nodes left the grid)."));
 
             return;
@@ -649,7 +649,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry while processing get response (will not retry).");
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     // Fail.
                     onDone(e);
 

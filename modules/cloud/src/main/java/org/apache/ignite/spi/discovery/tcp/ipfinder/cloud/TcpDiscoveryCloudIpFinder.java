@@ -30,6 +30,7 @@ import org.jclouds.*;
 import org.jclouds.compute.*;
 import org.jclouds.compute.domain.*;
 import org.jclouds.domain.*;
+import org.jclouds.googlecloud.*;
 import org.jclouds.location.reference.*;
 
 import java.io.*;
@@ -97,7 +98,7 @@ import java.util.concurrent.atomic.*;
  *                     &lt;bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudIpFinder"/&gt;
  *                         &lt;property name="provider" value="google-compute-engine"/&gt;
  *                         &lt;property name="identity" value="your_service_account_email"/&gt;
- *                         &lt;property name="credentialPath" value="path_to_pem_file"/&gt;
+ *                         &lt;property name="credentialPath" value="path_to_json_key"/&gt;
  *                         &lt;property name="zones"&gt;
  *                             &lt;list&gt;
  *                                 &lt;value>us-central1-a&lt/value&gt;
@@ -253,8 +254,7 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
     /**
      * Sets the path to a credential that is used during authentication on the cloud.
      *
-     * This method should be used when an access key or private key is stored in a plain or PEM file without
-     * a passphrase.
+     * This method should be used when an access key or private key is stored in a file.
      * Content of the file, referred by @{code credentialPath}, is fully read and used as a access key or private key
      * during authentication.
      *
@@ -322,7 +322,7 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
                     throw new IgniteSpiException("Both credential and credentialPath are set. Use only one method.");
 
                 if (credentialPath != null)
-                    credential = getPrivateKeyFromFile();
+                    credential = getCredentialFromFile();
 
                 try {
                     ContextBuilder ctxBuilder = ContextBuilder.newBuilder(provider);
@@ -398,13 +398,22 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * Retrieves a private key from the secrets file.
+     * Reads credential info from {@link #credentialPath} and returns in a string format.
      *
-     * @return Private key
+     * @return Credential in {@code String} representation.
+     * @throws IgniteSpiException In case of error.
      */
-    private String getPrivateKeyFromFile() throws IgniteSpiException {
+    private String getCredentialFromFile() throws IgniteSpiException {
         try {
-            return Files.toString(new File(credentialPath), Charsets.UTF_8);
+            String fileContents = Files.toString(new File(credentialPath), Charsets.UTF_8);
+
+            if (provider.equals("google-compute-engine")) {
+                Supplier<Credentials> credentialSupplier = new GoogleCredentialsFromJson(fileContents);
+
+                return credentialSupplier.get().credential;
+            }
+
+            return fileContents;
         }
         catch (IOException e) {
             throw new IgniteSpiException("Failed to retrieve the private key from the file: " + credentialPath, e);

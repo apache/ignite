@@ -549,7 +549,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         CollectionConfiguration colCfg2 = collectionConfiguration();
 
-        colCfg2.setNodeFilter(CacheConfiguration.SERVER_NODES);
+        colCfg2.setNodeFilter(CacheConfiguration.ALL_NODES);
 
         IgniteQueue queue1 = grid(0).queue("Queue1", 0, colCfg1);
 
@@ -557,7 +557,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         assertNotSame(getQueueCache(queue1), getQueueCache(queue2));
 
-        colCfg1.setNodeFilter(CacheConfiguration.SERVER_NODES);
+        colCfg1.setNodeFilter(CacheConfiguration.ALL_NODES);
 
         IgniteQueue queue3 = grid(0).queue("Queue3", 0, colCfg1);
 

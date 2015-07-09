@@ -43,7 +43,7 @@ public class IpcSharedMemoryBenchmarkReader implements IpcSharedMemoryBenchmarkP
      * @throws IgniteCheckedException If failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        IpcSharedMemoryNativeLoader.load();
+        IpcSharedMemoryNativeLoader.load(null);
 
         int nThreads = (args.length > 0 ? Integer.parseInt(args[0]) : 1);
 

@@ -22,19 +22,17 @@ import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
-
 /**
  * Custom event.
  */
 public class DiscoveryCustomEvent extends DiscoveryEvent {
     /** */
     private static final long serialVersionUID = 0L;
-    
+
     /**
      * Built-in event type: custom event sent.
      * <br>
-     * Generated when someone invoke {@link GridDiscoveryManager#sendCustomEvent(Serializable)}.
+     * Generated when someone invoke {@link GridDiscoveryManager#sendCustomEvent(DiscoveryCustomMessage)}.
      * <p>
      *
      * @see DiscoveryCustomEvent
@@ -42,7 +40,7 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
     public static final int EVT_DISCOVERY_CUSTOM_EVT = 18;
 
     /** */
-    private Serializable data;
+    private DiscoveryCustomMessage customMsg;
 
     /** Affinity topology version. */
     private AffinityTopologyVersion affTopVer;
@@ -57,15 +55,15 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
     /**
      * @return Data.
      */
-    public Serializable data() {
-        return data;
+    public DiscoveryCustomMessage customMessage() {
+        return customMsg;
     }
 
     /**
-     * @param data New data.
+     * @param customMsg New customMessage.
      */
-    public void data(Serializable data) {
-        this.data = data;
+    public void customMessage(DiscoveryCustomMessage customMsg) {
+        this.customMsg = customMsg;
     }
 
     /**

@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.eviction.lru.*;
+import org.apache.ignite.cache.eviction.sorted.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -98,7 +99,11 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
      */
     public void testConcurrentPutsFifoLocal() throws Exception {
         mode = LOCAL;
-        plc = new FifoEvictionPolicy<Object, Object>(1000);
+
+        FifoEvictionPolicy plc = new FifoEvictionPolicy();
+        plc.setMaxSize(1000);
+
+        this.plc = plc;
         warmUpPutsCnt = 100000;
         iterCnt = 100000;
 
@@ -110,7 +115,27 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
      */
     public void testConcurrentPutsLruLocal() throws Exception {
         mode = LOCAL;
-        plc = new LruEvictionPolicy<Object, Object>(1000);
+
+        LruEvictionPolicy plc = new LruEvictionPolicy();
+        plc.setMaxSize(1000);
+
+        this.plc = plc;
+        warmUpPutsCnt = 100000;
+        iterCnt = 100000;
+
+        checkConcurrentPuts();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentPutsSortedLocal() throws Exception {
+        mode = LOCAL;
+
+        SortedEvictionPolicy plc = new SortedEvictionPolicy();
+        plc.setMaxSize(1000);
+
+        this.plc = plc;
         warmUpPutsCnt = 100000;
         iterCnt = 100000;
 

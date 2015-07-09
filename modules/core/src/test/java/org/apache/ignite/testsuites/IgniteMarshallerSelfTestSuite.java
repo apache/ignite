@@ -21,6 +21,9 @@ import junit.framework.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.testframework.*;
+
+import java.util.*;
 
 /**
  * Test suite for all marshallers.
@@ -31,16 +34,25 @@ public class IgniteMarshallerSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Marshaller Test Suite");
 
-        suite.addTest(new TestSuite(GridJdkMarshallerSelfTest.class));
-        suite.addTest(new TestSuite(OptimizedMarshallerEnumSelfTest.class));
-        suite.addTest(new TestSuite(OptimizedMarshallerSelfTest.class));
-        suite.addTest(new TestSuite(OptimizedMarshallerTest.class));
-        suite.addTest(new TestSuite(OptimizedObjectStreamSelfTest.class));
-        suite.addTest(new TestSuite(GridUnsafeDataOutputArraySizingSelfTest.class));
-        suite.addTest(new TestSuite(OptimizedMarshallerNodeFailoverTest.class));
-        suite.addTest(new TestSuite(OptimizedMarshallerSerialPersistentFieldsSelfTest.class));
+        GridTestUtils.addTestIfNeeded(suite, GridJdkMarshallerSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerEnumSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, OptimizedObjectStreamSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridUnsafeDataOutputArraySizingSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerNodeFailoverTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerSerialPersistentFieldsSelfTest.class, ignoredTests);
 
         return suite;
     }

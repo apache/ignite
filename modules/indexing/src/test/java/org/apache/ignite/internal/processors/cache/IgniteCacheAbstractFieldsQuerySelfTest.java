@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -73,8 +72,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         if (hasCache)
             cfg.setCacheConfiguration(cache(null, true), cache(CACHE, true), cache(EMPTY_CACHE, true),
@@ -217,11 +214,11 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
             assert metas != null;
 
-            assertEquals("Invalid meta: " + metas, 5, metas.size());
-
             boolean wasNull = false;
             boolean wasNamed = false;
             boolean wasEmpty = false;
+            boolean wasNoPrimitives = false;
+            boolean wasComplexKeys = false;
 
             for (GridCacheSqlMetadata meta : metas) {
                 if (meta.cacheName() == null) {
@@ -288,11 +285,17 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
                     wasEmpty = true;
                 }
+                else if (CACHE_NO_PRIMITIVES.equals(meta.cacheName()))
+                    wasNoPrimitives = true;
+                else if (CACHE_COMPLEX_KEYS.equals(meta.cacheName()))
+                    wasComplexKeys = true;
             }
 
             assert wasNull;
             assert wasNamed;
             assert wasEmpty;
+            assert wasNoPrimitives;
+            assert wasComplexKeys;
         }
         finally {
             ((IgniteKernal)grid(0)).getCache(null).remove(new GridCacheInternalKeyImpl("LONG"));

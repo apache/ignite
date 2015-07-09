@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
+import org.apache.ignite.internal.processors.nodevalidation.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
@@ -56,7 +57,6 @@ import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
-import org.apache.ignite.internal.processors.nodevalidation.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -169,11 +169,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** */
     @GridToStringExclude
-    private Timer starveTimer;
+    private GridTimeoutProcessor.CancelableTask starveTask;
 
     /** */
     @GridToStringExclude
-    private Timer metricsLogTimer;
+    private GridTimeoutProcessor.CancelableTask metricsLogTask;
 
     /** Indicate error on grid stop. */
     @GridToStringExclude
@@ -629,6 +629,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Ack configuration.
         ackSpis();
 
+        List<PluginProvider> plugins = U.allPluginProviders();
+
         // Spin out SPIs & managers.
         try {
             ctx = new GridKernalContextImpl(log,
@@ -642,7 +644,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 p2pExecSvc,
                 mgmtExecSvc,
                 igfsExecSvc,
-                restExecSvc);
+                restExecSvc,
+                plugins);
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
 
@@ -678,7 +681,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
-            startProcessor(new IgnitePluginProcessor(ctx, cfg));
+            startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
 
             verChecker = null;
 
@@ -686,7 +689,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 try {
                     verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, ctx.plugins().allProviders(), false);
 
-                    updateNtfTimer = new Timer("ignite-update-notifier-timer");
+                    updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
 
                     // Setup periodic version check.
                     updateNtfTimer.scheduleAtFixedRate(new GridTimerTask() {
@@ -867,13 +870,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (starveCheck) {
             final long interval = F.isEmpty(intervalStr) ? PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
 
-            starveTimer = new Timer("ignite-starvation-checker");
-
-            starveTimer.scheduleAtFixedRate(new GridTimerTask() {
+            starveTask = ctx.timeout().schedule(new Runnable() {
                 /** Last completed task count. */
                 private long lastCompletedCnt;
 
-                @Override protected void safeRun() {
+                @Override public void run() {
                     if (!(execSvc instanceof ThreadPoolExecutor))
                         return;
 
@@ -896,13 +897,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         long metricsLogFreq = cfg.getMetricsLogFrequency();
 
         if (metricsLogFreq > 0) {
-            metricsLogTimer = new Timer("ignite-metrics-logger");
-
-            metricsLogTimer.scheduleAtFixedRate(new GridTimerTask() {
-                /** */
+            metricsLogTask = ctx.timeout().schedule(new Runnable() {
                 private final DecimalFormat dblFmt = new DecimalFormat("#.##");
 
-                @Override protected void safeRun() {
+                @Override public void run() {
                     if (log.isInfoEnabled()) {
                         ClusterMetrics m = cluster().localNode().metrics();
 
@@ -963,8 +961,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             sysPoolQSize = exec.getQueue().size();
                         }
 
+                        String id = U.id8(localNode().id());
+
                         String msg = NL +
                             "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
+                            "    ^-- Node [id=" + id + ", name=" + name() + "]" + NL +
                             "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
                             "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
                                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
@@ -1003,7 +1004,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         A.notNull(cfg.getMBeanServer(), "cfg.getMBeanServer()");
         A.notNull(cfg.getGridLogger(), "cfg.getGridLogger()");
         A.notNull(cfg.getMarshaller(), "cfg.getMarshaller()");
-        A.notNull(cfg.getPublicThreadPoolSize(), "cfg.getPublicThreadPoolSize()");
         A.notNull(cfg.getUserAttributes(), "cfg.getUserAttributes()");
 
         // All SPIs should be non-null.
@@ -1164,6 +1164,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         add(ATTR_JVM_PID, U.jvmPid());
 
         add(ATTR_CLIENT_MODE, cfg.isClientMode());
+
+        add(ATTR_CONSISTENCY_CHECK_SKIPPED, getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK));
 
         // Build a string from JVM arguments, because parameters with spaces are split.
         SB jvmArgs = new SB(512);
@@ -1484,9 +1486,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     "  /  _/ ___/ |/ /  _/_  __/ __/ ",
                     " _/ // (7 7    // /  / / / _/   ",
                     "/___/\\___/_/|_/___/ /_/ /___/  ",
-                    " ",
+                    "",
                     ver,
                     COPYRIGHT,
+                    "",
+                    "Ignite documentation: " + "http://" + SITE,
                     "",
                     "Quiet mode.");
 
@@ -1506,7 +1510,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
                         ">>> " + NL +
                         ">>> " + ver + NL +
-                        ">>> " + COPYRIGHT + NL
+                        ">>> " + COPYRIGHT + NL +
+                        ">>> " + NL +
+                        ">>> Ignite documentation: " + "http://" + SITE + NL
                 );
             }
         }
@@ -1550,12 +1556,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     ">>> Grid name: " + gridName + NL +
                     ">>> Local node [" +
                     "ID=" + locNode.id().toString().toUpperCase() +
-                    ", order=" + locNode.order() +
+                    ", order=" + locNode.order() + ", clientMode=" + ctx.clientNode() +
                     "]" + NL +
                     ">>> Local node addresses: " + U.addressesAsString(locNode) + NL +
                     ">>> Local ports: " + sb + NL;
-
-            str += ">>> Ignite documentation: http://" + SITE + NL;
 
             log.info(str);
         }
@@ -1690,6 +1694,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             List<GridComponent> comps = ctx.components();
 
+            ctx.marshallerContext().onKernalStop();
+
             // Callback component in reverse order while kernal is still functional
             // if called in the same thread, at least.
             for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious();) {
@@ -1713,12 +1719,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (updateNtfTimer != null)
                 updateNtfTimer.cancel();
 
-            if (starveTimer != null)
-                starveTimer.cancel();
+            if (starveTask != null)
+                starveTask.close();
 
-            // Cancel metrics log timer.
-            if (metricsLogTimer != null)
-                metricsLogTimer.cancel();
+            if (metricsLogTask != null)
+                metricsLogTask.close();
 
             boolean interrupted = false;
 
@@ -2244,7 +2249,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            return ctx.cache().publicJCache(name, true);
+            return ctx.cache().publicJCache(name, false);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -2261,7 +2266,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, true).get();
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, true, true).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2298,7 +2303,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             if (ctx.cache().cache(cacheCfg.getName()) == null)
-                ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, false).get();
+                ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, false, true).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2321,7 +2326,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, true).get();
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, true, true).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2345,10 +2350,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheCfg.getName());
 
             if (cache == null)
-                ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, false).get();
+                ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, false, true).get();
             else {
                 if (cache.configuration().getNearConfiguration() == null)
-                    ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, false).get();
+                    ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, false, true).get();
             }
 
             return ctx.cache().publicJCache(cacheCfg.getName());
@@ -2368,9 +2373,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(null, cacheName, nearCfg, true).get();
+            ctx.cache().dynamicStartCache(null, cacheName, nearCfg, true, true).get();
 
-            return ctx.cache().publicJCache(cacheName);
+            IgniteCacheProxy<K, V> cache = ctx.cache().publicJCache(cacheName);
+
+            checkNearCacheStarted(cache);
+
+            return cache;
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -2391,13 +2400,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             IgniteInternalCache<Object, Object> internalCache = ctx.cache().cache(cacheName);
 
             if (internalCache == null)
-                ctx.cache().dynamicStartCache(null, cacheName, nearCfg, false).get();
+                ctx.cache().dynamicStartCache(null, cacheName, nearCfg, false, true).get();
             else {
                 if (internalCache.configuration().getNearConfiguration() == null)
-                    ctx.cache().dynamicStartCache(null, cacheName, nearCfg, false).get();
+                    ctx.cache().dynamicStartCache(null, cacheName, nearCfg, false, true).get();
             }
 
-            return ctx.cache().publicJCache(cacheName);
+            IgniteCacheProxy<K, V> cache = ctx.cache().publicJCache(cacheName);
+
+            checkNearCacheStarted(cache);
+
+            return cache;
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -2405,6 +2418,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void checkNearCacheStarted(IgniteCacheProxy<?, ?> cache) throws IgniteCheckedException {
+        if (!cache.context().isNear())
+            throw new IgniteCheckedException("Failed to start near cache " +
+                "(a cache with the same name without near cache is already started)");
     }
 
     /** {@inheritDoc} */

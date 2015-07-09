@@ -1123,6 +1123,8 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNaturalIdCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1084");
+
         for (AccessType accessType : accessTypes())
             testNaturalIdCache(accessType);
     }

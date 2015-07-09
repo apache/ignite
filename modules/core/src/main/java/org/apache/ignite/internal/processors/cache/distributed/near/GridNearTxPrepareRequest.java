@@ -75,6 +75,9 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Task name hash. */
     private int taskNameHash;
 
+    /** {@code True} if first optimistic tx prepare request sent from client node. */
+    private boolean firstClientReq;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -92,8 +95,13 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param txNodes Transaction nodes mapping.
      * @param last {@code True} if this last prepare request for node.
      * @param lastBackups IDs of backup nodes receiving last prepare request during this prepare.
+     * @param onePhaseCommit One phase commit flag.
+     * @param retVal Return value flag.
+     * @param implicitSingle Implicit single flag.
+     * @param explicitLock Explicit lock flag.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
+     * @param firstClientReq {@code True} if first optimistic tx prepare request sent from client node.
      */
     public GridNearTxPrepareRequest(
         IgniteUuid futId,
@@ -110,11 +118,13 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean implicitSingle,
         boolean explicitLock,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        boolean firstClientReq
     ) {
         super(tx, reads, writes, txNodes, onePhaseCommit);
 
         assert futId != null;
+        assert !firstClientReq || tx.optimistic() : tx;
 
         this.futId = futId;
         this.topVer = topVer;
@@ -126,6 +136,14 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.explicitLock = explicitLock;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.firstClientReq = firstClientReq;
+    }
+
+    /**
+     * @return {@code True} if first optimistic tx prepare request sent from client node.
+     */
+    public boolean firstClientRequest() {
+        return firstClientReq;
     }
 
     /**
@@ -266,8 +284,14 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         }
 
         switch (writer.state()) {
-            case 23:
+            case 22:
                 if (!writer.writeBoolean("explicitLock", explicitLock))
+                    return false;
+
+                writer.incrementState();
+
+            case 23:
+                if (!writer.writeBoolean("firstClientReq", firstClientReq))
                     return false;
 
                 writer.incrementState();
@@ -348,8 +372,16 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
             return false;
 
         switch (reader.state()) {
-            case 23:
+            case 22:
                 explicitLock = reader.readBoolean("explicitLock");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 23:
+                firstClientReq = reader.readBoolean("firstClientReq");
 
                 if (!reader.isLastRead())
                     return false;

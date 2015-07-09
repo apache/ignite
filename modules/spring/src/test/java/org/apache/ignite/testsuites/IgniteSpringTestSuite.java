@@ -18,6 +18,8 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.cache.store.jdbc.*;
+import org.apache.ignite.cache.store.spring.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.p2p.*;
 import org.apache.ignite.spring.*;
@@ -38,6 +40,8 @@ public class IgniteSpringTestSuite extends TestSuite {
 
         suite.addTest(IgniteResourceSelfTestSuite.suite());
 
+        suite.addTest(new TestSuite(IgniteExcludeInConfigurationTest.class));
+
         // Tests moved to this suite since they require Spring functionality.
         suite.addTest(new TestSuite(GridP2PUserVersionChangeSelfTest.class));
 
@@ -46,6 +50,12 @@ public class IgniteSpringTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteDynamicCacheConfigTest.class));
 
         suite.addTest(new TestSuite(IgniteStartFromStreamConfigurationTest.class));
+
+        suite.addTestSuite(CacheSpringStoreSessionListenerSelfTest.class);
+
+        suite.addTestSuite(CacheJdbcBlobStoreFactorySelfTest.class);
+
+        suite.addTestSuite(CacheJdbcPojoStoreFactorySelfTest.class);
 
         return suite;
     }

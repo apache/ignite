@@ -5,8 +5,12 @@
  */
 
 /*
- * The initial version of this file was copied from JSR-166:
- * http://gee.cs.oswego.edu/dl/concurrency-interest/
+ * The latest version of the file corresponds to the following CVS commit:
+ * http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/jdk7/java/util/concurrent/
+ *  ThreadLocalRandom.java.java?pathrev=1.3
+ *
+ * Note, that the repository above is JDK 7 based that is kept up-to-date too.
+ * The main repository (JDK 8 based) uses JDK 8 features significantly that unavailable in JDK 7.
  */
 
 package org.jsr166;
@@ -22,7 +26,8 @@ import java.util.*;
  * than shared {@code Random} objects in concurrent programs will
  * typically encounter much less overhead and contention.  Use of
  * {@code ThreadLocalRandom} is particularly appropriate when multiple
- * tasks use random numbers in parallel in thread pools.
+ * tasks (for example, each a ForkJoinTask) use random numbers
+ * in parallel in thread pools.
  *
  * <p>Usages of this class should typically be of the form:
  * {@code ThreadLocalRandom.current().nextX(...)} (where
@@ -38,7 +43,7 @@ import java.util.*;
  */
 @SuppressWarnings("ALL")
 public class ThreadLocalRandom8 extends Random {
-    // same constants as Random, but must be re-declared because private
+    // same constants as Random, but must be redeclared because private
     private static final long multiplier = 0x5DEECE66DL;
     private static final long addend = 0xBL;
     private static final long mask = (1L << 48) - 1;
@@ -112,9 +117,9 @@ public class ThreadLocalRandom8 extends Random {
      *
      * @param least the least value returned
      * @param bound the upper bound (exclusive)
+     * @return the next value
      * @throws IllegalArgumentException if least greater than or equal
      * to bound
-     * @return the next value
      */
     public int nextInt(int least, int bound) {
         if (least >= bound)
@@ -177,7 +182,7 @@ public class ThreadLocalRandom8 extends Random {
      * @throws IllegalArgumentException if n is not positive
      */
     public double nextDouble(double n) {
-        if (n <= 0)
+        if (!(n > 0))
             throw new IllegalArgumentException("n must be positive");
         return nextDouble() * n;
     }

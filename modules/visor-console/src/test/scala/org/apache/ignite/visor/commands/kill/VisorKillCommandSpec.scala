@@ -20,6 +20,7 @@ package org.apache.ignite.visor.commands.kill
 import org.apache.ignite.visor.visor
 import org.scalatest._
 
+import org.apache.ignite.visor.commands.open.VisorOpenCommand._
 import org.apache.ignite.visor.commands.kill.VisorKillCommand._
 
 /**

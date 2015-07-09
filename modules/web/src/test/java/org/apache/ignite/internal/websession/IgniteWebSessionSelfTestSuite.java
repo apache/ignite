@@ -55,7 +55,7 @@ public class IgniteWebSessionSelfTestSuite extends TestSuite {
 
         /** {@inheritDoc} */
         @Override public void testRestarts() throws Exception {
-            // TODO GG-8166, enable when fixed.
+            fail("https://issues.apache.org/jira/browse/IGNITE-810");
         }
     }
 

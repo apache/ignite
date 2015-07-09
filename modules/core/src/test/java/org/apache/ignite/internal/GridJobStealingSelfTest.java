@@ -23,7 +23,6 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.failover.jobstealing.*;
@@ -289,8 +288,6 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         cfg.setCollisionSpi(colSpi);
         cfg.setFailoverSpi(failSpi);
-
-        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }

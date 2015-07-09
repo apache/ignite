@@ -31,9 +31,9 @@ import java.util.*;
 /**
  * Adapter for preloading which always assumes that preloading finished.
  */
-public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V> {
+public class GridCachePreloaderAdapter implements GridCachePreloader {
     /** Cache context. */
-    protected final GridCacheContext<K, V> cctx;
+    protected final GridCacheContext<?, ?> cctx;
 
     /** Logger.*/
     protected final IgniteLogger log;
@@ -50,7 +50,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     /**
      * @param cctx Cache context.
      */
-    public GridCachePreloaderAdapter(GridCacheContext<K, V> cctx) {
+    public GridCachePreloaderAdapter(GridCacheContext<?, ?> cctx) {
         assert cctx != null;
 
         this.cctx = cctx;
@@ -126,17 +126,18 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public GridDhtPreloaderAssignments assign(GridDhtPartitionsExchangeFuture exchFut) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void addAssignments(GridDhtPreloaderAssignments<K, V> assignments, boolean forcePreload) {
+    @Override public void addAssignments(GridDhtPreloaderAssignments assignments, boolean forcePreload) {
         // No-op.
     }
 }

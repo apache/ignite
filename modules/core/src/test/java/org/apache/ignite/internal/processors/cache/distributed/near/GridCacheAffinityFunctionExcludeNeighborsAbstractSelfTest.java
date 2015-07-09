@@ -55,7 +55,8 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
 
         // Override node attributes in discovery spi.
         TcpDiscoverySpi spi = new TcpDiscoverySpi() {
-            @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
+            @Override public void setNodeAttributes(Map<String, Object> attrs,
+                IgniteProductVersion ver) {
                 super.setNodeAttributes(attrs, ver);
 
                 // Set unique mac addresses for every group of three nodes.

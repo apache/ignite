@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.igfs.common;
 
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -62,6 +63,9 @@ public class IgfsPathControlRequest extends IgfsMessage {
 
     /** Last modification time. */
     private long modificationTime;
+
+    /** The user name this control request is made on behalf of. */
+    private String userName;
 
     /**
      * @param path Path.
@@ -234,5 +238,23 @@ public class IgfsPathControlRequest extends IgfsMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgfsPathControlRequest.class, this, "cmd", command());
+    }
+
+    /**
+     * Getter for the user name.
+     * @return user name.
+     */
+    public final String userName() {
+        assert userName != null;
+
+        return userName;
+    }
+
+    /**
+     * Setter for the user name.
+     * @param userName the user name.
+     */
+    public final void userName(String userName) {
+        this.userName = IgfsUtils.fixUserName(userName);
     }
 }

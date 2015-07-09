@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Cache change batch.
  */
-public class DynamicCacheChangeBatch implements Serializable {
+public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,6 +40,9 @@ public class DynamicCacheChangeBatch implements Serializable {
     @GridToStringInclude
     private Map<String, Map<UUID, Boolean>> clientNodes;
 
+    /** Custom message ID. */
+    private IgniteUuid id = IgniteUuid.randomUuid();
+
     /**
      * @param reqs Requests.
      */
@@ -45,6 +50,11 @@ public class DynamicCacheChangeBatch implements Serializable {
         Collection<DynamicCacheChangeRequest> reqs
     ) {
         this.reqs = reqs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
+        return id;
     }
 
     /**
@@ -66,6 +76,21 @@ public class DynamicCacheChangeBatch implements Serializable {
      */
     public void clientNodes(Map<String, Map<UUID, Boolean>> clientNodes) {
         this.clientNodes = clientNodes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean incrementMinorTopologyVersion() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return false;
     }
 
     /** {@inheritDoc} */

@@ -442,7 +442,12 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictSynchronized(true);
-                    cfg.setEvictionPolicy(new FifoEvictionPolicy(100));
+
+                    FifoEvictionPolicy plc = new FifoEvictionPolicy();
+
+                    plc.setMaxSize(100);
+
+                    cfg.setEvictionPolicy(plc);
                     return null;
                 }
             },
@@ -450,7 +455,12 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictSynchronized(false);
-                    cfg.setEvictionPolicy(new FifoEvictionPolicy(100));
+
+                    FifoEvictionPolicy plc = new FifoEvictionPolicy();
+
+                    plc.setMaxSize(100);
+
+                    cfg.setEvictionPolicy(plc);
                     return null;
                 }
             }

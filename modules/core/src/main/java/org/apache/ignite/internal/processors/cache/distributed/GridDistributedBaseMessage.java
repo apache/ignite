@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -54,15 +53,6 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
     /** */
     @GridToStringExclude
     private byte[] candsByIdxBytes;
-
-    /** Collections of local lock candidates. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private Map<KeyCacheObject, Collection<GridCacheMvccCandidate>> candsByKey;
-
-    /** Collections of local lock candidates in serialized form. */
-    @GridToStringExclude
-    private byte[] candsByKeyBytes;
 
     /** Committed versions with order higher than one for this message (needed for commit ordering). */
     @GridToStringInclude
@@ -114,15 +104,6 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
 
         if (candsByIdx != null)
             candsByIdxBytes = ctx.marshaller().marshal(candsByIdx);
-
-        if (candsByKey != null) {
-            if (ctx.deploymentEnabled()) {
-                for (KeyCacheObject key : candsByKey.keySet())
-                    prepareObject(key, ctx);
-            }
-
-            candsByKeyBytes = CU.marshal(ctx, candsByKey);
-        }
     }
 
     /** {@inheritDoc} */
@@ -131,9 +112,6 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
 
         if (candsByIdxBytes != null)
             candsByIdx = ctx.marshaller().unmarshal(candsByIdxBytes, ldr);
-
-        if (candsByKeyBytes != null)
-            candsByKey = ctx.marshaller().unmarshal(candsByKeyBytes, ldr);
     }
 
     /**
@@ -202,39 +180,6 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
     }
 
     /**
-     * @param key Candidates key.
-     * @param candsByKey Collection of local candidates.
-     */
-    public void candidatesByKey(KeyCacheObject key, Collection<GridCacheMvccCandidate> candsByKey) {
-        if (this.candsByKey == null)
-            this.candsByKey = new HashMap<>(1, 1.0f);
-
-        this.candsByKey.put(key, candsByKey);
-    }
-
-    /**
-     *
-     * @param key Candidates key.
-     * @return Collection of lock candidates at given index.
-     */
-    @Nullable public Collection<GridCacheMvccCandidate> candidatesByKey(KeyCacheObject key) {
-        assert key != null;
-
-        if (candsByKey == null)
-            return null;
-
-        return candsByKey.get(key);
-    }
-
-    /**
-     * @return Map of candidates.
-     */
-    public Map<KeyCacheObject, Collection<GridCacheMvccCandidate>> candidatesByKey() {
-        return candsByKey == null ?
-            Collections.<KeyCacheObject, Collection<GridCacheMvccCandidate>>emptyMap() : candsByKey;
-    }
-
-    /**
      * @return Count of keys referenced in candidates array (needed only locally for optimization).
      */
     public int keysCount() {
@@ -263,24 +208,18 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("candsByKeyBytes", candsByKeyBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
                 if (!writer.writeCollection("committedVers", committedVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 5:
                 if (!writer.writeCollection("rolledbackVers", rolledbackVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 6:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -311,14 +250,6 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
                 reader.incrementState();
 
             case 4:
-                candsByKeyBytes = reader.readByteArray("candsByKeyBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
                 committedVers = reader.readCollection("committedVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -326,7 +257,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
 
                 reader.incrementState();
 
-            case 6:
+            case 5:
                 rolledbackVers = reader.readCollection("rolledbackVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -334,7 +265,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
 
                 reader.incrementState();
 
-            case 7:
+            case 6:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())

@@ -45,7 +45,7 @@ class RoundRobinGlobalLoadBalancer {
     private final IgniteLogger log;
 
     /** Current snapshot of nodes which participated in load balancing. */
-    private volatile GridNodeList nodeList = new GridNodeList(0, null);
+    private volatile GridNodeList nodeList = new GridNodeList(0, new ArrayList<UUID>(0));
 
     /** Mutex for updating current topology. */
     private final Object mux = new Object();

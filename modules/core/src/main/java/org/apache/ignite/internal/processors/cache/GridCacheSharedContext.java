@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -26,6 +27,8 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.jta.*;
+import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -52,6 +55,9 @@ public class GridCacheSharedContext<K, V> {
     /** Cache transaction manager. */
     private IgniteTxManager txMgr;
 
+    /** JTA manager. */
+    private CacheJtaManagerAdapter jtaMgr;
+
     /** Partition exchange manager. */
     private GridCachePartitionExchangeManager<K, V> exchMgr;
 
@@ -76,6 +82,9 @@ public class GridCacheSharedContext<K, V> {
     /** Preloaders start future. */
     private IgniteInternalFuture<Object> preloadersStartFut;
 
+    /** Store session listeners. */
+    private Collection<CacheStoreSessionListener> storeSesLsnrs;
+
     /**
      * @param txMgr Transaction manager.
      * @param verMgr Version manager.
@@ -88,15 +97,19 @@ public class GridCacheSharedContext<K, V> {
         GridCacheMvccManager mvccMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
-        GridCacheIoManager ioMgr
+        GridCacheIoManager ioMgr,
+        Collection<CacheStoreSessionListener> storeSesLsnrs,
+        CacheJtaManagerAdapter jtaMgr
     ) {
         this.kernalCtx = kernalCtx;
         this.mvccMgr = add(mvccMgr);
         this.verMgr = add(verMgr);
         this.txMgr = add(txMgr);
+        this.jtaMgr = add(jtaMgr);
         this.depMgr = add(depMgr);
         this.exchMgr = add(exchMgr);
         this.ioMgr = add(ioMgr);
+        this.storeSesLsnrs = storeSesLsnrs;
 
         txMetrics = new TransactionMetricsAdapter();
 
@@ -274,6 +287,13 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return JTA manager.
+     */
+    public CacheJtaManagerAdapter jta() {
+        return jtaMgr;
+    }
+
+    /**
      * @return Exchange manager.
      */
     public GridCachePartitionExchangeManager<K, V> exchange() {
@@ -427,27 +447,38 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to check.
      * @param activeCacheIds Active cache IDs.
      * @param cacheCtx Cache context.
-     * @return {@code True} if cross-cache transaction can include this new cache.
+     * @return Error message if transactions are incompatible.
      */
-    public boolean txCompatible(IgniteInternalTx tx, Iterable<Integer> activeCacheIds, GridCacheContext<K, V> cacheCtx) {
-        if (cacheCtx.systemTx() ^ tx.system())
-            return false;
+    @Nullable public String verifyTxCompatibility(IgniteInternalTx tx, Iterable<Integer> activeCacheIds,
+        GridCacheContext<K, V> cacheCtx) {
+        if (cacheCtx.systemTx() && !tx.system())
+            return "system cache can be enlisted only in system transaction";
+
+        if (!cacheCtx.systemTx() && tx.system())
+            return "non-system cache can't be enlisted in system transaction";
 
         for (Integer cacheId : activeCacheIds) {
             GridCacheContext<K, V> activeCacheCtx = cacheContext(cacheId);
 
-            // System transactions may sap only one cache.
             if (cacheCtx.systemTx()) {
                 if (activeCacheCtx.cacheId() != cacheCtx.cacheId())
-                    return false;
+                    return "system transaction can include only one cache";
             }
 
-            // Check that caches have the same store.
-            if (activeCacheCtx.store().store() != cacheCtx.store().store())
-                return false;
+            CacheStoreManager store = cacheCtx.store();
+            CacheStoreManager activeStore = activeCacheCtx.store();
+
+            if (store.isLocal() != activeStore.isLocal())
+                return "caches with local and non-local stores can't be enlisted in one transaction";
+
+            if (store.isWriteBehind() != activeStore.isWriteBehind())
+                return "caches with different write-behind setting can't be enlisted in one transaction";
+
+            // If local and write-behind validations passed, this must be true.
+            assert store.isWriteToStoreFromDht() == activeStore.isWriteToStoreFromDht();
         }
 
-        return true;
+        return null;
     }
 
     /**
@@ -499,6 +530,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @param tx Transaction to rollback.
      * @throws IgniteCheckedException If failed.
+     * @return Rollback future.
      */
     public IgniteInternalFuture rollbackTxAsync(IgniteInternalTx tx) throws IgniteCheckedException {
         Collection<Integer> cacheIds = tx.activeCacheIds();
@@ -509,6 +541,13 @@ public class GridCacheSharedContext<K, V> {
         }
 
         return tx.rollbackAsync();
+    }
+
+    /**
+     * @return Store session listeners.
+     */
+    @Nullable public Collection<CacheStoreSessionListener> storeSessionListeners() {
+        return storeSesLsnrs;
     }
 
     /**

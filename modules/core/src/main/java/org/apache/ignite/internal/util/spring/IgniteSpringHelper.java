@@ -133,6 +133,16 @@ public interface IgniteSpringHelper {
     public <T> T loadBean(InputStream stream, String beanName) throws IgniteCheckedException;
 
     /**
+     * Loads bean instance by name from application context.
+     *
+     * @param appContext Sprint application context.
+     * @param beanName Bean name.
+     * @return Bean instance.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public <T> T loadBeanFromAppContext(Object appContext, String beanName) throws IgniteCheckedException;
+
+    /**
      * Gets user version for given class loader by checking
      * {@code META-INF/ignite.xml} file for {@code userVersion} attribute. If
      * {@code ignite.xml} file is not found, or user version is not specified there,

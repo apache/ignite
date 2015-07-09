@@ -5,8 +5,11 @@
  */
 
 /*
- * The initial version of this file was copied from JSR-166:
- * http://gee.cs.oswego.edu/dl/concurrency-interest/
+ * The latest version of the file corresponds to the following CVS commit:
+ * http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/main/java/util/concurrent/atomic/LongAdder.java?pathrev=1.3
+ *
+ * The later versions are based on updated Striped64 that uses java.util.function package which is unavailable in JDK 7.
+ * Thus they can't be imported.
  */
 
 package org.jsr166;
@@ -22,7 +25,7 @@ import java.util.concurrent.atomic.*;
  * #longValue}) returns the current total combined across the
  * variables maintaining the sum.
  *
- * <p> This class is usually preferable to {@link AtomicLong} when
+ * <p>This class is usually preferable to {@link AtomicLong} when
  * multiple threads update a common sum that is used for purposes such
  * as collecting statistics, not for fine-grained synchronization
  * control.  Under low update contention, the two classes have similar
@@ -36,7 +39,7 @@ import java.util.concurrent.atomic.*;
  * collection keys.
  *
  * <p><em>jsr166e note: This class is targeted to be placed in
- * java.util.concurrent.atomic<em>
+ * java.util.concurrent.atomic.</em>
  *
  * @since 1.8
  * @author Doug Lea
@@ -67,8 +70,8 @@ public class LongAdder8 extends Striped64_8 implements Serializable {
             boolean uncontended = true;
             int h = (hc = threadHashCode.get()).code;
             if (as == null || (n = as.length) < 1 ||
-                (a = as[(n - 1) & h]) == null ||
-                !(uncontended = a.cas(v = a.value, v + x)))
+                        (a = as[(n - 1) & h]) == null ||
+                        !(uncontended = a.cas(v = a.value, v + x)))
                 retryUpdate(x, hc, uncontended);
         }
     }
@@ -149,6 +152,14 @@ public class LongAdder8 extends Striped64_8 implements Serializable {
     }
 
     /**
+     * Returns the String representation of the {@link #sum}.
+     * @return the String representation of the {@link #sum}
+     */
+    public String toString() {
+        return Long.toString(sum());
+    }
+
+    /**
      * Equivalent to {@link #sum}.
      *
      * @return the sum
@@ -182,25 +193,17 @@ public class LongAdder8 extends Striped64_8 implements Serializable {
     }
 
     private void writeObject(java.io.ObjectOutputStream s)
-        throws java.io.IOException {
+            throws java.io.IOException {
         s.defaultWriteObject();
         s.writeLong(sum());
     }
 
     private void readObject(ObjectInputStream s)
-        throws IOException, ClassNotFoundException {
+            throws IOException, ClassNotFoundException {
         s.defaultReadObject();
         busy = 0;
         cells = null;
         base = s.readLong();
     }
 
-    /**
-     * Returns the String representation of the {@link #sum}.
-     *
-     * @return String representation of the {@link #sum}
-     */
-    public String toString() {
-        return Long.toString(sum());
-    }
 }

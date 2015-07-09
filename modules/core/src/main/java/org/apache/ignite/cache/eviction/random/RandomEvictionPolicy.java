@@ -18,12 +18,14 @@
 package org.apache.ignite.cache.eviction.random;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.cache.*;
 import java.io.*;
+
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 
 /**
  * Cache eviction policy which will select random cache entry for eviction if cache
@@ -31,7 +33,7 @@ import java.io.*;
  * extremely light weight, lock-free, and does not create any data structures to maintain
  * any order for eviction.
  * <p>
- * Random eviction will provide the best performance over any key set in which every
+ * Random eviction will provide the best performance over any key queue in which every
  * key has the same probability of being accessed.
  */
 public class RandomEvictionPolicy<K, V> implements EvictionPolicy<K, V>, RandomEvictionPolicyMBean, Externalizable {
@@ -39,7 +41,7 @@ public class RandomEvictionPolicy<K, V> implements EvictionPolicy<K, V>, RandomE
     private static final long serialVersionUID = 0L;
 
     /** Maximum size. */
-    private volatile int max = CacheConfiguration.DFLT_CACHE_SIZE;
+    private volatile int max = DFLT_CACHE_SIZE;
 
     /**
      * Constructs random eviction policy with all defaults.
@@ -87,7 +89,7 @@ public class RandomEvictionPolicy<K, V> implements EvictionPolicy<K, V>, RandomE
 
         IgniteCache<K, V> cache = entry.unwrap(IgniteCache.class);
 
-        int size = cache.size();
+        int size = cache.localSize(CachePeekMode.ONHEAP);
 
         for (int i = max; i < size; i++) {
             Cache.Entry<K, V> e = cache.randomEntry();

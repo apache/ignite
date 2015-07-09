@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -56,8 +55,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     private static final long serialVersionUID = 0L;
 
     /** DHT mappings. */
-    private ConcurrentMap<UUID, GridDistributedTxMapping> mappings =
-        new ConcurrentHashMap8<>();
+    private ConcurrentMap<UUID, GridDistributedTxMapping> mappings = new ConcurrentHashMap8<>();
 
     /** Future. */
     @GridToStringExclude
@@ -65,13 +63,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /** */
     @GridToStringExclude
-    private final AtomicReference<GridNearTxFinishFuture> commitFut =
-        new AtomicReference<>();
+    private final AtomicReference<GridNearTxFinishFuture> commitFut = new AtomicReference<>();
 
     /** */
     @GridToStringExclude
-    private final AtomicReference<GridNearTxFinishFuture> rollbackFut =
-        new AtomicReference<>();
+    private final AtomicReference<GridNearTxFinishFuture> rollbackFut = new AtomicReference<>();
 
     /** Entries to lock on next step of prepare stage. */
     private Collection<IgniteTxEntry> optimisticLockEntries = Collections.emptyList();
@@ -85,6 +81,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /** Info for entries accessed locally in optimistic transaction. */
     private Map<IgniteTxKey, IgniteCacheExpiryPolicy> accessMap;
 
+    /** */
+    private boolean hasRemoteLocks;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -97,6 +96,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @param implicit Implicit flag.
      * @param implicitSingle Implicit with one key flag.
      * @param sys System flag.
+     * @param plc IO policy.
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
@@ -110,7 +110,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -1182,6 +1182,36 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     @SuppressWarnings("unchecked")
     @Nullable @Override public IgniteInternalFuture<?> currentPrepareFuture() {
         return prepFut.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onRemap(AffinityTopologyVersion topVer) {
+        assert cctx.kernalContext().clientNode();
+
+        mapped.set(false);
+        nearLocallyMapped = false;
+        colocatedLocallyMapped = false;
+        txNodes = null;
+        onePhaseCommit = false;
+        nearMap.clear();
+        dhtMap.clear();
+        mappings.clear();
+
+        this.topVer.set(topVer);
+    }
+
+    /**
+     * @param hasRemoteLocks {@code True} if tx has remote locks acquired.
+     */
+    public void hasRemoteLocks(boolean hasRemoteLocks) {
+        this.hasRemoteLocks = hasRemoteLocks;
+    }
+
+    /**
+     * @return {@code True} if tx has remote locks acquired.
+     */
+    public boolean hasRemoteLocks() {
+        return hasRemoteLocks;
     }
 
     /** {@inheritDoc} */

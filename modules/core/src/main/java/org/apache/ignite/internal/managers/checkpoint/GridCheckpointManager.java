@@ -56,11 +56,10 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
     private final GridMessageListener lsnr = new CheckpointRequestListener();
 
     /** */
-    private final ConcurrentMap<IgniteUuid, CheckpointSet> keyMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<IgniteUuid, CheckpointSet> keyMap;
 
     /** */
-    private final Collection<IgniteUuid> closedSess = new GridBoundedConcurrentLinkedHashSet<>(
-        MAX_CLOSED_SESS, MAX_CLOSED_SESS, 0.75f, 256, PER_SEGMENT_Q);
+    private final Collection<IgniteUuid> closedSess;
 
     /** Grid marshaller. */
     private final Marshaller marsh;
@@ -72,6 +71,21 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
         super(ctx, ctx.config().getCheckpointSpi());
 
         marsh = ctx.config().getMarshaller();
+
+        if (enabled()) {
+            keyMap = new ConcurrentHashMap8<>();
+
+            closedSess = new GridBoundedConcurrentLinkedHashSet<>(MAX_CLOSED_SESS,
+                MAX_CLOSED_SESS,
+                0.75f,
+                256,
+                PER_SEGMENT_Q);
+        }
+        else {
+            keyMap = null;
+
+            closedSess = null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -112,7 +126,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
      * @return Session IDs.
      */
     public Collection<IgniteUuid> sessionIds() {
-        return new ArrayList<>(keyMap.keySet());
+        return enabled() ? new ArrayList<>(keyMap.keySet()) : Collections.<IgniteUuid>emptyList();
     }
 
     /**
@@ -125,8 +139,17 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
      * @return {@code true} if checkpoint has been actually saved, {@code false} otherwise.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public boolean storeCheckpoint(GridTaskSessionInternal ses, String key, Object state, ComputeTaskSessionScope scope,
-        long timeout, boolean override) throws IgniteCheckedException {
+    public boolean storeCheckpoint(GridTaskSessionInternal ses,
+        String key,
+        Object state,
+        ComputeTaskSessionScope scope,
+        long timeout,
+        boolean override)
+        throws IgniteCheckedException
+    {
+        if (!enabled())
+            return false;
+
         assert ses != null;
         assert key != null;
 
@@ -239,6 +262,9 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
      * @return Whether or not checkpoint was removed.
      */
     public boolean removeCheckpoint(String key) {
+        if (!enabled())
+            return false;
+
         assert key != null;
 
         boolean rmv = false;
@@ -256,6 +282,9 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
      * @return Whether or not checkpoint was removed.
      */
     public boolean removeCheckpoint(GridTaskSessionInternal ses, String key) {
+        if (!enabled())
+            return false;
+
         assert ses != null;
         assert key != null;
 
@@ -283,6 +312,9 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @Nullable public Serializable loadCheckpoint(GridTaskSessionInternal ses, String key) throws IgniteCheckedException {
+        if (!enabled())
+            return null;
+
         assert ses != null;
         assert key != null;
 
@@ -309,6 +341,9 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
      * @param cleanup Whether cleanup or not.
      */
     public void onSessionEnd(GridTaskSessionInternal ses, boolean cleanup) {
+        if (!enabled())
+            return;
+
         closedSess.add(ses.getId());
 
         // If on task node.
@@ -358,7 +393,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
     @Override public void printMemoryStats() {
         X.println(">>>");
         X.println(">>> Checkpoint manager memory stats [grid=" + ctx.gridName() + ']');
-        X.println(">>>  keyMap: " + keyMap.size());
+        X.println(">>>  keyMap: " + (keyMap != null ? keyMap.size() : 0));
     }
 
     /**
@@ -406,6 +441,9 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
 
             if (log.isDebugEnabled())
                 log.debug("Received checkpoint request: " + req);
+
+            if (!enabled())
+                return;
 
             IgniteUuid sesId = req.getSessionId();
 

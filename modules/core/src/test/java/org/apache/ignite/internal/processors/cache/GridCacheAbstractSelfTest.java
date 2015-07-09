@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -58,7 +57,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected static final Map<Object, Object> map = new ConcurrentHashMap8<>();
 
     /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * @return Grids count to start.
@@ -203,8 +202,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
-
-        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -534,7 +531,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Serializable factory.
      */
-    private static class TestStoreFactory implements Factory<CacheStore> {
+    protected static class TestStoreFactory implements Factory<CacheStore> {
         @Override public CacheStore create() {
             return cacheStore();
         }

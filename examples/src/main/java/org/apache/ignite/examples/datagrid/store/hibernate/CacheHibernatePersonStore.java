@@ -21,10 +21,7 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.Transaction;
 import org.hibernate.*;
-import org.hibernate.cfg.*;
-import org.jetbrains.annotations.*;
 
 import javax.cache.integration.*;
 import java.util.*;
@@ -34,99 +31,55 @@ import java.util.*;
  * and deals with maps {@link UUID} to {@link Person}.
  */
 public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
-    /** Default hibernate configuration resource path. */
-    private static final String DFLT_HIBERNATE_CFG = "/org/apache/ignite/examples/datagrid/store/hibernate" +
-        "/hibernate.cfg.xml";
-
-    /** Session attribute name. */
-    private static final String ATTR_SES = "HIBERNATE_STORE_SESSION";
-
-    /** Session factory. */
-    private SessionFactory sesFactory;
-
     /** Auto-injected store session. */
     @CacheStoreSessionResource
     private CacheStoreSession ses;
 
-    /**
-     * Default constructor.
-     */
-    public CacheHibernatePersonStore() {
-        sesFactory = new Configuration().configure(DFLT_HIBERNATE_CFG).buildSessionFactory();
-    }
-
     /** {@inheritDoc} */
     @Override public Person load(Long key) {
-        Transaction tx = transaction();
+        System.out.println(">>> Store load [key=" + key + ']');
 
-        System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
-
-        Session ses = session(tx);
+        Session hibSes = ses.attachment();
 
         try {
-            return (Person) ses.get(Person.class, key);
+            return (Person)hibSes.get(Person.class, key);
         }
         catch (HibernateException e) {
-            rollback(ses, tx);
-
-            throw new CacheLoaderException("Failed to load value from cache store with key: " + key, e);
-        }
-        finally {
-            end(ses, tx);
+            throw new CacheLoaderException("Failed to load value from cache store [key=" + key + ']', e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void write(javax.cache.Cache.Entry<? extends Long, ? extends Person> entry) {
-        Transaction tx = transaction();
-
         Long key = entry.getKey();
-
         Person val = entry.getValue();
 
-        System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
+        System.out.println(">>> Store write [key=" + key + ", val=" + val + ']');
 
-        if (val == null) {
-            delete(key);
-
-            return;
-        }
-
-        Session ses = session(tx);
+        Session hibSes = ses.attachment();
 
         try {
-            ses.saveOrUpdate(val);
+            hibSes.saveOrUpdate(val);
         }
         catch (HibernateException e) {
-            rollback(ses, tx);
-
             throw new CacheWriterException("Failed to put value to cache store [key=" + key + ", val" + val + "]", e);
-        }
-        finally {
-            end(ses, tx);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"JpaQueryApiInspection"})
     @Override public void delete(Object key) {
-        Transaction tx = transaction();
+        System.out.println(">>> Store delete [key=" + key + ']');
 
-        System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
-
-        Session ses = session(tx);
+        Session hibSes = ses.attachment();
 
         try {
-            ses.createQuery("delete " + Person.class.getSimpleName() + " where key = :key")
-                .setParameter("key", key).setFlushMode(FlushMode.ALWAYS).executeUpdate();
+            hibSes.createQuery("delete " + Person.class.getSimpleName() + " where key = :key").
+                setParameter("key", key).
+                executeUpdate();
         }
         catch (HibernateException e) {
-            rollback(ses, tx);
-
-            throw new CacheWriterException("Failed to remove value from cache store with key: " + key, e);
-        }
-        finally {
-            end(ses, tx);
+            throw new CacheWriterException("Failed to remove value from cache store [key=" + key + ']', e);
         }
     }
 
@@ -137,18 +90,18 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
 
         final int entryCnt = (Integer)args[0];
 
-        Session ses = session(null);
+        Session hibSes = ses.attachment();
 
         try {
             int cnt = 0;
 
-            List res = ses.createCriteria(Person.class).list();
+            List list = hibSes.createCriteria(Person.class).
+                setMaxResults(entryCnt).
+                list();
 
-            if (res != null) {
-                Iterator iter = res.iterator();
-
-                while (cnt < entryCnt && iter.hasNext()) {
-                    Person person = (Person)iter.next();
+            if (list != null) {
+                for (Object obj : list) {
+                    Person person = (Person)obj;
 
                     clo.apply(person.getId(), person);
 
@@ -161,120 +114,5 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
         catch (HibernateException e) {
             throw new CacheLoaderException("Failed to load values from cache store.", e);
         }
-        finally {
-            end(ses, null);
-        }
-    }
-
-    /**
-     * Rolls back hibernate session.
-     *
-     * @param ses Hibernate session.
-     * @param tx Cache ongoing transaction.
-     */
-    private void rollback(Session ses, Transaction tx) {
-        // Rollback only if there is no cache transaction,
-        // otherwise sessionEnd() will do all required work.
-        if (tx == null) {
-            org.hibernate.Transaction hTx = ses.getTransaction();
-
-            if (hTx != null && hTx.isActive())
-                hTx.rollback();
-        }
-    }
-
-    /**
-     * Ends hibernate session.
-     *
-     * @param ses Hibernate session.
-     * @param tx Cache ongoing transaction.
-     */
-    private void end(Session ses, @Nullable Transaction tx) {
-        // Commit only if there is no cache transaction,
-        // otherwise sessionEnd() will do all required work.
-        if (tx == null) {
-            org.hibernate.Transaction hTx = ses.getTransaction();
-
-            if (hTx != null && hTx.isActive())
-                hTx.commit();
-
-            ses.close();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void sessionEnd(boolean commit) {
-        Transaction tx = ses.transaction();
-
-        Map<String, Session> props = ses.properties();
-
-        Session ses = props.remove(ATTR_SES);
-
-        if (ses != null) {
-            org.hibernate.Transaction hTx = ses.getTransaction();
-
-            if (hTx != null) {
-                try {
-                    if (commit) {
-                        ses.flush();
-
-                        hTx.commit();
-                    }
-                    else
-                        hTx.rollback();
-
-                    System.out.println("Transaction ended [xid=" + tx.xid() + ", commit=" + commit + ']');
-                }
-                catch (HibernateException e) {
-                    throw new CacheWriterException("Failed to end transaction [xid=" + tx.xid() +
-                        ", commit=" + commit + ']', e);
-                }
-                finally {
-                    ses.close();
-                }
-            }
-        }
-    }
-
-    /**
-     * Gets Hibernate session.
-     *
-     * @param tx Cache transaction.
-     * @return Session.
-     */
-    private Session session(@Nullable Transaction tx) {
-        Session hbSes;
-
-        if (tx != null) {
-            Map<String, Session> props = ses.properties();
-
-            hbSes = props.get(ATTR_SES);
-
-            if (hbSes == null) {
-                hbSes = sesFactory.openSession();
-
-                hbSes.beginTransaction();
-
-                // Store session in session properties, so it can be accessed
-                // for other operations on the same transaction.
-                props.put(ATTR_SES, hbSes);
-
-                System.out.println("Hibernate session open [ses=" + hbSes + ", tx=" + tx.xid() + "]");
-            }
-        }
-        else {
-            hbSes = sesFactory.openSession();
-
-            hbSes.beginTransaction();
-        }
-
-        return hbSes;
-    }
-
-    /**
-     * @return Current transaction.
-     */
-    @Nullable private Transaction transaction() {
-        return ses != null ? ses.transaction() : null;
     }
 }
