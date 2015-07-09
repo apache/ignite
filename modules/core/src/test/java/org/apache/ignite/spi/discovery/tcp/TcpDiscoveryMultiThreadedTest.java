@@ -217,7 +217,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            1
+            GRID_CNT - 1
         );
 
         Thread.sleep(getTestTimeout() - 60 * 1000);

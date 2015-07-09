@@ -595,11 +595,11 @@ class ClientImpl extends TcpDiscoveryImpl {
         NavigableSet<ClusterNode> allNodes = allVisibleNodes();
 
         if (!topHist.containsKey(topVer)) {
-//            assert topHist.isEmpty() || topHist.lastKey() == topVer - 1 :
-//                "lastVer=" + (topHist.isEmpty() ? null : topHist.lastKey()) +
-//                ", newVer=" + topVer +
-//                ", locNode=" + locNode +
-//                ", msg=" + msg;
+            assert topHist.isEmpty() || topHist.lastKey() == topVer - 1 :
+                "lastVer=" + (topHist.isEmpty() ? null : topHist.lastKey()) +
+                ", newVer=" + topVer +
+                ", locNode=" + locNode +
+                ", msg=" + msg;
 
             topHist.put(topVer, allNodes);
 
@@ -782,8 +782,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         msg.senderNodeId(rmtNodeId);
 
-//                        if (log.isDebugEnabled())
-                            log.info("Message has been received: " + msg);
+                        if (log.isDebugEnabled())
+                            log.debug("Message has been received: " + msg);
 
                         spi.stats.onMessageReceived(msg);
 

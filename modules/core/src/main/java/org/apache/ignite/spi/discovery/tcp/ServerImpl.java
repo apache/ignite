@@ -2000,7 +2000,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (debugMode)
                             debugLog("New next node [newNext=" + newNext + ", formerNext=" + next +
-                                ", ring=" + ring + ", failedNodes=" + failedNodes + ", coord= " + resolveCoordinator() + ']');
+                                ", ring=" + ring + ", failedNodes=" + failedNodes + ']');
 
                         U.closeQuiet(sock);
 
@@ -2071,22 +2071,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 if (!next.id().equals(nextId)) {
                                     // Node with different ID has bounded to the same port.
-                                    //if (log.isDebugEnabled())
-                                    log.info("Failed to restore ring because next node ID received is not as " +
-                                                 "expected [expectedId=" + next.id() + ", rcvdId=" + nextId + ", " +
-                                                 "locNode " + locNodeId + ", ring = " + ring + ']');
-
-//                                    if (!dumping) {
-//                                        synchronized (TcpDiscoverySpi.allSpis) {
-//                                            dumping = true;
-//                                            System.out.println("------------ Start dump ------ ");
-//                                            for (TcpDiscoverySpi spi : TcpDiscoverySpi.allSpis)
-//                                                spi.dumpDebugInfo();
-//                                        }
-//                                    System.out.println("------------- End dump -----------");
-//
-//                                        System.exit(1);
-//                                    }
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to restore ring because next node ID received is not as " +
+                                            "expected [expectedId=" + next.id() + ", rcvdId=" + nextId + ']');
 
                                     if (debugMode)
                                         debugLog("Failed to restore ring because next node ID received is not as " +
@@ -3304,11 +3291,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (ring.node(msg.senderNodeId()) == null) {
-//                if (log.isDebugEnabled())
-                    log.info("Discarding node left message since sender node is not in topology: " + msg);
-
-                if (debugMode)
-                    debugLog("Discarding node left message since sender node is not in topology: " + msg);
+                if (log.isDebugEnabled())
+                    log.debug("Discarding node left message since sender node is not in topology: " + msg);
 
                 return;
             }
@@ -3321,11 +3305,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
             else {
-//                if (log.isDebugEnabled())
-                    log.info("Discarding node left message since node was not found: " + msg);
-
-                if (debugMode)
-                    debugLog("Discarding node left message since node was not found: " + msg);
+                if (log.isDebugEnabled())
+                    log.debug("Discarding node left message since node was not found: " + msg);
 
                 return;
             }
@@ -3334,9 +3315,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (locNodeCoord) {
                 if (msg.verified()) {
-                    if (!locNode.id().equals(msg.verifierNodeId()))
-                        System.out.println("Fuck!!: [loc=" + locNode + ", verifier=" + msg.verifierNodeId());
-
                     spi.stats.onRingMessageReceived(msg);
 
                     addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id()));
@@ -3354,9 +3332,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (log.isDebugEnabled())
                     log.debug("Removed node from topology: " + leftNode);
-
-                if (debugMode)
-                    debugLog("Removed node from topology: " + leftNode);
 
                 long topVer;
 
@@ -3393,9 +3368,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (log.isDebugEnabled())
                             log.debug("Sent verified node left message to leaving node: " + msg);
-
-                        if (debugMode)
-                            debugLog("Sent verified node left message to leaving node: " + msg);
                     }
                     catch (IgniteCheckedException | IOException e) {
                         if (log.isDebugEnabled())
@@ -3438,9 +3410,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (log.isDebugEnabled())
                     log.debug("Unable to send message across the ring (topology has no remote nodes): " + msg);
-
-                if (debugMode)
-                    debugLog("Unable to send message across the ring (topology has no remote nodes): " + msg);
 
                 U.closeQuiet(sock);
             }
