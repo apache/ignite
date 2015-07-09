@@ -69,7 +69,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 throw new RuntimeException("Failed!");
             }
         };
-    
+
     /** Increment processor for invoke operations. */
     public static final EntryProcessor<String, Integer, String> INCR_PROCESSOR = new EntryProcessor<String, Integer, String>() {
         @Override public String process(MutableEntry<String, Integer> e, Object... args) {
@@ -5005,7 +5005,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testTransformException() throws Exception {
         final IgniteCache<String, Integer> cache = jcache().withAsync();
-        
+
         cache.invoke("key2", ERR_PROCESSOR);
 
         assertThrows(log, new Callable<Object>() {
@@ -5023,7 +5023,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
         }, EntryProcessorException.class, null);
     }
-    
+
     /**
      * Sets given value, returns old value.
      */
