@@ -833,8 +833,6 @@ object VisorCacheCommand {
         cacheT += ("Invalidate", bool2Str(cfg.invalidate()))
         cacheT += ("Start Size", cfg.startSize())
 
-        cacheT += ("Transaction Manager Lookup", safe(cfg.transactionManagerLookupClassName()))
-
         cacheT += ("Affinity Function", safe(affinityCfg.function()))
         cacheT += ("Affinity Backups", affinityCfg.partitionedBackups())
         cacheT += ("Affinity Partitions", safe(affinityCfg.partitions()))

@@ -23,6 +23,7 @@ import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -41,15 +42,23 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
     /** */
     private boolean near;
 
+    /** */
+    private boolean configureGlobalTmLookup;
+
     /**
      */
     @SuppressWarnings("PublicInnerClass")
     public static class TestTxLookup extends GridAbstractLifecycleAwareSelfTest.TestLifecycleAware
         implements CacheTmLookup {
-        /**
-         */
-        public TestTxLookup() {
-            super(CACHE_NAME);
+        /** */
+        @IgniteInstanceResource
+        Ignite ignite;
+
+        /** {@inheritDoc} */
+        @Override public void start() {
+            super.start();
+
+            assertNotNull(ignite);
         }
 
         /** {@inheritDoc} */
@@ -74,7 +83,10 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
 
         ccfg.setName(CACHE_NAME);
 
-        ccfg.setTransactionManagerLookupClassName(TestTxLookup.class.getName());
+        if (configureGlobalTmLookup)
+            cfg.getTransactionConfiguration().setTxManagerLookupClassName(TestTxLookup.class.getName());
+        else
+            ccfg.setTransactionManagerLookupClassName(TestTxLookup.class.getName());
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -98,5 +110,12 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
 
             super.testLifecycleAware();
         }
+    }
+
+    /** {@inheritDoc} */
+    public void testLifecycleAwareGlobal() throws Exception {
+        configureGlobalTmLookup = true;
+
+        super.testLifecycleAware();
     }
 }

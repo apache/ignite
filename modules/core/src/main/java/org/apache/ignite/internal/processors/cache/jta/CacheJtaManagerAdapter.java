@@ -25,21 +25,20 @@ import org.jetbrains.annotations.*;
 /**
  * Provides possibility to integrate cache transactions with JTA.
  */
-public abstract class CacheJtaManagerAdapter extends GridCacheManagerAdapter {
-    /**
-     * Creates transaction manager finder.
-     *
-     * @param ccfg Cache configuration.
-     * @throws IgniteCheckedException If failed.
-     */
-    public abstract void createTmLookup(CacheConfiguration ccfg) throws IgniteCheckedException;
-
+public abstract class CacheJtaManagerAdapter extends GridCacheSharedManagerAdapter {
     /**
      * Checks if cache is working in JTA transaction and enlist cache as XAResource if necessary.
      *
      * @throws IgniteCheckedException In case of error.
      */
     public abstract void checkJta() throws IgniteCheckedException;
+
+    /**
+     * @param cfg Cache configuration.
+     * @throws IgniteCheckedException If {@link CacheConfiguration#getTransactionManagerLookupClassName()} is incompatible with
+     *     another caches or {@link TransactionConfiguration#getTxManagerLookupClassName()}.
+     */
+    public abstract void registerCache(CacheConfiguration<?, ?> cfg) throws IgniteCheckedException;
 
     /**
      * Gets transaction manager finder. Returns Object to avoid dependency on JTA library.

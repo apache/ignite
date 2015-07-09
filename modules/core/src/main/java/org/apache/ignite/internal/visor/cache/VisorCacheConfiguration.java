@@ -62,9 +62,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Start size. */
     private int startSize;
 
-    /** Name of class implementing GridCacheTmLookup. */
-    private String tmLookupClsName;
-
     /** Off-heap max memory. */
     private long offHeapMaxMemory;
 
@@ -134,7 +131,6 @@ public class VisorCacheConfiguration implements Serializable {
         swapEnabled = ccfg.isSwapEnabled();
         invalidate = ccfg.isInvalidate();
         startSize = ccfg.getStartSize();
-        tmLookupClsName = ccfg.getTransactionManagerLookupClassName();
         offHeapMaxMemory = ccfg.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = ccfg.getMaxConcurrentAsyncOperations();
         memoryMode = ccfg.getMemoryMode();
@@ -219,13 +215,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public int startSize() {
         return startSize;
-    }
-
-    /**
-     * @return Name of class implementing GridCacheTmLookup.
-     */
-    @Nullable public String transactionManagerLookupClassName() {
-        return tmLookupClsName;
     }
 
     /**
