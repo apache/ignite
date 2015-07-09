@@ -95,14 +95,14 @@ abstract class TcpDiscoveryImpl {
     protected void debugLog(String msg) {
         assert debugMode;
 
-        String msg0 = new SimpleDateFormat("[HH:mm:ss,SSS]").format(new Date(System.currentTimeMillis())) +
-            '[' + Thread.currentThread().getName() + "][" + getLocalNodeId() +
-            "-" + locNode.internalOrder() + "] " +
-            msg;
-
-        debugLog.add(msg0);
-
-        int delta = debugLog.size() - debugMsgHist;
+//        String msg0 = new SimpleDateFormat("[HH:mm:ss,SSS]").format(new Date(System.currentTimeMillis())) +
+//            '[' + Thread.currentThread().getName() + "][" + getLocalNodeId() +
+//            "-" + locNode.internalOrder() + "] " +
+//            msg;
+//
+//        debugLog.add(msg0);
+//
+//        int delta = debugLog.size() - debugMsgHist;
 //
 //        for (int i = 0; i < delta && debugLog.size() > debugMsgHist; i++)
 //            debugLog.poll();

@@ -1563,11 +1563,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             impl = new ServerImpl(this);
         }
 
-        impl.setDebugMode(true);
-
-        synchronized (allSpis) {
-            allSpis.add(this);
-        }
+//        impl.setDebugMode(true);
+//
+//        synchronized (allSpis) {
+//            allSpis.add(this);
+//        }
 
         assertParameter(ipFinder != null, "ipFinder != null");
         assertParameter(hbFreq > 0, "heartbeatFreq > 0");

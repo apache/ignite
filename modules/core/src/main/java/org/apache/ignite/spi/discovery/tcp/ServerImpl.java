@@ -57,7 +57,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 class ServerImpl extends TcpDiscoveryImpl {
     /** */
-    private final Executor utilityPool = new ThreadPoolExecutor(0, 1, 2000, TimeUnit.MILLISECONDS,
+    private final ThreadPoolExecutor utilityPool = new ThreadPoolExecutor(0, 1, 2000, TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<Runnable>());
 
     /** Nodes ring. */
@@ -330,6 +330,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         U.interrupt(msgWorker);
         U.join(msgWorker, log);
+
+        for (ClientMessageWorker clientWorker : clientMsgWorkers.values()) {
+            U.interrupt(clientWorker);
+            U.join(clientWorker, log);
+        }
+
+        clientMsgWorkers.clear();
+
+        utilityPool.shutdownNow();
 
         U.interrupt(statsPrinter);
         U.join(statsPrinter, log);
@@ -1699,7 +1708,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             res = new ArrayList<>(msgs.size());
                     }
 
-                    if (res != null)
+                    if (res != null && msg.verified())
                         res.add(prepare(msg, node.id()));
                 }
 
@@ -1725,7 +1734,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (msg.id().equals(lastMsgId))
                             skip = false;
                     }
-                    else
+                    else if (msg.verified())
                         cp.add(prepare(msg, node.id()));
                 }
 
@@ -3894,6 +3903,13 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processClientPingRequest(final TcpDiscoveryClientPingRequest msg) {
             utilityPool.execute(new Runnable() {
                 @Override public void run() {
+                    if (spiState == DISCONNECTED) {
+                        if (log.isDebugEnabled())
+                            log.debug("Ignoring ping request, SPI is already disconnected: " + msg);
+
+                        return;
+                    }
+
                     boolean res = pingNode(msg.nodeToPing());
 
                     final ClientMessageWorker worker = clientMsgWorkers.get(msg.creatorNodeId());

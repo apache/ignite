@@ -102,7 +102,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
      * @throws Exception If any error occurs.
      */
     public void testMultiThreaded() throws Exception {
-        execute();
+        execute2();
     }
 
     /**
@@ -159,6 +159,73 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
             stopGrid(i);
 
         fut.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void execute2() throws Exception {
+        info("Test timeout: " + (getTestTimeout() / (60 * 1000)) + " min.");
+
+        startGridsMultiThreaded(GRID_CNT);
+
+        clientFlagGlobal = true;
+
+        startGridsMultiThreaded(GRID_CNT, CLIENT_GRID_CNT);
+
+        final AtomicBoolean done = new AtomicBoolean();
+
+        final AtomicInteger clientIdx = new AtomicInteger(GRID_CNT);
+
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    clientFlagPerThread.set(true);
+
+                    int idx = clientIdx.getAndIncrement();
+
+                    while (!done.get()) {
+                        stopGrid(idx);
+                        startGrid(idx);
+                    }
+
+                    return null;
+                }
+            },
+            1
+        );
+
+        final BlockingQueue<Integer> srvIdx = new LinkedBlockingQueue<>();
+
+        for (int i = 0; i < GRID_CNT; i++)
+            srvIdx.add(i);
+
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    clientFlagPerThread.set(false);
+
+                    while (!done.get()) {
+                        int idx = srvIdx.take();
+
+                        stopGrid(idx);
+                        startGrid(idx);
+
+                        srvIdx.add(idx);
+                    }
+
+                    return null;
+                }
+            },
+            1
+        );
+
+        Thread.sleep(getTestTimeout() - 60 * 1000);
+
+        done.set(true);
+
+        fut1.get();
+        fut2.get();
     }
 
     /**
