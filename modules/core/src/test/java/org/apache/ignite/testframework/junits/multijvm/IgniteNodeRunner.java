@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import sun.jvmstat.monitor.*;
 
 import java.io.*;
+import java.lang.reflect.*;
 import java.util.*;
 
 /**
@@ -83,6 +84,30 @@ public class IgniteNodeRunner {
      */
     public static String storeToFile(IgniteConfiguration cfg) throws IOException {
         String fileName = IGNITE_CONFIGURATION_FILE + cfg.getNodeId();
+
+        // Check marshaller configuration, because read configuration method expect specific marshaller.
+        if (cfg.getMarshaller() instanceof OptimizedMarshaller){
+            OptimizedMarshaller marsh = (OptimizedMarshaller)cfg.getMarshaller();
+
+            try {
+                Field isRequireFiled = marsh.getClass().getDeclaredField("requireSer");
+
+                isRequireFiled.setAccessible(true);
+
+                boolean isRequireSer = isRequireFiled.getBoolean(marsh);
+
+                if (isRequireSer)
+                    throw new UnsupportedOperationException("Unsupported marshaller configuration. " +
+                        "readCfgFromFileAndDeleteFile method expect " + OptimizedMarshaller.class.getSimpleName() +
+                        "with requireSerializeble flag in 'false'.");
+            }
+            catch (NoSuchFieldException|IllegalAccessException e) {
+                throw new IgniteException("Failed to check filed of " + OptimizedMarshaller.class.getSimpleName(), e);
+            }
+        }
+        else
+            throw new UnsupportedOperationException("Unsupported marshaller. " +
+                "readCfgFromFileAndDeleteFile method expect " + OptimizedMarshaller.class.getSimpleName());
 
         try(OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
             cfg.setMBeanServer(null);
