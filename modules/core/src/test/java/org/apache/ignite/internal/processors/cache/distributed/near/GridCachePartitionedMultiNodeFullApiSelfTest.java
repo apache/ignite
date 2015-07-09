@@ -27,6 +27,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -97,13 +98,13 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         Map<Integer, Integer> putMap = new LinkedHashMap<>();
 
-        int size = 100;
+        final int size = 100;
 
         for (int i = 0; i < size; i++)
             putMap.put(i, i);
 
-        IgniteCache<Object, Object> prj0 = grid(0).cache(null);
-        IgniteCache<Object, Object> prj1 = grid(1).cache(null);
+        final IgniteCache<Object, Object> prj0 = grid(1).cache(null);
+        final IgniteCache<Object, Object> prj1 = grid(2).cache(null);
 
         prj0.putAll(putMap);
 
@@ -121,9 +122,41 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info(">>> After second put.");
 
+        Thread.sleep(10_000);
+
+        Affinity<Object> affinity = grid(0).affinity(null);
+
         for (int i = 0; i < size; i++) {
-            assertEquals(i * i, prj0.get(i));
-            assertEquals(i * i, prj1.get(i));
+            Collection<ClusterNode> nodes = affinity.mapKeyToPrimaryAndBackups(i);
+            System.out.print(">>>>>> Affinity for i=" + i + " ");
+
+            for (ClusterNode node : nodes)
+                System.out.print(node.id() + " ");
+
+            System.out.println();
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            System.out.println("*********** Grid " + i + " ***************");
+
+            executeOnLocalOrRemoteJvm(grid(i).cache(null), new TestCacheRunnable<Object, Object>() {
+                @Override public void run(Ignite ignite, IgniteCache<Object, Object> cache) throws Exception {
+                    for (int i = 0; i < size; i++) {
+                        if (i==12)
+                            cache.get(i);
+
+                        System.out.println(">>>>> i=" + i + " v=" + cache.get(i));
+                    }
+
+                    for (Cache.Entry<Object, Object> entry : cache)
+                        System.out.println(">>>>> Entry=" + entry);
+                }
+            });
+        }
+
+        for (int g = 0; g < gridCount(); g++) {
+            for (int i = 0; i < size; i++)
+                assertEquals("Grid " + g, i * i, grid(g).cache(null).get(i));
         }
     }
 

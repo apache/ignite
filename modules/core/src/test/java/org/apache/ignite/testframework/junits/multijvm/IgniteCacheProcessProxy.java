@@ -323,6 +323,8 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public void putAll(final Map<? extends K, ? extends V> map) {
         compute.run(new IgniteRunnable() {
             @Override public void run() {
+                System.out.println(">>>>> map=" + map);
+
                 cache().putAll(map);
             }
         });
