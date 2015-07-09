@@ -129,7 +129,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         b.append("Stats: ").append(spi.stats).append(U.nl());
 
-        U.quietAndInfo(log, b.toString());
+        System.out.println(b.toString());
+//        U.quietAndInfo(log, b.toString());
     }
 
     /** {@inheritDoc} */
@@ -781,8 +782,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         msg.senderNodeId(rmtNodeId);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Message has been received: " + msg);
+//                        if (log.isDebugEnabled())
+                            log.info("Message has been received: " + msg);
 
                         spi.stats.onMessageReceived(msg);
 

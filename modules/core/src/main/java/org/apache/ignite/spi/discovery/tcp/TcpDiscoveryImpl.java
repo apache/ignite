@@ -103,9 +103,9 @@ abstract class TcpDiscoveryImpl {
         debugLog.add(msg0);
 
         int delta = debugLog.size() - debugMsgHist;
-
-        for (int i = 0; i < delta && debugLog.size() > debugMsgHist; i++)
-            debugLog.poll();
+//
+//        for (int i = 0; i < delta && debugLog.size() > debugMsgHist; i++)
+//            debugLog.poll();
     }
 
     /**

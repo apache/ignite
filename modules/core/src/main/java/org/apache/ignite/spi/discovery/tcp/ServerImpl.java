@@ -1326,7 +1326,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             return;
         }
 
-        assert log.isInfoEnabled();
+        //assert log.isInfoEnabled();
 
         synchronized (mux) {
             StringBuilder b = new StringBuilder(U.nl());
@@ -1379,7 +1379,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             b.append("Stats: ").append(spi.stats).append(U.nl());
 
-            U.quietAndInfo(log, b.toString());
+            System.out.println(b.toString());
+            //U.quietAndInfo(log, b.toString());
         }
     }
 
@@ -1820,6 +1821,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
+    private static volatile boolean dumping;
+
     /**
      * Message worker thread for messages processing.
      */
@@ -1988,7 +1991,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (debugMode)
                             debugLog("New next node [newNext=" + newNext + ", formerNext=" + next +
-                                ", ring=" + ring + ", failedNodes=" + failedNodes + ']');
+                                ", ring=" + ring + ", failedNodes=" + failedNodes + ", coord= " + resolveCoordinator() + ']');
 
                         U.closeQuiet(sock);
 
@@ -2059,9 +2062,22 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 if (!next.id().equals(nextId)) {
                                     // Node with different ID has bounded to the same port.
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to restore ring because next node ID received is not as " +
-                                            "expected [expectedId=" + next.id() + ", rcvdId=" + nextId + ']');
+                                    //if (log.isDebugEnabled())
+                                    log.info("Failed to restore ring because next node ID received is not as " +
+                                                 "expected [expectedId=" + next.id() + ", rcvdId=" + nextId + ", " +
+                                                 "locNode " + locNodeId + ", ring = " + ring + ']');
+
+//                                    if (!dumping) {
+//                                        synchronized (TcpDiscoverySpi.allSpis) {
+//                                            dumping = true;
+//                                            System.out.println("------------ Start dump ------ ");
+//                                            for (TcpDiscoverySpi spi : TcpDiscoverySpi.allSpis)
+//                                                spi.dumpDebugInfo();
+//                                        }
+//                                    System.out.println("------------- End dump -----------");
+//
+//                                        System.exit(1);
+//                                    }
 
                                     if (debugMode)
                                         debugLog("Failed to restore ring because next node ID received is not as " +
@@ -2216,7 +2232,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         ", next=" + next.id() +
                                         ", res=" + res + ']');
 
-                                if (debugMode)
+                                if (debugMode && !(msg instanceof TcpDiscoveryDiscardMessage) && !(msg instanceof TcpDiscoveryHeartbeatMessage)
+                                    && !(msg instanceof  TcpDiscoveryCustomEventMessage))
                                     debugLog("Message has been sent to next node [msg=" + msg +
                                         ", next=" + next.id() +
                                         ", res=" + res + ']');
@@ -2804,28 +2821,48 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (log.isDebugEnabled())
                             log.debug("Accept client reconnect, restored pending messages " +
                                 "[locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
+
+                        if (debugMode)
+                            debugLog("Accept client reconnect, restored pending messages " +
+                                         "[locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
+
                     }
                     else {
                         if (log.isDebugEnabled())
                             log.debug("Failing reconnecting client node because failed to restore pending " +
                                 "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
 
+                        if (debugMode)
+                            debugLog("Failing reconnecting client node because failed to restore pending " +
+                                         "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
+
                         processNodeFailedMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
                             node.id(), node.internalOrder()));
                     }
                 }
             }
-            else if (log.isDebugEnabled())
-                log.debug("Reconnecting client node is already failed [nodeId=" + nodeId + ']');
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Reconnecting client node is already failed [nodeId=" + nodeId + ']');
+
+                if (debugMode)
+                    debugLog("Reconnecting client node is already failed [nodeId=" + nodeId + ']');
+            }
 
             if (isLocNodeRouter) {
                 ClientMessageWorker wrk = clientMsgWorkers.get(nodeId);
 
                 if (wrk != null)
                     wrk.addMessage(msg);
-                else if (log.isDebugEnabled())
-                    log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
-                        locNodeId + ", clientNodeId=" + nodeId + ']');
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
+                                      locNodeId + ", clientNodeId=" + nodeId + ']');
+
+                    if (debugMode)
+                        debugLog("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
+                                      locNodeId + ", clientNodeId=" + nodeId + ']');
+                }
             }
             else {
                 if (ring.hasRemoteNodes())
@@ -3219,6 +3256,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (log.isDebugEnabled())
                             log.debug("Starting local node stop procedure.");
 
+                        if (debugMode)
+                            debugLog("Starting local node stop procedure.");
+
                         spiState = STOPPING;
 
                         mux.notifyAll();
@@ -3226,6 +3266,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (msg.verified() || !ring.hasRemoteNodes() || msg.senderNodeId() != null) {
+                    if (debugMode)
+                        debugLog("Do stop local node: [msg=" + msg + ", hasRemote=" + ring.hasRemoteNodes() + ']');
+
                     if (spi.ipFinder.isShared() && !ring.hasRemoteNodes()) {
                         try {
                             spi.ipFinder.unregisterAddresses(locNode.socketAddresses());
@@ -3252,8 +3295,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (ring.node(msg.senderNodeId()) == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Discarding node left message since sender node is not in topology: " + msg);
+//                if (log.isDebugEnabled())
+                    log.info("Discarding node left message since sender node is not in topology: " + msg);
+
+                if (debugMode)
+                    debugLog("Discarding node left message since sender node is not in topology: " + msg);
 
                 return;
             }
@@ -3266,8 +3312,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
             else {
-                if (log.isDebugEnabled())
-                    log.debug("Discarding node left message since node was not found: " + msg);
+//                if (log.isDebugEnabled())
+                    log.info("Discarding node left message since node was not found: " + msg);
+
+                if (debugMode)
+                    debugLog("Discarding node left message since node was not found: " + msg);
 
                 return;
             }
@@ -3276,6 +3325,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (locNodeCoord) {
                 if (msg.verified()) {
+                    if (!locNode.id().equals(msg.verifierNodeId()))
+                        System.out.println("Fuck!!: [loc=" + locNode + ", verifier=" + msg.verifierNodeId());
+
                     spi.stats.onRingMessageReceived(msg);
 
                     addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id()));
@@ -3293,6 +3345,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (log.isDebugEnabled())
                     log.debug("Removed node from topology: " + leftNode);
+
+                if (debugMode)
+                    debugLog("Removed node from topology: " + leftNode);
 
                 long topVer;
 
@@ -3329,6 +3384,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (log.isDebugEnabled())
                             log.debug("Sent verified node left message to leaving node: " + msg);
+
+                        if (debugMode)
+                            debugLog("Sent verified node left message to leaving node: " + msg);
                     }
                     catch (IgniteCheckedException | IOException e) {
                         if (log.isDebugEnabled())
@@ -3371,6 +3429,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (log.isDebugEnabled())
                     log.debug("Unable to send message across the ring (topology has no remote nodes): " + msg);
+
+                if (debugMode)
+                    debugLog("Unable to send message across the ring (topology has no remote nodes): " + msg);
 
                 U.closeQuiet(sock);
             }
@@ -4290,7 +4351,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         spi.stats.onMessageReceived(msg);
 
-                        if (debugMode && recordable(msg))
+                        if (debugMode && !(msg instanceof TcpDiscoveryDiscardMessage) && !(msg instanceof TcpDiscoveryHeartbeatMessage)
+                            && !(msg instanceof  TcpDiscoveryCustomEventMessage) && recordable(msg))
                             debugLog("Message has been received: " + msg);
 
                         if (msg instanceof TcpDiscoveryJoinRequestMessage) {

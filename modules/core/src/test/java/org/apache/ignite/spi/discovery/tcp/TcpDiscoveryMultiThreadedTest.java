@@ -95,15 +95,13 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 5 * 60 * 1000;
+        return 2 * 60 * 1000;
     }
 
     /**
      * @throws Exception If any error occurs.
      */
     public void testMultiThreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1100");
-
         execute();
     }
 
