@@ -51,11 +51,6 @@ import static org.hibernate.cfg.Environment.*;
  * Tests Hibernate L2 cache.
  */
 public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-591");
-    }
-
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -1128,6 +1123,8 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNaturalIdCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1084");
+
         for (AccessType accessType : accessTypes())
             testNaturalIdCache(accessType);
     }

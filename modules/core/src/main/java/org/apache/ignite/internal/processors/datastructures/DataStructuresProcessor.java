@@ -29,7 +29,6 @@ import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -177,7 +176,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         if (initLatch.getCount() > 0) {
             initFailed = true;
-            
+
             initLatch.countDown();
         }
 
@@ -804,7 +803,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         CacheConfiguration newCfg = cacheConfiguration(cfg, cacheName);
 
-        ctx.cache().dynamicStartCache(newCfg, cacheName, null, CacheType.INTERNAL, false).get();
+        if (ctx.cache().cache(cacheName) == null)
+            ctx.cache().dynamicStartCache(newCfg, cacheName, null, CacheType.INTERNAL, false, true).get();
 
         return cacheName;
     }
@@ -875,7 +875,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
             String cacheName = ((CollectionInfo)oldInfo.info).cacheName;
 
-            GridCacheContext cacheCtx = ctx.cache().internalCache(cacheName).context();
+            GridCacheContext cacheCtx = ctx.cache().getOrStartCache(cacheName).context();
 
             return c.applyx(cacheCtx);
         }
@@ -1056,7 +1056,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         dsView.remove(key);
 
                         tx.commit();
-                    } else
+                    }
+                    else
                         tx.setRollbackOnly();
 
                     return null;
@@ -1147,19 +1148,41 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         GridCacheInternalKey key = evt.getKey();
 
                         // Notify latch on changes.
-                        GridCacheRemovable latch = dsMap.get(key);
+                        final GridCacheRemovable latch = dsMap.get(key);
 
                         GridCacheCountDownLatchValue val = (GridCacheCountDownLatchValue)val0;
 
                         if (latch instanceof GridCacheCountDownLatchEx) {
-                            GridCacheCountDownLatchEx latch0 = (GridCacheCountDownLatchEx)latch;
+                            final GridCacheCountDownLatchEx latch0 = (GridCacheCountDownLatchEx)latch;
 
                             latch0.onUpdate(val.get());
 
                             if (val.get() == 0 && val.autoDelete()) {
                                 dsMap.remove(key);
 
-                                latch.onRemoved();
+                                IgniteInternalFuture<?> removeFut = ctx.closure().runLocalSafe(new GPR() {
+                                    @Override public void run() {
+                                        try {
+                                            removeCountDownLatch(latch0.name());
+                                        }
+                                        catch (IgniteCheckedException e) {
+                                            U.error(log, "Failed to remove count down latch: " + latch0.name(), e);
+                                        }
+                                    }
+                                });
+
+                                removeFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                                    @Override public void apply(IgniteInternalFuture<?> f) {
+                                        try {
+                                            f.get();
+                                        }
+                                        catch (IgniteCheckedException e) {
+                                            U.error(log, "Failed to remove count down latch: " + latch0.name(), e);
+                                        }
+
+                                        latch.onRemoved();
+                                    }
+                                });
                             }
                         }
                         else if (latch != null) {

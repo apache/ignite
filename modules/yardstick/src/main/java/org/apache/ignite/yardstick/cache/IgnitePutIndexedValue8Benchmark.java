@@ -15,28 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.jta;
+package org.apache.ignite.yardstick.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.yardstick.cache.model.*;
+
+import java.util.*;
 
 /**
- * No-op implementation of {@link CacheJtaManagerAdapter}.
+ * Ignite benchmark that performs put operations for entity with indexed fields.
  */
-public class CacheNoopJtaManager extends CacheJtaManagerAdapter {
+public class IgnitePutIndexedValue8Benchmark extends IgniteCacheAbstractBenchmark {
     /** {@inheritDoc} */
-    @Override public void checkJta() throws IgniteCheckedException {
-        // No-op.
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        int key = nextRandom(args.range());
+
+        cache.put(key, new Person8(key));
+
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public void registerCache(CacheConfiguration<?, ?> cfg) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Object tmLookup() {
-        return null;
+    @Override protected IgniteCache<Integer, Object> cache() {
+        return ignite().cache("atomic-index");
     }
 }

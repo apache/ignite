@@ -284,14 +284,13 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
     /** {@inheritDoc} */
     @Override public void close() {
-        if (rmvd)
-            return;
-
-        try {
-            ctx.kernalContext().dataStructures().removeCountDownLatch(name);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        if (!rmvd) {
+            try {
+                ctx.kernalContext().dataStructures().removeCountDownLatch(name);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
     }
 

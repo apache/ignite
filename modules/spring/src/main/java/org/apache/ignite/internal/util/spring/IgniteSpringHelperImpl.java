@@ -422,6 +422,8 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         GenericApplicationContext springCtx = new GenericApplicationContext();
 
         if (excludedProps.length > 0) {
+            final List<String> excludedPropsList = Arrays.asList(excludedProps);
+
             BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
                 /**
                  * @param def Registered BeanDefinition.
@@ -433,12 +435,10 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
                     while (iterVals.hasNext()) {
                         PropertyValue val = iterVals.next();
 
-                        for (String excludedProp : excludedProps) {
-                            if (val.getName().equals(excludedProp)) {
-                                iterVals.remove();
+                        if (excludedPropsList.contains(val.getName())) {
+                            iterVals.remove();
 
-                                return;
-                            }
+                            continue;
                         }
 
                         if (val.getValue() instanceof Iterable) {

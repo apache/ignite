@@ -19,16 +19,14 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
 import java.io.*;
-import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
@@ -37,81 +35,107 @@ import static java.util.concurrent.TimeUnit.*;
  * Cache future self test.
  */
 public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static volatile boolean fail;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = StartNode.createConfiguration();
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setClientMode(true);
+        cfg.setGridName(gridName);
+
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+
+        spi.setIpFinder(IP_FINDER);
+
+        cfg.setDiscoverySpi(spi);
+
+        if (gridName.equals(getTestGridName(1)))
+            cfg.setClientMode(true);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAsyncCacheFuture() throws Exception {
-        final CountDownLatch readyLatch = new CountDownLatch(1);
+        startGrid(0);
 
-        GridJavaProcess node1 = null;
+        startGrid(1);
 
-        Collection<String> jvmArgs = Arrays.asList("-ea", "-DIGNITE_QUIET=false");
+        testGet(false, false);
 
-        try {
-            node1 = GridJavaProcess.exec(
-                StartNode.class.getName(), null,
-                log,
-                new CI1<String>() {
-                    @Override public void apply(String s) {
-                        info("Server node1: " + s);
+        testGet(false, true);
 
-                        if (s.contains("Topology snapshot"))
-                            readyLatch.countDown();
-                    }
-                },
-                null,
-                jvmArgs,
-                null
-            );
+        testGet(true, false);
 
-            assertTrue(readyLatch.await(60, SECONDS));
+        testGet(true, true);
+    }
 
-            Ignite client = startGrid(0);
+    /**
+     * @param nearCache If {@code true} creates near cache on client.
+     * @param cpyOnRead Cache copy on read flag.
+     * @throws Exception If failed.
+     */
+    private void testGet(boolean nearCache, boolean cpyOnRead) throws Exception {
+        fail = false;
 
-            IgniteCache<String, NotSerializableClass> cache = client.getOrCreateCache("CACHE");
+        Ignite srv = grid(0);
 
-            cache.put("key", new NotSerializableClass());
+        Ignite client = grid(1);
 
-            System.setProperty("FAIL", "true");
+        final String cacheName = nearCache ? ("NEAR-CACHE-" + cpyOnRead) : ("CACHE-" + cpyOnRead);
 
-            IgniteCache<String, NotSerializableClass> asyncCache = cache.withAsync();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
-            asyncCache.get("key");
+        ccfg.setCopyOnRead(cpyOnRead);
 
-            final CountDownLatch futLatch = new CountDownLatch(1);
+        ccfg.setName(cacheName);
 
-            asyncCache.future().listen(new IgniteInClosure<IgniteFuture<Object>>() {
-                @Override public void apply(IgniteFuture<Object> fut) {
-                    assertTrue(fut.isDone());
+        IgniteCache<Object, Object> cache = srv.createCache(ccfg);
 
-                    try {
-                        fut.get();
+        cache.put("key", new NotSerializableClass());
 
-                        fail();
-                    }
-                    catch (CacheException e) {
-                        log.info("Expected error: " + e);
+        IgniteCache<Object, Object> clientCache = nearCache ? client.createNearCache(cacheName,
+            new NearCacheConfiguration<>()) : client.cache(cacheName);
 
-                        futLatch.countDown();
-                    }
+        IgniteCache<Object, Object> asyncCache = clientCache.withAsync();
+
+        fail = true;
+
+        asyncCache.get("key");
+
+        final CountDownLatch futLatch = new CountDownLatch(1);
+
+        asyncCache.future().listen(new IgniteInClosure<IgniteFuture<Object>>() {
+            @Override public void apply(IgniteFuture<Object> fut) {
+                assertTrue(fut.isDone());
+
+                try {
+                    fut.get();
+
+                    fail();
                 }
-            });
+                catch (CacheException e) {
+                    log.info("Expected error: " + e);
 
-            assertTrue(futLatch.await(60, SECONDS));
-        }
-        finally {
-            if (node1 != null)
-                node1.killProcess();
-        }
+                    futLatch.countDown();
+                }
+            }
+        });
+
+        assertTrue(futLatch.await(5, SECONDS));
+
+        srv.destroyCache(cache.getName());
     }
 
     /**
@@ -125,47 +149,10 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc}*/
         private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-            if (System.getProperty("FAIL") != null)
+            if (fail)
                 throw new RuntimeException("Deserialization failed.");
 
             in.readObject();
-        }
-    }
-
-    /**
-     * Test class.
-     */
-    public static class StartNode {
-        /**
-         * @return Configuration.
-         */
-        public static IgniteConfiguration createConfiguration() {
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            cfg.setPeerClassLoadingEnabled(true);
-
-            cfg.setLocalHost("127.0.0.1");
-
-            TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-            disco.setIpFinderCleanFrequency(1000);
-
-            TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-
-            ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
-
-            disco.setIpFinder(ipFinder);
-
-            cfg.setDiscoverySpi(disco);
-
-            return cfg;
-        }
-
-        /**
-         * @param args Main parameters.
-         */
-        public static void main(String[] args) {
-            Ignition.start(createConfiguration());
         }
     }
 }

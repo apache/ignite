@@ -15,28 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.jta;
+package org.apache.ignite.yardstick.cache.model;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cache.query.annotations.*;
+
+import java.io.*;
 
 /**
- * No-op implementation of {@link CacheJtaManagerAdapter}.
+ * Value used for indexed put test.
  */
-public class CacheNoopJtaManager extends CacheJtaManagerAdapter {
-    /** {@inheritDoc} */
-    @Override public void checkJta() throws IgniteCheckedException {
-        // No-op.
+public class Person1 implements Serializable {
+    /** Value. */
+    @QuerySqlField(index = true)
+    private int val1;
+
+    /**
+     * Constructs.
+     *
+     * @param val Indexed value.
+     */
+    public Person1(int val) {
+        this.val1 = val;
     }
 
     /** {@inheritDoc} */
-    @Override public void registerCache(CacheConfiguration<?, ?> cfg) {
-        // No-op.
+    @Override public boolean equals(Object o) {
+        return this == o || (o instanceof Person1) && val1 == ((Person1)o).val1;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object tmLookup() {
-        return null;
+    @Override public int hashCode() {
+        return val1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "IndexedValue1 [val1=" + val1 + ']';
     }
 }

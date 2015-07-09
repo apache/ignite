@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -139,7 +140,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
                 return null;
             }
-        }, IgniteException.class, null);
+        }, CacheException.class, null);
 
         checkCache(ignite1, cacheName, false, false);
 
@@ -149,7 +150,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
                 return null;
             }
-        }, IgniteException.class, null);
+        }, CacheException.class, null);
 
         checkCache(ignite1, cacheName, false, false);
     }
