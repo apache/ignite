@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -884,7 +885,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
                     IgniteInternalFuture<Void> fut0 = fut.chain(new CX1<IgniteInternalFuture<Boolean>, Void>() {
                         @Override public Void applyx(IgniteInternalFuture<Boolean> fut) throws IgniteCheckedException {
-                            fut.get();
+                            try {
+                                fut.get();
+                            }
+                            catch (RuntimeException e) {
+                                throw new GridClosureException(e);
+                            }
 
                             return null;
                         }
@@ -1238,9 +1244,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     IgniteInternalFuture<T> fut0 = fut.chain(new CX1<IgniteInternalFuture<EntryProcessorResult<T>>, T>() {
                         @Override public T applyx(IgniteInternalFuture<EntryProcessorResult<T>> fut)
                             throws IgniteCheckedException {
-                            EntryProcessorResult<T> res = fut.get();
+                            try {
+                                EntryProcessorResult<T> res = fut.get();
 
-                            return res != null ? res.get() : null;
+                                return res != null ? res.get() : null;
+                            }
+                            catch (RuntimeException e) {
+                                throw new GridClosureException(e);
+                            }
                         }
                     });
 
@@ -1276,9 +1287,15 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     IgniteInternalFuture<T> fut0 = fut.chain(new CX1<IgniteInternalFuture<EntryProcessorResult<T>>, T>() {
                         @Override public T applyx(IgniteInternalFuture<EntryProcessorResult<T>> fut)
                             throws IgniteCheckedException {
-                            EntryProcessorResult<T> res = fut.get();
 
-                            return res != null ? res.get() : null;
+                            try {
+                                EntryProcessorResult<T> res = fut.get();
+
+                                return res != null ? res.get() : null;
+                            }
+                            catch (RuntimeException e) {
+                                throw new GridClosureException(e);
+                            }
                         }
                     });
 
