@@ -388,7 +388,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public boolean isFieldsIndexingEnabled(Class<?> cls) {
         return indexingMgr != null && indexingMgr.isFieldsIndexingSupported() &&
-            indexingMgr.fieldsIndexingEnabledForClass(cls);
+            indexingMgr.enableFieldsIndexingForClass(cls);
     }
 
     /** {@inheritDoc} */

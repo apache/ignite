@@ -214,7 +214,12 @@ public class CacheTypeMetadata implements Serializable {
      * @param cls Value type class.
      */
     public void setValueType(Class<?> cls) {
-        setValueType(cls.getName());
+        if (valType != null)
+            throw new CacheException("Value type can be set only once.");
+
+        valType = cls.getName();
+
+        simpleValType = GridQueryProcessor.typeName(cls);
     }
 
     /**

@@ -441,10 +441,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             TypeId id;
 
-            boolean portableVal = ctx.cacheObjects().isPortableObject(val);
-            boolean indexedFieldsVal = val instanceof CacheIndexedObjectImpl;
+            boolean indexedFieldsVal = ctx.cacheObjects().isIndexedObject(val);
 
-            if (portableVal || indexedFieldsVal) {
+            if (indexedFieldsVal) {
                 int typeId = ctx.cacheObjects().typeId(val);
 
                 id = new TypeId(space, typeId);
@@ -460,7 +459,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (desc == null || !desc.registered())
                 return;
 
-            if (!portableVal && !indexedFieldsVal && !desc.valueClass().isAssignableFrom(valCls))
+            if (!indexedFieldsVal && !desc.valueClass().isAssignableFrom(valCls))
                 throw new IgniteCheckedException("Failed to update index due to class name conflict" +
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
@@ -1616,7 +1615,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 obj = isKeyProp0 == 1 ? key : val;
             }
 
-            return ctx.cacheObjects().field(obj, propName);
+            Object res = ctx.cacheObjects().field(obj, propName);
+
+            return res;
         }
 
         /** {@inheritDoc} */

@@ -30,10 +30,7 @@ import java.util.concurrent.*;
  */
 public class OptimizedMarshallerIndexingHandler {
     /** */
-    private final static OptimizedMarshallerIndexingHandler instance = new OptimizedMarshallerIndexingHandler();
-
-    /** */
-    private final static ConcurrentHashMap<Class<?>, Boolean> indexingEnabledCache = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<Class<?>, Boolean> indexingEnabledCache = new ConcurrentHashMap<>();
 
     /** Class descriptors by class. */
     private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
@@ -129,16 +126,18 @@ public class OptimizedMarshallerIndexingHandler {
      *
      * @param cls Class.
      * @return {@code true} if fields indexing is enabled.
-     * @throws IgniteCheckedException In case of error.
      */
-    public boolean enableFieldsIndexingForClass(Class<?> cls) throws IgniteCheckedException {
+    public boolean enableFieldsIndexingForClass(Class<?> cls) {
         if (!isFieldsIndexingSupported())
             return false;
 
         if (metaHandler == null)
             return false;
 
-        boolean res;
+        Boolean res = indexingEnabledCache.get(cls);
+
+        if (res != null)
+            return res;
 
         if (isFieldsIndexingExcludedForClass(cls))
             res = false;
@@ -164,54 +163,11 @@ public class OptimizedMarshallerIndexingHandler {
                     res = false;
 
             } catch (IOException e) {
-                throw new IgniteCheckedException("Failed to put meta for class: " + cls.getName(), e);
+                throw new IgniteException("Failed to put meta for class: " + cls.getName(), e);
             }
         }
 
-        synchronized (indexingEnabledCache) {
-            indexingEnabledCache.put(cls, res);
-        }
-
-        return res;
-    }
-
-    /**
-     * Checks whether fields indexing is enabled for objects of the given {@code cls}.
-     *
-     * @param cls Class.
-     * @return {@code true} if fields indexing is enabled.
-     */
-    public boolean fieldsIndexingEnabledForClass(Class<?> cls) {
-        if (!isFieldsIndexingSupported())
-            return false;
-
-        if (metaHandler == null)
-            return false;
-
-        Boolean res = indexingEnabledCache.get(cls);
-
-        if (res != null)
-            return res;
-
-        if (isFieldsIndexingExcludedForClass(cls))
-            res = false;
-        else if (OptimizedMarshalAware.class.isAssignableFrom(cls))
-            res = true;
-        else {
-            try {
-                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsMap, cls, ctx, mapper,
-                    this);
-
-                res = desc.fields() != null && desc.fields().fieldsIndexingSupported() && metaHandler != null &&
-                    metaHandler.metadata(desc.typeId()) != null;
-            } catch (IOException e) {
-                throw new IgniteException("Failed to load class description: " + cls);
-            }
-        }
-
-        synchronized (indexingEnabledCache) {
-            indexingEnabledCache.putIfAbsent(cls, res);
-        }
+        indexingEnabledCache.put(cls, res);
 
         return res;
     }
