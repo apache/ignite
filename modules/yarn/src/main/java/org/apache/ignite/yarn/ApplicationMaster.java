@@ -93,12 +93,19 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
                     env.put("IGNITE_TCP_DISCOVERY_ADDRESSES", getAddress(c.getNodeId().getHost()));
 
+                    if (props.jvmOpts() != null && !props.jvmOpts().isEmpty())
+                        env.put("JVM_OPTS", props.jvmOpts());
+
                     ctx.setEnvironment(env);
 
                     Map<String, LocalResource> resources = new HashMap<>();
 
                     resources.put("ignite", IgniteYarnUtils.setupFile(ignitePath, fs, LocalResourceType.ARCHIVE));
                     resources.put("ignite-config.xml", IgniteYarnUtils.setupFile(cfgPath, fs, LocalResourceType.FILE));
+
+                    if (props.licencePath() != null)
+                        resources.put("gridgain-license.xml",
+                            IgniteYarnUtils.setupFile(new Path(props.licencePath()), fs, LocalResourceType.FILE));
 
                     if (props.userLibs() != null)
                         resources.put("libs", IgniteYarnUtils.setupFile(new Path(props.userLibs()), fs,
@@ -108,7 +115,8 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
                     ctx.setCommands(
                         Collections.singletonList(
-                            "cp -r ./libs/* ./ignite/*/libs/ || true && "
+                            (props.licencePath() != null ? "cp gridgain-license.xml ./ignite/*/ || true && " : "")
+                            + "cp -r ./libs/* ./ignite/*/libs/ || true && "
                             + "./ignite/*/bin/ignite.sh "
                             + "./ignite-config.xml"
                             + " -J-Xmx" + c.getResource().getMemory() + "m"

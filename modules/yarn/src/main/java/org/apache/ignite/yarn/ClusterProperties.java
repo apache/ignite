@@ -87,6 +87,24 @@ public class ClusterProperties {
     private String igniteWorkDir = DEFAULT_IGNITE_WORK_DIR;
 
     /** */
+    public static final String IGNITE_PATH = "IGNITE_PATH";
+
+    /** Ignite path. */
+    private String ignitePath = null;
+
+    /** */
+    public static final String LICENCE_PATH = "LICENCE_PATH";
+
+    /** Licence path. */
+    private String licencePath = null;
+
+    /** */
+    public static final String IGNITE_JVM_OPTS = "IGNITE_JVM_OPTS";
+
+    /** JVM opts. */
+    private String jvmOpts = null;
+
+    /** */
     public static final String IGNITE_LOCAL_WORK_DIR = "IGNITE_LOCAL_WORK_DIR";
 
     /** */
@@ -231,6 +249,27 @@ public class ClusterProperties {
     }
 
     /**
+     * @return Licence path.
+     */
+    public String licencePath() {
+        return licencePath;
+    }
+
+    /**
+     * @return Licence path.
+     */
+    public String ignitePath() {
+        return ignitePath;
+    }
+
+    /**
+     * @return Licence path.
+     */
+    public String jvmOpts() {
+        return jvmOpts;
+    }
+
+    /**
      * @return Host name constraint.
      */
     public Pattern hostnameConstraint() {
@@ -260,6 +299,9 @@ public class ClusterProperties {
             prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, props, DEFAULT_IGNITE_NODE_COUNT);
 
             prop.igniteVer = getStringProperty(IGNITE_VERSION, props, DEFAULT_IGNITE_VERSION);
+            prop.ignitePath = getStringProperty(IGNITE_PATH, props, null);
+            prop.licencePath = getStringProperty(LICENCE_PATH, props, null);
+            prop.jvmOpts = getStringProperty(IGNITE_JVM_OPTS, props, null);
             prop.igniteWorkDir = getStringProperty(IGNITE_WORKING_DIR, props, DEFAULT_IGNITE_WORK_DIR);
             prop.igniteLocalWorkDir = getStringProperty(IGNITE_LOCAL_WORK_DIR, props, DEFAULT_IGNITE_LOCAL_WORK_DIR);
             prop.igniteReleasesDir = getStringProperty(IGNITE_RELEASES_DIR, props, DEFAULT_IGNITE_RELEASES_DIR);
@@ -297,6 +339,9 @@ public class ClusterProperties {
         prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, null, DEFAULT_IGNITE_NODE_COUNT);
 
         prop.igniteVer = getStringProperty(IGNITE_VERSION, null, DEFAULT_IGNITE_VERSION);
+        prop.ignitePath = getStringProperty(IGNITE_PATH, null, null);
+        prop.licencePath = getStringProperty(LICENCE_PATH, null, null);
+        prop.jvmOpts = getStringProperty(IGNITE_JVM_OPTS, null, null);
         prop.igniteWorkDir = getStringProperty(IGNITE_WORKING_DIR, null, DEFAULT_IGNITE_WORK_DIR);
         prop.igniteLocalWorkDir = getStringProperty(IGNITE_LOCAL_WORK_DIR, null, DEFAULT_IGNITE_LOCAL_WORK_DIR);
         prop.igniteReleasesDir = getStringProperty(IGNITE_RELEASES_DIR, null, DEFAULT_IGNITE_RELEASES_DIR);
@@ -332,6 +377,9 @@ public class ClusterProperties {
         envs.put(IGNITE_NODE_COUNT, toEnvVal(nodeCnt));
 
         envs.put(IGNITE_VERSION, toEnvVal(igniteVer));
+        envs.put(IGNITE_PATH, toEnvVal(ignitePath));
+        envs.put(LICENCE_PATH, toEnvVal(licencePath));
+        envs.put(IGNITE_JVM_OPTS, toEnvVal(jvmOpts));
         envs.put(IGNITE_WORKING_DIR, toEnvVal(igniteWorkDir));
         envs.put(IGNITE_LOCAL_WORK_DIR, toEnvVal(igniteLocalWorkDir));
         envs.put(IGNITE_RELEASES_DIR, toEnvVal(igniteReleasesDir));

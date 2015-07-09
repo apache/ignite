@@ -61,8 +61,13 @@ public class IgniteYarnClient {
 
         FileSystem fs = FileSystem.get(conf);
 
+        Path ignite;
+
         // Load ignite and jar
-        Path ignite = getIgnite(props, fs);
+        if (props.ignitePath() == null)
+            ignite = getIgnite(props, fs);
+        else
+            ignite = new Path(props.ignitePath());
 
         Path appJar = IgniteYarnUtils.copyLocalToHdfs(fs, pathAppMasterJar,
             props.igniteWorkDir() + File.separator + IgniteYarnUtils.JAR_NAME);
