@@ -323,6 +323,10 @@
                                 <packages>org.apache.ignite.mesos*</packages>
                             </group>
                             <group>
+                                <title>Yarn Integration</title>
+                                <packages>org.apache.ignite.yarn*</packages>
+                            </group>
+                            <group>
                                 <title>Spark Integration</title>
                                 <packages>org.apache.ignite.spark.examples.java</packages>
                             </group>

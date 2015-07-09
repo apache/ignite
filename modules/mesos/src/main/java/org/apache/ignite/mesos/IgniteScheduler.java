@@ -147,14 +147,18 @@ public class IgniteScheduler implements Scheduler {
 
         String cfgName = resourceProvider.configName();
 
-        if (clusterProps.igniteConfigUrl() != null) {
-            String[] split = clusterProps.igniteConfigUrl().split("/");
+        if (clusterProps.igniteConfigUrl() != null)
+            cfgName = fileName(clusterProps.igniteConfigUrl());
 
-            cfgName = split[split.length - 1];
-        }
+        String licenceFile = null;
 
-        builder.setValue("find . -maxdepth 1 -name \"*.jar\" -exec cp {} ./gridgain-community-*/libs/ \\; && "
-            + "./gridgain-community-*/bin/ignite.sh "
+        if (clusterProps.licenceUrl() != null)
+            licenceFile = fileName(clusterProps.licenceUrl());
+
+        builder.setValue(
+            (licenceFile != null ? "find . -maxdepth 1 -name \"" + licenceFile + "\" -exec cp {} ./*/ \\; && " : "")
+            + "find . -maxdepth 1 -name \"*.jar\" -exec cp {} ./*/libs/ \\; && "
+            + "./*/bin/ignite.sh "
             + cfgName
             + " -J-Xmx" + String.valueOf((int)igniteTask.mem() + "m")
             + " -J-Xms" + String.valueOf((int)igniteTask.mem()) + "m");
@@ -177,6 +181,16 @@ public class IgniteScheduler implements Scheduler {
                 .setType(Protos.Value.Type.SCALAR)
                 .setScalar(Protos.Value.Scalar.newBuilder().setValue(igniteTask.disk())))
             .build();
+    }
+
+    /**
+     * @param path Path.
+     * @return File name.
+     */
+    private String fileName(String path) {
+        String[] split = path.split("/");
+
+        return split[split.length - 1];
     }
 
     /**
