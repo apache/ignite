@@ -77,9 +77,7 @@ public class IgniteContainer {
         return mem;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "IgniteTask [host=" + nodeId.getHost() + ", cpuCores=" + cpuCores + ", mem=" + mem + ']';
     }

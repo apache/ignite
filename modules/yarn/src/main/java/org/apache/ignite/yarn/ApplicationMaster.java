@@ -74,7 +74,8 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private Map<ContainerId, IgniteContainer> containers = new ConcurrentHashMap<>();
 
     /**
-     * @param
+     * @param ignitePath Hdfs path to ignite.
+     * @param props Cluster properties.
      */
     public ApplicationMaster(String ignitePath, ClusterProperties props) throws Exception {
         this.conf = new YarnConfiguration();
@@ -146,7 +147,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
     /**
      * @param cont Container.
-     * @return {@code True} if
+     * @return {@code True} if container satisfies requirements.
      */
     private boolean checkContainer(Container cont) {
         // Check limit on running nodes.

@@ -69,13 +69,10 @@ public class ClusterProperties {
     private double nodeCnt = DEFAULT_IGNITE_NODE_COUNT;
 
     /** */
-    public static final String IGNITE_VERSION = "IGNITE_VERSION";
-
-    /** */
-    public static final String DEFAULT_IGNITE_VERSION = "latest";
+    public static final String IGNITE_URL = "IGNITE_URL";
 
     /** Ignite version. */
-    private String igniteVer = DEFAULT_IGNITE_VERSION;
+    private String igniteUrl = null;
 
     /** */
     public static final String IGNITE_WORKING_DIR = "IGNITE_WORKING_DIR";
@@ -152,7 +149,6 @@ public class ClusterProperties {
         return clusterName;
     }
 
-
     /**
      * @return CPU count limit.
      */
@@ -209,8 +205,8 @@ public class ClusterProperties {
     /**
      * @return Ignite version.
      */
-    public String igniteVer() {
-        return igniteVer;
+    public String igniteUrl() {
+        return igniteUrl;
     }
 
     /**
@@ -256,14 +252,14 @@ public class ClusterProperties {
     }
 
     /**
-     * @return Licence path.
+     * @return Ignite hdfs path.
      */
     public String ignitePath() {
         return ignitePath;
     }
 
     /**
-     * @return Licence path.
+     * @return Jvm opts.
      */
     public String jvmOpts() {
         return jvmOpts;
@@ -298,7 +294,7 @@ public class ClusterProperties {
             prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, props, DEFAULT_MEM_PER_NODE);
             prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, props, DEFAULT_IGNITE_NODE_COUNT);
 
-            prop.igniteVer = getStringProperty(IGNITE_VERSION, props, DEFAULT_IGNITE_VERSION);
+            prop.igniteUrl = getStringProperty(IGNITE_URL, props, null);
             prop.ignitePath = getStringProperty(IGNITE_PATH, props, null);
             prop.licencePath = getStringProperty(LICENCE_PATH, props, null);
             prop.jvmOpts = getStringProperty(IGNITE_JVM_OPTS, props, null);
@@ -338,7 +334,7 @@ public class ClusterProperties {
         prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, null, DEFAULT_MEM_PER_NODE);
         prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, null, DEFAULT_IGNITE_NODE_COUNT);
 
-        prop.igniteVer = getStringProperty(IGNITE_VERSION, null, DEFAULT_IGNITE_VERSION);
+        prop.igniteUrl = getStringProperty(IGNITE_URL, null, null);
         prop.ignitePath = getStringProperty(IGNITE_PATH, null, null);
         prop.licencePath = getStringProperty(LICENCE_PATH, null, null);
         prop.jvmOpts = getStringProperty(IGNITE_JVM_OPTS, null, null);
@@ -376,7 +372,7 @@ public class ClusterProperties {
         envs.put(IGNITE_MEMORY_PER_NODE, toEnvVal(memPerNode));
         envs.put(IGNITE_NODE_COUNT, toEnvVal(nodeCnt));
 
-        envs.put(IGNITE_VERSION, toEnvVal(igniteVer));
+        envs.put(IGNITE_URL, toEnvVal(igniteUrl));
         envs.put(IGNITE_PATH, toEnvVal(ignitePath));
         envs.put(LICENCE_PATH, toEnvVal(licencePath));
         envs.put(IGNITE_JVM_OPTS, toEnvVal(jvmOpts));

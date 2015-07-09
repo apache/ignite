@@ -154,11 +154,10 @@ public class IgniteYarnClient {
     private static Path getIgnite(ClusterProperties props, FileSystem fileSystem) throws Exception {
         IgniteProvider provider = new IgniteProvider(props, fileSystem);
 
-        if (props.igniteVer() == null
-            || props.igniteVer().equalsIgnoreCase(ClusterProperties.DEFAULT_IGNITE_VERSION))
+        if (props.igniteUrl() == null)
             return provider.getIgnite();
         else
-            return provider.getIgnite(props.igniteVer());
+            return provider.getIgnite(props.igniteUrl());
     }
 
     /**

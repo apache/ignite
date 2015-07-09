@@ -33,9 +33,6 @@ public class IgniteProvider {
     public static final String DOWNLOAD_LINK = "http://tiny.cc/updater/download_community.php";
 
     /** */
-    public static final String DIRECT_DOWNLOAD_LINK = "http://www.gridgain.com/media/gridgain-community-fabric-";
-
-    /** */
     private ClusterProperties props;
 
     /** */
@@ -175,43 +172,18 @@ public class IgniteProvider {
      * @return Ignite.
      */
     public Path getIgnite(String version) throws Exception {
-        File folder = checkDownloadFolder();
-
-        // Check to hdfs contains required ignite version.
-        List<String> hdfsFiles = findIgnites(fs, props.igniteReleasesDir());
-
-        if (hdfsFiles != null && !hdfsFiles.isEmpty()) {
-            for (String fileName : hdfsFiles) {
-                if (fileName.equals("gridgain-community-fabric-" + version + ".zip"))
-                    return new Path(formatPath(props.igniteReleasesDir(), version));
-            }
-        }
-
-        // Check local fs.
-        List<String> localFiles = findIgnites(folder);
-
-        if (localFiles != null) {
-            for (String fileName : localFiles) {
-                if (fileName.equals("gridgain-community-fabric-" + version + ".zip")) {
-                    Path dst = new Path(formatPath(props.igniteReleasesDir(), version));
-
-                    fs.copyFromLocalFile(new Path(formatPath(props.igniteLocalWorkDir(), latestVersion)), dst);
-
-                    return dst;
-                }
-            }
-        }
+        checkDownloadFolder();
 
         // Download ignite.
-        downloadIgnite(version);
+        String fileName = downloadIgnite(version);
 
-        Path dst = new Path(formatPath(props.igniteReleasesDir(), version));
+        Path dst = new Path(props.igniteReleasesDir() + File.separator + fileName);
 
-        fs.copyFromLocalFile(new Path(formatPath(props.igniteLocalWorkDir(), latestVersion)), dst);
+        if (!fs.exists(dst))
+            fs.copyFromLocalFile(new Path(props.igniteLocalWorkDir() + File.separator + fileName), dst);
 
         return dst;
     }
-
 
     /**
      * @param folder folder
@@ -265,23 +237,26 @@ public class IgniteProvider {
     }
 
     /**
-     * @param version The current latest version.
-     * @return Ignite archive.
+     * @param igniteUrl Url to ignite.
+     * @return Ignite file name.
      */
-    private String downloadIgnite(String version) {
+    private String downloadIgnite(String igniteUrl) {
         try {
-            URL url = new URL(DIRECT_DOWNLOAD_LINK + version + ".zip");
+            URL url = new URL(igniteUrl);
 
             HttpURLConnection conn = (HttpURLConnection)url.openConnection();
 
             int code = conn.getResponseCode();
 
             if (code == 200) {
-                checkDownloadFolder();
-
                 String fileName = fileName(url.toString());
 
-                FileOutputStream outFile = new FileOutputStream(props.igniteLocalWorkDir() + File.separator + fileName);
+                String filePath = props.igniteLocalWorkDir() + File.separator + fileName;
+
+                if (new File(filePath).exists())
+                    return fileName;
+
+                FileOutputStream outFile = new FileOutputStream(filePath);
 
                 outFile.getChannel().transferFrom(Channels.newChannel(conn.getInputStream()), 0, Long.MAX_VALUE);
 
@@ -305,6 +280,9 @@ public class IgniteProvider {
 
         if (!file.exists())
             file.mkdirs();
+
+        if (!file.exists())
+            throw new RuntimeException("Couldn't create local directory! Path: " + file.toURI());
 
         return file;
     }
