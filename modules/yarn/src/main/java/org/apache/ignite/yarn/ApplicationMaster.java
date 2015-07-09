@@ -74,7 +74,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private Map<ContainerId, IgniteContainer> containers = new ConcurrentHashMap<>();
 
     /**
-     * Constructor.
+     * @param
      */
     public ApplicationMaster(String ignitePath, ClusterProperties props) throws Exception {
         this.conf = new YarnConfiguration();
@@ -145,8 +145,6 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     }
 
     /**
-     * Checks that container
-     *
      * @param cont Container.
      * @return {@code True} if
      */
