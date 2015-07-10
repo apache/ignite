@@ -985,11 +985,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Found duplicated properties with the same name [keyType=" +
                 type.keyClass().getName() + ", valueType=" + type.valueClass().getName() + "]");
 
-        String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [class=" + type + "]";
+        String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name ";
 
         for (String name : names) {
             if (name.equals(KEY_FIELD_NAME) || name.equals(VAL_FIELD_NAME))
-                throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
+                throw new IgniteCheckedException(MessageFormat.format(ptrn, name) + "[class=" + type + "]");
         }
 
         return true;
