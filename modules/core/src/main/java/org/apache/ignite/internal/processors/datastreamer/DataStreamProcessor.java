@@ -255,6 +255,9 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
             try {
                 updater = marsh.unmarshal(req.updaterBytes(), clsLdr);
+
+                if (updater != null)
+                    ctx.resource().injectGeneric(updater);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to unmarshal message [nodeId=" + nodeId + ", req=" + req + ']', e);
