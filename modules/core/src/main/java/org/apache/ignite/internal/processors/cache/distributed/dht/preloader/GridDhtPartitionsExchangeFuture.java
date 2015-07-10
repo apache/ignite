@@ -474,6 +474,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 oldestNode.set(oldest);
 
+                if (!F.isEmpty(reqs))
+                    blockGateways();
+
                 startCaches();
 
                 // True if client node joined or failed.
@@ -489,24 +492,25 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 else {
                     assert discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT : discoEvt;
 
-                    boolean clientOnlyStart = true;
+                    boolean clientOnlyCacheEvt = true;
 
                     for (DynamicCacheChangeRequest req : reqs) {
-                        if (!req.clientStartOnly()) {
-                            clientOnlyStart = false;
+                        if (req.clientStartOnly() || req.close())
+                            continue;
 
-                            break;
-                        }
+                        clientOnlyCacheEvt = false;
+
+                        break;
                     }
 
-                    clientNodeEvt = clientOnlyStart;
+                    clientNodeEvt = clientOnlyCacheEvt;
                 }
 
                 if (clientNodeEvt) {
                     ClusterNode node = discoEvt.eventNode();
 
                     // Client need to initialize affinity for local join event or for stated client caches.
-                    if (!node.isLocal()) {
+                    if (!node.isLocal() || clientCacheClose()) {
                         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                             if (cacheCtx.isLocal())
                                 continue;
@@ -733,9 +737,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (log.isDebugEnabled())
                     log.debug("After waiting for partition release future: " + this);
 
-                if (!F.isEmpty(reqs))
-                    blockGateways();
-
                 if (exchId.isLeft())
                     cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
 
@@ -839,6 +840,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * @return {@code True} if exchange initiated for client cache close.
+     */
+    private boolean clientCacheClose() {
+        return reqs != null && reqs.size() == 1 && reqs.iterator().next().close();
+    }
+
+    /**
      *
      */
     private void dumpPendingObjects() {
@@ -903,7 +911,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void blockGateways() {
         for (DynamicCacheChangeRequest req : reqs) {
-            if (req.stop())
+            if (req.stop() || req.close())
                 cctx.cache().blockGateway(req);
         }
     }

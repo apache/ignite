@@ -597,7 +597,9 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         List<ReaderId> newRdrs = null;
 
         for (int i = 0; i < rdrs.length; i++) {
-            if (!cctx.discovery().alive(rdrs[i].nodeId())) {
+            ClusterNode node = cctx.discovery().getAlive(rdrs[i].nodeId());
+
+            if (node == null || !cctx.discovery().cacheNode(node, cacheName())) {
                 // Node has left and if new list has already been created, just skip.
                 // Otherwise, create new list and add alive nodes.
                 if (newRdrs == null) {

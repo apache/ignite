@@ -163,7 +163,7 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
             cache = srv.cache(null);
 
             if (cache != null)
-                cache.close();
+                cache.destroy();
         }
     }
 }

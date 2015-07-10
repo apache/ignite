@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.CacheManager;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheManager;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -171,19 +171,23 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             return ctx.cache().metrics();
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetrics metrics(ClusterGroup grp) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             List<CacheMetrics> metrics = new ArrayList<>(grp.nodes().size());
@@ -202,19 +206,21 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             return new CacheMetricsSnapshot(ctx.cache().metrics(), metrics);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetricsMXBean mxBean() {
-        CacheOperationContext prev = gate.enter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             return ctx.cache().mxBean();
         }
         finally {
-            gate.leave(prev);
+            onLeave(gate, prev);
         }
     }
 
@@ -230,19 +236,23 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Nullable @Override public Cache.Entry<K, V> randomEntry() {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             return ctx.cache().randomEntry();
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withExpiryPolicy(ExpiryPolicy plc) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             CacheOperationContext prj0 = opCtx != null ? opCtx.withExpiryPolicy(plc) :
@@ -251,7 +261,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             return new IgniteCacheProxy<>(ctx, delegate, prj0, isAsync(), lock);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
@@ -262,7 +272,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withNoRetries() {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             boolean noRetries = opCtx != null && opCtx.noRetries();
@@ -280,14 +292,16 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 lock);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync())
@@ -296,7 +310,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     ctx.cache().globalLoadCache(p, args);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -307,7 +321,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync())
@@ -316,7 +332,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     delegate.localLoadCache(p, args);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -327,7 +343,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Nullable @Override public V getAndPutIfAbsent(K key, V val) throws CacheException {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -339,7 +357,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.getAndPutIfAbsent(key, val);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -359,13 +377,15 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public boolean isLocalLocked(K key, boolean byCurrThread) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             return byCurrThread ? delegate.isLockedByThread(key) : delegate.isLocked(key);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
@@ -379,7 +399,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         final CacheQuery<Map.Entry<K,V>> qry;
         final CacheQueryFuture<Map.Entry<K,V>> fut;
 
-        boolean isKeepPortable = opCtx != null ? opCtx.isKeepPortable() : false;
+        boolean isKeepPortable = opCtx != null && opCtx.isKeepPortable();
 
         if (filter instanceof ScanQuery) {
             IgniteBiPredicate<K, V> p = ((ScanQuery)filter).getFilter();
@@ -444,11 +464,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * @param local Enforce local.
+     * @param loc Enforce local.
      * @return Local node cluster group.
      */
-    private ClusterGroup projection(boolean local) {
-        if (local || ctx.isLocal() || isReplicatedDataNode())
+    private ClusterGroup projection(boolean loc) {
+        if (loc || ctx.isLocal() || isReplicatedDataNode())
             return ctx.kernalContext().grid().cluster().forLocal();
 
         if (ctx.isReplicated())
@@ -517,7 +537,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @Override public <R> QueryCursor<R> query(Query<R> qry) {
         A.notNull(qry, "qry");
 
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             ctx.checkSecurity(SecurityPermission.CACHE_READ);
@@ -558,7 +580,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw new CacheException(e);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
@@ -589,7 +611,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             return delegate.localEntries(peekModes);
@@ -598,37 +622,43 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw cacheException(e);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public QueryMetrics queryMetrics() {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             return delegate.context().queries().metrics();
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void localEvict(Collection<? extends K> keys) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             delegate.evictAll(keys);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public V localPeek(K key, CachePeekMode... peekModes) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             return delegate.localPeek(key, peekModes, null);
@@ -637,20 +667,22 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw cacheException(e);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void localPromote(Set<? extends K> keys) throws CacheException {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 delegate.promoteAll(keys);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -660,7 +692,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public int size(CachePeekMode... peekModes) throws CacheException {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             if (isAsync()) {
@@ -675,13 +709,15 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw cacheException(e);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             return delegate.localSize(peekModes);
@@ -690,14 +726,16 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw cacheException(e);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public V get(K key) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -709,7 +747,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.get(key);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -720,7 +758,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(Set<? extends K> keys) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -732,7 +772,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.getAll(keys);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -743,7 +783,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public Map<K, V> getAllOutTx(Set<? extends K> keys) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -755,7 +797,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.getAllOutTx(keys);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -769,7 +811,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      */
     public Map<K, V> getAll(Collection<? extends K> keys) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -781,7 +825,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.getAll(keys);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -796,19 +840,23 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Entry set.
      */
     public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             return delegate.entrySetx(filter);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             if (isAsync()) {
@@ -820,13 +868,15 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 return delegate.containsKey(key);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsKeys(Set<? extends K> keys) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             if (isAsync()) {
@@ -838,7 +888,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 return delegate.containsKeys(keys);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
@@ -848,7 +898,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         boolean replaceExisting,
         @Nullable final CompletionListener completionLsnr
     ) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             IgniteInternalFuture<?> fut = ctx.cache().loadAll(keys, replaceExisting);
@@ -869,14 +921,16 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             }
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void put(K key, V val) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -896,7 +950,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     delegate.put(key, val);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -907,7 +961,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public V getAndPut(K key, V val) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -919,7 +975,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.getAndPut(key, val);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -930,7 +986,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public void putAll(Map<? extends K, ? extends V> map) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync())
@@ -939,7 +997,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     delegate.putAll(map);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -950,7 +1008,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public boolean putIfAbsent(K key, V val) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -962,7 +1022,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.putIfAbsent(key, val);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -973,7 +1033,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public boolean remove(K key) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -985,7 +1047,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.remove(key);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -996,7 +1058,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public boolean remove(K key, V oldVal) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -1008,7 +1072,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.remove(key, oldVal);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1019,7 +1083,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public V getAndRemove(K key) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -1031,7 +1097,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.getAndRemove(key);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1042,7 +1108,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V oldVal, V newVal) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -1054,7 +1122,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.replace(key, oldVal, newVal);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1065,7 +1133,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V val) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -1077,7 +1147,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.replace(key, val);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1088,7 +1158,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public V getAndReplace(K key, V val) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -1100,7 +1172,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.getAndReplace(key, val);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1111,7 +1183,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public void removeAll(Set<? extends K> keys) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync())
@@ -1120,7 +1194,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     delegate.removeAll(keys);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1130,7 +1204,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public void removeAll() {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             if (isAsync())
@@ -1142,13 +1218,15 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw cacheException(e);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void clear(K key) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             if (isAsync())
@@ -1160,13 +1238,15 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw cacheException(e);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void clearAll(Set<? extends K> keys) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             if (isAsync())
@@ -1178,13 +1258,15 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw cacheException(e);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             if (isAsync())
@@ -1196,32 +1278,36 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw cacheException(e);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void localClear(K key) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             delegate.clearLocally(key);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void localClearAll(Set<? extends K> keys) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             for (K key : keys)
                 delegate.clearLocally(key);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
@@ -1229,7 +1315,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... args)
         throws EntryProcessorException {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -1255,7 +1343,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 }
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1267,7 +1355,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @Override public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... args)
         throws EntryProcessorException {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -1293,7 +1383,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 }
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1303,10 +1393,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-                                                                   EntryProcessor<K, V, T> entryProcessor,
-                                                                   Object... args) {
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -1318,7 +1410,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.invokeAll(keys, entryProcessor, args);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1331,7 +1423,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         CacheEntryProcessor<K, V, T> entryProcessor,
         Object... args) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -1343,7 +1437,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.invokeAll(keys, entryProcessor, args);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1356,7 +1450,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args) {
         try {
-            CacheOperationContext prev = onEnter(opCtx);
+            GridCacheGateway<K, V> gate = this.gate;
+
+            CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
                 if (isAsync()) {
@@ -1368,7 +1464,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     return delegate.invokeAll(map, args);
             }
             finally {
-                onLeave(prev);
+                onLeave(gate, prev);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1394,17 +1490,43 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
-        if (!onEnterIfNoClose())
+    @Override public void destroy() {
+        GridCacheGateway<K, V> gate = this.gate;
+
+        if (!onEnterIfNoStop(gate))
             return;
 
         IgniteInternalFuture<?> fut;
 
         try {
-            fut = ctx.kernalContext().cache().dynamicStopCache(ctx.name());
+            fut = ctx.kernalContext().cache().dynamicDestroyCache(ctx.name());
         }
         finally {
-            onLeave();
+            onLeave(gate);
+        }
+
+        try {
+            fut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        GridCacheGateway<K, V> gate = this.gate;
+
+        if (!onEnterIfNoStop(gate))
+            return;
+
+        IgniteInternalFuture<?> fut;
+
+        try {
+            fut = ctx.kernalContext().cache().dynamicCloseCache(ctx.name());
+        }
+        finally {
+            onLeave(gate);
         }
 
         try {
@@ -1417,14 +1539,16 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
-        if (!onEnterIfNoClose())
+        GridCacheGateway<K, V> gate = this.gate;
+
+        if (!onEnterIfNoStop(gate))
             return true;
 
         try {
             return ctx.kernalContext().cache().context().closed(ctx);
         }
         finally {
-            onLeave();
+            onLeave(gate);
         }
     }
 
@@ -1448,7 +1572,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             ctx.continuousQueries().executeJCacheQuery(lsnrCfg, false);
@@ -1457,13 +1583,15 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw cacheException(e);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg) {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             ctx.continuousQueries().cancelJCacheQuery(lsnrCfg);
@@ -1472,19 +1600,21 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw cacheException(e);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             return ctx.cache().igniteIterator();
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
@@ -1516,8 +1646,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      *
      * @return Projection for portable objects.
      */
+    @SuppressWarnings("unchecked")
     public <K1, V1> IgniteCache<K1, V1> keepPortable() {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             CacheOperationContext opCtx0 =
@@ -1535,7 +1668,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 lock);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
@@ -1543,7 +1676,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cache with skip store enabled.
      */
     public IgniteCache<K, V> skipStore() {
-        CacheOperationContext prev = onEnter(opCtx);
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
             boolean skip = opCtx != null && opCtx.skipStore();
@@ -1565,7 +1700,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 lock);
         }
         finally {
-            onLeave(prev);
+            onLeave(gate, prev);
         }
     }
 
@@ -1592,10 +1727,69 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
+     * @return {@code True} if proxy was closed.
+     */
+    public boolean proxyClosed() {
+        return !gate.getClass().equals(GridCacheGateway.class);
+    }
+
+    /**
+     * Closes this proxy instance.
+     */
+    public void closeProxy() {
+        gate = new GridCacheGateway<K, V>(ctx) {
+            @Override public void enter() {
+                throw new IllegalStateException("Cache has been closed: " + ctx.name());
+            }
+
+            @Override public boolean enterIfNotStopped() {
+                return false;
+            }
+
+            @Override public boolean enterIfNotStoppedNoLock() {
+                return false;
+            }
+
+            @Override public void leaveNoLock() {
+                assert false;
+            }
+
+            @Override public void leave() {
+                assert false;
+            }
+
+            @Nullable @Override public CacheOperationContext enter(@Nullable CacheOperationContext opCtx) {
+                throw new IllegalStateException("Cache has been closed: " + ctx.name());
+            }
+
+            @Nullable @Override public CacheOperationContext enterNoLock(@Nullable CacheOperationContext opCtx) {
+                throw new IllegalStateException("Cache has been closed: " + ctx.name());
+            }
+
+            @Override public void leave(CacheOperationContext prev) {
+                assert false;
+            }
+
+            @Override public void leaveNoLock(CacheOperationContext prev) {
+                assert false;
+            }
+
+            @Override public void block() {
+                // No-op.
+            }
+
+            @Override public void onStopped() {
+                // No-op.
+            }
+        };
+    }
+
+    /**
+     * @param gate Cache gateway.
      * @param opCtx Cache operation context to guard.
      * @return Previous projection set on this thread.
      */
-    private CacheOperationContext onEnter(CacheOperationContext opCtx) {
+    private CacheOperationContext onEnter(GridCacheGateway<K, V> gate, CacheOperationContext opCtx) {
         if (lock)
             return gate.enter(opCtx);
         else
@@ -1603,21 +1797,21 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * On enter.
-     *
+     * @param gate Cache gateway.
      * @return {@code True} if enter successful.
      */
-    private boolean onEnterIfNoClose() {
+    private boolean onEnterIfNoStop(GridCacheGateway<K, V> gate) {
         if (lock)
-            return gate.enterIfNotClosed();
+            return gate.enterIfNotStopped();
         else
-            return gate.enterIfNotClosedNoLock();
+            return gate.enterIfNotStoppedNoLock();
     }
 
     /**
+     * @param gate Cache gateway.
      * @param opCtx Operation context to guard.
      */
-    private void onLeave(CacheOperationContext opCtx) {
+    private void onLeave(GridCacheGateway<K, V> gate, CacheOperationContext opCtx) {
         if (lock)
             gate.leave(opCtx);
         else
@@ -1625,9 +1819,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * On leave.
+     * @param gate Cache gateway.
      */
-    private void onLeave() {
+    private void onLeave(GridCacheGateway<K, V> gate) {
         if (lock)
             gate.leave();
         else

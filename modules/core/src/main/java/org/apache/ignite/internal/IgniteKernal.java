@@ -2436,7 +2436,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         IgniteInternalFuture<?> stopFut;
 
         try {
-            stopFut = ctx.cache().dynamicStopCache(cacheName);
+            stopFut = ctx.cache().dynamicDestroyCache(cacheName);
         }
         finally {
             unguard();
