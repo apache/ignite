@@ -56,7 +56,7 @@ public class VisorCacheStopTask extends VisorOneNodeTask<String, Void> {
         @Override protected Void run(String cacheName) {
             IgniteCache cache = ignite.cache(cacheName);
 
-            cache.close();
+            cache.destroy();
 
             return null;
         }

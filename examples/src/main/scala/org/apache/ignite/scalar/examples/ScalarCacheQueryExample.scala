@@ -55,7 +55,7 @@ object ScalarCacheQueryExample {
                 example(ignite$)
             }
             finally {
-                cache.close()
+                cache.destroy()
             }
         }
     }

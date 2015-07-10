@@ -498,7 +498,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         spi1.reset();
         spi2.reset();
 
-        assertNull(((IgniteKernal)ignite2).context().cache().context().cache().internalCache("cache1"));
+        assertNull(((IgniteKernal)ignite2).context().cache().context().cache().internalCache(CACHE_NAME1));
 
         if (nearCache)
             ignite2.getOrCreateNearCache(CACHE_NAME1, new NearCacheConfiguration<>());
@@ -507,7 +507,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         waitForTopologyUpdate(3, new AffinityTopologyVersion(3, 1));
 
-        GridCacheAdapter cache = ((IgniteKernal)ignite2).context().cache().context().cache().internalCache("cache1");
+        GridCacheAdapter cache = ((IgniteKernal)ignite2).context().cache().context().cache().internalCache(CACHE_NAME1);
 
         assertNotNull(cache);
         assertEquals(nearCache, cache.context().isNear());
@@ -533,6 +533,29 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         spi1.reset();
         spi2.reset();
 
+        AffinityTopologyVersion topVer;
+
+        if (!srvNode) {
+            log.info("Close client cache: " + CACHE_NAME1);
+
+            ignite2.cache(CACHE_NAME1).close();
+
+            assertNull(((IgniteKernal)ignite2).context().cache().context().cache().internalCache(CACHE_NAME1));
+
+            waitForTopologyUpdate(3, new AffinityTopologyVersion(3, 2));
+
+            assertEquals(0, spi0.partitionsSingleMessages());
+            assertEquals(0, spi0.partitionsFullMessages());
+            assertEquals(0, spi1.partitionsSingleMessages());
+            assertEquals(0, spi1.partitionsFullMessages());
+            assertEquals(0, spi2.partitionsSingleMessages());
+            assertEquals(0, spi2.partitionsFullMessages());
+
+            topVer = new AffinityTopologyVersion(3, 3);
+        }
+        else
+            topVer = new AffinityTopologyVersion(3, 2);
+
         final String CACHE_NAME2 = "cache2";
 
         ccfg = new CacheConfiguration();
@@ -541,7 +564,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         ignite2.createCache(ccfg);
 
-        waitForTopologyUpdate(3, new AffinityTopologyVersion(3, 2));
+        waitForTopologyUpdate(3, topVer);
 
         assertEquals(0, spi0.partitionsSingleMessages());
         assertEquals(2, spi0.partitionsFullMessages());

@@ -50,7 +50,7 @@ object ScalarCacheExample extends App {
             basicOperations()
         }
         finally {
-            cache.close()
+            cache.destroy()
         }
     }
 
