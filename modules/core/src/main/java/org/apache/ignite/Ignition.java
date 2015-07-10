@@ -165,6 +165,27 @@ public class Ignition {
     }
 
     /**
+     * Sets user-provided class loader that may be used to load classes. This may be helpful in cases when
+     * user classes are loaded by third-party class-loaders, for example when application is deployed in
+     * a J2EE container.
+     *
+     * @param usrClsLdr Default user class loader.
+     */
+    public static void setDefaultClassLoader(ClassLoader usrClsLdr) {
+        IgnitionEx.setDefaultClassLoader(usrClsLdr);
+    }
+
+    /**
+     * Gets default class loader that will be used to load classes.
+     *
+     * @return Default user class loader.
+     * @see Ignition#setDefaultClassLoader(ClassLoader)
+     */
+    public static ClassLoader getDefaultClassLoader() {
+        return IgnitionEx.getDefaultClassLoader();
+    }
+
+    /**
      * Gets state of grid default grid.
      *
      * @return Default grid state.

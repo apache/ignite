@@ -303,6 +303,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Marshaller context. */
     private MarshallerContextImpl marshCtx;
 
+    /** Default class loader. */
+    private ClassLoader dfltClsLdr;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -768,6 +771,21 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public String userVersion(ClassLoader ldr) {
         return spring != null ? spring.userVersion(ldr, log()) : U.DFLT_USER_VERSION;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClassLoader defaultClassLoader() {
+        ClassLoader ldr = dfltClsLdr;
+
+        if (ldr == null)
+            ldr = dfltClsLdr = getClass().getClassLoader();
+
+        return ldr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void defaultClassLoader(ClassLoader dfltClsLdr) {
+        this.dfltClsLdr = dfltClsLdr;
     }
 
     /** {@inheritDoc} */

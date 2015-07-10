@@ -444,6 +444,20 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public String userVersion(ClassLoader ldr);
 
     /**
+     * Gets default class loader to use when deserializing objects.
+     *
+     * @return Default class loader.
+     */
+    public ClassLoader defaultClassLoader();
+
+    /**
+     * Sets default class loader to use when deserializing objects.
+     *
+     * @param dfltClsLdr Default class loader to use.
+     */
+    public void defaultClassLoader(ClassLoader dfltClsLdr);
+
+    /**
      * @param name Plugin name.
      * @return Plugin provider instance.
      * @throws PluginNotFoundException If plugin provider for the given name was not found.

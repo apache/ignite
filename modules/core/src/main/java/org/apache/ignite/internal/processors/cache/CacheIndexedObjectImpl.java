@@ -200,7 +200,7 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
             assert valBytes != null;
 
             Object val = ctx.processor().unmarshal(ctx, valBytes, start, len,
-                ctx.kernalContext().config().getClassLoader());
+                ctx.kernalContext().defaultClassLoader());
 
             if (keepDeserialized(ctx, false))
                 this.val = val;

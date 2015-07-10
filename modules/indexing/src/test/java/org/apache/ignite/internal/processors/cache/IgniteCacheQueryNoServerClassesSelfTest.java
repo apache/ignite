@@ -47,7 +47,7 @@ public class IgniteCacheQueryNoServerClassesSelfTest extends GridCommonAbstractT
     private static final String PLAIN_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.IndexValue";
 
     /** */
-    private ClassLoader ldr;
+    private static ClassLoader ldr;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -66,6 +66,8 @@ public class IgniteCacheQueryNoServerClassesSelfTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        Ignition.setDefaultClassLoader(ldr);
+
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (getTestGridName(CLIENT_IDX).equals(gridName))
@@ -93,7 +95,6 @@ public class IgniteCacheQueryNoServerClassesSelfTest extends GridCommonAbstractT
                 clientCache.put(i, value(valCls, i, "value" + i, new Date(i * 1000), "otherValue" + i));
 
             // Check SQL query.
-            // TODO ignite-950.
             List<Cache.Entry<Object, Object>> res = clientCache.query(new SqlQuery<>(valCls, "field1 >= 50")).getAll();
 
             assertEquals(50, res.size());
@@ -136,10 +137,9 @@ public class IgniteCacheQueryNoServerClassesSelfTest extends GridCommonAbstractT
                 clientCache.put(i, value(valCls, i, "value" + i, new Date(i * 1000), "otherValue" + i));
 
             // Check SQL query.
-            // TODO ignite-950.
-//            List<Cache.Entry<Object, Object>> res = clientCache.query(new SqlQuery<>(valCls, "field1 >= 50")).getAll();
-//
-//            assertEquals(50, res.size());
+            List<Cache.Entry<Object, Object>> res = clientCache.query(new SqlQuery<>(valCls, "field1 >= 50")).getAll();
+
+            assertEquals(50, res.size());
 
             // Check SQL fields query.
             List<List<?>> rows = clientCache.query(new SqlFieldsQuery("select field1, field2 from IndexValue " +

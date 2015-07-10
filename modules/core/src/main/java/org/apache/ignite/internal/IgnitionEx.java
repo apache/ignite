@@ -123,6 +123,9 @@ public class IgnitionEx {
     /** */
     private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
 
+    /** */
+    private static ThreadLocal<ClassLoader> dfltClsLdr = new ThreadLocal<>();
+
     /**
      * Checks runtime version to be 1.7.x or 1.8.x.
      * This will load pretty much first so we must do these checks here.
@@ -193,6 +196,24 @@ public class IgnitionEx {
      */
     public static boolean isClientMode() {
         return clientMode.get() == null ? false : clientMode.get();
+    }
+
+    /**
+     * @param usrClsLdr Default user class loader.
+     */
+    public static void setDefaultClassLoader(ClassLoader usrClsLdr) {
+        if (usrClsLdr != null)
+            dfltClsLdr.set(usrClsLdr);
+        else
+            dfltClsLdr.remove();
+    }
+
+    /**
+     * @return Default user class loader.
+     * @see Ignition#setDefaultClassLoader(ClassLoader)
+     */
+    public static ClassLoader getDefaultClassLoader() {
+        return dfltClsLdr.get();
     }
 
     /**

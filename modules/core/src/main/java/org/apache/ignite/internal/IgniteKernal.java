@@ -647,6 +647,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 restExecSvc,
                 plugins);
 
+            ctx.defaultClassLoader(IgnitionEx.getDefaultClassLoader());
+
+            IgnitionEx.setDefaultClassLoader(null);
+
             cfg.getMarshaller().setContext(ctx.marshallerContext());
 
             startProcessor(new ClusterProcessor(ctx));

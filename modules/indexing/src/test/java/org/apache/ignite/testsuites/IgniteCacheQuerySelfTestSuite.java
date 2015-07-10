@@ -44,7 +44,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         // Queries tests.
         suite.addTestSuite(GridCacheQueryIndexDisabledSelfTest.class);
-        suite.addTestSuite(IgniteCacheQueryLoadSelfTest.class);
+//        suite.addTestSuite(IgniteCacheQueryLoadSelfTest.class);
         suite.addTestSuite(IgniteCacheLocalQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheLocalAtomicQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheReplicatedQuerySelfTest.class);
