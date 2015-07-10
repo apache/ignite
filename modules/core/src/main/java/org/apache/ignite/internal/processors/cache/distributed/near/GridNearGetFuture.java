@@ -223,7 +223,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param nodeId Sender.
      * @param res Result.
      */
-    void onResult(UUID nodeId, GridNearGetResponse res) {
+    public void onResult(UUID nodeId, GridNearGetResponse res) {
         for (IgniteInternalFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
@@ -649,7 +649,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry while processing get response (will not retry).");
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     // Fail.
                     onDone(e);
 

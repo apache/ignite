@@ -835,7 +835,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Gets caching mode to use. You can configure cache either to be local-only,
-     * fully replicated, partitioned, or near. If not provided, {@link CacheMode#REPLICATED}
+     * fully replicated, partitioned, or near. If not provided, {@link CacheMode#PARTITIONED}
      * mode will be used by default (defined by {@link #DFLT_CACHE_MODE} constant).
      *
      * @return {@code True} if cache is local.
@@ -974,7 +974,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets class name of transaction manager finder for integration for JEE app servers.
      *
      * @return Transaction manager finder.
+     * @deprecated Use {@link TransactionConfiguration#getTxManagerLookupClassName()} instead.
      */
+    @Deprecated
     public String getTransactionManagerLookupClassName() {
         return tmLookupClsName;
     }
@@ -985,7 +987,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
      *      receive JTA transaction manager.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link TransactionConfiguration#setTxManagerLookupClassName(String)} instead.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setTransactionManagerLookupClassName(String tmLookupClsName) {
         this.tmLookupClsName = tmLookupClsName;
 

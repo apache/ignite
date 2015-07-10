@@ -263,6 +263,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Removes near node ID from cache filter.
+     *
+     * @param cacheName Cache name.
+     * @param clientNodeId Near node ID.
+     */
+    public void onClientCacheClose(String cacheName, UUID clientNodeId) {
+        CachePredicate predicate = registeredCaches.get(cacheName);
+
+        if (predicate != null)
+            predicate.onNodeLeft(clientNodeId);
+    }
+
+    /**
      * @return Client nodes map.
      */
     public Map<String, Map<UUID, Boolean>> clientNodesMap() {
@@ -1079,9 +1092,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node for given ID is alive.
      */
     public boolean alive(UUID nodeId) {
+        return getAlive(nodeId) != null;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @return Node if node is alive.
+     */
+    @Nullable public ClusterNode getAlive(UUID nodeId) {
         assert nodeId != null;
 
-        return getSpi().getNode(nodeId) != null; // Go directly to SPI without checking disco cache.
+        return getSpi().getNode(nodeId); // Go directly to SPI without checking disco cache.
     }
 
     /**

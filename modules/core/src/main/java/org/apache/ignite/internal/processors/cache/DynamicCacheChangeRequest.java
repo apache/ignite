@@ -57,6 +57,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Stop flag. */
     private boolean stop;
 
+    /** Close flag. */
+    private boolean close;
+
     /** Fail if exists flag. */
     private boolean failIfExists;
 
@@ -68,23 +71,10 @@ public class DynamicCacheChangeRequest implements Serializable {
      *
      * @param cacheName Cache stop name.
      * @param initiatingNodeId Initiating node ID.
-     * @param stop Stop flag.
-     */
-    public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId, boolean stop) {
-        this.cacheName = cacheName;
-        this.initiatingNodeId = initiatingNodeId;
-
-        this.stop = stop;
-    }
-
-    /**
-     * Constructor means for start requests.
-     *
-     * @param cacheName Cache name.
-     * @param initiatingNodeId Initiating node ID.
      */
     public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId) {
-        this(cacheName, initiatingNodeId, false);
+        this.cacheName = cacheName;
+        this.initiatingNodeId = initiatingNodeId;
     }
 
     /**
@@ -127,6 +117,13 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public boolean stop() {
         return stop;
+    }
+
+    /**
+     * @param stop New stop flag.
+     */
+    public void stop(boolean stop) {
+        this.stop = stop;
     }
 
     /**
@@ -218,6 +215,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void failIfExists(boolean failIfExists) {
         this.failIfExists = failIfExists;
+    }
+
+    /**
+     * @return Close flag.
+     */
+    public boolean close() {
+        return close;
+    }
+
+    /**
+     * @param close New close flag.
+     */
+    public void close(boolean close) {
+        this.close = close;
     }
 
     /** {@inheritDoc} */

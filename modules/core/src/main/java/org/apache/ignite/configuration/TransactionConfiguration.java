@@ -61,6 +61,9 @@ public class TransactionConfiguration implements Serializable {
     /** Pessimistic tx log linger. */
     private int pessimisticTxLogLinger = DFLT_PESSIMISTIC_TX_LOG_LINGER;
 
+    /** Name of class implementing GridCacheTmLookup. */
+    private String tmLookupClsName;
+
     /**
      * Empty constructor.
      */
@@ -78,6 +81,7 @@ public class TransactionConfiguration implements Serializable {
         pessimisticTxLogLinger = cfg.getPessimisticTxLogLinger();
         pessimisticTxLogSize = cfg.getPessimisticTxLogSize();
         txSerEnabled = cfg.isTxSerializableEnabled();
+        tmLookupClsName = cfg.getTxManagerLookupClassName();
     }
 
     /**
@@ -201,5 +205,24 @@ public class TransactionConfiguration implements Serializable {
      */
     public void setPessimisticTxLogLinger(int pessimisticTxLogLinger) {
         this.pessimisticTxLogLinger = pessimisticTxLogLinger;
+    }
+
+    /**
+     * Gets class name of transaction manager finder for integration for JEE app servers.
+     *
+     * @return Transaction manager finder.
+     */
+    public String getTxManagerLookupClassName() {
+        return tmLookupClsName;
+    }
+
+    /**
+     * Sets look up mechanism for available {@code TransactionManager} implementation, if any.
+     *
+     * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
+     *      receive JTA transaction manager.
+     */
+    public void setTxManagerLookupClassName(String tmLookupClsName) {
+        this.tmLookupClsName = tmLookupClsName;
     }
 }
