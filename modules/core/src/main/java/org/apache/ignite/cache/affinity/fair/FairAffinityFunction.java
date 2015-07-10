@@ -19,7 +19,7 @@ package org.apache.ignite.cache.affinity.fair;
 
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -31,7 +31,8 @@ import java.util.*;
  * Fair affinity function which tries to ensure that all nodes get equal number of partitions with
  * minimum amount of reassignments between existing nodes.
  * <p>
- * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
+ * Cache affinity can be configured for individual caches via
+ * {@link CacheConfiguration#setAffinity(AffinityFunction)} method.
  */
 @AffinityCentralizedFunction
 public class FairAffinityFunction implements AffinityFunction {
