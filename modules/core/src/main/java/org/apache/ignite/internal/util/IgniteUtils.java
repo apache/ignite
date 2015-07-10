@@ -8048,13 +8048,9 @@ public abstract class IgniteUtils {
     public static String consistentId(Collection<String> addrs, int port) {
         assert !F.isEmpty(addrs);
 
-        List<String> sortedAddrs = new ArrayList<>(addrs);
-
-        Collections.sort(sortedAddrs);
-
         StringBuilder sb = new StringBuilder();
 
-        for (String addr : sortedAddrs)
+        for (String addr : addrs)
             sb.append(addr).append(',');
 
         sb.delete(sb.length() - 1, sb.length());
