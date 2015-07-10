@@ -828,7 +828,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Gets caching mode to use. You can configure cache either to be local-only,
-     * fully replicated, partitioned, or near. If not provided, {@link CacheMode#REPLICATED}
+     * fully replicated, partitioned, or near. If not provided, {@link CacheMode#PARTITIONED}
      * mode will be used by default (defined by {@link #DFLT_CACHE_MODE} constant).
      *
      * @return {@code True} if cache is local.
