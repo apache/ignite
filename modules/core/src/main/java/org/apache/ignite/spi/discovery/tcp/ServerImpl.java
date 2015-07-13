@@ -1710,6 +1710,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (res != null && msg.verified())
                         res.add(prepare(msg, node.id()));
+                    else
+                        log.info("(1) Skipping message with [topVer=" + msg.topologyVersion() + ", msg=" + msg + ']');
                 }
 
                 if (log.isDebugEnabled()) {
@@ -1736,6 +1738,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                     else if (msg.verified())
                         cp.add(prepare(msg, node.id()));
+                    else
+                        log.info("(2) Skipping message with [topVer=" + msg.topologyVersion() + ", msg=" + msg + ']');
                 }
 
                 cp = !skip ? cp : null;

@@ -37,10 +37,10 @@ import static org.apache.ignite.events.EventType.*;
  */
 public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /** */
-    private static final int GRID_CNT = 3;
+    private static final int GRID_CNT = 4;
 
     /** */
-    private static final int CLIENT_GRID_CNT = 2;
+    private static final int CLIENT_GRID_CNT = 1;
 
     /** */
     private static final ThreadLocal<Boolean> clientFlagPerThread = new ThreadLocal<>();
@@ -185,7 +185,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                     int idx = clientIdx.getAndIncrement();
 
                     while (!done.get()) {
-                        stopGrid(idx);
+                        assertTrue(stopGrid(idx, true));
                         startGrid(idx);
                     }
 
@@ -208,7 +208,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                     while (!done.get()) {
                         int idx = srvIdx.take();
 
-                        stopGrid(idx);
+                        assertTrue(stopGrid(idx, true));
                         startGrid(idx);
 
                         srvIdx.add(idx);
