@@ -78,7 +78,6 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
-                    <finalName>${project.artifactId}-${project.version}-full</finalName>
                     <archive>
                         <manifest>
                             <mainClass>org.apache.ignite.mesos.IgniteFramework</mainClass>
