@@ -2066,7 +2066,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         client = null;
                     }
 
-                    onException("Handshake timedout (will retry with increased timeout) [timeout=" + connTimeout0 +
+                    onException("Handshake timeout (will retry with increased timeout) [timeout=" + connTimeout0 +
                         ", addr=" + addr + ']', e);
 
                     if (log.isDebugEnabled())
@@ -2100,8 +2100,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 }
                 catch (Exception e) {
-                    if (!getSpiContext().localNode().isClient() && node.isClient())
-                        getSpiContext().tryFailNode(node.id(), "Killing client");
+                    if (X.hasCause(e, HandshakeFailureException.class) && node.isClient() &&
+                        !getSpiContext().isStopping())
+                        getSpiContext().tryFailNode(node.id(), "Killing client: " + e.getMessage());
 
                     if (client != null) {
                         client.forceClose();
