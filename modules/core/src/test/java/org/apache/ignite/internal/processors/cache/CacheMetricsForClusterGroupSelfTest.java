@@ -107,7 +107,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
         assertMetrics(cache1);
         assertMetrics(cache2);
 
-        closeCaches();
+        destroyCaches();
     }
 
     /**
@@ -135,7 +135,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
         assertMetrics(cache1);
         assertMetrics(cache2);
 
-        closeCaches();
+        destroyCaches();
     }
 
     /**
@@ -157,9 +157,9 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
     /**
      * Closes caches.
      */
-    private void closeCaches() {
-        cache1.close();
-        cache2.close();
+    private void destroyCaches() {
+        cache1.destroy();
+        cache2.destroy();
     }
 
     /**

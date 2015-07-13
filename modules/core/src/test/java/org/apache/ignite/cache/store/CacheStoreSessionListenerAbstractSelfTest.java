@@ -113,11 +113,16 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     public void testAtomicCache() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(null, CacheAtomicityMode.ATOMIC);
 
-        try (IgniteCache<Integer, Integer> cache = ignite(0).createCache(cfg)) {
+        IgniteCache<Integer, Integer> cache = ignite(0).createCache(cfg);
+
+        try {
             cache.loadCache(null);
             cache.get(1);
             cache.put(1, 1);
             cache.remove(1);
+        }
+        finally {
+            cache.destroy();
         }
 
         assertEquals(3, loadCacheCnt.get());
@@ -133,11 +138,16 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     public void testTransactionalCache() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(null, CacheAtomicityMode.TRANSACTIONAL);
 
-        try (IgniteCache<Integer, Integer> cache = ignite(0).createCache(cfg)) {
+        IgniteCache<Integer, Integer> cache = ignite(0).createCache(cfg);
+
+        try {
             cache.loadCache(null);
             cache.get(1);
             cache.put(1, 1);
             cache.remove(1);
+        }
+        finally {
+            cache.destroy();
         }
 
         assertEquals(3, loadCacheCnt.get());
@@ -153,15 +163,18 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     public void testExplicitTransaction() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(null, CacheAtomicityMode.TRANSACTIONAL);
 
-        try (IgniteCache<Integer, Integer> cache = ignite(0).createCache(cfg)) {
-            try (Transaction tx = ignite(0).transactions().txStart()) {
-                cache.put(1, 1);
-                cache.put(2, 2);
-                cache.remove(3);
-                cache.remove(4);
+        IgniteCache<Integer, Integer> cache = ignite(0).createCache(cfg);
 
-                tx.commit();
-            }
+        try (Transaction tx = ignite(0).transactions().txStart()) {
+            cache.put(1, 1);
+            cache.put(2, 2);
+            cache.remove(3);
+            cache.remove(4);
+
+            tx.commit();
+        }
+        finally {
+            cache.destroy();
         }
 
         assertEquals(2, writeCnt.get());
@@ -176,18 +189,20 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
         CacheConfiguration<Integer, Integer> cfg1 = cacheConfiguration("cache1", CacheAtomicityMode.TRANSACTIONAL);
         CacheConfiguration<Integer, Integer> cfg2 = cacheConfiguration("cache2", CacheAtomicityMode.TRANSACTIONAL);
 
-        try (
-            IgniteCache<Integer, Integer> cache1 = ignite(0).createCache(cfg1);
-            IgniteCache<Integer, Integer> cache2 = ignite(0).createCache(cfg2)
-        ) {
-            try (Transaction tx = ignite(0).transactions().txStart()) {
-                cache1.put(1, 1);
-                cache2.put(2, 2);
-                cache1.remove(3);
-                cache2.remove(4);
+        IgniteCache<Integer, Integer> cache1 = ignite(0).createCache(cfg1);
+        IgniteCache<Integer, Integer> cache2 = ignite(0).createCache(cfg2);
 
-                tx.commit();
-            }
+        try (Transaction tx = ignite(0).transactions().txStart()) {
+            cache1.put(1, 1);
+            cache2.put(2, 2);
+            cache1.remove(3);
+            cache2.remove(4);
+
+            tx.commit();
+        }
+        finally {
+            cache1.destroy();
+            cache2.destroy();
         }
 
         assertEquals(2, writeCnt.get());
@@ -204,16 +219,18 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
         CacheConfiguration<Integer, Integer> cfg1 = cacheConfiguration("cache1", CacheAtomicityMode.TRANSACTIONAL);
         CacheConfiguration<Integer, Integer> cfg2 = cacheConfiguration("cache2", CacheAtomicityMode.TRANSACTIONAL);
 
-        try (
-            IgniteCache<Integer, Integer> cache1 = ignite(0).createCache(cfg1);
-            IgniteCache<Integer, Integer> cache2 = ignite(0).createCache(cfg2)
-        ) {
-            try (Transaction tx = ignite(0).transactions().txStart()) {
-                cache1.put(1, 1);
-                cache2.put(2, 2);
+        IgniteCache<Integer, Integer> cache1 = ignite(0).createCache(cfg1);
+        IgniteCache<Integer, Integer> cache2 = ignite(0).createCache(cfg2);
 
-                tx.commit();
-            }
+        try (Transaction tx = ignite(0).transactions().txStart()) {
+            cache1.put(1, 1);
+            cache2.put(2, 2);
+
+            tx.commit();
+        }
+        finally {
+            cache1.destroy();
+            cache2.destroy();
         }
 
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -232,25 +249,27 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
         CacheConfiguration<Integer, Integer> cfg1 = cacheConfiguration("cache1", CacheAtomicityMode.TRANSACTIONAL);
         CacheConfiguration<Integer, Integer> cfg2 = cacheConfiguration("cache2", CacheAtomicityMode.TRANSACTIONAL);
 
-        try (
-            IgniteCache<Integer, Integer> cache1 = ignite(0).createCache(cfg1);
-            IgniteCache<Integer, Integer> cache2 = ignite(0).createCache(cfg2)
-        ) {
-            try (Transaction tx = ignite(0).transactions().txStart()) {
-                cache1.put(1, 1);
-                cache2.put(2, 2);
+        IgniteCache<Integer, Integer> cache1 = ignite(0).createCache(cfg1);
+        IgniteCache<Integer, Integer> cache2 = ignite(0).createCache(cfg2);
 
-                tx.commit();
+        try (Transaction tx = ignite(0).transactions().txStart()) {
+            cache1.put(1, 1);
+            cache2.put(2, 2);
 
-                assert false : "Exception was not thrown.";
-            }
-            catch (IgniteException e) {
-                CacheWriterException we = X.cause(e, CacheWriterException.class);
+            tx.commit();
 
-                assertNotNull(we);
+            assert false : "Exception was not thrown.";
+        }
+        catch (IgniteException e) {
+            CacheWriterException we = X.cause(e, CacheWriterException.class);
 
-                assertEquals("Expected failure.", we.getMessage());
-            }
+            assertNotNull(we);
+
+            assertEquals("Expected failure.", we.getMessage());
+        }
+        finally {
+            cache1.destroy();
+            cache2.destroy();
         }
 
         try (Connection conn = DriverManager.getConnection(URL)) {

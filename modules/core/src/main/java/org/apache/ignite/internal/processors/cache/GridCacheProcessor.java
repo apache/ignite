@@ -1390,10 +1390,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if change request was registered to apply.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public boolean dynamicCacheRegistered(DynamicCacheChangeRequest req) {
+    public boolean exchangeNeeded(DynamicCacheChangeRequest req) {
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
 
         if (desc != null) {
+            if (req.close()) {
+                assert req.initiatingNodeId() != null : req;
+
+                return true;
+            }
+
             if (desc.deploymentId().equals(req.deploymentId())) {
                 if (req.start())
                     return !desc.cancelled();
@@ -1515,20 +1521,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param req Stop request.
      */
     public void blockGateway(DynamicCacheChangeRequest req) {
-        assert req.stop();
+        assert req.stop() || req.close();
 
-        // Break the proxy before exchange future is done.
-        IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(maskNull(req.cacheName()));
+        if (req.stop() || (req.close() && req.initiatingNodeId().equals(ctx.localNodeId()))) {
+            // Break the proxy before exchange future is done.
+            IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(maskNull(req.cacheName()));
 
-        if (proxy != null)
-            proxy.gate().block();
+            if (proxy != null) {
+                if (req.stop())
+                    proxy.gate().block();
+                else
+                    proxy.closeProxy();
+            }
+        }
     }
 
     /**
      * @param req Request.
      */
     private void stopGateway(DynamicCacheChangeRequest req) {
-        assert req.stop();
+        assert req.stop() : req;
 
         // Break the proxy before exchange future is done.
         IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(maskNull(req.cacheName()));
@@ -1541,7 +1553,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param req Stop request.
      */
     public void prepareCacheStop(DynamicCacheChangeRequest req) {
-        assert req.stop();
+        assert req.stop() || req.close() : req;
 
         GridCacheAdapter<?, ?> cache = caches.remove(maskNull(req.cacheName()));
 
@@ -1596,6 +1608,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     if (desc != null && desc.cancelled() && desc.deploymentId().equals(req.deploymentId()))
                         registeredCaches.remove(masked, desc);
+                }
+                else if (req.close() && req.initiatingNodeId().equals(ctx.localNodeId())) {
+                    IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(masked);
+
+                    if (proxy != null) {
+                        if (proxy.context().affinityNode()) {
+                            GridCacheAdapter<?, ?> cache = caches.get(masked);
+
+                            if (cache != null)
+                                jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
+                        }
+                        else {
+                            proxy.context().gate().onStopped();
+
+                            prepareCacheStop(req);
+                        }
+                    }
                 }
 
                 completeStartFuture(req);
@@ -2005,13 +2034,35 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cacheName Cache name to stop.
-     * @return Future that will be completed when cache is stopped.
+     * @param cacheName Cache name to destroy.
+     * @return Future that will be completed when cache is destroyed.
      */
-    public IgniteInternalFuture<?> dynamicStopCache(String cacheName) {
+    public IgniteInternalFuture<?> dynamicDestroyCache(String cacheName) {
         checkEmptyTransactions();
 
-        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId(), true);
+        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+
+        t.stop(true);
+
+        return F.first(initiateCacheChanges(F.asList(t), false));
+    }
+
+
+    /**
+     * @param cacheName Cache name to close.
+     * @return Future that will be completed when cache is closed.
+     */
+    public IgniteInternalFuture<?> dynamicCloseCache(String cacheName) {
+        IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(maskNull(cacheName));
+
+        if (proxy == null || proxy.proxyClosed())
+            return new GridFinishedFuture<>(); // No-op.
+
+        checkEmptyTransactions();
+
+        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+
+        t.close(true);
 
         return F.first(initiateCacheChanges(F.asList(t), false));
     }
@@ -2031,16 +2082,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheStartFuture fut = new DynamicCacheStartFuture(req.cacheName(), req.deploymentId(), req);
 
             try {
-                if (req.stop()) {
+                if (req.stop() || req.close()) {
                     DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
 
                     if (desc == null)
                         // No-op.
                         fut.onDone();
                     else {
+                        assert desc.cacheConfiguration() != null : desc;
+
+                        if (req.close() && desc.cacheConfiguration().getCacheMode() == LOCAL) {
+                            req.close(false);
+
+                            req.stop(true);
+                        }
+
                         IgniteUuid dynamicDeploymentId = desc.deploymentId();
 
-                        assert dynamicDeploymentId != null;
+                        assert dynamicDeploymentId != null : desc;
 
                         // Save deployment ID to avoid concurrent stops.
                         req.deploymentId(dynamicDeploymentId);
@@ -2188,9 +2247,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     req.nearCacheConfiguration() != null);
             }
             else {
+                assert req.stop() || req.close() : req;
+
                 if (desc == null) {
-                    // If local node initiated start, fail the start future.
-                    DynamicCacheStartFuture changeFut = (DynamicCacheStartFuture)pendingFuts.get(maskNull(req.cacheName()));
+                    // If local node initiated start, finish future.
+                    DynamicCacheStartFuture changeFut =
+                        (DynamicCacheStartFuture)pendingFuts.get(maskNull(req.cacheName()));
 
                     if (changeFut != null && changeFut.deploymentId().equals(req.deploymentId())) {
                         // No-op.
@@ -2200,9 +2262,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     return;
                 }
 
-                desc.onCancelled();
+                if (req.stop()) {
+                    desc.onCancelled();
 
-                ctx.discovery().removeCacheFilter(req.cacheName());
+                    ctx.discovery().removeCacheFilter(req.cacheName());
+                }
+                else
+                    ctx.discovery().onClientCacheClose(req.cacheName(), req.initiatingNodeId());
             }
         }
     }

@@ -149,7 +149,9 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
             cacheMode,
             "Cache");
 
-        try (IgniteCache jcache = grid(0).getOrCreateCache(cfg)) {
+        IgniteCache jcache = grid(0).getOrCreateCache(cfg);
+
+        try {
             GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(0)).internalCache(jcache.getName());
 
             Integer key = primaryKey(grid(0).cache(null));
@@ -163,6 +165,9 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
             assertNotNull(entry);
 
             assertEquals(entry.getClass(), entryCls);
+        }
+        finally {
+            jcache.destroy();
         }
     }
 }

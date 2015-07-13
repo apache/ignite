@@ -143,13 +143,17 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         assert ver != null;
 
         this.id = id;
-        this.addrs = addrs;
+
+        List<String> sortedAddrs = new ArrayList<>(addrs);
+        Collections.sort(sortedAddrs);
+
+        this.addrs = sortedAddrs;
         this.hostNames = hostNames;
         this.discPort = discPort;
         this.metricsProvider = metricsProvider;
         this.ver = ver;
 
-        consistentId = U.consistentId(addrs, discPort);
+        consistentId = U.consistentId(sortedAddrs, discPort);
 
         metrics = metricsProvider.metrics();
         cacheMetrics = metricsProvider.cacheMetrics();

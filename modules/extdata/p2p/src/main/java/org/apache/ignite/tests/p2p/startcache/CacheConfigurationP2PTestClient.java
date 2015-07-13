@@ -109,9 +109,9 @@ public class CacheConfigurationP2PTestClient {
             if (cnt != 600)
                 throw new Exception("Unexpected query result: " + cnt);
 
-            cache1.close();
+            cache1.destroy();
 
-            cache2.close();
+            cache2.destroy();
         }
     }
 }

@@ -313,9 +313,17 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /**
      * @return {@code True} if transactions are enabled.
+     * @see #txShouldBeUsed()
      */
     protected boolean txEnabled() {
         return true;
+    }
+
+    /**
+     * @return {@code True} if transactions should be used.
+     */
+    protected boolean txShouldBeUsed() {
+        return txEnabled() && !isMultiJvm();
     }
 
     /**
@@ -360,7 +368,11 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @param idx Index of grid.
      * @return Cache context.
      */
-    protected GridCacheContext<String, Integer> context(int idx) {
+    protected GridCacheContext<String, Integer> context(final int idx) {
+        if (isRemoteJvm(idx) && !isRemoteJvm())
+            throw new UnsupportedOperationException("Operation can't be done automatically via proxy. " +
+                "Send task with this logic on remote jvm instead.");
+
         return ((IgniteKernal)grid(idx)).<String, Integer>internalCache().context();
     }
 

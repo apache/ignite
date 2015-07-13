@@ -116,6 +116,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> GridCacheAdapter<K, V> internalCache(IgniteCache<K, V> cache) {
+        if (isMultiJvmObject(cache))
+            throw new UnsupportedOperationException("Oparetion can't be supported automatically for multi jvm " +
+                "(send closure instead).");
+
         return ((IgniteKernal)cache.unwrap(Ignite.class)).internalCache(cache.getName());
     }
 
@@ -201,9 +205,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return {@code True} if near cache is enabled.
      */
-    protected static <K, V> boolean nearEnabled(IgniteCache<K,V> cache) {
-        CacheConfiguration cfg = ((IgniteKernal)cache.unwrap(Ignite.class)).
-            <K, V>internalCache(cache.getName()).context().config();
+    protected static <K, V> boolean nearEnabled(final IgniteCache<K,V> cache) {
+        CacheConfiguration cfg = GridAbstractTest.executeOnLocalOrRemoteJvm(cache,
+            new TestCacheCallable<K, V, CacheConfiguration>() {
+            @Override public CacheConfiguration call(Ignite ignite, IgniteCache<K, V> cache) throws Exception {
+                return ((IgniteKernal)ignite).<K, V>internalCache(cache.getName()).context().config();
+            }
+        });
 
         return isNearEnabled(cfg);
     }
@@ -238,27 +246,33 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param replaceExistingValues Replace existing values.
      * @throws Exception If failed.
      */
-    protected static <K> void loadAll(Cache<K, ?> cache, Set<K> keys, boolean replaceExistingValues) throws Exception {
-        final AtomicReference<Exception> ex = new AtomicReference<>();
+    protected static <K> void loadAll(Cache<K, ?> cache, final Set<K> keys, final boolean replaceExistingValues) throws Exception {
+        IgniteCache<K, Object> cacheCp = (IgniteCache<K, Object>)cache;
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        GridAbstractTest.executeOnLocalOrRemoteJvm(cacheCp, new TestCacheRunnable<K, Object>() {
+            @Override public void run(Ignite ignite, IgniteCache<K, Object> cache) throws Exception {
+                final AtomicReference<Exception> ex = new AtomicReference<>();
 
-        cache.loadAll(keys, replaceExistingValues, new CompletionListener() {
-            @Override public void onCompletion() {
-                latch.countDown();
-            }
+                final CountDownLatch latch = new CountDownLatch(1);
 
-            @Override public void onException(Exception e) {
-                ex.set(e);
+                cache.loadAll(keys, replaceExistingValues, new CompletionListener() {
+                    @Override public void onCompletion() {
+                        latch.countDown();
+                    }
 
-                latch.countDown();
+                    @Override public void onException(Exception e) {
+                        ex.set(e);
+
+                        latch.countDown();
+                    }
+                });
+
+                latch.await();
+
+                if (ex.get() != null)
+                    throw ex.get();
             }
         });
-
-        latch.await();
-
-        if (ex.get() != null)
-            throw ex.get();
     }
 
     /**
