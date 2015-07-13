@@ -3879,8 +3879,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         return;
                     }
 
-                    boolean res = pingNode(msg.nodeToPing());
-
                     final ClientMessageWorker worker = clientMsgWorkers.get(msg.creatorNodeId());
 
                     if (worker == null) {
@@ -3888,6 +3886,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                             log.debug("Ping request from dead client node, will be skipped: " + msg.creatorNodeId());
                     }
                     else {
+                        boolean res;
+
+                        try {
+                            res = pingNode(msg.nodeToPing());
+                        } catch (IgniteSpiException e) {
+                            log.error("Failed to ping node [nodeToPing=" + msg.nodeToPing() + ']', e);
+
+                            res = false;
+                        }
+
                         TcpDiscoveryClientPingResponse pingRes = new TcpDiscoveryClientPingResponse(
                             getLocalNodeId(), msg.nodeToPing(), res);
 

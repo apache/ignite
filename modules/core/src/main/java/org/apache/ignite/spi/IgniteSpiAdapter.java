@@ -545,17 +545,19 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
     /**
      * @param obj Timeout object.
+     * @throws IgniteSpiException Thrown in case of any error.
      * @see IgniteSpiContext#addTimeoutObject(IgniteSpiTimeoutObject)
      */
-    protected void addTimeoutObject(IgniteSpiTimeoutObject obj) {
+    protected void addTimeoutObject(IgniteSpiTimeoutObject obj) throws IgniteSpiException {
         spiCtx.addTimeoutObject(obj);
     }
 
     /**
      * @param obj Timeout object.
+     * @throws IgniteSpiException Thrown in case of any error.
      * @see IgniteSpiContext#removeTimeoutObject(IgniteSpiTimeoutObject)
      */
-    protected void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
+    protected void removeTimeoutObject(IgniteSpiTimeoutObject obj) throws IgniteSpiException {
         spiCtx.removeTimeoutObject(obj);
     }
 
@@ -764,15 +766,17 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Override public void addTimeoutObject(IgniteSpiTimeoutObject obj) {
-            assert ignite instanceof IgniteKernal : ignite;
+        @Override public void addTimeoutObject(IgniteSpiTimeoutObject obj) throws IgniteSpiException {
+            if (!(ignite instanceof IgniteKernal))
+                throw new IgniteSpiException("Wrong Ignite instance is set: " + ignite);
 
             ((IgniteKernal)ignite).context().timeout().addTimeoutObject(new GridSpiTimeoutObject(obj));
         }
 
         /** {@inheritDoc} */
-        @Override public void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
-            assert ignite instanceof IgniteKernal : ignite;
+        @Override public void removeTimeoutObject(IgniteSpiTimeoutObject obj) throws IgniteSpiException {
+            if (!(ignite instanceof IgniteKernal))
+                throw new IgniteSpiException("Wrong Ignite instance is set: " + ignite);
 
             ((IgniteKernal)ignite).context().timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
         }
