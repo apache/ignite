@@ -51,6 +51,7 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
     public TcpDiscoveryNodeFailedMessage(UUID creatorNodeId, UUID failedNodeId, long order) {
         super(creatorNodeId);
 
+        U.dumpStack("Failed = " + failedNodeId + ", creator=" + creatorNodeId);
         assert failedNodeId != null;
         assert order > 0;
 

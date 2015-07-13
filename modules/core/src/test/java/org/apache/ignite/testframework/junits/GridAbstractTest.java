@@ -1032,7 +1032,8 @@ public abstract class GridAbstractTest extends TestCase {
 
             assert ignite != null : "Ignite returned null grid for name: " + gridName;
 
-            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
+            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() +
+                ", isClient=" + ignite.configuration().isClientMode() + ']');
 
             res = G.stop(gridName, cancel);
         }

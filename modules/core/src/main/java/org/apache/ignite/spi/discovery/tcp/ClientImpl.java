@@ -1134,14 +1134,18 @@ class ClientImpl extends TcpDiscoveryImpl {
                         assert spi.getSpiContext().isStopping();
 
                         if (currSock != null) {
+                            System.out.println("Sending node left msg: " + getLocalNodeId());
+
                             TcpDiscoveryAbstractMessage leftMsg = new TcpDiscoveryNodeLeftMessage(getLocalNodeId());
 
                             leftMsg.client(true);
 
                             sockWriter.sendMessage(leftMsg);
                         }
-                        else
+                        else {
+                            System.out.println("No connection on leave: " + getLocalNodeId());
                             leaveLatch.countDown();
+                        }
                     }
                     else if (msg instanceof SocketClosedMessage) {
                         if (((SocketClosedMessage)msg).sock == currSock) {
@@ -1173,6 +1177,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                             reconnector.cancel();
                             reconnector.join();
+
+                            System.out.println("RECONNECT FAILED: sending segmentation error: " + locNode);
 
                             notifyDiscovery(EVT_NODE_SEGMENTED, topVer, locNode, allVisibleNodes());
                         }
