@@ -594,9 +594,11 @@ class ClientImpl extends TcpDiscoveryImpl {
         NavigableSet<ClusterNode> allNodes = allVisibleNodes();
 
         if (!topHist.containsKey(topVer)) {
-            if (!topHist.isEmpty() && topHist.lastKey() != topVer - 1)
-                log.warning("Missing particular topology version [lastVer=" + (topHist.isEmpty() ? null :
-                    topHist.lastKey()) + ", newVer=" + topVer + ", locNode=" + locNode + ", msg=" + msg);
+            assert topHist.isEmpty() || topHist.lastKey() == topVer - 1 :
+                "lastVer=" + (topHist.isEmpty() ? null : topHist.lastKey()) +
+                ", newVer=" + topVer +
+                ", locNode=" + locNode +
+                ", msg=" + msg;
 
             topHist.put(topVer, allNodes);
 
