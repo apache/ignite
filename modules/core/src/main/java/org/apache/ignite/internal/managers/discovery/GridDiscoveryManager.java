@@ -1589,7 +1589,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             new Runnable() {
                 @Override public void run() {
                     ctx.markSegmented();
-                    System.out.println("Stopping grid on segmentation: " + ctx.gridName());
+
                     G.stop(ctx.gridName(), true);
                 }
             }
@@ -1896,7 +1896,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     segmented = true;
 
                     if (!isLocDaemon)
-                        U.warn(log, "Local node SEGMENTED: " + node + ", remote_nodes = " + getSpi().getRemoteNodes());
+                        U.warn(log, "Local node SEGMENTED: " + node);
                     else if (log.isDebugEnabled())
                         log.debug("Local node SEGMENTED: " + node);
 

@@ -1335,7 +1335,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             return;
         }
 
-        //assert log.isInfoEnabled();
+        assert log.isInfoEnabled();
 
         synchronized (mux) {
             StringBuilder b = new StringBuilder(U.nl());
@@ -1388,8 +1388,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             b.append("Stats: ").append(spi.stats).append(U.nl());
 
-            System.out.println(b.toString());
-            //U.quietAndInfo(log, b.toString());
+            U.quietAndInfo(log, b.toString());
         }
     }
 
@@ -1830,8 +1829,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
-    private static volatile boolean dumping;
-
     /**
      * Message worker thread for messages processing.
      */
@@ -2228,8 +2225,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         ", next=" + next.id() +
                                         ", res=" + res + ']');
 
-                                if (debugMode && !(msg instanceof TcpDiscoveryDiscardMessage) && !(msg instanceof TcpDiscoveryHeartbeatMessage)
-                                    && !(msg instanceof  TcpDiscoveryCustomEventMessage))
+                                if (debugMode)
                                     debugLog("Message has been sent to next node [msg=" + msg +
                                         ", next=" + next.id() +
                                         ", res=" + res + ']');
@@ -2817,48 +2813,28 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (log.isDebugEnabled())
                             log.debug("Accept client reconnect, restored pending messages " +
                                 "[locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
-
-                        if (debugMode)
-                            debugLog("Accept client reconnect, restored pending messages " +
-                                         "[locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
-
                     }
                     else {
                         if (log.isDebugEnabled())
                             log.debug("Failing reconnecting client node because failed to restore pending " +
                                 "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
 
-                        if (debugMode)
-                            debugLog("Failing reconnecting client node because failed to restore pending " +
-                                         "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
-
                         processNodeFailedMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
                             node.id(), node.internalOrder()));
                     }
                 }
             }
-            else {
-                if (log.isDebugEnabled())
-                    log.debug("Reconnecting client node is already failed [nodeId=" + nodeId + ']');
-
-                if (debugMode)
-                    debugLog("Reconnecting client node is already failed [nodeId=" + nodeId + ']');
-            }
+            else if (log.isDebugEnabled())
+                log.debug("Reconnecting client node is already failed [nodeId=" + nodeId + ']');
 
             if (isLocNodeRouter) {
                 ClientMessageWorker wrk = clientMsgWorkers.get(nodeId);
 
                 if (wrk != null)
                     wrk.addMessage(msg);
-                else {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
-                                      locNodeId + ", clientNodeId=" + nodeId + ']');
-
-                    if (debugMode)
-                        debugLog("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
-                                      locNodeId + ", clientNodeId=" + nodeId + ']');
-                }
+                else if (log.isDebugEnabled())
+                    log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
+                        locNodeId + ", clientNodeId=" + nodeId + ']');
             }
             else {
                 if (ring.hasRemoteNodes())
@@ -3252,9 +3228,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (log.isDebugEnabled())
                             log.debug("Starting local node stop procedure.");
 
-                        if (debugMode)
-                            debugLog("Starting local node stop procedure.");
-
                         spiState = STOPPING;
 
                         mux.notifyAll();
@@ -3262,9 +3235,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (msg.verified() || !ring.hasRemoteNodes() || msg.senderNodeId() != null) {
-                    if (debugMode)
-                        debugLog("Do stop local node: [msg=" + msg + ", hasRemote=" + ring.hasRemoteNodes() + ']');
-
                     if (spi.ipFinder.isShared() && !ring.hasRemoteNodes()) {
                         try {
                             spi.ipFinder.unregisterAddresses(locNode.socketAddresses());
@@ -3765,22 +3735,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (clientNodeIds.contains(clientNode.id()))
                                 clientNode.aliveCheck(spi.maxMissedClientHbs);
                             else {
-                                if (!isLocalNodeCoordinator())
-                                    continue;
-
-                                if (clientNode.aliveCheck() == 0)
-                                    // Node can just became coordinator without receiving any client heartbeat.
-                                    clientNode.aliveCheck(spi.maxMissedClientHbs);
-
                                 int aliveCheck = clientNode.decrementAliveCheck();
 
-                                if (aliveCheck == 0) {
-                                    // Make aliveCheck negative
-                                    clientNode.decrementAliveCheck();
-
+                                if (aliveCheck <= 0 && isLocalNodeCoordinator() && !failedNodes.contains(clientNode))
                                     processNodeFailedMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
                                         clientNode.id(), clientNode.internalOrder()));
-                                }
                             }
                         }
                     }
@@ -4354,8 +4313,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         spi.stats.onMessageReceived(msg);
 
-                        if (debugMode && !(msg instanceof TcpDiscoveryDiscardMessage) && !(msg instanceof TcpDiscoveryHeartbeatMessage)
-                            && !(msg instanceof  TcpDiscoveryCustomEventMessage) && recordable(msg))
+                        if (debugMode && recordable(msg))
                             debugLog("Message has been received: " + msg);
 
                         if (msg instanceof TcpDiscoveryJoinRequestMessage) {

@@ -1022,33 +1022,26 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      */
     @SuppressWarnings("deprecation")
-    protected boolean stopGrid(int idx, boolean cancel) {
+    protected void stopGrid(int idx, boolean cancel) {
         String gridName = getTestGridName(idx);
-
-        boolean res;
 
         try {
             Ignite ignite = G.ignite(gridName);
 
             assert ignite != null : "Ignite returned null grid for name: " + gridName;
 
-            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() +
-                ", isClient=" + ignite.configuration().isClientMode() + ']');
+            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 
-            res = G.stop(gridName, cancel);
+            G.stop(gridName, cancel);
         }
         catch (IllegalStateException ignored) {
             // Ignore error if grid already stopped.
-            res = true;
         }
         catch (Throwable e) {
             error("Failed to stop grid [gridName=" + gridName + ", cancel=" + cancel + ']', e);
 
             stopGridErr = true;
-            res = false;
         }
-
-        return res;
     }
 
     /**

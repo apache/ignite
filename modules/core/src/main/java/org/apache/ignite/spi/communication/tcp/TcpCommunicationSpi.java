@@ -1899,8 +1899,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 }
             }
             catch (IgniteCheckedException | RuntimeException | Error e) {
-                //tryFailClient(node, e);
-
                 if (log.isDebugEnabled())
                     log.debug(
                         "Caught exception (will close client) [err=" + e.getMessage() + ", client=" + client + ']');
@@ -2141,8 +2139,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (client == null) {
             assert errs != null;
 
-//            if (!tryFailClient(node, errs) && X.hasCause(errs, ConnectException.class))
-              if (X.hasCause(errs, ConnectException.class))
+            if (X.hasCause(errs, ConnectException.class))
                 LT.warn(log, null, "Failed to connect to a remote node " +
                     "(make sure that destination node is alive and " +
                     "operating system firewall is disabled on local and remote hosts) " +
@@ -2203,7 +2200,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     UUID rmtNodeId0 = U.bytesToUuid(buf.array(), 1);
 
                     if (!rmtNodeId.equals(rmtNodeId0))
-                        throw new HandshakeFailureException("Remote node ID is not as expected [expected=" + rmtNodeId +
+                        throw new IgniteCheckedException("Remote node ID is not as expected [expected=" + rmtNodeId +
                             ", rcvd=" + rmtNodeId0 + ']');
                     else if (log.isDebugEnabled())
                         log.debug("Received remote node ID: " + rmtNodeId0);
@@ -2245,7 +2242,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             int read = ch.read(buf);
 
                             if (read == -1)
-                                throw new HandshakeFailureException("Failed to read remote node recovery handshake " +
+                                throw new IgniteCheckedException("Failed to read remote node recovery handshake " +
                                     "(connection closed).");
 
                             i += read;
@@ -2420,19 +2417,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param msg Message.
          */
         HandshakeTimeoutException(String msg) {
-            super(msg);
-        }
-    }
-
-    /** Internal exception class for handshake failure handling. */
-    private static class HandshakeFailureException extends IgniteCheckedException {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param msg Message.
-         */
-        HandshakeFailureException(String msg) {
             super(msg);
         }
     }

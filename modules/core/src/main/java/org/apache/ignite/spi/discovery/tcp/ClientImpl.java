@@ -129,8 +129,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         b.append("Stats: ").append(spi.stats).append(U.nl());
 
-        System.out.println(b.toString());
-//        U.quietAndInfo(log, b.toString());
+        U.quietAndInfo(log, b.toString());
     }
 
     /** {@inheritDoc} */
@@ -432,10 +431,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
 
             if (addrs.isEmpty()) {
-                if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout) {
-                    System.out.println("Client reconnect timeout: " + getLocalNodeId());
+                if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
                     return null;
-                }
 
                 U.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "in 2000ms): " + addrs0);
@@ -796,7 +793,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 catch (IOException e) {
                     msgWorker.addMessage(new SocketClosedMessage(sock));
 
-                    //if (log.isDebugEnabled())
+                    if (log.isDebugEnabled())
                         U.error(log, "Connection failed [sock=" + sock + ", locNodeId=" + getLocalNodeId() + ']', e);
                 }
                 finally {
@@ -1134,24 +1131,19 @@ class ClientImpl extends TcpDiscoveryImpl {
                         assert spi.getSpiContext().isStopping();
 
                         if (currSock != null) {
-                            System.out.println("Sending node left msg: " + getLocalNodeId());
-
                             TcpDiscoveryAbstractMessage leftMsg = new TcpDiscoveryNodeLeftMessage(getLocalNodeId());
 
                             leftMsg.client(true);
 
                             sockWriter.sendMessage(leftMsg);
                         }
-                        else {
-                            System.out.println("No connection on leave: " + getLocalNodeId());
+                        else
                             leaveLatch.countDown();
-                        }
                     }
                     else if (msg instanceof SocketClosedMessage) {
                         if (((SocketClosedMessage)msg).sock == currSock) {
                             currSock = null;
 
-                            System.out.println("Socket closed. Join latch: " + joinLatch.getCount() + ". Node: " + getLocalNodeId());
                             boolean join = joinLatch.getCount() > 0;
 
                             if (spi.getSpiContext().isStopping() || segmented) {
@@ -1166,7 +1158,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                             else {
                                 assert reconnector == null;
 
-                                System.out.println("Starting reconnector: " + getLocalNodeId());
                                 final Reconnector reconnector = new Reconnector(join);
                                 this.reconnector = reconnector;
                                 reconnector.start();
@@ -1179,8 +1170,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                             reconnector.cancel();
                             reconnector.join();
-
-                            System.out.println("RECONNECT FAILED: sending segmentation error: " + locNode);
 
                             notifyDiscovery(EVT_NODE_SEGMENTED, topVer, locNode, allVisibleNodes());
                         }
