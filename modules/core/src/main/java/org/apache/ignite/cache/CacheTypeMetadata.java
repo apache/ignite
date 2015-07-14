@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache;
 
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -43,11 +44,11 @@ public class CacheTypeMetadata implements Serializable {
     /** Value class used to store value in cache. */
     private String valType;
 
-    /** Persistent key fields. */
+    /** Optional persistent key fields (needed only if {@link CacheJdbcPojoStore} is used). */
     @GridToStringInclude
     private Collection<CacheTypeFieldMetadata> keyFields;
 
-    /** Persistent value fields . */
+    /** Optional persistent value fields (needed only if {@link CacheJdbcPojoStore} is used). */
     @GridToStringInclude
     private Collection<CacheTypeFieldMetadata> valFields;
 
@@ -208,7 +209,7 @@ public class CacheTypeMetadata implements Serializable {
     }
 
     /**
-     * Gets persistent key fields.
+     * Gets optional persistent key fields (needed only if {@link CacheJdbcPojoStore} is used).
      *
      * @return Persistent key fields.
      */
@@ -217,7 +218,7 @@ public class CacheTypeMetadata implements Serializable {
     }
 
     /**
-     * Sets persistent key fields.
+     * Sets optional persistent key fields (needed only if {@link CacheJdbcPojoStore} is used).
      *
      * @param keyFields Persistent key fields.
      */
@@ -226,7 +227,7 @@ public class CacheTypeMetadata implements Serializable {
     }
 
     /**
-     * Gets persistent value fields.
+     * Gets optional persistent value fields (needed only if {@link CacheJdbcPojoStore} is used).
      *
      * @return Persistent value fields.
      */
@@ -235,7 +236,7 @@ public class CacheTypeMetadata implements Serializable {
     }
 
     /**
-     * Sets persistent value fields.
+     * Sets optional persistent value fields (needed only if {@link CacheJdbcPojoStore} is used).
      *
      * @param valFields Persistent value fields.
      */
