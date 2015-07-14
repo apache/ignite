@@ -20,8 +20,7 @@
 <!--
     POM file.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <packaging>pom</packaging>
 
@@ -33,7 +32,7 @@
     </parent>
 
     <artifactId>ignite-extdata-uri</artifactId>
-    <version>1.2.1-SNAPSHOT</version>
+    <version>1.4.1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -140,33 +139,28 @@
                                 <!-- copying resources to classes -->
                                 <copy todir="${basedir}/target/classes">
                                     <fileset dir="${basedir}/src/main/java">
-                                        <include name="**/*.xml"/>
-                                        <include name="**/*.properties"/>
+                                        <include name="**/*.xml" />
+                                        <include name="**/*.properties" />
                                     </fileset>
                                 </copy>
 
-                                <copy
-                                    file="${settings.localRepository}/com/sun/mail/javax.mail/1.5.2/javax.mail-1.5.2.jar"
-                                    todir="${basedir}/target/classes/lib"/>
+                                <copy file="${settings.localRepository}/com/sun/mail/javax.mail/1.5.2/javax.mail-1.5.2.jar" todir="${basedir}/target/classes/lib" />
 
                                 <zip destfile="${basedir}/target/classes/lib/depend.jar" encoding="UTF-8">
-                                    <zipfileset dir="modules/uri-dependency/target/classes"/>
+                                    <zipfileset dir="modules/uri-dependency/target/classes" />
                                 </zip>
 
-                                <taskdef name="gar"
-                                         classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask"/>
+                                <taskdef name="gar" classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask" />
 
-                                <gar destfile="${basedir}/target/deploy/uri.gar" basedir="${basedir}/target/classes"/>
+                                <gar destfile="${basedir}/target/deploy/uri.gar" basedir="${basedir}/target/classes" />
 
                                 <!--
                                 This is created for test GridTaskUriDeploymentDeadlockSelfTest.
                                 We put two files here to have a collision and make deployment SPI to unregister class loaders.
                                 This is intended to test GG-2852 issue.
                                 -->
-                                <gar destfile="${basedir}/target/resources/helloworld.gar"
-                                     descrdir="${basedir}/META-INF" basedir="${basedir}/target/classes"/>
-                                <gar destfile="${basedir}/target/resources/helloworld1.gar"
-                                     descrdir="${basedir}/META-INF" basedir="${basedir}/target/classes"/>
+                                <gar destfile="${basedir}/target/resources/helloworld.gar" descrdir="${basedir}/META-INF" basedir="${basedir}/target/classes" />
+                                <gar destfile="${basedir}/target/resources/helloworld1.gar" descrdir="${basedir}/META-INF" basedir="${basedir}/target/classes" />
                             </target>
                         </configuration>
                     </execution>
