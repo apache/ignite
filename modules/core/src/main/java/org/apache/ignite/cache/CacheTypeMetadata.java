@@ -43,11 +43,11 @@ public class CacheTypeMetadata implements Serializable {
     /** Value class used to store value in cache. */
     private String valType;
 
-    /** Key fields. */
+    /** Persistent key fields. */
     @GridToStringInclude
     private Collection<CacheTypeFieldMetadata> keyFields;
 
-    /** Value fields . */
+    /** Persistent value fields . */
     @GridToStringInclude
     private Collection<CacheTypeFieldMetadata> valFields;
 
@@ -208,36 +208,36 @@ public class CacheTypeMetadata implements Serializable {
     }
 
     /**
-     * Gets key fields.
+     * Gets persistent key fields.
      *
-     * @return Key fields.
+     * @return Persistent key fields.
      */
     public Collection<CacheTypeFieldMetadata> getKeyFields() {
         return keyFields;
     }
 
     /**
-     * Sets key fields.
+     * Sets persistent key fields.
      *
-     * @param keyFields New key fields.
+     * @param keyFields Persistent key fields.
      */
     public void setKeyFields(Collection<CacheTypeFieldMetadata> keyFields) {
         this.keyFields = keyFields;
     }
 
     /**
-     * Gets value fields.
+     * Gets persistent value fields.
      *
-     * @return Value fields.
+     * @return Persistent value fields.
      */
     public Collection<CacheTypeFieldMetadata> getValueFields() {
         return valFields;
     }
 
     /**
-     * Sets value fields.
+     * Sets persistent value fields.
      *
-     * @param valFields New value fields.
+     * @param valFields Persistent value fields.
      */
     public void setValueFields(Collection<CacheTypeFieldMetadata> valFields) {
         this.valFields = valFields;
