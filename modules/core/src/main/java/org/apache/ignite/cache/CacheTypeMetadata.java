@@ -51,15 +51,15 @@ public class CacheTypeMetadata implements Serializable {
     @GridToStringInclude
     private Collection<CacheTypeFieldMetadata> valFields;
 
-    /** Fields to be queried, in addition to indexed fields. */
+    /** Field name-to-type map to be queried, in addition to indexed fields. */
     @GridToStringInclude
     private Map<String, Class<?>> qryFlds;
 
-    /** Fields to index in ascending order. */
+    /** Field name-to-type map to index in ascending order. */
     @GridToStringInclude
     private Map<String, Class<?>> ascFlds;
 
-    /** Fields to index in descending order. */
+    /** Field name-to-type map to index in descending order. */
     @GridToStringInclude
     private Map<String, Class<?>> descFlds;
 
@@ -244,54 +244,54 @@ public class CacheTypeMetadata implements Serializable {
     }
 
     /**
-     * Gets query-enabled fields.
+     * Gets name-to-type map for query-enabled fields.
      *
-     * @return Collection of fields available for query.
+     * @return Name-to-type map for query-enabled fields.
      */
     public Map<String, Class<?>> getQueryFields() {
         return qryFlds;
     }
 
     /**
-     * Sets query fields map.
+     * Sets name-to-type map for query-enabled fields.
      *
-     * @param qryFlds Query fields.
+     * @param qryFlds Name-to-type map for query-enabled fields.
      */
     public void setQueryFields(Map<String, Class<?>> qryFlds) {
         this.qryFlds = qryFlds;
     }
 
     /**
-     * Gets ascending-indexed fields.
+     * Gets name-to-type map for ascending-indexed fields.
      *
-     * @return Map of ascending-indexed fields.
+     * @return Name-to-type map for ascending-indexed fields.
      */
     public Map<String, Class<?>> getAscendingFields() {
         return ascFlds;
     }
 
     /**
-     * Sets ascending-indexed fields.
+     * Sets name-to-type map for ascending-indexed fields.
      *
-     * @param ascFlds Map of ascending-indexed fields.
+     * @param ascFlds Name-to-type map for ascending-indexed fields.
      */
     public void setAscendingFields(Map<String, Class<?>> ascFlds) {
         this.ascFlds = ascFlds;
     }
 
     /**
-     * Gets descending-indexed fields.
+     * Gets name-to-type map for descending-indexed fields.
      *
-     * @return Map of descending-indexed fields.
+     * @return Name-to-type map of descending-indexed fields.
      */
     public Map<String, Class<?>> getDescendingFields() {
         return descFlds;
     }
 
     /**
-     * Sets descending-indexed fields.
+     * Sets name-to-type map for descending-indexed fields.
      *
-     * @param descFlds Map of descending-indexed fields.
+     * @param descFlds Name-to-type map of descending-indexed fields.
      */
     public void setDescendingFields(Map<String, Class<?>> descFlds) {
         this.descFlds = descFlds;
