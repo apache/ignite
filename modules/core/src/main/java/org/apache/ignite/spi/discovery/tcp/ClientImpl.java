@@ -432,8 +432,10 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
 
             if (addrs.isEmpty()) {
-                if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
+                if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout) {
+                    System.out.println("Client reconnect timeout: " + getLocalNodeId());
                     return null;
+                }
 
                 U.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "in 2000ms): " + addrs0);
@@ -595,11 +597,9 @@ class ClientImpl extends TcpDiscoveryImpl {
         NavigableSet<ClusterNode> allNodes = allVisibleNodes();
 
         if (!topHist.containsKey(topVer)) {
-            assert topHist.isEmpty() || topHist.lastKey() == topVer - 1 :
-                "lastVer=" + (topHist.isEmpty() ? null : topHist.lastKey()) +
-                ", newVer=" + topVer +
-                ", locNode=" + locNode +
-                ", msg=" + msg;
+            if (!topHist.isEmpty() && topHist.lastKey() != topVer - 1)
+                log.warning("Missing particular topology version [lastVer=" + (topHist.isEmpty() ? null :
+                    topHist.lastKey()) + ", newVer=" + topVer + ", locNode=" + locNode + ", msg=" + msg);
 
             topHist.put(topVer, allNodes);
 
@@ -796,7 +796,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 catch (IOException e) {
                     msgWorker.addMessage(new SocketClosedMessage(sock));
 
-                    if (log.isDebugEnabled())
+                    //if (log.isDebugEnabled())
                         U.error(log, "Connection failed [sock=" + sock + ", locNodeId=" + getLocalNodeId() + ']', e);
                 }
                 finally {
@@ -1151,6 +1151,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (((SocketClosedMessage)msg).sock == currSock) {
                             currSock = null;
 
+                            System.out.println("Socket closed. Join latch: " + joinLatch.getCount() + ". Node: " + getLocalNodeId());
                             boolean join = joinLatch.getCount() > 0;
 
                             if (spi.getSpiContext().isStopping() || segmented) {
@@ -1165,6 +1166,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             else {
                                 assert reconnector == null;
 
+                                System.out.println("Starting reconnector: " + getLocalNodeId());
                                 final Reconnector reconnector = new Reconnector(join);
                                 this.reconnector = reconnector;
                                 reconnector.start();

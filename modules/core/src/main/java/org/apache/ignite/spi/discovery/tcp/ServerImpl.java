@@ -1710,8 +1710,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (res != null && msg.verified())
                         res.add(prepare(msg, node.id()));
-                    else
-                        log.info("(1) Skipping message with [topVer=" + msg.topologyVersion() + ", msg=" + msg + ']');
                 }
 
                 if (log.isDebugEnabled()) {
@@ -1738,8 +1736,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                     else if (msg.verified())
                         cp.add(prepare(msg, node.id()));
-                    else
-                        log.info("(2) Skipping message with [topVer=" + msg.topologyVersion() + ", msg=" + msg + ']');
                 }
 
                 cp = !skip ? cp : null;
@@ -3769,9 +3765,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (clientNodeIds.contains(clientNode.id()))
                                 clientNode.aliveCheck(spi.maxMissedClientHbs);
                             else {
+                                if (!isLocalNodeCoordinator())
+                                    continue;
+
+                                if (clientNode.aliveCheck() == 0)
+                                    // Node can just became coordinator without receiving any client heartbeat.
+                                    clientNode.aliveCheck(spi.maxMissedClientHbs);
+
                                 int aliveCheck = clientNode.decrementAliveCheck();
 
-                                if (aliveCheck == 0 && isLocalNodeCoordinator()) {
+                                if (aliveCheck == 0) {
+                                    // Make aliveCheck negative
+                                    clientNode.decrementAliveCheck();
+
                                     processNodeFailedMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
                                         clientNode.id(), clientNode.internalOrder()));
                                 }

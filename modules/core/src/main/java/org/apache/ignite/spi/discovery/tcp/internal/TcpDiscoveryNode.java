@@ -427,6 +427,12 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         this.aliveCheck = aliveCheck;
     }
 
+    public int aliveCheck() {
+        assert isClient();
+
+        return aliveCheck;
+    }
+
     /**
      * @return Client router node ID.
      */

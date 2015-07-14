@@ -1728,8 +1728,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             GridCommunicationClient client = clients.get(nodeId);
 
             if (client == null) {
-                //if (isNodeStopping())
-                //    throw new IgniteSpiException("Node is stopping.");
+                if (isNodeStopping())
+                    throw new IgniteSpiException("Node is stopping.");
 
                 // Do not allow concurrent connects.
                 GridFutureAdapter<GridCommunicationClient> fut = new ConnectFuture();
@@ -1899,8 +1899,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 }
             }
             catch (IgniteCheckedException | RuntimeException | Error e) {
-                if (!getSpiContext().localNode().isClient() && node.isClient())
-                    getSpiContext().tryFailNode(node.id(), "Killing client");
+                //tryFailClient(node, e);
 
                 if (log.isDebugEnabled())
                     log.debug(
@@ -2100,10 +2099,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 }
                 catch (Exception e) {
-                    if (X.hasCause(e, HandshakeFailureException.class) && node.isClient() &&
-                        !getSpiContext().isStopping())
-                        getSpiContext().tryFailNode(node.id(), "Killing client: " + e.getMessage());
-
                     if (client != null) {
                         client.forceClose();
 
@@ -2146,7 +2141,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (client == null) {
             assert errs != null;
 
-            if (X.hasCause(errs, ConnectException.class))
+//            if (!tryFailClient(node, errs) && X.hasCause(errs, ConnectException.class))
+              if (X.hasCause(errs, ConnectException.class))
                 LT.warn(log, null, "Failed to connect to a remote node " +
                     "(make sure that destination node is alive and " +
                     "operating system firewall is disabled on local and remote hosts) " +
