@@ -26,7 +26,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Type metadata.
+ * Cache type metadata need for configuration of indexes or automatic persistence.
  */
 public class CacheTypeMetadata implements Serializable {
     /** */
