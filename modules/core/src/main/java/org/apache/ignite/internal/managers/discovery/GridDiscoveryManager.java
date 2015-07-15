@@ -193,6 +193,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         super(ctx, ctx.config().getDiscoverySpi());
     }
 
+    /** */
+    private final CountDownLatch startLatch = new CountDownLatch(1);
+
     /**
      * @return Memory usage of non-heap memory.
      */
@@ -375,8 +378,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             });
         }
-
-        final CountDownLatch startLatch = new CountDownLatch(1);
 
         spi.setListener(new DiscoverySpiListener() {
             @Override public void onDiscovery(
@@ -1052,6 +1053,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop0(boolean cancel) {
+        startLatch.countDown();
+
         // Stop segment check worker.
         if (segChkWrk != null) {
             segChkWrk.cancel();
@@ -1224,16 +1227,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return Discovery collection cache.
      */
     public DiscoCache discoCache() {
-        Snapshot cur;
+        Snapshot cur = topSnap.get();
 
-        while ((cur = topSnap.get()) == null) {
-            // Wrap the SPI collection to avoid possible floating collection.
-            if (topSnap.compareAndSet(null, cur = new Snapshot(
-                AffinityTopologyVersion.ZERO,
-                new DiscoCache(localNode(), getSpi().getRemoteNodes())))) {
-                return cur.discoCache;
-            }
-        }
+        assert cur != null;
 
         return cur.discoCache;
     }
