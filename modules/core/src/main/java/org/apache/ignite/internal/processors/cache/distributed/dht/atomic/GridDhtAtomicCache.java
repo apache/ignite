@@ -142,7 +142,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
 
                 // Request should be for primary keys only in PRIMARY ordering mode.
-                assert req.hasPrimary();
+                assert req.hasPrimary() : req;
 
                 if (req.writeSynchronizationMode() != FULL_ASYNC)
                     sendNearUpdateReply(res.nodeId(), res);
@@ -2158,7 +2158,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private void unlockEntries(Collection<GridDhtCacheEntry> locked, AffinityTopologyVersion topVer) {
         // Process deleted entries before locks release.
-        assert ctx.deferredDelete();
+        assert ctx.deferredDelete() : this;
 
         // Entries to skip eviction manager notification for.
         // Enqueue entries while holding locks.
