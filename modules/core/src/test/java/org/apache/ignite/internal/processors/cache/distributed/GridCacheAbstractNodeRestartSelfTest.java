@@ -505,7 +505,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                         try {
                             barrier.await();
 
-                            info("Starting put thread...");
+                            info("Starting put thread: " + gridIdx);
 
                             IgniteCache<Integer, String> cache = grid(gridIdx).cache(CACHE_NAME);
 
@@ -546,7 +546,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                         try {
                             barrier.await();
 
-                            info("Starting restart thread...");
+                            info("Starting restart thread: " + gridIdx);
 
                             int cnt = 0;
 
@@ -624,7 +624,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                         try {
                             barrier.await();
 
-                            info("Starting put thread...");
+                            info("Starting put thread: " + gridIdx);
 
                             Ignite ignite = grid(gridIdx);
 
@@ -705,7 +705,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                         try {
                             barrier.await();
 
-                            info("Starting restart thread...");
+                            info("Starting restart thread: " + gridIdx);
 
                             int cnt = 0;
 
@@ -780,7 +780,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                         try {
                             barrier.await();
 
-                            info("Starting put thread...");
+                            info("Starting put thread: " + gridIdx);
 
                             Ignite ignite = grid(gridIdx);
 
@@ -849,7 +849,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                         try {
                             barrier.await();
 
-                            info("Starting restart thread...");
+                            info("Starting restart thread: " + gridIdx);
 
                             int cnt = 0;
 
