@@ -328,6 +328,11 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      */
     public void resetMetrics();
 
+    /**
+     * @return Future that will be completed when client reconnected.
+     */
+    @Nullable public IgniteFuture<?> clientReconnectFuture();
+
     /** {@inheritDoc} */
     @Override public IgniteCluster withAsync();
 }

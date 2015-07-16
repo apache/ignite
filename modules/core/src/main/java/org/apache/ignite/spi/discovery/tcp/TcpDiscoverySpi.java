@@ -260,6 +260,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** Local node. */
     protected TcpDiscoveryNode locNode;
 
+    /** */
+    protected UUID cfgNodeId;
+
     /** Local host. */
     protected InetAddress locHost;
 
@@ -326,6 +329,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
     /** */
     private boolean forceSrvMode;
+
+    /** */
+    private boolean clientReconnectDisabled;
 
     /** {@inheritDoc} */
     @Override public String getSpiState() {
@@ -414,6 +420,29 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         this.forceSrvMode = forceSrvMode;
 
         return this;
+    }
+
+    /**
+     * If {@code true} client does not try to reconnect after
+     * server detected client node failure.
+     *
+     * @return Client reconnect disabled flag.
+     */
+    public boolean isClientReconnectDisabled() {
+        return clientReconnectDisabled;
+    }
+
+    /**
+     * Sets client reconnect disabled flag.
+     * <p>
+     * If {@code true} client does not try to reconnect after
+     * server detected client node failure.
+     *
+     * @param clientReconnectDisabled Client reconnect disabled flag.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setClientReconnectDisabled(boolean clientReconnectDisabled) {
+        this.clientReconnectDisabled = clientReconnectDisabled;
     }
 
     /**
@@ -844,7 +873,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         }
 
         locNode = new TcpDiscoveryNode(
-            getLocalNodeId(),
+            ignite.configuration().getNodeId(),
             addrs.get1(),
             addrs.get2(),
             srvPort,
@@ -1614,6 +1643,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             if (mcastIpFinder.getLocalAddress() == null)
                 mcastIpFinder.setLocalAddress(locAddr);
         }
+
+        cfgNodeId = ignite.configuration().getNodeId();
 
         impl.spiStart(gridName);
     }

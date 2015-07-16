@@ -61,6 +61,20 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
         this.order = order;
     }
 
+    /**
+     * @return {@code True} if server supports client message acknowledge.
+     */
+    public boolean clientAck() {
+        return getFlag(CLIENT_ACK_FLAG_POS);
+    }
+
+    /**
+     * @param clientAck {@code True} if server supports client message acknowledge.
+     */
+    public void clientAck(boolean clientAck) {
+        setFlag(CLIENT_ACK_FLAG_POS, clientAck);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryHandshakeResponse.class, this, "super", super.toString());

@@ -78,13 +78,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         }
     };
 
-    /**
-     * @return Pre-generated UUID.
-     */
-    private IgniteUuid uuid() {
-        return IgniteUuid.randomUuid();
-    }
-
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         txSerEnabled = cctx.gridConfig().getTransactionConfiguration().isTxSerializableEnabled();
@@ -95,7 +88,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws IgniteCheckedException {
+    @Override protected void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
         for (ClusterNode n : cctx.discovery().remoteNodes())
             onReceived(n.id(), n.metrics().getLastDataVersion());
     }

@@ -68,9 +68,15 @@ class GridServiceProxy<T> implements Serializable {
      * @param name Service name.
      * @param svc Service type class.
      * @param sticky Whether multi-node request should be done.
+     * @param ctx Context.
      */
-    @SuppressWarnings("unchecked") GridServiceProxy(ClusterGroup prj, String name, Class<? super T> svc,
-        boolean sticky, GridKernalContext ctx) {
+    @SuppressWarnings("unchecked")
+    GridServiceProxy(ClusterGroup prj,
+        String name,
+        Class<? super T> svc,
+        boolean sticky,
+        GridKernalContext ctx)
+    {
         this.prj = prj;
         this.ctx = ctx;
         hasLocNode = hasLocalNode(prj);
@@ -158,6 +164,9 @@ class GridServiceProxy<T> implements Serializable {
                 }
                 catch (RuntimeException | Error e) {
                     throw e;
+                }
+                catch (IgniteCheckedException e) {
+                    throw U.convertException(e);
                 }
                 catch (Exception e) {
                     throw new IgniteException(e);

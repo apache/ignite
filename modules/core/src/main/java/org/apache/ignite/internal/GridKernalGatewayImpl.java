@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
-import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  *
@@ -39,10 +41,10 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
 
     /** */
     @GridToStringExclude
-    private final Collection<Runnable> lsnrs = new GridSetWrapper<>(new IdentityHashMap<Runnable, Object>());
+    private IgniteFutureImpl<?> reconnectFut;
 
     /** */
-    private volatile GridKernalState state = GridKernalState.STOPPED;
+    private final AtomicReference<GridKernalState> state = new AtomicReference<>(GridKernalState.STOPPED);
 
     /** */
     @GridToStringExclude
@@ -63,12 +65,6 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public void lightCheck() throws IllegalStateException {
-        if (state != GridKernalState.STARTED)
-            throw illegalState();
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "BusyWait"})
     @Override public void readLock() throws IllegalStateException {
         if (stackTrace == null)
@@ -76,9 +72,17 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
 
         rwLock.readLock();
 
+        GridKernalState state = this.state.get();
+
         if (state != GridKernalState.STARTED) {
             // Unlock just acquired lock.
             rwLock.readUnlock();
+
+            if (state == GridKernalState.DISCONNECTED) {
+                assert reconnectFut != null;
+
+                throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + gridName);
+            }
 
             throw illegalState();
         }
@@ -90,6 +94,9 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
             stackTrace = stackTrace();
 
         rwLock.readLock();
+
+        if (state.get() == GridKernalState.DISCONNECTED)
+            throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + gridName);
     }
 
     /** {@inheritDoc} */
@@ -137,6 +144,27 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override public GridFutureAdapter<?> onDisconnected() {
+        GridFutureAdapter<?> fut = new GridFutureAdapter<>();
+
+        reconnectFut = new IgniteFutureImpl<>(fut);
+
+        if (!state.compareAndSet(GridKernalState.STARTED, GridKernalState.DISCONNECTED)) {
+            ((GridFutureAdapter<?>)reconnectFut.internalFuture()).onDone(new IgniteCheckedException("Node stopped."));
+
+            return null;
+        }
+
+        return fut;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReconnected() {
+        if (state.compareAndSet(GridKernalState.DISCONNECTED, GridKernalState.STARTED))
+            ((GridFutureAdapter<?>)reconnectFut.internalFuture()).onDone();
+    }
+
     /**
      * Retrieves user stack trace.
      *
@@ -171,46 +199,15 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
         assert state != null;
 
         // NOTE: this method should always be called within write lock.
-        this.state = state;
+        this.state.set(state);
 
-        if (state == GridKernalState.STOPPING) {
-            Runnable[] runs;
-
-            synchronized (lsnrs) {
-                lsnrs.toArray(runs = new Runnable[lsnrs.size()]);
-            }
-
-            // In the same thread.
-            for (Runnable r : runs)
-                r.run();
-        }
+        if (reconnectFut != null)
+            ((GridFutureAdapter<?>)reconnectFut.internalFuture()).onDone(new IgniteCheckedException("Node stopped."));
     }
 
     /** {@inheritDoc} */
     @Override public GridKernalState getState() {
-        return state;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addStopListener(Runnable lsnr) {
-        assert lsnr != null;
-
-        if (state == GridKernalState.STARTING || state == GridKernalState.STARTED)
-            synchronized (lsnrs) {
-                lsnrs.add(lsnr);
-            }
-        else
-            // Call right away in the same thread.
-            lsnr.run();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void removeStopListener(Runnable lsnr) {
-        assert lsnr != null;
-
-        synchronized (lsnrs) {
-            lsnrs.remove(lsnr);
-        }
+        return state.get();
     }
 
     /** {@inheritDoc} */

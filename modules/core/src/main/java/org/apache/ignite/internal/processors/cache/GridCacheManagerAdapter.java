@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.util.concurrent.atomic.*;
 
@@ -123,6 +124,11 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
      * @param cancel Cancel flag.
      */
     protected void onKernalStop0(boolean cancel) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         // No-op.
     }
 

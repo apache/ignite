@@ -43,6 +43,11 @@ public class IgniteCacheFutureImpl<V> extends IgniteFutureImpl<V> {
 
     /** {@inheritDoc} */
     @Override protected RuntimeException convertException(IgniteCheckedException e) {
+        if (e instanceof IgniteFutureCancelledCheckedException ||
+            e instanceof IgniteInterruptedCheckedException ||
+            e instanceof IgniteFutureTimeoutCheckedException)
+            return U.convertException(e);
+
         return CU.convertToCacheException(e);
     }
 }

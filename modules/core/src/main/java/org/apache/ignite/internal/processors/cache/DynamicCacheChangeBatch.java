@@ -43,6 +43,9 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
+    /** */
+    private boolean clientReconnect;
+
     /**
      * @param reqs Requests.
      */
@@ -91,6 +94,20 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
+    }
+
+    /**
+     * @param clientReconnect {@code True} if this is discovery data sent on client reconnect.
+     */
+    public void clientReconnect(boolean clientReconnect) {
+        this.clientReconnect = clientReconnect;
+    }
+
+    /**
+     * @return {@code True} if this is discovery data sent on client reconnect.
+     */
+    public boolean clientReconnect() {
+        return clientReconnect;
     }
 
     /** {@inheritDoc} */

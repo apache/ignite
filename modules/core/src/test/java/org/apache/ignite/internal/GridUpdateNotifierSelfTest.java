@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
@@ -104,8 +105,6 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
      * Test kernal gateway that always return uninitialized user stack trace.
      */
     private static final GridKernalGateway TEST_GATEWAY = new GridKernalGateway() {
-        @Override public void lightCheck() throws IllegalStateException {}
-
         @Override public void readLock() throws IllegalStateException {}
 
         @Override public void readLockAnyway() {}
@@ -122,16 +121,20 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
 
         @Override public void writeUnlock() {}
 
-        @Override public void addStopListener(Runnable lsnr) {}
-
-        @Override public void removeStopListener(Runnable lsnr) {}
-
         @Override public String userStackTrace() {
             return null;
         }
 
         @Override public boolean tryWriteLock(long timeout) {
             return false;
+        }
+
+        @Override public GridFutureAdapter<?> onDisconnected() {
+            return null;
+        }
+
+        @Override public void onReconnected() {
+            // No-op.
         }
     };
 }

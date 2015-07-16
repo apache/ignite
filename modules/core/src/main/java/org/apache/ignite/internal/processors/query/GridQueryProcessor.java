@@ -234,6 +234,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.stop();
     }
 
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        if (idx != null)
+            idx.onDisconnected(reconnectFut);
+    }
+
     /**
      * @param cctx Cache context.
      * @throws IgniteCheckedException If failed.

@@ -67,7 +67,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     private GridDhtPartitionDemandPool demandPool;
 
     /** Start future. */
-    private final GridFutureAdapter<Object> startFut;
+    private GridFutureAdapter<Object> startFut;
 
     /** Busy lock to prevent activities from accessing exchanger while it's stopping. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
@@ -180,13 +180,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         topVer.setIfGreater(startTopVer);
 
-        // Generate dummy discovery event for local node joining.
-        DiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
-
-        assert discoEvt != null;
-
-        assert discoEvt.topologyVersion() == startTopVer;
-
         supplyPool.start();
         demandPool.start();
     }
@@ -230,7 +223,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             final CacheConfiguration cfg = cctx.config();
 
-            if (cfg.getRebalanceDelay() >= 0) {
+            if (cfg.getRebalanceDelay() >= 0 && !cctx.kernalContext().clientNode()) {
                 U.log(log, "Starting rebalancing in " + cfg.getRebalanceMode() + " mode: " + cctx.name());
 
                 demandPool.syncFuture().listen(new CI1<Object>() {
@@ -243,6 +236,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         }
         else
             startFut.onDone(err);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReconnected() {
+        startFut = new GridFutureAdapter<>();
     }
 
     /** {@inheritDoc} */

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.deployment;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.resource.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.deployment.*;
@@ -95,5 +96,11 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean unregister(String rsrcName) { return false; }
+
+        /** {@inheritDoc} */
+        @Override public void onClientDisconnected(IgniteFuture<?> reconnectFut) { /* No-op. */ }
+
+        /** {@inheritDoc} */
+        @Override public void onClientReconnected(boolean clusterRestarted) { /* No-op. */ }
     }
 }

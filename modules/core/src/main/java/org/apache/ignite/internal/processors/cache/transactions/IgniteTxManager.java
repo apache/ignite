@@ -115,7 +115,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         new ConcurrentHashMap8<>(5120);
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() {
+    @Override protected void onKernalStart0(boolean reconnect) {
+        if (reconnect)
+            return;
+
         cctx.gridEvents().addLocalEventListener(
             new GridLocalEventListener() {
                 @Override public void onEvent(Event evt) {
@@ -147,6 +150,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         txFinishSync = new GridCacheTxFinishSync<>(cctx);
 
         txHandler = new IgniteTxHandler(cctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture reconnectFut) {
+        txFinishSync.onDisconnected(reconnectFut);
+
+        for (Map.Entry<Long, IgniteInternalTx> e : threadMap.entrySet())
+            rollbackTx(e.getValue());
     }
 
     /**
@@ -764,11 +775,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
         }
 
-        boolean txSerializableEnabled = cctx.txConfig().isTxSerializableEnabled();
+        boolean txSerEnabled = cctx.txConfig().isTxSerializableEnabled();
 
         // Clean up committed transactions queue.
         if (tx.pessimistic() && tx.local()) {
-            if (tx.enforceSerializable() && txSerializableEnabled) {
+            if (tx.enforceSerializable() && txSerEnabled) {
                 for (Iterator<IgniteInternalTx> it = committedQ.iterator(); it.hasNext();) {
                     IgniteInternalTx committedTx = it.next();
 
@@ -784,7 +795,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             return;
         }
 
-        if (txSerializableEnabled && tx.optimistic() && tx.enforceSerializable()) {
+        if (txSerEnabled && tx.optimistic() && tx.enforceSerializable()) {
             Set<IgniteTxKey> readSet = tx.readSet();
             Set<IgniteTxKey> writeSet = tx.writeSet();
 

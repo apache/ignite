@@ -32,6 +32,9 @@ public enum GridKernalState {
     /** Kernal is stopping. */
     STOPPING,
 
+    /** Kernal is disconnected. */
+    DISCONNECTED,
+
     /** Kernal is stopped.
      * <p>
      * This is also the initial state of the kernal.

@@ -317,4 +317,9 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     @Override public ClusterMetrics metrics() throws IgniteException {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteFuture<?> clientReconnectFuture() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
 }

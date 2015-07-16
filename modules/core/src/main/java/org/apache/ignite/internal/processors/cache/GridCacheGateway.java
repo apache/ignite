@@ -22,7 +22,11 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
+
+import javax.cache.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Cache gateway.
@@ -33,7 +37,10 @@ public class GridCacheGateway<K, V> {
     private final GridCacheContext<K, V> ctx;
 
     /** Stopped flag for dynamic caches. */
-    private volatile boolean stopped;
+    private final AtomicReference<State> state = new AtomicReference<>(State.STARTED);
+
+    /** */
+    private IgniteFuture<?> reconnectFut;
 
     /** */
     private GridSpinReadWriteLock rwLock = new GridSpinReadWriteLock();
@@ -56,11 +63,36 @@ public class GridCacheGateway<K, V> {
 
         rwLock.readLock();
 
-        if (stopped) {
-            rwLock.readUnlock();
+        checkState(true, true);
+    }
 
-            throw new IllegalStateException("Dynamic cache has been stopped: " + ctx.name());
+    /**
+     * @param lock {@code True} if lock is held.
+     * @param stopErr {@code True} if throw exception if stopped.
+     * @return {@code True} if cache is in started state.
+     */
+    private boolean checkState(boolean lock, boolean stopErr) {
+        State state = this.state.get();
+
+        if (state != State.STARTED) {
+            if (lock)
+                rwLock.readUnlock();
+
+            if (state == State.STOPPED) {
+                if (stopErr)
+                    throw new IllegalStateException("Cache has been stopped: " + ctx.name());
+                else
+                    return false;
+            }
+            else {
+                assert reconnectFut != null;
+
+                throw new CacheException(
+                    new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + ctx.gridName()));
+            }
         }
+
+        return true;
     }
 
     /**
@@ -71,17 +103,11 @@ public class GridCacheGateway<K, V> {
     public boolean enterIfNotStopped() {
         onEnter();
 
-        // Must unlock in case of unexpected errors to avoid
-        // deadlocks during kernal stop.
+        // Must unlock in case of unexpected errors to avoid deadlocks during kernal stop.
         rwLock.readLock();
 
-        if (stopped) {
-            rwLock.readUnlock();
+        return checkState(true, false);
 
-            return false;
-        }
-
-        return true;
     }
 
     /**
@@ -92,7 +118,7 @@ public class GridCacheGateway<K, V> {
     public boolean enterIfNotStoppedNoLock() {
         onEnter();
 
-        return !stopped;
+        return checkState(false, false);
     }
 
     /**
@@ -144,11 +170,7 @@ public class GridCacheGateway<K, V> {
 
         rwLock.readLock();
 
-        if (stopped) {
-            rwLock.readUnlock();
-
-            throw new IllegalStateException("Cache has been stopped: " + ctx.name());
-        }
+        checkState(true, true);
 
         // Must unlock in case of unexpected errors to avoid
         // deadlocks during kernal stop.
@@ -169,8 +191,7 @@ public class GridCacheGateway<K, V> {
     @Nullable public CacheOperationContext enterNoLock(@Nullable CacheOperationContext opCtx) {
         onEnter();
 
-        if (stopped)
-            throw new IllegalStateException("Cache has been stopped: " + ctx.name());
+        checkState(false, false);
 
         return setOperationContextPerCall(opCtx);
     }
@@ -229,8 +250,42 @@ public class GridCacheGateway<K, V> {
     /**
      *
      */
-    public void block() {
-        stopped = true;
+    public void stopped() {
+        state.set(State.STOPPED);
+    }
+
+    /**
+     * @param reconnectFut Reconnect future.
+     */
+    public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        assert reconnectFut != null;
+
+        this.reconnectFut = reconnectFut;
+
+        state.compareAndSet(State.STARTED, State.DISCONNECTED);
+    }
+
+    /**
+     *
+     */
+    public void writeLock(){
+        rwLock.writeLock();
+    }
+
+    /**
+     *
+     */
+    public void writeUnlock() {
+        rwLock.writeUnlock();
+    }
+
+    /**
+     * @param stopped Cache stopped flag.
+     */
+    public void reconnected(boolean stopped) {
+        State newState = stopped ? State.STOPPED : State.STARTED;
+
+        state.compareAndSet(State.DISCONNECTED, newState);
     }
 
     /**
@@ -256,11 +311,24 @@ public class GridCacheGateway<K, V> {
             Thread.currentThread().interrupt();
 
         try {
-            // No-op.
-            stopped = true;
+            state.set(State.STOPPED);
         }
         finally {
             rwLock.writeUnlock();
         }
+    }
+
+    /**
+     *
+     */
+    private enum State {
+        /** */
+        STARTED,
+
+        /** */
+        DISCONNECTED,
+
+        /** */
+        STOPPED
     }
 }

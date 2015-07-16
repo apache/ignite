@@ -94,6 +94,30 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /**
+     *
+     */
+    public void onReconnected() {
+        lock.writeLock().lock();
+
+        try {
+            node2part = null;
+
+            part2node = new HashMap<>();
+
+            lastExchangeId = null;
+
+            updateSeq.set(1);
+
+            topReadyFut = null;
+
+            topVer = AffinityTopologyVersion.NONE;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
      * @return Full map string representation.
      */
     @SuppressWarnings( {"ConstantConditions"})

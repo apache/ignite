@@ -293,7 +293,7 @@ class GridDeploymentCommunication {
                     log.debug("Sent peer class loading response [node=" + node.id() + ", res=" + res + ']');
             }
             catch (IgniteCheckedException e) {
-                if (ctx.discovery().pingNode(nodeId))
+                if (ctx.discovery().pingNodeNoError(nodeId))
                     U.error(log, "Failed to send peer class loading response to node: " + nodeId, e);
                 else if (log.isDebugEnabled())
                     log.debug("Failed to send peer class loading response to node " +
