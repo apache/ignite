@@ -29,6 +29,11 @@ import static org.apache.ignite.cache.CacheMemoryMode.*;
 public class GridCachePartitionedQueueFailoverDataConsistencySelfTest extends
     GridCacheAbstractQueueFailoverDataConsistencySelfTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-264");
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheMemoryMode collectionMemoryMode() {
         return ONHEAP_TIERED;
     }

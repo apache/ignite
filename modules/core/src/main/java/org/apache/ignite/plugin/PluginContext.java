@@ -20,6 +20,7 @@ package org.apache.ignite.plugin;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
@@ -38,6 +39,11 @@ public interface PluginContext {
      * @return Grid.
      */
     public Ignite grid();
+
+    /**
+     * @return Marshaller context.
+     */
+    public MarshallerContext marshallerContext();
 
     /**
      * Gets a collection of all grid nodes. Remote nodes are discovered via underlying

@@ -37,6 +37,16 @@ public interface GridPortableInputStream extends GridPortableStream {
     public byte[] readByteArray(int cnt);
 
     /**
+     * Reads {@code cnt} of bytes into byte array.
+     *
+     * @param arr Expected item count.
+     * @param off offset
+     * @param cnt number of bytes to read.
+     * @return actual length read.
+     */
+    public int read(byte[] arr, int off, int cnt);
+
+    /**
      * Read boolean value.
      *
      * @return Boolean value.

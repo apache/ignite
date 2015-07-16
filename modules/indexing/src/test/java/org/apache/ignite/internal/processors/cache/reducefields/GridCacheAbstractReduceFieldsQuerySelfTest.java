@@ -62,7 +62,6 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
             cfg.setCacheConfiguration();
 
         cfg.setDiscoverySpi(discovery());
-        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -376,6 +375,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         /** */
         private int cnt;
 
+        /** {@inheritDoc} */
         @Override public boolean collect(List<?> e) {
             sum += (Integer)e.get(0);
 
@@ -384,6 +384,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public IgniteBiTuple<Integer, Integer> reduce() {
             return F.t(sum, cnt);
         }
@@ -399,6 +400,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         /** */
         private int cnt;
 
+        /** {@inheritDoc} */
         @Override public boolean collect(IgniteBiTuple<Integer, Integer> t) {
             sum += t.get1();
             cnt += t.get2();
@@ -406,6 +408,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public Integer reduce() {
             return cnt == 0 ? 0 : sum / cnt;
         }

@@ -30,7 +30,8 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.getCacheConfiguration()[0].setIndexedTypes(TestKey.class, String.class);
+        if (cfg.getCacheConfiguration().length > 0)
+            cfg.getCacheConfiguration()[0].setIndexedTypes(TestKey.class, String.class);
 
         return cfg;
     }

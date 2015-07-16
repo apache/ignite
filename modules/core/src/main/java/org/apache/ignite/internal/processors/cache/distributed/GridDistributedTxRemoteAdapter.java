@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -95,7 +94,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @param invalidate Invalidate flag.
      * @param timeout Timeout.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      */
@@ -106,13 +104,12 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         boolean invalidate,
         long timeout,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -128,7 +125,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             isolation,
             timeout,
             txSize,
-            grpLockKey,
             subjId,
             taskNameHash);
 
@@ -193,16 +189,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public void seal() {
         // No-op.
-    }
-
-    /**
-     * Adds group lock key to remote transaction.
-     *
-     * @param key Key.
-     */
-    public void groupLockKey(IgniteTxKey key) {
-        if (grpLockKey == null)
-            grpLockKey = key;
     }
 
     /** {@inheritDoc} */
@@ -350,7 +336,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             entry.op(e.op());
             entry.ttl(e.ttl());
             entry.explicitVersion(e.explicitVersion());
-            entry.groupLockEntry(e.groupLockEntry());
 
             // Conflict resolution stuff.
             entry.conflictVersion(e.conflictVersion());
@@ -446,7 +431,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         GridCacheVersion ver = txEntry.explicitVersion() != null ? txEntry.explicitVersion() : xidVer;
 
                         // If locks haven't been acquired yet, keep waiting.
-                        if (!txEntry.groupLockEntry() && !Entry.lockedBy(ver)) {
+                        if (!Entry.lockedBy(ver)) {
                             if (log.isDebugEnabled())
                                 log.debug("Transaction does not own lock for entry (will wait) [entry=" + Entry +
                                     ", tx=" + this + ']');
@@ -607,10 +592,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     }
                                     // No-op.
                                     else {
-                                        assert !groupLock() || txEntry.groupLockEntry() || ownsLock(txEntry.cached()):
-                                            "Transaction does not own lock for group lock entry during  commit [tx=" +
-                                                this + ", txEntry=" + txEntry + ']';
-
                                         if (conflictCtx == null || !conflictCtx.isUseOld()) {
                                             if (txEntry.ttl() != CU.TTL_NOT_CHANGED)
                                                 cached.updateTtl(null, txEntry.ttl());
@@ -651,14 +632,16 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             }
                         }
                         catch (Throwable ex) {
-                            uncommit();
-
-                            state(UNKNOWN);
-
                             // In case of error, we still make the best effort to commit,
                             // as there is no way to rollback at this point.
                             err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
                                 "(all transaction entries will be invalidated): " + CU.txString(this), ex);
+
+                            U.error(log, "Commit failed.", err);
+
+                            uncommit();
+
+                            state(UNKNOWN);
 
                             if (ex instanceof Error)
                                 throw (Error)ex;

@@ -20,3 +20,4 @@ target
 /libs/
 pom-installed.xml
 git-patch-prop-local.sh
+/slurp.sh

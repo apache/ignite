@@ -224,7 +224,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param res Result.
      */
     public void onResult(UUID nodeId, GridNearGetResponse res) {
-        for (IgniteInternalFuture<Map<K, V>> fut : futures())
+        for (IgniteInternalFuture<Map<K, V>> fut : futures()) {
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -234,6 +234,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     f.onResult(res);
                 }
             }
+        }
     }
 
     /** {@inheritDoc} */
@@ -638,10 +639,17 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         if (timeout.finish()) {
                             cctx.kernalContext().timeout().removeTimeoutObject(timeout);
 
-                            // Remap.
-                            map(keys.keySet(), F.t(node, keys), updTopVer);
+                            try {
+                                fut.get();
 
-                            onDone(Collections.<K, V>emptyMap());
+                                // Remap.
+                                map(keys.keySet(), F.t(node, keys), updTopVer);
+
+                                onDone(Collections.<K, V>emptyMap());
+                            }
+                            catch (IgniteCheckedException e) {
+                                GridPartitionedGetFuture.this.onDone(e);
+                            }
                         }
                     }
                 }
@@ -702,8 +710,14 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     }
                 });
             }
-            else
-                onDone(createResultMap(res.entries()));
+            else {
+                try {
+                    onDone(createResultMap(res.entries()));
+                }
+                catch (Exception e) {
+                    onDone(e);
+                }
+            }
         }
 
         /** {@inheritDoc} */

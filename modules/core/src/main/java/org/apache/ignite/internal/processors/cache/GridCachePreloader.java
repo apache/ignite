@@ -30,7 +30,7 @@ import java.util.*;
  * Cache preloader that is responsible for loading cache entries either from remote
  * nodes (for distributed cache) or anywhere else at cache startup.
  */
-public interface GridCachePreloader<K, V> {
+public interface GridCachePreloader {
     /**
      * Starts preloading.
      *
@@ -56,6 +56,11 @@ public interface GridCachePreloader<K, V> {
     public void onKernalStop();
 
     /**
+     * Client reconnected callback.
+     */
+    public void onReconnected();
+
+    /**
      * Callback by exchange manager when initial partition exchange is complete.
      *
      * @param err Error, if any happened on initial exchange.
@@ -78,7 +83,7 @@ public interface GridCachePreloader<K, V> {
      * @param exchFut Exchange future to assign.
      * @return Assignments.
      */
-    public GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture exchFut);
+    public GridDhtPreloaderAssignments assign(GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * Adds assignments to preloader.
@@ -86,7 +91,7 @@ public interface GridCachePreloader<K, V> {
      * @param assignments Assignments to add.
      * @param forcePreload Force preload flag.
      */
-    public void addAssignments(GridDhtPreloaderAssignments<K, V> assignments, boolean forcePreload);
+    public void addAssignments(GridDhtPreloaderAssignments assignments, boolean forcePreload);
 
     /**
      * @param p Preload predicate.

@@ -113,7 +113,7 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
 
         cache = true;
 
-        Ignite ignite = startGrid(2); // Check can start on more cache node.
+        Ignite ignite = startGrid(2); // Check can start one more cache node.
 
         assertNotNull(ignite.cache(null));
     }
@@ -122,7 +122,7 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testRestartAllNodes() throws Exception {
-        cache = false;
+        cache = true;
 
         String home = U.getIgniteHome();
 

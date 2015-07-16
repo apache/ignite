@@ -57,8 +57,26 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Class<?>[] indexedTypes() {
         return new Class<?>[]{
-            Integer.class, EnemyCamp.class
+            Integer.class, EnemyCamp.class,
+            Long.class, Geometry.class // Geometry must be indexed here.
         };
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimitiveGeometry() throws Exception {
+        IgniteCache<Long, Geometry> cache = grid(0).cache(null);
+
+        WKTReader r = new WKTReader();
+
+        for (long i = 0; i < 100; i++)
+            cache.put(i, r.read("POINT(" + i + " " + i + ")"));
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery("explain select _key from Geometry where _val && ?")
+            .setArgs(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))")).setLocal(true)).getAll();
+
+        assertTrue("__ explain: " + res, res.get(0).get(0).toString().contains("_val_idx"));
     }
 
     /**

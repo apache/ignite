@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -56,8 +55,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     private static final long serialVersionUID = 0L;
 
     /** DHT mappings. */
-    private ConcurrentMap<UUID, GridDistributedTxMapping> mappings =
-        new ConcurrentHashMap8<>();
+    private ConcurrentMap<UUID, GridDistributedTxMapping> mappings = new ConcurrentHashMap8<>();
 
     /** Future. */
     @GridToStringExclude
@@ -65,13 +63,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /** */
     @GridToStringExclude
-    private final AtomicReference<GridNearTxFinishFuture> commitFut =
-        new AtomicReference<>();
+    private final AtomicReference<GridNearTxFinishFuture> commitFut = new AtomicReference<>();
 
     /** */
     @GridToStringExclude
-    private final AtomicReference<GridNearTxFinishFuture> rollbackFut =
-        new AtomicReference<>();
+    private final AtomicReference<GridNearTxFinishFuture> rollbackFut = new AtomicReference<>();
 
     /** Entries to lock on next step of prepare stage. */
     private Collection<IgniteTxEntry> optimisticLockEntries = Collections.emptyList();
@@ -85,6 +81,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /** Info for entries accessed locally in optimistic transaction. */
     private Map<IgniteTxKey, IgniteCacheExpiryPolicy> accessMap;
 
+    /** */
+    private boolean hasRemoteLocks;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -97,13 +96,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @param implicit Implicit flag.
      * @param implicitSingle Implicit with one key flag.
      * @param sys System flag.
+     * @param plc IO policy.
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
      * @param storeEnabled Store enabled flag.
      * @param txSize Transaction size.
-     * @param grpLockKey Group lock key if this is a group lock transaction.
-     * @param partLock {@code True} if this is a group-lock transaction and the whole partition should be locked.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      */
@@ -112,14 +110,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
         boolean storeEnabled,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
-        boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -137,8 +133,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             false,
             storeEnabled,
             txSize,
-            grpLockKey,
-            partLock,
             subjId,
             taskNameHash);
 
@@ -272,9 +266,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> optimisticLockEntries() {
-        if (groupLock())
-            return super.optimisticLockEntries();
-
         return optimisticLockEntries;
     }
 
@@ -387,15 +378,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /**
      * @param nodeId Node ID.
      * @param dhtVer DHT version.
+     * @param writeVer Write version.
      */
-    void addDhtVersion(UUID nodeId, GridCacheVersion dhtVer) {
+    void addDhtVersion(UUID nodeId, GridCacheVersion dhtVer, GridCacheVersion writeVer) {
         // This step is very important as near and DHT versions grow separately.
         cctx.versions().onReceived(nodeId, dhtVer);
 
         GridDistributedTxMapping m = mappings.get(nodeId);
 
         if (m != null)
-            m.dhtVersion(dhtVer);
+            m.dhtVersion(dhtVer, writeVer);
     }
 
     /**
@@ -414,13 +406,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
             return false;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void addGroupTxMapping(Collection<IgniteTxKey> keys) {
-        super.addGroupTxMapping(keys);
-
-        addKeyMapping(cctx.localNode(), keys);
     }
 
     /**
@@ -562,9 +547,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers)
     {
-        Collection<IgniteTxEntry> entries = groupLock() ?
-            Collections.singletonList(groupLockEntry()) :
-            F.concat(false, mapping.reads(), mapping.writes());
+        Collection<IgniteTxEntry> entries = F.concat(false, mapping.reads(), mapping.writes());
 
         for (IgniteTxEntry txEntry : entries) {
             while (true) {
@@ -1199,6 +1182,36 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     @SuppressWarnings("unchecked")
     @Nullable @Override public IgniteInternalFuture<?> currentPrepareFuture() {
         return prepFut.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onRemap(AffinityTopologyVersion topVer) {
+        assert cctx.kernalContext().clientNode();
+
+        mapped.set(false);
+        nearLocallyMapped = false;
+        colocatedLocallyMapped = false;
+        txNodes = null;
+        onePhaseCommit = false;
+        nearMap.clear();
+        dhtMap.clear();
+        mappings.clear();
+
+        this.topVer.set(topVer);
+    }
+
+    /**
+     * @param hasRemoteLocks {@code True} if tx has remote locks acquired.
+     */
+    public void hasRemoteLocks(boolean hasRemoteLocks) {
+        this.hasRemoteLocks = hasRemoteLocks;
+    }
+
+    /**
+     * @return {@code True} if tx has remote locks acquired.
+     */
+    public boolean hasRemoteLocks() {
+        return hasRemoteLocks;
     }
 
     /** {@inheritDoc} */

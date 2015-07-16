@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.spi.*;
 
@@ -52,6 +53,11 @@ public class GridPluginContext implements PluginContext {
     /** {@inheritDoc} */
     @Override public Ignite grid() {
         return ctx.grid();
+    }
+
+    /** {@inheritDoc} */
+    @Override public MarshallerContext marshallerContext() {
+        return ctx.marshallerContext();
     }
 
     /** {@inheritDoc} */

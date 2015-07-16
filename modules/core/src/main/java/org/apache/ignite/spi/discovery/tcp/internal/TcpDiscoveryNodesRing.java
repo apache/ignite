@@ -32,9 +32,15 @@ import java.util.concurrent.locks.*;
  */
 public class TcpDiscoveryNodesRing {
     /** Visible nodes filter. */
-    private static final IgnitePredicate<TcpDiscoveryNode> VISIBLE_NODES = new P1<TcpDiscoveryNode>() {
+    public static final IgnitePredicate<TcpDiscoveryNode> VISIBLE_NODES = new P1<TcpDiscoveryNode>() {
         @Override public boolean apply(TcpDiscoveryNode node) {
-            return node.visible();
+            if (node.visible()) {
+                assert node.order() > 0 : "Invalid node order: " + node;
+
+                return true;
+            }
+
+            return false;
         }
     };
 

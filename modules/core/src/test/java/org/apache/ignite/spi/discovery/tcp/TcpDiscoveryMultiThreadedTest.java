@@ -21,8 +21,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.*;
@@ -70,28 +72,16 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (client()) {
-            TcpClientDiscoverySpi spi = new TcpClientDiscoverySpi();
+        if (client())
+            cfg.setClientMode(true);
 
-            spi.setIpFinder(ipFinder);
-
-            cfg.setDiscoverySpi(spi);
-        }
-        else {
-            TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-            spi.setIpFinder(ipFinder);
-
-            cfg.setDiscoverySpi(spi);
-        }
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
 
         cfg.setCacheConfiguration();
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
         cfg.setIncludeProperties();
-
-        cfg.setLocalHost("127.0.0.1");
 
         return cfg;
     }
@@ -112,6 +102,8 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
      * @throws Exception If any error occurs.
      */
     public void testMultiThreaded() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1100");
+
         execute();
     }
 
@@ -135,6 +127,40 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
         }
 
         info("Test finished.");
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void testMultipleStartOnCoordinatorStop() throws Exception{
+        startGrids(GRID_CNT);
+
+        final CyclicBarrier barrier = new CyclicBarrier(GRID_CNT + 4);
+
+        final AtomicInteger startIdx = new AtomicInteger(GRID_CNT);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                barrier.await();
+
+                Ignite ignite = startGrid(startIdx.getAndIncrement());
+
+                assertFalse(ignite.configuration().isClientMode());
+
+                log.info("Started node: " + ignite.name());
+
+                return null;
+            }
+        }, GRID_CNT + 3, "start-thread");
+
+        barrier.await();
+
+        U.sleep(ThreadLocalRandom.current().nextInt(10, 100));
+
+        for (int i = 0; i < GRID_CNT; i++)
+            stopGrid(i);
+
+        fut.get();
     }
 
     /**

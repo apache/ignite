@@ -24,6 +24,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
+import org.apache.ignite.testframework.*;
+
+import java.util.*;
 
 /**
  * Test suite.
@@ -34,25 +37,33 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Tests don't include in the execution.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Cache Failover Test Suite");
 
         suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class);
 
-        suite.addTestSuite(GridCacheIncrementTransformTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheIncrementTransformTest.class, ignoredTests);
 
         // Failure consistency tests.
         suite.addTestSuite(GridCacheAtomicRemoveFailureTest.class);
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderRemoveFailureTest.class);
+        suite.addTestSuite(GridCacheAtomicClientRemoveFailureTest.class);
 
         suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);
         suite.addTestSuite(GridCacheDhtRemoveFailureTest.class);
+        suite.addTestSuite(GridCacheDhtClientRemoveFailureTest.class);
         suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
         suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class);
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest.class);
-
-        suite.addTestSuite(GridCacheAtomicFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicReplicatedFailoverSelfTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicNodeJoinTest.class);
         suite.addTestSuite(IgniteCacheTxNodeJoinTest.class);
@@ -61,10 +72,8 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxNearDisabledPutGetRestartTest.class);
         suite.addTestSuite(IgniteCacheTxNearDisabledFairAffinityPutGetRestartTest.class);
 
-        // TODO IGNITE-882.
-        //suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);
-        //suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class);
-        //suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class);
+        suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
+        suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
 
         return suite;
     }

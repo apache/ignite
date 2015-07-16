@@ -5,8 +5,11 @@
  */
 
 /*
- * The initial version of this file was copied from JSR-166:
- * http://gee.cs.oswego.edu/dl/concurrency-interest/
+ * The latest version of the file corresponds to the following CVS commit:
+ * http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/main/java/util/concurrent/atomic/Striped64.java?pathrev=1.1
+ *
+ * The later versions use classes from java.util.function package that are unavailable in JDK 7.
+ * Thus they can't be imported.
  */
 
 package org.jsr166;
@@ -329,18 +332,19 @@ abstract class Striped64_8 extends Number {
         } catch (SecurityException se) {
             try {
                 return java.security.AccessController.doPrivileged
-                    (new java.security
-                        .PrivilegedExceptionAction<sun.misc.Unsafe>() {
+                    (new java.security.PrivilegedExceptionAction<sun.misc.Unsafe>() {
                         public sun.misc.Unsafe run() throws Exception {
-                            java.lang.reflect.Field f = sun.misc
-                                .Unsafe.class.getDeclaredField("theUnsafe");
+                            java.lang.reflect.Field f = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
                             f.setAccessible(true);
-                            return (sun.misc.Unsafe) f.get(null);
-                        }});
+
+                            return (sun.misc.Unsafe)f.get(null);
+                        }
+                    });
             } catch (java.security.PrivilegedActionException e) {
                 throw new RuntimeException("Could not initialize intrinsics",
-                    e.getCause());
+                                           e.getCause());
             }
         }
     }
+
 }

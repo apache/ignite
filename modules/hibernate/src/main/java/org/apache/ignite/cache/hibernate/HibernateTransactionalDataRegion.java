@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.hibernate.cache.*;
 import org.hibernate.cache.spi.*;
@@ -83,9 +84,14 @@ public class HibernateTransactionalDataRegion extends HibernateRegion implements
                     throw new CacheException("Hibernate TRANSACTIONAL access strategy must have Ignite cache with " +
                         "'TRANSACTIONAL' atomicity mode: " + cache.name());
 
-                if (cache.configuration().getTransactionManagerLookupClassName() == null)
-                    throw new CacheException("Hibernate TRANSACTIONAL access strategy must have Ignite cache with " +
-                        "TransactionManagerLookup configured: " + cache.name());
+                if (cache.configuration().getTransactionManagerLookupClassName() == null) {
+                    TransactionConfiguration txCfg = ignite.configuration().getTransactionConfiguration();
+                    
+                    if (txCfg == null || txCfg.getTxManagerLookupClassName() == null)
+                        throw new CacheException("Hibernate TRANSACTIONAL access strategy must have Ignite with " +
+                            "TransactionManagerLookup configured (see IgniteConfiguration." +
+                            "getTransactionConfiguration().getTxManagerLookupClassName()): " + cache.name());
+                }
 
                 return new HibernateTransactionalAccessStrategy(ignite, cache);
 

@@ -18,6 +18,8 @@
 package org.apache.ignite.examples.datagrid.store.hibernate;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cache.store.hibernate.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.examples.datagrid.store.*;
@@ -37,6 +39,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheHibernateStoreExample {
+    /** Hibernate configuration resource path. */
+    private static final String HIBERNATE_CFG =
+        "/org/apache/ignite/examples/datagrid/store/hibernate/hibernate.cfg.xml";
+
     /** Cache name. */
     private static final String CACHE_NAME = CacheHibernateStoreExample.class.getSimpleName();
 
@@ -70,6 +76,17 @@ public class CacheHibernateStoreExample {
 
             // Configure Hibernate store.
             cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(CacheHibernatePersonStore.class));
+
+            // Configure Hibernate session listener.
+            cacheCfg.setCacheStoreSessionListenerFactories(new Factory<CacheStoreSessionListener>() {
+                @Override public CacheStoreSessionListener create() {
+                    CacheHibernateStoreSessionListener lsnr = new CacheHibernateStoreSessionListener();
+
+                    lsnr.setHibernateConfigurationPath(HIBERNATE_CFG);
+
+                    return lsnr;
+                }
+            });
 
             cacheCfg.setReadThrough(true);
             cacheCfg.setWriteThrough(true);

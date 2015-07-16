@@ -121,7 +121,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
     private void checkGar() throws Exception {
         initGar = true;
 
-        String garDir = "modules/extdata/p2p/deploy";
+        String garDir = "modules/extdata/p2p/target/deploy";
         String garFileName = "p2p.gar";
 
         File origGarPath = U.resolveIgnitePath(garDir + '/' + garFileName);

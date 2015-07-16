@@ -279,11 +279,17 @@ public class GridCacheConcurrentMap {
      * @param loadFactor  the load factor threshold, used to control resizing.
      *      Resizing may be performed when the average number of elements per
      *      bin exceeds this threshold.
+     * @param factory Entries factory.
      * @throws IllegalArgumentException if the initial capacity of
      *      elements is negative or the load factor is non-positive.
      */
-    public GridCacheConcurrentMap(GridCacheContext ctx, int initCap, float loadFactor) {
+    public GridCacheConcurrentMap(GridCacheContext ctx,
+        int initCap,
+        float loadFactor,
+        @Nullable GridCacheMapEntryFactory factory) {
         this(ctx, initCap, loadFactor, DFLT_CONCUR_LEVEL);
+
+        this.factory = factory;
     }
 
     /**
@@ -309,6 +315,13 @@ public class GridCacheConcurrentMap {
         assert factory != null;
 
         this.factory = factory;
+    }
+
+    /**
+     * @return Entries factory.
+     */
+    public GridCacheMapEntryFactory getEntryFactory() {
+        return factory;
     }
 
     /**
@@ -626,7 +639,19 @@ public class GridCacheConcurrentMap {
     public <K, V> Set<K> keySet(CacheEntryPredicate... filter) {
         checkWeakQueue();
 
-        return new KeySet<>(this, filter);
+        return new KeySet<>(this, filter, false);
+    }
+
+    /**
+     * Key set including internal keys.
+     *
+     * @param filter Filter.
+     * @return Set of the keys contained in this map.
+     */
+    public <K, V> Set<K> keySetx(CacheEntryPredicate... filter) {
+        checkWeakQueue();
+
+        return new KeySet<>(this, filter, true);
     }
 
     /**
@@ -1921,7 +1946,7 @@ public class GridCacheConcurrentMap {
 
         /** {@inheritDoc} */
         @Override public void clear() {
-            ctx.cache().clearLocally0(new KeySet<K, V>(map, filter));
+            ctx.cache().clearLocally0(new KeySet<K, V>(map, filter, false));
         }
 
         /** {@inheritDoc} */
@@ -2171,11 +2196,12 @@ public class GridCacheConcurrentMap {
         /**
          * @param map Base map.
          * @param filter Key filter.
+         * @param internal Whether to allow internal keys.
          */
-        private KeySet(GridCacheConcurrentMap map, CacheEntryPredicate[] filter) {
+        private KeySet(GridCacheConcurrentMap map, CacheEntryPredicate[] filter, boolean internal) {
             assert map != null;
 
-            set = new Set0<>(map, nonInternal(filter));
+            set = new Set0<>(map, internal ? filter : nonInternal(filter));
         }
 
         /** {@inheritDoc} */

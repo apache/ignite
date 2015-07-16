@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.cacheobject;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -32,8 +30,9 @@ import org.jetbrains.annotations.*;
 public interface IgniteCacheObjectProcessor extends GridProcessor {
     /**
      * @see GridComponent#onKernalStart()
+     * @throws IgniteCheckedException If failed.
      */
-    public void onCacheProcessorStarted();
+    public void onUtilityCacheStarted() throws IgniteCheckedException;
 
     /**
      * @param typeName Type name.
@@ -77,10 +76,9 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     /**
      * Checks whether given class is portable.
      *
-     * @param cls Class.
-     * @return {@code true} If the class was registered as portable.
+     * @return {@code true} If portable objects are enabled.
      */
-    public boolean isPortableClass(Class<?> cls);
+    public boolean isPortableEnabled();
 
     /**
      * @param obj Portable object to get field from.
@@ -116,9 +114,11 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr) throws IgniteCheckedException;
 
     /**
+     * @param ccfg Cache configuration.
      * @return Cache object context.
+     * @throws IgniteCheckedException If failed.
      */
-    public CacheObjectContext contextForCache(CacheConfiguration ccfg);
+    public CacheObjectContext contextForCache(CacheConfiguration ccfg) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache context.

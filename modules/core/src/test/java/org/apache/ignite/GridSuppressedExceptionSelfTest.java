@@ -93,7 +93,9 @@ public class GridSuppressedExceptionSelfTest extends TestCase {
      *
      * @throws Exception If failed.
      */
-    public void _testStackTrace() throws Exception {
+    public void testStackTrace() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-818");
+
         IgniteCheckedException me = new IgniteCheckedException("Test message.");
 
         for (int i = 5; i < 20; i++) {

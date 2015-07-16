@@ -23,18 +23,6 @@ import org.jetbrains.annotations.*;
  * Continuous processor message types.
  */
 enum GridContinuousMessageType {
-    /** Consume start request. */
-    MSG_START_REQ,
-
-    /** Consume start acknowledgement. */
-    MSG_START_ACK,
-
-    /** Consume stop request. */
-    MSG_STOP_REQ,
-
-    /** Consume stop acknowledgement. */
-    MSG_STOP_ACK,
-
     /** Remote event notification. */
     MSG_EVT_NOTIFICATION,
 

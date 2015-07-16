@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
@@ -76,8 +75,6 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
                 return failoverNode;
             }
         });
-
-        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }

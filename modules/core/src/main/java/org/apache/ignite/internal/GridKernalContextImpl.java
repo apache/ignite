@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
 import org.apache.ignite.internal.managers.collision.*;
@@ -303,6 +304,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Marshaller context. */
     private MarshallerContextImpl marshCtx;
 
+    /** */
+    private ClusterNode locNode;
+
+    /** */
+    private volatile boolean disconnected;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -325,6 +332,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc REST executor service.
+     * @param plugins Plugin providers.
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("TypeMayBeWeakened")
@@ -340,7 +348,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
-        ExecutorService restExecSvc) throws IgniteCheckedException {
+        ExecutorService restExecSvc,
+        List<PluginProvider> plugins) throws IgniteCheckedException {
         assert grid != null;
         assert cfg != null;
         assert gw != null;
@@ -357,7 +366,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
 
-        marshCtx = new MarshallerContextImpl();
+        marshCtx = new MarshallerContextImpl(plugins);
 
         try {
             spring = SPRING.create(false);
@@ -502,7 +511,13 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public UUID localNodeId() {
-        return cfg.getNodeId();
+        if (locNode != null)
+            return locNode.id();
+
+        if (discoMgr != null)
+            locNode = discoMgr.localNode();
+
+        return locNode != null ? locNode.id() : config().getNodeId();
     }
 
     /** {@inheritDoc} */
@@ -790,6 +805,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         if (cls.equals(IgniteCacheObjectProcessor.class))
             return (T)new IgniteCacheObjectProcessorImpl(this);
 
+        if (cls.equals(CacheConflictResolutionManager.class))
+            return null;
+
         throw new IgniteException("Unsupported component type: " + cls);
     }
 
@@ -891,6 +909,26 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public MarshallerContextImpl marshallerContext() {
         return marshCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean clientNode() {
+        return cfg.isClientMode() || cfg.isDaemon();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean clientDisconnected() {
+        if (locNode == null)
+            locNode = discoMgr != null ? discoMgr.localNode() : null;
+
+        return locNode != null ? (locNode.isClient() && disconnected) : false;
+    }
+
+    /**
+     * @param disconnected Disconnected flag.
+     */
+    void disconnected(boolean disconnected) {
+        this.disconnected = disconnected;
     }
 
     /** {@inheritDoc} */

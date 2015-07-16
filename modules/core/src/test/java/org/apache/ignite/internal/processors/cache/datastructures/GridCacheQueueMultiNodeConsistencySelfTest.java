@@ -54,6 +54,11 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
     private int backups;
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-583");
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         // No-op.
     }

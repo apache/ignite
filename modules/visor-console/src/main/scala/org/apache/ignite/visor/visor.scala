@@ -17,23 +17,17 @@
 
 package org.apache.ignite.visor
 
-import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite._
 import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
-import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.events.{DiscoveryEvent, Event}
-import org.apache.ignite.internal.IgniteComponentType._
 import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.internal.IgniteNodeAttributes._
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
-import org.apache.ignite.internal.util.spring.IgniteSpringHelper
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => U}
 import org.apache.ignite.lang._
-import org.apache.ignite.logger.NullLogger
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
 import org.apache.ignite.visor.commands.common.VisorTextTable
 
@@ -212,9 +206,6 @@ object visor extends VisorTag {
      * `work` folder under system `java.io.tmpdir` folder.
      */
     private final val DFLT_LOG_PATH = "visor/visor-log"
-
-    /** Default configuration path relative to Ignite home. */
-    private final val DFLT_CFG = "config/default-config.xml"
 
     /** Log file. */
     private var logFile: File = null
@@ -427,42 +418,6 @@ object visor extends VisorTag {
         ),
         emptyArgs = status,
         withArgs = status
-    )
-
-    addHelp(
-        name = "open",
-        shortInfo = "Connects Visor console to the grid.",
-        longInfo = Seq(
-            "Connects Visor console to the grid. Note that P2P class loading",
-            "should be enabled on all nodes.",
-            " ",
-            "If neither '-cpath' or '-d' are provided, command will ask",
-            "user to select Ignite configuration file in interactive mode."
-        ),
-        spec = Seq(
-            "open -cpath=<path>",
-            "open -d"
-        ),
-        args = Seq(
-            "-cpath=<path>" -> Seq(
-                "Ignite configuration path.",
-                "Can be absolute, relative to Ignite home folder or any well formed URL."
-            ),
-            "-d" -> Seq(
-                "Flag forces the command to connect to grid using default Ignite configuration file.",
-                "without interactive mode."
-            )
-        ),
-        examples = Seq(
-            "open" ->
-                "Prompts user to select Ignite configuration file in interactive mode.",
-            "open -d" ->
-                "Connects Visor console to grid using default Ignite configuration file.",
-            "open -cpath=/gg/config/mycfg.xml" ->
-                "Connects Visor console to grid using Ignite configuration from provided file."
-        ),
-        emptyArgs = open,
-        withArgs = open
     )
 
     /**
@@ -980,7 +935,7 @@ object visor extends VisorTag {
 
             val sb = new StringBuilder()
 
-            for (i <- 0 until lst.size if lst(i).nonEmpty || sb.size != 0) {
+            for (i <- 0 until lst.size if lst(i).nonEmpty || sb.nonEmpty) {
                 val arg = sb.toString + lst(i)
 
                 arg match {
@@ -1007,7 +962,7 @@ object visor extends VisorTag {
     def hasArgValue(@Nullable v: String, args: ArgList): Boolean = {
         assert(args != null)
 
-        args.find(_._2 == v).nonEmpty
+        args.exists(_._2 == v)
     }
 
     /**
@@ -1019,7 +974,7 @@ object visor extends VisorTag {
     def hasArgName(@Nullable n: String, args: ArgList): Boolean = {
         assert(args != null)
 
-        args.find(_._1 == n).nonEmpty
+        args.exists(_._1 == n)
     }
 
     /**
@@ -1032,7 +987,7 @@ object visor extends VisorTag {
     def hasArgFlag(n: String, args: ArgList): Boolean = {
         assert(n != null && args != null)
 
-        args.find((a) => a._1 == n && a._2 == null).nonEmpty
+        args.exists((a) => a._1 == n && a._2 == null)
     }
 
     /**
@@ -1525,169 +1480,22 @@ object visor extends VisorTag {
     private def blank(len: Int) = new String().padTo(len, ' ')
 
     /**
-     * ==Command==
-     * Connects Visor console to default or named grid.
-     *
-     * ==Examples==
-     * <ex>open -g=mygrid</ex>
-     * Connects to 'mygrid' grid.
-     *
-     * @param args Command arguments.
-     */
-    def open(args: String) {
-        assert(args != null)
-
-        if (isConnected) {
-            warn("Visor is already connected. Disconnect first.")
-
-            return
-        }
-
-        try {
-            def configuration(path: String): IgniteConfiguration = {
-                assert(path != null)
-
-                val url =
-                    try
-                        new URL(path)
-                    catch {
-                        case e: Exception =>
-                            val url = U.resolveIgniteUrl(path)
-
-                            if (url == null)
-                                throw new IgniteException("Ignite configuration path is invalid: " + path, e)
-
-                            url
-                    }
-
-                // Add no-op logger to remove no-appender warning.
-                val log4jTup =
-                    if (classOf[Ignition].getClassLoader.getResource("org/apache/log4j/Appender.class") != null)
-                        U.addLog4jNoOpLogger()
-                    else
-                        null
-
-                val spring: IgniteSpringHelper = SPRING.create(false)
-
-                val cfgs =
-                    try
-                        // Cache, IGFS, streamer and DR configurations should be excluded from daemon node config.
-                        spring.loadConfigurations(url, "cacheConfiguration", "fileSystemConfiguration",
-                            "streamerConfiguration", "drSenderConfiguration", "drReceiverConfiguration").get1()
-                    finally {
-                        if (log4jTup != null)
-                            U.removeLog4jNoOpLogger(log4jTup)
-                    }
-
-                if (cfgs == null || cfgs.isEmpty)
-                    throw new IgniteException("Can't find grid configuration in: " + url)
-
-                if (cfgs.size > 1)
-                    throw new IgniteException("More than one grid configuration found in: " + url)
-
-                val cfg = cfgs.iterator().next()
-
-                // Setting up 'Config URL' for properly print in console.
-                System.setProperty(IgniteSystemProperties.IGNITE_CONFIG_URL, url.getPath)
-
-                var cpuCnt = Runtime.getRuntime.availableProcessors
-
-                if (cpuCnt < 4)
-                    cpuCnt = 4
-
-                cfg.setConnectorConfiguration(null)
-
-                // All thread pools are overridden to have size equal to number of CPUs.
-                cfg.setPublicThreadPoolSize(cpuCnt)
-                cfg.setSystemThreadPoolSize(cpuCnt)
-                cfg.setPeerClassLoadingThreadPoolSize(cpuCnt)
-
-                var ioSpi = cfg.getCommunicationSpi
-
-                if (ioSpi == null)
-                    ioSpi = new TcpCommunicationSpi()
-
-                cfg
-            }
-
-            val argLst = parseArgs(args)
-
-            val path = argValue("cpath", argLst)
-            val dflt = hasArgFlag("d", argLst)
-
-            val (cfg, cfgPath) =
-                if (path.isDefined)
-                    (configuration(path.get), path.get)
-                else if (dflt)
-                    (configuration(DFLT_CFG), "<default>")
-                else {
-                    // If configuration file is not defined in arguments,
-                    // ask to choose from the list
-                    askConfigFile() match {
-                        case Some(p) =>
-                            nl()
-
-                            (VisorTextTable() +=("Using configuration", p)) render()
-
-                            nl()
-
-                            (configuration(p), p)
-                        case None =>
-                            return
-                    }
-                }
-
-            open(cfg, cfgPath)
-        }
-        catch {
-            case e: IgniteException =>
-                warn(e.getMessage)
-                warn("Type 'help open' to see how to use this command.")
-
-                status("q")
-        }
-    }
-
-    /**
      * Connects Visor console to configuration with path.
      *
-     * @param cfg Configuration.
+     * @param gridName Name of grid instance.
      * @param cfgPath Configuration path.
      */
-    def open(cfg: IgniteConfiguration, cfgPath: String) {
-        val daemon = Ignition.isDaemon
-
-        val shutdownHook = IgniteSystemProperties.getString(IGNITE_NO_SHUTDOWN_HOOK, "false")
-
-        // Make sure Visor console starts as daemon node.
-        Ignition.setDaemon(true)
-
-        // Make sure visor starts without shutdown hook.
-        System.setProperty(IGNITE_NO_SHUTDOWN_HOOK, "true")
-
-        // Set NullLoger in quite mode.
-        if ("true".equalsIgnoreCase(sys.props.getOrElse(IGNITE_QUIET, "true")))
-            cfg.setGridLogger(new NullLogger)
-
-        val startedGridName = try {
-             Ignition.start(cfg).name
-        }
-        finally {
-            Ignition.setDaemon(daemon)
-
-            System.setProperty(IGNITE_NO_SHUTDOWN_HOOK, shutdownHook)
-        }
-
+    def open(gridName: String, cfgPath: String) {
         this.cfgPath = cfgPath
 
         ignite =
             try
-                Ignition.ignite(startedGridName).asInstanceOf[IgniteEx]
+                Ignition.ignite(gridName).asInstanceOf[IgniteEx]
             catch {
                 case _: IllegalStateException =>
                     this.cfgPath = null
 
-                    throw new IgniteException("Named grid unavailable: " + startedGridName)
+                    throw new IgniteException("Named grid unavailable: " + gridName)
             }
 
         assert(cfgPath != null)
@@ -1699,7 +1507,7 @@ object visor extends VisorTag {
         ignite.cluster.nodes().foreach(n => {
             setVarIfAbsent(nid8(n), "n")
 
-            val ip = n.addresses().headOption
+            val ip = sortAddresses(n.addresses()).headOption
 
             if (ip.isDefined)
                 setVarIfAbsent(ip.get, "h")
@@ -1714,7 +1522,7 @@ object visor extends VisorTag {
                         val node = ignite.cluster.node(de.eventNode().id())
 
                         if (node != null) {
-                            val ip = node.addresses().headOption
+                            val ip = sortAddresses(node.addresses).headOption
 
                             if (ip.isDefined)
                                 setVarIfAbsent(ip.get, "h")
@@ -1743,11 +1551,11 @@ object visor extends VisorTag {
                         if (nv.isDefined)
                             mem.remove(nv.get._1)
 
-                        val ip = de.eventNode().addresses.headOption
+                        val ip = sortAddresses(de.eventNode().addresses).headOption
 
                         if (ip.isDefined) {
                             val last = !ignite.cluster.nodes().exists(n =>
-                                n.addresses.size > 0 && n.addresses.head == ip.get
+                                n.addresses.size > 0 && sortAddresses(n.addresses).head == ip.get
                             )
 
                             if (last) {
@@ -1823,18 +1631,6 @@ object visor extends VisorTag {
     }
 
     /**
-     * ==Command==
-     * Connects Visor console to the default grid.
-     *
-     * ==Example==
-     * <ex>open</ex>
-     * Connects to the default grid.
-     */
-    def open() {
-        open("")
-    }
-
-    /**
      * Returns string with node id8, its memory variable, if available, and its
      * IP address (first internal address), if node is alive.
      *
@@ -1858,7 +1654,7 @@ object visor extends VisorTag {
             id8 +
                 (if (v.isDefined) "(@" + v.get._1 + ")" else "") +
                 ", " +
-                (if (n == null) NA else n.addresses().headOption.getOrElse(NA))
+                (if (n == null) NA else sortAddresses(n.addresses).headOption.getOrElse(NA))
         }
     }
 
@@ -2012,8 +1808,10 @@ object visor extends VisorTag {
 
             None
         }
+        else if (nodes.size == 1)
+            Some(nodes.head.id)
         else {
-            (0 until nodes.size) foreach (i => {
+            nodes.indices foreach (i => {
                 val n = nodes(i)
 
                 val m = n.metrics
@@ -2077,7 +1875,7 @@ object visor extends VisorTag {
             None
         }
         else {
-            (0 until neighborhood.size) foreach (i => {
+            neighborhood.indices foreach (i => {
                 val neighbors = neighborhood(i)
 
                 var ips = immutable.Set.empty[String]
@@ -2099,7 +1897,7 @@ object visor extends VisorTag {
                 neighbors.foreach(n => {
                     id8s = id8s :+ nodeId8(n.id)
 
-                    ips = ips ++ n.addresses()
+                    ips = ips ++ n.addresses
 
                     cpuLoadSum += n.metrics().getCurrentCpuLoad
 
@@ -2226,7 +2024,7 @@ object visor extends VisorTag {
 
         val ids = ignite.cluster.forRemotes().nodes().map(nid8).toList
 
-        (0 until ids.size).foreach(i => println((i + 1) + ": " + ids(i)))
+        ids.indices.foreach(i => println((i + 1) + ": " + ids(i)))
 
         nl()
 
@@ -2755,7 +2553,7 @@ object visor extends VisorTag {
         help()
     }
 
-    lazy val commands = cmdLst.map(_.name) ++ cmdLst.map(_.aliases).flatten
+    lazy val commands = cmdLst.map(_.name) ++ cmdLst.flatMap(_.aliases)
 
     def searchCmd(cmd: String) = cmdLst.find(c => c.name.equals(cmd) || (c.aliases != null && c.aliases.contains(cmd)))
 
@@ -2833,5 +2631,54 @@ object visor extends VisorTag {
         }
         else
             Long.MaxValue
+    }
+
+    /**
+     * Sort addresses to properly display in Visor.
+     *
+     * @param addrs Addresses to sort.
+     * @return Sorted list.
+     */
+    def sortAddresses(addrs: Iterable[String]) = {
+        def ipToLong(ip: String) = {
+            try {
+                val octets = if (ip.contains(".")) ip.split('.') else ip.split(':')
+
+                var dec = BigDecimal.valueOf(0L)
+
+                for (i <- octets.indices) dec += octets(i).toLong * math.pow(256, octets.length - 1 - i).toLong
+
+                dec
+            }
+            catch {
+                case _: Exception => BigDecimal.valueOf(0L)
+            }
+        }
+
+        /**
+         * Sort addresses to properly display in Visor.
+         *
+         * @param addr Address to detect type for.
+         * @return IP class type for sorting in order: public addresses IPv4 + private IPv4 + localhost + IPv6.
+         */
+        def addrType(addr: String) = {
+            if (addr.contains(':'))
+                4 // IPv6
+            else {
+                try {
+                    InetAddress.getByName(addr) match {
+                        case ip if ip.isLoopbackAddress => 3 // localhost
+                        case ip if ip.isSiteLocalAddress => 2 // private IPv4
+                        case _ => 1 // other IPv4
+                    }
+                }
+                catch {
+                    case ignore: UnknownHostException => 5
+                }
+            }
+        }
+
+        addrs.map(addr => (addrType(addr), ipToLong(addr), addr)).toSeq.
+            sortWith((l, r) => if (l._1 == r._1) l._2.compare(r._2) < 0 else l._1 < r._1).map(_._3)
     }
 }

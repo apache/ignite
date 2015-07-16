@@ -257,7 +257,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         registerMBean(gridName, this, FileSwapSpaceSpiMBean.class);
 
-        String path = baseDir + File.separator + gridName + File.separator + getLocalNodeId();
+        String path = baseDir + File.separator + gridName + File.separator + ignite.configuration().getNodeId();
 
         try {
             dir = U.resolveWorkDirectory(path, true);
@@ -387,15 +387,13 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         Space space = space(spaceName, false);
 
-        if (space == null)
-            return;
-
-        byte[] val = space.remove(key, c != null);
+        byte[] val = space == null ? null : space.remove(key, c != null);
 
         if (c != null)
             c.apply(val);
 
-        notifyListener(EVT_SWAP_SPACE_DATA_REMOVED, spaceName);
+        if (space != null)
+             notifyListener(EVT_SWAP_SPACE_DATA_REMOVED, spaceName);
     }
 
     /** {@inheritDoc} */

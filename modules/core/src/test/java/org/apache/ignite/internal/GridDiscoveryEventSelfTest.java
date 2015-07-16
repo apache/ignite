@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -98,9 +98,9 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 private AtomicInteger cnt = new AtomicInteger();
 
                 @Override public boolean apply(Event evt) {
-                    assert evt.type() == EVT_NODE_JOINED;
+                    assert evt.type() == EVT_NODE_JOINED : evt;
 
-                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent)evt).topologyNodes());
 
                     latch.countDown();
 
@@ -163,7 +163,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 private AtomicInteger cnt = new AtomicInteger();
 
                 @Override public boolean apply(Event evt) {
-                    assert evt.type() == EVT_NODE_LEFT;
+                    assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED : evt;
 
                     evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
 
@@ -228,7 +228,8 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 private AtomicInteger cnt = new AtomicInteger();
 
                 @Override public boolean apply(Event evt) {
-                    assert evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT;
+                    assert evt.type() == EVT_NODE_JOINED
+                        || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED : evt;
 
                     evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
 
@@ -344,7 +345,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 private AtomicInteger cnt = new AtomicInteger();
 
                 @Override public boolean apply(Event evt) {
-                    assert evt.type() == EVT_NODE_JOINED;
+                    assert evt.type() == EVT_NODE_JOINED : evt;
 
                     X.println(">>>>>>> Joined " + F.viewReadOnly(((DiscoveryEvent) evt).topologyNodes(),
                         NODE_2ID));

@@ -164,13 +164,16 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      *
      * @param cacheName Cache name.
      * @param key Key to map.
+     * @param topVer Topology version.
      * @return Affinity nodes, primary first.
      * @throws IgniteCheckedException If failed.
      */
-    public <K> List<ClusterNode> mapKeyToPrimaryAndBackups(@Nullable String cacheName, K key) throws IgniteCheckedException {
+    public <K> List<ClusterNode> mapKeyToPrimaryAndBackups(@Nullable String cacheName,
+        K key,
+        AffinityTopologyVersion topVer)
+        throws IgniteCheckedException
+    {
         A.notNull(key, "key");
-
-        AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
         AffinityInfo affInfo = affinityCache(cacheName, topVer);
 
@@ -178,6 +181,20 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             return Collections.emptyList();
 
         return primaryAndBackups(affInfo, key);
+    }
+
+    /**
+     * Map single key to primary and backup nodes.
+     *
+     * @param cacheName Cache name.
+     * @param key Key to map.
+     * @return Affinity nodes, primary first.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <K> List<ClusterNode> mapKeyToPrimaryAndBackups(@Nullable String cacheName, K key)
+        throws IgniteCheckedException
+    {
+        return mapKeyToPrimaryAndBackups(cacheName, key, ctx.discovery().topologyVersionEx());
     }
 
     /**

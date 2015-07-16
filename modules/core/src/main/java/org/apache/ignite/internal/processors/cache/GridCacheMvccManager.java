@@ -208,10 +208,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         exchLog = cctx.logger(getClass().getName() + ".exchange");
 
         pendingExplicit = GridConcurrentFactory.newMap();
-    }
 
-    /** {@inheritDoc} */
-    @Override public void onKernalStart0() throws IgniteCheckedException {
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
@@ -295,15 +292,39 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * Cancels all client futures.
      */
     public void cancelClientFutures() {
-        IgniteCheckedException e = new IgniteCheckedException("Operation has been cancelled (grid is stopping).");
+        cancelClientFutures(new IgniteCheckedException("Operation has been cancelled (node is stopping)."));
+    }
 
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture reconnectFut) {
+        IgniteClientDisconnectedCheckedException err = disconnectedError(reconnectFut);
+
+        cancelClientFutures(err);
+    }
+
+    /**
+     * @param err Error.
+     */
+    private void cancelClientFutures(IgniteCheckedException err) {
         for (Collection<GridCacheFuture<?>> futures : futs.values()) {
             for (GridCacheFuture<?> future : futures)
-                ((GridFutureAdapter)future).onDone(e);
+                ((GridFutureAdapter)future).onDone(err);
         }
 
         for (GridCacheAtomicFuture<?> future : atomicFuts.values())
-            ((GridFutureAdapter)future).onDone(e);
+            ((GridFutureAdapter)future).onDone(err);
+    }
+
+    /**
+     * @param reconnectFut Reconnect future.
+     * @return Client disconnected exception.
+     */
+    private IgniteClientDisconnectedCheckedException disconnectedError(@Nullable IgniteFuture<?> reconnectFut) {
+        if (reconnectFut == null)
+            reconnectFut = cctx.kernalContext().cluster().clientReconnectFuture();
+
+        return new IgniteClientDisconnectedCheckedException(reconnectFut,
+            "Operation has been cancelled (client node disconnected).");
     }
 
     /**
@@ -338,7 +359,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     public void addAtomicFuture(GridCacheVersion futVer, GridCacheAtomicFuture<?> fut) {
         IgniteInternalFuture<?> old = atomicFuts.put(futVer, fut);
 
-        assert old == null;
+        assert old == null : "Old future is not null [futVer=" + futVer + ", fut=" + fut + ", old=" + old + ']';
+
+        if (cctx.kernalContext().clientDisconnected())
+            ((GridFutureAdapter)fut).onDone(disconnectedError(null));
     }
 
     /**
@@ -459,7 +483,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 fut.onNodeLeft(n.id());
         }
 
-        // Just in case if future was complete before it was added.
+        if (cctx.kernalContext().clientDisconnected())
+            ((GridFutureAdapter)fut).onDone(disconnectedError(null));
+
+        // Just in case if future was completed before it was added.
         if (fut.isDone())
             removeFuture(fut);
 
@@ -955,6 +982,21 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param topVer Topology version.
+     * @return Locked keys.
+     */
+    public Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> unfinishedLocks(AffinityTopologyVersion topVer) {
+        Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> cands = new HashMap<>();
+
+        for (FinishLockFuture fut : finishFuts) {
+            if (fut.topologyVersion().equals(topVer))
+                cands.putAll(fut.pendingLocks());
+        }
+
+        return cands;
+    }
+
+    /**
      * Creates a future that will wait for all explicit locks acquired on given topology
      * version to be released.
      *
@@ -987,8 +1029,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         res.ignoreChildFailures(ClusterTopologyCheckedException.class, CachePartialUpdateCheckedException.class);
 
         for (GridCacheAtomicFuture<?> fut : atomicFuts.values()) {
-            if (fut.waitForPartitionExchange() && fut.topologyVersion().compareTo(topVer) < 0)
-                res.add((IgniteInternalFuture<Object>)fut);
+            IgniteInternalFuture<Void> complete = fut.completeFuture(topVer);
+
+            if (complete != null)
+                res.add((IgniteInternalFuture)complete);
         }
 
         res.markInitialized();
@@ -1041,8 +1085,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         finishFuts.add(finishFut);
 
         finishFut.listen(new CI1<IgniteInternalFuture<?>>() {
-            @Override
-            public void apply(IgniteInternalFuture<?> e) {
+            @Override public void apply(IgniteInternalFuture<?> e) {
                 finishFuts.remove(finishFut);
 
                 // This call is required to make sure that the concurrent queue
@@ -1114,6 +1157,20 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
             if (exchLog.isDebugEnabled())
                 exchLog.debug("Pending lock set [topVer=" + topVer + ", locks=" + pendingLocks + ']');
+        }
+
+        /**
+         * @return Topology version.
+         */
+        AffinityTopologyVersion topologyVersion() {
+            return topVer;
+        }
+
+        /**
+         * @return Pending locks.
+         */
+        Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> pendingLocks() {
+            return pendingLocks;
         }
 
         /**

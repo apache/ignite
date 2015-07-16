@@ -50,6 +50,8 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheTtlCleanupSelfTest.class);
 
+        suite.addTestSuite(IgniteCacheClientNearCacheExpiryTest.class);
+
         return suite;
     }
 }

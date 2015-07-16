@@ -90,12 +90,20 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     public abstract GridDhtCacheAdapter<K, V> dht();
 
     /** {@inheritDoc} */
+    @Override public void onReconnected() {
+        map = new GridCacheConcurrentMap(ctx,
+            ctx.config().getNearConfiguration().getNearStartSize(),
+            0.75F,
+            map.getEntryFactory());
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isNear() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCachePreloader<K, V> preloader() {
+    @Override public GridCachePreloader preloader() {
         return dht().preloader();
     }
 

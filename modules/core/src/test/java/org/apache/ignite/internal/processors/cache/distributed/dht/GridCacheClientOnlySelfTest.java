@@ -17,20 +17,72 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Client only test.
  */
-public class GridCacheClientOnlySelfTest extends GridCacheClientModesAbstractSelfTest {
+@SuppressWarnings("RedundantMethodOverride")
+public abstract class GridCacheClientOnlySelfTest extends GridCacheClientModesAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean clientOnly() {
-        return true;
+    /** */
+    public static class CaseReplicatedAtomic extends GridCacheClientOnlySelfTest {
+        /** {@inheritDoc} */
+        @Override protected CacheMode cacheMode() {
+            return REPLICATED;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheAtomicityMode atomicityMode() {
+            return ATOMIC;
+        }
+    }
+
+    /** */
+    public static class CaseReplicatedTransactional extends GridCacheClientOnlySelfTest {
+        /** {@inheritDoc} */
+        @Override protected CacheMode cacheMode() {
+            return REPLICATED;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheAtomicityMode atomicityMode() {
+            return TRANSACTIONAL;
+        }
+    }
+
+    /** */
+    public static class CasePartitionedAtomic extends GridCacheClientOnlySelfTest {
+        /** {@inheritDoc} */
+        @Override protected CacheMode cacheMode() {
+            return PARTITIONED;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheAtomicityMode atomicityMode() {
+            return ATOMIC;
+        }
+    }
+
+    /** */
+    public static class CasePartitionedTransactional extends GridCacheClientOnlySelfTest {
+        /** {@inheritDoc} */
+        @Override protected CacheMode cacheMode() {
+            return PARTITIONED;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheAtomicityMode atomicityMode() {
+            return TRANSACTIONAL;
+        }
     }
 }

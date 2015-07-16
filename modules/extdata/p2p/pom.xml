@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-extdata-p2p</artifactId>
-    <version>1.0.6-SNAPSHOT</version>
+    <version>1.4.1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -85,7 +85,7 @@
                             <target>
                                 <taskdef name="gar" classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask" />
 
-                                <gar destfile="${basedir}/deploy/p2p.gar" descrdir="${basedir}/META-INF" basedir="${basedir}/target/classes" />
+                                <gar destfile="${basedir}/target/deploy/p2p.gar" descrdir="${basedir}/META-INF" basedir="${basedir}/target/classes" />
                             </target>
                         </configuration>
                     </execution>

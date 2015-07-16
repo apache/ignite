@@ -30,6 +30,7 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
+import javax.cache.event.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
@@ -103,6 +104,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache with read-through write-through behavior disabled.
      */
     public IgniteCache<K, V> withSkipStore();
+
+    /**
+     * @return Cache with no-retries behavior enabled.
+     */
+    public IgniteCache<K, V> withNoRetries();
 
     /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
@@ -311,10 +317,26 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @IgniteAsyncSupported
     @Override public Map<K, V> getAll(Set<? extends K> keys);
 
+    /**
+     * Gets values from cache. Will bypass started transaction, if any, i.e. will not enlist entries
+     * and will not lock any keys if pessimistic transaction is started by thread.
+     *
+     * @param keys The keys whose associated values are to be returned.
+     * @return A map of entries that were found for the given keys.
+     */
+    @IgniteAsyncSupported
+    public Map<K, V> getAllOutTx(Set<? extends K> keys);
+
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public boolean containsKey(K key);
 
+    /**
+     * Determines if the {@link Cache} contains entries for the specified keys.
+     *
+     * @param keys Key whose presence in this cache is to be tested.
+     * @return {@code True} if this cache contains a mapping for the specified keys.
+     */
     @IgniteAsyncSupported
     public boolean containsKeys(Set<? extends K> keys);
 
@@ -362,7 +384,29 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @IgniteAsyncSupported
     @Override public void removeAll(Set<? extends K> keys);
 
-    /** {@inheritDoc} */
+    /**
+     * Removes all of the mappings from this cache.
+     * <p>
+     * The order that the individual entries are removed is undefined.
+     * <p>
+     * For every mapping that exists the following are called:
+     * <ul>
+     *   <li>any registered {@link CacheEntryRemovedListener}s</li>
+     *   <li>if the cache is a write-through cache, the {@link CacheWriter}</li>
+     * </ul>
+     * If the cache is empty, the {@link CacheWriter} is not called.
+     * <p>
+     * This operation is not transactional. It calls broadcast closure that
+     * deletes all primary keys from remote nodes.
+     * <p>
+     * This is potentially an expensive operation as listeners are invoked.
+     * Use {@link #clear()} to avoid this.
+     *
+     * @throws IllegalStateException if the cache is {@link #isClosed()}
+     * @throws CacheException        if there is a problem during the remove
+     * @see #clear()
+     * @see CacheWriter#deleteAll
+     */
     @IgniteAsyncSupported
     @Override public void removeAll();
 
@@ -499,9 +543,21 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         CacheEntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
+     * Closes this cache instance.
+     * <p>
+     * For local cache equivalent to {@link #destroy()}.
+     * For distributed caches, if called on clients, stops client cache, if called on a server node,
+     * just closes this cache instance and does not destroy cache data.
+     * <p>
+     * After cache instance is closed another {@link IgniteCache} instance for the same
+     * cache can be created using {@link Ignite#cache(String)} method.
+     */
+    @Override public void close();
+
+    /**
      * Completely deletes the cache with all its data from the system on all cluster nodes.
      */
-    @Override void close();
+    public void destroy();
 
     /**
      * This cache node to re-balance its partitions. This method is usually used when

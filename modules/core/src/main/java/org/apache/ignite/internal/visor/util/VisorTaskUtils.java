@@ -436,6 +436,7 @@ public class VisorTaskUtils {
      * @param file Starting folder
      * @param maxDepth Depth of the tree. If 1 - just look in the folder, no sub-folders.
      * @param filter file filter.
+     * @return List of found files.
      */
     public static List<VisorLogFile> fileTree(File file, int maxDepth, @Nullable FileFilter filter) {
         if (file.isDirectory()) {
@@ -506,7 +507,7 @@ public class VisorTaskUtils {
      *
      * @param f File to process.
      * @return File charset.
-     * @throws IOException
+     * @throws IOException in case of error.
      */
     public static Charset decode(File f) throws IOException {
         SortedMap<String, Charset> charsets = Charset.availableCharsets();
@@ -735,8 +736,10 @@ public class VisorTaskUtils {
      * Log message.
      *
      * @param log Logger.
+     * @param msg Message to log.
      * @param clazz class.
      * @param start start time.
+     * @return Time when message was logged.
      */
     public static long log(@Nullable IgniteLogger log, String msg, Class<?> clazz, long start) {
         final long end = U.currentTimeMillis();
@@ -791,6 +794,7 @@ public class VisorTaskUtils {
      *
      * @param args A string array containing the program and its arguments.
      * @return Started process.
+     * @throws IOException in case of error.
      */
     public static Process openInConsole(String... args) throws IOException {
         return openInConsole(null, args);

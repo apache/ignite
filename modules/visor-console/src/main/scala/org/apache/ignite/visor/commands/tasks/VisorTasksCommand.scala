@@ -1216,7 +1216,7 @@ class VisorTasksCommand extends VisorConsoleCommand {
 
                 eLst.foreach(e => {
                     e.nodeIds.foreach(id => {
-                        val host = ignite.cluster.node(id).addresses.headOption
+                        val host = sortAddresses(ignite.cluster.node(id).addresses).headOption
 
                         if (host.isDefined) {
                             var eSet = hMap.getOrElse(host.get, Set.empty[VisorExecution])

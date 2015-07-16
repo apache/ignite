@@ -236,12 +236,8 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
         try {
             GridUnsafeMemory mem = desc.memory();
 
-            if (mem.readLongVolatile(p + OFFSET_VALUE_REF) != 0) {
-                if (beforeRmv)
-                    return; // The offheap value is in its place, nothing to do here.
-                else
-                    throw new IllegalStateException("Unswap without swap: " + p);
-            }
+            if (mem.readLongVolatile(p + OFFSET_VALUE_REF) != 0)
+                return; // The offheap value is in its place, nothing to do here.
 
             Value v = peekValue(VAL_COL);
 
@@ -272,8 +268,8 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     }
 
     /** {@inheritDoc} */
-    @Override protected Value syncValue(int attempt) {
-        Value v = super.syncValue(attempt);
+    @Override protected Value syncValue(long waitTime) {
+        Value v = super.syncValue(waitTime);
 
         if (v != null)
             return v;

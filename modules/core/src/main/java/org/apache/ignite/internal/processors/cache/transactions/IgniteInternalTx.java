@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -246,7 +245,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     /**
      * @return Pool where message for the given transaction must be processed.
      */
-    public GridIoPolicy ioPolicy();
+    public byte ioPolicy();
 
     /**
      * @return Last recorded topology version.
@@ -282,16 +281,6 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @return {@code True} if transaction is empty.
      */
     public boolean empty();
-
-    /**
-     * @return {@code True} if transaction group-locked.
-     */
-    public boolean groupLock();
-
-    /**
-     * @return Group lock key if {@link #groupLock()} is {@code true}.
-     */
-    @Nullable public IgniteTxKey groupLockKey();
 
     /**
      * @return {@code True} if preparing flag was set with this call.
@@ -716,4 +705,9 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @return Public API proxy.
      */
     public TransactionProxy proxy();
+
+    /**
+     * @param topVer New topology version.
+     */
+    public void onRemap(AffinityTopologyVersion topVer);
 }

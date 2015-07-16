@@ -110,7 +110,7 @@ public class GridClientConfiguration {
     private ExecutorService executor;
 
     /** Marshaller. */
-    private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
+    private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller(U.allPluginProviders());
 
     /** Daemon flag. */
     private boolean daemon;

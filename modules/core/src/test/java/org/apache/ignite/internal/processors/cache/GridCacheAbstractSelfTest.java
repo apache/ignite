@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -58,7 +57,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected static final Map<Object, Object> map = new ConcurrentHashMap8<>();
 
     /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * @return Grids count to start.
@@ -204,8 +203,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
-
         return cfg;
     }
 
@@ -316,9 +313,17 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /**
      * @return {@code True} if transactions are enabled.
+     * @see #txShouldBeUsed()
      */
     protected boolean txEnabled() {
         return true;
+    }
+
+    /**
+     * @return {@code True} if transactions should be used.
+     */
+    protected boolean txShouldBeUsed() {
+        return txEnabled() && !isMultiJvm();
     }
 
     /**
@@ -363,7 +368,11 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @param idx Index of grid.
      * @return Cache context.
      */
-    protected GridCacheContext<String, Integer> context(int idx) {
+    protected GridCacheContext<String, Integer> context(final int idx) {
+        if (isRemoteJvm(idx) && !isRemoteJvm())
+            throw new UnsupportedOperationException("Operation can't be done automatically via proxy. " +
+                "Send task with this logic on remote jvm instead.");
+
         return ((IgniteKernal)grid(idx)).<String, Integer>internalCache().context();
     }
 
@@ -534,7 +543,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Serializable factory.
      */
-    private static class TestStoreFactory implements Factory<CacheStore> {
+    protected static class TestStoreFactory implements Factory<CacheStore> {
         @Override public CacheStore create() {
             return cacheStore();
         }

@@ -126,10 +126,7 @@ import java.util.*;
  * ...
  * GridServices svcs = grid.services();
  *
- * GridFuture&lt;?&gt; fut = svcs.deployClusterSingleton("mySingleton", new MyGridService());
- *
- * // Wait for deployment to complete.
- * fut.get();
+ * svcs.deployClusterSingleton("mySingleton", new MyGridService());
  * </pre>
  */
 public interface IgniteServices extends IgniteAsyncSupport {

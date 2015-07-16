@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
@@ -942,5 +943,11 @@ public interface GridCacheEntryEx {
      * @param <V> Value type.
      * @return {@code True} if value was removed, {@code false} otherwise.
      */
+    public <V> boolean removeMeta(UUID name, V val);
+
+    /**
+     * Calls {@link GridDhtLocalPartition#onUnlock()} for this entry's partition.
+     */
+    public void onUnlock();
     public <V> boolean removeMeta(int key, V val);
 }

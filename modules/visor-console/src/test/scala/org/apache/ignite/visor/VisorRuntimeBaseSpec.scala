@@ -19,6 +19,8 @@ package org.apache.ignite.visor
 
 import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.visor.commands.open.VisorOpenCommand._
+
 import org.scalatest._
 
 /**

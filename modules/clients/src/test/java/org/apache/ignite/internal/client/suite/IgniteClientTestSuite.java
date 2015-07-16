@@ -103,8 +103,7 @@ public class IgniteClientTestSuite extends TestSuite {
 
         // Router tests.
         suite.addTest(new TestSuite(TcpRouterSelfTest.class));
-        // TODO uncomment when fixed https://issues.apache.org/jira/browse/IGNITE-433
-        // suite.addTest(new TestSuite(TcpSslRouterSelfTest.class));
+        suite.addTest(new TestSuite(TcpSslRouterSelfTest.class));
         suite.addTest(new TestSuite(TcpRouterMultiNodeSelfTest.class));
 
         suite.addTest(new TestSuite(ClientFailedInitSelfTest.class));

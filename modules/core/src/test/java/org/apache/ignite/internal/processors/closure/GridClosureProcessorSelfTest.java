@@ -23,7 +23,6 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -57,8 +56,6 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -95,7 +92,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * Test runnable job.
      */
-    private static class TestRunnable implements IgniteRunnable {
+    private static class ClosureTestRunnable implements IgniteRunnable {
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -130,7 +127,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * Test callable job.
      */
-    private static class TestCallable extends AbstractTestCallable {
+    private static class ClosureTestCallable extends AbstractTestCallable {
         /** {@inheritDoc} */
         @Override public Integer call() {
             log.info("Callable job executed on node: " + ignite.cluster().localNode().id());
@@ -144,11 +141,11 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * Test callable job which throws class not found exception.
      */
-    private static class TestCallableError extends AbstractTestCallable implements Externalizable {
+    private static class ClosureTestCallableError extends AbstractTestCallable implements Externalizable {
         /**
          *
          */
-        public TestCallableError() {
+        public ClosureTestCallableError() {
             // No-op.
         }
 
@@ -234,7 +231,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      */
     private ComputeTaskFuture<?> runAsync(int idx,
-        Collection<TestRunnable> jobs,
+        Collection<ClosureTestRunnable> jobs,
         @Nullable IgnitePredicate<ClusterNode> p)
     {
         assert idx >= 0 && idx < NODES_CNT;
@@ -302,7 +299,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @param p Optional node predicate.
      * @return Future object.
      */
-    private ComputeTaskFuture<Collection<Integer>> callAsync(int idx, Collection<TestCallable> jobs,
+    private ComputeTaskFuture<Collection<Integer>> callAsync(int idx, Collection<ClosureTestCallable> jobs,
         @Nullable IgnitePredicate<ClusterNode> p) {
         assert idx >= 0 && idx < NODES_CNT;
         assert !F.isEmpty(jobs);
@@ -334,7 +331,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRunAsyncSingle() throws Exception {
-        IgniteRunnable job = new TestRunnable();
+        IgniteRunnable job = new ClosureTestRunnable();
 
         ComputeTaskFuture<?> fut = broadcast(0, job, null);
 
@@ -360,7 +357,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRunAsyncMultiple() throws Exception {
-        Collection<TestRunnable> jobs = F.asList(new TestRunnable(), new TestRunnable());
+        Collection<ClosureTestRunnable> jobs = F.asList(new ClosureTestRunnable(), new ClosureTestRunnable());
 
         ComputeTaskFuture<?> fut = runAsync(0, jobs, null);
 
@@ -374,7 +371,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCallAsyncSingle() throws Exception {
-        IgniteCallable<Integer> job = new TestCallable();
+        IgniteCallable<Integer> job = new ClosureTestCallable();
 
         ComputeTaskFuture<Collection<Integer>> fut1 = broadcast(0, job, null);
 
@@ -404,7 +401,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     public void testCallAsyncErrorNoFailover() throws Exception {
         IgniteCompute comp = compute(grid(0).cluster().forPredicate(F.notEqualTo(grid(0).localNode()))).withAsync();
 
-        comp.withNoFailover().call(new TestCallableError());
+        comp.withNoFailover().call(new ClosureTestCallableError());
 
         ComputeTaskFuture<Integer> fut = comp.future();
 
@@ -422,7 +419,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWithName() throws Exception {
-        grid(0).compute().withName("TestTaskName").call(new TestCallable());
+        grid(0).compute().withName("TestTaskName").call(new ClosureTestCallable());
     }
 
     /**
@@ -460,7 +457,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCallAsyncMultiple() throws Exception {
-        Collection<TestCallable> jobs = F.asList(new TestCallable(), new TestCallable());
+        Collection<ClosureTestCallable> jobs = F.asList(new ClosureTestCallable(), new ClosureTestCallable());
 
         ComputeTaskFuture<Collection<Integer>> fut = callAsync(0, jobs, null);
 
@@ -479,7 +476,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReduceAsync() throws Exception {
-        Collection<TestCallable> jobs = F.asList(new TestCallable(), new TestCallable());
+        Collection<ClosureTestCallable> jobs = F.asList(new ClosureTestCallable(), new ClosureTestCallable());
 
         IgniteCompute comp = grid(0).compute().withAsync();
 

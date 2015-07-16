@@ -115,7 +115,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         new ConcurrentHashMap8<>(5120);
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() {
+    @Override protected void onKernalStart0(boolean reconnect) {
+        if (reconnect)
+            return;
+
         cctx.gridEvents().addLocalEventListener(
             new GridLocalEventListener() {
                 @Override public void onEvent(Event evt) {
@@ -147,6 +150,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         txFinishSync = new GridCacheTxFinishSync<>(cctx);
 
         txHandler = new IgniteTxHandler(cctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture reconnectFut) {
+        txFinishSync.onDisconnected(reconnectFut);
+
+        for (Map.Entry<Long, IgniteInternalTx> e : threadMap.entrySet())
+            rollbackTx(e.getValue());
     }
 
     /**
@@ -347,8 +358,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param isolation Isolation.
      * @param timeout transaction timeout.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
-     * @param partLock {@code True} if partition is locked.
      * @return New transaction.
      */
     public IgniteTxLocalAdapter newTx(
@@ -359,9 +368,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         TransactionIsolation isolation,
         long timeout,
         boolean storeEnabled,
-        int txSize,
-        @Nullable IgniteTxKey grpLockKey,
-        boolean partLock) {
+        int txSize) {
         assert sysCacheCtx == null || sysCacheCtx.systemTx();
 
         UUID subjId = null; // TODO GG-9141 how to get subj ID?
@@ -379,8 +386,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             timeout,
             storeEnabled,
             txSize,
-            grpLockKey,
-            partLock,
             subjId,
             taskNameHash);
 
@@ -639,6 +644,30 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Any transaction associated with the current thread.
+     */
+    public IgniteInternalTx anyActiveThreadTx() {
+        long threadId = Thread.currentThread().getId();
+
+        IgniteInternalTx tx = threadMap.get(threadId);
+
+        if (tx != null && tx.topologyVersionSnapshot() != null)
+            return tx;
+
+        for (GridCacheContext cacheCtx : cctx.cache().context().cacheContexts()) {
+            if (!cacheCtx.systemTx())
+                continue;
+
+            tx = sysThreadMap.get(new TxThreadKey(threadId, cacheCtx.cacheId()));
+
+            if (tx != null && tx.topologyVersionSnapshot() != null)
+                return tx;
+        }
+
+        return null;
+    }
+
+    /**
      * @return Local transaction.
      */
     @Nullable public IgniteInternalTx localTxx() {
@@ -746,11 +775,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
         }
 
-        boolean txSerializableEnabled = cctx.txConfig().isTxSerializableEnabled();
+        boolean txSerEnabled = cctx.txConfig().isTxSerializableEnabled();
 
         // Clean up committed transactions queue.
         if (tx.pessimistic() && tx.local()) {
-            if (tx.enforceSerializable() && txSerializableEnabled) {
+            if (tx.enforceSerializable() && txSerEnabled) {
                 for (Iterator<IgniteInternalTx> it = committedQ.iterator(); it.hasNext();) {
                     IgniteInternalTx committedTx = it.next();
 
@@ -766,7 +795,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             return;
         }
 
-        if (txSerializableEnabled && tx.optimistic() && tx.enforceSerializable()) {
+        if (txSerEnabled && tx.optimistic() && tx.enforceSerializable()) {
             Set<IgniteTxKey> readSet = tx.readSet();
             Set<IgniteTxKey> writeSet = tx.writeSet();
 
@@ -1203,17 +1232,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 collectPendingVersions(dhtTxLoc);
             }
 
-            // 3.1 Call dataStructures manager.
-            cctx.kernalContext().dataStructures().onTxCommitted(tx);
-
             // 4. Unlock write resources.
-            if (tx.groupLock())
-                unlockGroupLocks(tx);
-            else
-                unlockMultiple(tx, tx.writeEntries());
+            unlockMultiple(tx, tx.writeEntries());
 
             // 5. For pessimistic transaction, unlock read resources if required.
-            if (tx.pessimistic() && !tx.readCommitted() && !tx.groupLock())
+            if (tx.pessimistic() && !tx.readCommitted())
                 unlockMultiple(tx, tx.readEntries());
 
             // 6. Notify evictions.
@@ -1441,7 +1464,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Transaction to notify evictions for.
      */
     private void notifyEvitions(IgniteInternalTx tx) {
-        if (tx.internal() && !tx.groupLock())
+        if (tx.internal())
             return;
 
         for (IgniteTxEntry txEntry : tx.allEntries())
@@ -1614,51 +1637,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
 
         return true;
-    }
-
-    /**
-     * Unlocks entries locked by group transaction.
-     *
-     * @param txx Transaction.
-     */
-    @SuppressWarnings("unchecked")
-    private void unlockGroupLocks(IgniteInternalTx txx) {
-        IgniteTxKey grpLockKey = txx.groupLockKey();
-
-        assert grpLockKey != null;
-
-        if (grpLockKey == null)
-            return;
-
-        IgniteTxEntry txEntry = txx.entry(grpLockKey);
-
-        assert txEntry != null || (txx.near() && !txx.local());
-
-        if (txEntry != null) {
-            GridCacheContext cacheCtx = txEntry.context();
-
-            // Group-locked entries must be locked.
-            while (true) {
-                try {
-                    GridCacheEntryEx entry = txEntry.cached();
-
-                    assert entry != null;
-
-                    entry.txUnlock(txx);
-
-                    break;
-                }
-                catch (GridCacheEntryRemovedException ignored) {
-                    if (log.isDebugEnabled())
-                        log.debug("Got removed entry in TM unlockGroupLocks(..) method (will retry): " + txEntry);
-
-                    GridCacheAdapter cache = cacheCtx.cache();
-
-                    // Renew cache entry.
-                    txEntry.cached(cache.entryEx(txEntry.key()));
-                }
-            }
-        }
     }
 
     /**

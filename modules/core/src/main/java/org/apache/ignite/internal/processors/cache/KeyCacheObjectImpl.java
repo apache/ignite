@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 /**
  *
  */
-public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheObject, Comparable<KeyCacheObjectImpl> {
+public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,15 +43,6 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
         this.val = val;
         this.valBytes = valBytes;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public int compareTo(KeyCacheObjectImpl other) {
-        assert val instanceof Comparable : val;
-        assert other.val instanceof Comparable : val;
-
-        return ((Comparable)val).compareTo(other.val);
     }
 
     /** {@inheritDoc} */

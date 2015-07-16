@@ -137,7 +137,7 @@ public final class GridTestUtils {
                 }
             }
 
-            if (msg != null && (e.getMessage() == null || !e.getMessage().startsWith(msg))) {
+            if (msg != null && (e.getMessage() == null || !e.getMessage().contains(msg))) {
                 U.error(log, "Unexpected exception message.", e);
 
                 fail("Exception message is not as expected [expected=" + msg + ", actual=" + e.getMessage() + ']', e);
@@ -1494,5 +1494,34 @@ public final class GridTestUtils {
      */
     public static String apacheIgniteTestPath() {
         return System.getProperty("IGNITE_TEST_PATH", U.getIgniteHome() + "/target/ignite");
+    }
+
+    /**
+     * {@link Class#getSimpleName()} does not return outer class name prefix for inner classes, for example,
+     * getSimpleName() returns "RegularDiscovery" instead of "GridDiscoveryManagerSelfTest$RegularDiscovery"
+     * This method return correct simple name for inner classes.
+     *
+     * @param cls Class
+     * @return Simple name with outer class prefix.
+     */
+    public static String fullSimpleName(@NotNull Class cls) {
+        if (cls.getEnclosingClass() != null)
+            return cls.getEnclosingClass().getSimpleName() + "." + cls.getSimpleName();
+        else
+            return cls.getSimpleName();
+    }
+
+    /**
+     * Adds test to the suite only if it's not in {@code ignoredTests} set.
+     *
+     * @param suite TestSuite where to place the test.
+     * @param test Test.
+     * @param ignoredTests Tests to ignore.
+     */
+    public static void addTestIfNeeded(TestSuite suite, Class test, Set<Class> ignoredTests) {
+        if (ignoredTests != null && ignoredTests.contains(test))
+            return;
+
+        suite.addTestSuite(test);
     }
 }

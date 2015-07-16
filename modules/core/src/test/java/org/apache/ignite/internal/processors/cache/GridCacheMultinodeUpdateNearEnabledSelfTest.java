@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
- *
+ * TODO: IGNITE-809.
  */
 public class GridCacheMultinodeUpdateNearEnabledSelfTest extends GridCacheMultinodeUpdateAbstractSelfTest {
     /** {@inheritDoc} */

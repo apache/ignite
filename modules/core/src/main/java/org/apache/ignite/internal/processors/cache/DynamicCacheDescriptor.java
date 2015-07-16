@@ -61,7 +61,11 @@ public class DynamicCacheDescriptor {
     /** Cache plugin manager. */
     private final CachePluginManager pluginMgr;
 
+    /** */
+    private boolean updatesAllowed = true;
+
     /**
+     * @param ctx Context.
      * @param cacheCfg Cache configuration.
      * @param cacheType Cache type.
      * @param template {@code True} if this is template configuration.
@@ -76,6 +80,7 @@ public class DynamicCacheDescriptor {
         this.cacheType = cacheType;
         this.template = template;
         this.deploymentId = deploymentId;
+
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
     }
 
@@ -204,6 +209,20 @@ public class DynamicCacheDescriptor {
      */
     public void clearRemoteConfigurations() {
         rmtCfgs = null;
+    }
+
+    /**
+     * @return Updates allowed flag.
+     */
+    public boolean updatesAllowed() {
+        return updatesAllowed;
+    }
+
+    /**
+     * @param updatesAllowed Updates allowed flag.
+     */
+    public void updatesAllowed(boolean updatesAllowed) {
+        this.updatesAllowed = updatesAllowed;
     }
 
     /** {@inheritDoc} */

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -88,18 +87,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> dhtVerVals;
 
-    /** Group lock key, if any. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private IgniteTxKey grpLockKey;
-
-    /** Group lock key bytes. */
-    @GridToStringExclude
-    private byte[] grpLockKeyBytes;
-
-    /** Partition lock flag. */
-    private boolean partLock;
-
     /** Expected transaction size. */
     private int txSize;
 
@@ -117,7 +104,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private boolean sys;
 
     /** IO policy. */
-    private GridIoPolicy plc;
+    private byte plc;
 
     /**
      * Required by {@link Externalizable}.
@@ -130,8 +117,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @param tx Cache transaction.
      * @param reads Read entries.
      * @param writes Write entries.
-     * @param grpLockKey Group lock key.
-     * @param partLock {@code True} if preparing group-lock transaction with partition lock.
      * @param txNodes Transaction nodes mapping.
      * @param onePhaseCommit One phase commit flag.
      */
@@ -139,8 +124,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         IgniteInternalTx tx,
         @Nullable Collection<IgniteTxEntry> reads,
         Collection<IgniteTxEntry> writes,
-        IgniteTxKey grpLockKey,
-        boolean partLock,
         Map<UUID, Collection<UUID>> txNodes,
         boolean onePhaseCommit
     ) {
@@ -158,8 +141,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
         this.reads = reads;
         this.writes = writes;
-        this.grpLockKey = grpLockKey;
-        this.partLock = partLock;
         this.txNodes = txNodes;
         this.onePhaseCommit = onePhaseCommit;
     }
@@ -181,7 +162,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /**
      * @return IO policy.
      */
-    public GridIoPolicy policy() {
+    public byte policy() {
         return plc;
     }
 
@@ -272,20 +253,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * @return Group lock key if preparing group-lock transaction.
-     */
-    @Nullable public IgniteTxKey groupLockKey() {
-        return grpLockKey;
-    }
-
-    /**
-     * @return {@code True} if preparing group-lock transaction with partition lock.
-     */
-    public boolean partitionLock() {
-        return partLock;
-    }
-
-    /**
      * @return Expected transaction size.
      */
     public int txSize() {
@@ -309,9 +276,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
         if (reads != null)
             marshalTx(reads, ctx);
-
-        if (grpLockKey != null && grpLockKeyBytes == null)
-            grpLockKeyBytes = ctx.marshaller().marshal(grpLockKey);
 
         if (dhtVers != null) {
             for (IgniteTxKey key : dhtVers.keySet()) {
@@ -337,9 +301,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
         if (reads != null)
             unmarshalTx(reads, false, ctx, ldr);
-
-        if (grpLockKeyBytes != null && grpLockKey == null)
-            grpLockKey = ctx.marshaller().unmarshal(grpLockKeyBytes, ldr);
 
         if (dhtVerKeys != null && dhtVers == null) {
             assert dhtVerVals != null;
@@ -378,103 +339,91 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         }
 
         switch (writer.state()) {
-            case 8:
+            case 7:
                 if (!writer.writeByte("concurrency", concurrency != null ? (byte)concurrency.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeCollection("dhtVerKeys", dhtVerKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeCollection("dhtVerVals", dhtVerVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
-                if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
+            case 10:
                 if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 11:
                 if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 12:
                 if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
-                if (!writer.writeBoolean("partLock", partLock))
+            case 13:
+                if (!writer.writeByte("plc", plc))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
-                if (!writer.writeByte("plc", plc != null ? (byte)plc.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 17:
+            case 14:
                 if (!writer.writeCollection("reads", reads, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 15:
                 if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
+            case 16:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 17:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 18:
                 if (!writer.writeByteArray("txNodesBytes", txNodesBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 19:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 20:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 21:
                 if (!writer.writeCollection("writes", writes, MessageCollectionItemType.MSG))
                     return false;
 
@@ -496,7 +445,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             return false;
 
         switch (reader.state()) {
-            case 8:
+            case 7:
                 byte concurrencyOrd;
 
                 concurrencyOrd = reader.readByte("concurrency");
@@ -508,7 +457,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 dhtVerKeys = reader.readCollection("dhtVerKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -516,7 +465,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 dhtVerVals = reader.readCollection("dhtVerVals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -524,15 +473,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 11:
-                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
+            case 10:
                 invalidate = reader.readBoolean("invalidate");
 
                 if (!reader.isLastRead())
@@ -540,7 +481,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 13:
+            case 11:
                 byte isolationOrd;
 
                 isolationOrd = reader.readByte("isolation");
@@ -552,7 +493,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 14:
+            case 12:
                 onePhaseCommit = reader.readBoolean("onePhaseCommit");
 
                 if (!reader.isLastRead())
@@ -560,15 +501,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 15:
-                partLock = reader.readBoolean("partLock");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 16:
+            case 13:
                 byte plcOrd;
 
                 plcOrd = reader.readByte("plc");
@@ -576,11 +509,11 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 if (!reader.isLastRead())
                     return false;
 
-                plc = GridIoPolicy.fromOrdinal(plcOrd);
+                plc = plcOrd;
 
                 reader.incrementState();
 
-            case 17:
+            case 14:
                 reads = reader.readCollection("reads", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -588,7 +521,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 18:
+            case 15:
                 sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
@@ -596,7 +529,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 19:
+            case 16:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -604,7 +537,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 20:
+            case 17:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -612,7 +545,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 21:
+            case 18:
                 txNodesBytes = reader.readByteArray("txNodesBytes");
 
                 if (!reader.isLastRead())
@@ -620,7 +553,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 22:
+            case 19:
                 txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
@@ -628,7 +561,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 23:
+            case 20:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
@@ -636,7 +569,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 24:
+            case 21:
                 writes = reader.readCollection("writes", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -656,7 +589,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 25;
+        return 22;
     }
 
     /** {@inheritDoc} */

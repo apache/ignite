@@ -309,7 +309,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.rolledbackVersions(),
                 tx.pendingVersions(),
                 tx.size(),
-                tx.groupLockKey(),
                 tx.subjectId(),
                 tx.taskNameHash());
 
@@ -387,7 +386,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.rolledbackVersions(),
                 tx.pendingVersions(),
                 tx.size(),
-                tx.groupLockKey(),
                 tx.subjectId(),
                 tx.taskNameHash());
 
@@ -439,7 +437,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.rolledbackVersions(),
                     tx.pendingVersions(),
                     tx.size(),
-                    tx.groupLockKey(),
                     tx.subjectId(),
                     tx.taskNameHash());
 

@@ -19,13 +19,14 @@ package org.apache.ignite.internal.visor.query;
 
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.internal.visor.util.*;
 import org.apache.ignite.lang.*;
 
 /**
  * Task for execute SCAN or SQL query and get first page of results.
  */
 @GridInternal
-public class VisorQueryTask extends VisorOneNodeTask<VisorQueryArg, IgniteBiTuple<? extends Exception, VisorQueryResultEx>> {
+public class VisorQueryTask extends VisorOneNodeTask<VisorQueryArg, IgniteBiTuple<? extends VisorExceptionWrapper, VisorQueryResultEx>> {
     /** */
     private static final long serialVersionUID = 0L;
 

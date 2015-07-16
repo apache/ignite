@@ -46,6 +46,13 @@ public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
     public boolean isCached();
 
     /**
+     * Returns entry size in bytes.
+     *
+     * @return entry size in bytes.
+     */
+    public int size();
+
+    /**
      * Gets metadata added by eviction policy.
      *
      * @return Metadata value or {@code null}.

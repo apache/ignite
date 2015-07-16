@@ -85,12 +85,15 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
         cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME),
             cacheConfiguration(CACHE_NAME));
 
-        if (!gridName.equals(getTestGridName(0)))
-            cfg.setClientMode(true);
-
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
+
+        if (!gridName.equals(getTestGridName(0))) {
+            cfg.setClientMode(true);
+
+            disco.setForceServerMode(true);
+        }
 
         cfg.setDiscoverySpi(disco);
 
@@ -114,11 +117,12 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
 
         cacheCfg.setName(cacheName);
 
+        cacheCfg.setNearConfiguration(null);
+
         if (META_CACHE_NAME.equals(cacheName))
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setNearConfiguration(null);
 
             cacheCfg.setBackups(0);
             cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));

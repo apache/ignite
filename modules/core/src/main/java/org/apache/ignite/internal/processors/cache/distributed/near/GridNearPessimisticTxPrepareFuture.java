@@ -84,6 +84,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     /** {@inheritDoc} */
     @Override public void onResult(UUID nodeId, GridNearTxPrepareResponse res) {
         if (!isDone()) {
+            assert res.clientRemapVersion() == null : res;
+
             for (IgniteInternalFuture<IgniteInternalTx> fut : pending()) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -178,8 +180,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 tx,
                 m.reads(),
                 m.writes(),
-                /*grp lock key*/null,
-                /*part lock*/false,
                 m.near(),
                 txMapping.transactionNodes(),
                 true,
@@ -189,7 +189,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 tx.implicitSingle(),
                 m.explicitLock(),
                 tx.subjectId(),
-                tx.taskNameHash());
+                tx.taskNameHash(),
+                false);
 
             for (IgniteTxEntry txEntry : m.writes()) {
                 if (txEntry.op() == TRANSFORM)

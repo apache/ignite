@@ -80,6 +80,11 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
         return !evicted;
     }
 
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return 0;
+    }
+
     /**
      * @return Evicted or not.
      */

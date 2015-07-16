@@ -31,11 +31,9 @@ import java.util.*;
  * Stream random numbers into the streaming cache.
  * To start the example, you should:
  * <ul>
- *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
+ *     <li>Start a few nodes using {@link ExampleNodeStartup}.</li>
  *     <li>Start streaming using {@link StreamVisitorExample}.</li>
  * </ul>
- * <p>
- * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
 public class StreamVisitorExample {
     /** Random number generator. */

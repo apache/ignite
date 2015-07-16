@@ -192,6 +192,23 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> T loadBeanFromAppContext(Object appContext, String beanName) throws IgniteCheckedException {
+        ApplicationContext springCtx = (ApplicationContext)appContext;
+
+        try {
+            return (T)springCtx.getBean(beanName);
+        }
+        catch (NoSuchBeanDefinitionException e) {
+            throw new IgniteCheckedException("Spring bean with provided name doesn't exist " +
+                    ", beanName=" + beanName + ']');
+        }
+        catch (BeansException e) {
+            throw new IgniteCheckedException("Failed to load Spring bean with provided name " +
+                    ", beanName=" + beanName + ']', e);
+        }
+    }
+
     /**
      * @param stream Input stream containing Spring XML configuration.
      * @return Context.
@@ -404,36 +421,70 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     private static GenericApplicationContext prepareSpringContext(final String... excludedProps){
         GenericApplicationContext springCtx = new GenericApplicationContext();
 
-        BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
-            @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
-                throws BeansException {
-                for (String beanName : beanFactory.getBeanDefinitionNames()) {
-                    BeanDefinition def = beanFactory.getBeanDefinition(beanName);
+        if (excludedProps.length > 0) {
+            final List<String> excludedPropsList = Arrays.asList(excludedProps);
 
-                    if (def.getBeanClassName() != null) {
-                        try {
-                            Class.forName(def.getBeanClassName());
-                        }
-                        catch (ClassNotFoundException ignored) {
-                            ((BeanDefinitionRegistry) beanFactory).removeBeanDefinition(beanName);
+            BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
+                /**
+                 * @param def Registered BeanDefinition.
+                 * @throws BeansException in case of errors.
+                 */
+                private void processNested(BeanDefinition def) throws BeansException {
+                    Iterator<PropertyValue> iterVals = def.getPropertyValues().getPropertyValueList().iterator();
+
+                    while (iterVals.hasNext()) {
+                        PropertyValue val = iterVals.next();
+
+                        if (excludedPropsList.contains(val.getName())) {
+                            iterVals.remove();
 
                             continue;
                         }
-                    }
 
-                    MutablePropertyValues vals = def.getPropertyValues();
+                        if (val.getValue() instanceof Iterable) {
+                            Iterator iterNested = ((Iterable)val.getValue()).iterator();
 
-                    for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
-                        for (String excludedProp : excludedProps) {
-                            if (val.getName().equals(excludedProp))
-                                vals.removePropertyValue(val);
+                            while (iterNested.hasNext()) {
+                                Object item = iterNested.next();
+
+                                if (item instanceof BeanDefinitionHolder) {
+                                    BeanDefinitionHolder h = (BeanDefinitionHolder)item;
+
+                                    try {
+                                        if (h.getBeanDefinition().getBeanClassName() != null)
+                                            Class.forName(h.getBeanDefinition().getBeanClassName());
+
+                                        processNested(h.getBeanDefinition());
+                                    }
+                                    catch (ClassNotFoundException ignored) {
+                                        iterNested.remove();
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            }
-        };
 
-        springCtx.addBeanFactoryPostProcessor(postProc);
+                @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
+                    throws BeansException {
+                    for (String beanName : beanFactory.getBeanDefinitionNames()) {
+                        try {
+                            BeanDefinition def = beanFactory.getBeanDefinition(beanName);
+
+                            if (def.getBeanClassName() != null)
+                                Class.forName(def.getBeanClassName());
+
+                            processNested(def);
+                        }
+                        catch (ClassNotFoundException ignored) {
+                            ((BeanDefinitionRegistry)beanFactory).removeBeanDefinition(beanName);
+                        }
+                    }
+                }
+            };
+
+            springCtx.addBeanFactoryPostProcessor(postProc);
+        }
 
         return springCtx;
     }

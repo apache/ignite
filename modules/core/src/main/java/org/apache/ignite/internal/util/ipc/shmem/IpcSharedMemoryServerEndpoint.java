@@ -146,7 +146,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        IpcSharedMemoryNativeLoader.load();
+        IpcSharedMemoryNativeLoader.load(log);
 
         pid = IpcSharedMemoryUtils.pid();
 
@@ -531,7 +531,9 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
 
             while (true) {
                 try {
-                    Thread.sleep(GC_FREQ);
+                    // Sleep only if not cancelled.
+                    if (lastRunNeeded)
+                        Thread.sleep(GC_FREQ);
                 }
                 catch (InterruptedException ignored) {
                     // No-op.
@@ -559,8 +561,12 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
                 }
 
                 if (isCancelled()) {
-                    if (lastRunNeeded)
+                    if (lastRunNeeded) {
                         lastRunNeeded = false;
+
+                        // Clear interrupted status.
+                        Thread.interrupted();
+                    }
                     else {
                         Thread.currentThread().interrupt();
 
@@ -592,7 +598,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
                 if (log.isDebugEnabled())
                     log.debug("Token directory is being processed concurrently: " + workTokDir.getAbsolutePath());
             }
-            catch (InterruptedIOException ignored) {
+            catch (FileLockInterruptionException ignored) {
                 Thread.currentThread().interrupt();
             }
             catch (IOException e) {
