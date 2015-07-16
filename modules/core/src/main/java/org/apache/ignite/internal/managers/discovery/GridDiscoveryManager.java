@@ -193,6 +193,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         super(ctx, ctx.config().getDiscoverySpi());
     }
 
+    /** */
+    private final CountDownLatch startLatch = new CountDownLatch(1);
+
     /**
      * @return Memory usage of non-heap memory.
      */
@@ -464,6 +467,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 // If this is a local join event, just save it and do not notify listeners.
                 if (type == EVT_NODE_JOINED && node.id().equals(locNode.id())) {
+                    updateTopologyVersionIfGreater(new AffinityTopologyVersion(locNode.order()),
+                        new DiscoCache(localNode(), getSpi().getRemoteNodes()));
+
+                    assert startLatch.getCount() == 1;
+
+                    startLatch.countDown();
+
                     DiscoveryEvent discoEvt = new DiscoveryEvent();
 
                     discoEvt.node(ctx.discovery().localNode());
@@ -527,6 +537,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         startSpi();
 
+        try {
+            U.await(startLatch);
+        }
+        catch (IgniteInterruptedException e) {
+            throw new IgniteCheckedException("Failed to start discovery manager (thread has been interrupted).", e);
+        }
+
         // Start segment check worker only if frequency is greater than 0.
         if (hasRslvrs && segChkFreq > 0) {
             segChkWrk = new SegmentCheckWorker();
@@ -537,9 +554,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         locNode = spi.getLocalNode();
-
-        updateTopologyVersionIfGreater(new AffinityTopologyVersion(locNode.order()), new DiscoCache(localNode(),
-            getSpi().getRemoteNodes()));
 
         checkAttributes(discoCache().remoteNodes());
 
@@ -1039,6 +1053,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop0(boolean cancel) {
+        startLatch.countDown();
+
         // Stop segment check worker.
         if (segChkWrk != null) {
             segChkWrk.cancel();
@@ -1211,16 +1227,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return Discovery collection cache.
      */
     public DiscoCache discoCache() {
-        Snapshot cur;
+        Snapshot cur = topSnap.get();
 
-        while ((cur = topSnap.get()) == null) {
-            // Wrap the SPI collection to avoid possible floating collection.
-            if (topSnap.compareAndSet(null, cur = new Snapshot(
-                AffinityTopologyVersion.ZERO,
-                new DiscoCache(localNode(), getSpi().getRemoteNodes())))) {
-                return cur.discoCache;
-            }
-        }
+        assert cur != null;
 
         return cur.discoCache;
     }
