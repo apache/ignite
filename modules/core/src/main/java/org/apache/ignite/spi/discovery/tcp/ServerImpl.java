@@ -338,7 +338,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         clientMsgWorkers.clear();
 
-        utilityPool.shutdownNow();
+        IgniteUtils.shutdownNow(ServerImpl.class, utilityPool, log);
 
         U.interrupt(statsPrinter);
         U.join(statsPrinter, log);

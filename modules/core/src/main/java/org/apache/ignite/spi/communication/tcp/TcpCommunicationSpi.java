@@ -2063,7 +2063,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         client = null;
                     }
 
-                    onException("Handshake timeout (will retry with increased timeout) [timeout=" + connTimeout0 +
+                    onException("Handshake timed out (will retry with increased timeout) [timeout=" + connTimeout0 +
                         ", addr=" + addr + ']', e);
 
                     if (log.isDebugEnabled())

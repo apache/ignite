@@ -320,13 +320,11 @@ public interface IgniteSpiContext {
 
     /**
      * @param c Timeout object.
-     * @throws IgniteSpiException Thrown if any exception occurs.
      */
-    public void addTimeoutObject(IgniteSpiTimeoutObject c) throws IgniteSpiException;
+    public void addTimeoutObject(IgniteSpiTimeoutObject c);
 
     /**
      * @param c Timeout object.
-     * @throws IgniteSpiException Thrown if any exception occurs.
      */
-    public void removeTimeoutObject(IgniteSpiTimeoutObject c) throws IgniteSpiException;
+    public void removeTimeoutObject(IgniteSpiTimeoutObject c);
 }
