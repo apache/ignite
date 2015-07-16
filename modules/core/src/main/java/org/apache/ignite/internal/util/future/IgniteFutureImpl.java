@@ -78,7 +78,15 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
-        IgniteInternalFuture<T> fut0 = fut.chain(new C1<IgniteInternalFuture<V>, T>() {
+        return new IgniteFutureImpl<>(chainInternal(doneCb));
+    }
+
+    /**
+     * @param doneCb Done callback.
+     * @return Internal future
+     */
+    protected  <T> IgniteInternalFuture<T> chainInternal(final IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
+        return fut.chain(new C1<IgniteInternalFuture<V>, T>() {
             @Override public T apply(IgniteInternalFuture<V> fut) {
                 assert IgniteFutureImpl.this.fut == fut;
 
@@ -90,8 +98,6 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
                 }
             }
         });
-
-        return new IgniteFutureImpl<>(fut0);
     }
 
     /** {@inheritDoc} */

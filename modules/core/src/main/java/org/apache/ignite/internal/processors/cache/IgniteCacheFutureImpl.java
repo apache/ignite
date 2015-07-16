@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 /**
  * Implementation of public API future for cache.
@@ -33,6 +34,11 @@ public class IgniteCacheFutureImpl<V> extends IgniteFutureImpl<V> {
      */
     public IgniteCacheFutureImpl(IgniteInternalFuture<V> fut) {
         super(fut);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
+        return new IgniteCacheFutureImpl<>(chainInternal(doneCb));
     }
 
     /** {@inheritDoc} */

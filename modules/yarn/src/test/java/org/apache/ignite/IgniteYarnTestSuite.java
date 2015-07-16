@@ -15,35 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin.security;
+package org.apache.ignite;
 
-import org.apache.ignite.cluster.*;
-import org.jetbrains.annotations.*;
+import junit.framework.*;
+import org.apache.ignite.yarn.*;
 
 /**
- * Supported security subject types. Subject type can be retrieved form {@link SecuritySubject#type()} method.
+ * Apache Hadoop Yarn integration tests.
  */
-public enum SecuritySubjectType {
+public class IgniteYarnTestSuite extends TestSuite {
     /**
-     * Subject type for a remote {@link ClusterNode}.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
      */
-    REMOTE_NODE,
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Apache Yarn Integration Test Suite");
 
-    /**
-     * Subject type for remote client.
-     */
-    REMOTE_CLIENT;
+        suite.addTest(new TestSuite(IgniteApplicationMasterSelfTest.class));
 
-    /** Enumerated values. */
-    private static final SecuritySubjectType[] VALS = values();
-
-    /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
-     */
-    @Nullable public static SecuritySubjectType fromOrdinal(byte ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+        return suite;
     }
 }

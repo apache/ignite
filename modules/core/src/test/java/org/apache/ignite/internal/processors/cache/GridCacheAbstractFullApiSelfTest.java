@@ -63,6 +63,14 @@ import static org.apache.ignite.transactions.TransactionState.*;
  */
 @SuppressWarnings("TransientFieldInNonSerializableClass")
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
+    /** */
+    public static final CacheEntryProcessor<String, Integer, String> ERR_PROCESSOR =
+        new CacheEntryProcessor<String, Integer, String>() {
+            @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+                throw new RuntimeException("Failed!");
+            }
+        };
+
     /** Increment processor for invoke operations. */
     public static final EntryProcessor<String, Integer, String> INCR_PROCESSOR = new EntryProcessor<String, Integer, String>() {
         @Override public String process(MutableEntry<String, Integer> e, Object... args) {
@@ -5053,6 +5061,30 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         finally {
             grid(0).events().stopLocalListen(lsnr, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTransformException() throws Exception {
+        final IgniteCache<String, Integer> cache = jcache().withAsync();
+
+        cache.invoke("key2", ERR_PROCESSOR);
+
+        assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+
+                IgniteFuture fut = cache.future().chain(new IgniteClosure<IgniteFuture, Object>() {
+                    @Override public Object apply(IgniteFuture o) {
+                        return o.get();
+                    }
+                });
+
+                fut.get();
+
+                return null;
+            }
+        }, EntryProcessorException.class, null);
     }
 
     /**

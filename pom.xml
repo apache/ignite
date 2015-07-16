@@ -48,6 +48,7 @@
     </scm>
 
     <modules>
+        <module>modules/apache-license-gen</module>
         <module>modules/tools</module>
         <module>modules/core</module>
         <module>modules/hadoop</module>
@@ -71,6 +72,7 @@
         <module>modules/cloud</module>
         <module>modules/mesos</module>
         <module>modules/kafka</module>
+        <module>modules/yarn</module>
     </modules>
 
     <profiles>

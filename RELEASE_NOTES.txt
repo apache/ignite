@@ -5,6 +5,8 @@ Apache Ignite In-Memory Data Fabric 1.3
 ---------------------------------------
 
 * Added auto-retries for cache operations in recoverable cases.
+* Added integration with Apache YARN.
+* Added auto detection and dropping of slow client nodes.
 * Fixed several issues with JTA integration.
 * Fixed several issues with Hibernate L2 cache.
 * Fixed issue with GAR files in source release.
