@@ -106,6 +106,41 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param set Set.
+     */
+    public void onRemoved(GridCacheSetProxy set) {
+        setsMap.remove(set.delegate().id(), set);
+    }
+
+    /**
+     * @param clusterRestarted Cluster restarted flag.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        for (Map.Entry<IgniteUuid, GridCacheSetProxy> e : setsMap.entrySet()) {
+            GridCacheSetProxy set = e.getValue();
+
+            if (clusterRestarted) {
+                set.blockOnRemove();
+
+                setsMap.remove(e.getKey(), set);
+            }
+            else
+                set.needCheckNotRemoved();
+        }
+
+        for (Map.Entry<IgniteUuid, GridCacheQueueProxy> e : queuesMap.entrySet()) {
+            GridCacheQueueProxy queue = e.getValue();
+
+            if (clusterRestarted) {
+                queue.delegate().onRemoved(false);
+
+                queuesMap.remove(e.getKey(), queue);
+            }
+        }
+    }
+
+    /**
      * @throws IgniteCheckedException If thread is interrupted or manager
      *     was not successfully initialized.
      */

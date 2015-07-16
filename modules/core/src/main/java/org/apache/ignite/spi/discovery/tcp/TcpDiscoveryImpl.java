@@ -112,7 +112,14 @@ abstract class TcpDiscoveryImpl {
      * @return Local node ID.
      */
     public UUID getLocalNodeId() {
-        return spi.getLocalNodeId();
+        return spi.locNode.id();
+    }
+
+    /**
+     * @return Configured node ID (actual node ID can be different if client reconnects).
+     */
+    public UUID getConfiguredNodeId() {
+        return spi.cfgNodeId;
     }
 
     /**

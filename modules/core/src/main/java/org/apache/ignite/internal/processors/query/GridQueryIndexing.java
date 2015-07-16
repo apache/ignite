@@ -246,4 +246,11 @@ public interface GridQueryIndexing {
      * @return Backup filter.
      */
     public IndexingQueryFilter backupFilter(List<String> caches, AffinityTopologyVersion topVer, int[] parts);
+
+    /**
+     * Client disconnected callback.
+     *
+     * @param reconnectFut Reconnect future.
+     */
+    public void onDisconnected(IgniteFuture<?> reconnectFut);
 }

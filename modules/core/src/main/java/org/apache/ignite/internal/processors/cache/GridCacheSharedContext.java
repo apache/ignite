@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
@@ -86,9 +87,15 @@ public class GridCacheSharedContext<K, V> {
     private Collection<CacheStoreSessionListener> storeSesLsnrs;
 
     /**
+     * @param kernalCtx  Context.
      * @param txMgr Transaction manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
+     * @param depMgr Deployment manager.
+     * @param exchMgr Exchange manager.
+     * @param ioMgr IO manager.
+     * @param jtaMgr JTA manager.
+     * @param storeSesLsnrs Store session listeners.
      */
     public GridCacheSharedContext(
         GridKernalContext kernalCtx,
@@ -98,22 +105,101 @@ public class GridCacheSharedContext<K, V> {
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         GridCacheIoManager ioMgr,
-        Collection<CacheStoreSessionListener> storeSesLsnrs,
-        CacheJtaManagerAdapter jtaMgr
+        CacheJtaManagerAdapter jtaMgr,
+        Collection<CacheStoreSessionListener> storeSesLsnrs
     ) {
         this.kernalCtx = kernalCtx;
-        this.mvccMgr = add(mvccMgr);
-        this.verMgr = add(verMgr);
-        this.txMgr = add(txMgr);
-        this.jtaMgr = add(jtaMgr);
-        this.depMgr = add(depMgr);
-        this.exchMgr = add(exchMgr);
-        this.ioMgr = add(ioMgr);
+
+        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, depMgr, exchMgr, ioMgr);
+
         this.storeSesLsnrs = storeSesLsnrs;
 
         txMetrics = new TransactionMetricsAdapter();
 
         ctxMap = new ConcurrentHashMap<>();
+    }
+
+    /**
+     * @param reconnectFut Reconnect future.
+     * @throws IgniteCheckedException If failed.
+     */
+    void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = mgrs.listIterator(mgrs.size());
+            it.hasPrevious();) {
+            GridCacheSharedManager<?, ?> mgr = it.previous();
+
+            mgr.onDisconnected(reconnectFut);
+
+            if (restartOnDisconnect(mgr))
+                mgr.onKernalStop(true);
+        }
+
+        for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = mgrs.listIterator(mgrs.size()); it.hasPrevious();) {
+            GridCacheSharedManager<?, ?> mgr = it.previous();
+
+            if (restartOnDisconnect(mgr))
+                mgr.stop(true);
+        }
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    void onReconnected() throws IgniteCheckedException {
+        List<GridCacheSharedManager<K, V>> mgrs = new LinkedList<>();
+
+        setManagers(mgrs, txMgr,
+            jtaMgr,
+            verMgr,
+            mvccMgr,
+            new GridCacheDeploymentManager<K, V>(),
+            new GridCachePartitionExchangeManager<K, V>(),
+            ioMgr);
+
+        this.mgrs = mgrs;
+
+        for (GridCacheSharedManager<K, V> mgr : mgrs) {
+            if (restartOnDisconnect(mgr))
+                mgr.start(this);
+        }
+
+        for (GridCacheSharedManager<?, ?> mgr : mgrs)
+            mgr.onKernalStart(true);
+    }
+
+    /**
+     * @param mgr Manager.
+     * @return {@code True} if manager is restarted cn reconnect.
+     */
+    private boolean restartOnDisconnect(GridCacheSharedManager<?, ?> mgr) {
+        return mgr instanceof GridCacheDeploymentManager || mgr instanceof GridCachePartitionExchangeManager;
+    }
+
+    /**
+     * @param mgrs Managers list.
+     * @param txMgr Transaction manager.
+     * @param verMgr Version manager.
+     * @param mvccMgr MVCC manager.
+     * @param depMgr Deployment manager.
+     * @param exchMgr Exchange manager.
+     * @param ioMgr IO manager.
+     * @param jtaMgr JTA manager.
+     */
+    private void setManagers(List<GridCacheSharedManager<K, V>> mgrs,
+        IgniteTxManager txMgr,
+        CacheJtaManagerAdapter jtaMgr,
+        GridCacheVersionManager verMgr,
+        GridCacheMvccManager mvccMgr,
+        GridCacheDeploymentManager<K, V> depMgr,
+        GridCachePartitionExchangeManager<K, V> exchMgr,
+        GridCacheIoManager ioMgr) {
+        this.mvccMgr = add(mgrs, mvccMgr);
+        this.verMgr = add(mgrs, verMgr);
+        this.txMgr = add(mgrs, txMgr);
+        this.jtaMgr = add(mgrs, jtaMgr);
+        this.depMgr = add(mgrs, depMgr);
+        this.exchMgr = add(mgrs, exchMgr);
+        this.ioMgr = add(mgrs, ioMgr);
     }
 
     /**
@@ -136,6 +222,7 @@ public class GridCacheSharedContext<K, V> {
      * Adds cache context to shared cache context.
      *
      * @param cacheCtx Cache context to add.
+     * @throws IgniteCheckedException If cache ID conflict detected.
      */
     @SuppressWarnings("unchecked")
     public void addCacheContext(GridCacheContext cacheCtx) throws IgniteCheckedException {
@@ -230,7 +317,7 @@ public class GridCacheSharedContext<K, V> {
      */
     public byte dataCenterId() {
         // Data center ID is same for all caches, so grab the first one.
-        GridCacheContext<K, V> cacheCtx = F.first(cacheContexts());
+        GridCacheContext<?, ?> cacheCtx = F.first(cacheContexts());
 
         return cacheCtx.dataCenterId();
     }
@@ -242,7 +329,7 @@ public class GridCacheSharedContext<K, V> {
         if (preloadersStartFut == null) {
             GridCompoundFuture<Object, Object> compound = null;
 
-            for (GridCacheContext<K, V> cacheCtx : cacheContexts()) {
+            for (GridCacheContext<?, ?> cacheCtx : cacheContexts()) {
                 IgniteInternalFuture<Object> startFut = cacheCtx.preloader().startFuture();
 
                 if (!startFut.isDone()) {
@@ -551,10 +638,12 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @param mgrs Managers list.
      * @param mgr Manager to add.
      * @return Added manager.
      */
-    @Nullable private <T extends GridCacheSharedManager<K, V>> T add(@Nullable T mgr) {
+    @Nullable private <T extends GridCacheSharedManager<K, V>> T add(List<GridCacheSharedManager<K, V>> mgrs,
+        @Nullable T mgr) {
         if (mgr != null)
             mgrs.add(mgr);
 

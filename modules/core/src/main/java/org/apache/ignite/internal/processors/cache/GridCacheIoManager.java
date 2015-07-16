@@ -893,6 +893,14 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param cacheId Cache ID to remove handlers for.
+     * @param type Message type.
+     */
+    public void removeHandler(int cacheId, Class<? extends GridCacheMessage> type) {
+        clsHandlers.remove(new ListenerKey(cacheId, type));
+    }
+
+    /**
      * @param msgCls Message class to check.
      * @return Message index.
      */

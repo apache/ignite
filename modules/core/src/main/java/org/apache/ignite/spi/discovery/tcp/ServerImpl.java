@@ -1447,6 +1447,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (log.isDebugEnabled())
                 log.debug("Heartbeats sender has been started.");
 
+            UUID nodeId = getConfiguredNodeId();
+
             while (!isInterrupted()) {
                 if (spiStateCopy() != CONNECTED) {
                     if (log.isDebugEnabled())
@@ -1455,7 +1457,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                TcpDiscoveryHeartbeatMessage msg = new TcpDiscoveryHeartbeatMessage(getLocalNodeId());
+                TcpDiscoveryHeartbeatMessage msg = new TcpDiscoveryHeartbeatMessage(nodeId);
 
                 msg.verify(getLocalNodeId());
 
@@ -1593,39 +1595,47 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Addresses registered in IP finder.
                 Collection<InetSocketAddress> regAddrs = spi.registeredAddresses();
 
-                // Remove all addresses that belong to alive nodes, leave dead-node addresses.
-                Collection<InetSocketAddress> rmvAddrs = F.view(
-                    regAddrs,
-                    F.notContains(currAddrs),
-                    new P1<InetSocketAddress>() {
-                        private final Map<InetSocketAddress, Boolean> pingResMap = new HashMap<>();
+                P1<InetSocketAddress> p = new P1<InetSocketAddress>() {
+                    private final Map<InetSocketAddress, Boolean> pingResMap = new HashMap<>();
 
-                        @Override public boolean apply(InetSocketAddress addr) {
-                            Boolean res = pingResMap.get(addr);
+                    @Override public boolean apply(InetSocketAddress addr) {
+                        Boolean res = pingResMap.get(addr);
 
-                            if (res == null) {
-                                try {
-                                    res = pingNode(addr, null).get1() != null;
-                                }
-                                catch (IgniteCheckedException e) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to ping node [addr=" + addr +
-                                            ", err=" + e.getMessage() + ']');
-
-                                    res = false;
-                                }
-                                finally {
-                                    pingResMap.put(addr, res);
-                                }
+                        if (res == null) {
+                            try {
+                                res = pingNode(addr, null).get1() != null;
                             }
+                            catch (IgniteCheckedException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to ping node [addr=" + addr +
+                                        ", err=" + e.getMessage() + ']');
 
-                            return !res;
+                                res = false;
+                            }
+                            finally {
+                                pingResMap.put(addr, res);
+                            }
                         }
+
+                        return !res;
                     }
-                );
+                };
+
+                ArrayList<InetSocketAddress> rmvAddrs = null;
+
+                for (InetSocketAddress addr : regAddrs) {
+                    boolean rmv = !F.contains(currAddrs, addr) && p.apply(addr);
+
+                    if (rmv) {
+                        if (rmvAddrs == null)
+                            rmvAddrs = new ArrayList<>();
+
+                        rmvAddrs.add(addr);
+                    }
+                }
 
                 // Unregister dead-nodes addresses.
-                if (!rmvAddrs.isEmpty()) {
+                if (rmvAddrs != null) {
                     spi.ipFinder.unregisterAddresses(rmvAddrs);
 
                     if (log.isDebugEnabled())
@@ -4077,7 +4087,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
-            UUID locNodeId = getLocalNodeId();
+            UUID locNodeId = getConfiguredNodeId();
 
             ClientMessageWorker clientMsgWrk = null;
 
@@ -4169,6 +4179,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
+
+                    if (req.client())
+                        res.clientAck(true);
 
                     spi.writeToSocket(sock, res);
 
@@ -4313,7 +4326,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (state == CONNECTED) {
                                     spi.writeToSocket(msg, sock, RES_OK);
 
-                                    if (clientMsgWrk != null && clientMsgWrk.getState() == State.NEW)
+                                    if (clientMsgWrk.getState() == State.NEW)
                                         clientMsgWrk.start();
 
                                     msgWorker.addMessage(msg);
@@ -4457,7 +4470,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                         msgWorker.addMessage(msg);
 
                         // Send receipt back.
-                        if (clientMsgWrk == null)
+                        if (clientMsgWrk != null) {
+                            TcpDiscoveryClientAckResponse ack = new TcpDiscoveryClientAckResponse(locNodeId, msg.id());
+
+                            ack.verify(locNodeId);
+
+                            clientMsgWrk.addMessage(ack);
+                        }
+                        else
                             spi.writeToSocket(msg, sock, RES_OK);
                     }
                     catch (IgniteCheckedException e) {
@@ -4567,8 +4587,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 msg.responded(true);
 
-                if (clientMsgWrk != null && clientMsgWrk.getState() == State.NEW)
+                if (clientMsgWrk != null && clientMsgWrk.getState() == State.NEW) {
+                    clientMsgWrk.clientVersion(U.productVersion(msg.node()));
+
                     clientMsgWrk.start();
+                }
 
                 msgWorker.addMessage(msg);
 
@@ -4679,6 +4702,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private final AtomicReference<GridFutureAdapter<Boolean>> pingFut = new AtomicReference<>();
 
+        /** */
+        private IgniteProductVersion clientVer;
+
         /**
          * @param sock Socket.
          * @param clientNodeId Node ID.
@@ -4688,6 +4714,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;
+        }
+
+        /**
+         * @param clientVer Client version.
+         */
+        void clientVersion(IgniteProductVersion clientVer) {
+            this.clientVer = clientVer;
         }
 
         /**
@@ -4709,17 +4742,40 @@ class ServerImpl extends TcpDiscoveryImpl {
             try {
                 assert msg.verified() : msg;
 
-                if (log.isDebugEnabled())
-                    log.debug("Redirecting message to client [sock=" + sock + ", locNodeId="
-                        + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
+                if (msg instanceof TcpDiscoveryClientAckResponse) {
+                    if (clientVer == null) {
+                        ClusterNode node = spi.getNode(clientNodeId);
 
-                try {
-                    prepareNodeAddedMessage(msg, clientNodeId, null, null);
+                        if (node != null)
+                            clientVer = IgniteUtils.productVersion(node);
+                        else if (log.isDebugEnabled())
+                            log.debug("Skip sending message ack to client, fail to get client node " +
+                                "[sock=" + sock + ", locNodeId=" + getLocalNodeId() +
+                                ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
+                    }
 
-                    writeToSocket(sock, msg);
+                    if (clientVer != null &&
+                        clientVer.compareTo(TcpDiscoveryClientAckResponse.CLIENT_ACK_SINCE_VERSION) >= 0) {
+                        if (log.isDebugEnabled())
+                            log.debug("Sending message ack to client [sock=" + sock + ", locNodeId="
+                                + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
+
+                        writeToSocket(sock, msg);
+                    }
                 }
-                finally {
-                    clearNodeAddedMessage(msg);
+                else {
+                    try {
+                        if (log.isDebugEnabled())
+                            log.debug("Redirecting message to client [sock=" + sock + ", locNodeId="
+                                + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
+
+                        prepareNodeAddedMessage(msg, clientNodeId, null, null);
+
+                        writeToSocket(sock, msg);
+                    }
+                    finally {
+                        clearNodeAddedMessage(msg);
+                    }
                 }
             }
             catch (IgniteCheckedException | IOException e) {
@@ -4829,7 +4885,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             if (log.isDebugEnabled())
-                log.debug("Message worker started [locNodeId=" + getLocalNodeId() + ']');
+                log.debug("Message worker started [locNodeId=" + getConfiguredNodeId() + ']');
 
             while (!isInterrupted()) {
                 TcpDiscoveryAbstractMessage msg = queue.poll(2000, TimeUnit.MILLISECONDS);

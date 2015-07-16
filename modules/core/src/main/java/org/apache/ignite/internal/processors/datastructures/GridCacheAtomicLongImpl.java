@@ -57,6 +57,9 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     /** Removed flag.*/
     private volatile boolean rmvd;
 
+    /** Check removed flag. */
+    private boolean rmvCheck;
+
     /** Atomic long key. */
     private GridCacheInternalKey key;
 
@@ -336,7 +339,31 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
      */
     private void checkRemoved() throws IllegalStateException {
         if (rmvd)
-            throw new IllegalStateException("Atomic long was removed from cache: " + name);
+            throw removedError();
+
+        if (rmvCheck) {
+            try {
+                rmvd = atomicView.get(key) == null;
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+
+            rmvCheck = false;
+
+            if (rmvd) {
+                ctx.kernalContext().dataStructures().onRemoved(key, this);
+
+                throw removedError();
+            }
+        }
+    }
+
+    /**
+     * @return Error.
+     */
+    private IllegalStateException removedError() {
+        return new IllegalStateException("Atomic long was removed from cache: " + name);
     }
 
     /** {@inheritDoc} */
@@ -345,8 +372,8 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public void onInvalid(@Nullable Exception err) {
-        // No-op.
+    @Override public void needCheckNotRemoved() {
+        rmvCheck = true;
     }
 
     /** {@inheritDoc} */

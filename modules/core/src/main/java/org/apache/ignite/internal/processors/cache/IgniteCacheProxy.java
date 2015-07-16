@@ -1751,7 +1751,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 assert false;
             }
 
-            @Override public void block() {
+            @Override public void stopped() {
                 // No-op.
             }
 

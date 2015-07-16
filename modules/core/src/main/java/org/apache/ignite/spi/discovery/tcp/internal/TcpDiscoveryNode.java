@@ -441,6 +441,25 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         this.clientRouterNodeId = clientRouterNodeId;
     }
 
+    /**
+     * @param newId New node ID.
+     */
+    public void onClientDisconnected(UUID newId) {
+        id = newId;
+    }
+
+    /**
+     * @return Copy of local node for client reconnect request.
+     */
+    public TcpDiscoveryNode clientReconnectNode() {
+        TcpDiscoveryNode node = new TcpDiscoveryNode(id, addrs, hostNames, discPort, metricsProvider, ver);
+
+        node.attrs = attrs;
+        node.clientRouterNodeId = clientRouterNodeId;
+
+        return node;
+    }
+
     /** {@inheritDoc} */
     @Override public int compareTo(@Nullable TcpDiscoveryNode node) {
         if (node == null)

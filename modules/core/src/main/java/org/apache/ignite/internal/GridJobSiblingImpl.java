@@ -167,7 +167,7 @@ public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
                 }
                 catch (IgniteCheckedException e) {
                     // Avoid stack trace for left nodes.
-                    if (ctx.discovery().node(node.id()) != null && ctx.discovery().pingNode(node.id()))
+                    if (ctx.discovery().node(node.id()) != null && ctx.discovery().pingNodeNoError(node.id()))
                         U.error(ctx.log(GridJobSiblingImpl.class), "Failed to send cancel request to node " +
                             "[nodeId=" + node.id() + ", ses=" + ses + ']', e);
                 }

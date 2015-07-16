@@ -89,7 +89,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         try {
             cctx.kernalContext().gateway().readLock();
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException | IgniteClientDisconnectedException e) {
             throw e;
         }
         catch (RuntimeException | Error e) {

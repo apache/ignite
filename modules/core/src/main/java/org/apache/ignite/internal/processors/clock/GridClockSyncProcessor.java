@@ -57,7 +57,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
     /** Time coordinator thread. */
     private volatile TimeCoordinator timeCoord;
 
-    /** Time delta history. Constructed on coorinator. */
+    /** Time delta history. Constructed on coordinator. */
     private NavigableMap<GridClockDeltaVersion, GridClockDeltaSnapshot> timeSyncHist =
         new GridBoundedConcurrentOrderedMap<>(MAX_TIME_SYNC_HISTORY);
 
@@ -222,7 +222,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                         minNodeOrder = node.order();
                 }
 
-                ClusterNode locNode = ctx.grid().localNode();
+                ClusterNode locNode = ctx.discovery().localNode();
 
                 if (locNode.order() == minNodeOrder) {
                     if (log.isDebugEnabled())
@@ -295,7 +295,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                     ctx.io().send(n, TOPIC_TIME_SYNC, msg, SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
-                    if (ctx.discovery().pingNode(n.id()))
+                    if (ctx.discovery().pingNodeNoError(n.id()))
                         U.error(log, "Failed to send time sync snapshot to remote node (did not leave grid?) " +
                             "[nodeId=" + n.id() + ", msg=" + msg + ", err=" + e.getMessage() + ']');
                     else if (log.isDebugEnabled())

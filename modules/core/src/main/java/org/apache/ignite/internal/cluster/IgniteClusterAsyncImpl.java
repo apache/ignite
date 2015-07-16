@@ -287,6 +287,11 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public IgniteFuture<?> clientReconnectFuture() {
+        return cluster.clientReconnectFuture();
+    }
+
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         cluster = (IgniteClusterImpl)in.readObject();
     }

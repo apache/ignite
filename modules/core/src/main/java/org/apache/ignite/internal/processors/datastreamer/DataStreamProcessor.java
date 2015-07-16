@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.stream.*;
 import org.apache.ignite.thread.*;
@@ -63,13 +64,15 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     public DataStreamProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
-                assert msg instanceof DataStreamerRequest;
+        if (!ctx.clientNode()) {
+            ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
+                @Override public void onMessage(UUID nodeId, Object msg) {
+                    assert msg instanceof DataStreamerRequest;
 
-                processRequest(nodeId, (DataStreamerRequest)msg);
-            }
-        });
+                    processRequest(nodeId, (DataStreamerRequest)msg);
+                }
+            });
+        }
 
         marsh = ctx.config().getMarshaller();
     }
@@ -113,7 +116,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        ctx.io().removeMessageListener(TOPIC_DATASTREAM);
+        if (!ctx.clientNode())
+            ctx.io().removeMessageListener(TOPIC_DATASTREAM);
 
         busyLock.block();
 
@@ -137,6 +141,12 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Stopped data streamer processor.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        for (DataStreamerImpl<?, ?> ldr : ldrs)
+            ldr.onDisconnected(reconnectFut);
     }
 
     /**

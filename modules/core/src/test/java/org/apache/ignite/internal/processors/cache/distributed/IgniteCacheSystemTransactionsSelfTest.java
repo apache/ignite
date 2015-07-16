@@ -75,7 +75,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
             jcache.get("1");
             jcache.put("1", "11");
 
-            GridCacheAdapter<Object, Object> utilityCache = ignite.context().cache().utilityCache();
+            IgniteInternalCache<Object, Object> utilityCache = ignite.context().cache().utilityCache();
 
             utilityCache.getAndPutIfAbsent("2", "2");
 

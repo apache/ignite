@@ -140,32 +140,39 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     @SuppressWarnings("unchecked")
     private IgniteInternalTx txStart0(TransactionConcurrency concurrency, TransactionIsolation isolation,
         long timeout, int txSize, @Nullable GridCacheContext sysCacheCtx) {
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
+        cctx.kernalContext().gateway().readLock();
 
-        if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
-            throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
-                "'txSerializableEnabled' configuration property)");
+        try {
+            TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
 
-        IgniteInternalTx tx = cctx.tm().userTx(sysCacheCtx);
+            if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
+                throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
+                    "'txSerializableEnabled' configuration property)");
 
-        if (tx != null)
-            throw new IllegalStateException("Failed to start new transaction " +
-                "(current thread already has a transaction): " + tx);
+            IgniteInternalTx tx = cctx.tm().userTx(sysCacheCtx);
 
-        tx = cctx.tm().newTx(
-            false,
-            false,
-            sysCacheCtx,
-            concurrency,
-            isolation,
-            timeout,
-            true,
-            txSize
-        );
+            if (tx != null)
+                throw new IllegalStateException("Failed to start new transaction " +
+                    "(current thread already has a transaction): " + tx);
 
-        assert tx != null;
+            tx = cctx.tm().newTx(
+                false,
+                false,
+                sysCacheCtx,
+                concurrency,
+                isolation,
+                timeout,
+                true,
+                txSize
+            );
 
-        return tx;
+            assert tx != null;
+
+            return tx;
+        }
+        finally {
+            cctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
