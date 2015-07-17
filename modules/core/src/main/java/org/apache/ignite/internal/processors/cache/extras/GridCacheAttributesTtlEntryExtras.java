@@ -79,7 +79,7 @@ public class GridCacheAttributesTtlEntryExtras extends GridCacheEntryExtrasAdapt
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return 24;
+        return 16;
     }
 
     /** {@inheritDoc} */

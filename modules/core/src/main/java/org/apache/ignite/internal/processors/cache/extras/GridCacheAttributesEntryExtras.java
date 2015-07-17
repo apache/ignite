@@ -49,7 +49,7 @@ public class GridCacheAttributesEntryExtras extends GridCacheEntryExtrasAdapter 
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return 8;
+        return 0;
     }
 
     /** {@inheritDoc} */

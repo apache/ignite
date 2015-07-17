@@ -87,7 +87,7 @@ public class GridCacheAttributesMvccObsoleteEntryExtras extends GridCacheEntryEx
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return 24;
+        return 16;
     }
 
     /** {@inheritDoc} */

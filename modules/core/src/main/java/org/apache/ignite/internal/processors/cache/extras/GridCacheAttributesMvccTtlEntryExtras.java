@@ -98,7 +98,7 @@ public class GridCacheAttributesMvccTtlEntryExtras extends GridCacheEntryExtrasA
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return 32;
+        return 24;
     }
 
     /** {@inheritDoc} */
