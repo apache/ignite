@@ -84,8 +84,7 @@ public class IgniteFairAffinityDynamicCacheSelfTest extends GridCommonAbstractTe
             cache.put(i, i);
 
         IgniteInternalFuture<Object> destFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 ignite(0).destroyCache(cache.getName());
 
                 return null;

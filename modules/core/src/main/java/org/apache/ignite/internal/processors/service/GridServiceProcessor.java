@@ -124,7 +124,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         cache = ctx.cache().utilityCache();
 
-        ctx.event().addLocalEventListener(topLsnr, EVTS_DISCOVERY);
+        if (!ctx.clientNode())
+            ctx.event().addLocalEventListener(topLsnr, EVTS_DISCOVERY);
 
         try {
             if (ctx.deploy().enabled())
@@ -165,7 +166,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         busyLock.block();
 
-        ctx.event().removeLocalEventListener(topLsnr);
+        if (!ctx.clientNode())
+            ctx.event().removeLocalEventListener(topLsnr);
 
         if (cfgQryId != null)
             cache.context().continuousQueries().cancelInternalQuery(cfgQryId);
@@ -207,6 +209,27 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Stopped service processor.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        for (Map.Entry<String, GridServiceDeploymentFuture> e : depFuts.entrySet()) {
+            GridServiceDeploymentFuture fut = e.getValue();
+
+            fut.onDone(new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
+                "Failed to deploy service, client node disconnected."));
+
+            depFuts.remove(e.getKey(), fut);
+        }
+
+        for (Map.Entry<String, GridFutureAdapter<?>> e : undepFuts.entrySet()) {
+            GridFutureAdapter fut = e.getValue();
+
+            fut.onDone(new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
+                "Failed to undeploy service, client node disconnected."));
+
+            undepFuts.remove(e.getKey(), fut);
+        }
     }
 
     /**
@@ -326,6 +349,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             }
 
             return old;
+        }
+
+        if (ctx.clientDisconnected()) {
+            fut.onDone(new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
+                "Failed to deploy service, client node disconnected."));
+
+            depFuts.remove(cfg.getName(), fut);
         }
 
         while (true) {
@@ -646,10 +676,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     }
                 }
                 else {
-                    Collection<ClusterNode> nodes =
-                        assigns.nodeFilter() == null ?
-                            ctx.discovery().nodes(topVer) :
-                            F.view(ctx.discovery().nodes(topVer), assigns.nodeFilter());
+                    Collection<ClusterNode> nodes = assigns.nodeFilter() == null ?
+                        ctx.discovery().nodes(topVer) :
+                        F.view(ctx.discovery().nodes(topVer), assigns.nodeFilter());
 
                     if (!nodes.isEmpty()) {
                         int size = nodes.size();
@@ -1019,7 +1048,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                     cache.getAndRemove(key);
                                 }
                                 catch (IgniteCheckedException ex) {
-                                    log.error("Failed to remove assignments for undeployed service: " + name, ex);
+                                    U.error(log, "Failed to remove assignments for undeployed service: " + name, ex);
                                 }
                             }
                         }
@@ -1164,7 +1193,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 }
                             }
                             catch (IgniteCheckedException ex) {
-                                log.error("Failed to clean up zombie assignments for service: " + name, ex);
+                                U.error(log, "Failed to clean up zombie assignments for service: " + name, ex);
                             }
                         }
                     }

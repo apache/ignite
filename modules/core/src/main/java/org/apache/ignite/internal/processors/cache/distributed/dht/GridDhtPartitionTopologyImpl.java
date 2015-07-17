@@ -94,6 +94,30 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /**
+     *
+     */
+    public void onReconnected() {
+        lock.writeLock().lock();
+
+        try {
+            node2part = null;
+
+            part2node = new HashMap<>();
+
+            lastExchangeId = null;
+
+            updateSeq.set(1);
+
+            topReadyFut = null;
+
+            topVer = AffinityTopologyVersion.NONE;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
      * @return Full map string representation.
      */
     @SuppressWarnings( {"ConstantConditions"})
@@ -620,7 +644,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         lock.readLock().lock();
 
         try {
-            assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer=" + topVer +
+            assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer1=" + topVer +
+                ", topVer2=" + this.topVer +
+                ", cache=" + cctx.name() +
                 ", node2part=" + node2part + ']';
 
             Collection<ClusterNode> nodes = null;

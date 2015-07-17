@@ -56,6 +56,11 @@ public interface GridCachePreloader {
     public void onKernalStop();
 
     /**
+     * Client reconnected callback.
+     */
+    public void onReconnected();
+
+    /**
      * Callback by exchange manager when initial partition exchange is complete.
      *
      * @param err Error, if any happened on initial exchange.

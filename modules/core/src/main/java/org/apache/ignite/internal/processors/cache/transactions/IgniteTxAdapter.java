@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -136,7 +135,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     private boolean sys;
 
     /** IO policy. */
-    private GridIoPolicy plc;
+    private byte plc;
 
     /** */
     protected boolean onePhaseCommit;
@@ -238,7 +237,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         boolean implicitSingle,
         boolean loc,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -296,7 +295,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         GridCacheVersion startVer,
         long threadId,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -399,7 +398,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridIoPolicy ioPolicy() {
+    @Override public byte ioPolicy() {
         return plc;
     }
 
@@ -1716,7 +1715,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
-        @Override public GridIoPolicy ioPolicy() {
+        @Override public byte ioPolicy() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

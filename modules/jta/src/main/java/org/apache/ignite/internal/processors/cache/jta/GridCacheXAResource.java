@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.jta;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.transactions.*;
@@ -41,9 +41,6 @@ public final class GridCacheXAResource implements XAResource {
     /** */
     private static final Xid[] NO_XID = new Xid[] {};
 
-    /** Context. */
-    private GridCacheContext cctx;
-
     /** Cache transaction. */
     private IgniteInternalTx cacheTx;
 
@@ -52,17 +49,16 @@ public final class GridCacheXAResource implements XAResource {
 
     /**
      * @param cacheTx Cache jta.
-     * @param cctx Cache context.
+     * @param ctx Kernal context.
      */
-    public GridCacheXAResource(IgniteInternalTx cacheTx, GridCacheContext cctx) {
+    public GridCacheXAResource(IgniteInternalTx cacheTx, GridKernalContext ctx) {
         assert cacheTx != null;
-        assert cctx != null;
+        assert ctx != null;
 
-        this.cctx = cctx;
         this.cacheTx = cacheTx;
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridCacheXAResource.class);
+            log = U.logger(ctx, logRef, GridCacheXAResource.class);
     }
 
     /** {@inheritDoc} */
@@ -209,7 +205,14 @@ public final class GridCacheXAResource implements XAResource {
 
     /** {@inheritDoc} */
     @Override public int getTransactionTimeout() {
-        return (int)cacheTx.timeout();
+        return (int)(cacheTx.timeout() / 1000);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean setTransactionTimeout(int i) {
+        cacheTx.timeout(i * 1000);
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -217,19 +220,12 @@ public final class GridCacheXAResource implements XAResource {
         if (xar == this)
             return true;
 
-        if  (!(xar instanceof GridCacheXAResource))
+        if (!(xar instanceof GridCacheXAResource))
             return false;
 
         GridCacheXAResource other = (GridCacheXAResource)xar;
 
-        return cctx == other.cctx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean setTransactionTimeout(int i) {
-        cacheTx.timeout(i);
-
-        return true;
+        return cacheTx == other.cacheTx;
     }
 
     /**

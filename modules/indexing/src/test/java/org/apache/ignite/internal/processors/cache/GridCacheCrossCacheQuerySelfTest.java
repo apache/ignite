@@ -123,7 +123,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 //        for (Map.Entry<Integer, FactPurchase> e : qx.createSqlQuery(FactPurchase.class, "1 = 1").execute().get())
 //            X.println("___ "  + e);
 
-        GridCacheTwoStepQuery q = new GridCacheTwoStepQuery("select cast(sum(x) as long) from _cnts_ where ? = ?", 1, 1);
+        GridCacheTwoStepQuery q = new GridCacheTwoStepQuery(null,
+            "select cast(sum(x) as long) from _cnts_ where ? = ?", 1, 1);
 
         q.addMapQuery("_cnts_", "select count(*) x from \"partitioned\".FactPurchase where ? = ?", 2, 2);
 

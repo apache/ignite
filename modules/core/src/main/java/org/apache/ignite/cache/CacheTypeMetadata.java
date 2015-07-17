@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache;
 
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -25,7 +26,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Type metadata.
+ * Cache type metadata need for configuration of indexes or automatic persistence.
  */
 public class CacheTypeMetadata implements Serializable {
     /** */
@@ -43,23 +44,23 @@ public class CacheTypeMetadata implements Serializable {
     /** Value class used to store value in cache. */
     private String valType;
 
-    /** Key fields. */
+    /** Optional persistent key fields (needed only if {@link CacheJdbcPojoStore} is used). */
     @GridToStringInclude
     private Collection<CacheTypeFieldMetadata> keyFields;
 
-    /** Value fields . */
+    /** Optional persistent value fields (needed only if {@link CacheJdbcPojoStore} is used). */
     @GridToStringInclude
     private Collection<CacheTypeFieldMetadata> valFields;
 
-    /** Fields to be queried, in addition to indexed fields. */
+    /** Field name-to-type map to be queried, in addition to indexed fields. */
     @GridToStringInclude
     private Map<String, Class<?>> qryFlds;
 
-    /** Fields to index in ascending order. */
+    /** Field name-to-type map to index in ascending order. */
     @GridToStringInclude
     private Map<String, Class<?>> ascFlds;
 
-    /** Fields to index in descending order. */
+    /** Field name-to-type map to index in descending order. */
     @GridToStringInclude
     private Map<String, Class<?>> descFlds;
 
@@ -208,90 +209,90 @@ public class CacheTypeMetadata implements Serializable {
     }
 
     /**
-     * Gets key fields.
+     * Gets optional persistent key fields (needed only if {@link CacheJdbcPojoStore} is used).
      *
-     * @return Key fields.
+     * @return Persistent key fields.
      */
     public Collection<CacheTypeFieldMetadata> getKeyFields() {
         return keyFields;
     }
 
     /**
-     * Sets key fields.
+     * Sets optional persistent key fields (needed only if {@link CacheJdbcPojoStore} is used).
      *
-     * @param keyFields New key fields.
+     * @param keyFields Persistent key fields.
      */
     public void setKeyFields(Collection<CacheTypeFieldMetadata> keyFields) {
         this.keyFields = keyFields;
     }
 
     /**
-     * Gets value fields.
+     * Gets optional persistent value fields (needed only if {@link CacheJdbcPojoStore} is used).
      *
-     * @return Value fields.
+     * @return Persistent value fields.
      */
     public Collection<CacheTypeFieldMetadata> getValueFields() {
         return valFields;
     }
 
     /**
-     * Sets value fields.
+     * Sets optional persistent value fields (needed only if {@link CacheJdbcPojoStore} is used).
      *
-     * @param valFields New value fields.
+     * @param valFields Persistent value fields.
      */
     public void setValueFields(Collection<CacheTypeFieldMetadata> valFields) {
         this.valFields = valFields;
     }
 
     /**
-     * Gets query-enabled fields.
+     * Gets name-to-type map for query-enabled fields.
      *
-     * @return Collection of fields available for query.
+     * @return Name-to-type map for query-enabled fields.
      */
     public Map<String, Class<?>> getQueryFields() {
         return qryFlds;
     }
 
     /**
-     * Sets query fields map.
+     * Sets name-to-type map for query-enabled fields.
      *
-     * @param qryFlds Query fields.
+     * @param qryFlds Name-to-type map for query-enabled fields.
      */
     public void setQueryFields(Map<String, Class<?>> qryFlds) {
         this.qryFlds = qryFlds;
     }
 
     /**
-     * Gets ascending-indexed fields.
+     * Gets name-to-type map for ascending-indexed fields.
      *
-     * @return Map of ascending-indexed fields.
+     * @return Name-to-type map for ascending-indexed fields.
      */
     public Map<String, Class<?>> getAscendingFields() {
         return ascFlds;
     }
 
     /**
-     * Sets ascending-indexed fields.
+     * Sets name-to-type map for ascending-indexed fields.
      *
-     * @param ascFlds Map of ascending-indexed fields.
+     * @param ascFlds Name-to-type map for ascending-indexed fields.
      */
     public void setAscendingFields(Map<String, Class<?>> ascFlds) {
         this.ascFlds = ascFlds;
     }
 
     /**
-     * Gets descending-indexed fields.
+     * Gets name-to-type map for descending-indexed fields.
      *
-     * @return Map of descending-indexed fields.
+     * @return Name-to-type map of descending-indexed fields.
      */
     public Map<String, Class<?>> getDescendingFields() {
         return descFlds;
     }
 
     /**
-     * Sets descending-indexed fields.
+     * Sets name-to-type map for descending-indexed fields.
      *
-     * @param descFlds Map of descending-indexed fields.
+     * @param descFlds Name-to-type map of descending-indexed fields.
      */
     public void setDescendingFields(Map<String, Class<?>> descFlds) {
         this.descFlds = descFlds;

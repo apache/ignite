@@ -52,6 +52,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     @GridToStringExclude
     private ConcurrentMap nodeLoc;
 
+    /** Client reconnect future. */
+    private IgniteFuture<?> reconnecFut;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -119,6 +122,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
         try {
             return ctx.discovery().pingNode(nodeId);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -499,6 +505,18 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      */
     public void clearNodeMap() {
         nodeLoc.clear();
+    }
+
+    /**
+     * @param reconnecFut Reconnect future.
+     */
+    public void clientReconnectFuture(IgniteFuture<?> reconnecFut) {
+        this.reconnecFut = reconnecFut;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteFuture<?> clientReconnectFuture() {
+        return reconnecFut;
     }
 
     /** {@inheritDoc} */

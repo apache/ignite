@@ -94,13 +94,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
 
         comm.start();
 
-        locStore = new GridDeploymentLocalStore(getSpi(), ctx, comm);
-        ldrStore = new GridDeploymentPerLoaderStore(getSpi(), ctx, comm);
-        verStore = new GridDeploymentPerVersionStore(getSpi(), ctx, comm);
-
-        locStore.start();
-        ldrStore.start();
-        verStore.start();
+        startStores();
 
         if (log.isDebugEnabled()) {
             log.debug("Local deployment: " + locDep);
@@ -110,17 +104,24 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     }
 
     /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        storesOnKernalStop();
+
+        storesStop();
+
+        startStores();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        storesOnKernalStart();
+    }
+
+    /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         GridProtocolHandler.deregisterDeploymentManager();
 
-        if (verStore != null)
-            verStore.stop();
-
-        if (ldrStore != null)
-            ldrStore.stop();
-
-        if (locStore != null)
-            locStore.stop();
+        storesStop();
 
         if (comm != null)
             comm.stop();
@@ -135,21 +136,12 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart0() throws IgniteCheckedException {
-        locStore.onKernalStart();
-        ldrStore.onKernalStart();
-        verStore.onKernalStart();
+        storesOnKernalStart();
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop0(boolean cancel) {
-        if (verStore != null)
-            verStore.onKernalStop();
-
-        if (ldrStore != null)
-            ldrStore.onKernalStop();
-
-        if (locStore != null)
-            locStore.onKernalStop();
+        storesOnKernalStop();
     }
 
     /** {@inheritDoc} */
@@ -545,6 +537,57 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      */
     public boolean isGlobalLoader(ClassLoader ldr) {
         return ldr instanceof GridDeploymentClassLoader;
+    }
+
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void startStores() throws IgniteCheckedException {
+        locStore = new GridDeploymentLocalStore(getSpi(), ctx, comm);
+        ldrStore = new GridDeploymentPerLoaderStore(getSpi(), ctx, comm);
+        verStore = new GridDeploymentPerVersionStore(getSpi(), ctx, comm);
+
+        locStore.start();
+        ldrStore.start();
+        verStore.start();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void storesOnKernalStart() throws IgniteCheckedException {
+        locStore.onKernalStart();
+        ldrStore.onKernalStart();
+        verStore.onKernalStart();
+    }
+
+    /**
+     *
+     */
+    private void storesOnKernalStop() {
+        if (verStore != null)
+            verStore.onKernalStop();
+
+        if (ldrStore != null)
+            ldrStore.onKernalStop();
+
+        if (locStore != null)
+            locStore.onKernalStop();
+    }
+
+    /**
+     *
+     */
+    private void storesStop() {
+        if (verStore != null)
+            verStore.stop();
+
+        if (ldrStore != null)
+            ldrStore.stop();
+
+        if (locStore != null)
+            locStore.stop();
     }
 
     /**

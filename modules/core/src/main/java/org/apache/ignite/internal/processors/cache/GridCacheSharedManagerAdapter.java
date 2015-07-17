@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.util.concurrent.atomic.*;
 
@@ -34,6 +35,9 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
 
     /** Starting flag. */
     private final AtomicBoolean starting = new AtomicBoolean(false);
+
+    /** */
+    private final AtomicBoolean stop = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
     @Override public final void start(GridCacheSharedContext<K, V> cctx) throws IgniteCheckedException {
@@ -75,7 +79,7 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
 
     /** {@inheritDoc} */
     @Override public final void stop(boolean cancel) {
-        if (!starting.get())
+        if (!starting.get() || !stop.compareAndSet(false, true))
             // Ignoring attempt to stop manager that has never been started.
             return;
 
@@ -93,10 +97,10 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     }
 
     /** {@inheritDoc} */
-    @Override public final void onKernalStart() throws IgniteCheckedException {
-        onKernalStart0();
+    @Override public final void onKernalStart(boolean reconnect) throws IgniteCheckedException {
+        onKernalStart0(reconnect);
 
-        if (log != null && log.isDebugEnabled())
+        if (!reconnect && log != null && log.isDebugEnabled())
             log.debug(kernalStartInfo());
     }
 
@@ -113,9 +117,10 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     }
 
     /**
+     * @param reconnect {@code True} if manager restarted after client reconnect.
      * @throws IgniteCheckedException If failed.
      */
-    protected void onKernalStart0() throws IgniteCheckedException {
+    protected void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -123,6 +128,11 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
      * @param cancel Cancel flag.
      */
     protected void onKernalStop0(boolean cancel) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         // No-op.
     }
 

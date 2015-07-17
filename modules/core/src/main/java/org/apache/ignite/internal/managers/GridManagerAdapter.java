@@ -166,6 +166,18 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         // No-op.
     }
 
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        for (T t : spis)
+            t.onClientDisconnected(reconnectFut);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        for (T t : spis)
+            t.onClientReconnected(clusterRestarted);
+    }
+
     /**
      * Starts wrapped SPI.
      *
@@ -318,7 +330,12 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     @Override public boolean pingNode(UUID nodeId) {
                         A.notNull(nodeId, "nodeId");
 
-                        return ctx.discovery().pingNode(nodeId);
+                        try {
+                            return ctx.discovery().pingNode(nodeId);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw U.convertException(e);
+                        }
                     }
 
                     @Override public void send(ClusterNode node, Serializable msg, String topic)
@@ -480,8 +497,12 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return ctx.io().messageFactory();
                     }
 
-                    @Override public boolean tryFailNode(UUID nodeId) {
-                        return ctx.discovery().tryFailNode(nodeId);
+                    @Override public boolean tryFailNode(UUID nodeId, @Nullable String warning) {
+                        return ctx.discovery().tryFailNode(nodeId, warning);
+                    }
+
+                    @Override public void failNode(UUID nodeId, @Nullable String warning) {
+                        ctx.discovery().failNode(nodeId, warning);
                     }
 
                     @Override public void addTimeoutObject(IgniteSpiTimeoutObject obj) {

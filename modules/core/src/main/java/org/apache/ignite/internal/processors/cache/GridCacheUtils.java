@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -387,6 +388,15 @@ public class GridCacheUtils {
         assert swapSpaceName != null;
 
         return "gg-swap-cache-dflt".equals(swapSpaceName) ? null : swapSpaceName.substring("gg-swap-cache-".length());
+    }
+
+    /**
+     * Gets public cache name substituting null name by {@code 'default'}.
+     *
+     * @return Public cache name substituting null name by {@code 'default'}.
+     */
+    public static String namexx(@Nullable String name) {
+        return name == null ? "default" : name;
     }
 
     /**
@@ -1549,6 +1559,17 @@ public class GridCacheUtils {
      * @return CacheException runtime exception, never null.
      */
     @NotNull public static RuntimeException convertToCacheException(IgniteCheckedException e) {
+        IgniteClientDisconnectedCheckedException disconnectedErr =
+            e instanceof IgniteClientDisconnectedCheckedException ?
+            (IgniteClientDisconnectedCheckedException)e
+            : e.getCause(IgniteClientDisconnectedCheckedException.class);
+
+        if (disconnectedErr != null) {
+            assert disconnectedErr.reconnectFuture() != null : disconnectedErr;
+
+            e = disconnectedErr;
+        }
+
         if (e.hasCause(CacheWriterException.class))
             return new CacheWriterException(U.convertExceptionNoWrap(e));
 
@@ -1679,6 +1700,47 @@ public class GridCacheUtils {
 
             ctx.resource().cleanupGeneric(lsnr);
         }
+    }
+
+    /**
+     * @param c Closure to retry.
+     * @param <S> Closure type.
+     * @return Wrapped closure.
+     */
+    public static <S> Callable<S> retryTopologySafe(final Callable<S> c ) {
+        return new Callable<S>() {
+            @Override public S call() throws Exception {
+                int retries = GridCacheAdapter.MAX_RETRIES;
+
+                IgniteCheckedException err = null;
+
+                for (int i = 0; i < retries; i++) {
+                    try {
+                        return c.call();
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (X.hasCause(e, ClusterTopologyCheckedException.class) ||
+                            X.hasCause(e, IgniteTxRollbackCheckedException.class) ||
+                            X.hasCause(e, CachePartialUpdateCheckedException.class)) {
+                            if (i < retries - 1) {
+                                err = e;
+
+                                U.sleep(1);
+
+                                continue;
+                            }
+
+                            throw e;
+                        }
+                        else
+                            throw e;
+                    }
+                }
+
+                // Should never happen.
+                throw err;
+            }
+        };
     }
 
     /**

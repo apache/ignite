@@ -328,7 +328,7 @@ class VisorCacheCommand {
                     sumT += (
                         mkCacheName(ad.name()),
                         ad.mode(),
-                        ad.nodes.map(nid8),
+                        ad.nodes.size(),
                         (
                             "min: " + ad.minimumSize,
                             "avg: " + formatDouble(ad.averageSize),
@@ -619,9 +619,9 @@ class VisorCacheCommand {
 
         val sumT = VisorTextTable()
 
-        sumT #= ("#", "Name(@)", "Mode", "Nodes", "Size")
+        sumT #= ("#", "Name(@)", "Mode", "Size")
 
-        (0 until sortedAggrData.size) foreach (i => {
+        sortedAggrData.indices.foreach(i => {
             val ad = sortedAggrData(i)
 
             // Add cache host as visor variable.
@@ -631,7 +631,6 @@ class VisorCacheCommand {
                 i,
                 mkCacheName(ad.name()),
                 ad.mode(),
-                ad.nodes,
                 (
                     "min: " + ad.minimumSize,
                     "avg: " + formatDouble(ad.averageSize),
@@ -833,8 +832,6 @@ object VisorCacheCommand {
         cacheT += ("Swap Enabled", bool2Str(cfg.swapEnabled()))
         cacheT += ("Invalidate", bool2Str(cfg.invalidate()))
         cacheT += ("Start Size", cfg.startSize())
-
-        cacheT += ("Transaction Manager Lookup", safe(cfg.transactionManagerLookupClassName()))
 
         cacheT += ("Affinity Function", safe(affinityCfg.function()))
         cacheT += ("Affinity Backups", affinityCfg.partitionedBackups())

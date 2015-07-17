@@ -30,28 +30,28 @@ public class IgniteCacheTransactionalStopBusySelfTest extends IgniteCacheAbstrac
 
     /** {@inheritDoc} */
     @Override public void testPut() throws Exception {
-        bannedMessage.set(GridNearTxPrepareRequest.class);
+        bannedMsg.set(GridNearTxPrepareRequest.class);
 
         super.testPut();
     }
 
     /** {@inheritDoc} */
     @Override public void testPutBatch() throws Exception {
-        bannedMessage.set(GridNearTxPrepareRequest.class);
+        bannedMsg.set(GridNearTxPrepareRequest.class);
 
         super.testPut();
     }
 
     /** {@inheritDoc} */
     @Override public void testPutAsync() throws Exception {
-        bannedMessage.set(GridNearTxPrepareRequest.class);
+        bannedMsg.set(GridNearTxPrepareRequest.class);
 
         super.testPut();
     }
 
     /** {@inheritDoc} */
     @Override public void testRemove() throws Exception {
-        bannedMessage.set(GridNearTxPrepareRequest.class);
+        bannedMsg.set(GridNearTxPrepareRequest.class);
 
         super.testPut();
     }

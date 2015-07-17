@@ -104,9 +104,9 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
             assert backupNode != otherNode;
             assert priNode != otherNode;
 
-            Ignite priIgnite = G.ignite(priNode.id());
-            Ignite backupIgnite = G.ignite(backupNode.id());
-            Ignite otherIgnite = G.ignite(otherNode.id());
+            final Ignite priIgnite = grid(priNode);
+            Ignite backupIgnite = grid(backupNode);
+            Ignite otherIgnite = grid(otherNode);
 
             List<Ignite> ignites = F.asList(otherIgnite, priIgnite, backupIgnite);
 
@@ -152,8 +152,8 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
                 tx.close();
             }
 
-            G.stop(priIgnite.name(), true);
-            G.stop(backupIgnite.name(), true);
+            stopGrid(priIgnite.name(), true);
+            stopGrid(backupIgnite.name(), true);
 
             Ignite newIgnite = startGrid(GRID_CNT);
 

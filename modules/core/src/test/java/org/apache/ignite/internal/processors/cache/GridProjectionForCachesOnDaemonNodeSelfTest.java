@@ -88,7 +88,7 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ignite.cache(null).close();
+        ignite.cache(null).destroy();
     }
 
     /**

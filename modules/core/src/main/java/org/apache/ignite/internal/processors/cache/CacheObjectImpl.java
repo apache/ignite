@@ -77,7 +77,6 @@ public class CacheObjectImpl extends CacheObjectAdapter {
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to unmarshall object.", e);
         }
-
     }
 
     /** {@inheritDoc} */
