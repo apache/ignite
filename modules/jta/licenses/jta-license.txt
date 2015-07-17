@@ -1,0 +1,2 @@
+This product bundles Java Transaction API, which is available under it's own license.
+See http://download.oracle.com/otndocs/jcp/jta-1.1-classes-oth-JSpec/jta-1.1-classes-oth-JSpec-license.html for details.

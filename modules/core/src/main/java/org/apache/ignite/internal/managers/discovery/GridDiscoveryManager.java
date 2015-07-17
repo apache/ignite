@@ -188,6 +188,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Received custom messages history. */
     private final ArrayDeque<IgniteUuid> rcvdCustomMsgs = new ArrayDeque<>();
 
+    /** */
+    private final CountDownLatch startLatch = new CountDownLatch(1);
+
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
@@ -334,7 +337,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         isLocDaemon = ctx.isDaemon();
 
-        hasRslvrs = !F.isEmpty(ctx.config().getSegmentationResolvers());
+        hasRslvrs = !ctx.config().isClientMode() && !F.isEmpty(ctx.config().getSegmentationResolvers());
 
         segChkFreq = ctx.config().getSegmentCheckFrequency();
 
@@ -377,14 +380,24 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         spi.setListener(new DiscoverySpiListener() {
+            private long gridStartTime;
+
             @Override public void onDiscovery(
-                int type,
-                long topVer,
-                ClusterNode node,
-                Collection<ClusterNode> topSnapshot,
-                Map<Long, Collection<ClusterNode>> snapshots,
+                final int type,
+                final long topVer,
+                final ClusterNode node,
+                final Collection<ClusterNode> topSnapshot,
+                final Map<Long, Collection<ClusterNode>> snapshots,
                 @Nullable DiscoverySpiCustomMessage spiCustomMsg
             ) {
+                if (type == EVT_NODE_JOINED && node.isLocal() && ctx.clientDisconnected()) {
+                    discoCacheHist.clear();
+
+                    topHist.clear();
+
+                    topSnap.set(new Snapshot(AffinityTopologyVersion.ZERO, null));
+                }
+
                 DiscoveryCustomMessage customMsg = spiCustomMsg == null ? null
                     : ((CustomMessageWrapper)spiCustomMsg).delegate();
 
@@ -412,7 +425,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         verChanged = false;
                 }
                 else {
-                    if (type != EVT_NODE_SEGMENTED) {
+                    if (type != EVT_NODE_SEGMENTED &&
+                        type != EVT_CLIENT_NODE_DISCONNECTED &&
+                        type != EVT_CLIENT_NODE_RECONNECTED) {
                         minorTopVer = 0;
 
                         verChanged = true;
@@ -421,7 +436,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         verChanged = false;
                 }
 
-                AffinityTopologyVersion nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
+                final AffinityTopologyVersion nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
                 if (type == EVT_NODE_FAILED || type == EVT_NODE_LEFT) {
                     for (DiscoCache c : discoCacheHist.values())
@@ -464,6 +479,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 // If this is a local join event, just save it and do not notify listeners.
                 if (type == EVT_NODE_JOINED && node.id().equals(locNode.id())) {
+                    if (gridStartTime == 0)
+                        gridStartTime = getSpi().getGridStartTime();
+
+                    updateTopologyVersionIfGreater(new AffinityTopologyVersion(locNode.order()),
+                        new DiscoCache(localNode(), getSpi().getRemoteNodes()));
+
+                    startLatch.countDown();
+
                     DiscoveryEvent discoEvt = new DiscoveryEvent();
 
                     discoEvt.node(ctx.discovery().localNode());
@@ -478,6 +501,46 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         }, daemonFilter)));
 
                     locJoinEvt.onDone(discoEvt);
+
+                    return;
+                }
+                else if (type == EVT_CLIENT_NODE_DISCONNECTED) {
+                    /*
+                     * Notify all components from discovery thread to avoid concurrent
+                     * reconnect while disconnect handling is in progress.
+                     */
+
+                    assert locNode.isClient() : locNode;
+                    assert node.isClient() : node;
+
+                    ((IgniteKernal)ctx.grid()).onDisconnected();
+
+                    locJoinEvt = new GridFutureAdapter<>();
+
+                    registeredCaches.clear();
+                }
+                else if (type == EVT_CLIENT_NODE_RECONNECTED) {
+                    assert locNode.isClient() : locNode;
+                    assert node.isClient() : node;
+
+                    boolean clusterRestarted = gridStartTime != getSpi().getGridStartTime();
+
+                    gridStartTime = getSpi().getGridStartTime();
+
+                    ((IgniteKernal)ctx.grid()).onReconnected(clusterRestarted);
+
+                    ctx.cluster().clientReconnectFuture().listen(new CI1<IgniteFuture<?>>() {
+                        @Override public void apply(IgniteFuture<?> fut) {
+                            try {
+                                fut.get();
+
+                                discoWrk.addEvent(type, nextTopVer, node, topSnapshot, null);
+                            }
+                            catch (IgniteException ignore) {
+                                // No-op.
+                            }
+                        }
+                    });
 
                     return;
                 }
@@ -527,6 +590,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         startSpi();
 
+        try {
+            U.await(startLatch);
+        }
+        catch (IgniteInterruptedException e) {
+            throw new IgniteCheckedException("Failed to start discovery manager (thread has been interrupted).", e);
+        }
+
         // Start segment check worker only if frequency is greater than 0.
         if (hasRslvrs && segChkFreq > 0) {
             segChkWrk = new SegmentCheckWorker();
@@ -537,9 +607,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         locNode = spi.getLocalNode();
-
-        updateTopologyVersionIfGreater(new AffinityTopologyVersion(locNode.order()), new DiscoCache(localNode(),
-            getSpi().getRemoteNodes()));
 
         checkAttributes(discoCache().remoteNodes());
 
@@ -953,7 +1020,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Collection<ClusterNode> rmtNodes = discoCache.remoteNodes();
 
-        Collection<ClusterNode> serverNodes = F.view(discoCache.allNodes(), F.not(clientFilter));
+        Collection<ClusterNode> srvNodes = F.view(discoCache.allNodes(), F.not(clientFilter));
 
         Collection<ClusterNode> clientNodes = F.view(discoCache.allNodes(), clientFilter);
 
@@ -973,7 +1040,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         double heap = U.heapSize(allNodes, 2);
 
         if (log.isQuiet())
-            U.quiet(false, topologySnapshotMessage(serverNodes.size(), clientNodes.size(), totalCpus, heap));
+            U.quiet(false, topologySnapshotMessage(srvNodes.size(), clientNodes.size(), totalCpus, heap));
 
         if (log.isDebugEnabled()) {
             String dbg = "";
@@ -983,7 +1050,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ">>> " + PREFIX + "." + U.nl() +
                 ">>> +----------------+" + U.nl() +
                 ">>> Grid name: " + (ctx.gridName() == null ? "default" : ctx.gridName()) + U.nl() +
-                ">>> Number of server nodes: " + serverNodes.size() + U.nl() +
+                ">>> Number of server nodes: " + srvNodes.size() + U.nl() +
                 ">>> Number of client nodes: " + clientNodes.size() + U.nl() +
                 (discoOrdered ? ">>> Topology version: " + topVer + U.nl() : "") +
                 ">>> Topology hash: 0x" + Long.toHexString(hash).toUpperCase() + U.nl();
@@ -1017,20 +1084,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             log.debug(dbg);
         }
         else if (log.isInfoEnabled())
-            log.info(topologySnapshotMessage(serverNodes.size(), clientNodes.size(), totalCpus, heap));
+            log.info(topologySnapshotMessage(srvNodes.size(), clientNodes.size(), totalCpus, heap));
     }
 
     /**
-     * @param serverNodesNum Server nodes number.
+     * @param srvNodesNum Server nodes number.
      * @param clientNodesNum Client nodes number.
      * @param totalCpus Total cpu number.
      * @param heap Heap size.
      * @return Topology snapshot message.
      */
-    private String topologySnapshotMessage(int serverNodesNum, int clientNodesNum, int totalCpus, double heap) {
+    private String topologySnapshotMessage(int srvNodesNum, int clientNodesNum, int totalCpus, double heap) {
         return PREFIX + " [" +
             (discoOrdered ? "ver=" + topSnap.get().topVer.topologyVersion() + ", " : "") +
-            "server nodes=" + serverNodesNum +
+            "server nodes=" + srvNodesNum +
             ", client nodes=" + clientNodesNum +
             ", CPUs=" + totalCpus +
             ", heap=" + heap + "GB" +
@@ -1039,6 +1106,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop0(boolean cancel) {
+        startLatch.countDown();
+
         // Stop segment check worker.
         if (segChkWrk != null) {
             segChkWrk.cancel();
@@ -1118,8 +1187,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * @param nodeId ID of the node.
      * @return {@code True} if ping succeeded.
+     * @throws IgniteClientDisconnectedCheckedException If ping failed.
      */
-    public boolean pingNode(UUID nodeId) {
+    public boolean pingNode(UUID nodeId) throws IgniteClientDisconnectedCheckedException {
         assert nodeId != null;
 
         if (!busyLock.enterBusy())
@@ -1127,6 +1197,36 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         try {
             return getSpi().pingNode(nodeId);
+        }
+        catch (IgniteException e) {
+            if (e.hasCause(IgniteClientDisconnectedCheckedException.class)) {
+                IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();
+
+                throw new IgniteClientDisconnectedCheckedException(reconnectFut, e.getMessage());
+            }
+
+            throw e;
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param nodeId ID of the node.
+     * @return {@code True} if ping succeeded.
+     */
+    public boolean pingNodeNoError(UUID nodeId) {
+        assert nodeId != null;
+
+        if (!busyLock.enterBusy())
+            return false;
+
+        try {
+            return getSpi().pingNode(nodeId);
+        }
+        catch (IgniteException e) {
+            return false;
         }
         finally {
             busyLock.leaveBusy();
@@ -1211,16 +1311,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return Discovery collection cache.
      */
     public DiscoCache discoCache() {
-        Snapshot cur;
+        Snapshot cur = topSnap.get();
 
-        while ((cur = topSnap.get()) == null) {
-            // Wrap the SPI collection to avoid possible floating collection.
-            if (topSnap.compareAndSet(null, cur = new Snapshot(
-                AffinityTopologyVersion.ZERO,
-                new DiscoCache(localNode(), getSpi().getRemoteNodes())))) {
-                return cur.discoCache;
-            }
-        }
+        assert cur != null;
 
         return cur.discoCache;
     }
@@ -1510,9 +1603,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /**
      * @param msg Custom message.
+     * @throws IgniteCheckedException If failed.
      */
-    public void sendCustomEvent(DiscoveryCustomMessage msg) {
-        getSpi().sendCustomEvent(new CustomMessageWrapper(msg));
+    public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
+        try {
+            getSpi().sendCustomEvent(new CustomMessageWrapper(msg));
+        }
+        catch (IgniteClientDisconnectedException e) {
+            IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();
+
+            throw new IgniteClientDisconnectedCheckedException(reconnectFut, e.getMessage());
+        }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**
@@ -1734,6 +1838,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 else if (type == EVT_NODE_SEGMENTED)
                     evt.message("Node segmented: " + node);
 
+                else if (type == EVT_CLIENT_NODE_DISCONNECTED)
+                    evt.message("Client node disconnected: " + node);
+
+                else if (type == EVT_CLIENT_NODE_RECONNECTED)
+                    evt.message("Client node reconnected: " + node);
+
                 else
                     assert false;
 
@@ -1746,6 +1856,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param topVer Topology version.
          * @param node Node.
          * @param topSnapshot Topology snapshot.
+         * @param data Custom message.
          */
         void addEvent(
             int type,
@@ -1851,6 +1962,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                     else if (log.isDebugEnabled())
                         log.debug("Daemon node left topology: " + node);
+
+                    break;
+                }
+
+                case EVT_CLIENT_NODE_DISCONNECTED: {
+                    // No-op.
+
+                    break;
+                }
+
+                case EVT_CLIENT_NODE_RECONNECTED: {
+                    if (log.isInfoEnabled())
+                        log.info("Client node reconnected to topology: " + node);
+
+                    ackTopology(topVer.topologyVersion(), true);
 
                     break;
                 }

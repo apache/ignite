@@ -211,8 +211,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart0() throws IgniteCheckedException {
-        cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
+    @Override protected void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
+        if (!reconnect)
+            cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
     /** {@inheritDoc} */
@@ -295,15 +296,39 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * Cancels all client futures.
      */
     public void cancelClientFutures() {
-        IgniteCheckedException e = new IgniteCheckedException("Operation has been cancelled (grid is stopping).");
+        cancelClientFutures(new IgniteCheckedException("Operation has been cancelled (node is stopping)."));
+    }
 
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture reconnectFut) {
+        IgniteClientDisconnectedCheckedException err = disconnectedError(reconnectFut);
+
+        cancelClientFutures(err);
+    }
+
+    /**
+     * @param err Error.
+     */
+    private void cancelClientFutures(IgniteCheckedException err) {
         for (Collection<GridCacheFuture<?>> futures : futs.values()) {
             for (GridCacheFuture<?> future : futures)
-                ((GridFutureAdapter)future).onDone(e);
+                ((GridFutureAdapter)future).onDone(err);
         }
 
         for (GridCacheAtomicFuture<?> future : atomicFuts.values())
-            ((GridFutureAdapter)future).onDone(e);
+            ((GridFutureAdapter)future).onDone(err);
+    }
+
+    /**
+     * @param reconnectFut Reconnect future.
+     * @return Client disconnected exception.
+     */
+    private IgniteClientDisconnectedCheckedException disconnectedError(@Nullable IgniteFuture<?> reconnectFut) {
+        if (reconnectFut == null)
+            reconnectFut = cctx.kernalContext().cluster().clientReconnectFuture();
+
+        return new IgniteClientDisconnectedCheckedException(reconnectFut,
+            "Operation has been cancelled (client node disconnected).");
     }
 
     /**
@@ -339,6 +364,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         IgniteInternalFuture<?> old = atomicFuts.put(futVer, fut);
 
         assert old == null : "Old future is not null [futVer=" + futVer + ", fut=" + fut + ", old=" + old + ']';
+
+        if (cctx.kernalContext().clientDisconnected())
+            ((GridFutureAdapter)fut).onDone(disconnectedError(null));
     }
 
     /**
@@ -459,7 +487,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 fut.onNodeLeft(n.id());
         }
 
-        // Just in case if future was complete before it was added.
+        if (cctx.kernalContext().clientDisconnected())
+            ((GridFutureAdapter)fut).onDone(disconnectedError(null));
+
+        // Just in case if future was completed before it was added.
         if (fut.isDone())
             removeFuture(fut);
 

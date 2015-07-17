@@ -338,6 +338,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> completeFuture(AffinityTopologyVersion topVer) {
         if (waitForPartitionExchange() && topologyVersion().compareTo(topVer) < 0) {
+            GridFutureAdapter<Void> fut = null;
+
             synchronized (this) {
                 if (this.topVer == AffinityTopologyVersion.ZERO)
                     return null;
@@ -346,9 +348,14 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                     if (topCompleteFut == null)
                         topCompleteFut = new GridFutureAdapter<>();
 
-                    return topCompleteFut;
+                    fut = topCompleteFut;
                 }
             }
+
+            if (fut != null && isDone())
+                fut.onDone();
+
+            return fut;
         }
 
         return null;
@@ -358,8 +365,10 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * @param failed Keys to remap.
      */
     private void remap(Collection<?> failed) {
-        if (futVer != null)
-            cctx.mvcc().removeAtomicFuture(version());
+        GridCacheVersion futVer0 = futVer;
+
+        if (futVer0 == null || cctx.mvcc().removeAtomicFuture(futVer0) == null)
+            return;
 
         Collection<Object> remapKeys = new ArrayList<>(failed.size());
         Collection<Object> remapVals = vals != null ? new ArrayList<>(failed.size()) : null;
@@ -444,6 +453,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
         if (err != null && X.hasCause(err, CachePartialUpdateCheckedException.class) &&
             X.hasCause(err, ClusterTopologyCheckedException.class) &&
+            storeFuture() &&
             remapCnt.decrementAndGet() > 0) {
 
             CachePartialUpdateCheckedException cause = X.cause(err, CachePartialUpdateCheckedException.class);
@@ -579,7 +589,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 return;
             }
 
-            GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+            GridDhtTopologyFuture fut = cache.topology().topologyVersionFuture();
 
             if (fut.isDone()) {
                 if (!fut.isCacheTopologyValid(cctx)) {
@@ -646,6 +656,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     }
 
     /**
+     * @return {@code True} future is stored by {@link GridCacheMvccManager#addAtomicFuture}.
+     */
+    private boolean storeFuture() {
+        return cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC;
+    }
+
+    /**
      * @param topVer Topology version.
      * @param remapKeys Keys to remap or {@code null} to map all keys.
      * @param remap Flag indicating if this is partial remap for this future.
@@ -671,7 +688,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             // Assign future version in topology read lock before first exception may be thrown.
             futVer = cctx.versions().next(topVer);
 
-        if (!remap && (cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC))
+        if (!remap && storeFuture())
             cctx.mvcc().addAtomicFuture(version(), this);
 
         CacheConfiguration ccfg = cctx.config();
@@ -998,7 +1015,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
                     @Override public void apply(GridNearAtomicUpdateRequest req,
                         GridNearAtomicUpdateResponse res) {
-                        assert res.futureVersion().equals(futVer);
+                        assert res.futureVersion().equals(futVer) : futVer;
 
                         onResult(res.nodeId(), res);
                     }
@@ -1065,7 +1082,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
                     @Override public void apply(GridNearAtomicUpdateRequest req,
                         GridNearAtomicUpdateResponse res) {
-                        assert res.futureVersion().equals(futVer);
+                        assert res.futureVersion().equals(futVer) : futVer;
 
                         onResult(res.nodeId(), res);
                     }

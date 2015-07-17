@@ -764,10 +764,17 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         if (timeout.finish()) {
                             cctx.kernalContext().timeout().removeTimeoutObject(timeout);
 
-                            // Remap.
-                            map(keys.keySet(), F.t(node, keys), updTopVer);
+                            try {
+                                fut.get();
 
-                            onDone(Collections.<K, V>emptyMap());
+                                // Remap.
+                                map(keys.keySet(), F.t(node, keys), updTopVer);
+
+                                onDone(Collections.<K, V>emptyMap());
+                            }
+                            catch (IgniteCheckedException e) {
+                                GridNearGetFuture.this.onDone(e);
+                            }
                         }
                     }
                 }

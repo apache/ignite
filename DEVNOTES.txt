@@ -99,6 +99,14 @@ mvn clean package
 
 Look for ignite-mesos-<version>-jar-with-dependencies.jar in ./target directory.
 
+Ignite Yarn Maven Build Instructions
+============================================
+cd to ./modules/yarn
+
+mvn clean package
+
+Look for ignite-yarn-<version>-jar-with-dependencies.jar in ./target directory.
+
 Run tests
 ==========
 To run tests locally use:

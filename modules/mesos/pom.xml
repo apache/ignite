@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-mesos</artifactId>
-    <version>1.2.1-SNAPSHOT</version>
+    <version>1.4.1-SNAPSHOT</version>
 
     <properties>
         <mesos.version>0.22.0</mesos.version>
@@ -83,6 +83,7 @@
                             <mainClass>org.apache.ignite.mesos.IgniteFramework</mainClass>
                         </manifest>
                     </archive>
+                    <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
                 <executions>
                     <execution>

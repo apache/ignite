@@ -578,6 +578,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         /**
          * @param nodes Nodes.
+         * @return Nodes for query execution.
          */
         private Queue<ClusterNode> fallbacks(Collection<ClusterNode> nodes) {
             Queue<ClusterNode> fallbacks = new LinkedList<>();
@@ -595,17 +596,21 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         /**
          *
          */
+        @SuppressWarnings("unchecked")
         private void init() {
             ClusterNode node = nodes.poll();
 
-            GridCacheQueryFutureAdapter<?, ?, R> fut0 =
-                (GridCacheQueryFutureAdapter<?, ?, R>)(node.isLocal() ? qryMgr.queryLocal(bean) :
-                    qryMgr.queryDistributed(bean, Collections.singleton(node)));
+            GridCacheQueryFutureAdapter<?, ?, R> fut0 = (GridCacheQueryFutureAdapter<?, ?, R>)(node.isLocal() ?
+                qryMgr.queryLocal(bean) :
+                qryMgr.queryDistributed(bean, Collections.singleton(node)));
 
             fut0.listen(new IgniteInClosure<IgniteInternalFuture<Collection<R>>>() {
                 @Override public void apply(IgniteInternalFuture<Collection<R>> fut) {
                     try {
                         onDone(fut.get());
+                    }
+                    catch (IgniteClientDisconnectedCheckedException e) {
+                        onDone(e);
                     }
                     catch (IgniteCheckedException e) {
                         if (F.isEmpty(nodes))

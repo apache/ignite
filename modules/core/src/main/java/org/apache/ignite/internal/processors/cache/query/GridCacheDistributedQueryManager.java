@@ -110,6 +110,20 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        IgniteClientDisconnectedCheckedException err = new IgniteClientDisconnectedCheckedException(reconnectFut,
+            "Query was cancelled, client node disconnected.");
+
+        for (Map.Entry<Long, GridCacheDistributedQueryFuture<?, ?, ?>> e : futs.entrySet()) {
+            GridCacheDistributedQueryFuture<?, ?, ?> fut = e.getValue();
+
+            fut.onPage(null, null, err, true);
+
+            futs.remove(e.getKey(), fut);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         super.printMemoryStats();
 
@@ -125,6 +139,14 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      */
     protected void addQueryFuture(long reqId, GridCacheDistributedQueryFuture<?, ?, ?> fut) {
         futs.put(reqId, fut);
+
+        if (cctx.kernalContext().clientDisconnected()) {
+            IgniteClientDisconnectedCheckedException err = new IgniteClientDisconnectedCheckedException(
+                cctx.kernalContext().cluster().clientReconnectFuture(),
+                "Query was cancelled, client node disconnected.");
+
+            fut.onDone(err);
+        }
     }
 
     /**

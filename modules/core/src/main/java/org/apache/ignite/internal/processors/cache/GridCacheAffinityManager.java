@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -54,7 +55,25 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        aff.onKernalStop();
+        IgniteCheckedException err =
+            new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
+
+        aff.onKernalStop(err);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture reconnectFut) {
+        IgniteCheckedException err = new IgniteClientDisconnectedCheckedException(reconnectFut,
+            "Failed to wait for topology update, client disconnected.");
+
+        aff.onKernalStop(err);
+    }
+
+    /**
+     *
+     */
+    public void onReconnected() {
+        aff.onReconnected();
     }
 
     /** {@inheritDoc} */

@@ -269,7 +269,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                     return null;
                 }
-            }, 4);
+            }, 4, "putAll-thread");
 
             Random rnd = new Random();
 

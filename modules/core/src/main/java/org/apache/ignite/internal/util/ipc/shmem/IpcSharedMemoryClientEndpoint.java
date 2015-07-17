@@ -59,8 +59,9 @@ public class IpcSharedMemoryClientEndpoint implements IpcEndpoint {
      * @param outSpace Out space.
      * @param parent Parent logger.
      */
-    public IpcSharedMemoryClientEndpoint(IpcSharedMemorySpace inSpace, IpcSharedMemorySpace outSpace,
-                                         IgniteLogger parent) {
+    public IpcSharedMemoryClientEndpoint(IpcSharedMemorySpace inSpace,
+        IpcSharedMemorySpace outSpace,
+        IgniteLogger parent) {
         assert inSpace != null;
         assert outSpace != null;
 

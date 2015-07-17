@@ -101,6 +101,19 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         return rmvd;
     }
 
+    /**
+     * @return {@code True} if set header found in cache.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public boolean checkHeader() throws IgniteCheckedException {
+        IgniteInternalCache<GridCacheSetHeaderKey, GridCacheSetHeader> cache0 = ctx.cache();
+
+        GridCacheSetHeader hdr = cache0.get(new GridCacheSetHeaderKey(name));
+
+        return hdr != null && hdr.id().equals(id);
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public int size() {
@@ -476,7 +489,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /**
      * @return Set ID.
      */
-    IgniteUuid id() {
+    public IgniteUuid id() {
         return id;
     }
 

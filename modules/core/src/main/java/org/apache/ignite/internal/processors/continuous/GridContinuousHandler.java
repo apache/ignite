@@ -33,7 +33,14 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
      * Listener registration status.
      */
     public enum RegisterStatus {
-        REGISTERED, NOT_REGISTERED, DELAYED
+        /** */
+        REGISTERED,
+
+        /** */
+        NOT_REGISTERED,
+
+        /** */
+        DELAYED
     }
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.lang.*;
 
 /**
  * OS conflict resolver manager.
@@ -53,6 +54,11 @@ public class CacheOsConflictResolutionManager<K ,V> implements CacheConflictReso
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         // No-op.
     }
 }

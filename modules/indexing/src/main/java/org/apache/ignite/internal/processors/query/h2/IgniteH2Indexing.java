@@ -1439,6 +1439,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             fut.get();
     }
 
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        rdcQryExec.onDisconnected(reconnectFut);
+    }
+
     /**
      * Wrapper to store connection and flag is schema set or not.
      */

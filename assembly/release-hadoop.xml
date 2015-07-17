@@ -35,6 +35,18 @@
 
     <files>
         <file>
+            <source>assembly/LICENSE_HADOOP</source>
+            <destName>LICENSE</destName>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
+            <source>assembly/NOTICE_HADOOP</source>
+            <destName>NOTICE</destName>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
             <source>modules/hadoop/config/core-site.ignite.xml</source>
             <outputDirectory>/config/hadoop</outputDirectory>
         </file>

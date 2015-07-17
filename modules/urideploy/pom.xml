@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-urideploy</artifactId>
-    <version>1.2.1-SNAPSHOT</version>
+    <version>1.4.1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -89,9 +89,9 @@
         </dependency>
 
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>3.0.1</version>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-servlet-api</artifactId>
+            <version>8.0.23</version>
             <scope>test</scope>
         </dependency>
 

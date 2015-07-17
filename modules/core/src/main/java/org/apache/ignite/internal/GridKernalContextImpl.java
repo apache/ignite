@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
 import org.apache.ignite.internal.managers.collision.*;
@@ -306,6 +307,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Default class loader. */
     private ClassLoader dfltClsLdr;
 
+    /** */
+    private ClusterNode locNode;
+
+    /** */
+    private volatile boolean disconnected;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -328,6 +335,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc REST executor service.
+     * @param plugins Plugin providers.
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("TypeMayBeWeakened")
@@ -506,7 +514,13 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public UUID localNodeId() {
-        return cfg.getNodeId();
+        if (locNode != null)
+            return locNode.id();
+
+        if (discoMgr != null)
+            locNode = discoMgr.localNode();
+
+        return locNode != null ? locNode.id() : config().getNodeId();
     }
 
     /** {@inheritDoc} */
@@ -918,6 +932,21 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public boolean clientNode() {
         return cfg.isClientMode() || cfg.isDaemon();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean clientDisconnected() {
+        if (locNode == null)
+            locNode = discoMgr != null ? discoMgr.localNode() : null;
+
+        return locNode != null ? (locNode.isClient() && disconnected) : false;
+    }
+
+    /**
+     * @param disconnected Disconnected flag.
+     */
+    void disconnected(boolean disconnected) {
+        this.disconnected = disconnected;
     }
 
     /** {@inheritDoc} */

@@ -163,7 +163,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             return null;
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw CU.convertToCacheException(e);
         }
     }
 

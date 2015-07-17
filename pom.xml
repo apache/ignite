@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>1.2.1-SNAPSHOT</version>
+    <version>1.4.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -48,6 +48,7 @@
     </scm>
 
     <modules>
+        <module>modules/apache-license-gen</module>
         <module>modules/tools</module>
         <module>modules/core</module>
         <module>modules/hadoop</module>
@@ -71,6 +72,7 @@
         <module>modules/cloud</module>
         <module>modules/mesos</module>
         <module>modules/kafka</module>
+        <module>modules/yarn</module>
     </modules>
 
     <profiles>
@@ -605,14 +607,12 @@
                                         </copy>
 
                                         <!-- appending filename to md5 and sha1 files. to be improved. -->
-                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true" message=" ${project.artifactId}-fabric-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha1" append="true" message=" ${project.artifactId}-fabric-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true" message=" ${project.artifactId}-hadoop-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha1" append="true" message=" ${project.artifactId}-hadoop-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true" message=" ${project.artifactId}-${project.version}-src.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha1" append="true" message=" ${project.artifactId}-${project.version}-src.zip" />
-
-                                        <copy file="${basedir}/KEYS" todir="${basedir}/target/site" failonerror="false" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true" message="  ${project.artifactId}-fabric-${project.version}-bin.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha1" append="true" message="  ${project.artifactId}-fabric-${project.version}-bin.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true" message="  ${project.artifactId}-hadoop-${project.version}-bin.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha1" append="true" message="  ${project.artifactId}-hadoop-${project.version}-bin.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true" message="  ${project.artifactId}-${project.version}-src.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha1" append="true" message="  ${project.artifactId}-${project.version}-src.zip" />
                                     </target>
                                 </configuration>
                             </execution>
