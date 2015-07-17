@@ -30,7 +30,7 @@ import javax.cache.*;
  */
 public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements Cache.Entry<K, V>, EvictableEntry<K, V> {
     /** */
-    private static final int META_KEY = EntryKey.values().length; //+1 to maximum value
+    private static final int META_KEY = EntryKey.values().length; //+1 to maximum value (test only case)
 
     /** */
     @GridToStringInclude

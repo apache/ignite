@@ -1375,7 +1375,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                                     if (log.isDebugEnabled()) {
                                         log.debug("Set value loaded from store into entry [set=" + set + ", " +
-                                            "newVer=" + nextVer + ", entry=" + entry + ']');
+                                            "curVer=" +
+                                            curVer + ", newVer=" + nextVer + ", entry=" + entry + ']');
                                     }
                                 }
                                 else {

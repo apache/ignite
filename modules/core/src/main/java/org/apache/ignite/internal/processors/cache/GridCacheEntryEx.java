@@ -943,11 +943,10 @@ public interface GridCacheEntryEx {
      * @param <V> Value type.
      * @return {@code True} if value was removed, {@code false} otherwise.
      */
-    public <V> boolean removeMeta(UUID name, V val);
+    public <V> boolean removeMeta(int key, V val);
 
     /**
      * Calls {@link GridDhtLocalPartition#onUnlock()} for this entry's partition.
      */
     public void onUnlock();
-    public <V> boolean removeMeta(int key, V val);
 }
