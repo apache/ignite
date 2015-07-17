@@ -524,7 +524,21 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if entries should not be deleted from cache immediately.
      */
     public boolean deferredDelete() {
-        return isDht() || isDhtAtomic() || isColocated() || (isNear() && atomic());
+        GridCacheAdapter<K, V> cache = this.cache;
+
+        if (cache == null)
+            throw new IllegalStateException("Cache stopped: " + cacheName);
+
+        return deferredDelete(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     * @return {@code True} if entries should not be deleted from cache immediately.
+     */
+    public boolean deferredDelete(GridCacheAdapter<?, ?> cache) {
+        return cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
+            (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC);
     }
 
     /**
@@ -765,26 +779,37 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Partition topology.
      */
     public GridDhtPartitionTopology topology() {
-        assert isNear() || isDht() || isColocated() || isDhtAtomic() : cache;
+        GridCacheAdapter<K, V> cache = this.cache;
 
-        return isNear() ? near().dht().topology() : dht().topology();
+        if (cache == null)
+            throw new IllegalStateException("Cache stopped: " + cacheName);
+
+        assert cache.isNear() || cache.isDht() || cache.isColocated() || cache.isDhtAtomic() : cache;
+
+        return topology(cache);
     }
 
     /**
      * @return Topology version future.
      */
     public GridDhtTopologyFuture topologyVersionFuture() {
-        assert isNear() || isDht() || isColocated() || isDhtAtomic() : cache;
+        GridCacheAdapter<K, V> cache = this.cache;
 
-        GridDhtTopologyFuture fut = null;
+        if (cache == null)
+            throw new IllegalStateException("Cache stopped: " + cacheName);
 
-        if (!isDhtAtomic()) {
-            GridDhtCacheAdapter<K, V> cache = isNear() ? near().dht() : colocated();
+        assert cache.isNear() || cache.isDht() || cache.isColocated() || cache.isDhtAtomic() : cache;
 
-            fut = cache.multiUpdateTopologyFuture();
-        }
+        return topology(cache).topologyVersionFuture();
+    }
 
-        return fut == null ? topology().topologyVersionFuture() : fut;
+    /**
+     * @param cache Cache.
+     * @return Partition topology.
+     */
+    private GridDhtPartitionTopology topology(GridCacheAdapter<K, V> cache) {
+        return cache.isNear() ? ((GridNearCacheAdapter<K, V>)cache).dht().topology() :
+            ((GridDhtCacheAdapter<K, V>)cache).topology();
     }
 
     /**

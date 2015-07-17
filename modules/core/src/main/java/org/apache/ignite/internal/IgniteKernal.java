@@ -3009,6 +3009,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         return ctx.isDaemon() && U.hasAnnotation(comp.getClass(), SkipDaemon.class);
     }
 
+    /**
+     *
+     */
+    public void dumpDebugInfo() {
+        U.warn(log, "Dumping debug info for node [id=" + ctx.localNodeId() +
+            ", name=" + ctx.gridName() +
+            ", order=" + ctx.discovery().localNode().order() +
+            ", client=" + ctx.clientNode() + ']');
+
+        ctx.cache().context().exchange().dumpDebugInfo();
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteKernal.class, this);

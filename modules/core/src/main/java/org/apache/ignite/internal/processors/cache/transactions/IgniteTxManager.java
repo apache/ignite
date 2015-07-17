@@ -1984,9 +1984,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             try {
                 cctx.kernalContext().gateway().readLock();
             }
-            catch (IllegalStateException ignore) {
+            catch (IllegalStateException | IgniteClientDisconnectedException ignore) {
                 if (log.isDebugEnabled())
-                    log.debug("Failed to acquire kernal gateway (grid is stopping).");
+                    log.debug("Failed to acquire kernal gateway [err=" + ignore + ']');
 
                 return;
             }
