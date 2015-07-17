@@ -534,7 +534,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings( {"unchecked"})
     @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon()) {
-            sharedCtx = createSharedContext(ctx, CU.startStoreSessionListeners(ctx, null));
+            sharedCtx = createSharedContext(ctx, null);
 
             for (GridCacheSharedManager mgr : sharedCtx.managers())
                 mgr.start(sharedCtx);
