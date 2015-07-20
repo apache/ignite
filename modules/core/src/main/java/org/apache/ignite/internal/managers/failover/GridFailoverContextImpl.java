@@ -24,6 +24,7 @@ import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.failover.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -41,15 +42,26 @@ public class GridFailoverContextImpl implements FailoverContext {
     @GridToStringExclude
     private final GridLoadBalancerManager loadMgr;
 
+    /** Affinity key for affinityCall. */
+    private final Object affKey;
+
+    /** Affinity cache name for affinityCall. */
+    private final String affCacheName;
+
     /**
      * Initializes failover context.
      *
      * @param taskSes Grid task session.
      * @param jobRes Failed job result.
      * @param loadMgr Load manager.
+     * @param affKey Affinity key.
+     * @param affCacheName Affinity cache name.
      */
-    public GridFailoverContextImpl(GridTaskSessionImpl taskSes, ComputeJobResult jobRes,
-        GridLoadBalancerManager loadMgr) {
+    public GridFailoverContextImpl(GridTaskSessionImpl taskSes,
+        ComputeJobResult jobRes,
+        GridLoadBalancerManager loadMgr,
+        @Nullable Object affKey,
+        @Nullable String affCacheName) {
         assert taskSes != null;
         assert jobRes != null;
         assert loadMgr != null;
@@ -57,6 +69,8 @@ public class GridFailoverContextImpl implements FailoverContext {
         this.taskSes = taskSes;
         this.jobRes = jobRes;
         this.loadMgr = loadMgr;
+        this.affKey = affKey;
+        this.affCacheName = affCacheName;
     }
 
     /** {@inheritDoc} */
@@ -72,6 +86,16 @@ public class GridFailoverContextImpl implements FailoverContext {
     /** {@inheritDoc} */
     @Override public ClusterNode getBalancedNode(List<ClusterNode> top) {
         return loadMgr.getBalancedNode(taskSes, top, jobRes.getJob());
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object affinityKey() {
+        return affKey;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String affinityCacheName() {
+        return affCacheName;
     }
 
     /** {@inheritDoc} */

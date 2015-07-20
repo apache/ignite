@@ -92,6 +92,11 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
      */
     public static final String FAILED_NODE_LIST_ATTR = "gg:failover:failednodelist";
 
+    /**
+     * Name of job context attribute containing number of affinity call attempts.
+     */
+    public static final String AFFINITY_CALL_ATTEMPT = "ignite:failover:affinitycallattempt";
+
     /** Maximum attempts attribute key should be the same on all nodes. */
     public static final String MAX_FAILOVER_ATTEMPT_ATTR = "gg:failover:maxattempts";
 
@@ -171,6 +176,26 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
 
             // Nowhere to failover to.
             return null;
+        }
+
+        if (ctx.affinityKey() != null) {
+            Integer affCallAttempt = ctx.getJobResult().getJobContext().getAttribute(AFFINITY_CALL_ATTEMPT);
+
+            if (affCallAttempt == null)
+                affCallAttempt = 1;
+
+            if (maxFailoverAttempts <= affCallAttempt) {
+                U.warn(log, "Job failover failed because number of maximum failover attempts for affinity call" +
+                    " is exceeded [failedJob=" + ctx.getJobResult().getJob() + ", maxFailoverAttempts=" +
+                    maxFailoverAttempts + ']');
+
+                return null;
+            }
+            else {
+                ctx.getJobResult().getJobContext().setAttribute(AFFINITY_CALL_ATTEMPT, affCallAttempt + 1);
+
+                return ignite.affinity(ctx.affinityCacheName()).mapKeyToNode(ctx.affinityKey());
+            }
         }
 
         Collection<UUID> failedNodes = ctx.getJobResult().getJobContext().getAttribute(FAILED_NODE_LIST_ATTR);

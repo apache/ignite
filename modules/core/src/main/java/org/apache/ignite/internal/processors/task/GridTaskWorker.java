@@ -26,6 +26,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -134,6 +135,12 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
     /** */
     private final boolean noFailover;
+
+    /** */
+    private final Object affKey;
+
+    /** */
+    private final String affCache;
 
     /** */
     private final UUID subjId;
@@ -245,6 +252,17 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         Boolean noFailover = getThreadContext(TC_NO_FAILOVER);
 
         this.noFailover = noFailover != null ? noFailover : false;
+
+        if (task instanceof AffinityTask) {
+            AffinityTask affTask = (AffinityTask)task;
+
+            affKey = affTask.affinityKey();
+            affCache = affTask.affinityCacheName();
+        }
+        else {
+            affKey = null;
+            affCache = null;
+        }
     }
 
     /**
@@ -397,7 +415,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             ses.setClassLoader(dep.classLoader());
 
-            final List<ClusterNode> shuffledNodes = getTaskTopology();
+            // Nodes are ignored by affinity tasks.
+            final List<ClusterNode> shuffledNodes =
+                affKey == null ? getTaskTopology() : Collections.<ClusterNode>emptyList();
 
             // Load balancer.
             ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, shuffledNodes);
@@ -968,7 +988,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobBeforeFailover.class);
 
             // Map to a new node.
-            ClusterNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top));
+            ClusterNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top), affKey, affCache);
 
             if (node == null) {
                 String msg = "Failed to failover a job to another node (failover SPI returned null) [job=" +
