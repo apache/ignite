@@ -1627,7 +1627,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-       if (keyCheck)
+        if (keyCheck)
             validateCacheKeys(keys);
 
         return getAllAsync0(ctx.cacheKeysView(keys),
