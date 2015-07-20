@@ -20,6 +20,8 @@ package org.apache.ignite.spi.failover;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.lang.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -52,4 +54,20 @@ public interface FailoverContext {
      * @throws IgniteException If anything failed.
      */
     public ClusterNode getBalancedNode(List<ClusterNode> top) throws IgniteException;
+
+    /**
+     * Gets affinity key for {@link IgniteCompute#affinityRun(String, Object, IgniteRunnable)}
+     * and {@link IgniteCompute#affinityCall(String, Object, IgniteCallable)}.
+     *
+     * @return Affinity key.
+     */
+    @Nullable public Object affinityKey();
+
+    /**
+     * Returns affinity cache name {@link IgniteCompute#affinityRun(String, Object, IgniteRunnable)}
+     * and {@link IgniteCompute#affinityCall(String, Object, IgniteCallable)}.
+     *
+     * @return Cache name.
+     */
+    @Nullable public String affinityCacheName();
 }
