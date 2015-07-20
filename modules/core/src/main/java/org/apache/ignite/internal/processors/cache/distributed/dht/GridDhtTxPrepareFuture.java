@@ -256,7 +256,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId));
+                    f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId));
 
                     return true;
                 }
@@ -873,12 +873,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                     assert req.transactionNodes() != null;
 
-                    //noinspection TryWithIdenticalCatches
                     try {
                         cctx.io().send(n, req, tx.ioPolicy());
                     }
                     catch (ClusterTopologyCheckedException e) {
-                        fut.onResult(e);
+                        fut.onNodeLeft(e);
                     }
                     catch (IgniteCheckedException e) {
                         fut.onResult(e);
@@ -933,7 +932,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             cctx.io().send(nearMapping.node(), req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                         }
                         catch (ClusterTopologyCheckedException e) {
-                            fut.onResult(e);
+                            fut.onNodeLeft(e);
                         }
                         catch (IgniteCheckedException e) {
                             fut.onResult(e);
@@ -1148,7 +1147,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         /**
          * @param e Node failure.
          */
-        void onResult(ClusterTopologyCheckedException e) {
+        void onNodeLeft(ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
 
