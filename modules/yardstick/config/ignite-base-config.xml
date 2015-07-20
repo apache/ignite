@@ -29,6 +29,17 @@
 
         <property name="metricsLogFrequency" value="5000"/>
 
+        <property name="sslContextFactory">
+            <bean class="org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory">
+                <property name="keyStoreFilePath" value="file:keystore/server.jks"/>
+                <property name="keyStorePassword" value="123456"/>
+                <property name="trustManagers">
+                    <bean class="org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory"
+                          factory-method="getDisabledTrustManager"/>
+                </property>
+            </bean>
+        </property>
+
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
