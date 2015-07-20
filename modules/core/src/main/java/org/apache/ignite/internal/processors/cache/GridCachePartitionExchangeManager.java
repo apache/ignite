@@ -27,6 +27,7 @@ import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -946,6 +947,58 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     *
+     */
+    public void dumpDebugInfo() {
+        U.warn(log, "Ready affinity version: " + readyTopVer.get());
+
+        U.warn(log, "Last exchange future: " + lastInitializedFut);
+
+        U.warn(log, "Pending exchange futures:");
+
+        for (GridDhtPartitionsExchangeFuture fut : pendingExchangeFuts)
+            U.warn(log, ">>> " + fut);
+
+        U.warn(log, "Last 10 exchange futures (total: " + exchFuts.size() + "):");
+
+        int cnt = 0;
+
+        for (GridDhtPartitionsExchangeFuture fut : exchFuts) {
+            U.warn(log, ">>> " + fut);
+
+            if (++cnt == 10)
+                break;
+        }
+
+        dumpPendingObjects();
+    }
+
+    /**
+     *
+     */
+    public void dumpPendingObjects() {
+        U.warn(log, "Pending transactions:");
+
+        for (IgniteInternalTx tx : cctx.tm().activeTransactions())
+            U.warn(log, ">>> " + tx);
+
+        U.warn(log, "Pending explicit locks:");
+
+        for (GridCacheExplicitLockSpan lockSpan : cctx.mvcc().activeExplicitLocks())
+            U.warn(log, ">>> " + lockSpan);
+
+        U.warn(log, "Pending cache futures:");
+
+        for (GridCacheFuture<?> fut : cctx.mvcc().activeFutures())
+            U.warn(log, ">>> " + fut);
+
+        U.warn(log, "Pending atomic cache futures:");
+
+        for (GridCacheFuture<?> fut : cctx.mvcc().atomicFutures())
+            U.warn(log, ">>> " + fut);
     }
 
     /**

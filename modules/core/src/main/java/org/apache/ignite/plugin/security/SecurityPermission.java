@@ -45,14 +45,17 @@ public enum SecurityPermission {
     /** Events {@code disable} permission. */
     EVENTS_DISABLE,
 
-    /** Common visor tasks permission. */
+    /** Common visor view tasks permission. */
     ADMIN_VIEW,
 
     /** Visor cache read (query) permission. */
     ADMIN_QUERY,
 
     /** Visor cache load permission. */
-    ADMIN_CACHE;
+    ADMIN_CACHE,
+
+    /** Visor admin operations permissions. */
+    ADMIN_OPS;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();
