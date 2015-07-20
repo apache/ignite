@@ -1561,9 +1561,7 @@ public class GridCacheUtils {
      */
     @NotNull public static RuntimeException convertToCacheException(IgniteCheckedException e) {
         IgniteClientDisconnectedCheckedException disconnectedErr =
-            e instanceof IgniteClientDisconnectedCheckedException ?
-            (IgniteClientDisconnectedCheckedException)e
-            : e.getCause(IgniteClientDisconnectedCheckedException.class);
+            e.getCause(IgniteClientDisconnectedCheckedException.class);
 
         if (disconnectedErr != null) {
             assert disconnectedErr.reconnectFuture() != null : disconnectedErr;

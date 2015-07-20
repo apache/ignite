@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -114,37 +115,45 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
 
         reconnectFailover(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                TreeMap<Integer, Integer> map = new TreeMap<>();
+                try {
+                    TreeMap<Integer, Integer> map = new TreeMap<>();
 
-                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                for (int i = 0; i < 5; i++) {
-                    Integer key = rnd.nextInt(0, 100_000);
+                    for (int i = 0; i < 5; i++) {
+                        Integer key = rnd.nextInt(0, 100_000);
 
-                    cache.put(key, key);
+                        cache.put(key, key);
 
-                    assertEquals(key, cache.get(key));
+                        assertEquals(key, cache.get(key));
 
-                    map.put(key, key);
-                }
-
-                for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
-                    try (Transaction tx = txs.txStart(txConcurrency, REPEATABLE_READ)) {
-                        for (Map.Entry<Integer, Integer> e : map.entrySet()) {
-                            cache.put(e.getKey(), e.getValue());
-
-                            assertNotNull(cache.get(e.getKey()));
-                        }
-
-                        tx.commit();
+                        map.put(key, key);
                     }
+
+                    for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
+                        try (Transaction tx = txs.txStart(txConcurrency, REPEATABLE_READ)) {
+                            for (Map.Entry<Integer, Integer> e : map.entrySet()) {
+                                cache.put(e.getKey(), e.getValue());
+
+                                assertNotNull(cache.get(e.getKey()));
+                            }
+
+                            tx.commit();
+                        }
+                    }
+
+                    cache.putAll(map);
+
+                    Map<Integer, Integer> res = cache.getAll(map.keySet());
+
+                    assertEquals(map, res);
                 }
-
-                cache.putAll(map);
-
-                Map<Integer, Integer> res = cache.getAll(map.keySet());
-
-                assertEquals(map, res);
+                catch (CacheException e) {
+                    if (e.getCause() instanceof IgniteClientDisconnectedException)
+                        throw e;
+                    else
+                        log.info("Ignore error: " + e);
+                }
 
                 return null;
             }
