@@ -4008,7 +4008,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (port = spi.locPort; port < spi.locPort + spi.locPortRange; port++) {
                 try {
-                    srvrSock = new ServerSocket(port, 0, spi.locHost);
+                    if (spi.isSslEnabled())
+                        srvrSock = spi.sslSrvSocketFactory.createServerSocket(port, 0, spi.locHost);
+                    else
+                        srvrSock = new ServerSocket(port, 0, spi.locHost);
 
                     break;
                 }

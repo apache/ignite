@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery;
 
 import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.*;
@@ -56,6 +57,9 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
     /** */
     private static final String TEST_ATTRIBUTE_NAME = "test.node.prop";
+
+    /** */
+    protected boolean useSsl = false;
 
     /** */
     protected AbstractDiscoverySelfTest() {
@@ -393,6 +397,15 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                 GridSpiTestContext ctx = initSpiContext();
 
                 GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "spiCtx", ctx);
+
+                if (useSsl) {
+                    IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");
+
+                    IgniteConfiguration cfg = ignite.configuration()
+                        .setSslContextFactory(GridTestUtils.sslContextFactory());
+
+                    ignite.setStaticCfg(cfg);
+                }
 
                 spi.spiStart(getTestGridName() + i);
 

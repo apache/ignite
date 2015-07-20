@@ -1571,7 +1571,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     ", locHost=" + locHost + ']', e);
             }
             catch (SSLException e) {
-                throw new IgniteCheckedException("Failed to create SSL context. SSL factory: "
+                throw new IgniteSpiException("Failed to create SSL context. SSL factory: "
                     + ignite.configuration().getSslContextFactory() + '.', e);
             }
         }
