@@ -145,9 +145,9 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
-        stopGrid(SERVERS_COUNT);
+        U.sleep(3000);
 
-        stopGrid(0);
+        stopAllGrids();
     }
 
     /**
