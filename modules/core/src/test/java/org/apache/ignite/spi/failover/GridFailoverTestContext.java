@@ -66,4 +66,14 @@ public class GridFailoverTestContext implements FailoverContext {
     @Override public ClusterNode getBalancedNode(List<ClusterNode> grid) {
         return grid.get(RAND.nextInt(grid.size()));
     }
+
+    /** {@inheritDoc} */
+    @Override public Object affinityKey() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String affinityCacheName() {
+        return null;
+    }
 }

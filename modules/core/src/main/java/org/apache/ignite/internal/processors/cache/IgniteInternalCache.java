@@ -1473,6 +1473,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Internal projection.
      */
     IgniteInternalCache<K, V> forSubjectId(UUID subjId);
+
     /**
      * Store DR data.
      *

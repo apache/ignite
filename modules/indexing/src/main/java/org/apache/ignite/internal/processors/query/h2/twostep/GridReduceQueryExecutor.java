@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.command.*;
@@ -47,6 +48,7 @@ import org.h2.table.*;
 import org.h2.tools.*;
 import org.h2.util.*;
 import org.h2.value.*;
+import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
 import javax.cache.*;
@@ -234,10 +236,15 @@ public class GridReduceQueryExecutor {
                     Object errState = r.state.get();
 
                     if (errState != null) {
+                        CacheException err0 = errState instanceof CacheException ? (CacheException)errState : null;
+
+                        if (err0 != null && err0.getCause() instanceof IgniteClientDisconnectedException)
+                            throw err0;
+
                         CacheException e = new CacheException("Failed to fetch data from node: " + node.id());
 
-                        if (errState instanceof CacheException)
-                            e.addSuppressed((Throwable)errState);
+                        if (err0 != null)
+                            e.addSuppressed(err0);
 
                         throw e;
                     }
@@ -301,6 +308,7 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * @param cctx Cache context.
      * @return {@code true} If cache context
      */
     private boolean hasMovingPartitions(GridCacheContext<?,?> cctx) {
@@ -481,6 +489,12 @@ public class GridReduceQueryExecutor {
             runs.put(qryReqId, r);
 
             try {
+                if (ctx.clientDisconnected()) {
+                    throw new CacheException("Query was cancelled, client node disconnected.",
+                        new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
+                        "Client node disconnected."));
+                }
+
                 Collection<GridCacheSqlQuery> mapQrys = qry.mapQueries();
 
                 if (qry.explain()) {
@@ -506,8 +520,14 @@ public class GridReduceQueryExecutor {
                     Object state = r.state.get();
 
                     if (state != null) {
-                        if (state instanceof CacheException)
-                            throw new CacheException("Failed to run map query remotely.", (CacheException)state);
+                        if (state instanceof CacheException) {
+                            CacheException err = (CacheException)state;
+
+                            if (err.getCause() instanceof IgniteClientDisconnectedException)
+                                throw err;
+
+                            throw new CacheException("Failed to run map query remotely.", err);
+                        }
 
                         if (state instanceof AffinityTopologyVersion) {
                             retry = true;
@@ -550,7 +570,20 @@ public class GridReduceQueryExecutor {
             catch (IgniteCheckedException | RuntimeException e) {
                 U.closeQuiet(r.conn);
 
-                throw new CacheException("Failed to run reduce query locally.", e);
+                if (e instanceof CacheException)
+                    throw (CacheException)e;
+
+                Throwable cause = e;
+
+                if (e instanceof IgniteCheckedException) {
+                    Throwable disconnectedErr =
+                        ((IgniteCheckedException)e).getCause(IgniteClientDisconnectedException.class);
+
+                    if (disconnectedErr != null)
+                        cause = disconnectedErr;
+                }
+
+                throw new CacheException("Failed to run reduce query locally.", cause);
             }
             finally {
                 if (!runs.remove(qryReqId, r))
@@ -1082,6 +1115,17 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * @param reconnectFut Reconnect future.
+     */
+    public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        CacheException err = new CacheException("Query was cancelled, client node disconnected.",
+            new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected."));
+
+        for (Map.Entry<Long, QueryRun> e : runs.entrySet())
+            e.getValue().disconnected(err);
+    }
+
+    /**
      *
      */
     private static class QueryRun {
@@ -1104,7 +1148,7 @@ public class GridReduceQueryExecutor {
          * @param o Fail state object.
          * @param nodeId Node ID.
          */
-        void state(Object o, UUID nodeId) {
+        void state(Object o, @Nullable UUID nodeId) {
             assert o != null;
             assert o instanceof CacheException || o instanceof AffinityTopologyVersion : o.getClass();
 
@@ -1116,6 +1160,20 @@ public class GridReduceQueryExecutor {
 
             for (GridMergeTable tbl : tbls) // Fail all merge indexes.
                 tbl.getScanIndex(null).fail(nodeId);
+        }
+
+        /**
+         * @param e Error.
+         */
+        void disconnected(CacheException e) {
+            if (!state.compareAndSet(null, e))
+                return;
+
+            while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
+                latch.countDown();
+
+            for (GridMergeTable tbl : tbls) // Fail all merge indexes.
+                tbl.getScanIndex(null).fail(e);
         }
     }
 

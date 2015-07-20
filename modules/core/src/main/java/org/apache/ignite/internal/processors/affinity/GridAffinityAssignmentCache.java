@@ -69,7 +69,7 @@ public class GridAffinityAssignmentCache {
     private IgniteLogger log;
 
     /** Node stop flag. */
-    private volatile boolean stopping;
+    private volatile IgniteCheckedException stopErr;
 
     /**
      * Constructs affinity cached calculations.
@@ -130,15 +130,25 @@ public class GridAffinityAssignmentCache {
 
     /**
      * Kernal stop callback.
+     *
+     * @param err Error.
      */
-    public void onKernalStop() {
-        stopping = true;
-
-        IgniteCheckedException err =
-            new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
+    public void onKernalStop(IgniteCheckedException err) {
+        stopErr = err;
 
         for (AffinityReadyFuture fut : readyFuts.values())
             fut.onDone(err);
+    }
+
+    /**
+     *
+     */
+    public void onReconnected() {
+        affCache.clear();
+
+        head.set(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
+
+        stopErr = null;
     }
 
     /**
@@ -312,8 +322,8 @@ public class GridAffinityAssignmentCache {
 
             fut.onDone(topVer);
         }
-        else if (stopping)
-            fut.onDone(new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping."));
+        else if (stopErr != null)
+            fut.onDone(stopErr);
 
         return fut;
     }

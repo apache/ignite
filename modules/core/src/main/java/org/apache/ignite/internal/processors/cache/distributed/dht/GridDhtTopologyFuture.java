@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 
@@ -32,18 +30,6 @@ import org.apache.ignite.internal.processors.cache.*;
  * topology version.
  */
 public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopologyVersion> {
-    /**
-     * Gets a topology snapshot for the topology version represented by the future. Note that by the time
-     * partition exchange completes some nodes from the snapshot may leave the grid. One should use discovery
-     * service to check if the node is valid.
-     * <p/>
-     * This method will block until the topology future is ready.
-     *
-     * @return Topology snapshot for particular topology version.
-     * @throws IgniteCheckedException If topology future failed.
-     */
-    public GridDiscoveryTopologySnapshot topologySnapshot() throws IgniteCheckedException;
-
     /**
      * Gets topology version of this future.
      *

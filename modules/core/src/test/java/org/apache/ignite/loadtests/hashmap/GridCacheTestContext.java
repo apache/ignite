@@ -55,8 +55,8 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 new GridCacheDeploymentManager<K, V>(),
                 new GridCachePartitionExchangeManager<K, V>(),
                 new GridCacheIoManager(),
-                null,
-                new CacheNoopJtaManager()
+                new CacheNoopJtaManager(),
+                null
             ),
             defaultCacheConfiguration(),
             CacheType.USER,

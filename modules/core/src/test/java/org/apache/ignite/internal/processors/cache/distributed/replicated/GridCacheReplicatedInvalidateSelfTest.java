@@ -220,7 +220,8 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
             Object msg0 = ((GridIoMessage)msg).message();
 
             if (!(msg0 instanceof GridClockDeltaSnapshotMessage)) {
-                info("Sending message [locNodeId=" + getLocalNodeId() + ", destNodeId= " + destNode.id()
+                info("Sending message [locNodeId=" + ignite.cluster().localNode().id() +
+                    ", destNodeId= " + destNode.id()
                     + ", msg=" + msg + ']');
 
                 synchronized (msgCntMap) {

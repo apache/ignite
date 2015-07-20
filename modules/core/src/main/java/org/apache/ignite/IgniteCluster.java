@@ -328,6 +328,14 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      */
     public void resetMetrics();
 
+    /**
+     * If local client node disconnected from cluster returns future
+     * that will be completed when client reconnected.
+     *
+     * @return Future that will be completed when client reconnected.
+     */
+    @Nullable public IgniteFuture<?> clientReconnectFuture();
+
     /** {@inheritDoc} */
     @Override public IgniteCluster withAsync();
 }

@@ -227,17 +227,6 @@ For details, see CC0 1.0 Universal (1.0), Public Domain Dedication,
 http://creativecommons.org/publicdomain/zero/1.0/
 
 ==============================================================================
-For books used for tests in "org.apache.ignite.internal.processors.hadoop.books"
-==============================================================================
-This code bundles book text files used for testing purposes which contain
-the following header:
-
-This eBook is for the use of anyone anywhere at no cost and with
-almost no restrictions whatsoever.  You may copy it, give it away or
-re-use it under the terms of the Project Gutenberg License included
-with this eBook or online at www.gutenberg.org
-
-==============================================================================
 For JSR107 API and SPI (https://github.com/jsr107/jsr107spec) javax.cache:cache-api:jar:1.0.0
 ==============================================================================
 This product bundles JSR107 API and SPI which is available under a:
@@ -256,7 +245,7 @@ This product bundles JLine which is available under a:
 The BSD License. For details, see http://www.opensource.org/licenses/bsd-license.php.
 
 ==============================================================================
-For Scala Library (http://www.scala-lang.org/) org.scala-lang:scala-library:jar:2.11.2
+For Scala Library (http://www.scala-lang.org/) org.scala-lang:scala-library:jar:2.*
 ==============================================================================
 This product bundles Scala Library which is available under a:
 BSD 3-Clause. For details, see http://www.scala-lang.org/license.html.
@@ -294,8 +283,8 @@ Eclipse Public License - v 1.0. For details, see http://www.eclipse.org/legal/ep
 ==============================================================================
 For Java Transaction API (http://java.sun.com/products/jta) javax.transaction:jta:jar:1.1
 ==============================================================================
-This product bundles Java Transaction API which is available under a:
-No licenses.
+This product bundles Java Transaction API which is available under it's own license.
+See http://download.oracle.com/otndocs/jcp/jta-1.1-classes-oth-JSpec/jta-1.1-classes-oth-JSpec-license.html for details.
 
 ==============================================================================
 For ASM All (http://asm.objectweb.org/asm-all/) org.ow2.asm:asm-all:jar:4.2

@@ -136,7 +136,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(IgniteCachePartitionMapUpdateTest.class));
         suite.addTest(new TestSuite(IgniteCacheClientNodePartitionsExchangeTest.class));
         suite.addTest(new TestSuite(IgniteCacheClientNodeChangingTopologyTest.class));
-        suite.addTest(new TestSuite(IgniteCacheClientNodeConcurrentStart.class));
+        suite.addTest(new TestSuite(IgniteCacheServerNodeConcurrentStart.class));
 
         return suite;
     }

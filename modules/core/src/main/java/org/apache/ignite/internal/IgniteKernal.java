@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.session.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -902,82 +903,87 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 @Override public void run() {
                     if (log.isInfoEnabled()) {
-                        ClusterMetrics m = cluster().localNode().metrics();
-
-                        double cpuLoadPct = m.getCurrentCpuLoad() * 100;
-                        double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
-                        double gcPct = m.getCurrentGcCpuLoad() * 100;
-
-                        long heapUsed = m.getHeapMemoryUsed();
-                        long heapMax = m.getHeapMemoryMaximum();
-
-                        long heapUsedInMBytes = heapUsed / 1024 / 1024;
-                        long heapCommInMBytes = m.getHeapMemoryCommitted() / 1024 / 1024;
-
-                        double freeHeapPct = heapMax > 0 ? ((double)((heapMax - heapUsed) * 100)) / heapMax : -1;
-
-                        int hosts = 0;
-                        int nodes = 0;
-                        int cpus = 0;
-
                         try {
-                            ClusterMetrics metrics = cluster().metrics();
+                            ClusterMetrics m = cluster().localNode().metrics();
 
-                            Collection<ClusterNode> nodes0 = cluster().nodes();
+                            double cpuLoadPct = m.getCurrentCpuLoad() * 100;
+                            double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
+                            double gcPct = m.getCurrentGcCpuLoad() * 100;
 
-                            hosts = U.neighborhood(nodes0).size();
-                            nodes = metrics.getTotalNodes();
-                            cpus = metrics.getTotalCpus();
+                            long heapUsed = m.getHeapMemoryUsed();
+                            long heapMax = m.getHeapMemoryMaximum();
+
+                            long heapUsedInMBytes = heapUsed / 1024 / 1024;
+                            long heapCommInMBytes = m.getHeapMemoryCommitted() / 1024 / 1024;
+
+                            double freeHeapPct = heapMax > 0 ? ((double)((heapMax - heapUsed) * 100)) / heapMax : -1;
+
+                            int hosts = 0;
+                            int nodes = 0;
+                            int cpus = 0;
+
+                            try {
+                                ClusterMetrics metrics = cluster().metrics();
+
+                                Collection<ClusterNode> nodes0 = cluster().nodes();
+
+                                hosts = U.neighborhood(nodes0).size();
+                                nodes = metrics.getTotalNodes();
+                                cpus = metrics.getTotalCpus();
+                            }
+                            catch (IgniteException ignore) {
+                                // No-op.
+                            }
+
+                            int pubPoolActiveThreads = 0;
+                            int pubPoolIdleThreads = 0;
+                            int pubPoolQSize = 0;
+
+                            if (execSvc instanceof ThreadPoolExecutor) {
+                                ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
+
+                                int poolSize = exec.getPoolSize();
+
+                                pubPoolActiveThreads = Math.min(poolSize, exec.getActiveCount());
+                                pubPoolIdleThreads = poolSize - pubPoolActiveThreads;
+                                pubPoolQSize = exec.getQueue().size();
+                            }
+
+                            int sysPoolActiveThreads = 0;
+                            int sysPoolIdleThreads = 0;
+                            int sysPoolQSize = 0;
+
+                            if (sysExecSvc instanceof ThreadPoolExecutor) {
+                                ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExecSvc;
+
+                                int poolSize = exec.getPoolSize();
+
+                                sysPoolActiveThreads = Math.min(poolSize, exec.getActiveCount());
+                                sysPoolIdleThreads = poolSize - sysPoolActiveThreads;
+                                sysPoolQSize = exec.getQueue().size();
+                            }
+
+                            String id = U.id8(localNode().id());
+
+                            String msg = NL +
+                                "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
+                                "    ^-- Node [id=" + id + ", name=" + name() + "]" + NL +
+                                "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
+                                "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
+                                dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
+                                "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
+                                dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
+                                "    ^-- Public thread pool [active=" + pubPoolActiveThreads + ", idle=" +
+                                pubPoolIdleThreads + ", qSize=" + pubPoolQSize + "]" + NL +
+                                "    ^-- System thread pool [active=" + sysPoolActiveThreads + ", idle=" +
+                                sysPoolIdleThreads + ", qSize=" + sysPoolQSize + "]" + NL +
+                                "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]";
+
+                            log.info(msg);
                         }
-                        catch (IgniteException ignore) {
+                        catch (IgniteClientDisconnectedException ignore) {
                             // No-op.
                         }
-
-                        int pubPoolActiveThreads = 0;
-                        int pubPoolIdleThreads = 0;
-                        int pubPoolQSize = 0;
-
-                        if (execSvc instanceof ThreadPoolExecutor) {
-                            ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
-
-                            int poolSize = exec.getPoolSize();
-
-                            pubPoolActiveThreads = Math.min(poolSize, exec.getActiveCount());
-                            pubPoolIdleThreads = poolSize - pubPoolActiveThreads;
-                            pubPoolQSize = exec.getQueue().size();
-                        }
-
-                        int sysPoolActiveThreads = 0;
-                        int sysPoolIdleThreads = 0;
-                        int sysPoolQSize = 0;
-
-                        if (sysExecSvc instanceof ThreadPoolExecutor) {
-                            ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExecSvc;
-
-                            int poolSize = exec.getPoolSize();
-
-                            sysPoolActiveThreads = Math.min(poolSize, exec.getActiveCount());
-                            sysPoolIdleThreads = poolSize - sysPoolActiveThreads;
-                            sysPoolQSize = exec.getQueue().size();
-                        }
-
-                        String id = U.id8(localNode().id());
-
-                        String msg = NL +
-                            "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
-                            "    ^-- Node [id=" + id + ", name=" + name() + "]" + NL +
-                            "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
-                            "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
-                                dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
-                            "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
-                                dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
-                            "    ^-- Public thread pool [active=" + pubPoolActiveThreads + ", idle=" +
-                                pubPoolIdleThreads + ", qSize=" + pubPoolQSize + "]" + NL +
-                            "    ^-- System thread pool [active=" + sysPoolActiveThreads + ", idle=" +
-                                sysPoolIdleThreads + ", qSize=" + sysPoolQSize + "]" + NL +
-                            "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]";
-
-                        log.info(msg);
                     }
                 }
             }, metricsLogFreq, metricsLogFreq);
@@ -1676,7 +1682,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             GridKernalState state = gw.getState();
 
-            if (state == STARTED)
+            if (state == STARTED || state == DISCONNECTED)
                 firstStop = true;
             else if (state == STARTING)
                 U.warn(log, "Attempt to stop starting grid. This operation " +
@@ -1753,7 +1759,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (cache != null)
                     cache.blockGateways();
 
-                assert gw.getState() == STARTED || gw.getState() == STARTING;
+                assert gw.getState() == STARTED || gw.getState() == STARTING || gw.getState() == DISCONNECTED;
 
                 // No more kernal calls from this point on.
                 gw.setState(STOPPING);
@@ -2185,6 +2191,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     return ctx.discovery().pingNode(n.id());
 
             return false;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -2801,6 +2810,109 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
+     *
+     */
+    public void onDisconnected() {
+        Throwable err = null;
+
+        GridFutureAdapter<?> reconnectFut = ctx.gateway().onDisconnected();
+
+        if (reconnectFut == null) {
+            assert ctx.gateway().getState() != STARTED : ctx.gateway().getState();
+
+            return;
+        }
+
+        IgniteFuture<?> userFut = new IgniteFutureImpl<>(reconnectFut);
+
+        ctx.cluster().get().clientReconnectFuture(userFut);
+
+        ctx.disconnected(true);
+
+        List<GridComponent> comps = ctx.components();
+
+        for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious();) {
+            GridComponent comp = it.previous();
+
+            try {
+                if (!skipDaemon(comp))
+                    comp.onDisconnected(userFut);
+            }
+            catch (IgniteCheckedException e) {
+                err = e;
+            }
+            catch (Throwable e) {
+                err = e;
+
+                if (e instanceof Error)
+                    throw e;
+            }
+        }
+
+        for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
+            cctx.gate().writeLock();
+
+            cctx.gate().writeUnlock();
+        }
+
+        ctx.gateway().writeLock();
+
+        ctx.gateway().writeUnlock();
+
+        if (err != null) {
+            reconnectFut.onDone(err);
+
+            U.error(log, "Failed to reconnect, will stop node", err);
+
+            close();
+        }
+    }
+
+    /**
+     * @param clusterRestarted {@code True} if all cluster nodes restarted while client was disconnected.
+     */
+    public void onReconnected(final boolean clusterRestarted) {
+        Throwable err = null;
+
+        try {
+            ctx.disconnected(false);
+
+            for (GridComponent comp : ctx.components())
+                comp.onReconnected(clusterRestarted);
+
+            ctx.cache().context().exchange().reconnectExchangeFuture().listen(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> fut) {
+                    try {
+                        fut.get();
+
+                        ctx.gateway().onReconnected();
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to reconnect, will stop node", e);
+
+                        close();
+                    }
+                }
+            });
+        }
+        catch (IgniteCheckedException e) {
+            err = e;
+        }
+        catch (Throwable e) {
+            err = e;
+
+            if (e instanceof Error)
+                throw e;
+        }
+
+        if (err != null) {
+            U.error(log, "Failed to reconnect, will stop node", err);
+
+            close();
+        }
+    }
+
+    /**
      * Creates optional component.
      *
      * @param cls Component interface.
@@ -2895,6 +3007,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     private boolean skipDaemon(GridComponent comp) {
         return ctx.isDaemon() && U.hasAnnotation(comp.getClass(), SkipDaemon.class);
+    }
+
+    /**
+     *
+     */
+    public void dumpDebugInfo() {
+        U.warn(log, "Dumping debug info for node [id=" + ctx.localNodeId() +
+            ", name=" + ctx.gridName() +
+            ", order=" + ctx.discovery().localNode().order() +
+            ", client=" + ctx.clientNode() + ']');
+
+        ctx.cache().context().exchange().dumpDebugInfo();
     }
 
     /** {@inheritDoc} */

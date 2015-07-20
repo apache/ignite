@@ -95,78 +95,60 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 5 * 60 * 1000;
+        return 3 * 60 * 1000;
     }
 
     /**
      * @throws Exception If any error occurs.
      */
-    public void testMultiThreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1100");
+    public void testMultiThreadedClientsRestart() throws Exception {
+        clientFlagGlobal = false;
 
-        execute();
-    }
+        info("Test timeout: " + (getTestTimeout() / (60 * 1000)) + " min.");
 
-    /**
-     * @throws Exception If any error occurs.
-     */
-    public void testTopologyVersion() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
-        long prev = 0;
+        clientFlagGlobal = true;
 
-        for (Ignite g : G.allGrids()) {
-            IgniteKernal kernal = (IgniteKernal)g;
+        startGridsMultiThreaded(GRID_CNT, CLIENT_GRID_CNT);
 
-            long ver = kernal.context().discovery().topologyVersion();
+        final AtomicBoolean done = new AtomicBoolean();
 
-            info("Top ver: " + ver);
+        final AtomicInteger clientIdx = new AtomicInteger(GRID_CNT);
 
-            if (prev == 0)
-                prev = ver;
-        }
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    clientFlagPerThread.set(true);
 
-        info("Test finished.");
+                    int idx = clientIdx.getAndIncrement();
+
+                    while (!done.get()) {
+                        stopGrid(idx);
+                        startGrid(idx);
+                    }
+
+                    return null;
+                }
+            },
+            CLIENT_GRID_CNT
+        );
+
+        Thread.sleep(getTestTimeout() - 60 * 1000);
+
+        done.set(true);
+
+        fut1.get();
     }
 
     /**
      * @throws Exception If any error occurs.
      */
-    public void testMultipleStartOnCoordinatorStop() throws Exception{
-        startGrids(GRID_CNT);
+    public void testMultiThreadedClientsServersRestart() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1123");
 
-        final CyclicBarrier barrier = new CyclicBarrier(GRID_CNT + 4);
+        clientFlagGlobal = false;
 
-        final AtomicInteger startIdx = new AtomicInteger(GRID_CNT);
-
-        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                barrier.await();
-
-                Ignite ignite = startGrid(startIdx.getAndIncrement());
-
-                assertFalse(ignite.configuration().isClientMode());
-
-                log.info("Started node: " + ignite.name());
-
-                return null;
-            }
-        }, GRID_CNT + 3, "start-thread");
-
-        barrier.await();
-
-        U.sleep(ThreadLocalRandom.current().nextInt(10, 100));
-
-        for (int i = 0; i < GRID_CNT; i++)
-            stopGrid(i);
-
-        fut.get();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void execute() throws Exception {
         info("Test timeout: " + (getTestTimeout() / (60 * 1000)) + " min.");
 
         startGridsMultiThreaded(GRID_CNT);
@@ -228,5 +210,65 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
         fut1.get();
         fut2.get();
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void testTopologyVersion() throws Exception {
+        clientFlagGlobal = false;
+
+        startGridsMultiThreaded(GRID_CNT);
+
+        long prev = 0;
+
+        for (Ignite g : G.allGrids()) {
+            IgniteKernal kernal = (IgniteKernal)g;
+
+            long ver = kernal.context().discovery().topologyVersion();
+
+            info("Top ver: " + ver);
+
+            if (prev == 0)
+                prev = ver;
+        }
+
+        info("Test finished.");
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void testMultipleStartOnCoordinatorStop() throws Exception{
+        clientFlagGlobal = false;
+
+        startGrids(GRID_CNT);
+
+        final CyclicBarrier barrier = new CyclicBarrier(GRID_CNT + 4);
+
+        final AtomicInteger startIdx = new AtomicInteger(GRID_CNT);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                barrier.await();
+
+                Ignite ignite = startGrid(startIdx.getAndIncrement());
+
+                assertFalse(ignite.configuration().isClientMode());
+
+                log.info("Started node: " + ignite.name());
+
+                return null;
+            }
+        }, GRID_CNT + 3, "start-thread");
+
+        barrier.await();
+
+        U.sleep(ThreadLocalRandom.current().nextInt(10, 100));
+
+        for (int i = 0; i < GRID_CNT; i++)
+            stopGrid(i);
+
+        fut.get();
     }
 }

@@ -1570,6 +1570,7 @@ public class GridFunc {
      * @param <T> Type of the collection.
      * @return Light-weight view on given collection with provided predicate.
      */
+    @SafeVarargs
     public static <T> Collection<T> view(@Nullable final Collection<T> c,
         @Nullable final IgnitePredicate<? super T>... p) {
         if (isEmpty(c) || isAlwaysFalse(p))
@@ -2706,6 +2707,7 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Negated predicate.
      */
+    @SafeVarargs
     public static <T> IgnitePredicate<T> not(@Nullable final IgnitePredicate<? super T>... p) {
         return isAlwaysFalse(p) ? F.<T>alwaysTrue() : isAlwaysTrue(p) ? F.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T t) {

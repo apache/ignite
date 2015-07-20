@@ -23,6 +23,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.spi.failover.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -56,11 +57,17 @@ public class GridFailoverManager extends GridManagerAdapter<FailoverSpi> {
     /**
      * @param taskSes Task session.
      * @param jobRes Job result.
-     * @param top Collection of all top nodes that does not include the failed node.
+     * @param top Collection of all topology nodes.
+     * @param affKey Affinity key.
+     * @param affCacheName Affinity cache name.
      * @return New node to route this job to.
      */
-    public ClusterNode failover(GridTaskSessionImpl taskSes, ComputeJobResult jobRes, List<ClusterNode> top) {
+    public ClusterNode failover(GridTaskSessionImpl taskSes,
+        ComputeJobResult jobRes,
+        List<ClusterNode> top,
+        @Nullable Object affKey,
+        @Nullable String affCacheName) {
         return getSpi(taskSes.getFailoverSpi()).failover(new GridFailoverContextImpl(taskSes, jobRes,
-            ctx.loadBalancing()), top);
+            ctx.loadBalancing(), affKey, affCacheName), top);
     }
 }

@@ -338,6 +338,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> completeFuture(AffinityTopologyVersion topVer) {
         if (waitForPartitionExchange() && topologyVersion().compareTo(topVer) < 0) {
+            GridFutureAdapter<Void> fut = null;
+
             synchronized (this) {
                 if (this.topVer == AffinityTopologyVersion.ZERO)
                     return null;
@@ -346,9 +348,14 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                     if (topCompleteFut == null)
                         topCompleteFut = new GridFutureAdapter<>();
 
-                    return topCompleteFut;
+                    fut = topCompleteFut;
                 }
             }
+
+            if (fut != null && isDone())
+                fut.onDone();
+
+            return fut;
         }
 
         return null;
@@ -582,7 +589,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 return;
             }
 
-            GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+            GridDhtTopologyFuture fut = cache.topology().topologyVersionFuture();
 
             if (fut.isDone()) {
                 if (!fut.isCacheTopologyValid(cctx)) {

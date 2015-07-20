@@ -109,7 +109,7 @@ public class SchemaImportApp extends Application {
             "jdbc:mysql://[host]:[port]/[database]", "root"),
         new Preset("mssql", "Microsoft SQL Server", "sqljdbc41.jar", "com.microsoft.sqlserver.jdbc.SQLServerDriver",
             "jdbc:sqlserver://[host]:[port][;databaseName=database]", "sa"),
-        new Preset("posgresql", "PostgreSQL", "postgresql-9.3.jdbc4.jar", "org.postgresql.Driver",
+        new Preset("postgresql", "PostgreSQL", "postgresql-9.3.jdbc4.jar", "org.postgresql.Driver",
             "jdbc:postgresql://[host]:[port]/[database]", "sa"),
         new Preset("custom", "Custom server...", "custom-jdbc.jar", "org.custom.Driver", "jdbc:custom", "sa")
     };
@@ -444,6 +444,11 @@ public class SchemaImportApp extends Application {
         final boolean singleXml = xmlSingleFileCh.isSelected();
 
         Runnable task = new Task<Void>() {
+            /**
+             * @param pojo POJO descriptor to check.
+             * @param selected Selected flag.
+             * @param msg Message to show in case of check failed.
+             */
             private void checkEmpty(final PojoDescriptor pojo, boolean selected, String msg) {
                 if (!selected) {
                     Platform.runLater(new Runnable() {
@@ -694,6 +699,8 @@ public class SchemaImportApp extends Application {
 
     /**
      * Create connection pane with controls.
+     *
+     * @return Pane with connection controls.
      */
     private Pane createConnectionPane() {
         connPnl = paneEx(10, 10, 0, 10);
@@ -1110,10 +1117,10 @@ public class SchemaImportApp extends Application {
                 if (curPojo != null) {
                     TableView.TableViewSelectionModel<PojoDescriptor> selMdl = pojosTbl.getSelectionModel();
 
-                    List<Integer> idxs = new ArrayList<>(selMdl.getSelectedIndices());
+                    List<Integer> selIndices = new ArrayList<>(selMdl.getSelectedIndices());
 
-                    if (idxs.size() > 1) {
-                        for (Integer idx : idxs) {
+                    if (selIndices.size() > 1) {
+                        for (Integer idx : selIndices) {
                             if (pojos.get(idx) != curPojo)
                                 selMdl.clearSelection(idx);
                         }
@@ -1242,6 +1249,7 @@ public class SchemaImportApp extends Application {
      *
      * @param key Property key.
      * @param dflt Default value.
+     * @return Property value as string.
      */
     private String getStringProp(String key, String dflt) {
         String val = prefs.getProperty(key);
@@ -1267,6 +1275,7 @@ public class SchemaImportApp extends Application {
      *
      * @param key Property key.
      * @param dflt Default value.
+     * @return Property value as int.
      */
     private int getIntProp(String key, int dflt) {
         String val = prefs.getProperty(key);
@@ -1297,6 +1306,7 @@ public class SchemaImportApp extends Application {
      *
      * @param key Property key.
      * @param dflt Default value.
+     * @return Property value as boolean.
      */
     private boolean getBoolProp(String key, boolean dflt) {
         String val = prefs.getProperty(key);
@@ -1563,7 +1573,11 @@ public class SchemaImportApp extends Application {
         /** Combo box. */
         private final ComboBox<String> comboBox;
 
-        /** Creates a ComboBox cell factory for use in TableColumn controls. */
+        /**
+         * Creates a ComboBox cell factory for use in TableColumn controls.
+         *
+         * @return Cell factory for cell with java types combobox.
+         */
         public static Callback<TableColumn<PojoField, String>, TableCell<PojoField, String>> cellFactory() {
             return new Callback<TableColumn<PojoField, String>, TableCell<PojoField, String>>() {
                 @Override public TableCell<PojoField, String> call(TableColumn<PojoField, String> col) {
@@ -1637,7 +1651,11 @@ public class SchemaImportApp extends Application {
      * Special table cell to select schema or table.
      */
     private static class PojoDescriptorCell extends TableCell<PojoDescriptor, Boolean> {
-        /** Creates a ComboBox cell factory for use in TableColumn controls. */
+        /**
+         * Creates a ComboBox cell factory for use in TableColumn controls.
+         *
+         * @return Cell factory for schema / table selection.
+         */
         public static Callback<TableColumn<PojoDescriptor, Boolean>, TableCell<PojoDescriptor, Boolean>> cellFactory() {
             return new Callback<TableColumn<PojoDescriptor, Boolean>, TableCell<PojoDescriptor, Boolean>>() {
                 @Override public TableCell<PojoDescriptor, Boolean> call(TableColumn<PojoDescriptor, Boolean> col) {
@@ -1694,7 +1712,11 @@ public class SchemaImportApp extends Application {
      * Special table cell to select &quot;used&quot; fields for code generation.
      */
     private static class PojoFieldUseCell extends TableCell<PojoField, Boolean> {
-        /** Creates a ComboBox cell factory for use in TableColumn controls. */
+        /**
+         * Creates a ComboBox cell factory for use in TableColumn controls.
+         *
+         * @return Cell factory for used fields selection.
+         */
         public static Callback<TableColumn<PojoField, Boolean>, TableCell<PojoField, Boolean>> cellFactory() {
             return new Callback<TableColumn<PojoField, Boolean>, TableCell<PojoField, Boolean>>() {
                 @Override public TableCell<PojoField, Boolean> call(TableColumn<PojoField, Boolean> col) {

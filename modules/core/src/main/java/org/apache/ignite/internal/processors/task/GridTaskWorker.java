@@ -26,6 +26,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -134,6 +135,12 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
     /** */
     private final boolean noFailover;
+
+    /** */
+    private final Object affKey;
+
+    /** */
+    private final String affCache;
 
     /** */
     private final UUID subjId;
@@ -245,6 +252,17 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         Boolean noFailover = getThreadContext(TC_NO_FAILOVER);
 
         this.noFailover = noFailover != null ? noFailover : false;
+
+        if (task instanceof AffinityTask) {
+            AffinityTask affTask = (AffinityTask)task;
+
+            affKey = affTask.affinityKey();
+            affCache = affTask.affinityCacheName();
+        }
+        else {
+            affKey = null;
+            affCache = null;
+        }
     }
 
     /**
@@ -397,7 +415,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             ses.setClassLoader(dep.classLoader());
 
-            final List<ClusterNode> shuffledNodes = getTaskTopology();
+            // Nodes are ignored by affinity tasks.
+            final List<ClusterNode> shuffledNodes =
+                affKey == null ? getTaskTopology() : Collections.<ClusterNode>emptyList();
 
             // Load balancer.
             ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, shuffledNodes);
@@ -968,7 +988,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobBeforeFailover.class);
 
             // Map to a new node.
-            ClusterNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top));
+            ClusterNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top), affKey, affCache);
 
             if (node == null) {
                 String msg = "Failed to failover a job to another node (failover SPI returned null) [job=" +
@@ -1070,10 +1090,17 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                             PUBLIC_POOL);
                 }
                 catch (IgniteCheckedException e) {
-                    if (!isDeadNode(nodeId))
-                        U.error(log, "Failed to send cancel request to node (will ignore) [nodeId=" +
-                            nodeId + ", taskName=" + ses.getTaskName() +
-                            ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']', e);
+                    try {
+                        if (!isDeadNode(nodeId))
+                            U.error(log, "Failed to send cancel request to node (will ignore) [nodeId=" +
+                                nodeId + ", taskName=" + ses.getTaskName() +
+                                ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']', e);
+                    }
+                    catch (IgniteClientDisconnectedCheckedException e0) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send cancel request to node, client disconnected [nodeId=" +
+                                nodeId + ", taskName=" + ses.getTaskName() + ']');
+                    }
                 }
             }
         }
@@ -1169,24 +1196,39 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             }
         }
         catch (IgniteCheckedException e) {
-            boolean deadNode = isDeadNode(res.getNode().id());
+            IgniteException fakeErr = null;
 
-            // Avoid stack trace if node has left grid.
-            if (deadNode)
-                U.warn(log, "Failed to send job request because remote node left grid (if failover is enabled, " +
-                    "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
-                    ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
-            else
-                U.error(log, "Failed to send job request: " + req, e);
+            try {
+                boolean deadNode = isDeadNode(res.getNode().id());
+
+                // Avoid stack trace if node has left grid.
+                if (deadNode) {
+                    U.warn(log, "Failed to send job request because remote node left grid (if failover is enabled, " +
+                        "will attempt fail-over to another node) [node=" + node + ", taskName=" + ses.getTaskName() +
+                        ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']');
+
+                    fakeErr = new ClusterTopologyException("Failed to send job due to node failure: " + node, e);
+                }
+                else
+                    U.error(log, "Failed to send job request: " + req, e);
+
+            }
+            catch (IgniteClientDisconnectedCheckedException e0) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send job request, client disconnected [node=" + node +
+                        ", taskName=" + ses.getTaskName() + ", taskSesId=" + ses.getId() + ", jobSesId=" +
+                        res.getJobContext().getJobId() + ']');
+
+                fakeErr = U.convertException(e0);
+            }
 
             GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(node.id(), ses.getId(),
                 res.getJobContext().getJobId(), null, null, null, null, null, null, false);
 
-            if (deadNode)
-                fakeRes.setFakeException(new ClusterTopologyException("Failed to send job due to node failure: " +
-                    node, e));
-            else
-                fakeRes.setFakeException(U.convertException(e));
+            if (fakeErr == null)
+                fakeErr = U.convertException(e);
+
+            fakeRes.setFakeException(fakeErr);
 
             onResponse(fakeRes);
         }
@@ -1345,8 +1387,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      *
      * @param uid UID of node to check.
      * @return {@code true} if node is dead, {@code false} is node is alive.
+     * @throws IgniteClientDisconnectedCheckedException if ping failed when client disconnected.
      */
-    private boolean isDeadNode(UUID uid) {
+    private boolean isDeadNode(UUID uid) throws IgniteClientDisconnectedCheckedException {
         return ctx.discovery().node(uid) == null || !ctx.discovery().pingNode(uid);
     }
 

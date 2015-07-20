@@ -49,8 +49,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
         IgniteAtomicLong atomic = ignite(0).atomicLong("TestAtomic", 0, true);
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 while (!finished.get()) {
                     stopGrid(3);
 
@@ -65,10 +64,16 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
 
         int keysCnt = keysCount();
 
-        for (int i = 0; i < keysCnt; i++)
-            atomic.incrementAndGet();
+        try {
+            for (int i = 0; i < keysCnt; i++)
+                atomic.incrementAndGet();
 
-        finished.set(true);
-        fut.get();
+            finished.set(true);
+
+            fut.get();
+        }
+        finally {
+            finished.set(true);
+        }
     }
 }

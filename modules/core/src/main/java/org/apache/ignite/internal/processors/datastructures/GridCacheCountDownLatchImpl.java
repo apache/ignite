@@ -67,9 +67,6 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     /** Cache context. */
     private GridCacheContext ctx;
 
-    /** Current count. */
-    private int cnt;
-
     /** Initial count. */
     private int initCnt;
 
@@ -96,7 +93,6 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
      * Constructor.
      *
      * @param name Latch name.
-     * @param cnt Current count.
      * @param initCnt Initial count.
      * @param autoDel Auto delete flag.
      * @param key Latch key.
@@ -104,7 +100,6 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
      * @param ctx Cache context.
      */
     public GridCacheCountDownLatchImpl(String name,
-        int cnt,
         int initCnt,
         boolean autoDel,
         GridCacheInternalKey key,
@@ -112,14 +107,12 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         GridCacheContext ctx)
     {
         assert name != null;
-        assert cnt >= 0;
         assert initCnt >= 0;
         assert key != null;
         assert latchView != null;
         assert ctx != null;
 
         this.name = name;
-        this.cnt = cnt;
         this.initCnt = initCnt;
         this.autoDel = autoDel;
         this.key = key;
@@ -136,7 +129,12 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return cnt;
+        try {
+            return CU.outTx(new GetCountCallable(), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -207,13 +205,11 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
     /** {@inheritDoc} */
     @Override public boolean onRemoved() {
-        assert cnt == 0;
-
         return rmvd = true;
     }
 
     /** {@inheritDoc} */
-    @Override public void onInvalid(@Nullable Exception err) {
+    @Override public void needCheckNotRemoved() {
         // No-op.
     }
 
@@ -230,8 +226,6 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     /** {@inheritDoc} */
     @Override public void onUpdate(int cnt) {
         assert cnt >= 0;
-
-        this.cnt = cnt;
 
         while (internalLatch != null && internalLatch.getCount() > cnt)
             internalLatch.countDown();
@@ -253,9 +247,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                                     if (log.isDebugEnabled())
                                         log.debug("Failed to find count down latch with given name: " + name);
 
-                                    assert cnt == 0;
-
-                                    return new CountDownLatch(cnt);
+                                    return new CountDownLatch(0);
                                 }
 
                                 tx.commit();
@@ -337,6 +329,29 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     /**
      *
      */
+    private class GetCountCallable implements Callable<Integer> {
+        /** {@inheritDoc} */
+        @Override public Integer call() throws Exception {
+            Integer val;
+
+            try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
+                GridCacheCountDownLatchValue latchVal = latchView.get(key);
+
+                if (latchVal == null)
+                    return 0;
+
+                val = latchVal.get();
+
+                tx.rollback();
+            }
+
+            return val;
+        }
+    }
+
+    /**
+     *
+     */
     private class CountDownCallable implements Callable<Integer> {
         /** Value to count down on (if 0 then latch is counted down to 0). */
         private final int val;
@@ -359,9 +374,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                     if (log.isDebugEnabled())
                         log.debug("Failed to find count down latch with given name: " + name);
 
-                    assert cnt == 0;
-
-                    return cnt;
+                    return 0;
                 }
 
                 int retVal;

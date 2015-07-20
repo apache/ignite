@@ -1560,6 +1560,15 @@ public class GridCacheUtils {
      * @return CacheException runtime exception, never null.
      */
     @NotNull public static RuntimeException convertToCacheException(IgniteCheckedException e) {
+        IgniteClientDisconnectedCheckedException disconnectedErr =
+            e.getCause(IgniteClientDisconnectedCheckedException.class);
+
+        if (disconnectedErr != null) {
+            assert disconnectedErr.reconnectFuture() != null : disconnectedErr;
+
+            e = disconnectedErr;
+        }
+
         if (e.hasCause(CacheWriterException.class))
             return new CacheWriterException(U.convertExceptionNoWrap(e));
 
