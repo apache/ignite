@@ -607,12 +607,12 @@
                                         </copy>
 
                                         <!-- appending filename to md5 and sha1 files. to be improved. -->
-                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true" message="  ${project.artifactId}-fabric-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha1" append="true" message="  ${project.artifactId}-fabric-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true" message="  ${project.artifactId}-hadoop-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha1" append="true" message="  ${project.artifactId}-hadoop-${project.version}-bin.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true" message="  ${project.artifactId}-${project.version}-src.zip" />
-                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha1" append="true" message="  ${project.artifactId}-${project.version}-src.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true" message=" ${project.artifactId}-fabric-${project.version}-bin.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha1" append="true" message=" ${project.artifactId}-fabric-${project.version}-bin.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true" message=" ${project.artifactId}-hadoop-${project.version}-bin.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha1" append="true" message=" ${project.artifactId}-hadoop-${project.version}-bin.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true" message=" ${project.artifactId}-${project.version}-src.zip" />
+                                        <echo file="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha1" append="true" message=" ${project.artifactId}-${project.version}-src.zip" />
                                     </target>
                                 </configuration>
                             </execution>
