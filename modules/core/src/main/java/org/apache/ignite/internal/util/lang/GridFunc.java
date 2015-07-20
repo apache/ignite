@@ -3965,6 +3965,38 @@ public class GridFunc {
     }
 
     /**
+     * Creates map with given values.
+     *
+     * @param k1 Key 1.
+     * @param v1 Value 1.
+     * @param k2 Key 2.
+     * @param v2 Value 2.
+     * @param k3 Key 3.
+     * @param v3 Value 3.
+     * @param k4 Key 4.
+     * @param v4 Value 4.
+     * @param k5 Key 5.
+     * @param v5 Value 5.
+     * @param k6 Key 6.
+     * @param v6 Value 6.
+     * @param <K> Key's type.
+     * @param <V> Value's type.
+     * @return Created map.
+     */
+    public static <K, V> Map<K, V> asMap(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5, K k6, V v6) {
+        Map<K, V> map = new GridLeanMap<>(5);
+
+        map.put(k1, v1);
+        map.put(k2, v2);
+        map.put(k3, v3);
+        map.put(k4, v4);
+        map.put(k5, v5);
+        map.put(k6, v6);
+
+        return map;
+    }
+
+    /**
      * Convenience method to convert multiple elements into array.
      *
      * @param t Elements to convert into array.

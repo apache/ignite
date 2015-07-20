@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.client.ssl.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.nio.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
@@ -41,6 +43,7 @@ import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
+import javax.net.ssl.*;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
@@ -145,6 +148,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower).";
+
+    /** Node attribute that is set if using SSL (value is <tt>comm.tcp.ssl</tt>). */
+    public static final String ATTR_SSL = "comm.tcp.ssl";
 
     /** Node attribute that is mapped to node IP addresses (value is <tt>comm.tcp.addrs</tt>). */
     public static final String ATTR_ADDRS = "comm.tcp.addrs";
@@ -747,6 +753,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     };
 
     /**
+     * @return {@code True} if ssl enabled.
+     */
+    private boolean isSslEnabled() {
+        return ignite.configuration().getSslContextFactory() != null;
+    }
+
+    /**
      * Sets address resolver.
      *
      * @param addrRslvr Address resolver.
@@ -1298,7 +1311,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 createSpiAttributeName(ATTR_HOST_NAMES), addrs.get2(),
                 createSpiAttributeName(ATTR_PORT), boundTcpPort,
                 createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null,
-                createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
+                createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs,
+                createSpiAttributeName(ATTR_SSL), isSslEnabled());
         }
         catch (IOException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to resolve local host to addresses: " + locHost, e);
@@ -1465,6 +1479,26 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     } :
                     null;
 
+                GridNioFilter[] filters;
+
+                if (isSslEnabled()) {
+                    GridNioSslFilter sslFilter =
+                        new GridNioSslFilter(ignite.configuration().getSslContextFactory().createSslContext(), log);
+
+                    sslFilter.directMode(true);
+
+                    filters = new GridNioFilter[] {
+                        new GridNioCodecFilter(parser, log, true),
+                        new GridConnectionBytesVerifyFilter(log),
+                        sslFilter
+                    };
+                }
+                else
+                    filters = new GridNioFilter[] {
+                        new GridNioCodecFilter(parser, log, true),
+                        new GridConnectionBytesVerifyFilter(log)
+                    };
+
                 GridNioServer<Message> srvr =
                     GridNioServer.<Message>builder()
                         .address(locHost)
@@ -1482,8 +1516,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .directMode(true)
                         .metricsListener(metricsLsnr)
                         .writeTimeout(sockWriteTimeout)
-                        .filters(new GridNioCodecFilter(parser, log, true),
-                            new GridConnectionBytesVerifyFilter(log))
+                        .filters(filters)
                         .messageFormatter(msgFormatter)
                         .skipRecoveryPredicate(skipRecoveryPred)
                         .messageQueueSizeListener(queueSizeMonitor)
@@ -1509,6 +1542,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 onException("Failed to bind to local port (will try next port within range) [port=" + port +
                     ", locHost=" + locHost + ']', e);
+            }
+            catch (SSLException e) {
+                throw new IgniteCheckedException("Failed to create SSL context. SSL factory: "
+                    + ignite.configuration().getSslContextFactory() + '.', e);
             }
         }
 
@@ -1872,7 +1909,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             }
 
             try {
-                safeHandshake(client, null, node.id(), connTimeout0);
+                safeHandshake(client, null, node.id(), connTimeout0, null);
             }
             catch (HandshakeTimeoutException e) {
                 if (log.isDebugEnabled())
@@ -2019,10 +2056,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     long rcvCnt = -1;
 
+                    GridTuple<SSLEngine> ssl = new GridTuple<>();
+
                     try {
                         ch.socket().connect(addr, (int)connTimeout);
 
-                        rcvCnt = safeHandshake(ch, recoveryDesc, node.id(), connTimeout0);
+                        rcvCnt = safeHandshake(ch, recoveryDesc, node.id(), connTimeout0, ssl);
 
                         if (rcvCnt == -1)
                             return null;
@@ -2036,6 +2075,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         Map<Integer, Object> meta = new HashMap<>();
 
                         meta.put(NODE_ID_META, node.id());
+
+                        if (isSslEnabled()) {
+                            assert ssl != null;
+                            assert ssl.get() != null;
+
+                            meta.put(GridNioSessionMetaKey.SSL_ENGINE.ordinal(), ssl.get());
+                        }
 
                         if (recoveryDesc != null) {
                             recoveryDesc.onHandshake(rcvCnt);
@@ -2161,6 +2207,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param recovery Recovery descriptor if use recovery handshake, otherwise {@code null}.
      * @param rmtNodeId Remote node.
      * @param timeout Timeout for handshake.
+     * @param ssl SSL engine.
      * @throws IgniteCheckedException If handshake failed or wasn't completed withing timeout.
      * @return Handshake response.
      */
@@ -2169,7 +2216,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         T client,
         @Nullable GridNioRecoveryDescriptor recovery,
         UUID rmtNodeId,
-        long timeout
+        long timeout,
+        @Nullable GridTuple<SSLEngine> ssl
     ) throws IgniteCheckedException {
         HandshakeTimeoutObject<T> obj = new HandshakeTimeoutObject<>(client, U.currentTimeMillis() + timeout);
 
@@ -2186,15 +2234,53 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 boolean success = false;
 
                 try {
-                    ByteBuffer buf = ByteBuffer.allocate(17);
+                    BlockingSslHandler sslHnd = null;
 
-                    for (int i = 0; i < 17; ) {
-                        int read = ch.read(buf);
+                    ByteBuffer buf;
 
-                        if (read == -1)
-                            throw new IgniteCheckedException("Failed to read remote node ID (connection closed).");
+                    if (isSslEnabled()) {
+                        GridFutureAdapter<ByteBuffer> handFut = new GridFutureAdapter<>();
 
-                        i += read;
+                        SSLEngine sslEngine = ignite.configuration().getSslContextFactory()
+                            .createSslContext().createSSLEngine();
+
+                        sslEngine.setUseClientMode(true);
+
+                        sslHnd = new BlockingSslHandler(sslEngine, ch, handFut, log);
+
+                        if (!sslHnd.handshake())
+                            throw new IgniteCheckedException("SSL handshake isn't completed.");
+
+                        ssl.set(sslEngine);
+
+                        ByteBuffer handBuff = handFut.get();
+
+                        if (handBuff.limit() < 17) {
+                            buf = ByteBuffer.allocate(1000);
+
+                            int read = ch.read(buf);
+
+                            if (read == -1)
+                                throw new IgniteCheckedException("Failed to read remote node ID (connection closed).");
+
+                            buf.flip();
+
+                            buf = sslHnd.decode(buf);
+                        }
+                        else
+                            buf = handBuff;
+                    }
+                    else {
+                        buf = ByteBuffer.allocate(17);
+
+                        for (int i = 0; i < 17; ) {
+                            int read = ch.read(buf);
+
+                            if (read == -1)
+                                throw new IgniteCheckedException("Failed to read remote node ID (connection closed).");
+
+                            i += read;
+                        }
                     }
 
                     UUID rmtNodeId0 = U.bytesToUuid(buf.array(), 1);
@@ -2205,7 +2291,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     else if (log.isDebugEnabled())
                         log.debug("Received remote node ID: " + rmtNodeId0);
 
-                    ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
+                    if (isSslEnabled() ) {
+                        assert sslHnd != null;
+
+                        ch.write(sslHnd.encrypt(ByteBuffer.wrap(U.IGNITE_HEADER)));
+                    }
+                    else
+                        ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
 
                     if (recovery != null) {
                         HandshakeMessage msg = new HandshakeMessage(getLocalNodeId(),
@@ -2225,30 +2317,62 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         buf.flip();
 
-                        ch.write(buf);
+                        if (isSslEnabled()) {
+                            assert sslHnd != null;
+
+                            ch.write(sslHnd.encrypt(buf));
+                        }
+                        else
+                            ch.write(buf);
                     }
-                    else
-                        ch.write(ByteBuffer.wrap(nodeIdMsg.nodeIdBytesWithType));
+                    else {
+                        if (isSslEnabled()) {
+                            assert sslHnd != null;
+
+                            ch.write(sslHnd.encrypt(ByteBuffer.wrap(nodeIdMsg.nodeIdBytesWithType)));
+                        }
+                        else
+                            ch.write(ByteBuffer.wrap(nodeIdMsg.nodeIdBytesWithType));
+                    }
 
                     if (recovery != null) {
                         if (log.isDebugEnabled())
                             log.debug("Waiting for handshake [rmtNode=" + rmtNodeId + ']');
 
-                        buf = ByteBuffer.allocate(9);
+                        if (isSslEnabled()) {
+                            assert sslHnd != null;
 
-                        buf.order(ByteOrder.nativeOrder());
+                            buf = ByteBuffer.allocate(1000);
 
-                        for (int i = 0; i < 9; ) {
+                            buf.order(ByteOrder.nativeOrder());
+
                             int read = ch.read(buf);
 
                             if (read == -1)
                                 throw new IgniteCheckedException("Failed to read remote node recovery handshake " +
                                     "(connection closed).");
 
-                            i += read;
-                        }
+                            buf.flip();
 
-                        rcvCnt = buf.getLong(1);
+                            rcvCnt = sslHnd.decode(buf).getLong(1);
+                        }
+                        else {
+                            buf = ByteBuffer.allocate(9);
+
+                            buf.order(ByteOrder.nativeOrder());
+
+                            for (int i = 0; i < 9; ) {
+                                int read = ch.read(buf);
+
+                                if (read == -1)
+                                    throw new IgniteCheckedException("Failed to read remote node recovery handshake " +
+                                        "(connection closed).");
+
+                                i += read;
+                            }
+
+                            rcvCnt = buf.getLong(1);
+                        }
 
                         if (log.isDebugEnabled())
                             log.debug("Received handshake message [rmtNode=" + rmtNodeId + ", rcvCnt=" + rcvCnt + ']');

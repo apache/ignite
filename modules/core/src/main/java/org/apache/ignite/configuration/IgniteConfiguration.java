@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.client.ssl.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -400,6 +401,9 @@ public class IgniteConfiguration {
     /** Cache store session listeners. */
     private Factory<CacheStoreSessionListener>[] storeSesLsnrs;
 
+    /** SSL connection factory. */
+    private GridSslContextFactory sslCtxFactory;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -480,6 +484,7 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
+        sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         svcCfgs = cfg.getServiceConfiguration();
         sysPoolSize = cfg.getSystemThreadPoolSize();
@@ -1277,6 +1282,28 @@ public class IgniteConfiguration {
         this.clockSyncFreq = clockSyncFreq;
 
         return this;
+    }
+
+    /**
+     * Sets SSL context factory that will be used for creating a secure socket  layer.
+     *
+     * @param sslCtxFactory Ssl context factory.
+     * @see GridSslContextFactory
+     */
+    public IgniteConfiguration setSslContextFactory(GridSslContextFactory sslCtxFactory) {
+        this.sslCtxFactory = sslCtxFactory;
+
+        return this;
+    }
+
+    /**
+     * Returns SSL context factory that will be used for creating a secure socket layer.
+     *
+     * @return SSL connection factory.
+     * @see GridSslContextFactory
+     */
+    public GridSslContextFactory getSslContextFactory() {
+        return sslCtxFactory;
     }
 
     /**

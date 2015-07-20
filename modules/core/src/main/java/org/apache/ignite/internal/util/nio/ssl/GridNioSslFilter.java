@@ -393,6 +393,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     public static ByteBuffer expandBuffer(ByteBuffer original, int cap) {
         ByteBuffer res = ByteBuffer.allocate(cap);
 
+        res.order(ByteOrder.nativeOrder());
+
         original.flip();
 
         res.put(original);

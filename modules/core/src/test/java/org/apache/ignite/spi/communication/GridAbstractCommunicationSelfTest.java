@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -32,6 +33,7 @@ import org.apache.ignite.testframework.junits.spi.*;
 import java.net.*;
 import java.util.*;
 import java.util.Map.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
@@ -58,6 +60,9 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
     /** */
     private static final Object mux = new Object();
+
+    /** */
+    protected boolean useSsl = false;
 
     /**
      *
@@ -181,6 +186,8 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     public void testSendToManyNodes() throws Exception {
         msgDestMap.clear();
 
+        int cnt = 0;
+
         // Send message from each SPI to all SPI's, including itself.
         for (Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
             UUID sndId = entry.getKey();
@@ -298,6 +305,15 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             spiRsrcs.add(rsrcs);
 
             rsrcs.inject(spi);
+
+            if (useSsl) {
+                IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");
+
+                IgniteConfiguration cfg = ignite.configuration()
+                    .setSslContextFactory(GridTestUtils.sslContextFactory());
+
+                ignite.setStaticCfg(cfg);
+            }
 
             spi.setListener(new MessageListener(rsrcs.getNodeId()));
 
