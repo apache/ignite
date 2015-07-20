@@ -31,7 +31,7 @@
 
         <property name="sslContextFactory">
             <bean class="org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory">
-                <property name="keyStoreFilePath" value="file:config/keystore/server.jks"/>
+                <property name="keyStoreFilePath" value="file:config/server.jks"/>
                 <property name="keyStorePassword" value="123456"/>
                 <property name="trustManagers">
                     <bean class="org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory"
