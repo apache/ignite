@@ -186,8 +186,6 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     public void testSendToManyNodes() throws Exception {
         msgDestMap.clear();
 
-        int cnt = 0;
-
         // Send message from each SPI to all SPI's, including itself.
         for (Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
             UUID sndId = entry.getKey();
