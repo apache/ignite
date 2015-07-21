@@ -33,7 +33,6 @@ import org.apache.ignite.testframework.junits.spi.*;
 import java.net.*;
 import java.util.*;
 import java.util.Map.*;
-import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
