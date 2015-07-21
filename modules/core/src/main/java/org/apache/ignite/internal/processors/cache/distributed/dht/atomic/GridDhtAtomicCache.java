@@ -181,11 +181,22 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateRequest.class, new CI2<UUID, GridNearAtomicUpdateRequest>() {
-            @Override public void apply(UUID nodeId, GridNearAtomicUpdateRequest req) {
-                processNearAtomicUpdateRequest(nodeId, req);
+        if (ctx.config().isAtomicOrderedUpdates()) {
+            for (int part = 0; part < ctx.affinity().partitions(); part++) {
+                ctx.io().addOrderedHandler(CU.partitionMassageTopic(ctx, part), new CI2<UUID, GridNearAtomicUpdateRequest>() {
+                    @Override public void apply(UUID nodeId, GridNearAtomicUpdateRequest req) {
+                        processNearAtomicUpdateRequest(nodeId, req);
+                    }
+                });
             }
-        });
+        }
+        else {
+            ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateRequest.class, new CI2<UUID, GridNearAtomicUpdateRequest>() {
+                @Override public void apply(UUID nodeId, GridNearAtomicUpdateRequest req) {
+                    processNearAtomicUpdateRequest(nodeId, req);
+                }
+            });
+        }
 
         ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateResponse.class, new CI2<UUID, GridNearAtomicUpdateResponse>() {
             @Override public void apply(UUID nodeId, GridNearAtomicUpdateResponse res) {
@@ -193,11 +204,22 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateRequest.class, new CI2<UUID, GridDhtAtomicUpdateRequest>() {
-            @Override public void apply(UUID nodeId, GridDhtAtomicUpdateRequest req) {
-                processDhtAtomicUpdateRequest(nodeId, req);
+        if (ctx.config().isAtomicOrderedUpdates()) {
+            for (int part = 0; part < ctx.affinity().partitions(); part++) {
+                ctx.io().addOrderedHandler(CU.partitionMassageTopic(ctx, part), new CI2<UUID, GridDhtAtomicUpdateRequest>() {
+                    @Override public void apply(UUID nodeId, GridDhtAtomicUpdateRequest req) {
+                        processDhtAtomicUpdateRequest(nodeId, req);
+                    }
+                });
             }
-        });
+        }
+        else {
+            ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateRequest.class, new CI2<UUID, GridDhtAtomicUpdateRequest>() {
+                @Override public void apply(UUID nodeId, GridDhtAtomicUpdateRequest req) {
+                    processDhtAtomicUpdateRequest(nodeId, req);
+                }
+            });
+        }
 
         ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateResponse.class, new CI2<UUID, GridDhtAtomicUpdateResponse>() {
             @Override public void apply(UUID nodeId, GridDhtAtomicUpdateResponse res) {
@@ -1017,7 +1039,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
             nodeId,
-            req.futureVersion());
+            req.futureVersion(),
+            req.partition());
 
         List<KeyCacheObject> keys = req.keys();
 
@@ -2389,7 +2412,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridCacheVersion ver = req.writeVersion();
 
         // Always send update reply.
-        GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(ctx.cacheId(), req.futureVersion());
+        GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
+            ctx.cacheId(), req.futureVersion(), req.partition());
 
         Boolean replicate = ctx.isDrEnabled();
 
@@ -2477,7 +2501,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ctx.io().send(nodeId, res, ctx.ioPolicy());
             else {
                 // No failed keys and sync mode is not FULL_SYNC, thus sending deferred response.
-                sendDeferredUpdateResponse(nodeId, req.futureVersion());
+                sendDeferredUpdateResponse(nodeId, req.futureVersion(), req.partition());
             }
         }
         catch (ClusterTopologyCheckedException ignored) {
@@ -2494,7 +2518,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Node ID to send message to.
      * @param ver Version to ack.
      */
-    private void sendDeferredUpdateResponse(UUID nodeId, GridCacheVersion ver) {
+    private void sendDeferredUpdateResponse(UUID nodeId, GridCacheVersion ver, int part) {
         while (true) {
             DeferredResponseBuffer buf = pendingResponses.get(nodeId);
 
@@ -2511,7 +2535,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     buf = old;
             }
 
-            if (!buf.addResponse(ver))
+            if (!buf.addResponse(ver, part))
                 // Some thread is sending filled up buffer, we can remove it.
                 pendingResponses.remove(nodeId, buf);
             else
@@ -2551,7 +2575,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             GridDhtAtomicUpdateFuture updateFut = (GridDhtAtomicUpdateFuture)ctx.mvcc().atomicFuture(ver);
 
             if (updateFut != null)
-                updateFut.onResult(nodeId);
+                updateFut.onResult(nodeId, res);
             else
                 U.warn(log, "Failed to find DHT update future for deferred update response [nodeId=" +
                     nodeId + ", ver=" + ver + ", res=" + res + ']');
@@ -2751,6 +2775,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /** Response versions. */
         private Collection<GridCacheVersion> respVers = new ConcurrentLinkedDeque8<>();
 
+        /** Response partitions. */
+        private Collection<Integer> respParts = new GridConcurrentHashSet<>();
+
         /** Node ID. */
         private final UUID nodeId;
 
@@ -2805,7 +2832,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
          * @param ver Version to send.
          * @return {@code True} if response was handled, {@code false} if this buffer is filled and cannot be used.
          */
-        public boolean addResponse(GridCacheVersion ver) {
+        public boolean addResponse(GridCacheVersion ver, int part) {
             readLock().lock();
 
             boolean snd = false;
@@ -2815,6 +2842,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     return false;
 
                 respVers.add(ver);
+                respParts.add(part);
 
                 if  (respVers.size() > DEFERRED_UPDATE_RESPONSE_BUFFER_SIZE && guard.compareAndSet(false, true))
                     snd = true;
@@ -2845,7 +2873,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
          */
         private void finish() {
             GridDhtAtomicDeferredUpdateResponse msg = new GridDhtAtomicDeferredUpdateResponse(ctx.cacheId(),
-                respVers);
+                respVers, respParts);
 
             try {
                 ctx.kernalContext().gateway().readLock();

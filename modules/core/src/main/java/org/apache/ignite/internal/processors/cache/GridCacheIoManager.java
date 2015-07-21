@@ -378,7 +378,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                     ctx.cacheId(),
-                    req.futureVersion());
+                    req.futureVersion(),
+                    req.partition());
 
                 res.onError(req.classError());
 
@@ -393,7 +394,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
                     ctx.cacheId(),
                     nodeId,
-                    req.futureVersion());
+                    req.futureVersion(),
+                    req.partition());
 
                 res.error(req.classError());
 
@@ -745,10 +747,29 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         ClusterNode n = cctx.discovery().node(nodeId);
 
         if (n == null)
-            throw new ClusterTopologyCheckedException("Failed to send message because node left grid [nodeId=" + nodeId +
-                ", msg=" + msg + ']');
+            throw new ClusterTopologyCheckedException("Failed to send message because node left grid [nodeId=" +
+                nodeId + ", msg=" + msg + ']');
 
         send(n, msg, plc);
+    }
+
+    /**
+     * @param nodeId Destination node ID.
+     * @param topic Topic to send the message to.
+     * @param msg Message to send.
+     * @param plc IO policy.
+     * @param timeout Timeout to keep a message on receiving queue.
+     * @throws IgniteCheckedException Thrown in case of any errors.
+     */
+    public void sendOrderedMessage(UUID nodeId, Object topic, GridCacheMessage msg, byte plc, long timeout)
+        throws IgniteCheckedException {
+        ClusterNode n = cctx.discovery().node(nodeId);
+
+        if (n == null)
+            throw new ClusterTopologyCheckedException("Failed to send message because node left grid [nodeId=" +
+                nodeId + ", msg=" + msg + ']');
+
+        sendOrderedMessage(n, topic, msg, plc, timeout);
     }
 
     /**
@@ -779,7 +800,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
             catch (IgniteCheckedException e) {
                 if (cctx.discovery().node(node.id()) == null)
-                    throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " + node.id(), e);
+                    throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " +
+                        node.id(), e);
 
                 if (cnt == retryCnt)
                     throw e;

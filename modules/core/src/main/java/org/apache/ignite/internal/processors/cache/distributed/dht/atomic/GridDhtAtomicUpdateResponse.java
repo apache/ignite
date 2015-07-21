@@ -59,6 +59,9 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> nearEvicted;
 
+    /** Partition. */
+    private int part;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -69,10 +72,12 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     /**
      * @param cacheId Cache ID.
      * @param futVer Future version.
+     * @param part Partition.
      */
-    public GridDhtAtomicUpdateResponse(int cacheId, GridCacheVersion futVer) {
+    public GridDhtAtomicUpdateResponse(int cacheId, GridCacheVersion futVer, int part) {
         this.cacheId = cacheId;
         this.futVer = futVer;
+        this.part = part;
     }
 
     /** {@inheritDoc} */
@@ -89,7 +94,8 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
     /**
      * Sets update error.
-     * @param err
+     *
+     * @param err Error.
      */
     public void onError(IgniteCheckedException err){
         this.err = err;
@@ -107,6 +113,13 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
      */
     public Collection<KeyCacheObject> failedKeys() {
         return failedKeys;
+    }
+
+    /**
+     * @return Partition.
+     */
+    public int partition() {
+        return part;
     }
 
     /**

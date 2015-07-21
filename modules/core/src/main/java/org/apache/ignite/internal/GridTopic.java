@@ -183,6 +183,15 @@ public enum GridTopic {
     }
 
     /**
+     * @param id1 ID1.
+     * @param id2 ID2.
+     * @return Grid message topic with specified IDs.
+     */
+    public Object topic(int id1, int id2) {
+        return new T9(this, id1, id2);
+    }
+
+    /**
      *
      */
     private static class T1 implements Externalizable {
@@ -754,6 +763,70 @@ public enum GridTopic {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(T8.class, this);
+        }
+    }
+
+    /**
+     */
+    private static class T9 implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private GridTopic topic;
+
+        /** */
+        private int id1;
+
+        /** */
+        private int id2;
+
+        /**
+         * No-arg constructor needed for {@link Serializable}.
+         */
+        public T9() {
+            // No-op.
+        }
+
+        /**
+         * @param topic Topic.
+         * @param id1 ID1.
+         * @param id2 ID2.
+         */
+        private T9(GridTopic topic, int id1, int id2) {
+            this.topic = topic;
+            this.id1 = id1;
+            this.id2 = id2;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return topic.ordinal() + 31 * id1 + 31 * id2;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (obj.getClass() == T9.class) {
+                T9 that = (T9)obj;
+
+                return topic == that.topic && id1 == that.id1 && id2 == that.id2;
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeByte(topic.ordinal());
+            out.writeInt(id1);
+            out.writeInt(id2);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            topic = fromOrdinal(in.readByte());
+            id1 = in.readByte();
+            id2 = in.readByte();
         }
     }
 }

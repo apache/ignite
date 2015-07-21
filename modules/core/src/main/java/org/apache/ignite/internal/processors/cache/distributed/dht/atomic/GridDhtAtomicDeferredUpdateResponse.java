@@ -41,6 +41,10 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
     @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> futVers;
 
+    /** Partitions. */
+    @GridDirectCollection(int.class)
+    private Collection<Integer> parts;
+
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
         return CACHE_MSG_IDX;
@@ -57,12 +61,15 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
      * Constructor.
      *
      * @param futVers Future versions.
+     * @param parts Partitions.
      */
-    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<GridCacheVersion> futVers) {
+    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<GridCacheVersion> futVers,
+        Collection<Integer> parts) {
         assert !F.isEmpty(futVers);
 
         this.cacheId = cacheId;
         this.futVers = futVers;
+        this.parts = parts;
     }
 
     /**
@@ -70,6 +77,13 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
      */
     public Collection<GridCacheVersion> futureVersions() {
         return futVers;
+    }
+
+    /**
+     * @return Partitions.
+     */
+    public Collection<Integer> partitions() {
+        return parts;
     }
 
     /** {@inheritDoc} */

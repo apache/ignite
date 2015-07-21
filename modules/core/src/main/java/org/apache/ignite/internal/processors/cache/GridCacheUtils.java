@@ -57,7 +57,6 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.GridTopic.*;
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -1749,5 +1748,16 @@ public class GridCacheUtils {
                 throw err;
             }
         };
+    }
+
+    /**
+     * @param ctx Cache context.
+     * @param part Partition.
+     * @return Per-partition message topic.
+     */
+    public static Object partitionMassageTopic(GridCacheContext ctx, int part) {
+        assert part >= 0;
+
+        return TOPIC_CACHE.topic(ctx.cacheId(), part);
     }
 }

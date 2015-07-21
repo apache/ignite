@@ -127,6 +127,9 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /** Task name hash. */
     private int taskNameHash;
 
+    /** Partition. */
+    private int part;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -147,6 +150,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
      * @param forceTransformBackups Force transform backups flag.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param part Partition.
      */
     public GridDhtAtomicUpdateRequest(
         int cacheId,
@@ -158,7 +162,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         boolean forceTransformBackups,
         UUID subjId,
         int taskNameHash,
-        Object[] invokeArgs
+        Object[] invokeArgs,
+        int part
     ) {
         assert invokeArgs == null || forceTransformBackups;
 
@@ -172,6 +177,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.invokeArgs = invokeArgs;
+        this.part = part;
 
         keys = new ArrayList<>();
 
@@ -315,6 +321,13 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
         return CACHE_MSG_IDX;
+    }
+
+    /**
+     * @return Partition.
+     */
+    public int partition() {
+        return part;
     }
 
     /**

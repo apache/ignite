@@ -92,6 +92,9 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /** Near expire times. */
     private GridLongList nearExpireTimes;
 
+    /** Partition. */
+    private int part;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -103,11 +106,13 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @param cacheId Cache ID.
      * @param nodeId Node ID this reply should be sent to.
      * @param futVer Future version.
+     * @param part Partition.
      */
-    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer) {
+    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer, int part) {
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futVer = futVer;
+        this.part = part;
     }
 
     /** {@inheritDoc} */
@@ -185,6 +190,13 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      */
     public Collection<KeyCacheObject> remapKeys() {
         return remapKeys;
+    }
+
+    /**
+     * @return Partition.
+     */
+    public int partition() {
+        return part;
     }
 
     /**
