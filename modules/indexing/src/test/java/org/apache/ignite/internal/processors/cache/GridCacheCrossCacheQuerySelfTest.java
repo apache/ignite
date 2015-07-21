@@ -23,17 +23,14 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
@@ -108,37 +105,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             throw new IllegalStateException("mode: " + mode);
 
         return cc;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTwoStep() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-827");
-
-        String cache = "partitioned";
-
-        GridQueryProcessor qryProc = ((IgniteKernal) ignite).context().query();
-
-//        for (Map.Entry<Integer, FactPurchase> e : qx.createSqlQuery(FactPurchase.class, "1 = 1").execute().get())
-//            X.println("___ "  + e);
-
-        GridCacheTwoStepQuery q = new GridCacheTwoStepQuery(null,
-            "select cast(sum(x) as long) from _cnts_ where ? = ?", 1, 1);
-
-        q.addMapQuery("_cnts_", "select count(*) x from \"partitioned\".FactPurchase where ? = ?", 2, 2);
-
-        Iterator<List<?>> it = qryProc.queryTwoStep(cache, q).iterator();
-
-        try {
-            Object cnt = it.next().get(0);
-
-            assertEquals(10L, cnt);
-        }
-        finally {
-            if (it instanceof AutoCloseable)
-                ((AutoCloseable)it).close();
-        }
     }
 
     /**
@@ -257,42 +223,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 //    @Override protected long getTestTimeout() {
 //        return 10 * 60 * 1000;
 //    }
-
-    public void testLoop() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-827");
-
-        final IgniteCache<Object,Object> c = ignite.cache("partitioned");
-
-        X.println("___ GET READY");
-
-        Thread.sleep(20000);
-
-        X.println("___ GO");
-
-        multithreaded(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                long start = System.currentTimeMillis();
-
-                for (int i = 0; i < 1000000; i++) {
-                    if (i % 10000 == 0) {
-                        long t = System.currentTimeMillis();
-
-                        X.println(Thread.currentThread().getId() + "__ " + i + " -> " + (t - start));
-
-                        start = t;
-                    }
-
-                    c.query(new SqlFieldsQuery("select * from FactPurchase")).getAll();
-                }
-
-                return null;
-            }
-        }, 20);
-
-        X.println("___ OK");
-
-        Thread.sleep(300000);
-    }
 
     /**
      * @param l List.

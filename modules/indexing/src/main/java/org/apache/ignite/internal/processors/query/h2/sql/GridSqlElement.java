@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Abstract SQL element.
  */
-public abstract class GridSqlElement implements Cloneable, Iterable<GridSqlElement> {
+public abstract class GridSqlElement implements Iterable<GridSqlElement> {
     /** */
     protected List<GridSqlElement> children = new ArrayList<>();
 
@@ -76,21 +76,6 @@ public abstract class GridSqlElement implements Cloneable, Iterable<GridSqlEleme
      */
     public GridSqlElement child(int idx) {
         return children.get(idx);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"CloneCallsConstructors", "CloneDoesntDeclareCloneNotSupportedException"})
-    @Override public GridSqlElement clone() {
-        try {
-            GridSqlElement res = (GridSqlElement)super.clone();
-
-            res.children = new ArrayList<>(children);
-
-            return res;
-        }
-        catch (CloneNotSupportedException e) {
-            throw new IllegalStateException(e);
-        }
     }
 
     /**

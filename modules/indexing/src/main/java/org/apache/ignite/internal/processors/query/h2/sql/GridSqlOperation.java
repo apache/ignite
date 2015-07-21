@@ -54,20 +54,6 @@ public class GridSqlOperation extends GridSqlElement {
     }
 
     /**
-     * @return Left.
-     */
-    public GridSqlElement left() {
-        return child(0);
-    }
-
-    /**
-     * @return Right.
-     */
-    public GridSqlElement right() {
-        return child(1);
-    }
-
-    /**
      * @return Operation type.
      */
     public GridSqlOperationType opType() {

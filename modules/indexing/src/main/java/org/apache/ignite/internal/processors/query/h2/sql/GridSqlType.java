@@ -22,19 +22,19 @@ package org.apache.ignite.internal.processors.query.h2.sql;
  */
 public class GridSqlType {
     /** H2 type. */
-    private int type;
+    private final int type;
 
     /** */
-    private int scale;
+    private final int scale;
 
     /** */
-    private long precision;
+    private final long precision;
 
     /** */
-    private int displaySize;
+    private final int displaySize;
 
     /** */
-    private String sql;
+    private final String sql;
 
     /**
      * @param type H2 Type.

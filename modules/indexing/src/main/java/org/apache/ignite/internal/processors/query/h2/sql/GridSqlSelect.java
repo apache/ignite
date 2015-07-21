@@ -32,9 +32,6 @@ public class GridSqlSelect extends GridSqlQuery {
     private List<GridSqlElement> select = new ArrayList<>();
 
     /** */
-    private List<GridSqlElement> groups = new ArrayList<>();
-
-    /** */
     private int[] grpCols;
 
     /** */
@@ -42,9 +39,6 @@ public class GridSqlSelect extends GridSqlQuery {
 
     /** */
     private GridSqlElement where;
-
-    /** */
-    private GridSqlElement having;
 
     /** */
     private int havingCol = -1;
@@ -84,12 +78,14 @@ public class GridSqlSelect extends GridSqlQuery {
         if (where != null)
             buff.append("\nWHERE ").append(StringUtils.unEnclose(where.getSQL()));
 
-        if (!groups.isEmpty()) {
+        if (grpCols != null) {
             buff.append("\nGROUP BY ");
 
             buff.resetCount();
 
-            for (GridSqlElement expression : groups) {
+            for (int grpCol : grpCols) {
+                GridSqlElement expression = allExprs.get(grpCol);
+
                 buff.appendExceptFirst(", ");
 
                 if (expression instanceof GridSqlAlias)
@@ -99,8 +95,8 @@ public class GridSqlSelect extends GridSqlQuery {
             }
         }
 
-        if (having != null)
-            buff.append("\nHAVING ").append(StringUtils.unEnclose(having.getSQL()));
+        if (havingCol >= 0)
+            buff.append("\nHAVING ").append(StringUtils.unEnclose(allExprs.get(havingCol).getSQL()));
 
         getSortLimitSQL(buff);
 
@@ -155,38 +151,6 @@ public class GridSqlSelect extends GridSqlQuery {
             select.set(colIdx, expression);
 
         allExprs.set(colIdx, expression);
-    }
-
-    /**
-     * @return Expressions.
-     */
-    public Iterable<GridSqlElement> groups() {
-        return groups;
-    }
-
-    /**
-     * @return {@code true} If the select has group by expression.
-     */
-    public boolean hasGroupBy() {
-        return !groups.isEmpty();
-    }
-
-    /**
-     *
-     */
-    public void clearGroups() {
-        groups = new ArrayList<>();
-        grpCols = null;
-    }
-
-    /**
-     * @param expression Expression.
-     */
-    public void addGroupExpression(GridSqlElement expression) {
-        if (expression == null)
-            throw new NullPointerException();
-
-        groups.add(expression);
     }
 
     /**
@@ -253,20 +217,15 @@ public class GridSqlSelect extends GridSqlQuery {
      * @return Having.
      */
     public GridSqlElement having() {
-        return having;
-    }
-
-    /**
-     * @param having New having.
-     */
-    public void having(GridSqlElement having) {
-        this.having = having;
+        return havingCol >= 0 ? allExprs.get(havingCol) : null;
     }
 
     /**
      * @param col Index of HAVING column.
      */
     public void havingColumn(int col) {
+        assert col >= -1 : col;
+
         havingCol = col;
     }
 
@@ -275,18 +234,5 @@ public class GridSqlSelect extends GridSqlQuery {
      */
     public int havingColumn() {
         return havingCol;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"CloneCallsConstructors", "CloneDoesntDeclareCloneNotSupportedException"})
-    @Override public GridSqlSelect clone() {
-        GridSqlSelect res = (GridSqlSelect)super.clone();
-
-        res.groups = new ArrayList<>(groups);
-        res.grpCols =  grpCols == null ? null : grpCols.clone();
-        res.select = new ArrayList<>(select);
-        res.allExprs = new ArrayList<>(allExprs);
-
-        return res;
     }
 }

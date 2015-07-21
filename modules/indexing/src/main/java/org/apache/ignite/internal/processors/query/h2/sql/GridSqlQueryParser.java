@@ -276,20 +276,13 @@ public class GridSqlQueryParser {
 
         int[] grpIdx = GROUP_INDEXES.get(select);
 
-        if (grpIdx != null) {
+        if (grpIdx != null)
             res.groupColumns(grpIdx);
-
-            for (int idx : grpIdx)
-                res.addGroupExpression(parseExpression(expressions.get(idx)));
-        }
 
         int havingIdx = HAVING_INDEX.get(select);
 
-        if (havingIdx >= 0) {
+        if (havingIdx >= 0)
             res.havingColumn(havingIdx);
-
-            res.having(parseExpression(expressions.get(havingIdx)));
-        }
 
         processSortOrder(select.getSortOrder(), res);
 
