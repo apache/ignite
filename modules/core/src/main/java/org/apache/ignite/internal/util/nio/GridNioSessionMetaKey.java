@@ -44,7 +44,7 @@ public enum GridNioSessionMetaKey {
     /** Message writer. */
     MSG_WRITER,
 
-    /** Ssl engine. */
+    /** SSL engine. */
     SSL_ENGINE;
 
     /** Maximum count of NIO session keys in system. */
