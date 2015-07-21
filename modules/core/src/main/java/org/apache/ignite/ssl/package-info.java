@@ -15,28 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp;
-
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testframework.*;
-
 /**
- * Test for {@link TcpDiscoverySpi} with SSL.
+ * <!-- Package description. -->
+ * Contains classes for working with SSL.
  */
-public class TcpDiscoverySslSelfTest extends TcpDiscoverySelfTest {
-    /**
-     * @throws Exception If fails.
-     */
-    public TcpDiscoverySslSelfTest() throws Exception {
-        super();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setSslContextFactory(GridTestUtils.sslFactory());
-
-        return cfg;
-    }
-}
+package org.apache.ignite.ssl;

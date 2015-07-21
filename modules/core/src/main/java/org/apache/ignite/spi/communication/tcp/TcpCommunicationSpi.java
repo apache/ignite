@@ -1505,7 +1505,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 if (isSslEnabled()) {
                     GridNioSslFilter sslFilter =
-                        new GridNioSslFilter(ignite.configuration().getSslContextFactory().createSslContext(), log);
+                        new GridNioSslFilter(ignite.configuration().getSslContextFactory().create(), log);
 
                     sslFilter.directMode(true);
 
@@ -1556,6 +1556,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 return srvr;
             }
             catch (IgniteCheckedException e) {
+                if (X.hasCause(e, SSLException.class))
+                    throw new IgniteSpiException("Failed to create SSL context. SSL factory: "
+                        + ignite.configuration().getSslContextFactory() + '.', e);
+
                 lastEx = e;
 
                 if (log.isDebugEnabled())
@@ -1564,10 +1568,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 onException("Failed to bind to local port (will try next port within range) [port=" + port +
                     ", locHost=" + locHost + ']', e);
-            }
-            catch (SSLException e) {
-                throw new IgniteSpiException("Failed to create SSL context. SSL factory: "
-                    + ignite.configuration().getSslContextFactory() + '.', e);
             }
         }
 
@@ -2293,7 +2293,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         GridFutureAdapter<ByteBuffer> handFut = new GridFutureAdapter<>();
 
                         SSLEngine sslEngine = ignite.configuration().getSslContextFactory()
-                            .createSslContext().createSSLEngine();
+                            .create().createSSLEngine();
 
                         sslEngine.setUseClientMode(true);
 

@@ -63,7 +63,6 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
 
         // SSL.
         suite.addTest(new TestSuite(TcpDiscoverySslSelfTest.class));
-        suite.addTest(new TestSuite(TcpDiscoverySpiSslSelfTest.class));
 
         return suite;
     }
