@@ -108,7 +108,7 @@ public class BlockingSslHandler {
      */
     public boolean handshake() throws IgniteCheckedException, SSLException {
         if (log.isDebugEnabled())
-            log.debug("Entered handshake(): [handshakeStatus=" + handshakeStatus + ']');
+            log.debug("Entered handshake. Handshake status: " + handshakeStatus + '.');
 
         sslEngine.beginHandshake();
 
@@ -181,7 +181,7 @@ public class BlockingSslHandler {
         }
 
         if (log.isDebugEnabled())
-            log.debug("Leaved handshake(): [handshakeStatus=" + handshakeStatus + ']');
+            log.debug("Leaved handshake. Handshake status:" + handshakeStatus + '.');
 
         return handshakeFinished;
     }
