@@ -244,7 +244,7 @@
                             </group>
                             <group>
                                 <title>Security APIs</title>
-                                <packages>org.apache.ignite.plugin.security</packages>
+                                <packages>org.apache.ignite.plugin.security:org.apache.ignite.ssl</packages>
                             </group>
                             <group>
                                 <title>MXBeans classes</title>
