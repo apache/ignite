@@ -290,6 +290,14 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
             return super.addMeta(key, val);
     }
 
+    /**
+     *
+     */
+    void onServerStopped() {
+        if (sem != null)
+            sem.release(1_000_000);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridSelectorNioSessionImpl.class, this, super.toString());

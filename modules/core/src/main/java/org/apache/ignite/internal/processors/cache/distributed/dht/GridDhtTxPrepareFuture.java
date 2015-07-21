@@ -880,7 +880,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         fut.onNodeLeft(e);
                     }
                     catch (IgniteCheckedException e) {
-                        fut.onResult(e);
+                        if (!cctx.kernalContext().isStopping())
+                            fut.onResult(e);
                     }
                 }
 
@@ -927,7 +928,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                         assert req.transactionNodes() != null;
 
-                        //noinspection TryWithIdenticalCatches
                         try {
                             cctx.io().send(nearMapping.node(), req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                         }
@@ -935,7 +935,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             fut.onNodeLeft(e);
                         }
                         catch (IgniteCheckedException e) {
-                            fut.onResult(e);
+                            if (!cctx.kernalContext().isStopping())
+                                fut.onResult(e);
                         }
                     }
                 }

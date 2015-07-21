@@ -311,6 +311,9 @@ public class GridNioServer<T> {
             U.join(clientWorkers, log);
 
             filterChain.stop();
+
+            for (GridSelectorNioSessionImpl ses : sessions)
+                ses.onServerStopped();
         }
     }
 
@@ -1496,6 +1499,9 @@ public class GridNioServer<T> {
 
                     req.onDone(e);
                 }
+
+                if (closed)
+                    ses.onServerStopped();
             }
             catch (ClosedChannelException e) {
                 U.warn(log, "Failed to register accepted socket channel to selector (channel was closed): "
@@ -1524,6 +1530,9 @@ public class GridNioServer<T> {
             }
 
             sessions.remove(ses);
+
+            if (closed)
+                ses.onServerStopped();
 
             SelectionKey key = ses.key();
 
