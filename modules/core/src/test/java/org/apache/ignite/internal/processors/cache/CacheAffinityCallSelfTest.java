@@ -45,7 +45,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "myCache";
 
     /** */
-    private static final int MAX_FAILOVER_ATTEMPTS = 5;
+    private static final int MAX_FAILOVER_ATTEMPTS = 105;
 
     /** */
     private static final int SERVERS_COUNT = 4;
@@ -81,7 +81,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
@@ -138,10 +138,12 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
             assertTrue(e.getMessage().contains("Topology projection is empty"));
         }
         catch(IgniteException e) {
-            assertTrue(e.getMessage().contains("cache (or node) is stopping"));
+            assertTrue(e.getMessage().contains("Client node disconnected") ||
+                e.getMessage().contains("Failed to reconnect to cluster") ||
+                e.getMessage().contains("Failed to execute task, client node disconnected."));
         }
 
-        stopGrid(SERVERS_COUNT);
+        stopAllGrids();
     }
 
     /**

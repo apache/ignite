@@ -18,11 +18,17 @@
 package org.apache.ignite.cache.affinity;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.io.*;
+
 /**
- * Node hash resolver which uses {@link org.apache.ignite.cluster.ClusterNode#consistentId()} as alternate hash value.
+ * Node hash resolver which uses {@link ClusterNode#consistentId()} as alternate hash value.
+ *
+ * @deprecated Use {@link IgniteConfiguration#setConsistentId(Serializable)} instead.
  */
+@Deprecated
 public class AffinityNodeAddressHashResolver implements AffinityNodeHashResolver {
     /** */
     private static final long serialVersionUID = 0L;
