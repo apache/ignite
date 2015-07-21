@@ -22,14 +22,14 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.optimized.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  *
  */
-public class CacheObjectContext {
+public class CacheObjectContext implements Externalizable {
     /** */
     private GridKernalContext kernalCtx;
 
@@ -49,23 +49,29 @@ public class CacheObjectContext {
     private boolean p2pEnabled;
 
     /**
+     * Empty constructor required by {@link Externalizable}.
+     */
+    public CacheObjectContext() {
+        // No-op.
+    }
+
+    /**
      * @param kernalCtx Kernal context.
      * @param dfltAffMapper Default affinity mapper.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
-     * @param
      */
     public CacheObjectContext(GridKernalContext kernalCtx,
         AffinityKeyMapper dfltAffMapper,
         boolean cpyOnGet,
         boolean storeVal
-        ) {
+    ) {
         this.kernalCtx = kernalCtx;
-        this.p2pEnabled = kernalCtx.config().isPeerClassLoadingEnabled();
         this.dfltAffMapper = dfltAffMapper;
         this.cpyOnGet = cpyOnGet;
         this.storeVal = storeVal;
 
+        p2pEnabled = kernalCtx.config().isPeerClassLoadingEnabled();
         proc = kernalCtx.cacheObjects();
     }
 
@@ -119,10 +125,16 @@ public class CacheObjectContext {
      * @return Unwrapped object.
      */
     public Object unwrapIfNeeded(Object o, boolean keepPortable) {
-        if (processor().isFieldsIndexingEnabled() && OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(o))
-            return unwrapObject(o);
+        if (o == null)
+            return null;
 
-        return o;
+        if (!kernalContext().cacheObjects().isFieldsIndexingEnabled())
+            return o;
+
+        if (keepPortable || !kernalContext().cacheObjects().isIndexedObjectOrCollectionType(o.getClass()))
+            return o;
+
+        return unwrapObject(o);
     }
 
     /**
@@ -133,10 +145,13 @@ public class CacheObjectContext {
      * @return Unwrapped collection.
      */
     public Collection<Object> unwrapIfNeeded(Collection<Object> col, boolean keepPortable) {
-        if (processor().isFieldsIndexingEnabled())
-            return (Collection<Object>)unwrapObject(col);
+        if (F.isEmpty(col))
+            return col;
 
-        return col;
+        if (keepPortable || !kernalContext().cacheObjects().isFieldsIndexingEnabled())
+            return col;
+
+        return (Collection<Object>)unwrapObject(col);
     }
 
     /**
@@ -146,8 +161,10 @@ public class CacheObjectContext {
      * @return Unwrapped object.
      */
     private Object unwrapObject(Object obj) {
-        if (obj instanceof CacheIndexedObjectImpl)
-            return ((CacheIndexedObjectImpl)obj).deserialize(this);
+        IgniteCacheObjectProcessor objProc = kernalContext().cacheObjects();
+
+        if (objProc.isIndexedObject(obj))
+            return objProc.unwrapIndexedObject(obj);
         else if (obj instanceof Map.Entry) {
             Map.Entry<Object, Object> entry = (Map.Entry<Object, Object>)obj;
 
@@ -155,16 +172,16 @@ public class CacheObjectContext {
 
             boolean unwrapped = false;
 
-            if (key instanceof CacheIndexedObjectImpl) {
-                key = ((CacheIndexedObjectImpl)key).deserialize(this);
+            if (objProc.isIndexedObject(key)) {
+                key = objProc.unwrapIndexedObject(key);
 
                 unwrapped = true;
             }
 
             Object val = entry.getValue();
 
-            if (val instanceof CacheIndexedObjectImpl) {
-                val = ((CacheIndexedObjectImpl)val).deserialize(this);
+            if (objProc.isIndexedObject(val)) {
+                val = objProc.unwrapIndexedObject(val);
 
                 unwrapped = true;
             }
@@ -175,7 +192,7 @@ public class CacheObjectContext {
             Collection<Object> col = (Collection<Object>)obj;
 
             if (col instanceof ArrayList) {
-                ArrayList<Object> list = (ArrayList<Object>)col;
+                List<Object> list = (List<Object>)col;
 
                 int size = list.size();
 
@@ -191,7 +208,7 @@ public class CacheObjectContext {
                 return list;
             }
             else if (col instanceof Set) {
-                Set<Object> set = new HashSet<>();
+                Collection<Object> set = new HashSet<>();
 
                 for (Object obj0 : col)
                     set.add(unwrapObject(obj0));
@@ -215,5 +232,15 @@ public class CacheObjectContext {
         }
 
         return obj;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        assert false; // TODO IGNITE-950
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        assert false; // TODO IGNITE-950
     }
 }

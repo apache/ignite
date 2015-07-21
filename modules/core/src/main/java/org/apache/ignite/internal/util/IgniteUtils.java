@@ -1165,11 +1165,14 @@ public abstract class IgniteUtils {
      * @param dflt Default class to return.
      * @return Class or default given class if it can't be found.
      */
-    @Nullable public static Class<?> classForName(String cls, @Nullable Class<?> dflt) {
+    @Nullable public static Class<?> classForName(String cls, ClassLoader ldr, @Nullable Class<?> dflt) {
         try {
-            return Class.forName(cls);
+            if (ldr == null)
+                ldr = IgniteUtils.class.getClassLoader();
+
+            return Class.forName(cls, true, ldr);
         }
-        catch (ClassNotFoundException e) {
+        catch (ClassNotFoundException ignored) {
             return dflt;
         }
     }

@@ -31,6 +31,7 @@ public interface CacheObject extends Message {
     /** */
     public static final byte TYPE_BYTE_ARR = 2;
 
+    /** */
     public static final byte TYPE_OPTIMIZED = 3;
 
     /**

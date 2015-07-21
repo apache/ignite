@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
 
 /**
  * Cache object implementation for classes that support footer injection is their serialized form thus enabling fields
@@ -39,8 +38,8 @@ public class KeyCacheIndexedObjectImpl extends CacheIndexedObjectImpl implements
      * @param val Object.
      * @param valBytes Object in a serialized form.
      */
-    public KeyCacheIndexedObjectImpl(Object val, byte[] valBytes) {
-        super(val, valBytes);
+    public KeyCacheIndexedObjectImpl(CacheObjectContext objCtx, Object val, byte[] valBytes) {
+        super(objCtx, val, valBytes);
 
         assert val != null;
     }
@@ -51,8 +50,8 @@ public class KeyCacheIndexedObjectImpl extends CacheIndexedObjectImpl implements
      * @param start Object's start in the array.
      * @param len Object's len in the array.
      */
-    public KeyCacheIndexedObjectImpl(Object val, byte[] valBytes, int start, int len) {
-        super(val, valBytes, start, len);
+    public KeyCacheIndexedObjectImpl(CacheObjectContext objCtx, Object val, byte[] valBytes, int start, int len) {
+        super(objCtx, val, valBytes, start, len);
     }
 
     /** {@inheritDoc} */

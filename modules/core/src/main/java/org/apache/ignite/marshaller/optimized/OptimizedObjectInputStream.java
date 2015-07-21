@@ -1314,7 +1314,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
      * @throws IOException In case of error.
      * @throws ClassNotFoundException In case of error.
      */
-    public <F> F readField(String fieldName) throws IgniteFieldNotFoundException, IOException, ClassNotFoundException {
+    public <F> F readField(String fieldName, CacheObjectContext objCtx) throws IgniteFieldNotFoundException, IOException, ClassNotFoundException {
         int start = in.position();
 
         byte type = in.readByte(start);
@@ -1329,7 +1329,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
 
             if ((fieldType == SERIALIZABLE && idxHandler.metaHandler().metadata(in.readInt(range.start + 1)) != null)
                 || fieldType == MARSHAL_AWARE)
-                return  (F)new CacheIndexedObjectImpl(in.array(), range.start, range.len);
+                return  (F)new CacheIndexedObjectImpl(objCtx, in.array(), range.start, range.len);
             else {
                 in.position(range.start);
 

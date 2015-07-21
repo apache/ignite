@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cacheobject;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
@@ -30,8 +31,8 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
-import java.lang.reflect.*;
 import java.math.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -41,6 +42,7 @@ import static org.apache.ignite.cache.CacheMemoryMode.*;
 /**
  *
  */
+@SuppressWarnings("UnnecessaryFullyQualifiedName")
 public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter implements IgniteCacheObjectProcessor {
     /** */
     private static final sun.misc.Unsafe UNSAFE = GridUnsafe.unsafe();
@@ -55,16 +57,22 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     private volatile IgniteCacheProxy<OptimizedObjectMetadataKey, OptimizedObjectMetadata> metaDataCache;
 
     /** Metadata updates collected before metadata cache is initialized. */
-    private final ConcurrentHashMap<Integer, OptimizedObjectMetadata> metaBuf = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, OptimizedObjectMetadata> metaBuf = new ConcurrentHashMap<>();
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /** */
-    private OptimizedMarshallerIndexingHandler indexingMgr;
+    private OptimizedMarshallerIndexingHandler idxHnd;
 
     /** */
     private OptimizedMarshaller optMarsh;
+
+    /** Class presence cache map. */
+    private ConcurrentMap<Integer, Boolean> clsPresenceMap = new ConcurrentHashMap8<>();
+
+    /** Affinity fields map by type ID. */
+    private ConcurrentMap<Integer, String> affFields = new ConcurrentHashMap8<>();
 
     /**
      *
@@ -84,6 +92,13 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         IMMUTABLE_CLS.add(BigDecimal.class);
     }
 
+    /**
+     * @param ctx Context.
+     */
+    public IgniteCacheObjectProcessorImpl(GridKernalContext ctx) {
+        super(ctx);
+    }
+
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         super.start();
@@ -93,11 +108,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         if (marsh instanceof OptimizedMarshaller) {
             optMarsh = (OptimizedMarshaller)marsh;
 
-            indexingMgr = new OptimizedMarshallerIndexingHandler();
+            idxHnd = new OptimizedMarshallerIndexingHandler();
 
             OptimizedMarshallerMetaHandler metaHandler = new OptimizedMarshallerMetaHandler() {
                 @Override public void addMeta(int typeId, OptimizedObjectMetadata meta) {
-                    if (metaBuf.contains(typeId))
+                    if (metaBuf.containsKey(typeId))
                         return;
 
                     metaBuf.put(typeId, meta);
@@ -126,8 +141,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 }
             };
 
-            indexingMgr.setMetaHandler(metaHandler);
-            optMarsh.setIndexingHandler(indexingMgr);
+            idxHnd.setMetaHandler(metaHandler);
+            optMarsh.setIndexingHandler(idxHnd);
         }
     }
 
@@ -141,11 +156,70 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
             metaDataCache.putIfAbsent(new OptimizedObjectMetadataKey(e.getKey()), e.getValue());
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void onCacheStart(GridCacheContext cctx) {
+        if (!cctx.userCache())
+            return;
+
+        Collection<CacheTypeMetadata> typeMetadata = cctx.config().getTypeMetadata();
+
+        for (CacheTypeMetadata typeMeta : typeMetadata) {
+            int typeId = typeId(typeMeta.getKeyType());
+
+            if (typeId != 0 && typeMeta.getAffinityKeyFieldName() != null)
+                affFields.put(typeId, typeMeta.getAffinityKeyFieldName());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCacheStop(GridCacheContext cctx) {
+
+    }
+
     /**
-     * @param ctx Context.
+     * @param io Indexed object.
+     * @return Affinity key.
      */
-    public IgniteCacheObjectProcessorImpl(GridKernalContext ctx) {
-        super(ctx);
+    @Override public Object affinityKey(CacheIndexedObject io) {
+        try {
+            String affField = affFields.get(io.typeId());
+
+            if (affField != null)
+                return io.field(affField);
+        }
+        catch (IgniteException e) {
+            U.error(log, "Failed to get affinity field from Ignite object: " + io, e);
+        }
+
+        return io;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasClass(int typeId) {
+        Boolean res = clsPresenceMap.get(typeId);
+
+        if (res == null) {
+            try {
+                res = ctx.marshallerContext().getClass(typeId, null) != null;
+            }
+            catch (ClassNotFoundException | IgniteCheckedException ignore) {
+                res = false;
+            }
+
+            clsPresenceMap.put(typeId, res);
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isIndexedObjectOrCollectionType(Class<?> cls) {
+        return CacheIndexedObject.class.isAssignableFrom(cls) ||
+            cls == Object[].class ||
+            Collection.class.isAssignableFrom(cls) ||
+            Map.class.isAssignableFrom(cls) ||
+            Map.Entry.class.isAssignableFrom(cls);
     }
 
     /** {@inheritDoc} */
@@ -190,7 +264,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         if (obj instanceof KeyCacheObject)
             return (KeyCacheObject)obj;
 
-        return toCacheKeyObject0(obj, userObj);
+        return toCacheKeyObject0(ctx, obj, userObj);
     }
 
     /**
@@ -200,12 +274,12 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
      * @return Key cache object.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    protected KeyCacheObject toCacheKeyObject0(Object obj, boolean userObj) {
+    protected KeyCacheObject toCacheKeyObject0(CacheObjectContext ctx, Object obj, boolean userObj) {
         if (!userObj)
-            return isFieldsIndexingEnabled(obj.getClass()) ? new KeyCacheIndexedObjectImpl(obj, null) :
+            return isFieldsIndexingSupported(obj.getClass()) ? new KeyCacheIndexedObjectImpl(ctx, obj, null) :
                 new KeyCacheObjectImpl(obj, null);
 
-        return isFieldsIndexingEnabled(obj.getClass()) ? new UserKeyCacheIndexedObjectImpl(obj) :
+        return isFieldsIndexingSupported(obj.getClass()) ? new UserKeyCacheIndexedObjectImpl(ctx, obj) :
             new UserKeyCacheObjectImpl(obj);
     }
 
@@ -245,7 +319,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 return new CacheObjectImpl(null, bytes);
 
             case CacheObject.TYPE_OPTIMIZED:
-                return new CacheIndexedObjectImpl(bytes, 0, bytes.length);
+                return new CacheIndexedObjectImpl(ctx, bytes, 0, bytes.length);
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);
@@ -256,7 +330,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         if (obj == null || obj instanceof CacheObject)
             return (CacheObject)obj;
 
-        return toCacheObject0(obj, userObj);
+        return toCacheObject0(ctx, obj, userObj);
     }
 
     /**
@@ -266,7 +340,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
      * @return Cache object.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    protected CacheObject toCacheObject0(@Nullable Object obj, boolean userObj) {
+    protected CacheObject toCacheObject0(CacheObjectContext ctx, @Nullable Object obj, boolean userObj) {
         assert obj != null;
 
         if (obj instanceof byte[]) {
@@ -277,10 +351,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         }
 
         if (!userObj)
-            return isFieldsIndexingEnabled(obj.getClass()) ? new CacheIndexedObjectImpl(obj) :
+            return isFieldsIndexingSupported(obj.getClass()) ? new CacheIndexedObjectImpl(ctx, obj) :
                 new CacheObjectImpl(obj, null);
 
-        return isFieldsIndexingEnabled(obj.getClass()) ? new UserCacheIndexedObjectImpl(obj, null) :
+        return isFieldsIndexingSupported(obj.getClass()) ? new UserCacheIndexedObjectImpl(ctx, obj, null) :
             new UserCacheObjectImpl(obj, null);
     }
 
@@ -294,14 +368,23 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
             GridQueryProcessor.isEnabled(ccfg) ||
             !ccfg.isCopyOnRead();
 
-        CacheObjectContext res = new CacheObjectContext(ctx,
-            ccfg.getAffinityMapper() != null ? ccfg.getAffinityMapper() : new GridCacheDefaultAffinityKeyMapper(),
+        boolean idxObj = ctx.cacheObjects().isFieldsIndexingEnabled() && !GridCacheUtils.isSystemCache(ccfg.getName())
+            && !GridCacheUtils.isIgfsCache(ctx.config(), ccfg.getName());
+
+        AffinityKeyMapper affMapper = ccfg.getAffinityMapper();
+
+        if (affMapper == null)
+            affMapper = new GridCacheDefaultAffinityKeyMapper();
+
+        if (idxObj)
+            affMapper = new CacheIndexedObjectDefaultAffinityMapper();
+
+        ctx.resource().injectGeneric(affMapper);
+
+        return new CacheObjectContext(ctx,
+            affMapper,
             ccfg.isCopyOnRead() && memMode != OFFHEAP_VALUES,
             storeVal);
-
-        ctx.resource().injectGeneric(res.defaultAffMapper());
-
-        return res;
     }
 
     /** {@inheritDoc} */
@@ -313,13 +396,13 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public int typeId(String typeName) {
-        return indexingMgr != null ? OptimizedMarshallerUtils.resolveTypeId(typeName, indexingMgr.idMapper()) : 0;
+        return idxHnd != null ? OptimizedMarshallerUtils.resolveTypeId(typeName, idxHnd.idMapper()) : 0;
     }
 
     /** {@inheritDoc} */
     @Override public int typeId(Object obj) {
         if (obj instanceof CacheIndexedObjectImpl)
-            return ((CacheIndexedObjectImpl)obj).typeId();
+            return ((CacheIndexedObject)obj).typeId();
 
         return 0;
     }
@@ -330,71 +413,24 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPortableObject(Object obj) {
-        return false;
+    @Nullable @Override public Object unwrapIndexedObject(Object obj) throws IgniteException {
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isIndexedObject(Object obj) {
-        return obj instanceof CacheIndexedObjectImpl;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isPortableEnabled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object field(Object obj, String fieldName) throws IgniteFieldNotFoundException {
-        assert indexingMgr != null;
-
-        if (obj instanceof CacheIndexedObjectImpl) {
-            try {
-                return ((CacheIndexedObjectImpl)obj).field(fieldName, optMarsh);
-            }
-            catch (IgniteFieldNotFoundException e) {
-                throw e;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
-        else
-            throw new IgniteFieldNotFoundException("Object doesn't have field [obj=" + obj + ", field=" + fieldName
-                + "]");
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasField(Object obj, String fieldName) {
-        if (obj instanceof CacheIndexedObjectImpl) {
-            assert indexingMgr != null;
-
-            try {
-                return ((CacheIndexedObjectImpl)obj).hasField(fieldName, optMarsh);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        return false;
+        return obj instanceof CacheIndexedObject;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isFieldsIndexingEnabled() {
-        return indexingMgr != null && indexingMgr.isFieldsIndexingSupported();
+        return idxHnd != null && idxHnd.isFieldsIndexingSupported();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isFieldsIndexingEnabled(Class<?> cls) {
-        return indexingMgr != null && indexingMgr.isFieldsIndexingSupported() &&
-            indexingMgr.enableFieldsIndexingForClass(cls);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean enableFieldsIndexing(Class<?> cls) throws IgniteCheckedException {
-        return indexingMgr != null && indexingMgr.isFieldsIndexingSupported() &&
-            indexingMgr.enableFieldsIndexingForClass(cls);
+    @Override public boolean isFieldsIndexingSupported(Class<?> cls) {
+        return idxHnd != null && idxHnd.isFieldsIndexingSupported() &&
+            idxHnd.enableFieldsIndexingForClass(cls);
     }
 
     /**
@@ -426,7 +462,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                         valBytes = ctx.processor().marshal(ctx, val);
 
                     ClassLoader ldr = ctx.p2pEnabled() ?
-                        IgniteUtils.detectClassLoader(IgniteUtils.detectClass(this.val)) : U.gridClassLoader();
+                        IgniteUtils.detectClassLoader(IgniteUtils.detectClass(val)) : U.gridClassLoader();
 
                      Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
 
@@ -459,7 +495,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
          * @param val Value.
          * @param valBytes Value bytes.
          */
-        public UserCacheObjectImpl(Object val, byte[] valBytes) {
+        private UserCacheObjectImpl(Object val, byte[] valBytes) {
             super(val, valBytes);
         }
 
@@ -476,7 +512,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
                 if (ctx.storeValue()) {
                     ClassLoader ldr = ctx.p2pEnabled() ?
-                        IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
+                        IgniteUtils.detectClass(val).getClassLoader() : val.getClass().getClassLoader();
 
                     Object val = this.val != null && ctx.processor().immutable(this.val) ? this.val :
                         ctx.processor().unmarshal(ctx, valBytes, ldr);
@@ -494,7 +530,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /**
      * Wraps value provided by user, must be serialized before stored in cache.
-     * Used by classes that support fields indexing. Refer to {@link #isFieldsIndexingEnabled(Class)}.
+     * Used by classes that support fields indexing. Refer to {@link #isFieldsIndexingSupported(Class)}.
      */
     private static class UserCacheIndexedObjectImpl extends CacheIndexedObjectImpl {
         /** */
@@ -511,8 +547,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
          * @param val Value.
          * @param valBytes Value bytes.
          */
-        public UserCacheIndexedObjectImpl(Object val, byte[] valBytes) {
-            super(val, valBytes);
+        private UserCacheIndexedObjectImpl(CacheObjectContext ctx, Object val, byte[] valBytes) {
+            super(ctx, val, valBytes);
         }
 
         /** {@inheritDoc} */
@@ -527,12 +563,12 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
                 if (keepDeserialized(ctx, true)) {
                     ClassLoader ldr = ctx.p2pEnabled() ?
-                        IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
+                        IgniteUtils.detectClass(val).getClassLoader() : val.getClass().getClassLoader();
 
                     Object val = this.val != null && ctx.processor().immutable(this.val) ? this.val :
                         ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
 
-                    return new CacheIndexedObjectImpl(val, valBytes, start, len);
+                    return new CacheIndexedObjectImpl(ctx, val, valBytes, start, len);
                 }
 
                 return new CacheIndexedObjectImpl(null, valBytes, start, len);
@@ -545,7 +581,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /**
      * Wraps key provided by user, must be serialized before stored in cache.
-     * Used by classes that support fields indexing. Refer to {@link #isFieldsIndexingEnabled(Class)}.
+     * Used by classes that support fields indexing. Refer to {@link #isFieldsIndexingSupported(Class)}.
      */
     private static class UserKeyCacheIndexedObjectImpl extends KeyCacheIndexedObjectImpl {
         /** */
@@ -561,8 +597,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         /**
          * @param key Key.
          */
-        UserKeyCacheIndexedObjectImpl(Object key) {
-            super(key, null);
+        UserKeyCacheIndexedObjectImpl(CacheObjectContext ctx, Object key) {
+            super(ctx, key, null);
         }
 
         /** {@inheritDoc} */
@@ -572,14 +608,14 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                     toMarshaledFormIfNeeded(ctx);
 
                     ClassLoader ldr = ctx.p2pEnabled() ?
-                        IgniteUtils.detectClassLoader(IgniteUtils.detectClass(this.val)) : U.gridClassLoader();
+                        IgniteUtils.detectClassLoader(IgniteUtils.detectClass(val)) : U.gridClassLoader();
 
                     Object val = ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
 
-                    return new KeyCacheIndexedObjectImpl(val, valBytes, start, len);
+                    return new KeyCacheIndexedObjectImpl(ctx, val, valBytes, start, len);
                 }
 
-                return new KeyCacheIndexedObjectImpl(val, valBytes, start, len);
+                return new KeyCacheIndexedObjectImpl(ctx, val, valBytes, start, len);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to marshal object: " + val, e);
@@ -604,7 +640,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         /**
          * @param val Value.
          */
-        public UserCacheObjectByteArrayImpl(byte[] val) {
+        private UserCacheObjectByteArrayImpl(byte[] val) {
             super(val);
         }
 

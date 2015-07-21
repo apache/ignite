@@ -300,7 +300,7 @@ public enum IgniteComponentType {
     @Nullable public MessageFactory messageFactory() throws IgniteCheckedException {
         Class<?> cls;
 
-        if (msgFactoryCls == null || null == (cls = U.classForName(msgFactoryCls, null)))
+        if (msgFactoryCls == null || null == (cls = U.classForName(msgFactoryCls, null, null)))
             return null;
 
         return (MessageFactory)U.newInstance(cls);

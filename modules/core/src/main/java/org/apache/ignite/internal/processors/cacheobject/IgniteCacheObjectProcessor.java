@@ -38,6 +38,15 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public void onUtilityCacheStarted() throws IgniteCheckedException;
 
     /**
+     * Callback invoked when cache is started.
+     *
+     * @param cctx Cache context.
+     */
+    public void onCacheStart(GridCacheContext cctx);
+
+    public void onCacheStop(GridCacheContext cctx);
+
+    /**
      * @param typeName Type name.
      * @return Type ID.
      */
@@ -60,6 +69,15 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     @Nullable public Object unwrapTemporary(GridCacheContext ctx, @Nullable Object obj) throws IgniteException;
 
     /**
+     * Unwraps indexed object into user object.
+     *
+     * @param obj Indexed object.
+     * @return Unwrapped user object.
+     * @throws IgniteException If unwrap failed.
+     */
+    @Nullable public Object unwrapIndexedObject(Object obj) throws IgniteException;
+
+    /**
      * Prepares cache object for cache (e.g. copies user-provided object if needed).
      *
      * @param obj Cache object.
@@ -67,14 +85,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Object to be store in cache.
      */
     @Nullable public CacheObject prepareForCache(@Nullable CacheObject obj, GridCacheContext cctx);
-
-    /**
-     * Checks whether object is portable object.
-     *
-     * @param obj Object to check.
-     * @return {@code True} if object is already a portable object, {@code false} otherwise.
-     */
-    public boolean isPortableObject(Object obj);
 
     /**
      * Checks whether objects supports index fields extraction.
@@ -85,30 +95,28 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public boolean isIndexedObject(Object obj);
 
     /**
-     * Checks whether given class is portable.
+     * Gets affinity key for the given cache object.
      *
-     * @return {@code true} If portable objects are enabled.
+     * @param idxObj Indexed object to get affinity key for.
+     * @return Affinity key for the given cache key object.
      */
-    public boolean isPortableEnabled();
+    public Object affinityKey(CacheIndexedObject idxObj);
 
     /**
-     * Retrieves field from the given object. Object should be an instance of {@link CacheObject}.
+     * Checks whether this node has class representing the given type ID.
      *
-     * @param obj Object to get field from.
-     * @param fieldName Field name.
-     * @throws IgniteFieldNotFoundException In case if there is no such a field.
-     * @return Field value.
+     * @param typeId Type ID to check.
+     * @return {@code True} if class for the given type ID is available.
      */
-    public Object field(Object obj, String fieldName) throws IgniteFieldNotFoundException;
+    public boolean hasClass(int typeId);
 
     /**
-     * Checks whether field is set in the object. Object should be an instance of {@link CacheObject}.
+     * Checks whether the given class needs to be potentially unwrapped.
      *
-     * @param obj Object.
-     * @param fieldName Field name.
-     * @return {@code true} if field is set.
+     * @param cls Class to check.
+     * @return {@code True} if needs to be unwrapped.
      */
-    public boolean hasField(Object obj, String fieldName);
+    boolean isIndexedObjectOrCollectionType(Class<?> cls);
 
     /**
      * Checks whether this functionality is globally supported.
@@ -122,21 +130,10 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * Footer contains information about fields location in the serialized form, thus enabling fast queries without
      * a need to deserialize the object.
      *
-     * Indexing is enabled with {@link OptimizedMarshallerIndexingHandler#enableFieldsIndexingForClass(Class)}.
-     *
      * @param cls Class.
      * @return {@code true} if the footer is enabled.
      */
-    public boolean isFieldsIndexingEnabled(Class<?> cls);
-
-    /**
-     * Tries to enables fields indexing for the object of the given {@code cls}.
-     *
-     * @param cls Class.
-     * @return {@code true} if fields indexing is enabled.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public boolean enableFieldsIndexing(Class<?> cls) throws IgniteCheckedException;
+    public boolean isFieldsIndexingSupported(Class<?> cls);
 
     /**
      * @param ctx Cache object context.
@@ -175,7 +172,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public CacheObjectContext contextForCache(CacheConfiguration ccfg) throws IgniteCheckedException;
 
     /**
-     * @param ctx Cache context.
      * @param obj Key value.
      * @param userObj If {@code true} then given object is object provided by user and should be copied
      *        before stored in cache.
@@ -184,7 +180,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj);
 
     /**
-     * @param ctx Cache context.
      * @param obj Object.
      * @param userObj If {@code true} then given object is object provided by user and should be copied
      *        before stored in cache.
@@ -193,7 +188,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj);
 
     /**
-     * @param ctx Cache context.
      * @param type Object type.
      * @param bytes Object bytes.
      * @return Cache object.

@@ -30,7 +30,7 @@ import java.util.concurrent.*;
  */
 public class OptimizedMarshallerIndexingHandler {
     /** */
-    private static final ConcurrentMap<Class<?>, Boolean> indexingEnabledCache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, Boolean> indexingEnabledCache = new ConcurrentHashMap<>();
 
     /** Class descriptors by class. */
     private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
@@ -116,6 +116,13 @@ public class OptimizedMarshallerIndexingHandler {
      */
     public boolean isFieldsIndexingSupported() {
         return protocolVer != OptimizedMarshallerProtocolVersion.VER_1;
+    }
+
+    /**
+     * Clears indexing enabled cache.
+     */
+    public void clearIndexingEnabledCache() {
+        indexingEnabledCache.clear();
     }
 
     /**

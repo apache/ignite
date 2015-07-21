@@ -376,11 +376,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param o Object.
      * @return {@code true} If it is a portable object.
      */
-    private boolean isPortable(CacheObject o) {
-        if (ctx == null)
-            return false;
-
-        return ctx.cacheObjects().isPortableObject(o);
+    private boolean isIndexed(CacheObject o) {
+        return ctx != null && ctx.cacheObjects().isIndexedObject(o);
     }
 
     /**
@@ -389,7 +386,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Object class.
      */
     private Class<?> getClass(CacheObjectContext coctx, CacheObject o) {
-        return isPortable(o) ?
+        return isIndexed(o) ?
             Object.class :
             o.value(coctx, false).getClass();
     }

@@ -369,7 +369,8 @@ public class OptimizedMarshaller extends AbstractMarshaller {
      * @throws IgniteFieldNotFoundException In case if there is no such a field.
      * @throws IgniteCheckedException In case of error.
      */
-    public <T> T readField(String fieldName, byte[] arr, int off, int len, @Nullable ClassLoader clsLdr)
+    public <T> T readField(String fieldName, byte[] arr, int off, int len, @Nullable ClassLoader clsLdr,
+        CacheObjectContext objCtx)
         throws IgniteCheckedException {
 
         assert arr != null && fieldName != null;
@@ -383,7 +384,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
 
             objIn.in().bytes(arr, off, len);
 
-            return objIn.readField(fieldName);
+            return objIn.readField(fieldName, objCtx);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to find field with name: " + fieldName, e);

@@ -50,9 +50,4 @@ public class CacheOsStoreManager extends GridCacheStoreManagerAdapter {
     @Override protected CacheConfiguration cacheConfiguration() {
         return cfg;
     }
-
-    /** {@inheritDoc} */
-    @Override protected boolean convertPortable() {
-        return true;
-    }
 }

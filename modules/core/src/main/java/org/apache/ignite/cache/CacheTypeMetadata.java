@@ -31,6 +31,9 @@ import java.util.*;
  * Cache type metadata need for configuration of indexes or automatic persistence.
  */
 public class CacheTypeMetadata implements Serializable {
+    /** Default query type flag value. */
+    public static final boolean DFLT_QRY_TYPE = true;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -80,6 +83,12 @@ public class CacheTypeMetadata implements Serializable {
     /** */
     @GridToStringInclude
     private Map<String,String> aliases;
+
+    /** Affinity key field name for the cases when marshaller is used to access object fields. */
+    private String affKeyFieldName;
+
+    /** Query type flag. May be set to {@code false} if */
+    private boolean qryType = DFLT_QRY_TYPE;
 
     /**
      * Default constructor.
@@ -204,7 +213,7 @@ public class CacheTypeMetadata implements Serializable {
 
         this.valType = valType;
 
-        Class<?> cls = U.classForName(valType, null);
+        Class<?> cls = U.classForName(valType, null, null);
 
         simpleValType = cls == null ? valType : GridQueryProcessor.typeName(cls);
     }
@@ -369,6 +378,43 @@ public class CacheTypeMetadata implements Serializable {
      */
     public Map<String,String> getAliases() {
         return aliases;
+    }
+
+    /**
+     * Gets affinity key field name.
+     *
+     * @return Affinity key field name.
+     */
+    public String getAffinityKeyFieldName() {
+        return affKeyFieldName;
+    }
+
+    /**
+     * Sets affinity key field name.
+     *
+     * @param affKeyFieldName Affinity key field name.
+     */
+    public void setAffinityKeyFieldName(String affKeyFieldName) {
+        this.affKeyFieldName = affKeyFieldName;
+    }
+
+    /**
+     * Returns the flag indicating whether this type metadata descriptor should be used to define indexing.
+     * Default value is {@link #DFLT_QRY_TYPE}.
+     *
+     * @return {@code True} if the corresponding key-value pairs should be indexed.
+     */
+    public boolean isQueryType() {
+        return qryType;
+    }
+
+    /**
+     * Sets the flag indicating whether this type metadata descriptor should be used to define indexing.
+     *
+     * @param qryType If {@code true}, the corresponding key-value type will be indexed.
+     */
+    public void setQueryType(boolean qryType) {
+
     }
 
     /** {@inheritDoc} */

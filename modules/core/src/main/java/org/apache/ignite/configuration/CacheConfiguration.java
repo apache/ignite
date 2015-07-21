@@ -322,6 +322,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache store session listeners. */
     private Factory<? extends CacheStoreSessionListener>[] storeSesLsnrs;
 
+    /** Flag indicating to pass Ignite objects to store when field-aware marshalling is enabled. */
+    private boolean keepIgniteObjInStore;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -1804,6 +1807,26 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.storeSesLsnrs = storeSesLsnrs;
 
         return this;
+    }
+
+    /**
+     * Flag indicating whether Ignite objects should be passed as-is to cache store (without deserialization) when
+     * field-aware marshalling is enabled.
+     *
+     * @return Value for the keep Ignite objects in store flag.
+     */
+    public boolean isKeepIgniteObjectInStore() {
+        return keepIgniteObjInStore;
+    }
+
+    /**
+     * Sets flag indicating whether Ignite objects should be passed as-is (without deserialization) when
+     * field-aware marshalling is enabled.
+     *
+     * @param keepIgniteObjInStore Value for the keep Ignite objects in store flag.
+     */
+    public void setKeepIgniteObjectInStore(boolean keepIgniteObjInStore) {
+        this.keepIgniteObjInStore = keepIgniteObjInStore;
     }
 
     /**

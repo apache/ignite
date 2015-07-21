@@ -58,7 +58,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public static final String _VAL = "_val";
 
     /** */
-    private static final Class<?> GEOMETRY_CLASS = U.classForName("com.vividsolutions.jts.geom.Geometry", null);
+    private static final Class<?> GEOMETRY_CLASS = U.classForName("com.vividsolutions.jts.geom.Geometry", null, null);
 
     /** */
     private static final Collection<Class<?>> SQL_TYPES = new HashSet<>(F.<Class<?>>asList(
@@ -141,24 +141,51 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param ccfg Cache configuration.
+     * @param cctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void initializeCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
+    public void initializeCache(GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
+        CacheConfiguration<?, ?> ccfg = cctx.config();
+
         idx.registerCache(ccfg);
 
         try {
             if (!F.isEmpty(ccfg.getTypeMetadata())) {
+                boolean hasClasses = true;
+
+                // Check that we have all required classes on this server.
                 for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
+                    if (!meta.isQueryType())
+                        continue;
+
                     if (F.isEmpty(meta.getValueType()))
                         throw new IgniteCheckedException("Value type is not set: " + meta);
 
+                    Class<?> keyCls = U.classForName(meta.getKeyType(), ctx.defaultClassLoader(), null);
+                    Class<?> valCls = U.classForName(meta.getValueType(), ctx.defaultClassLoader(), null);
+
+                    if (keyCls == null || valCls == null) {
+                        hasClasses = false;
+
+                        break;
+                    }
+                }
+
+                if (!hasClasses && !ctx.cacheObjects().isFieldsIndexingEnabled()) {
+                    throw new IgniteCheckedException(""); // TODO ignite-950
+                }
+
+                boolean useFieldAccess = !hasClasses || ccfg.isCopyOnRead();
+
+                cctx.useClassFieldAccess(!useFieldAccess);
+
+                for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
                     TypeDescriptor desc = new TypeDescriptor();
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
-                    Class<?> keyCls = U.classForName(meta.getKeyType(), null);
-                    Class<?> valCls = U.classForName(meta.getValueType(), null);
+                    Class<?> keyCls = U.classForName(meta.getKeyType(), ctx.defaultClassLoader(), null);
+                    Class<?> valCls = U.classForName(meta.getValueType(), ctx.defaultClassLoader(), null);
 
                     desc.name(meta.getSimpleValueType());
 
@@ -166,11 +193,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     desc.keyClass(keyCls != null ? keyCls : Object.class);
 
                     TypeId typeId;
+                    TypeId altTypeId;
 
-                    if (ctx.cacheObjects().isPortableEnabled() || valCls == null || ccfg.isCopyOnRead()) {
+                    if (useFieldAccess) {
                         processCacheTypeMeta(meta, desc);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
+                        altTypeId = null;
                     }
                     else {
                         assert valCls != null;
@@ -178,10 +207,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         processClassMeta(meta, desc);
 
                         typeId = new TypeId(ccfg.getName(), valCls);
+                        altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
                     }
 
                     addTypeByName(ccfg, desc);
                     types.put(typeId, desc);
+
+                    if (altTypeId != null)
+                        types.put(altTypeId, desc);
 
                     desc.registered(idx.registerType(ccfg.getName(), desc));
                 }
@@ -240,7 +273,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            initializeCache(cctx.config());
+            initializeCache(cctx);
         }
         finally {
             busyLock.leaveBusy();
@@ -470,7 +503,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
 
-            if (!(key instanceof CacheIndexedObjectImpl) && !ctx.cacheObjects().isPortableObject(key)) {
+            if (!ctx.cacheObjects().isIndexedObject(key)) {
                 Class<?> keyCls = key.value(coctx, false).getClass();
 
                 if (!desc.keyClass().isAssignableFrom(keyCls))
@@ -1203,6 +1236,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 int order = 0;
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
+                    // Skip _val field as it is an implicit field.
+                    if (_VAL.equals(idxField.getKey()))
+                        continue;
+
                     Property prop = buildPortableProperty(idxField.getKey(), idxField.getValue().get1(), aliases);
 
                     d.addProperty(prop, false);
@@ -1590,17 +1627,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Object value(Object key, Object val) throws IgniteCheckedException {
-            Object obj;
+            CacheIndexedObject obj;
 
             if (parent != null) {
-                obj = parent.value(key, val);
+                Object obj0 = parent.value(key, val);
 
-                if (obj == null)
+                if (obj0 == null)
                     return null;
 
-                if (!ctx.cacheObjects().isIndexedObject(obj))
+                if (!ctx.cacheObjects().isIndexedObject(obj0))
                     throw new IgniteCheckedException("Non-indexed object received as a result of property extraction " +
-                        "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
+                        "[parent=" + parent + ", propName=" + propName + ", obj=" + obj0 + ']');
+
+                obj = (CacheIndexedObject)obj0;
             }
             else {
                 int isKeyProp0 = isKeyProp;
@@ -1608,10 +1647,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (isKeyProp0 == 0) {
                     // Key is allowed to be a non-portable object here.
                     // We check key before value consistently with ClassProperty.
-                    if (ctx.cacheObjects().isIndexedObject(key) && ctx.cacheObjects().hasField(key, propName))
-                        isKeyProp = isKeyProp0 = 1;
-                    else if (ctx.cacheObjects().hasField(val, propName))
-                        isKeyProp = isKeyProp0 = -1;
+                    if (ctx.cacheObjects().isIndexedObject(key)) {
+                        CacheIndexedObject key0 = (CacheIndexedObject)key;
+
+                        if (key0.hasField(propName))
+                            isKeyProp = isKeyProp0 = 1;
+                    }
+                    else if (ctx.cacheObjects().isIndexedObject(val)) {
+                        CacheIndexedObject val0 = (CacheIndexedObject)val;
+
+                        if (val0.hasField(propName))
+                            isKeyProp = isKeyProp0 = -1;
+                    }
                     else {
                         U.warn(log, "Neither key nor value have property " +
                             "[propName=" + propName + ", key=" + key + ", val=" + val + "]");
@@ -1620,12 +1667,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                obj = isKeyProp0 == 1 ? key : val;
+                obj = (CacheIndexedObject)(isKeyProp0 == 1 ? key : val);
             }
 
-            Object res = ctx.cacheObjects().field(obj, propName);
-
-            return res;
+            return obj.field(propName);
         }
 
         /** {@inheritDoc} */

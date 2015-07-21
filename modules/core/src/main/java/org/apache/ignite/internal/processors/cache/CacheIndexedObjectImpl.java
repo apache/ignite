@@ -31,7 +31,7 @@ import java.nio.*;
  * Cache object implementation for classes that support footer injection is their serialized form thus enabling fields
  * search and extraction without necessity to fully deserialize an object.
  */
-public class CacheIndexedObjectImpl extends CacheObjectAdapter {
+public class CacheIndexedObjectImpl extends CacheObjectAdapter implements CacheIndexedObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,7 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
     private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** */
-    private Boolean hasClass;
+    private CacheObjectContext ctx;
 
     /** */
     protected int start;
@@ -61,8 +61,8 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      * Instantiates {@code CacheIndexedObjectImpl} with object.
      * @param val Object.
      */
-    public CacheIndexedObjectImpl(Object val) {
-        this(val, null, 0, 0);
+    public CacheIndexedObjectImpl(CacheObjectContext ctx, Object val) {
+        this(ctx, val, null, 0, 0);
     }
 
     /**
@@ -71,8 +71,8 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      * @param start Object's start in the array.
      * @param len Object's len in the array.
      */
-    public CacheIndexedObjectImpl(byte[] valBytes, int start, int len) {
-        this(null, valBytes, start, len);
+    public CacheIndexedObjectImpl(CacheObjectContext ctx, byte[] valBytes, int start, int len) {
+        this(ctx, null, valBytes, start, len);
     }
 
     /**
@@ -80,8 +80,8 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      * @param val Object.
      * @param valBytes Object serialized to byte array.
      */
-    public CacheIndexedObjectImpl(Object val, byte[] valBytes) {
-        this(val, valBytes, 0, valBytes != null ? valBytes.length : 0);
+    public CacheIndexedObjectImpl(CacheObjectContext ctx, Object val, byte[] valBytes) {
+        this(ctx, val, valBytes, 0, valBytes != null ? valBytes.length : 0);
     }
 
     /**
@@ -91,9 +91,10 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      * @param start Object's start in the array.
      * @param len Object's len in the array.
      */
-    public CacheIndexedObjectImpl(Object val, byte[] valBytes, int start, int len) {
+    public CacheIndexedObjectImpl(CacheObjectContext ctx, Object val, byte[] valBytes, int start, int len) {
         assert val != null || (valBytes != null && start >= 0 && len > 0);
 
+        this.ctx = ctx;
         this.val = val;
         this.valBytes = valBytes;
         this.start = start;
@@ -121,6 +122,8 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
     @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert valBytes != null;
 
+        this.ctx = ctx;
+
         if (val == null && keepDeserialized(ctx, true))
             val = ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
     }
@@ -146,7 +149,7 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      *
      * @return Type ID.
      */
-    public int typeId() {
+    @Override public int typeId() {
         assert valBytes != null;
 
         int typeId = UNSAFE.getInt(valBytes, BYTE_ARR_OFF + start + 1);
@@ -161,40 +164,47 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      * Checks whether a wrapped object has field with name {@code fieldName}.
      *
      * @param fieldName Field name.
-     * @param marsh Marshaller.
      * @return {@code true} if has.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public boolean hasField(String fieldName, OptimizedMarshaller marsh) throws IgniteCheckedException {
+    @Override public boolean hasField(String fieldName) {
         assert valBytes != null;
 
-        return marsh.hasField(fieldName, valBytes, start, len);
+        try {
+            OptimizedMarshaller marsh = (OptimizedMarshaller)ctx.kernalContext().config().getMarshaller();
+
+            return marsh.hasField(fieldName, valBytes, start, len);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
      * Searches and returns field if it exists.
      *
      * @param fieldName Field name.
-     * @param marsh Marshaller.
      * @return Field.
-     * @throws IgniteFieldNotFoundException In case if there is no such a field.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public Object field(String fieldName, OptimizedMarshaller marsh) throws IgniteCheckedException {
+    @Override public <T> T field(String fieldName) {
         assert valBytes != null;
 
-        return marsh.readField(fieldName, valBytes, start, len, val != null ? val.getClass().getClassLoader() : null);
+        try {
+            OptimizedMarshaller marsh = (OptimizedMarshaller)ctx.kernalContext().config().getMarshaller();
+
+            return marsh.readField(fieldName, valBytes, start, len,
+                val != null ? val.getClass().getClassLoader() : null, ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
-    /**
-     * Deserializes wrapped object.
-     *
-     * @param ctx Cache context.
-     * @return Deserialized object.
-     */
-    public Object deserialize(CacheObjectContext ctx) {
+    /** {@inheritDoc} */
+    @Override public <T> T deserialize() {
         if (val != null)
-            return val;
+            return (T)val;
 
         try {
             assert valBytes != null;
@@ -205,7 +215,7 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
             if (keepDeserialized(ctx, false))
                 this.val = val;
 
-            return val;
+            return (T)val;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to unmarshall object.", e);
@@ -343,33 +353,6 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
         if (ctx.copyOnGet())
             return false;
 
-        return !checkCls || hasClassOnNode(ctx);
-    }
-
-    /**
-     * Checks whether a node has a class definition of a marhsaller object or not.
-     *
-     * @param ctx Cache object context.
-     * @return {@code true} if has, {@code false} otherwise.
-     */
-    private boolean hasClassOnNode(CacheObjectContext ctx) {
-        if (val != null)
-            return true;
-
-        if (hasClass != null)
-            return hasClass;
-
-        assert valBytes != null;
-
-        try {
-            Class<?> cls = ctx.kernalContext().marshallerContext().getClass(typeId(), null);
-
-            hasClass = cls != null;
-        }
-        catch (Exception ignore) {
-            hasClass = false;
-        }
-
-        return hasClass;
+        return !checkCls || ctx.processor().hasClass(typeId());
     }
 }

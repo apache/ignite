@@ -370,22 +370,15 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 return;
             }
 
-            Collection<Object> keys0;
+            final boolean unwrap = convertPortable();
 
-            if (OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(keys) || convertPortable()) {
-                keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
-                    @Override public Object apply(KeyCacheObject key) {
-                        return cctx.unwrapIfNeeded(key.value(cctx.cacheObjectContext(), false), false);
-                    }
-                });
-            }
-            else {
-                keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
-                    @Override public Object apply(KeyCacheObject key) {
-                        return key.value(cctx.cacheObjectContext(), false);
-                    }
-                });
-            }
+            Collection<Object> keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
+                @Override public Object apply(KeyCacheObject key) {
+                    Object val = key.value(cctx.cacheObjectContext(), false);
+
+                    return unwrap ? cctx.unwrapIfNeeded(val, false) : val;
+                }
+            });
 
             if (log.isDebugEnabled())
                 log.debug("Loading values from store for keys: " + keys0);
@@ -836,7 +829,10 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     /**
      * @return Convert-portable flag.
      */
-    protected abstract boolean convertPortable();
+    protected boolean convertPortable() {
+        return !(cctx.kernalContext().cacheObjects().isFieldsIndexingEnabled() &&
+            cacheConfiguration().isKeepIgniteObjectInStore());
+    }
 
     /**
      *

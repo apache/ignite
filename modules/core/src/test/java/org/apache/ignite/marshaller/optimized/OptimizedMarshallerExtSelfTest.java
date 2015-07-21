@@ -17,9 +17,7 @@
 
 package org.apache.ignite.marshaller.optimized;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -33,10 +31,13 @@ import java.util.concurrent.*;
 @GridCommonTest(group = "Marshaller")
 public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest {
     /** */
-    private static ConcurrentHashMap<Integer, OptimizedObjectMetadata> META_BUF = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Integer, OptimizedObjectMetadata> META_BUF = new ConcurrentHashMap<>();
 
     /** */
     private static OptimizedMarshallerIndexingHandler idxHandler;
+
+    /** */
+    private CacheObjectContext objCtx;
 
     /** */
     private static final OptimizedMarshallerMetaHandler META_HANDLER = new OptimizedMarshallerMetaHandler() {
@@ -49,6 +50,17 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         }
     };
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        META_BUF.clear();
+
+        setupIndexingHandler();
+
+        objCtx = new CacheObjectContext(grid().context(), new CacheIndexedObjectDefaultAffinityMapper(), true, false);
+    }
+
     /**
      * @throws Exception
      */
@@ -60,16 +72,14 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         idxHandler = (OptimizedMarshallerIndexingHandler)field.get(marsh);
 
         idxHandler.setMetaHandler(META_HANDLER);
+
+        idxHandler.clearIndexingEnabledCache();
     }
 
     /**
      * @throws Exception In case of error.
      */
     public void testHasField() throws Exception {
-        META_BUF.clear();
-
-        setupIndexingHandler();
-
         OptimizedMarshaller marsh = (OptimizedMarshaller)OptimizedMarshallerExtSelfTest.marsh;
 
         assertTrue(idxHandler.enableFieldsIndexingForClass(TestObject.class));
@@ -90,10 +100,6 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
      * @throws Exception In case of error.
      */
     public void testReadField() throws Exception {
-        META_BUF.clear();
-
-        setupIndexingHandler();
-
         OptimizedMarshaller marsh = (OptimizedMarshaller)OptimizedMarshallerExtSelfTest.marsh;
 
         assertTrue(idxHandler.enableFieldsIndexingForClass(TestObject.class));
@@ -105,12 +111,12 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
 
         // Simple field extraction.
 
-        String text = marsh.readField("str", arr, 0, arr.length, null);
+        String text = marsh.readField("str", arr, 0, arr.length, null, objCtx);
 
         assertEquals(testObj.str, text);
 
         // Serializable extraction (doesn't have meta, thus doesn't have footer)
-        TestObject2 o2 = marsh.readField("o2", arr, 0, arr.length, null);
+        TestObject2 o2 = marsh.readField("o2", arr, 0, arr.length, null, objCtx);
 
         assertEquals(testObj.o2, o2);
 
@@ -121,7 +127,7 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         arr = marsh.marshal(testObj);
 
         // Must be returned in a wrapped form, since metadata was added enabling the footer.
-        CacheIndexedObjectImpl cacheObject = marsh.readField("o2", arr, 0, arr.length, null);
+        CacheIndexedObjectImpl cacheObject = marsh.readField("o2", arr, 0, arr.length, null, objCtx);
 
 
         arr = cacheObject.valueBytes(null);
@@ -135,17 +141,13 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         // Check enclosed objects fields
         assertTrue(marsh.hasField("i", arr, start.getInt(cacheObject), len.getInt(cacheObject)));
         assertEquals(testObj.o2.i, (int)marsh.readField("i", arr, start.getInt(cacheObject), len.getInt(cacheObject),
-            null));
+            null, objCtx));
     }
 
     /**
      * @throws Exception In case of error.
      */
     public void testHandles() throws Exception {
-        META_BUF.clear();
-
-        setupIndexingHandler();
-
         OptimizedMarshaller marsh = (OptimizedMarshaller)OptimizedMarshallerExtSelfTest.marsh;
 
         assertTrue(idxHandler.enableFieldsIndexingForClass(SelfLinkObject.class));
@@ -158,11 +160,11 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
 
         byte[] arr = marsh.marshal(selfLinkObject);
 
-        String str2 = marsh.readField("str2", arr, 0, arr.length, null);
+        String str2 = marsh.readField("str2", arr, 0, arr.length, null, objCtx);
 
         assertEquals(selfLinkObject.str1, str2);
 
-        CacheIndexedObjectImpl cacheObj = marsh.readField("link", arr, 0, arr.length, null);
+        CacheIndexedObjectImpl cacheObj = marsh.readField("link", arr, 0, arr.length, null, objCtx);
 
         arr = cacheObj.valueBytes(null);
 
@@ -176,10 +178,6 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
      * @throws Exception In case of error.
      */
     public void testMarshalAware() throws Exception {
-        META_BUF.clear();
-
-        setupIndexingHandler();
-
         OptimizedMarshaller marsh = (OptimizedMarshaller)OptimizedMarshallerExtSelfTest.marsh;
 
         assertTrue(idxHandler.enableFieldsIndexingForClass(TestMarshalAware.class));
@@ -196,11 +194,11 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         assertEquals(3, META_BUF.size());
 
         // Working with fields
-        String text = marsh.readField("text", arr, 0, arr.length, null);
+        String text = marsh.readField("text", arr, 0, arr.length, null, objCtx);
 
         assertEquals(test.text, text);
 
-        CacheIndexedObjectImpl cacheObj = marsh.readField("aware", arr, 0, arr.length, null);
+        CacheIndexedObjectImpl cacheObj = marsh.readField("aware", arr, 0, arr.length, null, objCtx);
         byte[] cacheObjArr = cacheObj.valueBytes(null);
 
         Field start = cacheObj.getClass().getDeclaredField("start");
@@ -209,11 +207,11 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         Field len = cacheObj.getClass().getDeclaredField("len");
         len.setAccessible(true);
 
-        Date date = marsh.readField("date", cacheObjArr, start.getInt(cacheObj), len.getInt(cacheObj), null);
+        Date date = marsh.readField("date", cacheObjArr, start.getInt(cacheObj), len.getInt(cacheObj), null, objCtx);
 
         assertEquals(test.aware.date, date);
 
-        cacheObj = marsh.readField("testObject2", arr, 0, arr.length, null);
+        cacheObj = marsh.readField("testObject2", arr, 0, arr.length, null, objCtx);
         cacheObjArr = cacheObj.valueBytes(null);
 
         start = cacheObj.getClass().getDeclaredField("start");
@@ -222,7 +220,7 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         len = cacheObj.getClass().getDeclaredField("len");
         len.setAccessible(true);
 
-        int n = marsh.readField("i", cacheObjArr, start.getInt(cacheObj), len.getInt(cacheObj), null);
+        int n = marsh.readField("i", cacheObjArr, start.getInt(cacheObj), len.getInt(cacheObj), null, objCtx);
 
         assertEquals(test.testObject2.i, n);
 
