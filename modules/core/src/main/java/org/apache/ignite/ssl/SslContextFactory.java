@@ -41,6 +41,9 @@ import java.util.*;
  * </pre>
  */
 public class SslContextFactory implements Factory<SSLContext> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default key store type. */
     public static final String DFLT_STORE_TYPE = "JKS";
 
