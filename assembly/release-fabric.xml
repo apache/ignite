@@ -35,6 +35,18 @@
 
     <files>
         <file>
+            <source>assembly/LICENSE_FABRIC</source>
+            <destName>LICENSE</destName>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
+            <source>assembly/NOTICE_FABRIC</source>
+            <destName>NOTICE</destName>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
             <source>examples/pom-standalone.xml</source>
             <outputDirectory>/examples</outputDirectory>
             <destName>pom.xml</destName>

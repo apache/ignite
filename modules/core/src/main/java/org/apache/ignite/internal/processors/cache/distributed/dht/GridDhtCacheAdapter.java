@@ -51,7 +51,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     private static final long serialVersionUID = 0L;
 
     /** Topology. */
-    private GridDhtPartitionTopology top;
+    private GridDhtPartitionTopologyImpl top;
 
     /** Preloader. */
     protected GridCachePreloader preldr;
@@ -131,6 +131,18 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         // Clean up to help GC.
         preldr = null;
         top = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReconnected() {
+        super.onReconnected();
+
+        ctx.affinity().onReconnected();
+
+        top.onReconnected();
+
+        if (preldr != null)
+            preldr.onReconnected();
     }
 
     /** {@inheritDoc} */

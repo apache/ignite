@@ -224,21 +224,17 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
     private boolean touch(EvictableEntry<K, V> entry) {
         Holder<K, V> holder = entry.meta();
 
-        // Entry has not been add yet to backed queue..
+        // Entry has not been added yet to backed queue.
         if (holder == null) {
             while (true) {
                 holder = new Holder<>(entry, orderCnt.incrementAndGet());
 
+                if (entry.putMetaIfAbsent(holder) != null)
+                    return false; // Set has not been changed.
+
                 set.add(holder);
 
-                if (entry.putMetaIfAbsent(holder) != null) {
-                    // Was concurrently added, need to remove it from queue.
-                    removeHolder(holder);
-
-                    // Set has not been changed.
-                    return false;
-                }
-                else if (holder.order > 0) {
+                if (holder.order > 0) {
                     if (!entry.isCached()) {
                         // Was concurrently evicted, need to remove it from queue.
                         removeHolder(holder);
@@ -253,11 +249,6 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
                 // If holder was removed by concurrent shrink() call, we must repeat the whole cycle.
                 else if (!entry.removeMeta(holder))
                     return false;
-                else {
-                    memSize.add(-entry.size());
-
-                    return true;
-                }
             }
         }
 

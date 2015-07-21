@@ -26,6 +26,7 @@ import org.scalatest._
 
 import java.util
 
+import org.apache.ignite.visor.commands.open.VisorOpenCommand._
 import org.apache.ignite.visor.commands.tasks.VisorTasksCommand._
 
 import scala.collection.JavaConversions._

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.plugin.security;
 
+import org.apache.ignite.cluster.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -24,7 +25,7 @@ import org.jetbrains.annotations.*;
  */
 public enum SecuritySubjectType {
     /**
-     * Subject type for a remote {@link org.apache.ignite.cluster.ClusterNode}.
+     * Subject type for a remote {@link ClusterNode}.
      */
     REMOTE_NODE,
 

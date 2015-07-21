@@ -41,15 +41,17 @@ import java.util.concurrent.*;
  * you will need to do the following:
  * <ul>
  *     <li>
- *         Start a Ignite node with configured cache in the same JVM
- *         where you application is running.
+ *         Start an Ignite node with proper configuration in embedded mode
+ *         (i.e., in the same JVM where the application is running). It can
+ *         already have predefined caches, but it's not required - caches
+ *         will be created automatically on first access if needed.
  *     </li>
  *     <li>
- *         Configure {@code GridSpringCacheManager} as a cache provider
- *         in Spring application context.
+ *         Configure {@code SpringCacheManager} as a cache provider
+ *         in the Spring application context.
  *     </li>
  * </ul>
- * {@code GridSpringCacheManager} can start a node itself on its startup
+ * {@code SpringCacheManager} can start a node itself on its startup
  * based on provided Ignite configuration. You can provide path to a
  * Spring configuration XML file, like below (path can be absolute or
  * relative to {@code IGNITE_HOME}):
@@ -61,9 +63,9 @@ import java.util.concurrent.*;
  *         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
  *         http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd"&gt;
  *     &lt;-- Provide configuration file path. --&gt;
- *     &lt;bean id="cacheManager" class="org.apache.ignite.cache.spring.GridSpringCacheManager"&gt;
+ *     &lt;bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager"&gt;
  *         &lt;property name="configurationPath" value="examples/config/spring-cache.xml"/&gt;
- *     &lt;/bean>
+ *     &lt;/bean&gt;
  *
  *     &lt;-- Use annotation-driven caching configuration. --&gt;
  *     &lt;cache:annotation-driven/&gt;
@@ -78,7 +80,7 @@ import java.util.concurrent.*;
  *         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
  *         http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd"&gt;
  *     &lt;-- Provide configuration bean. --&gt;
- *     &lt;bean id="cacheManager" class="org.apache.ignite.cache.spring.GridSpringCacheManager"&gt;
+ *     &lt;bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager"&gt;
  *         &lt;property name="configuration"&gt;
  *             &lt;bean id="gridCfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *                 ...
@@ -104,7 +106,7 @@ import java.util.concurrent.*;
  *         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
  *         http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd"&gt;
  *     &lt;-- Provide Grid name. --&gt;
- *     &lt;bean id="cacheManager" class="org.apache.ignite.cache.spring.GridSpringCacheManager"&gt;
+ *     &lt;bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager"&gt;
  *         &lt;property name="gridName" value="myGrid"/&gt;
  *     &lt;/bean>
  *
@@ -247,7 +249,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
         if (cfgPath != null && cfg != null) {
             throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
                 "provided. Set only one of these properties if you need to start a Ignite node inside of " +
-                "GridSpringCacheManager. If you already have a node running, omit both of them and set" +
+                "SpringCacheManager. If you already have a node running, omit both of them and set" +
                 "'gridName' property.");
         }
 

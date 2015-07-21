@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -133,7 +133,13 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
      *
      * @throws Exception If failed.
      */
-    protected void checkRemovedLatch(IgniteCountDownLatch latch) throws Exception {
+    protected void checkRemovedLatch(final IgniteCountDownLatch latch) throws Exception {
+        assert GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return latch.removed();
+            }
+        }, 5000);
+
         assert latch.removed();
 
         assert latch.count() == 0;
@@ -177,7 +183,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
      */
     private void checkAwait() throws Exception {
         // Check only 'false' cases here. Successful await is tested over the grid.
-        IgniteCountDownLatch latch = createLatch("await", 5, true);
+        IgniteCountDownLatch latch = createLatch("await", 5, false);
 
         assert !latch.await(10);
         assert !latch.await(10, MILLISECONDS);

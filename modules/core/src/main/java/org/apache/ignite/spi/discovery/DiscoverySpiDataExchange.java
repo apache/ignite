@@ -39,7 +39,8 @@ public interface DiscoverySpiDataExchange {
     /**
      * Notifies discovery manager about data received from remote node.
      *
-     * @param joiningNodeId Remote node ID.
+     * @param joiningNodeId ID of new node that joins topology.
+     * @param nodeId ID of the node provided data.
      * @param data Collection of discovery data objects from different components.
      */
     public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data);

@@ -96,7 +96,7 @@ public class CacheLocalOffHeapAndSwapMetricsSelfTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         if (cache != null)
-            cache.close();
+            cache.destroy();
     }
 
     /**

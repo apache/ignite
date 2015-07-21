@@ -145,8 +145,12 @@ public class GridCacheAttributes implements Serializable {
     public String affinityHashIdResolverClassName() {
         AffinityFunction aff = ccfg.getAffinity();
 
-        if (aff instanceof RendezvousAffinityFunction)
-            return className(((RendezvousAffinityFunction)aff).getHashIdResolver());
+        if (aff instanceof RendezvousAffinityFunction) {
+            if (((RendezvousAffinityFunction) aff).getHashIdResolver() == null)
+                return null;
+
+            return className(((RendezvousAffinityFunction) aff).getHashIdResolver());
+        }
 
         return null;
     }
@@ -186,7 +190,10 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Transaction manager lookup class name.
+     * @deprecated Transaction manager lookup must be configured in 
+     *  {@link TransactionConfiguration#getTxManagerLookupClassName()}.
      */
+    @Deprecated
     public String transactionManagerLookupClassName() {
         return ccfg.getTransactionManagerLookupClassName();
     }

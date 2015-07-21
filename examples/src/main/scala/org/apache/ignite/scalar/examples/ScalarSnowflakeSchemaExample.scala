@@ -86,11 +86,11 @@ object ScalarSnowflakeSchemaExample {
                     queryProductPurchases()
                 }
                 finally {
-                    factCache.close()
+                    factCache.destroy()
                 }
             }
             finally {
-                dimCache.close()
+                dimCache.destroy()
             }
         }
     }

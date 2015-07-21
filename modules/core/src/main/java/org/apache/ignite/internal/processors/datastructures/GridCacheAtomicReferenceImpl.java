@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.concurrent.*;
@@ -55,6 +54,9 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
     /** Status.*/
     private volatile boolean rmvd;
+
+    /** Check removed flag. */
+    private boolean rmvCheck;
 
     /** Atomic reference key. */
     private GridCacheInternalKey key;
@@ -156,8 +158,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     }
 
     /** {@inheritDoc} */
-    @Override public void onInvalid(@Nullable Exception err) {
-        // No-op.
+    @Override public void needCheckNotRemoved() {
+        rmvCheck = true;
     }
 
     /** {@inheritDoc} */
@@ -293,7 +295,31 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      */
     private void checkRemoved() throws IllegalStateException {
         if (rmvd)
-            throw new IllegalStateException("Atomic reference was removed from cache: " + name);
+            throw removedError();
+
+        if (rmvCheck) {
+            try {
+                rmvd = atomicView.get(key) == null;
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+
+            rmvCheck = false;
+
+            if (rmvd) {
+                ctx.kernalContext().dataStructures().onRemoved(key, this);
+
+                throw removedError();
+            }
+        }
+    }
+
+    /**
+     * @return Error.
+     */
+    private IllegalStateException removedError() {
+        return new IllegalStateException("Atomic reference was removed from cache: " + name);
     }
 
     /** {@inheritDoc} */

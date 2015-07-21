@@ -279,11 +279,17 @@ public class GridCacheConcurrentMap {
      * @param loadFactor  the load factor threshold, used to control resizing.
      *      Resizing may be performed when the average number of elements per
      *      bin exceeds this threshold.
+     * @param factory Entries factory.
      * @throws IllegalArgumentException if the initial capacity of
      *      elements is negative or the load factor is non-positive.
      */
-    public GridCacheConcurrentMap(GridCacheContext ctx, int initCap, float loadFactor) {
+    public GridCacheConcurrentMap(GridCacheContext ctx,
+        int initCap,
+        float loadFactor,
+        @Nullable GridCacheMapEntryFactory factory) {
         this(ctx, initCap, loadFactor, DFLT_CONCUR_LEVEL);
+
+        this.factory = factory;
     }
 
     /**
@@ -309,6 +315,13 @@ public class GridCacheConcurrentMap {
         assert factory != null;
 
         this.factory = factory;
+    }
+
+    /**
+     * @return Entries factory.
+     */
+    public GridCacheMapEntryFactory getEntryFactory() {
+        return factory;
     }
 
     /**

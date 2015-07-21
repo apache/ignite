@@ -35,6 +35,7 @@ import java.util.concurrent.locks.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.internal.util.typedef.internal.CU.*;
 
 /**
  * Cache sequence implementation.
@@ -59,6 +60,9 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
     /** Removed flag. */
     private volatile boolean rmvd;
+
+    /** Check removed flag. */
+    private boolean rmvCheck;
 
     /** Sequence key. */
     private GridCacheInternalKey key;
@@ -390,7 +394,31 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      */
     private void checkRemoved() throws IllegalStateException {
         if (rmvd)
-            throw new IllegalStateException("Sequence was removed from cache: " + name);
+            throw removedError();
+
+        if (rmvCheck) {
+            try {
+                rmvd = seqView.get(key) == null;
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+
+            rmvCheck = false;
+
+            if (rmvd) {
+                ctx.kernalContext().dataStructures().onRemoved(key, this);
+
+                throw removedError();
+            }
+        }
+    }
+
+    /**
+     * @return Error.
+     */
+    private IllegalStateException removedError() {
+        return new IllegalStateException("Sequence was removed from cache: " + name);
     }
 
     /** {@inheritDoc} */
@@ -399,8 +427,8 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     }
 
     /** {@inheritDoc} */
-    @Override public void onInvalid(@Nullable Exception err) {
-        // No-op.
+    @Override public void needCheckNotRemoved() {
+        rmvCheck = true;
     }
 
     /** {@inheritDoc} */
@@ -435,11 +463,9 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      */
     @SuppressWarnings("TooBroadScope")
     private Callable<Long> internalUpdate(final long l, final boolean updated) {
-        return new Callable<Long>() {
+        return retryTopologySafe(new Callable<Long>() {
             @Override public Long call() throws Exception {
-                IgniteInternalTx tx = CU.txStartInternal(ctx, seqView, PESSIMISTIC, REPEATABLE_READ);
-
-                try {
+                try (IgniteInternalTx tx = CU.txStartInternal(ctx, seqView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicSequenceValue seq = seqView.get(key);
 
                     checkRemoved();
@@ -506,11 +532,9 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                     U.error(log, "Failed to get and add: " + this, e);
 
                     throw e;
-                } finally {
-                    tx.close();
                 }
             }
-        };
+        });
     }
 
     /** {@inheritDoc} */

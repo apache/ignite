@@ -34,6 +34,7 @@ import javax.cache.event.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
@@ -104,6 +105,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache with read-through write-through behavior disabled.
      */
     public IgniteCache<K, V> withSkipStore();
+
+    /**
+     * @return Cache with no-retries behavior enabled.
+     */
+    public IgniteCache<K, V> withNoRetries();
 
     /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
@@ -538,9 +544,21 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         CacheEntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
+     * Closes this cache instance.
+     * <p>
+     * For local cache equivalent to {@link #destroy()}.
+     * For distributed caches, if called on clients, stops client cache, if called on a server node,
+     * just closes this cache instance and does not destroy cache data.
+     * <p>
+     * After cache instance is closed another {@link IgniteCache} instance for the same
+     * cache can be created using {@link Ignite#cache(String)} method.
+     */
+    @Override public void close();
+
+    /**
      * Completely deletes the cache with all its data from the system on all cluster nodes.
      */
-    @Override void close();
+    public void destroy();
 
     /**
      * This cache node to re-balance its partitions. This method is usually used when
@@ -554,7 +572,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * the left nodes, and that nodes are restarted before
      * {@link CacheConfiguration#getRebalanceDelay() rebalanceDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
-     * {@link RendezvousAffinityFunction#setHashIdResolver(AffinityNodeHashResolver)} to make sure that
+     * {@link IgniteConfiguration#setConsistentId(Serializable)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
      * See {@link CacheConfiguration#getRebalanceDelay()} for more information on how to configure

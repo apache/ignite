@@ -132,7 +132,7 @@ public interface ClusterGroup {
      * @param val Optional attribute value to match.
      * @return Cluster group for nodes containing specified attribute.
      */
-    public ClusterGroup forAttribute(String name, @Nullable String val);
+    public ClusterGroup forAttribute(String name, @Nullable Object val);
 
     /**
      * Creates a cluster group of nodes started in server mode.
@@ -191,6 +191,15 @@ public interface ClusterGroup {
      * @return Cluster group for nodes residing on the same host as the specified node.
      */
     public ClusterGroup forHost(ClusterNode node);
+
+    /**
+     * Gets cluster group consisting from the nodes running on the hosts specified.
+     *
+     * @param host Host name to get nodes to put in cluster
+     * @param hosts Host names to get nodes to put in cluster.
+     * @return Cluster group for nodes residing on the hosts specified.
+     */
+    public ClusterGroup forHost(String host, String... hosts);
 
     /**
      * Gets a cluster group consisting from the daemon nodes.
@@ -259,6 +268,13 @@ public interface ClusterGroup {
      * @return First node from the list of nodes in this cluster group or {@code null} if the cluster group is empty.
      */
     public ClusterNode node();
+
+    /**
+     * Gets the read-only collection of hostnames in this cluster group.
+     *
+     * @return All hostnames in this cluster group.
+     */
+    public Collection<String> hostNames();
 
     /**
      * Gets predicate that defines a subset of nodes for this cluster group.

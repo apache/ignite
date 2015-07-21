@@ -153,21 +153,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
-                for (Iterator<StartFuture> itr = startFuts.values().iterator(); itr.hasNext(); ) {
-                    StartFuture fut = itr.next();
-
-                    itr.remove();
-
-                    fut.onDone(new IgniteException("Topology segmented"));
-                }
-
-                for (Iterator<StopFuture> itr = stopFuts.values().iterator(); itr.hasNext(); ) {
-                    StopFuture fut = itr.next();
-
-                    itr.remove();
-
-                    fut.onDone(new IgniteException("Topology segmented"));
-                }
+                cancelFutures(new IgniteCheckedException("Topology segmented"));
             }
         }, EVT_NODE_SEGMENTED);
 
@@ -263,6 +249,27 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param e Error.
+     */
+    private void cancelFutures(IgniteCheckedException e) {
+        for (Iterator<StartFuture> itr = startFuts.values().iterator(); itr.hasNext(); ) {
+            StartFuture fut = itr.next();
+
+            itr.remove();
+
+            fut.onDone(e);
+        }
+
+        for (Iterator<StopFuture> itr = stopFuts.values().iterator(); itr.hasNext(); ) {
+            StopFuture fut = itr.next();
+
+            itr.remove();
+
+            fut.onDone(e);
+        }
+    }
+
+    /**
      * @return {@code true} if lock successful, {@code false} if processor already stopped.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
@@ -318,27 +325,30 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override @Nullable public Serializable collectDiscoveryData(UUID nodeId) {
-        if (!nodeId.equals(ctx.localNodeId())) {
+        if (!nodeId.equals(ctx.localNodeId()) || !locInfos.isEmpty()) {
             DiscoveryData data = new DiscoveryData(ctx.localNodeId(), clientInfos);
 
-            // Collect listeners information (will be sent to
-            // joining node during discovery process).
+            // Collect listeners information (will be sent to joining node during discovery process).
             for (Map.Entry<UUID, LocalRoutineInfo> e : locInfos.entrySet()) {
                 UUID routineId = e.getKey();
                 LocalRoutineInfo info = e.getValue();
 
-                data.addItem(new DiscoveryDataItem(routineId, info.prjPred,
-                    info.hnd, info.bufSize, info.interval));
+                data.addItem(new DiscoveryDataItem(routineId,
+                    info.prjPred,
+                    info.hnd,
+                    info.bufSize,
+                    info.interval,
+                    info.autoUnsubscribe));
             }
 
             return data;
         }
-        else
-            return null;
+
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID nodeId, UUID rmtNodeId, Serializable obj) {
+    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable obj) {
         DiscoveryData data = (DiscoveryData)obj;
 
         if (!ctx.isDaemon() && data != null) {
@@ -377,6 +387,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * Callback invoked when cache is started.
      *
      * @param ctx Cache context.
+     * @throws IgniteCheckedException If failed.
      */
     public void onCacheStart(GridCacheContext ctx) throws IgniteCheckedException {
         for (Map.Entry<UUID, RemoteRoutineInfo> entry : rmtInfos.entrySet()) {
@@ -491,7 +502,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         // Register routine locally.
-        locInfos.put(routineId, new LocalRoutineInfo(prjPred, hnd, bufSize, interval));
+        locInfos.put(routineId, new LocalRoutineInfo(prjPred, hnd, bufSize, interval, autoUnsubscribe));
 
         StartFuture fut = new StartFuture(ctx, routineId);
 
@@ -500,7 +511,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         try {
             ctx.discovery().sendCustomEvent(new StartRoutineDiscoveryMessage(routineId, reqData));
         }
-        catch (IgniteException e) { // Marshaller exception may occurs if user pass unmarshallable filter.
+        catch (IgniteCheckedException e) { // Marshaller exception may occurs if user pass unmarshallable filter.
             startFuts.remove(routineId);
 
             locInfos.remove(routineId);
@@ -565,7 +576,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             // Unregister handler locally.
             unregisterHandler(routineId, routine.hnd, true);
 
-            ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId));
+            try {
+                ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId));
+            }
+            catch (IgniteCheckedException e) {
+                fut.onDone(e);
+            }
 
             if (ctx.isStopping())
                 fut.onDone();
@@ -580,6 +596,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param obj Notification object.
      * @param orderedTopic Topic for ordered notifications. If {@code null}, non-ordered message will be sent.
      * @param sync If {@code true} then waits for event acknowledgment.
+     * @param msg If {@code true} then sent data is message.
      * @throws IgniteCheckedException In case of error.
      */
     public void addNotification(UUID nodeId,
@@ -630,6 +647,18 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        cancelFutures(new IgniteClientDisconnectedCheckedException(reconnectFut, "Client node disconnected."));
+
+        for (UUID rmtId : rmtInfos.keySet())
+            unregisterRemote(rmtId);
+
+        rmtInfos.clear();
+
+        clientInfos.clear();
+    }
+
     /**
      * @param nodeId Node ID.
      * @param routineId Routine ID.
@@ -637,6 +666,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param toSnd Notification object to send.
      * @param orderedTopic Topic for ordered notifications.
      *      If {@code null}, non-ordered message will be sent.
+     * @param msg If {@code true} then sent data is collection of messages.
      * @throws IgniteCheckedException In case of error.
      */
     private void sendNotification(UUID nodeId,
@@ -703,8 +733,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 assert old == null;
             }
 
-            clientRouteMap.put(routineId, new LocalRoutineInfo(data.projectionPredicate(), hnd, data.bufferSize(),
-                data.interval()));
+            clientRouteMap.put(routineId, new LocalRoutineInfo(data.projectionPredicate(),
+                hnd,
+                data.bufferSize(),
+                data.interval(),
+                data.autoUnsubscribe()));
         }
 
         boolean registered = false;
@@ -1022,14 +1055,22 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /** Time interval. */
         private final long interval;
 
+        /** Automatic unsubscribe flag. */
+        private boolean autoUnsubscribe;
+
         /**
          * @param prjPred Projection predicate.
          * @param hnd Continuous routine handler.
          * @param bufSize Buffer size.
          * @param interval Interval.
+         * @param autoUnsubscribe Automatic unsubscribe flag.
          */
-        LocalRoutineInfo(@Nullable IgnitePredicate<ClusterNode> prjPred, GridContinuousHandler hnd, int bufSize,
-            long interval) {
+        LocalRoutineInfo(@Nullable IgnitePredicate<ClusterNode> prjPred,
+            GridContinuousHandler hnd,
+            int bufSize,
+            long interval,
+            boolean autoUnsubscribe)
+        {
             assert hnd != null;
             assert bufSize > 0;
             assert interval >= 0;
@@ -1038,6 +1079,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             this.hnd = hnd;
             this.bufSize = bufSize;
             this.interval = interval;
+            this.autoUnsubscribe = autoUnsubscribe;
         }
 
         /**
@@ -1046,6 +1088,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         GridContinuousHandler handler() {
             return hnd;
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(LocalRoutineInfo.class, this);
+        }
     }
 
     /**
@@ -1053,7 +1100,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      */
     private static class RemoteRoutineInfo {
         /** Master node ID. */
-        private final UUID nodeId;
+        private UUID nodeId;
 
         /** Continuous routine handler. */
         private final GridContinuousHandler hnd;
@@ -1205,6 +1252,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             return F.t(toSnd, diff < interval ? interval - diff : interval);
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(RemoteRoutineInfo.class, this);
+        }
     }
 
     /**
@@ -1221,6 +1273,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         @GridToStringInclude
         private Collection<DiscoveryDataItem> items;
 
+        /** */
         private Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos;
 
         /**
@@ -1232,6 +1285,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         /**
          * @param nodeId Node ID.
+         * @param clientInfos Client information.
          */
         DiscoveryData(UUID nodeId, Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos) {
             assert nodeId != null;
@@ -1308,9 +1362,15 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param hnd Handler.
          * @param bufSize Buffer size.
          * @param interval Time interval.
+         * @param autoUnsubscribe Automatic unsubscribe flag.
          */
-        DiscoveryDataItem(UUID routineId, @Nullable IgnitePredicate<ClusterNode> prjPred,
-            GridContinuousHandler hnd, int bufSize, long interval) {
+        DiscoveryDataItem(UUID routineId,
+            @Nullable IgnitePredicate<ClusterNode> prjPred,
+            GridContinuousHandler hnd,
+            int bufSize,
+            long interval,
+            boolean autoUnsubscribe)
+        {
             assert routineId != null;
             assert hnd != null;
             assert bufSize > 0;
@@ -1321,6 +1381,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             this.hnd = hnd;
             this.bufSize = bufSize;
             this.interval = interval;
+            this.autoUnsubscribe = autoUnsubscribe;
         }
 
         /** {@inheritDoc} */

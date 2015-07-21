@@ -234,6 +234,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.stop();
     }
 
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        if (idx != null)
+            idx.onDisconnected(reconnectFut);
+    }
+
     /**
      * @param cctx Cache context.
      * @throws IgniteCheckedException If failed.
@@ -737,6 +743,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
+            final boolean keepPortable = cctx.keepPortable();
+
             return executeQuery(cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
                 @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
                     String space = cctx.name();
@@ -750,7 +758,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
                         @Override public Iterator<List<?>> iterator() {
-                            return new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepPortable());
+                            return new GridQueryCacheObjectsIterator(res.iterator(), cctx, keepPortable);
                         }
                     });
 
@@ -1452,6 +1460,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             err = e.unwrap();
 
             throw (IgniteCheckedException)err;
+        }
+        catch (Exception e) {
+            err = e;
+
+            throw new IgniteCheckedException(e);
         }
         finally {
             GridCacheQueryMetricsAdapter metrics = (GridCacheQueryMetricsAdapter)cctx.queries().metrics();

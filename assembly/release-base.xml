@@ -23,16 +23,6 @@
            http://maven.apache.org/xsd/component-1.1.2.xsd">
     <files>
         <file>
-            <source>LICENSE</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-
-        <file>
-            <source>NOTICE</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-
-        <file>
             <source>RELEASE_NOTES.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
