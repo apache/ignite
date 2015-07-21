@@ -132,6 +132,9 @@ public final class IgniteNodeAttributes {
     /** Configuration consistency check disabled flag. */
     public static final String ATTR_CONSISTENCY_CHECK_SKIPPED = ATTR_PREFIX + ".consistency.check.skipped";
 
+    /** Node consistent id. */
+    public static final String ATTR_NODE_CONSISTENT_ID = ATTR_PREFIX + ".consistent.id";
+
     /**
      * Enforces singleton.
      */

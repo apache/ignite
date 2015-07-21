@@ -878,7 +878,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             addrs.get2(),
             srvPort,
             metricsProvider,
-            locNodeVer);
+            locNodeVer,
+            ignite.configuration().getConsistentId());
 
         if (addExtAddrAttr) {
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :

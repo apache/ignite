@@ -3536,7 +3536,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param msg Status check message.
          */
-        private void processStatusCheckMessage(TcpDiscoveryStatusCheckMessage msg) {
+        private void processStatusCheckMessage(final TcpDiscoveryStatusCheckMessage msg) {
             assert msg != null;
 
             UUID locNodeId = getLocalNodeId();
@@ -3576,35 +3576,45 @@ class ServerImpl extends TcpDiscoveryImpl {
                         // Sender is not in topology, it should reconnect.
                         msg.status(STATUS_RECON);
 
-                        try {
-                            trySendMessageDirectly(msg.creatorNode(), msg);
+                        utilityPool.execute(new Runnable() {
+                            @Override public void run() {
+                                if (spiState == DISCONNECTED) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Ignoring status check request, SPI is already disconnected: " + msg);
 
-                            if (log.isDebugEnabled())
-                                log.debug("Responded to status check message " +
-                                    "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']');
-                        }
-                        catch (IgniteSpiException e) {
-                            if (e.hasCause(SocketException.class)) {
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Failed to respond to status check message (connection refused) " +
-                                        "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']');
+                                    return;
                                 }
 
-                                onException("Failed to respond to status check message (connection refused) " +
-                                    "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']', e);
-                            }
-                            else {
-                                if (pingNode(msg.creatorNode())) {
-                                    // Node exists and accepts incoming connections.
-                                    U.error(log, "Failed to respond to status check message " +
-                                        "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']', e);
+                                try {
+                                    trySendMessageDirectly(msg.creatorNode(), msg);
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Responded to status check message " +
+                                            "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']');
                                 }
-                                else if (log.isDebugEnabled()) {
-                                    log.debug("Failed to respond to status check message (did the node stop?) " +
-                                        "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']');
+                                catch (IgniteSpiException e) {
+                                    if (e.hasCause(SocketException.class)) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Failed to respond to status check message (connection " +
+                                                "refused) [recipient=" + msg.creatorNodeId() + ", status=" +
+                                                msg.status() + ']');
+
+                                        onException("Failed to respond to status check message (connection refused) " +
+                                            "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']', e);
+                                    }
+                                    else {
+                                        if (pingNode(msg.creatorNode()))
+                                            // Node exists and accepts incoming connections.
+                                            U.error(log, "Failed to respond to status check message [recipient=" +
+                                                msg.creatorNodeId() + ", status=" + msg.status() + ']', e);
+                                        else if (log.isDebugEnabled())
+                                            log.debug("Failed to respond to status check message (did the node " +
+                                                "stop?) [recipient=" + msg.creatorNodeId() + ", status=" + msg.status()
+                                                + ']');
+                                    }
                                 }
                             }
-                        }
+                        });
                     }
 
                     return;
