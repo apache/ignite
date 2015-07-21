@@ -59,6 +59,7 @@ import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
 import javax.management.*;
+import java.io.*;
 import java.lang.management.*;
 import java.util.*;
 
@@ -400,6 +401,9 @@ public class IgniteConfiguration {
     /** Cache store session listeners. */
     private Factory<CacheStoreSessionListener>[] storeSesLsnrs;
 
+    /** Consistent globally unique node ID which survives node restarts. */
+    private Serializable consistentId;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -442,6 +446,7 @@ public class IgniteConfiguration {
         clientMode = cfg.isClientMode();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
+        consistentId = cfg.getConsistentId();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         pubPoolSize = cfg.getPublicThreadPoolSize();
@@ -555,6 +560,27 @@ public class IgniteConfiguration {
         this.gridName = gridName;
 
         return this;
+    }
+
+    /**
+     * Sets consistent globally unique node ID which survives node restarts.
+     *
+     * @param consistentId Node consistent ID.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setConsistentId(Serializable consistentId) {
+        this.consistentId = consistentId;
+
+        return this;
+    }
+
+    /**
+     * Gets consistent globally unique node ID which survives node restarts.
+     *
+     * @return Node consistent ID.
+     */
+    public Serializable getConsistentId() {
+        return consistentId;
     }
 
     /**

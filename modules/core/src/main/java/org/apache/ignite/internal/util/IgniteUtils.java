@@ -3132,7 +3132,7 @@ public abstract class IgniteUtils {
                 return ggHome0;
         }
 
-        URI uri;
+        URI classesUri;
 
         Class<IgniteUtils> cls = IgniteUtils.class;
 
@@ -3147,11 +3147,11 @@ public abstract class IgniteUtils {
             }
 
             // Resolve path to class-file.
-            uri = domain.getCodeSource().getLocation().toURI();
+            classesUri = domain.getCodeSource().getLocation().toURI();
 
             // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
-            if (isWindows() && uri.getAuthority() != null)
-                uri = new URI(uri.toString().replace("file://", "file:/"));
+            if (isWindows() && classesUri.getAuthority() != null)
+                classesUri = new URI(classesUri.toString().replace("file://", "file:/"));
         }
         catch (URISyntaxException | SecurityException e) {
             logResolveFailed(cls, e);
@@ -3159,7 +3159,18 @@ public abstract class IgniteUtils {
             return null;
         }
 
-        return findProjectHome(new File(uri));
+        File classesFile;
+
+        try {
+            classesFile = new File(classesUri);
+        }
+        catch (IllegalArgumentException e) {
+            logResolveFailed(cls, e);
+
+            return null;
+        }
+
+        return findProjectHome(classesFile);
     }
 
     /**
