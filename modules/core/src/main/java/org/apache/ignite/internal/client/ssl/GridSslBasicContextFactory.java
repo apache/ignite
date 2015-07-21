@@ -38,7 +38,7 @@ import java.util.*;
  *     factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
  *     // Rest of initialization.
  * </pre>
- * @deprecated Use {@link Factory<SSLContext>} instead.
+ * @deprecated Use {@link Factory} instead.
  */
 @Deprecated
 public class GridSslBasicContextFactory implements GridSslContextFactory {

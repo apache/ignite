@@ -467,11 +467,11 @@ public class ConnectorConfiguration {
     }
 
     /**
-     * Sets instance of {@link Factory<SSLContext>} that will be used to create an instance of {@code SSLContext}
+     * Sets instance of {@link Factory} that will be used to create an instance of {@code SSLContext}
      * for Secure Socket Layer on TCP binary protocol. This factory will only be used if
      * {@link #setSslEnabled(boolean)} is set to {@code true}.
      *
-     * @param sslFactory Instance of {@link Factory<SSLContext>}
+     * @param sslFactory Instance of {@link Factory}
      */
     public void setSslFactory(Factory<SSLContext> sslFactory) {
         this.sslFactory = sslFactory;
