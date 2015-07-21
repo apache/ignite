@@ -148,9 +148,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower).";
 
-    /** Node attribute that is set if using SSL (value is <tt>comm.tcp.ssl</tt>). */
-    public static final String ATTR_SSL = "comm.tcp.ssl";
-
     /** Node attribute that is mapped to node IP addresses (value is <tt>comm.tcp.addrs</tt>). */
     public static final String ATTR_ADDRS = "comm.tcp.addrs";
 
@@ -1335,8 +1332,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 createSpiAttributeName(ATTR_HOST_NAMES), addrs.get2(),
                 createSpiAttributeName(ATTR_PORT), boundTcpPort,
                 createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null,
-                createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs,
-                createSpiAttributeName(ATTR_SSL), isSslEnabled());
+                createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
         }
         catch (IOException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to resolve local host to addresses: " + locHost, e);
