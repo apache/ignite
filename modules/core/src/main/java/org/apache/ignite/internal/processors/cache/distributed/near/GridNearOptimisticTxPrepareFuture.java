@@ -50,6 +50,7 @@ import static org.apache.ignite.transactions.TransactionState.*;
 public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAdapter
     implements GridCacheMvccFuture<IgniteInternalTx> {
     /** */
+    @GridToStringInclude
     private Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
 
     /**
@@ -662,7 +663,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
         });
 
         return S.toString(GridNearOptimisticTxPrepareFuture.class, this,
-            "futs", futs,
+            "innerFuts", futs,
+            "tx", tx,
             "super", super.toString());
     }
 
