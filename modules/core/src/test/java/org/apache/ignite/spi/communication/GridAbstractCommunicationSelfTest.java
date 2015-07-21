@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -58,6 +59,9 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
     /** */
     private static final Object mux = new Object();
+
+    /** */
+    protected boolean useSsl = false;
 
     /**
      *
@@ -298,6 +302,15 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             spiRsrcs.add(rsrcs);
 
             rsrcs.inject(spi);
+
+            if (useSsl) {
+                IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");
+
+                IgniteConfiguration cfg = ignite.configuration()
+                    .setSslContextFactory(GridTestUtils.sslFactory());
+
+                ignite.setStaticCfg(cfg);
+            }
 
             spi.setListener(new MessageListener(rsrcs.getNodeId()));
 
