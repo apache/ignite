@@ -1030,11 +1030,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private String topologySnapshotMessage(int serverNodesNum, int clientNodesNum, int totalCpus, double heap) {
         return PREFIX + " [" +
             (discoOrdered ? "ver=" + topSnap.get().topVer.topologyVersion() + ", " : "") +
-            "server nodes=" + serverNodesNum +
-            ", client nodes=" + clientNodesNum +
+            "servers=" + serverNodesNum +
+            ", clients=" + clientNodesNum +
             ", CPUs=" + totalCpus +
-            ", heap=" + heap + "GB" +
-            ']';
+            ", heap=" + heap + "GB]";
     }
 
     /** {@inheritDoc} */
