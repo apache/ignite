@@ -15,19 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
 /**
- * Failover tests for partitioned cache.
+ *
  */
-public class GridCachePartitionedFailoverSelfTest extends GridCacheAbstractFailoverTxSelfTest {
+public class GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest
+    extends GridCachePartitionedOptimisticTxNodeRestartTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+    @Override protected boolean nearEnabled() {
+        return false;
     }
 }
