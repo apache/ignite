@@ -2052,6 +2052,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     long rcvCnt = -1;
 
                     GridTuple<SSLEngine> ssl = new GridTuple<>();
+
                     try {
                         ch.socket().connect(addr, (int)connTimeout);
 
