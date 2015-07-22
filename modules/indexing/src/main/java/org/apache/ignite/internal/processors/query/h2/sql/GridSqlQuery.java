@@ -145,13 +145,10 @@ public abstract class GridSqlQuery {
 
             int visibleCols = visibleColumns();
 
-            boolean first = true;
+            buff.resetCount();
 
             for (GridSqlSortColumn col : sort) {
-                if (first)
-                    first = false;
-                else
-                    buff.append(", ");
+                buff.appendExceptFirst(", ");
 
                 int idx = col.column();
 
@@ -183,6 +180,5 @@ public abstract class GridSqlQuery {
 
         if (offset != null)
             buff.append(" OFFSET ").append(StringUtils.unEnclose(offset.getSQL()));
-
     }
 }

@@ -70,7 +70,7 @@ public class GridSqlSelect extends GridSqlQuery {
         for (GridSqlElement expression : select) {
             buff.appendExceptFirst(",");
             buff.append('\n');
-            buff.append(StringUtils.indent(expression.getSQL(), 4, false));
+            buff.append(expression.getSQL());
         }
 
         buff.append("\nFROM ").append(from.getSQL());
