@@ -45,11 +45,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.*;
  * Test for distributed queries with node restarts.
  */
 public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-484");
-    }
-
     /** */
     private static final int GRID_CNT = 3;
 

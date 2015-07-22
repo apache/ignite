@@ -4034,9 +4034,11 @@ public abstract class IgniteUtils {
      * @param sb Sb.
      */
     private static void appendClassLoaderHash(SB sb) {
-        String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
+        if (getBoolean(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, true)) {
+            String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
 
-        sb.a("clsLdr=").a(clsLdrHash).a(',');
+            sb.a("clsLdr=").a(clsLdrHash).a(',');
+        }
     }
 
     /**
