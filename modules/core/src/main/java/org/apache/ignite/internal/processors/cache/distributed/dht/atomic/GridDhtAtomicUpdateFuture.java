@@ -121,6 +121,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         boolean topLocked = updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest());
 
         waitForExchange = !topLocked;
+
+        // We can send entry processor instead of value to backup if updates are ordered.
+        forceTransformBackups = cctx.config().isAtomicOrderedUpdates();
     }
 
     /** {@inheritDoc} */
