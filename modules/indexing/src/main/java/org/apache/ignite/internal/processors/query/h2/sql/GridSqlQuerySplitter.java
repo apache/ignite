@@ -137,13 +137,13 @@ public class GridSqlQuerySplitter {
         // nullifying or updating things, have to make sure that we will not need them in the original form later.
         final GridSqlSelect mapQry = wrapUnion(collectAllSpaces(GridSqlQueryParser.parse(stmt), spaces));
 
-        final String mergeTable = TABLE_FUNC_NAME + "()"; // table(0); TODO
+        final String mergeTable = TABLE_FUNC_NAME + "()"; // table(0); TODO IGNITE-1142
 
         final boolean explain = mapQry.explain();
 
         mapQry.explain(false);
 
-        GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction(null, TABLE_FUNC_NAME)); // table(mergeTable)); TODO
+        GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction(null, TABLE_FUNC_NAME)); // table(mergeTable)); TODO IGNITE-1142
 
         // Split all select expressions into map-reduce parts.
         List<GridSqlElement> mapExps = F.addAll(new ArrayList<GridSqlElement>(mapQry.allColumns()),
@@ -176,7 +176,7 @@ public class GridSqlQuerySplitter {
 
         // -- HAVING
         if (mapQry.havingColumn() >= 0 && !collocated) {
-            // TODO Find aggregate functions in HAVING clause or rewrite query to put all aggregates to SELECT clause.
+            // TODO IGNITE-1140 - Find aggregate functions in HAVING clause or rewrite query to put all aggregates to SELECT clause.
             rdcQry.whereAnd(column(columnName(mapQry.havingColumn())));
 
             mapQry.havingColumn(-1);
@@ -189,7 +189,7 @@ public class GridSqlQuerySplitter {
 
             if (aggregateFound) // Ordering over aggregates does not make sense.
                 mapQry.clearSort(); // Otherwise map sort will be used by offset-limit.
-            // TODO Check if sorting is done over aggregated expression, otherwise we can sort and use offset-limit.
+            // TODO IGNITE-1141 - Check if sorting is done over aggregated expression, otherwise we can sort and use offset-limit.
         }
 
         // -- LIMIT
@@ -425,7 +425,7 @@ public class GridSqlQuerySplitter {
                 GridSqlType type = el.expressionResultType();
 
                 if (type != null && type.type() == Value.UUID) // There is no JDBC type UUID, so conversion to bytes occurs.
-                    rdcEl = function(CAST).setCastType("UUID").addChild(rdcEl); // TODO remove this cast when table function removed
+                    rdcEl = function(CAST).setCastType("UUID").addChild(rdcEl); // TODO IGNITE-1142 - remove this cast when table function removed
 
                 if (colNames.add(rdcColAlias)) // To handle column name duplication (usually wildcard for few tables).
                     rdcEl = alias(rdcColAlias, rdcEl);

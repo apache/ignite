@@ -151,6 +151,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         qry = new SqlFieldsQuery("select p.name, avg(f.price), min(f.price), max(f.price), sum(f.price), count(*), " +
             "count(nullif(f.price, 5)), (max(f.price) - min(f.price)) * 3 as nn " +
+            ", CAST(max(f.price) + 7 AS VARCHAR) " +
             "from FactPurchase f, \"replicated\".DimProduct p " +
             "where p.id = f.productId " +
             "group by f.productId, p.name");
@@ -161,6 +162,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             assertTrue(names.add((String)o.get(0)));
             assertEquals(i(o, 4), i(o, 2) + i(o, 3));
             assertEquals(i(o, 7), (i(o, 3) - i(o, 2)) * 3);
+            assertEquals(o.get(8), Integer.toString(i(o, 3) + 7));
         }
 
         X.println("___ SUM HAVING");
