@@ -145,12 +145,12 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         assertEquals(set0, set1);
 
-        X.println("___ GROUP BY AVG MIN MAX SUM COUNT(*) COUNT(x)");
+        X.println("___ GROUP BY AVG MIN MAX SUM COUNT(*) COUNT(x) (MAX - MIN) * 2 as");
 
         Set<String> names = new HashSet<>();
 
         qry = new SqlFieldsQuery("select p.name, avg(f.price), min(f.price), max(f.price), sum(f.price), count(*), " +
-            "count(nullif(f.price, 5)) " +
+            "count(nullif(f.price, 5)), (max(f.price) - min(f.price)) * 3 as nn " +
             "from FactPurchase f, \"replicated\".DimProduct p " +
             "where p.id = f.productId " +
             "group by f.productId, p.name");
@@ -160,6 +160,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
             assertTrue(names.add((String)o.get(0)));
             assertEquals(i(o, 4), i(o, 2) + i(o, 3));
+            assertEquals(i(o, 7), (i(o, 3) - i(o, 2)) * 3);
         }
 
         X.println("___ SUM HAVING");

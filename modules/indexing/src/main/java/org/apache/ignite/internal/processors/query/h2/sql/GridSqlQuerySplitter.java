@@ -395,15 +395,17 @@ public class GridSqlQuerySplitter {
             el = alias.child();
         }
 
-        if (!collocated && el instanceof GridSqlAggregateFunction) {
+        if (!collocated && hasAggregates(el)) {
             aggregateFound = true;
 
             if (alias == null)
                 alias = alias(columnName(idx), el);
 
-            splitAggregate(alias, 0, mapSelect, idx, true);
+            // We can update original alias here as well since it will be dropped from mapSelect.
+            splitAggregates(alias, 0, mapSelect, idx, true);
 
-            rdcSelect[idx] = alias;
+            if (idx < rdcSelect.length)
+                rdcSelect[idx] = alias;
         }
         else {
             String mapColAlias = columnName(idx);
@@ -417,7 +419,7 @@ public class GridSqlQuerySplitter {
             // Always wrap map column into generated alias.
             mapSelect.set(idx, alias(mapColAlias, el)); // `el` is known not to be an alias.
 
-            if (idx < rdcSelect.length) { // SELECT __C0 AS orginal_alias
+            if (idx < rdcSelect.length) { // SELECT __C0 AS original_alias
                 GridSqlElement rdcEl = column(mapColAlias);
 
                 GridSqlType type = el.expressionResultType();
@@ -433,6 +435,52 @@ public class GridSqlQuerySplitter {
         }
 
         return aggregateFound;
+    }
+
+    /**
+     * @param el Expression.
+     * @return {@code true} If expression contains aggregates.
+     */
+    private static boolean hasAggregates(GridSqlElement el) {
+        if (el instanceof GridSqlAggregateFunction)
+            return true;
+
+        for (GridSqlElement child : el) {
+            if (hasAggregates(child))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param parentExpr Parent expression.
+     * @param childIdx Child index to try to split.
+     * @param mapSelect List of expressions in map SELECT clause.
+     * @param exprIdx Index of the original expression in map SELECT clause.
+     * @param first If the first aggregate is already found in this expression.
+     * @return {@code true} If the first aggregate is already found.
+     */
+    private static boolean splitAggregates(
+        final GridSqlElement parentExpr,
+        final int childIdx,
+        final List<GridSqlElement> mapSelect,
+        final int exprIdx,
+        boolean first) {
+        GridSqlElement el = parentExpr.child(childIdx);
+
+        if (el instanceof GridSqlAggregateFunction) {
+            splitAggregate(parentExpr, childIdx, mapSelect, exprIdx, first);
+
+            return true;
+        }
+
+        for (int i = 0; i < el.size(); i++) {
+            if (splitAggregates(el, i, mapSelect, exprIdx, first))
+                first = false;
+        }
+
+        return !first;
     }
 
     /**
