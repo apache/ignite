@@ -45,22 +45,12 @@ public class GridSqlAlias extends GridSqlElement {
      * @param useAs Use 'AS' keyword.
      */
     public GridSqlAlias(String alias, GridSqlElement expr, boolean useAs) {
-        super(list(expr));
+        super(new ArrayList<GridSqlElement>(1));
+
+        addChild(expr);
 
         this.useAs = useAs;
         this.alias = alias;
-    }
-
-    /**
-     * @param el Element.
-     * @return List.
-     */
-    private static List<GridSqlElement> list(GridSqlElement el) {
-        List<GridSqlElement> res = new ArrayList<>(1);
-
-        res.add(el);
-
-        return res;
     }
 
     /** {@inheritDoc} */

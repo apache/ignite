@@ -75,7 +75,7 @@ public abstract class GridSqlElement implements Iterable<GridSqlElement> {
     /**
      * @return First child.
      */
-    public GridSqlElement child() {
+    public <E extends GridSqlElement> E child() {
         return child(0);
     }
 
@@ -83,8 +83,9 @@ public abstract class GridSqlElement implements Iterable<GridSqlElement> {
      * @param idx Index.
      * @return Child.
      */
-    public GridSqlElement child(int idx) {
-        return children.get(idx);
+    @SuppressWarnings("unchecked")
+    public <E extends GridSqlElement> E child(int idx) {
+        return (E)children.get(idx);
     }
 
     /**
