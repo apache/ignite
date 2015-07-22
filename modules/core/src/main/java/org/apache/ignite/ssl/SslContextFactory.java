@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.ssl;
+package org.apache.ignite.ssl;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.cache.configuration.*;
@@ -27,21 +28,22 @@ import java.security.cert.*;
 import java.util.*;
 
 /**
- * Basic ssl context factory that provides ssl context configuration with specified key
+ * This SSL context factory that provides ssl context configuration with specified key
  * and trust stores.
  * <p>
  * In some cases it is useful to disable certificate validation of client side (e.g. when connecting
  * to a server with self-signed certificate). This can be achieved by setting a disabled trust manager
  * to this factory, which can be obtained by {@link #getDisabledTrustManager()} method:
  * <pre>
- *     GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
- *     factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
+ *     SslContextFactory factory = new SslContextFactory();
+ *     factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
  *     // Rest of initialization.
  * </pre>
- * @deprecated Use {@link Factory} instead.
  */
-@Deprecated
-public class GridSslBasicContextFactory implements GridSslContextFactory {
+public class SslContextFactory implements Factory<SSLContext> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default key store type. */
     public static final String DFLT_STORE_TYPE = "JKS";
 
@@ -269,8 +271,13 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
         return new DisabledX509TrustManager();
     }
 
-    /** {@inheritDoc} */
-    @Override public SSLContext createSslContext() throws SSLException {
+    /**
+     * Creates SSL context based on factory settings.
+     *
+     * @return Initialized SSL context.
+     * @throws SSLException If SSL context could not be created.
+     */
+    private SSLContext createSslContext() throws SSLException {
         checkParameters();
 
         try {
@@ -436,6 +443,16 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
         /** {@inheritDoc} */
         @Override public X509Certificate[] getAcceptedIssuers() {
             return CERTS;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public SSLContext create() {
+        try {
+            return createSslContext();
+        }
+        catch (SSLException e) {
+            throw new IgniteException(e);
         }
     }
 }

@@ -15,25 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.ssl;
+package org.apache.ignite.spi.communication.tcp;
 
-import javax.cache.configuration.*;
-import javax.net.ssl.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
- * This interface provides creation of SSL context both for server and client use.
- * <p>
- * Usually, it is enough to configure context from a particular key and trust stores, this functionality is provided
- * in {@link GridSslBasicContextFactory}.
- * @deprecated Use {@link Factory} instead.
+ *
  */
-@Deprecated
-public interface GridSslContextFactory {
-    /**
-     * Creates SSL context based on factory settings.
-     *
-     * @return Initialized SSL context.
-     * @throws SSLException If SSL context could not be created.
-     */
-    public SSLContext createSslContext() throws SSLException;
+@GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
+public class GridTcpCommunicationSpiSslSelfTest extends GridTcpCommunicationSpiAbstractTest {
+    /** */
+    public GridTcpCommunicationSpiSslSelfTest() {
+        super(false);
+
+        this.useSsl = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean tcpNoDelay() {
+        return true;
+    }
 }

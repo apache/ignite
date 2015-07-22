@@ -29,6 +29,7 @@ import java.util.concurrent.locks.*;
 import static javax.net.ssl.SSLEngineResult.*;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.*;
 import static javax.net.ssl.SSLEngineResult.Status.*;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
 import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.*;
 
 /**
@@ -96,7 +97,14 @@ class GridNioSslHandler extends ReentrantLock {
 
         sslEngine = engine;
 
-        sslEngine.beginHandshake();
+        if (ses.meta(SSL_ENGINE.ordinal()) == null)
+            sslEngine.beginHandshake();
+        else {
+            sslEngine = ses.meta(SSL_ENGINE.ordinal());
+
+            handshakeFinished = true;
+            initHandshakeComplete = true;
+        }
 
         handshakeStatus = sslEngine.getHandshakeStatus();
 
@@ -113,6 +121,8 @@ class GridNioSslHandler extends ReentrantLock {
         int appBufSize = Math.max(sslEngine.getSession().getApplicationBufferSize() + 50, netBufSize * 2);
 
         appBuf = ByteBuffer.allocate(appBufSize);
+
+        appBuf.order(ByteOrder.nativeOrder());
 
         if (log.isDebugEnabled())
             log.debug("Started SSL session [netBufSize=" + netBufSize + ", appBufSize=" + appBufSize + ']');

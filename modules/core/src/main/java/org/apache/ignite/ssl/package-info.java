@@ -15,25 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.ssl;
-
-import javax.cache.configuration.*;
-import javax.net.ssl.*;
-
 /**
- * This interface provides creation of SSL context both for server and client use.
- * <p>
- * Usually, it is enough to configure context from a particular key and trust stores, this functionality is provided
- * in {@link GridSslBasicContextFactory}.
- * @deprecated Use {@link Factory} instead.
+ * <!-- Package description. -->
+ * Contains classes for working with SSL.
  */
-@Deprecated
-public interface GridSslContextFactory {
-    /**
-     * Creates SSL context based on factory settings.
-     *
-     * @return Initialized SSL context.
-     * @throws SSLException If SSL context could not be created.
-     */
-    public SSLContext createSslContext() throws SSLException;
-}
+package org.apache.ignite.ssl;

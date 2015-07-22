@@ -40,6 +40,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.jetbrains.annotations.*;
 
+import javax.net.ssl.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -304,6 +305,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
+
+    /** SSL server socket factory. */
+    protected SSLServerSocketFactory sslSrvSocketFactory;
+
+    /** SSL socket factory. */
+    protected SSLSocketFactory sslSocketFactory;
 
     /** Context initialization latch. */
     @GridToStringExclude
@@ -1106,7 +1113,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         assert addr != null;
 
-        Socket sock = new Socket();
+        Socket sock;
+
+        if (isSslEnabled())
+            sock = sslSocketFactory.createSocket();
+        else
+            sock = new Socket();
 
         sock.bind(new InetSocketAddress(locHost, 0));
 
@@ -1578,6 +1590,19 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         assertParameter(threadPri > 0, "threadPri > 0");
         assertParameter(statsPrintFreq >= 0, "statsPrintFreq >= 0");
 
+        if (isSslEnabled()) {
+            try {
+                SSLContext sslCtx = ignite().configuration().getSslContextFactory().create();
+
+                sslSocketFactory = sslCtx.getSocketFactory();
+                sslSrvSocketFactory = sslCtx.getServerSocketFactory();
+            }
+            catch (IgniteException e) {
+                throw new IgniteSpiException("Failed to create SSL context. SSL factory: "
+                    + ignite.configuration().getSslContextFactory(), e);
+            }
+        }
+
         try {
             locHost = U.resolveLocalHost(locAddr);
         }
@@ -1692,6 +1717,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         }
 
         return false;
+    }
+
+    /**
+     * @return {@code True} if ssl enabled.
+     */
+    boolean isSslEnabled() {
+        return ignite().configuration().getSslContextFactory() != null;
     }
 
     /**
