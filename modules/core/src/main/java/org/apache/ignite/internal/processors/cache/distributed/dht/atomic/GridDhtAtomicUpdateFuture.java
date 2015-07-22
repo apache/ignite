@@ -352,7 +352,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     if (mappingKey.part >= 0) {
                         Object topic = CU.partitionMessageTopic(cctx, mappingKey.part, false);
 
-                        cctx.io().sendOrderedMessage(mappingKey.nodeId, topic, req, cctx.ioPolicy(), 0);
+                        cctx.io().sendOrderedMessage(mappingKey.nodeId, topic, req, cctx.ioPolicy(),
+                            2 * cctx.gridConfig().getNetworkTimeout());
                     }
                     else {
                         assert mappingKey.part == -1;
