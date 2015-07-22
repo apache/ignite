@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.testframework.config.*;
-import org.apache.ignite.testsuites.*;
 
 /**
  *
  */
-public class IgniteIndexedObjectCacheTestSuite2 {
+public class IgniteIndexedObjectCacheRestartTestSuite {
     /**
      * @return Suite.
      * @throws Exception In case of error.
@@ -33,6 +32,6 @@ public class IgniteIndexedObjectCacheTestSuite2 {
     public static TestSuite suite() throws Exception {
         GridTestProperties.setProperty(GridTestProperties.OPTIMIZED_MARSH_PROTOCOL, OptimizedMarshallerProtocolVersion.VER_1_1.toString());
 
-        return IgniteCacheTestSuite2.suite();
+        return IgniteCacheRestartTestSuite.suite();
     }
 }

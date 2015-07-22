@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal.processors.cache.expiry;
 
 import junit.framework.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.testframework.config.*;
-import org.apache.ignite.testsuites.*;
 
 /**
  *
  */
-public class IgniteIndexedObjectCacheFullApiTestSuite {
+public class IgniteIndexedObjectCacheExpiryPolicyTestSuite {
     /**
      * @return Suite.
      * @throws Exception In case of error.
@@ -33,6 +32,6 @@ public class IgniteIndexedObjectCacheFullApiTestSuite {
     public static TestSuite suite() throws Exception {
         GridTestProperties.setProperty(GridTestProperties.OPTIMIZED_MARSH_PROTOCOL, OptimizedMarshallerProtocolVersion.VER_1_1.toString());
 
-        return IgniteCacheFullApiSelfTestSuite.suite();
+        return IgniteCacheExpiryPolicyTestSuite.suite();
     }
 }
