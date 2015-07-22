@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -99,6 +100,8 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
+
+        ((TcpCommunicationSpi)c.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         // Discovery.
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -507,6 +510,8 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             info("Starting put thread: " + gridIdx);
 
+                            Thread.currentThread().setName("put-worker-" + grid(gridIdx).name());
+
                             IgniteCache<Integer, String> cache = grid(gridIdx).cache(CACHE_NAME);
 
                             while (System.currentTimeMillis() < endTime && err.get() == null) {
@@ -627,6 +632,8 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                             info("Starting put thread: " + gridIdx);
 
                             Ignite ignite = grid(gridIdx);
+
+                            Thread.currentThread().setName("put-worker-" + ignite.name());
 
                             UUID locNodeId = ignite.cluster().localNode().id();
 
@@ -783,6 +790,8 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                             info("Starting put thread: " + gridIdx);
 
                             Ignite ignite = grid(gridIdx);
+
+                            Thread.currentThread().setName("put-worker-" + ignite.name());
 
                             UUID locNodeId = ignite.cluster().localNode().id();
 

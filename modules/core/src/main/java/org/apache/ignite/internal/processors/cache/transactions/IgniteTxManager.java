@@ -538,10 +538,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 TransactionState state = tx.state();
                 AffinityTopologyVersion txTopVer = tx.topologyVersion();
 
-                if ((state == PREPARING || state == PREPARED || state == COMMITTING)
-                    && txTopVer.compareTo(AffinityTopologyVersion.ZERO) > 0 && txTopVer.compareTo(topVer) < 0) {
+                if ((state != ACTIVE && state != COMMITTED && state != ROLLED_BACK && state != UNKNOWN)
+                    && txTopVer.compareTo(AffinityTopologyVersion.ZERO) > 0 && txTopVer.compareTo(topVer) < 0)
                     res.add(tx.finishFuture());
-                }
             }
         }
 

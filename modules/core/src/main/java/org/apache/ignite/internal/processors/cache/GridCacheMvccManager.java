@@ -603,6 +603,20 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Locked keys.
+     */
+    public Collection<IgniteTxKey> lockedKeys() {
+        return locked.keySet();
+    }
+
+    /**
+     * @return Locked near keys.
+     */
+    public Collection<IgniteTxKey> nearLockedKeys() {
+        return nearLocked.keySet();
+    }
+
+    /**
      * This method has poor performance, so use with care. It is currently only used by {@code DGC}.
      *
      * @return Remote candidates.
