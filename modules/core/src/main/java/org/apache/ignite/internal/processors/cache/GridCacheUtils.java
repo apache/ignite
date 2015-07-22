@@ -1755,9 +1755,9 @@ public class GridCacheUtils {
      * @param part Partition.
      * @return Per-partition message topic.
      */
-    public static Object partitionMassageTopic(GridCacheContext ctx, int part) {
+    public static Object partitionMessageTopic(GridCacheContext ctx, int part, boolean nearMsg) {
         assert part >= 0;
 
-        return TOPIC_CACHE.topic(ctx.cacheId(), part);
+        return TOPIC_CACHE.topic(ctx.cacheId(), part, (byte)(nearMsg ? 1 : 0));
     }
 }

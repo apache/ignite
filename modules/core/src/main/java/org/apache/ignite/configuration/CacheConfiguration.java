@@ -220,7 +220,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private CacheAtomicWriteOrderMode atomicWriteOrderMode;
 
     /** Ordered updates mode. */
-    private boolean atomicOrderedUpdates;
+    // TODO: IGNITE-104 - Switch default to false
+    private boolean atomicOrderedUpdates = true;
 
     /** Number of backups for cache. */
     private int backups = DFLT_BACKUPS;

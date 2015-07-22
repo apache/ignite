@@ -350,7 +350,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                         log.debug("Sending DHT atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
                     if (mappingKey.part >= 0) {
-                        Object topic = CU.partitionMassageTopic(cctx, mappingKey.part);
+                        Object topic = CU.partitionMessageTopic(cctx, mappingKey.part, false);
 
                         cctx.io().sendOrderedMessage(mappingKey.nodeId, topic, req, cctx.ioPolicy(), 0);
                     }

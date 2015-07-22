@@ -183,7 +183,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (ctx.config().isAtomicOrderedUpdates()) {
             for (int part = 0; part < ctx.affinity().partitions(); part++) {
-                ctx.io().addOrderedHandler(CU.partitionMassageTopic(ctx, part), new CI2<UUID, GridNearAtomicUpdateRequest>() {
+                ctx.io().addOrderedHandler(CU.partitionMessageTopic(ctx, part, true), new CI2<UUID, GridNearAtomicUpdateRequest>() {
                     @Override public void apply(UUID nodeId, GridNearAtomicUpdateRequest req) {
                         processNearAtomicUpdateRequest(nodeId, req);
                     }
@@ -206,7 +206,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (ctx.config().isAtomicOrderedUpdates()) {
             for (int part = 0; part < ctx.affinity().partitions(); part++) {
-                ctx.io().addOrderedHandler(CU.partitionMassageTopic(ctx, part), new CI2<UUID, GridDhtAtomicUpdateRequest>() {
+                ctx.io().addOrderedHandler(CU.partitionMessageTopic(ctx, part, false), new CI2<UUID, GridDhtAtomicUpdateRequest>() {
                     @Override public void apply(UUID nodeId, GridDhtAtomicUpdateRequest req) {
                         processDhtAtomicUpdateRequest(nodeId, req);
                     }

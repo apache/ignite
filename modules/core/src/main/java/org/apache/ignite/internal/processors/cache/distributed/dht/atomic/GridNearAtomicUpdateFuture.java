@@ -1143,7 +1143,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      */
     private void sendRequest(MappingKey mappingKey, GridNearAtomicUpdateRequest req) throws IgniteCheckedException {
         if (mappingKey.part >= 0) {
-            Object topic = CU.partitionMassageTopic(cctx, mappingKey.part);
+            Object topic = CU.partitionMessageTopic(cctx, mappingKey.part, true);
 
             cctx.io().sendOrderedMessage(mappingKey.nodeId, topic, req, cctx.ioPolicy(), 0);
         }

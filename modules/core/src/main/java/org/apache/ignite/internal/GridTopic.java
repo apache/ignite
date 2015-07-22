@@ -185,10 +185,11 @@ public enum GridTopic {
     /**
      * @param id1 ID1.
      * @param id2 ID2.
+     * @param id3 ID3.
      * @return Grid message topic with specified IDs.
      */
-    public Object topic(int id1, int id2) {
-        return new T9(this, id1, id2);
+    public Object topic(int id1, int id2, byte id3) {
+        return new T9(this, id1, id2, id3);
     }
 
     /**
@@ -577,7 +578,7 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return topic.ordinal() + id1.hashCode () + (int)(id2 ^ (id2 >>> 32));
+            return topic.ordinal() + id1.hashCode() + (int)(id2 ^ (id2 >>> 32));
         }
 
         /** {@inheritDoc} */
@@ -781,6 +782,9 @@ public enum GridTopic {
         /** */
         private int id2;
 
+        /** */
+        private int id3;
+
         /**
          * No-arg constructor needed for {@link Serializable}.
          */
@@ -792,16 +796,24 @@ public enum GridTopic {
          * @param topic Topic.
          * @param id1 ID1.
          * @param id2 ID2.
+         * @param id3 ID3.
          */
-        private T9(GridTopic topic, int id1, int id2) {
+        private T9(GridTopic topic, int id1, int id2, byte id3) {
             this.topic = topic;
             this.id1 = id1;
             this.id2 = id2;
+            this.id3 = id3;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return topic.ordinal() + 31 * id1 + 31 * id2;
+            int res = topic.ordinal();
+
+            res += 31 * res + id1;
+            res += 31 * res + id2;
+            res += 31 * res + id3;
+
+            return res;
         }
 
         /** {@inheritDoc} */
@@ -809,7 +821,7 @@ public enum GridTopic {
             if (obj.getClass() == T9.class) {
                 T9 that = (T9)obj;
 
-                return topic == that.topic && id1 == that.id1 && id2 == that.id2;
+                return topic == that.topic && id1 == that.id1 && id2 == that.id2 && id3 == that.id3;
             }
 
             return false;
@@ -820,13 +832,20 @@ public enum GridTopic {
             out.writeByte(topic.ordinal());
             out.writeInt(id1);
             out.writeInt(id2);
+            out.writeByte(id3);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             topic = fromOrdinal(in.readByte());
-            id1 = in.readByte();
-            id2 = in.readByte();
+            id1 = in.readInt();
+            id2 = in.readInt();
+            id3 = in.readByte();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(T9.class, this);
         }
     }
 }
