@@ -1680,10 +1680,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Keep portable flag.
      */
-    public boolean keepPortable() {
+    public boolean keepIgniteObject() {
         CacheOperationContext opCtx = operationContextPerCall();
 
-        return opCtx != null && opCtx.isKeepPortable();
+        return opCtx != null && opCtx.isKeepIgniteObject();
     }
 
     /**

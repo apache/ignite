@@ -755,7 +755,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         IgniteInternalCache<K, V> prj0 = cctx.cache();
 
         if (qry.keepPortable())
-            prj0 = prj0.keepPortable();
+            prj0 = prj0.keepIgniteObject();
 
         final IgniteInternalCache<K, V> prj = prj0;
 

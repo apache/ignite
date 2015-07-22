@@ -106,6 +106,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withSkipStore();
 
     /**
+     * Returns an instance of cache that will keep binary form of objects on all cache operations when
+     * optimized field marshaller is used.
+     *
+     * @return Instance of Ignite cache preserving binary object format.
+     */
+    public IgniteCache<K, V> withIgniteObject();
+
+    /**
      * @return Cache with no-retries behavior enabled.
      */
     public IgniteCache<K, V> withNoRetries();

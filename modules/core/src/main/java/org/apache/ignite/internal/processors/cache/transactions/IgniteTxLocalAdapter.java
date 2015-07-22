@@ -2315,7 +2315,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 /*read through*/cacheCtx.config().isLoadPreviousValue() && !skipStore,
                 /*async*/true,
                 missedForLoad,
-                deserializePortables(cacheCtx),
+                deserializeIgniteObject(cacheCtx),
                 /*skip values*/false,
                 new CI2<KeyCacheObject, Object>() {
                     @Override public void apply(KeyCacheObject key, Object val) {
@@ -3009,10 +3009,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param cacheCtx Cache context.
      * @return {@code True} if portables should be deserialized, {@code false} otherwise.
      */
-    private boolean deserializePortables(GridCacheContext cacheCtx) {
+    private boolean deserializeIgniteObject(GridCacheContext cacheCtx) {
         CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
-        return opCtx == null || !opCtx.isKeepPortable();
+        return opCtx == null || !opCtx.isKeepIgniteObject();
     }
 
     /**

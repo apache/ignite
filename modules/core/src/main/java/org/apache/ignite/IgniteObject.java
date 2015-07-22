@@ -15,14 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite;
 
-import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
- *
+ * Abstracted binary representation of objects.
  */
-public interface CacheIndexedObject extends CacheObject, IgniteObject {
-    // All required method are declared in IgniteObject.
+public interface IgniteObject {
+    /**
+     * Gets portable object type ID.
+     *
+     * @return Type ID.
+     */
+    public int typeId();
+
+    /**
+     * Gets fully deserialized instance of portable object.
+     *
+     * @return Fully deserialized instance of portable object.
+     */
+    @Nullable public <T> T deserialize() throws IgniteException;
+
+    /**
+     * Gets field value.
+     *
+     * @param fieldName Field name.
+     * @return Field value.
+     */
+    @Nullable public <T> T field(String fieldName);
+
+    /**
+     * Checks whether field is set.
+     *
+     * @param fieldName Field name.
+     * @return {@code true} if field is set.
+     */
+    public boolean hasField(String fieldName);
 }

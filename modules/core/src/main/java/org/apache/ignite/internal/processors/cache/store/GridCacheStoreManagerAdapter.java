@@ -245,7 +245,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
             Object storeKey = key.value(cctx.cacheObjectContext(), false);
 
-            if (OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(storeKey) || convertPortable())
+            if (convertPortable())
                 storeKey = cctx.unwrapIfNeeded(storeKey, false);
 
             if (log.isDebugEnabled())
@@ -499,9 +499,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return true;
 
-            if (OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(key) ||
-                OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(val) ||
-                convertPortable()) {
+            if (convertPortable()) {
                 key = cctx.unwrapIfNeeded(key, false);
                 val = cctx.unwrapIfNeeded(val, false);
             }
@@ -606,7 +604,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return false;
 
-            if (OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(key) || convertPortable())
+            if (convertPortable())
                 key = cctx.unwrapIfNeeded(key, false);
 
             if (log.isDebugEnabled())
@@ -1075,9 +1073,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
                         Object v = locStore ? e.getValue() : e.getValue().get1();
 
-                        if (OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(k) ||
-                            OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(v) ||
-                            convertPortable()) {
+                        if (convertPortable()) {
                             k = cctx.unwrapIfNeeded(k, false);
                             v = cctx.unwrapIfNeeded(v, false);
                         }

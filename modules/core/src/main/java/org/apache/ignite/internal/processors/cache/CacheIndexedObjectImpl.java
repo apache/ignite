@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
@@ -26,6 +27,8 @@ import sun.misc.*;
 
 import java.io.*;
 import java.nio.*;
+
+import static org.apache.ignite.marshaller.optimized.OptimizedObjectOutputStream.*;
 
 /**
  * Cache object implementation for classes that support footer injection is their serialized form thus enabling fields
@@ -108,7 +111,7 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter implements CacheI
 
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
-        toMarshaledFormIfNeeded(ctx);
+        toMarshaledFormIfNeeded();
 
         return valBytes;
     }
@@ -130,7 +133,7 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter implements CacheI
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
-        toMarshaledFormIfNeeded(ctx);
+        toMarshaledFormIfNeeded();
     }
 
     /** {@inheritDoc} */
@@ -309,25 +312,56 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter implements CacheI
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        assert false;
+        if (val != null)
+            return val.hashCode();
+        else {
+            assert valBytes != null;
 
-        return super.hashCode();
+            return UNSAFE.getInt(valBytes, BYTE_ARR_OFF + start + len -
+                FOOTER_LENGTH_FIELD_SIZE - FOOTER_HANDLES_FIELD_SIZE - FOOTER_OBJECT_HASH_CODE_FIELD_SIZE);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        assert false;
+        if (obj == this)
+            return true;
 
-        return super.equals(obj);
+        if (!(obj instanceof CacheIndexedObjectImpl))
+            return false;
+
+        CacheIndexedObjectImpl other = (CacheIndexedObjectImpl)obj;
+
+        try {
+            if (val != null && other.val != null)
+                return F.eq(val, other.val);
+            else {
+                toMarshaledFormIfNeeded();
+
+                other.toMarshaledFormIfNeeded();
+
+                if (len != other.len)
+                    return false;
+
+                for (int i = 0; i < len; i++) {
+                    if (valBytes[start + i] != other.valBytes[other.start + i])
+                        return false;
+                }
+
+                return true;
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
      * Marshals {@link #val} to {@link #valBytes} if needed.
      *
-     * @param ctx Cache object context.
      * @throws IgniteCheckedException In case of error.
      */
-    protected void toMarshaledFormIfNeeded(CacheObjectContext ctx) throws IgniteCheckedException {
+    protected void toMarshaledFormIfNeeded() throws IgniteCheckedException {
         if (valBytes == null) {
             assert val != null;
 

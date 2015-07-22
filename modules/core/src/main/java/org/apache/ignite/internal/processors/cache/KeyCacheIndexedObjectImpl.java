@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-
 /**
  * Cache object implementation for classes that support footer injection is their serialized form thus enabling fields
  * search and extraction without necessity to fully deserialize an object.
@@ -55,45 +53,13 @@ public class KeyCacheIndexedObjectImpl extends CacheIndexedObjectImpl implements
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert val != null || valBytes != null;
-
-        if (val == null)
-            val = ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
-    }
-
-    /** {@inheritDoc} */
     @Override public byte directType() {
         // refer to GridIoMessageFactory.
-        return 113;
+        return 114;
     }
 
     /** {@inheritDoc} */
     @Override public boolean internal() {
-        assert val != null;
-
-        return val instanceof GridCacheInternal;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        assert val != null;
-
-        return val.hashCode();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (!(obj instanceof KeyCacheIndexedObjectImpl))
-            return false;
-
-        KeyCacheIndexedObjectImpl other = (KeyCacheIndexedObjectImpl)obj;
-
-        return val.equals(other.val);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean keepDeserialized(CacheObjectContext ctx, boolean checkCls) {
-        return true;
+        return false;
     }
 }

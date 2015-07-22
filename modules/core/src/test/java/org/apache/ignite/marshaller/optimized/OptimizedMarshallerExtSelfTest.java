@@ -37,7 +37,7 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
     private static OptimizedMarshallerIndexingHandler idxHandler;
 
     /** */
-    private CacheObjectContext objCtx;
+    private transient CacheObjectContext objCtx;
 
     /** */
     private static final OptimizedMarshallerMetaHandler META_HANDLER = new OptimizedMarshallerMetaHandler() {
@@ -115,10 +115,10 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
 
         assertEquals(testObj.str, text);
 
-        // Serializable extraction (doesn't have meta, thus doesn't have footer)
-        TestObject2 o2 = marsh.readField("o2", arr, 0, arr.length, null, objCtx);
+        // CacheObject extraction.
+        CacheIndexedObject o2 = marsh.readField("o2", arr, 0, arr.length, null, objCtx);
 
-        assertEquals(testObj.o2, o2);
+        assertEquals(testObj.o2, o2.deserialize());
 
         // Add metadata for the enclosed object.
         assertTrue(idxHandler.enableFieldsIndexingForClass(TestObject2.class));
@@ -171,6 +171,37 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         SelfLinkObject selfLinkObject2 = marsh.unmarshal(arr, null);
 
         assertEquals(selfLinkObject, selfLinkObject2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testHashCode() throws Exception {
+        OptimizedMarshaller marsh = (OptimizedMarshaller)OptimizedMarshallerExtSelfTest.marsh;
+
+        for (int i = 0; i < 100; i++) {
+            TestMarshalAware ma = new TestMarshalAware(i, "value" + i);
+
+            byte[] valBytes = marsh.marshal(ma);
+
+            CacheIndexedObject obj = new CacheIndexedObjectImpl(objCtx, valBytes, 0, valBytes.length);
+
+            assertEquals(ma.hashCode(), obj.hashCode());
+
+            assertEquals(ma.testObject2.hashCode(), obj.<CacheIndexedObject>field("testObject2").hashCode());
+        }
+
+        for (int i = 0; i < 100; i++) {
+            TestObject to = new TestObject("value" + i, i);
+
+            byte[] valBytes = marsh.marshal(to);
+
+            CacheIndexedObject obj = new CacheIndexedObjectImpl(objCtx, valBytes, 0, valBytes.length);
+
+            assertEquals(to.hashCode(), obj.hashCode());
+
+            assertEquals(to.o2.hashCode(), obj.<CacheIndexedObject>field("o2").hashCode());
+        }
     }
 
 
@@ -395,6 +426,24 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
             text = reader.readString("text");
             aware = reader.readObject("aware");
             testObject2 = reader.readObject("testObject2");
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return number * 31 + text.hashCode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestMarshalAware that = (TestMarshalAware)o;
+
+            return number == that.number && text.equals(that.text);
         }
     }
 

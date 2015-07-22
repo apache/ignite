@@ -87,7 +87,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     private OptimizedMarshallerIdMapper mapper;
 
     /** */
-    private OptimizedMarshallerProtocolVersion protocolVersion = OptimizedMarshallerProtocolVersion.VER_1_1;
+    private OptimizedMarshallerProtocolVersion protocolVersion = OptimizedMarshallerProtocolVersion.VER_1;
 
     /** */
     private OptimizedMarshallerIndexingHandler idxHandler;

@@ -57,6 +57,24 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
     /** */
     private static final long longArrOff = UNSAFE.arrayBaseOffset(long[].class);
 
+    /** Footer length field size in output format. */
+    public static final int FOOTER_LENGTH_FIELD_SIZE = 2;
+
+    /** Object hash code field size in output format. */
+    public static final int FOOTER_OBJECT_HASH_CODE_FIELD_SIZE = 4;
+
+    /** Handles indicator field size. */
+    public static final int FOOTER_HANDLES_FIELD_SIZE = 1;
+
+    /** Footer plain overhead size. */
+    public static final int FOOTER_OVERHEAD = 2 * FOOTER_LENGTH_FIELD_SIZE + FOOTER_OBJECT_HASH_CODE_FIELD_SIZE +
+        FOOTER_HANDLES_FIELD_SIZE;
+
+    /** Handle footer element size. */
+    public static final int HANDLE_FOOTER_ELEMENT_SIZE = 8;
+
+    /** Plain footer element size. */
+    public static final int PLAIN_FOOTER_ELEMENT_SIZE = 4;
 
     /** */
     private final GridDataOutput out;
@@ -351,6 +369,8 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
         Footer footer = getFooter();
 
+        footer.objectHashCode(obj.hashCode());
+
         if (marshalAwareFooters == null)
             marshalAwareFooters = new Stack<>();
 
@@ -383,8 +403,11 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
             out.writeBoolean(hasFooter);
 
-            if (hasFooter)
+            if (hasFooter) {
                 footer = getFooter();
+
+                footer.objectHashCode(obj.hashCode());
+            }
         }
 
         for (int i = 0; i < mtds.size(); i++) {
@@ -1242,6 +1265,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
         private int size;
 
         /** */
+        private int objHashCode;
+
+        /** */
         private boolean hasHandles;
 
 
@@ -1275,6 +1301,15 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
         }
 
         /**
+         * Sets object hash code to write.
+         *
+         * @param hashCode Object hash code.
+         */
+        public void objectHashCode(int hashCode) {
+            objHashCode = hashCode;
+        }
+
+        /**
          * Writes footer content to the OutputStream.
          *
          * @throws IOException In case of error.
@@ -1283,9 +1318,13 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
             if (data == null)
                 writeShort(EMPTY_FOOTER);
             else {
-                // +5 - 2 bytes for footer len at the beginning, 2 bytes for footer len at the end, 1 byte for handles
-                // indicator flag.
-                short footerLen = (short)(size * (hasHandles ? 8 : 4) + 5);
+                // OVERHEAD =
+                //      footer len at the beginning,
+                //      object hash code,
+                //      handles indicator flag,
+                //      footer len at the end,
+                short footerLen = (short)(size * (hasHandles ? HANDLE_FOOTER_ELEMENT_SIZE : PLAIN_FOOTER_ELEMENT_SIZE)
+                    + FOOTER_OVERHEAD);
 
                 writeShort(footerLen);
 
@@ -1298,12 +1337,15 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
                         writeInt((int)data[i]);
                 }
 
+                writeInt(objHashCode);
+
                 writeByte(hasHandles ? 1 : 0);
 
                 writeShort(footerLen);
             }
 
             size = 0;
+            objHashCode = 0;
             hasHandles = false;
 
             if (footersPool.size() < MAX_FOOTERS_POOL_SIZE)

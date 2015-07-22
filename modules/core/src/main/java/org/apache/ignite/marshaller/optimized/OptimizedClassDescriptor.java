@@ -757,6 +757,8 @@ public class OptimizedClassDescriptor {
                         "set OptimizedMarshaller.setRequireSerializable() to false " +
                         "(note that performance may degrade if object is not Serializable): " + name);
 
+                idxHandler.enableFieldsIndexingForClass(obj.getClass());
+
                 writeTypeData(out);
 
                 out.writeShort(checksum);

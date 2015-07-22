@@ -261,28 +261,6 @@ public class OptimizedMarshallerUtils {
     }
 
     /**
-     * Checks whether the given object is a wrapper, that contains serialized form of an object with indexed fields, or
-     * {@link Collection} or {@link Map}.
-     *
-     * @param obj Object.
-     * @return {@code true} if all the conditions are met..
-     */
-    public static boolean isObjectWithIndexedFieldsOrCollection(Object obj) {
-        if (obj == null)
-            return false;
-
-        if (obj instanceof CacheIndexedObjectImpl ||
-            obj instanceof Map.Entry ||
-            obj instanceof Collection ||
-            obj instanceof Map ||
-            obj.getClass() == Object[].class)
-            return true;
-
-        return false;
-    }
-
-
-    /**
      * Gets descriptor for provided ID.
      *
      * @param clsMap Class descriptors by class map.

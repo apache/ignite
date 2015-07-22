@@ -559,7 +559,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         /** {@inheritDoc} */
         @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
             try {
-                toMarshaledFormIfNeeded(ctx);
+                toMarshaledFormIfNeeded();
 
                 if (keepDeserialized(ctx, true)) {
                     ClassLoader ldr = ctx.p2pEnabled() ?
@@ -605,7 +605,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
             try {
                 if (!ctx.processor().immutable(val)) {
-                    toMarshaledFormIfNeeded(ctx);
+                    toMarshaledFormIfNeeded();
 
                     ClassLoader ldr = ctx.p2pEnabled() ?
                         IgniteUtils.detectClassLoader(IgniteUtils.detectClass(val)) : U.gridClassLoader();

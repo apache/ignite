@@ -56,17 +56,16 @@ public class OptimizedObjectMetadata implements Externalizable {
      * object's serialized form.
      *
      * @param fieldName Field name.
-     * @return Index.
-     * @throws IgniteFieldNotFoundException If object doesn't have such a field.
+     * @return Index or {@code -1} if field index cannot be resolved.
      */
-    public int fieldIndex(String fieldName) throws IgniteFieldNotFoundException {
+    public int fieldIndex(String fieldName) {
         if (indexes == null)
-            throw new IgniteFieldNotFoundException("Object doesn't have field named: " + fieldName);
+            return -1;
 
         FieldInfo info = indexes.get(OptimizedMarshallerUtils.resolveFieldId(fieldName));
 
         if (info == null)
-            throw new IgniteFieldNotFoundException("Object doesn't have field named: " + fieldName);
+            return -1;
 
         return info.index();
     }

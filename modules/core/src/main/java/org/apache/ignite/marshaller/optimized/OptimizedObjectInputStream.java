@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
+import static org.apache.ignite.marshaller.optimized.OptimizedObjectOutputStream.*;
 
 /**
  * Optimized object input stream.
@@ -1290,15 +1291,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         if (type != SERIALIZABLE && type != MARSHAL_AWARE)
             return false;
 
-        FieldRange range;
-
-        try {
-            range = fieldRange(fieldName, start);
-        }
-        catch (IgniteFieldNotFoundException e) {
-            // Ignore
-            return false;
-        }
+        FieldRange range = fieldRange(fieldName, start);
 
         return range != null && range.start >= 0;
     }
@@ -1351,9 +1344,8 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
      * @param start Object's start offset.
      * @return positive range or {@code null} if the object doesn't have such a field.
      * @throws IOException in case of error.
-     * @throws IgniteFieldNotFoundException In case if there is no such a field.
      */
-    private FieldRange fieldRange(String fieldName, int start) throws IOException, IgniteFieldNotFoundException {
+    private FieldRange fieldRange(String fieldName, int start) throws IOException {
         int pos = start + 1;
 
         int typeId = in.readInt(pos);
@@ -1372,23 +1364,26 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         OptimizedObjectMetadata meta = idxHandler.metaHandler().metadata(typeId);
 
         if (meta == null)
-            // TODO: IGNITE-950 add warning!
             return null;
 
         int end = in.size();
 
-        short footerLen = in.readShort(end - FOOTER_LEN_OFF);
+        short footerLen = in.readShort(end - FOOTER_LENGTH_FIELD_SIZE);
 
         if (footerLen == EMPTY_FOOTER)
-            throw new IgniteFieldNotFoundException("Object doesn't have a field named: " + fieldName);
+            return null;
 
         if (range == null)
             range = new FieldRange();
 
-        // Calculating start footer offset. +2 - skipping length at the beginning
-        pos = (end - footerLen) + 2;
+        // Calculating start footer offset. Skipping length at the beginning
+        pos = (end - footerLen) + FOOTER_LENGTH_FIELD_SIZE;
 
         int fieldIdx = meta.fieldIndex(fieldName);
+
+        if (fieldIdx < 0)
+            return null;
+
         int fieldsCnt = meta.size();
 
         if (fieldIdx >= fieldsCnt)
@@ -1397,7 +1392,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         boolean hasHandles = in.readByte(end - FOOTER_HANDLES_FLAG_OFF) == 1;
 
         if (hasHandles) {
-            long fieldInfo = in.readLong(pos + fieldIdx * 8);
+            long fieldInfo = in.readLong(pos + fieldIdx * HANDLE_FOOTER_ELEMENT_SIZE);
 
             boolean isHandle = ((fieldInfo & FOOTER_BODY_IS_HANDLE_MASK) >> FOOTER_BODY_HANDLE_MASK_BIT) == 1;
 
@@ -1414,11 +1409,12 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
             }
         }
         else
-            range.start = in.readInt(pos + fieldIdx * 4) & FOOTER_BODY_OFF_MASK;
+            range.start = in.readInt(pos + fieldIdx * PLAIN_FOOTER_ELEMENT_SIZE) & FOOTER_BODY_OFF_MASK;
 
         if (fieldIdx == 0) {
             if (fieldsCnt > 1) {
-                int nextFieldOff = in.readInt(pos + (fieldIdx + 1) * 4);
+                int nextFieldOff = in.readInt(pos + (fieldIdx + 1) * PLAIN_FOOTER_ELEMENT_SIZE);
+
                 range.len = nextFieldOff - range.start;
             }
             else
@@ -1427,7 +1423,8 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         else if (fieldIdx == fieldsCnt - 1)
             range.len = (end - footerLen) - range.start;
         else {
-            int nextFieldOff = in.readInt(pos + (fieldIdx + 1) * 4);
+            int nextFieldOff = in.readInt(pos + (fieldIdx + 1) * PLAIN_FOOTER_ELEMENT_SIZE);
+
             range.len = nextFieldOff - range.start;
         }
 
@@ -1443,12 +1440,6 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
 
         /** */
         private int len;
-
-        /**
-         * Constructor.
-         */
-        public FieldRange() {
-        }
 
         /** {@inheritDoc} */
         @Override public String toString() {

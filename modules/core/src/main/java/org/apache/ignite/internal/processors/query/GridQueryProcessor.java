@@ -591,7 +591,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     return idx.queryTwoStep(
                         cctx,
                         qry,
-                        cctx.keepPortable());
+                        cctx.keepIgniteObject());
                 }
             });
         }
@@ -764,7 +764,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            final boolean keepPortable = cctx.keepPortable();
+            final boolean keepPortable = cctx.keepIgniteObject();
 
             return executeQuery(cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
                 @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
