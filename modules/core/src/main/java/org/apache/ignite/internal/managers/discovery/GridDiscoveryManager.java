@@ -1033,8 +1033,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             "servers=" + serverNodesNum +
             ", clients=" + clientNodesNum +
             ", CPUs=" + totalCpus +
-            ", heap=" + heap + "GB" +
-            ']';
+            ", heap=" + heap + "GB]";
     }
 
     /** {@inheritDoc} */
