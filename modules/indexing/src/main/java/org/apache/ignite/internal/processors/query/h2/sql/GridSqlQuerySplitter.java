@@ -285,7 +285,7 @@ public class GridSqlQuerySplitter {
         if (el instanceof GridSqlAlias)
             el = el.child();
 
-        if (el instanceof GridSqlOperation || el instanceof GridSqlFunction || el instanceof GridSqlAggregateFunction) {
+        if (el instanceof GridSqlOperation || el instanceof GridSqlFunction) {
             for (GridSqlElement child : el)
                 collectAllSpacesInSubqueries(child, spaces);
         }

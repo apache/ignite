@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.util.*;
+
 /**
  * Query parameter.
  */
@@ -28,6 +30,8 @@ public class GridSqlParameter extends GridSqlElement implements GridSqlValue {
      * @param idx Index.
      */
     public GridSqlParameter(int idx) {
+        super(Collections.<GridSqlElement>emptyList());
+
         this.idx = idx;
     }
 

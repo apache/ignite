@@ -24,10 +24,19 @@ import java.util.*;
  */
 public abstract class GridSqlElement implements Iterable<GridSqlElement> {
     /** */
-    protected List<GridSqlElement> children = new ArrayList<>();
+    protected List<GridSqlElement> children;
 
     /** */
     private GridSqlType expressionResultType;
+
+    /**
+     * @param children Initial child list.
+     */
+    protected GridSqlElement(List<GridSqlElement> children) {
+        assert children != null;
+
+        this.children = children;
+    }
 
     /**
      * @return Optional expression result type (if this is an expression and result type is known).
@@ -67,7 +76,7 @@ public abstract class GridSqlElement implements Iterable<GridSqlElement> {
      * @return First child.
      */
     public GridSqlElement child() {
-        return children.get(0);
+        return child(0);
     }
 
     /**
@@ -83,6 +92,9 @@ public abstract class GridSqlElement implements Iterable<GridSqlElement> {
      * @param child New child.
      */
     public void child(int idx, GridSqlElement child) {
+        if (child == null)
+            throw new NullPointerException();
+
         children.set(idx, child);
     }
 

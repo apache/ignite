@@ -66,6 +66,8 @@ public class GridSqlFunction extends GridSqlElement {
      * @param name Name.
      */
     private GridSqlFunction(String schema, GridSqlFunctionType type, String name) {
+        super(new ArrayList<GridSqlElement>());
+
         if (name == null)
             throw new NullPointerException();
 
