@@ -67,6 +67,9 @@ public final class GridTestProperties {
     public static final String MARSH_CLASS_NAME = "marshaller.class";
 
     /** */
+    public static final String OPTIMIZED_MARSH_PROTOCOL = "optimized.marshaller.protocol";
+
+    /** */
     static {
         // Initialize IGNITE_HOME system property.
         String igniteHome = System.getProperty("IGNITE_HOME");

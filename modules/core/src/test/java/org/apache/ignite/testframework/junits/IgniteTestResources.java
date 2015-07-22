@@ -245,8 +245,23 @@ public class IgniteTestResources {
             }
         }
 
-        if (marsh instanceof OptimizedMarshaller)
+        if (marsh instanceof OptimizedMarshaller) {
             ((OptimizedMarshaller)marsh).setRequireSerializable(false);
+
+            OptimizedMarshallerProtocolVersion ver = OptimizedMarshallerProtocolVersion.VER_1;
+
+            String property = GridTestProperties.getProperty(GridTestProperties.OPTIMIZED_MARSH_PROTOCOL);
+
+            try {
+                if (property != null)
+                    ver = OptimizedMarshallerProtocolVersion.valueOf(property);
+            }
+            catch (IllegalArgumentException ignore) {
+                log.warning("Failed to set optimized marshaller protocol version: " + property);
+            }
+
+            ((OptimizedMarshaller)marsh).setProtocolVersion(ver);
+        }
 
         marsh.setContext(new MarshallerContextTestImpl());
 
