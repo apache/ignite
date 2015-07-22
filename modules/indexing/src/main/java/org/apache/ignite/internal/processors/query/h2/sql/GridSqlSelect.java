@@ -84,23 +84,32 @@ public class GridSqlSelect extends GridSqlQuery {
             buff.resetCount();
 
             for (int grpCol : grpCols) {
-                GridSqlElement expression = allExprs.get(grpCol);
-
                 buff.appendExceptFirst(", ");
 
-                if (expression instanceof GridSqlAlias)
-                    buff.append(StringUtils.unEnclose((expression.child().getSQL())));
-                else
-                    buff.append(StringUtils.unEnclose(expression.getSQL()));
+                addAlias(buff, allExprs.get(grpCol));
             }
         }
 
-        if (havingCol >= 0)
-            buff.append("\nHAVING ").append(StringUtils.unEnclose(allExprs.get(havingCol).getSQL()));
+        if (havingCol >= 0) {
+            buff.append("\nHAVING ");
+
+            addAlias(buff, allExprs.get(havingCol));
+        }
 
         getSortLimitSQL(buff);
 
         return buff.toString();
+    }
+
+    /**
+     * @param buff Statement builder.
+     * @param expression Alias expression.
+     */
+    private static void addAlias(StatementBuilder buff, GridSqlElement expression) {
+        if (expression instanceof GridSqlAlias)
+            expression = expression.child();
+
+        buff.append(StringUtils.unEnclose(expression.getSQL()));
     }
 
     /**
