@@ -241,6 +241,9 @@ class VisorOpenCommand extends VisorConsoleCommand {
             cfg.setGridLogger(new NullLogger)
 
         val startedGridName = try {
+            // We need to stop previous daemon node before to start new one.
+            Ignition.stopAll(true)
+
             Ignition.start(cfg).name
         }
         finally {
