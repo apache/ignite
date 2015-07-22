@@ -318,7 +318,7 @@ public final class IgniteSystemProperties {
 
     /**
      * If this property is set to {@code true} then Ignite will append
-     * hash code of class loader to bean name returned by {@link RuntimeMXBean#getName()}.
+     * hash code of class loader to MXBean name.
      * <p>
      * Default is {@code true}.
      */
