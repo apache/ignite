@@ -107,6 +107,12 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
                 writer.incrementState();
 
+            case 4:
+                if (!writer.writeCollection("parts", parts, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -131,6 +137,14 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
                 reader.incrementState();
 
+            case 4:
+                parts = reader.readCollection("parts", MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return true;
@@ -143,6 +157,6 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 }

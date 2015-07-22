@@ -225,6 +225,12 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
                 writer.incrementState();
 
+            case 7:
+                if (!writer.writeInt("part", part))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -273,6 +279,14 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
+            case 7:
+                part = reader.readInt("part");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return true;
@@ -285,7 +299,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /** {@inheritDoc} */
