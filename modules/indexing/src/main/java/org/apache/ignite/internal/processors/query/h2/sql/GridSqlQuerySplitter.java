@@ -28,6 +28,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.*;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlPlaceholder.*;
 
 /**
  * Splits a single SQL query into two step map-reduce query.
@@ -397,77 +398,12 @@ public class GridSqlQuerySplitter {
         if (!collocated && el instanceof GridSqlAggregateFunction) {
             aggregateFound = true;
 
-            GridSqlAggregateFunction agg = (GridSqlAggregateFunction)el;
+            if (alias == null)
+                alias = alias(columnName(idx), el);
 
-            GridSqlElement mapAgg, rdcAgg;
+            splitAggregate(alias, 0, mapSelect, idx, true);
 
-            String mapAggAlias = columnName(idx);
-
-            switch (agg.type()) {
-                case AVG: // SUM( AVG(CAST(x AS DOUBLE))*COUNT(x) )/SUM( COUNT(x) ).
-                    //-- COUNT(x) map
-                    GridSqlElement cntMapAgg = aggregate(agg.distinct(), COUNT).addChild(agg.child());
-
-                    // Add generated alias to COUNT(x).
-                    // Using size as index since COUNT will be added as the last select element to the map query.
-                    String cntMapAggAlias = columnName(mapSelect.size());
-
-                    cntMapAgg = alias(cntMapAggAlias, cntMapAgg);
-
-                    mapSelect.add(cntMapAgg);
-
-                    //-- AVG(CAST(x AS DOUBLE)) map
-                    mapAgg = aggregate(agg.distinct(), AVG).addChild( // Add function argument.
-                        function(CAST).setCastType("DOUBLE").addChild(agg.child()));
-
-                    //-- SUM( AVG(x)*COUNT(x) )/SUM( COUNT(x) ) reduce
-                    GridSqlElement sumUpRdc = aggregate(false, SUM).addChild(
-                        op(GridSqlOperationType.MULTIPLY,
-                                column(mapAggAlias),
-                                column(cntMapAggAlias)));
-
-                    GridSqlElement sumDownRdc = aggregate(false, SUM).addChild(column(cntMapAggAlias));
-
-                    rdcAgg = op(GridSqlOperationType.DIVIDE, sumUpRdc, sumDownRdc);
-
-                    break;
-
-                case SUM: // SUM( SUM(x) )
-                case MAX: // MAX( MAX(x) )
-                case MIN: // MIN( MIN(x) )
-                    mapAgg = aggregate(agg.distinct(), agg.type()).addChild(agg.child());
-                    rdcAgg = aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias));
-
-                    break;
-
-                case COUNT_ALL: // CAST(SUM( COUNT(*) ) AS BIGINT)
-                case COUNT: // CAST(SUM( COUNT(x) ) AS BIGINT)
-                    mapAgg = aggregate(agg.distinct(), agg.type());
-
-                    if (agg.type() == COUNT)
-                        mapAgg.addChild(agg.child());
-
-                    rdcAgg = aggregate(false, SUM).addChild(column(mapAggAlias));
-                    rdcAgg = function(CAST).setCastType("BIGINT").addChild(rdcAgg);
-
-                    break;
-
-                default:
-                    throw new IgniteException("Unsupported aggregate: " + agg.type());
-            }
-
-            assert !(mapAgg instanceof GridSqlAlias);
-
-            // Add generated alias to map aggregate.
-            mapAgg = alias(mapAggAlias, mapAgg);
-
-            if (alias != null) // Add initial alias if it was set.
-                rdcAgg = alias(alias.alias(), rdcAgg);
-
-            // Set map and reduce aggregates to their places in selects.
-            mapSelect.set(idx, mapAgg);
-
-            rdcSelect[idx] = rdcAgg;
+            rdcSelect[idx] = alias;
         }
         else {
             String mapColAlias = columnName(idx);
@@ -497,6 +433,95 @@ public class GridSqlQuerySplitter {
         }
 
         return aggregateFound;
+    }
+
+    /**
+     * @param parentExpr Parent expression.
+     * @param aggIdx Index of the aggregate to split in this expression.
+     * @param mapSelect List of expressions in map SELECT clause.
+     * @param exprIdx Index of the original expression in map SELECT clause.
+     * @param first If this is the first aggregate found in this expression.
+     */
+    private static void splitAggregate(
+        GridSqlElement parentExpr,
+        int aggIdx,
+        List<GridSqlElement> mapSelect,
+        int exprIdx,
+        boolean first
+    ) {
+        GridSqlAggregateFunction agg = parentExpr.child(aggIdx);
+
+        GridSqlElement mapAgg, rdcAgg;
+
+        // Create stubbed map alias to fill it with correct expression later.
+        GridSqlAlias mapAggAlias = alias(columnName(first ? exprIdx : mapSelect.size()), EMPTY);
+
+        // Replace original expression if it is the first aggregate in expression or add to the end.
+        if (first)
+            mapSelect.set(exprIdx, mapAggAlias);
+        else
+            mapSelect.add(mapAggAlias);
+
+        switch (agg.type()) {
+            case AVG: // SUM( AVG(CAST(x AS DOUBLE))*COUNT(x) )/SUM( COUNT(x) ).
+                //-- COUNT(x) map
+                GridSqlElement cntMapAgg = aggregate(agg.distinct(), COUNT).addChild(agg.child());
+
+                // Add generated alias to COUNT(x).
+                // Using size as index since COUNT will be added as the last select element to the map query.
+                String cntMapAggAlias = columnName(mapSelect.size());
+
+                cntMapAgg = alias(cntMapAggAlias, cntMapAgg);
+
+                mapSelect.add(cntMapAgg);
+
+                //-- AVG(CAST(x AS DOUBLE)) map
+                mapAgg = aggregate(agg.distinct(), AVG).addChild( // Add function argument.
+                    function(CAST).setCastType("DOUBLE").addChild(agg.child()));
+
+                //-- SUM( AVG(x)*COUNT(x) )/SUM( COUNT(x) ) reduce
+                GridSqlElement sumUpRdc = aggregate(false, SUM).addChild(
+                    op(GridSqlOperationType.MULTIPLY,
+                        column(mapAggAlias.alias()),
+                        column(cntMapAggAlias)));
+
+                GridSqlElement sumDownRdc = aggregate(false, SUM).addChild(column(cntMapAggAlias));
+
+                rdcAgg = op(GridSqlOperationType.DIVIDE, sumUpRdc, sumDownRdc);
+
+                break;
+
+            case SUM: // SUM( SUM(x) )
+            case MAX: // MAX( MAX(x) )
+            case MIN: // MIN( MIN(x) )
+                mapAgg = aggregate(agg.distinct(), agg.type()).addChild(agg.child());
+                rdcAgg = aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias.alias()));
+
+                break;
+
+            case COUNT_ALL: // CAST(SUM( COUNT(*) ) AS BIGINT)
+            case COUNT: // CAST(SUM( COUNT(x) ) AS BIGINT)
+                mapAgg = aggregate(agg.distinct(), agg.type());
+
+                if (agg.type() == COUNT)
+                    mapAgg.addChild(agg.child());
+
+                rdcAgg = aggregate(false, SUM).addChild(column(mapAggAlias.alias()));
+                rdcAgg = function(CAST).setCastType("BIGINT").addChild(rdcAgg);
+
+                break;
+
+            default:
+                throw new IgniteException("Unsupported aggregate: " + agg.type());
+        }
+
+        assert !(mapAgg instanceof GridSqlAlias);
+
+        // Fill the map alias with aggregate.
+        mapAggAlias.child(0, mapAgg);
+
+        // Replace in original expression aggregate with reduce aggregate.
+        parentExpr.child(aggIdx, rdcAgg);
     }
 
     /**
