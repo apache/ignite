@@ -64,6 +64,20 @@ class IgniteContext[K, V](
      */
     def this(
         sc: SparkContext,
+        springUrl: String,
+        client: Boolean
+    ) {
+        this(sc, () ⇒ IgnitionEx.loadConfiguration(springUrl).get1(), client)
+    }
+
+    /**
+     * Creates an instance of IgniteContext with the given spring configuration.
+     *
+     * @param sc Spark context.
+     * @param springUrl Spring configuration path.
+     */
+    def this(
+        sc: SparkContext,
         springUrl: String
     ) {
         this(sc, () ⇒ IgnitionEx.loadConfiguration(springUrl).get1())
