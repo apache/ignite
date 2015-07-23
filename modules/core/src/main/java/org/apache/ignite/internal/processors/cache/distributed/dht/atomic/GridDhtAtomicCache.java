@@ -1181,13 +1181,22 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (locked != null)
                     unlockEntries(locked, req.topologyVersion());
 
-                // Enqueue if necessary after locks release.
                 if (deleted != null) {
                     assert !deleted.isEmpty();
-                    assert ctx.deferredDelete(this) : this;
 
-                    for (IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion> e : deleted)
-                        ctx.onDeferredDelete(e.get1(), e.get2());
+                    boolean deferred = ctx.deferredDelete();
+
+                    for (IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion> e : deleted) {
+                        if (deferred)
+                            ctx.onDeferredDelete(e.get1(), e.get2());
+                        else {
+                            GridDhtCacheEntry entry = e.get1();
+
+                            assert entry.obsolete();
+
+                            removeEntry(entry);
+                        }
+                    }
                 }
             }
         }
@@ -2182,9 +2191,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param topVer Topology version.
      */
     private void unlockEntries(Collection<GridDhtCacheEntry> locked, AffinityTopologyVersion topVer) {
-        // Process deleted entries before locks release.
-        assert ctx.deferredDelete(this) : this;
-
         // Entries to skip eviction manager notification for.
         // Enqueue entries while holding locks.
         Collection<KeyCacheObject> skip = null;
@@ -2468,8 +2474,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             req.subjectId(),
                             taskName);
 
-                        if (updRes.removeVersion() != null)
-                            ctx.onDeferredDelete(entry, updRes.removeVersion());
+                        if (updRes.removeVersion() != null) {
+                            if (ctx.deferredDelete())
+                                ctx.onDeferredDelete(entry, updRes.removeVersion());
+                            else {
+                                assert entry.obsolete();
+
+                                removeEntry(entry);
+                            }
+                        }
 
                         entry.onUnlock();
 

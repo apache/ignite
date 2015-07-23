@@ -1611,7 +1611,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         CacheObject oldVal;
         CacheObject updated;
 
-        GridCacheVersion enqueueVer = null;
+        GridCacheVersion rmvVer = null;
 
         GridCacheVersionConflictContext<?, ?> conflictCtx = null;
 
@@ -2120,7 +2120,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     }
                 }
 
-                enqueueVer = newVer;
+                rmvVer = newVer;
 
                 boolean hasValPtr = hasOffHeapPointer();
 
@@ -2163,6 +2163,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     }
                 }
 
+                if (!cctx.deferredDelete())
+                    markObsolete(rmvVer);
+
                 res = hadVal;
             }
 
@@ -2194,7 +2197,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             invokeRes,
             newSysTtl,
             newSysExpireTime,
-            enqueueVer,
+            rmvVer,
             conflictCtx,
             true);
     }
