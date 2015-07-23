@@ -977,7 +977,13 @@ public class GridNioServer<T> {
 
                     buf = sslFilter.encrypt(ses, sesBuf);
 
+                    int expand = sesBuf.limit() - buf.limit();
+
                     sesBuf.clear();
+
+                    // SSL data more then socket buffer size
+                    if (expand < 0)
+                        sesBuf.limit(sesBuf.limit() + expand - 100);
 
                     assert buf.hasRemaining();
 
