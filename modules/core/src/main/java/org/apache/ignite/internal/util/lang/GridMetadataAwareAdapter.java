@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -28,54 +26,47 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Convenient adapter for working with metadata.
- * <h2 class="header">Thread Safety</h2>
- * This class provides necessary synchronization for thread-safe access.
+ * Convenient adapter for working with metadata. <h2 class="header">Thread Safety</h2> This class provides necessary
+ * synchronization for thread-safe access.
  */
-@SuppressWarnings( {"SynchronizeOnNonFinalField"})
+@SuppressWarnings({"SynchronizeOnNonFinalField"})
 public class GridMetadataAwareAdapter {
+    /**
+     * Enum stored predefined keys.
+     */
+    public enum EntryKey {//keys sorted by usage rate, descending.
+        /** Predefined key. */
+        CACHE_STORE_MANAGER_KEY(0),
+
+        /** Predefined key. */
+        CACHE_EVICTABLE_ENTRY_KEY(1),
+
+        /** Predefined key. */
+        CACHE_EVICTION_MANAGER_KEY(2);
+
+        /** key. */
+        private int key;
+
+        /**
+         * @param key key
+         */
+        EntryKey(int key) {
+            this.key = key;
+        }
+
+        /**
+         * Returns key.
+         *
+         * @return key.
+         */
+        public int key() {
+            return key;
+        }
+    }
+
     /** Attributes. */
     @GridToStringInclude
-    private GridLeanMap<UUID, Object> data;
-
-    /** Serializable mutex. */
-    @SuppressWarnings( {"FieldAccessedSynchronizedAndUnsynchronized"})
-    private GridMutex mux;
-
-    /**
-     * Default constructor.
-     */
-    public GridMetadataAwareAdapter() {
-        mux = new GridMutex();
-    }
-
-    /**
-     * Creates adapter with predefined data.
-     *
-     * @param data Data to copy.
-     */
-    public GridMetadataAwareAdapter(Map<UUID, Object> data) {
-        mux = new GridMutex();
-
-        if (data != null && !data.isEmpty())
-            this.data = new GridLeanMap<>(data);
-    }
-
-    /**
-     * Ensures that internal data storage is created.
-     *
-     * @param size Amount of data to ensure.
-     * @return {@code true} if data storage was created.
-     */
-    private boolean ensureData(int size) {
-        if (data == null) {
-            data = new GridLeanMap<>(size);
-
-            return true;
-        }
-        else
-            return false;
-    }
+    private Object[] data = null;
 
     /**
      * Copies all metadata from another instance.
@@ -83,15 +74,9 @@ public class GridMetadataAwareAdapter {
      * @param from Metadata aware instance to copy metadata from.
      */
     public void copyMeta(GridMetadataAwareAdapter from) {
-        A.notNull(from, "from");
+        assert from != null;
 
-        synchronized (mux) {
-            Map m = from.allMeta();
-
-            ensureData(m.size());
-
-            data.putAll(from.allMeta());
-        }
+        copyMeta(from.allMeta());
     }
 
     /**
@@ -99,71 +84,76 @@ public class GridMetadataAwareAdapter {
      *
      * @param data Map to copy metadata from.
      */
-    public void copyMeta(Map<UUID, ?> data) {
-        A.notNull(data, "data");
+    public void copyMeta(Object[] data) {
+        assert data != null;
 
-        synchronized (mux) {
-            ensureData(data.size());
+        synchronized (this) {
+            if (this.data.length < data.length)
+                this.data = Arrays.copyOf(this.data, data.length);
 
-            this.data.putAll(data);
+            for (int k = 0; k < data.length; k++) {
+                if (data[k] != null)
+                    this.data[k] = data[k];
+            }
         }
     }
 
     /**
      * Adds a new metadata.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param val Metadata value.
      * @param <V> Type of the value.
-     * @return Metadata previously associated with given name, or
-     *      {@code null} if there was none.
+     * @return Metadata previously associated with given name, or {@code null} if there was none.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <V> V addMeta(UUID name, V val) {
-        A.notNull(name, "name", val, "val");
+    @Nullable public <V> V addMeta(int key, V val) {
+        assert val != null;
 
-        synchronized (mux) {
-            ensureData(1);
+        synchronized (this) {
+            if (this.data == null)
+                this.data = new Object[key + 1];
+            else if (this.data.length <= key)
+                this.data = Arrays.copyOf(this.data, key + 1);
 
-            return (V)data.put(name, val);
+            V old = (V)data[key];
+
+            data[key] = val;
+
+            return old;
         }
     }
 
     /**
      * Gets metadata by name.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param <V> Type of the value.
      * @return Metadata value or {@code null}.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <V> V meta(UUID name) {
-        A.notNull(name, "name");
-
-        synchronized (mux) {
-            return data == null ? null : (V)data.get(name);
+    @Nullable public <V> V meta(int key) {
+        synchronized (this) {
+            return data != null && data.length > key ? (V)data[key] : null;
         }
     }
 
     /**
-     * Removes metadata by name.
+     * Removes metadata by key.
      *
-     * @param name Name of the metadata to remove.
+     * @param key Name of the metadata to remove.
      * @param <V> Type of the value.
      * @return Value of removed metadata or {@code null}.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <V> V removeMeta(UUID name) {
-        A.notNull(name, "name");
-
-        synchronized (mux) {
-            if (data == null)
+    @Nullable public <V> V removeMeta(int key) {
+        synchronized (this) {
+            if (data == null || data.length <= key)
                 return null;
 
-            V old = (V)data.remove(name);
+            V old = (V)data[key];
 
-            if (data.isEmpty())
-                data = null;
+            data[key] = null;
 
             return old;
         }
@@ -172,23 +162,23 @@ public class GridMetadataAwareAdapter {
     /**
      * Removes metadata only if its current value is equal to {@code val} passed in.
      *
-     * @param name Name of metadata attribute.
+     * @param key Name of metadata attribute.
      * @param val Value to compare.
      * @param <V> Value type.
      * @return {@code True} if value was removed, {@code false} otherwise.
      */
     @SuppressWarnings({"unchecked"})
-    public <V> boolean removeMeta(UUID name, V val) {
-        A.notNull(name, "name", val, "val");
+    public <V> boolean removeMeta(int key, V val) {
+        assert val != null;
 
-        synchronized (mux) {
-            if (data == null)
+        synchronized (this) {
+            if (data == null || data.length <= key)
                 return false;
 
-            V old = (V)data.get(name);
+            V old = (V)data[key];
 
             if (old != null && old.equals(val)) {
-                data.remove(name);
+                data[key] = null;
 
                 return true;
             }
@@ -203,41 +193,43 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return All metadata in this entry.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
-    public <V> Map<UUID, V> allMeta() {
-        synchronized (mux) {
-            if (data == null)
-                return Collections.emptyMap();
+    public <V> Object[] allMeta() {
+        Object[] cp;
 
-            if (data.size() <= 5)
-                // This is a singleton unmodifiable map.
-                return (Map<UUID, V>)data;
+        synchronized (this) {
+            cp = Arrays.copyOf(data, data.length);
+        }
 
-            // Return a copy.
-            return new HashMap<>((Map<UUID, V>) data);
+        return cp;
+    }
+
+    /**
+     * Removes all meta.
+     */
+    public void removeAllMeta() {
+        synchronized (this) {
+            data = null;
         }
     }
 
     /**
      * Tests whether or not given metadata is set.
      *
-     * @param name Name of the metadata to test.
+     * @param key key of the metadata to test.
      * @return Whether or not given metadata is set.
      */
-    public boolean hasMeta(UUID name) {
-        return meta(name) != null;
+    public boolean hasMeta(int key) {
+        return meta(key) != null;
     }
 
     /**
      * Tests whether or not given metadata is set.
      *
-     * @param name Name of the metadata to test.
+     * @param key Key of the metadata to test.
      * @return Whether or not given metadata is set.
      */
-    public <V> boolean hasMeta(UUID name, V val) {
-        A.notNull(name, "name");
-
-        Object v = meta(name);
+    public <V> boolean hasMeta(int key, V val) {
+        Object v = meta(key);
 
         return v != null && v.equals(val);
     }
@@ -245,43 +237,43 @@ public class GridMetadataAwareAdapter {
     /**
      * Adds given metadata value only if it was absent.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param val Value to add if it's not attached already.
      * @param <V> Type of the value.
      * @return {@code null} if new value was put, or current value if put didn't happen.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <V> V putMetaIfAbsent(UUID name, V val) {
-        A.notNull(name, "name", val, "val");
+    @Nullable public <V> V putMetaIfAbsent(int key, V val) {
+        assert val != null;
 
-        synchronized (mux) {
-            V v = (V) meta(name);
+        synchronized (this) {
+            V v = (V)meta(key);
 
             if (v == null)
-                return addMeta(name, val);
+                return addMeta(key, val);
 
             return v;
         }
     }
 
     /**
-     * Adds given metadata value only if it was absent. This method always returns
-     * the latest value and never previous one.
+     * Adds given metadata value only if it was absent. This method always returns the latest value and never previous
+     * one.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param val Value to add if it's not attached already.
      * @param <V> Type of the value.
      * @return The value of the metadata after execution of this method.
      */
     @SuppressWarnings({"unchecked"})
-    public <V> V addMetaIfAbsent(UUID name, V val) {
-        A.notNull(name, "name", val, "val");
+    public <V> V addMetaIfAbsent(int key, V val) {
+        assert val != null;
 
-        synchronized (mux) {
-            V v = (V) meta(name);
+        synchronized (this) {
+            V v = (V)meta(key);
 
             if (v == null)
-                addMeta(name, v = val);
+                addMeta(key, v = val);
 
             return v;
         }
@@ -290,25 +282,24 @@ public class GridMetadataAwareAdapter {
     /**
      * Adds given metadata value only if it was absent.
      *
-     * @param name Metadata name.
-     * @param c Factory closure to produce value to add if it's not attached already.
-     *      Not that unlike {@link #addMeta(UUID, Object)} method the factory closure will
-     *      not be called unless the value is required and therefore value will only be created
-     *      when it is actually needed. If {@code null} and metadata value is missing - {@code null}
-     *      will be returned from this method.
+     * @param key Metadata key.
+     * @param c Factory closure to produce value to add if it's not attached already. Not that unlike {@link
+     * #addMeta(int, Object)} method the factory closure will not be called unless the value is required and therefore
+     * value will only be created when it is actually needed. If {@code null} and metadata value is missing - {@code
+     * null} will be returned from this method.
      * @param <V> Type of the value.
      * @return The value of the metadata after execution of this method.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <V> V addMetaIfAbsent(UUID name, @Nullable Callable<V> c) {
-        A.notNull(name, "name", c, "c");
+    @Nullable public <V> V addMetaIfAbsent(int key, @Nullable Callable<V> c) {
+        assert c != null;
 
-        synchronized (mux) {
-            V v = (V) meta(name);
+        synchronized (this) {
+            V v = (V)meta(key);
 
             if (v == null && c != null)
                 try {
-                    addMeta(name, v = c.call());
+                    addMeta(key, v = c.call());
                 }
                 catch (Exception e) {
                     throw F.wrap(e);
@@ -319,24 +310,25 @@ public class GridMetadataAwareAdapter {
     }
 
     /**
-     * Replaces given metadata with new {@code newVal} value only if its current value
-     * is equal to {@code curVal}. Otherwise, it is no-op.
+     * Replaces given metadata with new {@code newVal} value only if its current value is equal to {@code curVal}.
+     * Otherwise, it is no-op.
      *
-     * @param name Name of the metadata.
+     * @param key Key of the metadata.
      * @param curVal Current value to check.
      * @param newVal New value.
      * @return {@code true} if replacement occurred, {@code false} otherwise.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    public <V> boolean replaceMeta(UUID name, V curVal, V newVal) {
-        A.notNull(name, "name", newVal, "newVal", curVal, "curVal");
+    public <V> boolean replaceMeta(int key, V curVal, V newVal) {
+        assert newVal != null;
+        assert curVal != null;
 
-        synchronized (mux) {
-            if (hasMeta(name)) {
-                V val = this.<V>meta(name);
+        synchronized (this) {
+            if (hasMeta(key)) {
+                V val = this.<V>meta(key);
 
                 if (val != null && val.equals(curVal)) {
-                    addMeta(name, newVal);
+                    addMeta(key, newVal);
 
                     return true;
                 }
@@ -347,28 +339,28 @@ public class GridMetadataAwareAdapter {
     }
 
     /**
-     * Convenience way for super-classes which implement {@link Externalizable} to
-     * serialize metadata. Super-classes must call this method explicitly from
-     * within {@link Externalizable#writeExternal(ObjectOutput)} methods implementation.
+     * Convenience way for super-classes which implement {@link Externalizable} to serialize metadata. Super-classes
+     * must call this method explicitly from within {@link Externalizable#writeExternal(ObjectOutput)} methods
+     * implementation.
      *
      * @param out Output to write to.
      * @throws IOException If I/O error occurred.
      */
     protected void writeExternalMeta(ObjectOutput out) throws IOException {
-        Map<UUID, Object> cp;
+        Object[] cp;
 
         // Avoid code warning (suppressing is bad here, because we need this warning for other places).
-        synchronized (mux) {
-            cp = new GridLeanMap<>(data);
+        synchronized (this) {
+            cp = Arrays.copyOf(this.data, this.data.length);
         }
 
         out.writeObject(cp);
     }
 
     /**
-     * Convenience way for super-classes which implement {@link Externalizable} to
-     * serialize metadata. Super-classes must call this method explicitly from
-     * within {@link Externalizable#readExternal(ObjectInput)} methods implementation.
+     * Convenience way for super-classes which implement {@link Externalizable} to serialize metadata. Super-classes
+     * must call this method explicitly from within {@link Externalizable#readExternal(ObjectInput)} methods
+     * implementation.
      *
      * @param in Input to read from.
      * @throws IOException If I/O error occurred.
@@ -376,10 +368,10 @@ public class GridMetadataAwareAdapter {
      */
     @SuppressWarnings({"unchecked"})
     protected void readExternalMeta(ObjectInput in) throws IOException, ClassNotFoundException {
-        GridLeanMap<UUID, Object> cp = (GridLeanMap<UUID, Object>)in.readObject();
+        Object[] cp = (Object[])in.readObject();
 
-        synchronized (mux) {
-            data = cp;
+        synchronized (this) {
+            this.data = cp;
         }
     }
 
@@ -388,10 +380,6 @@ public class GridMetadataAwareAdapter {
     @Override public Object clone() {
         try {
             GridMetadataAwareAdapter clone = (GridMetadataAwareAdapter)super.clone();
-
-            clone.mux = (GridMutex)mux.clone();
-
-            clone.data = null;
 
             clone.copyMeta(this);
 
