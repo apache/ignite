@@ -1482,6 +1482,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     sslFilter.directMode(true);
 
+                    sslFilter.wantClientAuth(true);
+                    sslFilter.needClientAuth(true);
+
                     filters = new GridNioFilter[] {
                         new GridNioCodecFilter(parser, log, true),
                         new GridConnectionBytesVerifyFilter(log),
