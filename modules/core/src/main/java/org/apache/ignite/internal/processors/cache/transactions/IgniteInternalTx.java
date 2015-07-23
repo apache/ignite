@@ -189,33 +189,33 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public void rollback() throws IgniteCheckedException;
 
     /**
-     * Removes metadata by name.
+     * Removes metadata by key.
      *
-     * @param name Name of the metadata to remove.
+     * @param key Key of the metadata to remove.
      * @param <T> Type of the value.
      * @return Value of removed metadata or {@code null}.
      */
-    @Nullable public <T> T removeMeta(UUID name);
+    @Nullable public <T> T removeMeta(int key);
 
     /**
-     * Gets metadata by name.
+     * Gets metadata by key.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param <T> Type of the value.
      * @return Metadata value or {@code null}.
      */
-    @Nullable public <T> T meta(UUID name);
+    @Nullable public <T> T meta(int key);
 
     /**
      * Adds a new metadata.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param val Metadata value.
      * @param <T> Type of the value.
      * @return Metadata previously associated with given name, or
      *      {@code null} if there was none.
      */
-    @Nullable public <T> T addMeta(UUID name, T val);
+    @Nullable public <T> T addMeta(int key, T val);
 
     /**
      * @return Size of the transaction.

@@ -880,70 +880,70 @@ public interface GridCacheEntryEx {
     /**
      * Tests whether or not given metadata is set.
      *
-     * @param name Name of the metadata to test.
+     * @param key Key of the metadata to test.
      * @return Whether or not given metadata is set.
      */
-    public boolean hasMeta(UUID name);
+    public boolean hasMeta(int key);
 
     /**
-     * Gets metadata by name.
+     * Gets metadata by key.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param <V> Type of the value.
      * @return Metadata value or {@code null}.
      */
-    @Nullable public <V> V meta(UUID name);
+    @Nullable public <V> V meta(int key);
 
     /**
      * Adds a new metadata.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param val Metadata value.
      * @param <V> Type of the value.
      * @return Metadata previously associated with given name, or
      *      {@code null} if there was none.
      */
-    @Nullable public <V> V addMeta(UUID name, V val);
+    @Nullable public <V> V addMeta(int key, V val);
 
     /**
      * Adds given metadata value only if it was absent.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param val Value to add if it's not attached already.
      * @param <V> Type of the value.
      * @return {@code null} if new value was put, or current value if put didn't happen.
      */
-    @Nullable public <V> V putMetaIfAbsent(UUID name, V val);
+    @Nullable public <V> V putMetaIfAbsent(int key, V val);
 
     /**
      * Replaces given metadata with new {@code newVal} value only if its current value
      * is equal to {@code curVal}. Otherwise, it is no-op.
      *
-     * @param name Name of the metadata.
+     * @param key Key of the metadata.
      * @param curVal Current value to check.
      * @param newVal New value.
      * @return {@code true} if replacement occurred, {@code false} otherwise.
      */
-    public <V> boolean replaceMeta(UUID name, V curVal, V newVal);
+    public <V> boolean replaceMeta(int key, V curVal, V newVal);
 
     /**
-     * Removes metadata by name.
+     * Removes metadata by key.
      *
-     * @param name Name of the metadata to remove.
+     * @param key Key of the metadata to remove.
      * @param <V> Type of the value.
      * @return Value of removed metadata or {@code null}.
      */
-    @Nullable public <V> V removeMeta(UUID name);
+    @Nullable public <V> V removeMeta(int key);
 
     /**
      * Removes metadata only if its current value is equal to {@code val} passed in.
      *
-     * @param name Name of metadata attribute.
+     * @param key key of metadata attribute.
      * @param val Value to compare.
      * @param <V> Value type.
      * @return {@code True} if value was removed, {@code false} otherwise.
      */
-    public <V> boolean removeMeta(UUID name, V val);
+    public <V> boolean removeMeta(int key, V val);
 
     /**
      * Calls {@link GridDhtLocalPartition#onUnlock()} for this entry's partition.
