@@ -79,17 +79,6 @@ public class GridSqlUnion extends GridSqlQuery {
         return buff.toString();
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings({"CloneCallsConstructors", "CloneDoesntDeclareCloneNotSupportedException"})
-    @Override public GridSqlUnion clone() {
-        GridSqlUnion res = (GridSqlUnion)super.clone();
-
-        res.right = right.clone();
-        res.left = left.clone();
-
-        return res;
-    }
-
     /**
      * @return Union type.
      */

@@ -148,6 +148,12 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
 
                     assertEquals(map, res);
                 }
+                catch (IgniteClientDisconnectedException e) {
+                    throw e;
+                }
+                catch (IgniteException e) {
+                    log.info("Ignore error: " + e);
+                }
                 catch (CacheException e) {
                     if (e.getCause() instanceof IgniteClientDisconnectedException)
                         throw e;

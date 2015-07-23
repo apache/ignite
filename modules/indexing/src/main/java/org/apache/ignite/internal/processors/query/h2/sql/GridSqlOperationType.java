@@ -70,6 +70,8 @@ public enum GridSqlOperationType {
      * @param sqlGenerator sqlGenerator.
      */
     GridSqlOperationType(int childrenCnt, SqlGenerator sqlGenerator) {
+        assert childrenCnt > 0 || sqlGenerator instanceof ConditionInSqlGenerator : childrenCnt;
+
         this.childrenCnt = childrenCnt;
         this.sqlGenerator = sqlGenerator;
     }

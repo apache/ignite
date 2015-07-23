@@ -265,7 +265,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         });
 
         return S.toString(GridNearPessimisticTxPrepareFuture.class, this,
-            "futs", futs,
+            "innerFuts", futs,
             "super", super.toString());
     }
 

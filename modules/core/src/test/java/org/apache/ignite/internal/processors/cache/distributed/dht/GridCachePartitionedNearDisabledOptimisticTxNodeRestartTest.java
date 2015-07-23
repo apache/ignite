@@ -15,42 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.sql;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
 /**
- * Subquery.
+ *
  */
-public class GridSqlSubquery extends GridSqlElement {
-    /** */
-    private GridSqlQuery select;
-
-    /**
-     * @param select Select.
-     */
-    public GridSqlSubquery(GridSqlQuery select) {
-        super(Collections.<GridSqlElement>emptyList());
-
-        this.select = select;
-    }
-
+public class GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest
+    extends GridCachePartitionedOptimisticTxNodeRestartTest {
     /** {@inheritDoc} */
-    @Override public String getSQL() {
-        return "(" + select.getSQL() + ")";
-    }
-
-    /**
-     * @return Select.
-     */
-    public GridSqlQuery select() {
-        return select;
-    }
-
-    /**
-     * @param select New select.
-     */
-    public void select(GridSqlQuery select) {
-        this.select = select;
+    @Override protected boolean nearEnabled() {
+        return false;
     }
 }

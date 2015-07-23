@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.util.*;
+
 /**
  * Placeholder.
  */
@@ -31,6 +33,8 @@ public class GridSqlPlaceholder extends GridSqlElement {
      * @param sql SQL.
      */
     public GridSqlPlaceholder(String sql) {
+        super(Collections.<GridSqlElement>emptyList());
+
         this.sql = sql;
     }
 

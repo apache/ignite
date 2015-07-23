@@ -753,7 +753,8 @@ public abstract class GridAbstractTest extends TestCase {
 
             assert ignite != null : "Ignite returned null grid for name: " + gridName;
 
-            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
+            info(">>> Stopping grid [name=" + ignite.name() + ", id=" +
+                ((IgniteKernal)ignite).context().localNodeId() + ']');
 
             if (!isRemoteJvm(gridName))
                 G.stop(gridName, cancel);
