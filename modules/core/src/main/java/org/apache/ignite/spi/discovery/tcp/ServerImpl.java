@@ -4242,10 +4242,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (log.isDebugEnabled())
                         U.error(log, "Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
 
-                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled())
+                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0())
                         LT.warn(log, null, "Failed to initialize connection. Not encrypted data received. " +
                             "Missed SSL configuration on node? [sock=" + sock + ']');
-                    else if (X.hasCause(e, ObjectStreamException.class) || !sock.isClosed()) {
+                    else if ((X.hasCause(e, ObjectStreamException.class) || !sock.isClosed())
+                        && !spi.isNodeStopping0()) {
                         if (U.isMacInvalidArgumentError(e))
                             LT.error(log, e, "Failed to initialize connection [sock=" + sock + "]\n\t" +
                                 U.MAC_INVALID_ARG_MSG);

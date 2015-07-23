@@ -39,14 +39,14 @@ public class BlockingSslHandler {
     /** Logger. */
     private IgniteLogger log;
 
-    /** */
+    /** Socket channel. */
     private SocketChannel ch;
 
-    /** */
-    private GridFutureAdapter<ByteBuffer> fut;
+    /** Order. */
+    private final ByteOrder order;
 
     /** SSL engine. */
-    private SSLEngine sslEngine;
+    private final SSLEngine sslEngine;
 
     /** Handshake completion flag. */
     private boolean handshakeFinished;
@@ -69,32 +69,37 @@ public class BlockingSslHandler {
     /**
      * @param sslEngine SSLEngine.
      * @param ch Socket channel.
-     * @param fut Future.
+     * @param directBuf Direct buffer flag.
+     * @param order Byte order.
      * @param log Logger.
      */
-    public BlockingSslHandler(SSLEngine sslEngine, SocketChannel ch, GridFutureAdapter<ByteBuffer> fut,
-        IgniteLogger log) throws SSLException {
+    public BlockingSslHandler(SSLEngine sslEngine,
+        SocketChannel ch,
+        boolean directBuf,
+        ByteOrder order,
+        IgniteLogger log)
+        throws SSLException {
         this.ch = ch;
-        this.fut = fut;
         this.log = log;
-
         this.sslEngine = sslEngine;
+        this.order = order;
 
         // Allocate a little bit more so SSL engine would not return buffer overflow status.
         int netBufSize = sslEngine.getSession().getPacketBufferSize() + 50;
 
-        outNetBuf = ByteBuffer.allocate(netBufSize);
-        inNetBuf = ByteBuffer.allocate(netBufSize);
+        outNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
+        outNetBuf.order(order);
 
         // Initially buffer is empty.
         outNetBuf.position(0);
         outNetBuf.limit(0);
 
+        inNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
+        inNetBuf.order(order);
+
         appBuf = allocateAppBuff();
 
         handshakeStatus = sslEngine.getHandshakeStatus();
-
-        sslEngine.setUseClientMode(true);
 
         if (log.isDebugEnabled())
             log.debug("Started SSL session [netBufSize=" + netBufSize + ", appBufSize=" + appBuf.capacity() + ']');
@@ -121,12 +126,6 @@ public class BlockingSslHandler {
                 case NOT_HANDSHAKING:
                 case FINISHED: {
                     handshakeFinished = true;
-
-                    if (fut != null) {
-                        appBuf.flip();
-
-                        fut.onDone(appBuf);
-                    }
 
                     loop = false;
 
@@ -184,6 +183,15 @@ public class BlockingSslHandler {
             log.debug("Leaved handshake. Handshake status:" + handshakeStatus + '.');
 
         return handshakeFinished;
+    }
+
+    /**
+     * @return Application buffer with decoded data.
+     */
+    public ByteBuffer applicationBuffer() {
+        appBuf.flip();
+
+        return appBuf;
     }
 
     /**
@@ -439,27 +447,32 @@ public class BlockingSslHandler {
 
         int appBufSize = Math.max(sslEngine.getSession().getApplicationBufferSize() + 50, netBufSize * 2);
 
-        return ByteBuffer.allocate(appBufSize);
+        ByteBuffer buf = ByteBuffer.allocate(appBufSize);
+        buf.order(order);
+
+        return buf;
     }
 
     /**
      * Read data from net buffer.
      */
-    private void readFromNet() {
+    private void readFromNet() throws IgniteCheckedException {
         try {
             inNetBuf.clear();
 
-            ch.read(inNetBuf);
+            int read = ch.read(inNetBuf);
+
+            if (read == -1)
+                throw new IgniteCheckedException("Failed to read remote node ID (connection closed).");
         }
         catch (IOException e) {
-            e.printStackTrace();
+            throw new IgniteCheckedException("Failed to write byte to socket.", e);
         }
     }
 
     /**
      * Copies data from out net buffer and passes it to the underlying chain.
      *
-     * @return Nothing.
      * @throws GridNioException If send failed.
      */
     private void writeNetBuffer() throws IgniteCheckedException {

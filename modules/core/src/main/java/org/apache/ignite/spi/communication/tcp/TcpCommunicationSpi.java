@@ -2051,12 +2051,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     long rcvCnt = -1;
 
-                    GridTuple<SSLEngine> ssl = new GridTuple<>();
+                    SSLEngine sslEngine = null;
 
                     try {
                         ch.socket().connect(addr, (int)connTimeout);
 
-                        rcvCnt = safeHandshake(ch, recoveryDesc, node.id(), connTimeout0, ssl);
+                        if (isSslEnabled()) {
+                            sslEngine = ignite.configuration().getSslContextFactory().create().createSSLEngine();
+
+                            sslEngine.setUseClientMode(true);
+                        }
+
+                        rcvCnt = safeHandshake(ch, recoveryDesc, node.id(), connTimeout0, sslEngine);
 
                         if (rcvCnt == -1)
                             return null;
@@ -2072,10 +2078,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         meta.put(NODE_ID_META, node.id());
 
                         if (isSslEnabled()) {
-                            assert ssl != null;
-                            assert ssl.get() != null;
+                            assert sslEngine != null;
 
-                            meta.put(GridNioSessionMetaKey.SSL_ENGINE.ordinal(), ssl.get());
+                            meta.put(GridNioSessionMetaKey.SSL_ENGINE.ordinal(), sslEngine);
                         }
                         if (recoveryDesc != null) {
                             recoveryDesc.onHandshake(rcvCnt);
@@ -2211,7 +2216,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         @Nullable GridNioRecoveryDescriptor recovery,
         UUID rmtNodeId,
         long timeout,
-        @Nullable GridTuple<SSLEngine> ssl
+        @Nullable SSLEngine ssl
     ) throws IgniteCheckedException {
         HandshakeTimeoutObject<T> obj = new HandshakeTimeoutObject<>(client, U.currentTimeMillis() + timeout);
 
@@ -2233,23 +2238,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     ByteBuffer buf;
 
                     if (isSslEnabled()) {
-                        GridFutureAdapter<ByteBuffer> handFut = new GridFutureAdapter<>();
-
-                        SSLEngine sslEngine = ignite.configuration().getSslContextFactory()
-                            .create().createSSLEngine();
-
-                        sslEngine.setUseClientMode(true);
-
-                        sslHnd = new BlockingSslHandler(sslEngine, ch, handFut, log);
+                        sslHnd = new BlockingSslHandler(ssl, ch, directBuf, ByteOrder.nativeOrder(), log);
 
                         if (!sslHnd.handshake())
-                            throw new IgniteCheckedException("SSL handshake isn't completed.");
+                            throw new IgniteCheckedException("SSL handshake is not completed.");
 
-                        ssl.set(sslEngine);
+                        ByteBuffer handBuff = sslHnd.applicationBuffer();
 
-                        ByteBuffer handBuff = handFut.get();
-
-                        if (handBuff.limit() < 17) {
+                        if (handBuff.remaining() < 17) {
                             buf = ByteBuffer.allocate(1000);
 
                             int read = ch.read(buf);
@@ -2338,18 +2334,30 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                             buf = ByteBuffer.allocate(1000);
 
+                            ByteBuffer decode = null;
+
                             buf.order(ByteOrder.nativeOrder());
 
-                            int read = ch.read(buf);
+                            for (int i = 0; i < 9; ) {
+                                int read = ch.read(buf);
 
-                            if (read == -1)
-                                throw new IgniteCheckedException("Failed to read remote node recovery handshake " +
-                                    "(connection closed).");
+                                if (read == -1)
+                                    throw new IgniteCheckedException("Failed to read remote node recovery handshake " +
+                                        "(connection closed).");
 
-                            buf.flip();
+                                buf.flip();
 
-                            rcvCnt = sslHnd.decode(buf).getLong(1);
-                        } else {
+                                decode = sslHnd.decode(buf);
+
+                                i += decode.remaining();
+
+                                buf.flip();
+                                buf.compact();
+                            }
+
+                            rcvCnt = decode.getLong(1);
+                        }
+                        else {
                             buf = ByteBuffer.allocate(9);
 
                             buf.order(ByteOrder.nativeOrder());
