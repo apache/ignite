@@ -705,6 +705,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             // Just wait for 10 secs.
                             Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
 
+                            // Just wait another 60 secs in order to get
+                            // version info even on slow connection.
+                            for (int i = 0; i < 60 && verChecker.latestVersion() == null; i++)
+                                Thread.sleep(1000);
+
                             // Report status if one is available.
                             // No-op if status is NOT available.
                             verChecker.reportStatus(log);
