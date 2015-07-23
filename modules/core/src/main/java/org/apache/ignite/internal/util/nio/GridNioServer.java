@@ -70,6 +70,9 @@ public class GridNioServer<T> {
     /** SSL system data buffer metadata key. */
     private static final int BUF_SSL_SYSTEM_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** SSL write buf limit. */
+    private static final int WRITE_BUF_LIMIT = GridNioSessionMetaKey.nextUniqueKey();
+
     /** Accept worker thread. */
     @GridToStringExclude
     private final IgniteThread acceptThread;
@@ -920,6 +923,10 @@ public class GridNioServer<T> {
                 }
 
                 ByteBuffer buf = ses.writeBuffer();
+
+                if (ses.meta(WRITE_BUF_LIMIT) != null)
+                    buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
+
                 NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
 
                 List<NioOperationFuture<?>> doneFuts = null;
@@ -971,19 +978,24 @@ public class GridNioServer<T> {
                             writer.reset();
                     }
 
+                    int sesBufLimit = buf.limit();
+                    int sesCap = buf.capacity();
+
                     buf.flip();
+
+                    buf = sslFilter.encrypt(ses, buf);
 
                     ByteBuffer sesBuf = ses.writeBuffer();
 
-                    buf = sslFilter.encrypt(ses, sesBuf);
-
-                    int expand = sesBuf.limit() - buf.limit();
-
                     sesBuf.clear();
 
-                    // SSL data more then socket buffer size
-                    if (expand < 0)
-                        sesBuf.limit(sesBuf.limit() + expand - 100);
+                    if (sesCap - buf.limit() < 0) {
+                        int limit = sesBufLimit + (sesCap - buf.limit()) - 100;
+
+                        ses.addMeta(WRITE_BUF_LIMIT, limit);
+
+                        sesBuf.limit(limit);
+                    }
 
                     assert buf.hasRemaining();
 
@@ -1022,8 +1034,12 @@ public class GridNioServer<T> {
 
                         break;
                     }
-                    else
+                    else {
                         buf = ses.writeBuffer();
+
+                        if (ses.meta(WRITE_BUF_LIMIT) != null)
+                            buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
+                    }
                 }
             }
             finally {
