@@ -71,7 +71,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         int size = CU.isSystemCache(ctx.name()) ? 100 :
             Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, 1_000_000);
 
-        if (ctx.deferredDelete())
+        if (ctx.deferredDelete(this))
             rmvQueue = new GridCircularBuffer<>(U.ceilPow2(size / 10));
     }
 
