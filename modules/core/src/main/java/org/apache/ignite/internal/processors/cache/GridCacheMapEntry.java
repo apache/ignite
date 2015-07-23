@@ -2164,7 +2164,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 }
 
                 if (!cctx.deferredDelete())
-                    markObsolete(rmvVer);
+                    markObsolete0(rmvVer, true);
 
                 res = hadVal;
             }
@@ -4016,7 +4016,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      */
     protected void deletedUnlocked(boolean deleted) {
         assert Thread.holdsLock(this);
-        assert cctx.deferredDelete();
+
+        if (!cctx.deferredDelete())
+            return;
 
         if (deleted) {
             assert !deletedUnlocked() : this;

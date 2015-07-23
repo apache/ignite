@@ -123,7 +123,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         waitForExchange = !topLocked;
 
         // We can send entry processor instead of value to backup if updates are ordered.
-        forceTransformBackups = cctx.config().isAtomicOrderedUpdates();
+        forceTransformBackups = updateReq.operation() == GridCacheOperation.TRANSFORM &&
+            cctx.config().isAtomicOrderedUpdates();
     }
 
     /** {@inheritDoc} */

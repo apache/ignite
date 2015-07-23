@@ -1194,6 +1194,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                             assert entry.obsolete();
 
+                            entry.onMarkedObsolete();
+
                             removeEntry(entry);
                         }
                     }
@@ -1749,12 +1751,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         else if (conflictCtx.isMerge())
                             newConflictVer = null; // Conflict version is discarded in case of merge.
 
-                        EntryProcessor<Object, Object, Object> entryProcessor = null;
-
                         if (!readersOnly) {
                             dhtFut.addWriteEntry(entry,
                                 updRes.newValue(),
-                                entryProcessor,
+                                op == TRANSFORM ? req.entryProcessor(i) : null,
                                 updRes.newTtl(),
                                 updRes.conflictExpireTime(),
                                 newConflictVer);
@@ -1764,7 +1764,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             dhtFut.addNearWriteEntries(filteredReaders,
                                 entry,
                                 updRes.newValue(),
-                                entryProcessor,
+                                null,
                                 updRes.newTtl(),
                                 updRes.conflictExpireTime());
                     }
@@ -2479,6 +2479,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 ctx.onDeferredDelete(entry, updRes.removeVersion());
                             else {
                                 assert entry.obsolete();
+
+                                entry.onMarkedObsolete();
 
                                 removeEntry(entry);
                             }
