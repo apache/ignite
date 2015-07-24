@@ -182,7 +182,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
+    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex)
+        throws IgniteCheckedException {
         proceedExceptionCaught(ses, ex);
     }
 
@@ -327,7 +328,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * @throws GridNioException If failed to forward requests to filter chain.
      * @return Close future.
      */
-    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioSslHandler hnd) throws IgniteCheckedException {
+    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioSslHandler hnd)
+        throws IgniteCheckedException {
         try {
             hnd.closeOutbound();
 
