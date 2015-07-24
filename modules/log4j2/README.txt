@@ -1,7 +1,7 @@
 Apache Ignite Log4J2 Module
 --------------------------
 
-Apache Ignite Log4J2 module provides GridLogger implementation based on Apache Log4J2.
+Apache Ignite Log4J2 module provides IgniteLogger implementation based on Apache Log4J2.
 
 To enable Log4J2 module when starting a standalone node, move 'optional/ignite-log4j2' folder to
 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will

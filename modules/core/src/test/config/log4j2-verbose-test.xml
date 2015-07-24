@@ -19,11 +19,6 @@
 
 <Configuration>
     <Appenders>
-        <Console name="CONSOLE" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
-            <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="ACCEPT"/>
-        </Console>
-
         <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
             <PatternLayout pattern="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
         </Console>
@@ -45,11 +40,7 @@
     </Appenders>
 
     <Loggers>
-        <Logger name="org" level="INFO"/>
-        <Logger name="org.eclipse.jetty" level="INFO"/>
-
         <Root level="INFO">
-            <AppenderRef ref="CONSOLE" level="DEBUG"/>
             <AppenderRef ref="CONSOLE_ERR" level="WARN"/>
             <AppenderRef ref="FILE" level="DEBUG"/>
         </Root>

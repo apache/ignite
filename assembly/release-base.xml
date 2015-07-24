@@ -43,6 +43,11 @@
         </file>
 
         <file>
+            <source>config/ignite-log4j2.xml</source>
+            <outputDirectory>/config</outputDirectory>
+        </file>
+
+        <file>
             <source>config/java.util.logging.properties</source>
             <outputDirectory>/config</outputDirectory>
         </file>

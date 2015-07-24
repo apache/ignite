@@ -20,4 +20,3 @@
  * Contains <b>default</b> Log4j2 implementation for logging.
  */
 package org.apache.ignite.logger.log4j2;
-

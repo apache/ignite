@@ -7,59 +7,75 @@
   The ASF licenses this file to You under the Apache License, Version 2.0
   (the "License"); you may not use this file except in compliance with
   the License.  You may obtain a copy of the License at
+
        http://www.apache.org/licenses/LICENSE-2.0
+
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  Configuration file for apache ignite 2 
-  -->
-<!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN"
-    "http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/xml/doc-files/log4j.dtd">
-<Configuration status="debug" strict="true" name="XMLConfigTest"
-               packages="org.apache.ignite.logger.log4j2">
-  <Filter type="ThresholdFilter" level="TRACE"/>
-  <Appenders>
-    <Appender type="Console" name="CONSOLE_ERR">
-    </Appender>
-	<Routing name="Routing">	
-	   <Routes pattern="$${ctx:ROUTINGKEY}">
-	   <Route key="$${ctx:ROUTINGKEY}">
-		  <RollingFile name="Rolling-default" fileName="work/log/ignite.log"
-					filePattern="work/log/${date:yyyy-MM}/default-%d{yyyy-MM-dd}-%i.log.gz">
-			<PatternLayout>
-		  <pattern>[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n</pattern>
-			</PatternLayout>
-			<Policies>
-			  <TimeBasedTriggeringPolicy interval="6" modulate="true" />
-			  <SizeBasedTriggeringPolicy size="10 MB" />
-			</Policies>
-		  </RollingFile>
-		</Route>
-	   <Route>
-		<RollingFile name="Rolling-${ctx:ROUTINGKEY}" fileName="work/log/ignite-${ctx:ROUTINGKEY}.log"
-					filePattern="work/log/${date:yyyy-MM}/ignite-${ctx:ROUTINGKEY}-%d{yyyy-MM-dd}-%i.log.gz">
-		<PatternLayout>
-		  <pattern>[%d{ABSOLUTE}][%-5p] $${ctx:nodeidmsg}[%t][%c{1}]%msg%n</pattern>
-		</PatternLayout>
-		<Policies>
-		  <TimeBasedTriggeringPolicy interval="6" modulate="true" />
-		  <SizeBasedTriggeringPolicy size="10 MB" />
-		</Policies>
-		  </RollingFile>
-		</Route>
-		  </Routes>
-		</Routing>
-	</Appenders>
-  <Loggers>
-    <Logger name="org.springframework" level="warn"/>
-    <Logger name="rg.eclipse.jetty" level="warn"/>
-    <Logger name="org.eclipse.jetty.util.log" level="warn"/>
-    <Logger name="org.eclipse.jetty.util.component" level="warn"/>
-    <Logger name="com.amazonaws" level="warn"/>
-    <Root level="TRACE">
-    	<AppenderRef ref="Routing"/>
-   </Root>
-  </Loggers>
+-->
+
+<Configuration>
+    <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
+            <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="ACCEPT"/>
+        </Console>
+
+        <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
+            <PatternLayout pattern="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
+        </Console>
+
+        <Routing name="FILE">
+            <Routes pattern="$${sys:nodeId}">
+                <Route>
+                    <RollingFile name="Rolling-${sys:nodeId}" fileName="${sys:IGNITE_HOME}/work/log/ignite-${sys:nodeId}.log"
+                                 filePattern="${sys:IGNITE_HOME}/work/log/ignite-${sys:nodeId}-%i-%d{yyyy-MM-dd}.log.gz">
+                        <PatternLayout pattern="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
+                        <Policies>
+                            <TimeBasedTriggeringPolicy interval="6" modulate="true" />
+                            <SizeBasedTriggeringPolicy size="10 MB" />
+                        </Policies>
+                    </RollingFile>
+                </Route>
+            </Routes>
+        </Routing>
+    </Appenders>
+
+    <Loggers>
+        <!--
+        <Logger name="org.apache.ignite" level=DEBUG/>
+        -->
+
+        <!--
+            Uncomment to disable courtesy notices, such as SPI configuration
+            consistency warnings.
+        -->
+        <!--
+        <Logger name="org.apache.ignite.CourtesyConfigNotice" level=OFF/>
+        -->
+
+        <Logger name="org.springframework" level="WARN"/>
+        <Logger name="org.eclipse.jetty" level="WARN"/>
+
+        <!--
+        Avoid warnings about failed bind attempt when multiple nodes running on the same host.
+        -->
+        <Logger name="org.eclipse.jetty.util.log" level="ERROR"/>
+        <Logger name="org.eclipse.jetty.util.component" level="ERROR"/>
+
+        <Logger name="com.amazonaws" level="WARN"/>
+
+        <Root level="INFO">
+            <!-- Uncomment to enable logging to console. -->
+            <!--
+            <AppenderRef ref="CONSOLE" level="DEBUG"/>
+            -->
+
+            <AppenderRef ref="CONSOLE_ERR" level="ERROR"/>
+            <AppenderRef ref="FILE" level="DEBUG"/>
+        </Root>
+    </Loggers>
 </Configuration>
