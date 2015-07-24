@@ -1267,6 +1267,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      */
     private static class SharedRoutineInfo implements Serializable {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos;
 
         /**
