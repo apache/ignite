@@ -75,7 +75,21 @@ import static org.apache.ignite.events.EventType.*;
  * {@link #DFLT_IDLE_CONN_TIMEOUT} period and then are closed. Use
  * {@link #setIdleConnectionTimeout(long)} configuration parameter to configure
  * you own idle connection timeout.
+ * <h1 class="header">Failure Detection</h1>
+ * Configuration defaults (see Configuration section below and
+ * {@link IgniteConfiguration#getFailureDetectionTimeout()}) for details) are chosen to make possible for
+ * communication SPI work reliably on most of hardware and virtual deployments, but this has made failure detection
+ * time worse.
  * <p>
+ * If it's needed to tune failure detection then it's highly recommended to do this using
+ * {@link IgniteConfiguration#setFailureDetectionTimeout(long)}. This failure timeout automatically controls the
+ * following parameters: {@link #getConnectTimeout()}, {@link #getMaxConnectTimeout()},
+ * {@link #getReconnectCount()}. If any of those parameters is set explicitly, then the failure timeout setting will be
+ * ignored.
+ * <p>
+ * If it's required to perform advanced settings of failure detection and
+ * {@link IgniteConfiguration#getFailureDetectionTimeout()} is unsuitable then various {@code TcpCommunicationSpi}
+ * configuration parameters may be used.
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
  * This SPI has no mandatory configuration parameters.
@@ -1000,12 +1014,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * {@code 0} is interpreted as infinite timeout.
      * <p>
      * If not provided, default value is {@link #DFLT_CONN_TIMEOUT}.
+     * <p>
+     * When this property is explicitly set {@link IgniteConfiguration#getFailureDetectionTimeout()} is ignored.
      *
      * @param connTimeout Connect timeout.
      */
     @IgniteSpiConfiguration(optional = true)
     public void setConnectTimeout(long connTimeout) {
         this.connTimeout = connTimeout;
+
+        failureDetectionTimeoutEnabled(false);
     }
 
     /** {@inheritDoc} */
@@ -1022,12 +1040,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * {@code 0} is interpreted as infinite timeout.
      * <p>
      * If not provided, default value is {@link #DFLT_MAX_CONN_TIMEOUT}.
+     * <p>
+     * When this property is explicitly set {@link IgniteConfiguration#getFailureDetectionTimeout()} is ignored.
      *
      * @param maxConnTimeout Maximum connect timeout.
      */
     @IgniteSpiConfiguration(optional = true)
     public void setMaxConnectTimeout(long maxConnTimeout) {
         this.maxConnTimeout = maxConnTimeout;
+
+        failureDetectionTimeoutEnabled(false);
     }
 
     /** {@inheritDoc} */
@@ -1040,12 +1062,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * with remote nodes.
      * <p>
      * If not provided, default value is {@link #DFLT_RECONNECT_CNT}.
+     * <p>
+     * When this property is explicitly set {@link IgniteConfiguration#getFailureDetectionTimeout()} is ignored.
      *
      * @param reconCnt Maximum number of reconnection attempts.
      */
     @IgniteSpiConfiguration(optional = true)
     public void setReconnectCount(int reconCnt) {
         this.reconCnt = reconCnt;
+
+        failureDetectionTimeoutEnabled(false);
     }
 
     /** {@inheritDoc} */
@@ -1273,6 +1299,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
+        initFailureDetectionTimeout();
+
         assertParameter(locPort > 1023, "locPort > 1023");
         assertParameter(locPort <= 0xffff, "locPort < 0xffff");
         assertParameter(locPortRange >= 0, "locPortRange >= 0");
@@ -1281,10 +1309,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         assertParameter(sockSndBuf >= 0, "sockSndBuf >= 0");
         assertParameter(msgQueueLimit >= 0, "msgQueueLimit >= 0");
         assertParameter(shmemPort > 0 || shmemPort == -1, "shmemPort > 0 || shmemPort == -1");
-        assertParameter(reconCnt > 0, "reconnectCnt > 0");
         assertParameter(selectorsCnt > 0, "selectorsCnt > 0");
-        assertParameter(connTimeout >= 0, "connTimeout >= 0");
-        assertParameter(maxConnTimeout >= connTimeout, "maxConnTimeout >= connTimeout");
+
+        if (!failureDetectionTimeoutEnabled()) {
+            assertParameter(reconCnt > 0, "reconnectCnt > 0");
+            assertParameter(connTimeout >= 0, "connTimeout >= 0");
+            assertParameter(maxConnTimeout >= connTimeout, "maxConnTimeout >= connTimeout");
+        }
+
         assertParameter(sockWriteTimeout >= 0, "sockWriteTimeout >= 0");
         assertParameter(ackSndThreshold > 0, "ackSndThreshold > 0");
         assertParameter(unackedMsgsBufSize >= 0, "unackedMsgsBufSize >= 0");
@@ -1360,9 +1392,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             log.debug(configInfo("sockRcvBuf", sockRcvBuf));
             log.debug(configInfo("shmemPort", shmemPort));
             log.debug(configInfo("msgQueueLimit", msgQueueLimit));
-            log.debug(configInfo("connTimeout", connTimeout));
-            log.debug(configInfo("maxConnTimeout", maxConnTimeout));
-            log.debug(configInfo("reconCnt", reconCnt));
+
+            if (failureDetectionTimeoutEnabled()) {
+                log.debug(configInfo("connTimeout", connTimeout));
+                log.debug(configInfo("maxConnTimeout", maxConnTimeout));
+                log.debug(configInfo("reconCnt", reconCnt));
+            }
+            else
+                log.debug(configInfo("failureDetectionTimeout", failureDetectionTimeout()));
+
             log.debug(configInfo("sockWriteTimeout", sockWriteTimeout));
             log.debug(configInfo("ackSndThreshold", ackSndThreshold));
             log.debug(configInfo("unackedMsgsBufSize", unackedMsgsBufSize));
@@ -1942,17 +1980,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         long connTimeout0 = connTimeout;
 
+        IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this);
+
         while (true) {
             GridCommunicationClient client;
 
             try {
                 client = new GridShmemCommunicationClient(metricsLsnr,
                     port,
-                    connTimeout,
+                    timeoutHelper.nextTimeoutChunk(connTimeout),
                     log,
                     getSpiContext().messageFormatter());
             }
             catch (IgniteCheckedException e) {
+                if (timeoutHelper.checkFailureTimeoutReached(e))
+                    throw e;
+
                 // Reconnect for the second time, if connection is not established.
                 if (connectAttempts < 2 && X.hasCause(e, ConnectException.class)) {
                     connectAttempts++;
@@ -1964,14 +2007,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             }
 
             try {
-                safeHandshake(client, null, node.id(), connTimeout0, null);
+                safeHandshake(client, null, node.id(), timeoutHelper.nextTimeoutChunk(connTimeout0), null);
             }
-            catch (HandshakeTimeoutException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Handshake timedout (will retry with increased timeout) [timeout=" + connTimeout0 +
-                        ", err=" + e.getMessage() + ", client=" + client + ']');
-
+            catch (HandshakeTimeoutException | IgniteSpiOperationTimeoutException e) {
                 client.forceClose();
+
+                if (failureDetectionTimeoutEnabled() && (e instanceof HandshakeTimeoutException ||
+                    timeoutHelper.checkFailureTimeoutReached(e))) {
+                    log.debug("Handshake timed out (failure threshold reached) [failureDetectionTimeout=" +
+                        failureDetectionTimeout() + ", err=" + e.getMessage() + ", client=" + client + ']');
+
+                    throw e;
+                }
+
+                assert !failureDetectionTimeoutEnabled();
+
+                if (log.isDebugEnabled())
+                    log.debug("Handshake timed out (will retry with increased timeout) [timeout=" + connTimeout0 +
+                        ", err=" + e.getMessage() + ", client=" + client + ']');
 
                 if (attempt == reconCnt || connTimeout0 > maxConnTimeout) {
                     if (log.isDebugEnabled())
@@ -2086,6 +2139,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             int attempt = 1;
 
+            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this);
+
             while (!conn) { // Reconnection on handshake timeout.
                 try {
                     SocketChannel ch = SocketChannel.open();
@@ -2114,7 +2169,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     SSLEngine sslEngine = null;
 
                     try {
-                        ch.socket().connect(addr, (int)connTimeout);
+                        ch.socket().connect(addr, (int)timeoutHelper.nextTimeoutChunk(connTimeout));
 
                         if (isSslEnabled()) {
                             sslEngine = ignite.configuration().getSslContextFactory().create().createSSLEngine();
@@ -2122,7 +2177,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             sslEngine.setUseClientMode(true);
                         }
 
-                        rcvCnt = safeHandshake(ch, recoveryDesc, node.id(), connTimeout0, sslEngine);
+                        rcvCnt = safeHandshake(ch, recoveryDesc, node.id(),
+                            timeoutHelper.nextTimeoutChunk(connTimeout0), sslEngine);
 
                         if (rcvCnt == -1)
                             return null;
@@ -2161,19 +2217,43 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         }
                     }
                 }
-                catch (HandshakeTimeoutException e) {
+                catch (HandshakeTimeoutException | IgniteSpiOperationTimeoutException e) {
                     if (client != null) {
                         client.forceClose();
 
                         client = null;
                     }
 
+                    if (failureDetectionTimeoutEnabled() && (e instanceof HandshakeTimeoutException ||
+                        timeoutHelper.checkFailureTimeoutReached(e))) {
+
+                        String msg = "Handshake timed out (failure detection timeout is reached) " +
+                            "[failureDetectionTimeout=" + failureDetectionTimeout() + ", addr=" + addr + ']';
+
+                        onException(msg, e);
+
+                        if (log.isDebugEnabled())
+                            log.debug(msg);
+
+                        if (errs == null)
+                            errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
+                                "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
+                                "in order to prevent parties from waiting forever in case of network issues " +
+                                "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
+
+                        errs.addSuppressed(new IgniteCheckedException("Failed to connect to address: " + addr, e));
+
+                        break;
+                    }
+
+                    assert !failureDetectionTimeoutEnabled();
+
                     onException("Handshake timed out (will retry with increased timeout) [timeout=" + connTimeout0 +
                         ", addr=" + addr + ']', e);
 
                     if (log.isDebugEnabled())
                         log.debug(
-                            "Handshake timedout (will retry with increased timeout) [timeout=" + connTimeout0 +
+                            "Handshake timed out (will retry with increased timeout) [timeout=" + connTimeout0 +
                                 ", addr=" + addr + ", err=" + e + ']');
 
                     if (attempt == reconCnt || connTimeout0 > maxConnTimeout) {
@@ -2213,7 +2293,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (log.isDebugEnabled())
                         log.debug("Client creation failed [addr=" + addr + ", err=" + e + ']');
 
-                    if (X.hasCause(e, SocketTimeoutException.class))
+                    boolean failureDetThrReached = timeoutHelper.checkFailureTimeoutReached(e);
+
+                    if (failureDetThrReached)
+                        LT.warn(log, null, "Connect timed out (consider increasing 'failureDetectionTimeout' " +
+                            "configuration property) [addr=" + addr + ", failureDetectionTimeout=" +
+                            failureDetectionTimeout() + ']');
+                    else if (X.hasCause(e, SocketTimeoutException.class))
                         LT.warn(log, null, "Connect timed out (consider increasing 'connTimeout' " +
                             "configuration property) [addr=" + addr + ", connTimeout=" + connTimeout + ']');
 
@@ -2226,7 +2312,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     errs.addSuppressed(new IgniteCheckedException("Failed to connect to address: " + addr, e));
 
                     // Reconnect for the second time, if connection is not established.
-                    if (connectAttempts < 2 &&
+                    if (!failureDetThrReached && connectAttempts < 2 &&
                         (e instanceof ConnectException || X.hasCause(e, ConnectException.class))) {
                         connectAttempts++;
 

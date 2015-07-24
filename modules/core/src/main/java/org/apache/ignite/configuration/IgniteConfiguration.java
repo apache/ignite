@@ -192,6 +192,11 @@ public class IgniteConfiguration {
     /** Default value for cache sanity check enabled flag. */
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
+    /** Default failure detection timeout in millis. */
+    @SuppressWarnings("UnnecessaryBoxing")
+//    public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
+    public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
+
     /** Optional grid name. */
     private String gridName;
 
@@ -369,6 +374,9 @@ public class IgniteConfiguration {
     /** Port number range for time server. */
     private int timeSrvPortRange = DFLT_TIME_SERVER_PORT_RANGE;
 
+    /** Failure detection timeout. */
+    private Long failureDetectionTimeout = DFLT_FAILURE_DETECTION_TIMEOUT;
+
     /** Property names to include into node attributes. */
     private String[] includeProps;
 
@@ -454,7 +462,7 @@ public class IgniteConfiguration {
         consistentId = cfg.getConsistentId();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
-        pubPoolSize = cfg.getPublicThreadPoolSize();
+        failureDetectionTimeout = cfg.getFailureDetectionTimeout();
         ggHome = cfg.getIgniteHome();
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
@@ -484,6 +492,7 @@ public class IgniteConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
+        pubPoolSize = cfg.getPublicThreadPoolSize();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -1680,6 +1689,30 @@ public class IgniteConfiguration {
         this.failSpi = failSpi;
 
         return this;
+    }
+
+    /**
+     * Returns failure detection timeout used by {@link TcpDiscoverySpi} and {@link TcpCommunicationSpi}.
+     * <p>
+     * Default is {@link #DFLT_FAILURE_DETECTION_TIMEOUT}.
+     *
+     * @see #setFailureDetectionTimeout(long)
+     * @return Failure detection timeout in milliseconds.
+     */
+    public Long getFailureDetectionTimeout() {
+        return failureDetectionTimeout;
+    }
+
+    /**
+     * Sets failure detection timeout to use in {@link TcpDiscoverySpi} and {@link TcpCommunicationSpi}.
+     * <p>
+     * Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before
+     * considering a remote connection failed.
+     *
+     * @param failureDetectionTimeout Failure detection timeout in milliseconds.
+     */
+    public void setFailureDetectionTimeout(long failureDetectionTimeout) {
+        this.failureDetectionTimeout = failureDetectionTimeout;
     }
 
     /**

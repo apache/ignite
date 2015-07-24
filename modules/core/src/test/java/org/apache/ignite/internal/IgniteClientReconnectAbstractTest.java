@@ -281,7 +281,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         volatile CountDownLatch writeLatch;
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg)
+        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout)
             throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                 CountDownLatch writeLatch0 = writeLatch;
@@ -293,7 +293,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
                 }
             }
 
-            super.writeToSocket(sock, msg);
+            super.writeToSocket(sock, msg, timeout);
         }
     }
 

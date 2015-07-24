@@ -79,7 +79,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
         for (CommunicationSpi spi : spis.values()) {
             ConcurrentMap<UUID, GridCommunicationClient> clients = U.field(spi, "clients");
 
-            assertEquals(2, clients.size());
+            assertEquals(getSpiCount() - 1, clients.size());
 
             clients.put(UUID.randomUUID(), F.first(clients.values()));
         }
