@@ -19,10 +19,7 @@ package org.apache.ignite.internal.processors.cache.extras;
 
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
 
 /**
  * Extras where obsolete version is set.
@@ -40,11 +37,6 @@ public class GridCacheObsoleteEntryExtras extends GridCacheEntryExtrasAdapter {
         assert obsoleteVer != null;
 
         this.obsoleteVer = obsoleteVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData) {
-        return attrData != null ? new GridCacheAttributesObsoleteEntryExtras(attrData, obsoleteVer) : this;
     }
 
     /** {@inheritDoc} */

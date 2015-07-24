@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -40,7 +39,6 @@ import org.jetbrains.annotations.*;
 import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
-import java.io.*;
 import java.nio.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -53,7 +51,7 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.*;
  */
 @SuppressWarnings({
     "NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope", "FieldAccessedSynchronizedAndUnsynchronized"})
-public abstract class GridCacheMapEntry implements GridCacheEntryEx {
+public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter implements GridCacheEntryEx {
     /** */
     private static final byte IS_DELETED_MASK = 0x01;
 
@@ -77,8 +75,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * <li>Each nested object should be analyzed in the same way as above.</li>
      * </ul>
      */
-    // 7 * 8 /*references*/  + 2 * 8 /*long*/  + 1 * 4 /*int*/ + 1 * 1 /*byte*/ = 77
-    private static final int SIZE_OVERHEAD = 77 /*entry*/ + 32 /* version */ + 4 * 7 /* key + val */;
+    // 7 * 8 /*references*/  + 2 * 8 /*long*/  + 1 * 4 /*int*/ + 1 * 1 /*byte*/ + array at parent = 85
+    private static final int SIZE_OVERHEAD = 85 /*entry*/ + 32 /* version */ + 4 * 7 /* key + val */;
 
     /** Static logger to avoid re-creation. Made static for test purpose. */
     protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -297,7 +295,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 vb = val.valueBytes(cctx.cacheObjectContext());
             }
 
-           extrasSize = extrasSize();
+            extrasSize = extrasSize();
         }
 
         return SIZE_OVERHEAD + extrasSize + kb.length + (vb == null ? 1 : vb.length);
@@ -572,7 +570,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      */
     protected final void releaseSwap() throws IgniteCheckedException {
         if (cctx.isSwapOrOffheapEnabled()) {
-            synchronized (this){
+            synchronized (this) {
                 cctx.swap().remove(key());
             }
 
@@ -1003,7 +1001,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 else if (interceptorVal != val0)
                     val0 = cctx.unwrapTemporary(interceptorVal);
 
-                    val = cctx.toCacheObject(val0);
+                val = cctx.toCacheObject(val0);
             }
 
             // Determine new ttl and expire time.
@@ -1547,7 +1545,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                         if (evtOld == null)
                             evtOld = cctx.unwrapTemporary(old);
 
-                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, (GridCacheVersion) null,
+                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, (GridCacheVersion)null,
                             EVT_CACHE_OBJECT_REMOVED, null, false, evtOld, evtOld != null || hadVal, subjId, null,
                             taskName);
                     }
@@ -2575,7 +2573,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             // For optimistic checking.
             GridCacheVersion startVer;
 
-            synchronized (this){
+            synchronized (this) {
                 checkObsolete();
 
                 startVer = ver;
@@ -2757,8 +2755,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         boolean swap,
         AffinityTopologyVersion topVer,
         @Nullable IgniteCacheExpiryPolicy expiryPlc)
-        throws GridCacheEntryRemovedException, IgniteCheckedException
-    {
+        throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert heap || offheap || swap;
 
         try {
@@ -2770,7 +2767,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             }
 
             if (offheap || swap) {
-                GridCacheSwapEntry  e = cctx.swap().read(this, false, offheap, swap);
+                GridCacheSwapEntry e = cctx.swap().read(this, false, offheap, swap);
 
                 return e != null ? e.value() : null;
             }
@@ -3047,8 +3044,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     @Override public synchronized boolean versionedValue(CacheObject val,
         GridCacheVersion curVer,
         GridCacheVersion newVer)
-        throws IgniteCheckedException, GridCacheEntryRemovedException
-    {
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         checkObsolete();
 
         if (curVer == null || curVer.equals(ver)) {
@@ -3126,7 +3122,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean lockedLocally(GridCacheVersion lockVer) throws GridCacheEntryRemovedException {
+    @Override public synchronized boolean lockedLocally(GridCacheVersion lockVer)
+        throws GridCacheEntryRemovedException {
         checkObsolete();
 
         GridCacheMvcc mvcc = mvccExtras();
@@ -3815,170 +3812,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         return tx == null || !tx.removed(txKey());
     }
 
-    /**
-     * Ensures that internal data storage is created.
-     *
-     * @param size Amount of data to ensure.
-     * @return {@code true} if data storage was created.
-     */
-    private boolean ensureData(int size) {
-        if (attributeDataExtras() == null) {
-            attributeDataExtras(new GridLeanMap<UUID, Object>(size));
-
-            return true;
-        }
-        else
-            return false;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V1> V1 addMeta(UUID name, V1 val) {
-        A.notNull(name, "name", val, "val");
-
-        synchronized (this) {
-            ensureData(1);
-
-            return (V1)attributeDataExtras().put(name, val);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V1> V1 meta(UUID name) {
-        A.notNull(name, "name");
-
-        synchronized (this) {
-            GridLeanMap<UUID, Object> attrData = attributeDataExtras();
-
-            return attrData == null ? null : (V1)attrData.get(name);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V1> V1 removeMeta(UUID name) {
-        A.notNull(name, "name");
-
-        synchronized (this) {
-            GridLeanMap<UUID, Object> attrData = attributeDataExtras();
-
-            if (attrData == null)
-                return null;
-
-            V1 old = (V1)attrData.remove(name);
-
-            if (attrData.isEmpty())
-                attributeDataExtras(null);
-
-            return old;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Override public <V1> boolean removeMeta(UUID name, V1 val) {
-        A.notNull(name, "name", val, "val");
-
-        synchronized (this) {
-            GridLeanMap<UUID, Object> attrData = attributeDataExtras();
-
-            if (attrData == null)
-                return false;
-
-            V1 old = (V1)attrData.get(name);
-
-            if (old != null && old.equals(val)) {
-                attrData.remove(name);
-
-                if (attrData.isEmpty())
-                    attributeDataExtras(null);
-
-                return true;
-            }
-
-            return false;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasMeta(UUID name) {
-        return meta(name) != null;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V1> V1 putMetaIfAbsent(UUID name, V1 val) {
-        A.notNull(name, "name", val, "val");
-
-        synchronized (this) {
-            V1 v = meta(name);
-
-            if (v == null)
-                return addMeta(name, val);
-
-            return v;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public <V1> boolean replaceMeta(UUID name, V1 curVal, V1 newVal) {
-        A.notNull(name, "name", newVal, "newVal", curVal, "curVal");
-
-        synchronized (this) {
-            if (hasMeta(name)) {
-                V1 val = this.<V1>meta(name);
-
-                if (val != null && val.equals(curVal)) {
-                    addMeta(name, newVal);
-
-                    return true;
-                }
-            }
-
-            return false;
-        }
-    }
-
-    /**
-     * Convenience way for super-classes which implement {@link Externalizable} to
-     * serialize metadata. Super-classes must call this method explicitly from
-     * within {@link Externalizable#writeExternal(ObjectOutput)} methods implementation.
-     *
-     * @param out Output to write to.
-     * @throws IOException If I/O error occurred.
-     */
-    @SuppressWarnings({"TooBroadScope"})
-    protected void writeExternalMeta(ObjectOutput out) throws IOException {
-        Map<UUID, Object> cp;
-
-        // Avoid code warning (suppressing is bad here, because we need this warning for other places).
-        synchronized (this) {
-            cp = new GridLeanMap<>(attributeDataExtras());
-        }
-
-        out.writeObject(cp);
-    }
-
-    /**
-     * Convenience way for super-classes which implement {@link Externalizable} to
-     * serialize metadata. Super-classes must call this method explicitly from
-     * within {@link Externalizable#readExternal(ObjectInput)} methods implementation.
-     *
-     * @param in Input to read from.
-     * @throws IOException If I/O error occurred.
-     * @throws ClassNotFoundException If some class could not be found.
-     */
-    @SuppressWarnings({"unchecked"})
-    protected void readExternalMeta(ObjectInput in) throws IOException, ClassNotFoundException {
-        GridLeanMap<UUID, Object> cp = (GridLeanMap<UUID, Object>)in.readObject();
-
-        synchronized (this) {
-            attributeDataExtras(cp);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public boolean deleted() {
         if (!cctx.deferredDelete())
@@ -4029,21 +3862,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             cctx.incrementPublicSize(this);
         }
-    }
-
-    /**
-     * @return Attribute data.
-     */
-    @Nullable private GridLeanMap<UUID, Object> attributeDataExtras() {
-        return extras != null ? extras.attributesData() : null;
-    }
-
-    /**
-     * @param attrData Attribute data.
-     */
-    private void attributeDataExtras(@Nullable GridLeanMap<UUID, Object> attrData) {
-        extras = (extras != null) ? extras.attributesData(attrData) : attrData != null ?
-            new GridCacheAttributesEntryExtras(attrData) : null;
     }
 
     /**

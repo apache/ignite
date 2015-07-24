@@ -45,7 +45,7 @@ import javax.sql.*;
  *                      ...
  *                      &lt;property name="cacheStoreFactory"&gt;
  *                          &lt;bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory"&gt;
- *                              &lt;property name="user" value = "GridGain" /&gt;
+ *                              &lt;property name="user" value = "Ignite" /&gt;
  *                              &lt;property name="dataSourceBean" value = "simpleDataSource" /&gt;
  *                          &lt;/bean&gt;
  *                      &lt;/property&gt;
