@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.nio.ssl;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -30,7 +29,6 @@ import java.nio.channels.*;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.*;
 import static javax.net.ssl.SSLEngineResult.Status.*;
-import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.*;
 
 /**
  *
@@ -482,5 +480,40 @@ public class BlockingSslHandler {
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to write byte to socket.", e);
         }
+    }
+
+    /**
+     * Expands the given byte buffer to the requested capacity.
+     *
+     * @param original Original byte buffer.
+     * @param cap Requested capacity.
+     * @return Expanded byte buffer.
+     */
+    private ByteBuffer expandBuffer(ByteBuffer original, int cap) {
+        ByteBuffer res = ByteBuffer.allocate(cap);
+
+        res.order(ByteOrder.nativeOrder());
+
+        original.flip();
+
+        res.put(original);
+
+        return res;
+    }
+
+    /**
+     * Copies the given byte buffer.
+     *
+     * @param original Byte buffer to copy.
+     * @return Copy of the original byte buffer.
+     */
+    private ByteBuffer copy(ByteBuffer original) {
+        ByteBuffer cp = ByteBuffer.allocate(original.remaining());
+
+        cp.put(original);
+
+        cp.flip();
+
+        return cp;
     }
 }

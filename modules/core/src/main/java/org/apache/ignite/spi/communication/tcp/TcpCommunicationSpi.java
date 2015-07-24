@@ -1478,7 +1478,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 if (isSslEnabled()) {
                     GridNioSslFilter sslFilter =
-                        new GridNioSslFilter(ignite.configuration().getSslContextFactory().create(), log);
+                        new GridNioSslFilter(ignite.configuration().getSslContextFactory().create(),
+                            true, ByteOrder.nativeOrder(), log);
 
                     sslFilter.directMode(true);
 
