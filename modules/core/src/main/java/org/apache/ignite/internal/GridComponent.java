@@ -35,9 +35,6 @@ public interface GridComponent {
      */
     enum DiscoveryDataExchangeType {
         /** */
-        CONTINUOUS_PROC,
-
-        /** */
         CACHE_PROC,
 
         /** */

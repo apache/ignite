@@ -191,6 +191,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
+    /** */
+    private final ConcurrentMap<String, DataExchanger<?>> dataExchangers = new ConcurrentHashMap8<>();
+
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
@@ -565,25 +568,51 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 }
 
+                HashMap<String, Serializable> exchangersMap = new HashMap<>();
+
+                for (DataExchanger<?> exchanger : dataExchangers.values()) {
+                    if (!exchanger.lastNodeOnly()) {
+                        Serializable o = exchanger.collectDiscoveryData(nodeId);
+
+                        exchangersMap.put(exchanger.topicId(), o);
+                    }
+                }
+
+                data.put(-1, exchangersMap);
+
                 return data;
             }
 
             @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data) {
                 for (Map.Entry<Integer, Serializable> e : data.entrySet()) {
-                    GridComponent comp = null;
+                    if (e.getKey() == -1) {
+                        Map<String, Serializable> map = (Map<String, Serializable>)e.getValue();
 
-                    for (GridComponent c : ctx.components()) {
-                        if (c.discoveryDataType() != null && c.discoveryDataType().ordinal() == e.getKey()) {
-                            comp = c;
+                        for (Map.Entry<String, Serializable> entry : map.entrySet()) {
+                            DataExchanger exchanger = dataExchangers.get(entry.getKey());
 
-                            break;
+                            if (exchanger != null) {
+                                if (!exchanger.lastNodeOnly() || !joiningNodeId.equals(localNode().id()))
+                                    exchanger.onDiscoveryDataReceived(joiningNodeId, nodeId, entry.getValue());
+                            }
                         }
                     }
+                    else {
+                        GridComponent comp = null;
 
-                    if (comp != null)
-                        comp.onDiscoveryDataReceived(joiningNodeId, nodeId, e.getValue());
-                    else
-                        U.warn(log, "Received discovery data for unknown component: " + e.getKey());
+                        for (GridComponent c : ctx.components()) {
+                            if (c.discoveryDataType() != null && c.discoveryDataType().ordinal() == e.getKey()) {
+                                comp = c;
+
+                                break;
+                            }
+                        }
+
+                        if (comp != null)
+                            comp.onDiscoveryDataReceived(joiningNodeId, nodeId, e.getValue());
+                        else
+                            U.warn(log, "Received discovery data for unknown component: " + e.getKey());
+                    }
                 }
             }
         });
@@ -1649,6 +1678,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * @param dataExchanger Data exchanger.
+     */
+    public void registerDataExchanger(DataExchanger<?> dataExchanger) {
+        if (dataExchangers.putIfAbsent(dataExchanger.topicId(), dataExchanger) != null)
+            throw new IllegalArgumentException("Duplicate topicId: " + dataExchanger.topicId());
     }
 
     /**
