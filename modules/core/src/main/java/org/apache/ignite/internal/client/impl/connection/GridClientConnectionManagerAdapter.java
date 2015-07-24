@@ -146,7 +146,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
                 GridNioFilter codecFilter = new GridNioCodecFilter(new GridTcpRestParser(routerClient), gridLog, false);
 
                 if (sslCtx != null) {
-                    GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, gridLog);
+                    GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog);
 
                     sslFilter.directMode(false);
                     sslFilter.clientMode(true);
