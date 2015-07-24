@@ -69,7 +69,7 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
             .sendQueueLimit(0)
             .filters(
                 new GridNioCodecFilter(parser, log, false),
-                new GridNioSslFilter(sslCtx, log))
+                new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), log))
             .build();
 
         srvr.start();
