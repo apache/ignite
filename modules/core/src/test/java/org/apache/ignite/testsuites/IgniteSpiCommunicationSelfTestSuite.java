@@ -45,6 +45,9 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTcpCommunicationSpiMultithreadedSelfTest.class));
         suite.addTest(new TestSuite(GridTcpCommunicationSpiMultithreadedShmemTest.class));
 
+        suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest.class));
+        suite.addTest(new TestSuite(GridTcpCommunicationSpiTcpFailureDetectionSelfTest.class));
+
         suite.addTest(new TestSuite(GridTcpCommunicationSpiConfigSelfTest.class));
 
         return suite;

@@ -15,25 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.ssl;
+package org.apache.ignite.spi;
 
-import javax.cache.configuration.*;
-import javax.net.ssl.*;
+import org.apache.ignite.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.communication.tcp.*;
+import org.apache.ignite.configuration.*;
 
 /**
- * This interface provides creation of SSL context both for server and client use.
- * <p>
- * Usually, it is enough to configure context from a particular key and trust stores, this functionality is provided
- * in {@link GridSslBasicContextFactory}.
- * @deprecated Use {@link Factory} instead.
+ * Kind of exception that is used when failure detection timeout is enabled for {@link TcpDiscoverySpi} or
+ * {@link TcpCommunicationSpi}.
+ *
+ * For more information refer to {@link IgniteConfiguration#setFailureDetectionTimeout(long)} and
+ * {@link IgniteSpiOperationTimeoutHelper}.
  */
-@Deprecated
-public interface GridSslContextFactory {
+public class IgniteSpiOperationTimeoutException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * Creates SSL context based on factory settings.
-     *
-     * @return Initialized SSL context.
-     * @throws SSLException If SSL context could not be created.
+     * Constructor.
+     * @param msg Error message.
      */
-    public SSLContext createSslContext() throws SSLException;
+    public IgniteSpiOperationTimeoutException(String msg) {
+        super(msg);
+    }
 }

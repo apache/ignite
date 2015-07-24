@@ -118,7 +118,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TestTcpDiscoverySpi disco = new TestTcpDiscoverySpi();
+        TcpDiscoverySpi disco = getDiscoverySpi();
 
         disco.setMaxMissedClientHeartbeats(maxMissedClientHbs);
 
@@ -154,9 +154,19 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         else
             throw new IllegalArgumentException();
 
-        if (longSockTimeouts) {
-            disco.setAckTimeout(2000);
-            disco.setSocketTimeout(2000);
+        if (useFailureDetectionTimeout())
+            cfg.setFailureDetectionTimeout(failureDetectionTimeout());
+        else {
+            if (longSockTimeouts) {
+                disco.setAckTimeout(2000);
+                disco.setSocketTimeout(2000);
+            }
+            else {
+                disco.setAckTimeout(gridName.startsWith("client") ? TcpDiscoverySpi.DFLT_ACK_TIMEOUT_CLIENT :
+                    TcpDiscoverySpi.DFLT_ACK_TIMEOUT);
+                disco.setSocketTimeout(gridName.startsWith("client") ? TcpDiscoverySpi.DFLT_SOCK_TIMEOUT_CLIENT :
+                    TcpDiscoverySpi.DFLT_SOCK_TIMEOUT);
+            }
         }
 
         disco.setJoinTimeout(joinTimeout);
@@ -164,7 +174,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         disco.setClientReconnectDisabled(reconnectDisabled);
 
-        disco.afterWrite(afterWrite);
+        if (disco instanceof TestTcpDiscoverySpi)
+            ((TestTcpDiscoverySpi)disco).afterWrite(afterWrite);
 
         cfg.setDiscoverySpi(disco);
 
@@ -172,6 +183,14 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             cfg.setNodeId(nodeId);
 
         return cfg;
+    }
+
+    /**
+     * Returns TCP Discovery SPI instance to use in a test.
+     * @return TCP Discovery SPI.
+     */
+    protected TcpDiscoverySpi getDiscoverySpi() {
+        return new TestTcpDiscoverySpi();
     }
 
     /** {@inheritDoc} */
@@ -202,6 +221,24 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         longSockTimeouts = false;
 
         assert G.allGrids().isEmpty();
+    }
+
+    /**
+     * Checks whether to use failure detection timeout instead of setting explicit timeouts.
+     *
+     * @return {@code true} if use.
+     */
+    protected boolean useFailureDetectionTimeout() {
+        return false;
+    }
+
+    /**
+     * Gets failure detection timeout to use.
+     *
+     * @return Failure detection timeout.
+     */
+    protected long failureDetectionTimeout() {
+        return 0;
     }
 
     /**
@@ -390,12 +427,12 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        ((TcpDiscoverySpi)srv1.configuration().getDiscoverySpi()).addIncomeConnectionListener(new IgniteInClosure<Socket>() {
+        ((TcpDiscoverySpi)srv1.configuration().getDiscoverySpi()).addIncomeConnectionListener(new IgniteInClosure
+            <Socket>() {
             @Override public void apply(Socket sock) {
                 try {
                     latch.await();
-                }
-                catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -414,11 +451,14 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         startServerNodes(2);
         startClientNodes(1);
 
+        checkNodes(2, 1);
+
         Ignite srv0 = G.ignite("server-0");
         Ignite srv1 = G.ignite("server-1");
         Ignite client = G.ignite("client-0");
 
-        ((TcpDiscoverySpi)srv0.configuration().getDiscoverySpi()).setAckTimeout(1000);
+        if (!useFailureDetectionTimeout())
+            ((TcpDiscoverySpi)srv0.configuration().getDiscoverySpi()).setAckTimeout(1000);
 
         ((TestTcpDiscoverySpi)client.configuration().getDiscoverySpi()).pauseSocketWrite();
 
@@ -756,8 +796,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             @Override public void apply(TcpDiscoveryAbstractMessage msg) {
                 try {
                     Thread.sleep(1000000);
-                }
-                catch (InterruptedException ignored) {
+                } catch (InterruptedException ignored) {
                     Thread.interrupted();
                 }
             }
@@ -1405,8 +1444,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         latch.countDown();
 
-        assertTrue(disconnectLatch.await(10_000, MILLISECONDS));
-        assertTrue(reconnectLatch.await(10_000, MILLISECONDS));
+        assertTrue(disconnectLatch.await(awaitTime(), MILLISECONDS));
+        assertTrue(reconnectLatch.await(awaitTime(), MILLISECONDS));
 
         clientNodeIds.add(client.cluster().localNode().id());
 
@@ -1474,7 +1513,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @param failSrv If {@code true} fails server, otherwise server does not send join message.
      * @throws Exception If failed.
      */
-    private void reconnectSegmentedAfterJoinTimeout(boolean failSrv) throws Exception {
+    protected void reconnectSegmentedAfterJoinTimeout(boolean failSrv) throws Exception {
         netTimeout = 4000;
         joinTimeout = 5000;
 
@@ -1542,9 +1581,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             clientSpi.brakeConnection();
         }
 
-        assertTrue(disconnectLatch.await(10_000, MILLISECONDS));
+        assertTrue(disconnectLatch.await(awaitTime(), MILLISECONDS));
 
-        assertTrue(segmentedLatch.await(10_000, MILLISECONDS));
+        assertTrue(segmentedLatch.await(awaitTime(), MILLISECONDS));
 
         waitSegmented(client);
 
@@ -1557,7 +1596,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     return srv.cluster().nodes().size() == 1;
                 }
-            }, 10_000);
+            }, awaitTime());
 
             checkNodes(1, 0);
         }
@@ -1614,7 +1653,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         srv.close();
 
-        assertTrue(disconnectLatch.await(10_000, MILLISECONDS));
+        assertTrue(disconnectLatch.await(awaitTime(), MILLISECONDS));
 
         srvNodeIds.clear();
         srvIdx.set(0);
@@ -1625,7 +1664,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         startServerNodes(1);
 
-        assertTrue(reconnectLatch.await(10_000, MILLISECONDS));
+        assertTrue(reconnectLatch.await(awaitTime(), MILLISECONDS));
 
         clientNodeIds.clear();
         clientNodeIds.add(client.cluster().localNode().id());
@@ -1695,7 +1734,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         clientSpi.brakeConnection();
 
-        assertTrue(disconnectLatch.await(10_000, MILLISECONDS));
+        assertTrue(disconnectLatch.await(awaitTime(), MILLISECONDS));
 
         log.info("Fail client connection2.");
 
@@ -1704,7 +1743,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         clientSpi.brakeConnection();
 
-        assertTrue(reconnectLatch.await(10_000, MILLISECONDS));
+        assertTrue(reconnectLatch.await(awaitTime(), MILLISECONDS));
 
         clientNodeIds.clear();
 
@@ -1715,7 +1754,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             public boolean apply() {
                 return srv.cluster().nodes().size() == 2;
             }
-        }, 10_000);
+        }, awaitTime());
 
         checkNodes(1, 1);
 
@@ -1759,7 +1798,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @param cnt Number of nodes.
      * @throws Exception In case of error.
      */
-    private void startServerNodes(int cnt) throws Exception {
+    protected void startServerNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++) {
             Ignite g = startGrid("server-" + srvIdx.getAndIncrement());
 
@@ -1771,7 +1810,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @param cnt Number of nodes.
      * @throws Exception In case of error.
      */
-    private void startClientNodes(int cnt) throws Exception {
+    protected void startClientNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++) {
             Ignite g = startGrid("client-" + clientIdx.getAndIncrement());
 
@@ -1888,7 +1927,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @param srvCnt Number of server nodes.
      * @param clientCnt Number of client nodes.
      */
-    private void checkNodes(int srvCnt, int clientCnt) {
+    protected void checkNodes(int srvCnt, int clientCnt) {
         long topVer = -1;
 
         for (int i = 0; i < srvCnt; i++) {
@@ -1950,8 +1989,17 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @param latch Latch.
      * @throws InterruptedException If interrupted.
      */
-    private void await(CountDownLatch latch) throws InterruptedException {
-        assertTrue("Latch count: " + latch.getCount(), latch.await(10_000, MILLISECONDS));
+    protected void await(CountDownLatch latch) throws InterruptedException {
+        assertTrue("Latch count: " + latch.getCount(), latch.await(awaitTime(), MILLISECONDS));
+    }
+
+    /**
+     * Time to wait for operation completion.
+     *
+     * @return Time in milliseconds.
+     */
+    protected long awaitTime() {
+        return 10_000;
     }
 
     /**
@@ -2072,7 +2120,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
-            GridByteArrayOutputStream bout) throws IOException, IgniteCheckedException {
+            GridByteArrayOutputStream bout, long timeout) throws IOException, IgniteCheckedException {
             waitFor(writeLock);
 
             boolean fail = false;
@@ -2097,17 +2145,18 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 sock.close();
             }
 
-            super.writeToSocket(sock, msg, bout);
+            super.writeToSocket(sock, msg, bout, timeout);
 
             if (afterWrite != null)
                 afterWrite.apply(msg, sock);
         }
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(InetSocketAddress sockAddr) throws IOException {
+        @Override protected Socket openSocket(InetSocketAddress sockAddr,
+            IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
             waitFor(openSockLock);
 
-            return super.openSocket(sockAddr);
+            return super.openSocket(sockAddr, new IgniteSpiOperationTimeoutHelper(this));
         }
 
         /**
@@ -2137,7 +2186,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res) throws IOException {
+        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout)
+            throws IOException {
             if (delayJoinAckFor != null && msg instanceof TcpDiscoveryJoinRequestMessage) {
                 TcpDiscoveryJoinRequestMessage msg0 = (TcpDiscoveryJoinRequestMessage)msg;
 
@@ -2155,7 +2205,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            super.writeToSocket(msg, sock, res);
+            super.writeToSocket(msg, sock, res, timeout);
         }
 
         /** {@inheritDoc} */
