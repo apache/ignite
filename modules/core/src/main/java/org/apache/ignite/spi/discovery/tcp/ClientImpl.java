@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -480,13 +480,17 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         Collection<Throwable> errs = null;
 
-        long ackTimeout0 = spi.ackTimeout;
+        long ackTimeout0 = spi.getAckTimeout();
+
+        int reconCnt = 0;
 
         int connectAttempts = 1;
 
         UUID locNodeId = getLocalNodeId();
 
-        for (int i = 0; i < spi.reconCnt; i++) {
+        IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi);
+
+        while (true) {
             boolean openSock = false;
 
             Socket sock = null;
@@ -494,7 +498,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             try {
                 long tstamp = U.currentTimeMillis();
 
-                sock = spi.openSocket(addr);
+                sock = spi.openSocket(addr, timeoutHelper);
 
                 openSock = true;
 
@@ -502,7 +506,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 req.client(true);
 
-                spi.writeToSocket(sock, req);
+                spi.writeToSocket(sock, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
 
@@ -532,7 +536,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 msg.client(true);
 
-                spi.writeToSocket(sock, msg);
+                spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
 
@@ -540,7 +544,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     log.debug("Message has been sent to address [msg=" + msg + ", addr=" + addr +
                         ", rmtNodeId=" + rmtNodeId + ']');
 
-                return new T3<>(sock, spi.readReceipt(sock, ackTimeout0), res.clientAck());
+                return new T3<>(sock, spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0)),
+                    res.clientAck());
             }
             catch (IOException | IgniteCheckedException e) {
                 U.closeQuiet(sock);
@@ -555,6 +560,12 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 errs.add(e);
 
+                if (timeoutHelper.checkFailureTimeoutReached(e))
+                    break;
+
+                if (!spi.failureDetectionTimeoutEnabled() && ++reconCnt == spi.getReconnectCount())
+                    break;
+
                 if (!openSock) {
                     // Reconnect for the second time, if connection is not established.
                     if (connectAttempts < 2) {
@@ -566,7 +577,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     break; // Don't retry if we can not establish connection.
                 }
 
-                if (e instanceof SocketTimeoutException || X.hasCause(e, SocketTimeoutException.class)) {
+                if (!spi.failureDetectionTimeoutEnabled() && (e instanceof SocketTimeoutException ||
+                    X.hasCause(e, SocketTimeoutException.class))) {
                     ackTimeout0 *= 2;
 
                     if (!checkAckTimeout(ackTimeout0))
@@ -868,6 +880,9 @@ class ClientImpl extends TcpDiscoveryImpl {
         private final Queue<TcpDiscoveryAbstractMessage> queue = new ArrayDeque<>();
 
         /** */
+        private final long socketTimeout;
+
+        /** */
         private TcpDiscoveryAbstractMessage unackedMsg;
 
         /**
@@ -875,6 +890,9 @@ class ClientImpl extends TcpDiscoveryImpl {
          */
         protected SocketWriter() {
             super(spi.ignite().name(), "tcp-client-disco-sock-writer", log);
+
+            socketTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
+                spi.getSocketTimeout();
         }
 
         /**
@@ -968,12 +986,13 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
 
-                    spi.writeToSocket(sock, msg);
+                    spi.writeToSocket(sock, msg, socketTimeout);
 
                     msg = null;
 
                     if (ack) {
-                        long waitEnd = U.currentTimeMillis() + spi.ackTimeout;
+                        long waitEnd = U.currentTimeMillis() + (spi.failureDetectionTimeoutEnabled() ?
+                            spi.failureDetectionTimeout() : spi.getAckTimeout());
 
                         TcpDiscoveryAbstractMessage unacked;
 
@@ -989,7 +1008,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (unacked != null) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to get acknowledge for message, will try to reconnect " +
-                                "[msg=" + unacked + ", timeout=" + spi.ackTimeout + ']');
+                                "[msg=" + unacked +
+                                (spi.failureDetectionTimeoutEnabled() ?
+                                ", failureDetectionTimeout=" + spi.failureDetectionTimeout() :
+                                ", timeout=" + spi.getAckTimeout()) + ']');
 
                             throw new IOException("Failed to get acknowledge for message: " + unacked);
                         }
@@ -1068,11 +1090,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (join) {
                             joinError(new IgniteSpiException("Join process timed out, connection failed and " +
                                 "failed to reconnect (consider increasing 'joinTimeout' configuration property) " +
-                                "[networkTimeout=" + spi.joinTimeout + ", sock=" + sock + ']'));
+                                "[joinTimeout=" + spi.joinTimeout + ", sock=" + sock + ']'));
                         }
                         else
-                            U.error(log, "Failed to reconnect to cluster (consider increasing 'networkTimeout' " +
-                                "configuration property) [networkTimeout=" + spi.netTimeout + ", sock=" + sock + ']');
+                            U.error(log, "Failed to reconnect to cluster (consider increasing 'networkTimeout'" +
+                                " configuration  property) [networkTimeout=" + spi.netTimeout + ", sock=" + sock + ']');
 
                         return;
                     }

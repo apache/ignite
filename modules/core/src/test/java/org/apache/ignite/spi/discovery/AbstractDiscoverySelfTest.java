@@ -43,10 +43,16 @@ import static org.apache.ignite.lang.IgniteProductVersion.*;
 @SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
 public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends GridSpiAbstractTest<T> {
     /** */
-    private static final List<DiscoverySpi> spis = new ArrayList<>();
+    private static final String HTTP_ADAPTOR_MBEAN_NAME = "mbeanAdaptor:protocol=HTTP";
+
+    /** */
+    protected static final List<DiscoverySpi> spis = new ArrayList<>();
 
     /** */
     private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
+
+    /** */
+    private static final List<HttpAdaptor> httpAdaptors = new ArrayList<>();
 
     /** */
     private static long spiStartTime;
@@ -424,9 +430,11 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         adaptor.setPort(Integer.valueOf(GridTestProperties.getProperty("discovery.mbeanserver.selftest.baseport")) +
             idx);
 
-        srv.registerMBean(adaptor, new ObjectName("mbeanAdaptor:protocol=HTTP"));
+        srv.registerMBean(adaptor, new ObjectName(HTTP_ADAPTOR_MBEAN_NAME));
 
         adaptor.start();
+
+        httpAdaptors.add(adaptor);
 
         return srv;
     }
@@ -442,12 +450,21 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
             spi.spiStop();
         }
 
-        for (IgniteTestResources rscrs : spiRsrcs)
+        for (IgniteTestResources rscrs : spiRsrcs) {
+            MBeanServer mBeanServer = rscrs.getMBeanServer();
+
+            mBeanServer.unregisterMBean(new ObjectName(HTTP_ADAPTOR_MBEAN_NAME));
+
             rscrs.stopThreads();
+        }
+
+        for (HttpAdaptor adaptor : httpAdaptors)
+            adaptor.stop();
 
         // Clear.
         spis.clear();
         spiRsrcs.clear();
+        httpAdaptors.clear();
 
         spiStartTime = 0;
 
