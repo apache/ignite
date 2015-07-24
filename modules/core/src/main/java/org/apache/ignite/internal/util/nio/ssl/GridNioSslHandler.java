@@ -29,6 +29,7 @@ import java.util.concurrent.locks.*;
 import static javax.net.ssl.SSLEngineResult.*;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.*;
 import static javax.net.ssl.SSLEngineResult.Status.*;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
 import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.*;
 
 /**
@@ -43,6 +44,12 @@ class GridNioSslHandler extends ReentrantLock {
 
     /** SSL engine. */
     private SSLEngine sslEngine;
+
+    /** Order. */
+    private ByteOrder order;
+
+    /** Allocate direct buffer or heap buffer. */
+    private boolean directBuf;
 
     /** Session of this handler. */
     private GridNioSession ses;
@@ -81,10 +88,16 @@ class GridNioSslHandler extends ReentrantLock {
      * @param ses Session for which this handler was created.
      * @param engine SSL engine instance for this handler.
      * @param log Logger to use.
+     * @param directBuf Direct buffer flag.
+     * @param order Byte order.
      * @throws SSLException If exception occurred when starting SSL handshake.
      */
-    GridNioSslHandler(GridNioSslFilter parent, GridNioSession ses, SSLEngine engine, IgniteLogger log)
-        throws SSLException {
+    GridNioSslHandler(GridNioSslFilter parent,
+        GridNioSession ses,
+        SSLEngine engine,
+        boolean directBuf,
+        ByteOrder order,
+        IgniteLogger log) throws SSLException {
         assert parent != null;
         assert ses != null;
         assert engine != null;
@@ -92,19 +105,33 @@ class GridNioSslHandler extends ReentrantLock {
 
         this.parent = parent;
         this.ses = ses;
+        this.order = order;
+        this.directBuf = directBuf;
         this.log = log;
 
         sslEngine = engine;
 
-        sslEngine.beginHandshake();
+        if (ses.meta(SSL_ENGINE.ordinal()) == null)
+            sslEngine.beginHandshake();
+        else {
+            sslEngine = ses.meta(SSL_ENGINE.ordinal());
+
+            handshakeFinished = true;
+            initHandshakeComplete = true;
+        }
 
         handshakeStatus = sslEngine.getHandshakeStatus();
 
         // Allocate a little bit more so SSL engine would not return buffer overflow status.
         int netBufSize = sslEngine.getSession().getPacketBufferSize() + 50;
 
-        outNetBuf = ByteBuffer.allocate(netBufSize);
-        inNetBuf = ByteBuffer.allocate(netBufSize);
+        outNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
+
+        outNetBuf.order(order);
+
+        inNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
+
+        inNetBuf.order(order);
 
         // Initially buffer is empty.
         outNetBuf.position(0);
@@ -112,7 +139,9 @@ class GridNioSslHandler extends ReentrantLock {
 
         int appBufSize = Math.max(sslEngine.getSession().getApplicationBufferSize() + 50, netBufSize * 2);
 
-        appBuf = ByteBuffer.allocate(appBufSize);
+        appBuf = directBuf ? ByteBuffer.allocateDirect(appBufSize) : ByteBuffer.allocate(appBufSize);
+
+        appBuf.order(order);
 
         if (log.isDebugEnabled())
             log.debug("Started SSL session [netBufSize=" + netBufSize + ", appBufSize=" + appBufSize + ']');
@@ -575,6 +604,44 @@ class GridNioSslHandler extends ReentrantLock {
                 ", ses=" + ses + ']');
 
         return sslEngine.getHandshakeStatus();
+    }
+
+    /**
+     * Expands the given byte buffer to the requested capacity.
+     *
+     * @param original Original byte buffer.
+     * @param cap Requested capacity.
+     * @return Expanded byte buffer.
+     */
+    private ByteBuffer expandBuffer(ByteBuffer original, int cap) {
+        ByteBuffer res = directBuf ? ByteBuffer.allocateDirect(cap) : ByteBuffer.allocate(cap);
+
+        res.order(order);
+
+        original.flip();
+
+        res.put(original);
+
+        return res;
+    }
+
+    /**
+     * Copies the given byte buffer.
+     *
+     * @param original Byte buffer to copy.
+     * @return Copy of the original byte buffer.
+     */
+    private ByteBuffer copy(ByteBuffer original) {
+        ByteBuffer cp = directBuf ? ByteBuffer.allocateDirect(original.remaining()) :
+            ByteBuffer.allocate(original.remaining());
+
+        cp.order(order);
+
+        cp.put(original);
+
+        cp.flip();
+
+        return cp;
     }
 
     /**

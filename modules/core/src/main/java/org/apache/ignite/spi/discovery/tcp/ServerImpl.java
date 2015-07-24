@@ -39,6 +39,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
+import javax.net.ssl.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -4018,7 +4019,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (port = spi.locPort; port < spi.locPort + spi.locPortRange; port++) {
                 try {
-                    srvrSock = new ServerSocket(port, 0, spi.locHost);
+                    if (spi.isSslEnabled())
+                        srvrSock = spi.sslSrvSocketFactory.createServerSocket(port, 0, spi.locHost);
+                    else
+                        srvrSock = new ServerSocket(port, 0, spi.locHost);
 
                     break;
                 }
@@ -4163,12 +4167,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (!Arrays.equals(buf, U.IGNITE_HEADER)) {
                         if (log.isDebugEnabled())
                             log.debug("Unknown connection detected (is some other software connecting to " +
-                                "this Ignite port?) " +
+                                "this Ignite port?" +
+                                (!spi.isSslEnabled() ? " missed SSL configuration?" : "" ) +
+                                ") " +
                                 "[rmtAddr=" + sock.getRemoteSocketAddress() +
                                 ", locAddr=" + sock.getLocalSocketAddress() + ']');
 
                         LT.warn(log, null, "Unknown connection detected (is some other software connecting to " +
-                            "this Ignite port?) [rmtAddr=" + sock.getRemoteSocketAddress() +
+                            "this Ignite port?" +
+                            (!spi.isSslEnabled() ? " missed SSL configuration?" : "" ) +
+                            ") [rmtAddr=" + sock.getRemoteSocketAddress() +
                             ", locAddr=" + sock.getLocalSocketAddress() + ']');
 
                         return;
@@ -4280,7 +4288,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (log.isDebugEnabled())
                         U.error(log, "Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
 
-                    if (X.hasCause(e, ObjectStreamException.class) || !sock.isClosed()) {
+                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0())
+                        LT.warn(log, null, "Failed to initialize connection. Not encrypted data received. " +
+                            "Missed SSL configuration on node? [sock=" + sock + ']');
+                    else if ((X.hasCause(e, ObjectStreamException.class) || !sock.isClosed())
+                        && !spi.isNodeStopping0()) {
                         if (U.isMacInvalidArgumentError(e))
                             LT.error(log, e, "Failed to initialize connection [sock=" + sock + "]\n\t" +
                                 U.MAC_INVALID_ARG_MSG);

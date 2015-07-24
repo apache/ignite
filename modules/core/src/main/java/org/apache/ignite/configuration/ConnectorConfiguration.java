@@ -19,8 +19,12 @@ package org.apache.ignite.configuration;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.client.ssl.*;
+import org.apache.ignite.ssl.*;
+
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
+import javax.net.ssl.*;
 import java.net.*;
 
 /**
@@ -98,6 +102,9 @@ public class ConnectorConfiguration {
 
     /** SSL context factory for rest binary server. */
     private GridSslContextFactory sslCtxFactory;
+
+    /** SSL context factory for rest binary server. */
+    private Factory<SSLContext> sslFactory;
 
     /** Port range */
     private int portRange = DFLT_PORT_RANGE;
@@ -429,7 +436,9 @@ public class ConnectorConfiguration {
      *
      * @return SslContextFactory instance.
      * @see GridSslContextFactory
+     * @deprecated Use {@link #getSslFactory()} instead.
      */
+    @Deprecated
     public GridSslContextFactory getSslContextFactory() {
         return sslCtxFactory;
     }
@@ -440,9 +449,32 @@ public class ConnectorConfiguration {
      * {@link #setSslEnabled(boolean)} is set to {@code true}.
      *
      * @param sslCtxFactory Instance of {@link GridSslContextFactory}
+     * @deprecated Use {@link #setSslFactory(Factory)} instead.
      */
+    @Deprecated
     public void setSslContextFactory(GridSslContextFactory sslCtxFactory) {
         this.sslCtxFactory = sslCtxFactory;
+    }
+
+    /**
+     * Gets context factory that will be used for creating a secure socket layer of rest binary server.
+     *
+     * @return SSL context factory instance.
+     * @see SslContextFactory
+     */
+    public Factory<SSLContext> getSslFactory() {
+        return sslFactory;
+    }
+
+    /**
+     * Sets instance of {@link Factory} that will be used to create an instance of {@code SSLContext}
+     * for Secure Socket Layer on TCP binary protocol. This factory will only be used if
+     * {@link #setSslEnabled(boolean)} is set to {@code true}.
+     *
+     * @param sslFactory Instance of {@link Factory}
+     */
+    public void setSslFactory(Factory<SSLContext> sslFactory) {
+        this.sslFactory = sslFactory;
     }
 
     /**

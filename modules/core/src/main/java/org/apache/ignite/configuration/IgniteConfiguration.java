@@ -52,6 +52,7 @@ import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
+import org.apache.ignite.ssl.*;
 
 import javax.cache.configuration.*;
 import javax.cache.event.*;
@@ -60,6 +61,7 @@ import javax.cache.integration.*;
 import javax.cache.processor.*;
 import javax.management.*;
 import java.io.*;
+import javax.net.ssl.*;
 import java.lang.management.*;
 import java.util.*;
 
@@ -404,6 +406,9 @@ public class IgniteConfiguration {
     /** Consistent globally unique node ID which survives node restarts. */
     private Serializable consistentId;
 
+    /** SSL connection factory. */
+    private Factory<SSLContext> sslCtxFactory;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -485,6 +490,7 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
+        sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         svcCfgs = cfg.getServiceConfiguration();
         sysPoolSize = cfg.getSystemThreadPoolSize();
@@ -1333,6 +1339,28 @@ public class IgniteConfiguration {
         this.lifecycleBeans = lifecycleBeans;
 
         return this;
+    }
+
+    /**
+     * Sets SSL context factory that will be used for creating a secure socket  layer.
+     *
+     * @param sslCtxFactory Ssl context factory.
+     * @see SslContextFactory
+     */
+    public IgniteConfiguration setSslContextFactory(Factory<SSLContext> sslCtxFactory) {
+        this.sslCtxFactory = sslCtxFactory;
+
+        return this;
+    }
+
+    /**
+     * Returns SSL context factory that will be used for creating a secure socket layer.
+     *
+     * @return SSL connection factory.
+     * @see SslContextFactory
+     */
+    public Factory<SSLContext> getSslContextFactory() {
+        return sslCtxFactory;
     }
 
     /**

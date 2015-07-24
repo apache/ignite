@@ -124,7 +124,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         assertTrue(F.forAny(log.logs(), new IgnitePredicate<String>() {
             @Override public boolean apply(String s) {
-                return s.contains("Topology snapshot [ver=2, server nodes=2, client nodes=0,")
+                return s.contains("Topology snapshot [ver=2, servers=2, clients=0,")
                     || (s.contains(">>> Number of server nodes: 2") && s.contains(">>> Number of client nodes: 0"));
             }
         }));
@@ -174,7 +174,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         assertTrue(F.forAny(log.logs(), new IgnitePredicate<String>() {
             @Override public boolean apply(String s) {
-                return s.contains("Topology snapshot [ver=4, server nodes=2, client nodes=2,")
+                return s.contains("Topology snapshot [ver=4, servers=2, clients=2,")
                     || (s.contains(">>> Number of server nodes: 2") && s.contains(">>> Number of client nodes: 2"));
             }
         }));
@@ -225,7 +225,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         assertTrue(F.forAny(log.logs(), new IgnitePredicate<String>() {
             @Override public boolean apply(String s) {
-                return s.contains("Topology snapshot [ver=5, server nodes=2, client nodes=3,")
+                return s.contains("Topology snapshot [ver=5, servers=2, clients=3,")
                     || (s.contains(">>> Number of server nodes: 2") && s.contains(">>> Number of client nodes: 3"));
             }
         }));
