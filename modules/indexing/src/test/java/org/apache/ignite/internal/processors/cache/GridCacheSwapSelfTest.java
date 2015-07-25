@@ -152,6 +152,8 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("BusyWait")
     public void testSwapDeployment() throws Exception {
         try {
+            fail("Uncomment when IGNITE-1156 is fixed.");
+
             Ignite ignite1 = startGrid(1);
 
             excluded = true;
@@ -208,7 +210,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
                 if (success)
                     break;
-                else if (i < 2) {
+                else if (i < 6) {
                     info("Sleeping to wait for cache clear.");
 
                     Thread.sleep(500);
@@ -635,7 +637,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
             assert entry != null;
             assert entry.key() != null;
 
-            CacheValue val = CU.value(entry.rawGet(), entry.context(), false);
+            CacheValue val = cache.localPeek(i);
 
             assert val != null;
             assertEquals(CU.value(entry.key(), entry.context(), false), new Integer(val.value()));

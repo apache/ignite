@@ -196,9 +196,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Updates allowed flag. */
     private boolean updatesAllowed;
 
-    /** Flag indicating that marshalled cache object field access should be used. */
-    private boolean useClsFldsAccess;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -521,20 +518,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean isDrEnabled() {
         return dr().enabled();
-    }
-
-    /**
-     * @return Whether indexing should use deserialized values to access object fields.
-     */
-    public boolean useClassFieldAccess() {
-        return useClsFldsAccess;
-    }
-
-    /**
-     * @param useClsFldsAccess Whether indexing should use deserialized values to access object fields.
-     */
-    public void useClassFieldAccess(boolean useClsFldsAccess) {
-        this.useClsFldsAccess = useClsFldsAccess;
     }
 
     /**
@@ -1786,8 +1769,9 @@ public class GridCacheContext<K, V> implements Externalizable {
             if (ldr == null)
                 return null;
 
-            return ctx.cacheObjects().toCacheObject(cacheObjCtx, ctx.cacheObjects().unmarshal(cacheObjCtx, bytes, ldr),
-                false);
+            return ctx.cacheObjects().isFieldsIndexingEnabled() ?
+                ctx.cacheObjects().toCacheObject(cacheObjCtx, type, bytes) :
+                ctx.cacheObjects().toCacheObject(cacheObjCtx, ctx.cacheObjects().unmarshal(cacheObjCtx, bytes, ldr), false);
         }
 
         return ctx.cacheObjects().toCacheObject(cacheObjCtx, type, bytes);

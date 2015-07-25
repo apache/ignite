@@ -381,10 +381,13 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
         ctx.resource().injectGeneric(affMapper);
 
-        return new CacheObjectContext(ctx,
+        return new CacheObjectContext(
+            ctx,
+            ccfg.getName(),
             affMapper,
             ccfg.isCopyOnRead() && memMode != OFFHEAP_VALUES,
-            storeVal);
+            storeVal
+        );
     }
 
     /** {@inheritDoc} */
@@ -414,7 +417,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Nullable @Override public Object unwrapIndexedObject(Object obj) throws IgniteException {
-        return null;
+        return ((CacheIndexedObject)obj).deserialize();
     }
 
     /** {@inheritDoc} */
@@ -571,7 +574,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                     return new CacheIndexedObjectImpl(ctx, val, valBytes, start, len);
                 }
 
-                return new CacheIndexedObjectImpl(null, valBytes, start, len);
+                return new CacheIndexedObjectImpl(ctx, null, valBytes, start, len);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to marshal object: " + val, e);

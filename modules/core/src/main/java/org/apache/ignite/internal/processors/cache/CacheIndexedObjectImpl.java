@@ -96,6 +96,7 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter implements CacheI
      */
     public CacheIndexedObjectImpl(CacheObjectContext ctx, Object val, byte[] valBytes, int start, int len) {
         assert val != null || (valBytes != null && start >= 0 && len > 0);
+        assert ctx != null;
 
         this.ctx = ctx;
         this.val = val;
@@ -123,7 +124,8 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter implements CacheI
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert valBytes != null;
+        assert val != null || valBytes != null : "Invalid indexed object for unmarshal: " + this;
+        assert ctx != null;
 
         this.ctx = ctx;
 
@@ -174,6 +176,8 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter implements CacheI
         assert valBytes != null;
 
         try {
+            assert ctx != null;
+
             OptimizedMarshaller marsh = (OptimizedMarshaller)ctx.kernalContext().config().getMarshaller();
 
             return marsh.hasField(fieldName, valBytes, start, len);
@@ -213,7 +217,7 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter implements CacheI
             assert valBytes != null;
 
             Object val = ctx.processor().unmarshal(ctx, valBytes, start, len,
-                ctx.kernalContext().defaultClassLoader());
+                ctx.classLoader());
 
             if (keepDeserialized(ctx, false))
                 this.val = val;

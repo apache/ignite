@@ -175,9 +175,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     throw new IgniteCheckedException(""); // TODO ignite-950
                 }
 
-                boolean useFieldAccess = !hasClasses || ccfg.isCopyOnRead();
-
-                cctx.useClassFieldAccess(!useFieldAccess);
+                boolean useFieldAccess = ctx.cacheObjects().isFieldsIndexingEnabled();
 
                 for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
                     TypeDescriptor desc = new TypeDescriptor();
@@ -189,17 +187,33 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     desc.name(meta.getSimpleValueType());
 
-                    desc.valueClass(valCls != null ? valCls : Object.class);
-                    desc.keyClass(keyCls != null ? keyCls : Object.class);
+                    if (ctx.cacheObjects().isFieldsIndexingEnabled()) {
+                        // Safe to check null.
+                        if (SQL_TYPES.contains(valCls))
+                            desc.valueClass(valCls);
+                        else
+                            desc.valueClass(Object.class);
+
+                        if (SQL_TYPES.contains(keyCls))
+                            desc.keyClass(keyCls);
+                        else
+                            desc.keyClass(Object.class);
+                    }
+                    else {
+                        desc.valueClass(valCls);
+                        desc.keyClass(keyCls);
+                    }
 
                     TypeId typeId;
-                    TypeId altTypeId;
+                    TypeId altTypeId = null;
 
                     if (useFieldAccess) {
                         processCacheTypeMeta(meta, desc);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
-                        altTypeId = null;
+
+                        if (valCls != null)
+                            altTypeId = new TypeId(ccfg.getName(), valCls);
                     }
                     else {
                         assert valCls != null;
@@ -706,8 +720,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 IgniteBiTuple<K, V> t = i.next();
 
                                 return new CacheEntryImpl<>(
-                                    t.getKey(),
-                                    t.getValue());
+                                    (K)cctx.unwrapIfNeeded(t.getKey(), cctx.keepIgniteObject()),
+                                    (V)cctx.unwrapIfNeeded(t.getValue(), cctx.keepIgniteObject()));
                             }
 
                             @Override public void remove() {

@@ -248,7 +248,7 @@ public class IgniteTestResources {
         if (marsh instanceof OptimizedMarshaller) {
             ((OptimizedMarshaller)marsh).setRequireSerializable(false);
 
-            OptimizedMarshallerProtocolVersion ver = OptimizedMarshallerProtocolVersion.VER_1;
+            OptimizedMarshallerProtocolVersion ver = null;
 
             String property = GridTestProperties.getProperty(GridTestProperties.OPTIMIZED_MARSH_PROTOCOL);
 
@@ -260,7 +260,8 @@ public class IgniteTestResources {
                 log.warning("Failed to set optimized marshaller protocol version: " + property);
             }
 
-            ((OptimizedMarshaller)marsh).setProtocolVersion(ver);
+            if (ver != null)
+                ((OptimizedMarshaller)marsh).setProtocolVersion(ver);
         }
 
         marsh.setContext(new MarshallerContextTestImpl());

@@ -58,7 +58,7 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
 
         setupIndexingHandler();
 
-        objCtx = new CacheObjectContext(grid().context(), new CacheIndexedObjectDefaultAffinityMapper(), true, false);
+        objCtx = new CacheObjectContext(grid().context(), null, new CacheIndexedObjectDefaultAffinityMapper(), true, false);
     }
 
     /**

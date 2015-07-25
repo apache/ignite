@@ -36,6 +36,9 @@ public class CacheObjectContext implements Externalizable {
     /** */
     private IgniteCacheObjectProcessor proc;
 
+    /** Cache name. */
+    private String cacheName;
+
     /** */
     private AffinityKeyMapper dfltAffMapper;
 
@@ -61,12 +64,15 @@ public class CacheObjectContext implements Externalizable {
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
      */
-    public CacheObjectContext(GridKernalContext kernalCtx,
+    public CacheObjectContext(
+        GridKernalContext kernalCtx,
+        String cacheName,
         AffinityKeyMapper dfltAffMapper,
         boolean cpyOnGet,
         boolean storeVal
     ) {
         this.kernalCtx = kernalCtx;
+        this.cacheName = cacheName;
         this.dfltAffMapper = dfltAffMapper;
         this.cpyOnGet = cpyOnGet;
         this.storeVal = storeVal;
@@ -115,6 +121,15 @@ public class CacheObjectContext implements Externalizable {
      */
     public IgniteCacheObjectProcessor processor() {
         return proc;
+    }
+
+    public ClassLoader classLoader() {
+        if (!kernalCtx.config().isPeerClassLoadingEnabled())
+            return kernalCtx.defaultClassLoader();
+
+        IgniteInternalCache<Object, Object> cache = kernalCtx.cache().cache(cacheName);
+
+        return cache != null ? cache.context().deploy().globalLoader() : kernalCtx.defaultClassLoader();
     }
 
     /**
