@@ -35,6 +35,9 @@ public class CacheQueryResult implements Externalizable {
     /** Result items. */
     private Collection<?> items;
 
+    /** Fields metadata. */
+    private Collection<?> fieldsMeta;
+
     /** Last flag. */
     private boolean last;
 
@@ -67,6 +70,20 @@ public class CacheQueryResult implements Externalizable {
     }
 
     /**
+     * @param fieldsMeta Fields metadata.
+     */
+    public void setFieldsMetadata(Collection<?> fieldsMeta) {
+        this.fieldsMeta = fieldsMeta;
+    }
+
+    /**
+     * @return Fields metadata.
+     */
+    public Collection<?> getFieldsMetadata() {
+        return fieldsMeta;
+    }
+
+    /**
      * @return Last flag.
      */
     public boolean getLast() {
@@ -90,6 +107,7 @@ public class CacheQueryResult implements Externalizable {
         out.writeBoolean(last);
         out.writeLong(qryId);
         U.writeCollection(out, items);
+        U.writeCollection(out, fieldsMeta);
     }
 
     /** {@inheritDoc} */
@@ -97,5 +115,6 @@ public class CacheQueryResult implements Externalizable {
         last = in.readBoolean();
         qryId = in.readLong();
         items = U.readCollection(in);
+        fieldsMeta = U.readCollection(in);
     }
 }

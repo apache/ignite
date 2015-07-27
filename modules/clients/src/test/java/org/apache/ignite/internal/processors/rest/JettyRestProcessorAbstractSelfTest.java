@@ -650,7 +650,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonEquals(ret, cacheBulkPattern(true, true));
 
-        ret = content(F.asMap("cmd", "rmvall"));
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_REMOVE_ALL.key()));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1001,7 +1001,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testVersion() throws Exception {
-        String ret = content(F.asMap("cmd", "version"));
+        String ret = content(F.asMap("cmd", GridRestCommand.VERSION.key()));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1112,6 +1112,43 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         List items = (List)((Map)json.get("response")).get("items");
 
         assertEquals(4, items.size());
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSqlFieldsMetadataQuery() throws Exception {
+        String qry = "select firstName, lastName from Person";
+
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SQL_FIELDS_QUERY.key());
+        params.put("psz", "10");
+        params.put("cacheName", "person");
+        params.put("qry", URLEncoder.encode(qry));
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        List items = (List)((Map)json.get("response")).get("items");
+
+        List meta = (List)((Map)json.get("response")).get("fieldsMetadata");
+
+        assertEquals(4, items.size());
+
+        assertEquals(2, meta.size());
+
+        JSONObject o = (JSONObject)meta.get(0);
+
+        assertEquals("FIRSTNAME", o.get("fieldName"));
+        assertEquals("java.lang.String", o.get("fieldTypeName"));
+        assertEquals("person", o.get("schemaName"));
+        assertEquals("PERSON", o.get("typeName"));
 
         assertFalse(queryCursorFound());
     }

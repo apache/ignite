@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.rest.handlers.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.request.*;
@@ -146,6 +148,10 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
                 CacheQueryResult res = createQueryResult(qryCurs, cur, req, qryId);
 
+                List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl<?>) qryCur).fieldsMeta();
+
+                res.setFieldsMetadata(convertMetadata(fieldsMeta));
+
                 return new GridRestResponse(res);
             }
             catch (Exception e) {
@@ -153,6 +159,21 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
                 return new GridRestResponse(GridRestResponse.STATUS_FAILED, e.getMessage());
             }
+        }
+
+        /**
+         * @param meta Internal query field metadata.
+         * @return Rest query field metadata.
+         */
+        private Collection<CacheQueryFieldsMetaResult> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
+            List<CacheQueryFieldsMetaResult> res = new ArrayList<>();
+
+            if (meta != null) {
+                for (GridQueryFieldMetadata info : meta)
+                    res.add(new CacheQueryFieldsMetaResult(info));
+            }
+
+            return res;
         }
     }
 
