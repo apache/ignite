@@ -767,6 +767,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         lock.readLock().lock();
 
         try {
+            if (node2part == null)
+                return new GridDhtPartitionFullMap();
+
             assert node2part != null && node2part.valid() : "Invalid node2part [node2part: " + node2part +
                 ", cache=" + cctx.name() +
                 ", started=" + cctx.started() +

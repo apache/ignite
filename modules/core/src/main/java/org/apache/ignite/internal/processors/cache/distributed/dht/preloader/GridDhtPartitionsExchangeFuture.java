@@ -919,12 +919,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param id ID.
      * @throws IgniteCheckedException If failed.
      */
-    private void sendAllPartitions(Collection<? extends ClusterNode> nodes, GridDhtPartitionExchangeId id)
+    private void sendAllPartitions(Collection<? extends ClusterNode> nodes, GridDhtPartitionExchangeId id,
+        Throwable error)
         throws IgniteCheckedException {
         GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(id,
             lastVer.get(),
             id.topologyVersion());
-
+        if (error != null)
+            m.onClassError(new IgniteCheckedException(error));
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal()) {
                 AffinityTopologyVersion startTopVer = cacheCtx.startTopologyVersion();
@@ -974,7 +976,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private boolean spreadPartitions() {
         try {
-            sendAllPartitions(rmtNodes, exchId);
+            sendAllPartitions(rmtNodes, exchId, null);
 
             return true;
         }
@@ -1072,6 +1074,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param msg Single partition info.
      */
     public void onReceive(final UUID nodeId, final GridDhtPartitionsSingleMessage msg) {
+        onReceive(nodeId, msg, null);
+    }
+    /**
+     * @param nodeId Sender node id.
+     * @param msg Single partition info.
+     */
+    public void onReceive(final UUID nodeId, final GridDhtPartitionsSingleMessage msg, Throwable error) {
         assert msg != null;
 
         assert msg.exchangeId().equals(exchId);
@@ -1093,7 +1102,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 log.debug("Received message for finished future (will reply only to sender) [msg=" + msg +
                     ", fut=" + this + ']');
 
-            sendAllPartitions(nodeId, cctx.gridConfig().getNetworkSendRetryCount());
+            sendAllPartitions(nodeId, cctx.gridConfig().getNetworkSendRetryCount(), error);
         }
         else {
             initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
@@ -1153,12 +1162,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param nodeId Node ID.
      * @param retryCnt Number of retries.
      */
-    private void sendAllPartitions(final UUID nodeId, final int retryCnt) {
+    private void sendAllPartitions(final UUID nodeId, final int retryCnt, Throwable error) {
         ClusterNode n = cctx.node(nodeId);
 
         try {
             if (n != null)
-                sendAllPartitions(F.asList(n), exchId);
+                sendAllPartitions(F.asList(n), exchId, error);
         }
         catch (IgniteCheckedException e) {
             if (e instanceof ClusterTopologyCheckedException || !cctx.discovery().alive(n)) {
@@ -1176,7 +1185,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 cctx.time().addTimeoutObject(new GridTimeoutObjectAdapter(timeout) {
                     @Override public void onTimeout() {
-                        sendAllPartitions(nodeId, retryCnt - 1);
+                        sendAllPartitions(nodeId, retryCnt - 1, null);
                     }
                 });
             }

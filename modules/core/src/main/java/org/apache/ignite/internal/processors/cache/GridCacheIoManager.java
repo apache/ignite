@@ -426,6 +426,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
+            case 46: {
+                GridDhtPartitionsFullMessage req = (GridDhtPartitionsFullMessage)msg;
+
+                ctx.cache().
+            }
+
             case 49: {
                 GridNearGetRequest req = (GridNearGetRequest)msg;
 

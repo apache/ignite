@@ -920,7 +920,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             // Finished future should reply only to sender client node.
-                            exchFut.onReceive(node.id(), msg);
+                            exchFut.onReceive(node.id(), msg, fut.error());
                         }
                     });
                 }

@@ -60,7 +60,7 @@ public abstract class GridCacheMessage implements Message {
 
     /** */
     @GridDirectTransient
-    private IgniteCheckedException err;
+    protected IgniteCheckedException err;
 
     /** */
     @GridDirectTransient

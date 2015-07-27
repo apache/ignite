@@ -55,6 +55,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
@@ -1017,6 +1018,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
     private void startCache(GridCacheAdapter<?, ?> cache) throws IgniteCheckedException {
+        //TODO:
+        if (!systemCache(cache.name()))
+            checkSecurityPermissions();
+
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
         ctx.query().onCacheStart(cacheCtx);
@@ -1687,7 +1692,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheContext<?, ?> cacheCtx = cache.context();
 
             if (F.eq(cacheCtx.startTopologyVersion(), topVer)) {
-                cacheCtx.preloader().onInitialExchangeComplete(err);
+                if (cacheCtx.preloader() != null)
+                    cacheCtx.preloader().onInitialExchangeComplete(err);
 
                 String masked = maskNull(cacheCtx.name());
 
@@ -2093,6 +2099,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean failIfExists,
         boolean failIfNotStarted
     ) {
+        checkSecurityPermissions();
         checkEmptyTransactions();
 
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
@@ -2186,6 +2193,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when cache is destroyed.
      */
     public IgniteInternalFuture<?> dynamicDestroyCache(String cacheName) {
+        checkSecurityPermissions();
         checkEmptyTransactions();
 
         DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
@@ -2206,6 +2214,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (proxy == null || proxy.proxyClosed())
             return new GridFinishedFuture<>(); // No-op.
 
+        checkSecurityPermissions();
         checkEmptyTransactions();
 
         DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
@@ -3227,6 +3236,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (sharedCtx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId()) != null)
             throw new IgniteException("Cannot start/stop cache within lock.");
+    }
+
+    /**
+     * @throws org.apache.ignite.plugin.security.SecurityException If failed.
+     */
+    private void checkSecurityPermissions() throws org.apache.ignite.plugin.security.SecurityException {
+        if (!ctx.security().enabled() || ctx.clientNode())
+            return;
+
+        ctx.security().authorize(null, SecurityPermission.ADMIN_CACHE, null);
     }
 
     /**

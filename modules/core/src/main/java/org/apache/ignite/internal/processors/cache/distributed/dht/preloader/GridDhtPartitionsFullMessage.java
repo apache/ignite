@@ -46,6 +46,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** */
     private byte[] partsBytes;
 
+    /** */
+    private byte[] errBytes;
+
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
@@ -95,6 +98,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (parts != null)
             partsBytes = ctx.marshaller().marshal(parts);
+
+        if (err != null)
+            errBytes = ctx.marshaller().marshal(err);
     }
 
     /**
@@ -117,6 +123,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (partsBytes != null)
             parts = ctx.marshaller().unmarshal(partsBytes, ldr);
+
+        if (errBytes != null)
+            err = ctx.marshaller().unmarshal(errBytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -145,6 +154,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                     return false;
 
                 writer.incrementState();
+
+            case 7:
+                if (!writer.writeByteArray("errBytes", errBytes))
+                    return false;
+
+                writer.incrementState();
+
 
         }
 
@@ -178,6 +194,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 reader.incrementState();
 
+            case 7:
+                errBytes = reader.readByteArray("errBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return true;
@@ -190,7 +214,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /** {@inheritDoc} */
