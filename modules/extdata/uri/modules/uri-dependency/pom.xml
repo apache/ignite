@@ -27,7 +27,7 @@
     <artifactId>ignite-extdata-uri-dep</artifactId>
     <packaging>jar</packaging>
 
-    <version>1.3.3-SNAPSHOT</version>
+    <version>1.3.3-rc1-SNAPSHOT</version>
     <modelVersion>4.0.0</modelVersion>
 
     <dependencies>
