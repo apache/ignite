@@ -21,6 +21,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.testsuites.*;
 
+import java.lang.reflect.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collection;
@@ -30,6 +31,9 @@ import java.util.Collection;
  */
 public class TcpDiscoveryGoogleStorageIpFinderSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryGoogleStorageIpFinder> {
+    /** Bucket name. */
+    private static String bucketName;
+
     /**
      * Constructor.
      *
@@ -37,6 +41,29 @@ public class TcpDiscoveryGoogleStorageIpFinderSelfTest
      */
     public TcpDiscoveryGoogleStorageIpFinderSelfTest() throws Exception {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        bucketName = "ip-finder-test-bucket-" + InetAddress.getLocalHost().getAddress()[3];
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        try {
+            Method method = TcpDiscoveryGoogleStorageIpFinder.class.getDeclaredMethod("removeBucket", String.class);
+
+            method.setAccessible(true);
+
+            method.invoke(finder, bucketName);
+        }
+        catch (Exception e) {
+            log.warning("Failed to remove bucket on GCE [bucketName=" + bucketName + ", mes=" + e.getMessage() + ']');
+        }
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -52,7 +79,7 @@ public class TcpDiscoveryGoogleStorageIpFinderSelfTest
         finder.setProjectName(IgniteGCETestSuite.getProjectName());
 
         // Bucket name must be unique across the whole GCE platform.
-        finder.setBucketName("ip-finder-test-bucket-" + InetAddress.getLocalHost().getAddress()[3]);
+        finder.setBucketName(bucketName);
 
         for (int i = 0; i < 5; i++) {
             Collection<InetSocketAddress> addrs = finder.getRegisteredAddresses();
