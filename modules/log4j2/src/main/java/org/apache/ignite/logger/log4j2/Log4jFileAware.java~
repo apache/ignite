@@ -1,0 +1,13 @@
+package org.apache.ignite.logger.log4j2;
+
+import org.apache.ignite.lang.IgniteClosure;
+
+public interface Log4jFileAware {
+
+	 /**
+     * Sets closure that later evaluate file path.
+     *
+     * @param filePathClos Closure that generates actual file path.
+     */
+    void updateFilePath(IgniteClosure<String, String> filePathClos);
+}

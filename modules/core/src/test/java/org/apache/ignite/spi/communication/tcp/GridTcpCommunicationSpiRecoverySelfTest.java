@@ -60,7 +60,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     private static final int ITERS = 10;
 
     /** */
-    private static int port = 30_000;
+    protected static int port = 30_000;
 
     /**
      *
@@ -163,6 +163,15 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     }
 
     /**
+     * Time to wait for socket write timeout.
+     *
+     * @return Timeout.
+     */
+    protected long awaitForSocketWriteTimeout() {
+        return 5000;
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testBlockListener() throws Exception {
@@ -245,7 +254,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
             @Override public boolean apply() {
                 return lsnr0.rcvCnt.get() >= expMsgs && lsnr1.rcvCnt.get() >= expMsgs;
             }
-        }, 5000);
+        }, awaitForSocketWriteTimeout());
 
         assertEquals(expMsgs, lsnr0.rcvCnt.get());
         assertEquals(expMsgs, lsnr1.rcvCnt.get());
@@ -301,7 +310,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                         @Override public boolean apply() {
                             return ses0.closeTime() != 0;
                         }
-                    }, 5000);
+                    }, awaitForSocketWriteTimeout());
 
                     assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
 
@@ -411,7 +420,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                         @Override public boolean apply() {
                             return ses0.closeTime() != 0;
                         }
-                    }, 5000);
+                    }, awaitForSocketWriteTimeout());
 
                     assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
 
@@ -423,7 +432,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                         public boolean apply() {
                             return ses1.closeTime() != 0;
                         }
-                    }, 5000);
+                    }, awaitForSocketWriteTimeout());
 
                     assertTrue("Failed to wait for session close", ses1.closeTime() != 0);
 
@@ -528,7 +537,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                         @Override public boolean apply() {
                             return ses0.closeTime() != 0;
                         }
-                    }, 5000);
+                    }, awaitForSocketWriteTimeout());
 
                     assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
 
@@ -592,7 +601,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                 return !sessions.isEmpty();
             }
-        }, 5000);
+        }, awaitForSocketWriteTimeout());
 
         Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
 

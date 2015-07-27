@@ -244,7 +244,7 @@
                             </group>
                             <group>
                                 <title>Security APIs</title>
-                                <packages>org.apache.ignite.plugin.security</packages>
+                                <packages>org.apache.ignite.plugin.security:org.apache.ignite.ssl</packages>
                             </group>
                             <group>
                                 <title>MXBeans classes</title>
@@ -673,6 +673,8 @@
                                         <exclude>**/*.dylib</exclude><!--bin-files-->
                                         <exclude>**/*.gar</exclude><!--bin-files-->
                                         <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
+                                        <exclude>**/*readme*.txt</exclude><!--readme files-->
+                                        <exclude>**/*README*.txt</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
                                         <exclude>**/pom-installed.xml</exclude><!--tmp-files-->

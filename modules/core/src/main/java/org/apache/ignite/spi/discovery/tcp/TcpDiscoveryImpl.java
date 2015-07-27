@@ -131,6 +131,13 @@ abstract class TcpDiscoveryImpl {
     }
 
     /**
+     * Called when a chunk of data is received from a remote node.
+     */
+    protected void onDataReceived() {
+        // No-op
+    }
+
+    /**
      * @param log Logger.
      */
     public abstract void dumpDebugInfo(IgniteLogger log);
@@ -273,10 +280,10 @@ abstract class TcpDiscoveryImpl {
      * maximum acknowledgement timeout, {@code false} otherwise.
      */
     protected boolean checkAckTimeout(long ackTimeout) {
-        if (ackTimeout > spi.maxAckTimeout) {
+        if (ackTimeout > spi.getMaxAckTimeout()) {
             LT.warn(log, null, "Acknowledgement timeout is greater than maximum acknowledgement timeout " +
                 "(consider increasing 'maxAckTimeout' configuration property) " +
-                "[ackTimeout=" + ackTimeout + ", maxAckTimeout=" + spi.maxAckTimeout + ']');
+                "[ackTimeout=" + ackTimeout + ", maxAckTimeout=" + spi.getMaxAckTimeout() + ']');
 
             return false;
         }

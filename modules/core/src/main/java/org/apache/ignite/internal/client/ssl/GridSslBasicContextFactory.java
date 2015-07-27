@@ -19,6 +19,7 @@ package org.apache.ignite.internal.client.ssl;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import javax.cache.configuration.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.security.*;
@@ -37,7 +38,9 @@ import java.util.*;
  *     factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
  *     // Rest of initialization.
  * </pre>
+ * @deprecated Use {@link Factory} instead.
  */
+@Deprecated
 public class GridSslBasicContextFactory implements GridSslContextFactory {
     /** Default key store type. */
     public static final String DFLT_STORE_TYPE = "JKS";

@@ -17,12 +17,20 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import net.sf.json.*;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.testframework.*;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.regex.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
@@ -31,7 +39,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * Tests for Jetty REST protocol.
  */
 @SuppressWarnings("unchecked")
-abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorSelfTest {
+public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorSelfTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;
 
@@ -40,6 +48,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
         System.setProperty(IGNITE_JETTY_PORT, Integer.toString(restPort()));
 
         super.beforeTestsStarted();
+
+        initCache();
     }
 
     /** {@inheritDoc} */
@@ -47,6 +57,11 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
         super.afterTestsStopped();
 
         System.clearProperty(IGNITE_JETTY_PORT);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        grid(0).cache(null).removeAll();
     }
 
     /** {@inheritDoc} */
@@ -65,7 +80,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @return Returned content.
      * @throws Exception If failed.
      */
-    private String content(Map<String, String> params) throws Exception {
+    protected String content(Map<String, String> params) throws Exception {
         String addr = "http://" + LOC_HOST + ":" + restPort() + "/ignite?";
 
         for (Map.Entry<String, String> e : params.entrySet())
@@ -115,6 +130,18 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     }
 
     /**
+     * @param err Error.
+     * @return Regex pattern for JSON.
+     */
+    private String errorPattern(String err) {
+        return "\\{" +
+            "\\\"error\\\":\\\"" + err + "\\\"\\," +
+            "\\\"response\\\":null\\," +
+            "\\\"sessionToken\\\":\\\"\\\"," +
+            "\\\"successStatus\\\":" + 1 + "\\}";
+    }
+
+    /**
      * @param res Response.
      * @param success Success flag.
      * @return Regex pattern for JSON.
@@ -132,6 +159,19 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @return Regex pattern for JSON.
      */
     private String cacheBulkPattern(String res, boolean success) {
+        return "\\{\\\"affinityNodeId\\\":\\\"\\\"\\," +
+            "\\\"error\\\":\\\"\\\"\\," +
+            "\\\"response\\\":" + res + "\\," +
+            "\\\"sessionToken\\\":\\\"\\\"," +
+            "\\\"successStatus\\\":" + (success ? 0 : 1) + "\\}";
+    }
+
+    /**
+     * @param res Response.
+     * @param success Success flag.
+     * @return Regex pattern for JSON.
+     */
+    private String cacheBulkPattern(int res, boolean success) {
         return "\\{\\\"affinityNodeId\\\":\\\"\\\"\\," +
             "\\\"error\\\":\\\"\\\"\\," +
             "\\\"response\\\":" + res + "\\," +
@@ -208,7 +248,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     public void testGet() throws Exception {
         jcache().put("getKey", "getVal");
 
-        String ret = content(F.asMap("cmd", "get", "key", "getKey"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET.key(), "key", "getKey"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -221,11 +261,64 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     /**
      * @throws Exception If failed.
      */
+    public void testCacheSize() throws Exception {
+        jcache().removeAll();
+
+        jcache().put("getKey", "getVal");
+
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_SIZE.key()));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        info("Size command result: " + ret);
+
+        jsonEquals(ret, cacheBulkPattern(1, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteName() throws Exception {
+        String ret = content(F.asMap("cmd", GridRestCommand.NAME.key()));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        info("Name command result: " + ret);
+
+        jsonEquals(ret, stringPattern(getTestGridName(0), true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetOrCreateCache() throws Exception {
+        String ret = content(F.asMap("cmd", GridRestCommand.GET_OR_CREATE_CACHE.key(), "cacheName", "testCache"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        info("Name command result: " + ret);
+
+        grid(0).cache("testCache").put("1", "1");
+
+        ret = content(F.asMap("cmd", GridRestCommand.DESTROY_CACHE.key(), "cacheName", "testCache"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        assertNull(grid(0).cache("testCache"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetAll() throws Exception {
         jcache().put("getKey1", "getVal1");
         jcache().put("getKey2", "getVal2");
 
-        String ret = content(F.asMap("cmd", "getall", "k1", "getKey1", "k2", "getKey2"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET_ALL.key(), "k1", "getKey1", "k2", "getKey2"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -235,14 +328,192 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
         jsonEquals(ret,
             // getKey[12] is used since the order is not determined.
             cacheBulkPattern("\\{\\\"getKey[12]\\\":\\\"getVal[12]\\\"\\,\\\"getKey[12]\\\":\\\"getVal[12]\\\"\\}",
-            true));
+                true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIncorrectPut() throws Exception {
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT.key(), "key", "key0"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+        jsonEquals(ret, errorPattern("Failed to find mandatory parameter in request: val"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContainsKey() throws Exception {
+        grid(0).cache(null).put("key0", "val0");
+
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CONTAINS_KEY.key(), "key", "key0"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, cachePattern(true, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContainesKeys() throws Exception {
+        grid(0).cache(null).put("key0", "val0");
+        grid(0).cache(null).put("key1", "val1");
+
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CONTAINS_KEYS.key(),
+            "k1", "key0", "k2", "key1"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, cacheBulkPattern(true, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAndPut() throws Exception {
+        grid(0).cache(null).put("key0", "val0");
+
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET_AND_PUT.key(), "key", "key0", "val", "val1"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, cachePattern("val0", true));
+
+        assertEquals("val1", grid(0).cache(null).get("key0"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAndPutIfAbsent() throws Exception {
+        grid(0).cache(null).put("key0", "val0");
+
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT.key(),
+            "key", "key0", "val", "val1"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, cachePattern("val0", true));
+
+        assertEquals("val0", grid(0).cache(null).get("key0"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutIfAbsent2() throws Exception {
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT_IF_ABSENT.key(),
+            "key", "key0", "val", "val1"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, cachePattern(true, true));
+
+        assertEquals("val1", grid(0).cache(null).get("key0"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoveValue() throws Exception {
+        grid(0).cache(null).put("key0", "val0");
+
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REMOVE_VALUE.key(),
+            "key", "key0", "val", "val1"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, cachePattern(false, true));
+
+        assertEquals("val0", grid(0).cache(null).get("key0"));
+
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_REMOVE_VALUE.key(),
+            "key", "key0", "val", "val0"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, cachePattern(true, true));
+
+        assertNull(grid(0).cache(null).get("key0"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAndRemove() throws Exception {
+        grid(0).cache(null).put("key0", "val0");
+
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET_AND_REMOVE.key(),
+            "key", "key0"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, cachePattern("val0", true));
+
+        assertNull(grid(0).cache(null).get("key0"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReplaceValue() throws Exception {
+        grid(0).cache(null).put("key0", "val0");
+
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REPLACE_VALUE.key(),
+            "key", "key0", "val", "val1", "val2", "val2"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, cachePattern(false, true));
+
+        assertEquals("val0", grid(0).cache(null).get("key0"));
+
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_REPLACE_VALUE.key(),
+            "key", "key0", "val", "val1", "val2", "val0"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, cachePattern(true, true));
+
+        assertEquals("val1", grid(0).cache(null).get("key0"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAndReplace() throws Exception {
+        grid(0).cache(null).put("key0", "val0");
+
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET_AND_REPLACE.key(),
+            "key", "key0", "val", "val1"));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, cachePattern("val0", true));
+
+        assertEquals("val1", grid(0).cache(null).get("key0"));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        String ret = content(F.asMap("cmd", "put", "key", "putKey", "val", "putVal"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT.key(),
+            "key", "putKey", "val", "putVal"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -258,7 +529,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @throws Exception If failed.
      */
     public void testPutWithExpiration() throws Exception {
-        String ret = content(F.asMap("cmd", "put", "key", "putKey", "val", "putVal", "exp", "2000"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT.key(),
+            "key", "putKey", "val", "putVal", "exp", "2000"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -278,7 +550,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     public void testAdd() throws Exception {
         jcache().put("addKey1", "addVal1");
 
-        String ret = content(F.asMap("cmd", "add", "key", "addKey2", "val", "addVal2"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_ADD.key(),
+            "key", "addKey2", "val", "addVal2"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -293,7 +566,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @throws Exception If failed.
      */
     public void testAddWithExpiration() throws Exception {
-        String ret = content(F.asMap("cmd", "add", "key", "addKey", "val", "addVal", "exp", "2000"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_ADD.key(),
+            "key", "addKey", "val", "addVal", "exp", "2000"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -311,7 +585,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @throws Exception If failed.
      */
     public void testPutAll() throws Exception {
-        String ret = content(F.asMap("cmd", "putall", "k1", "putKey1", "k2", "putKey2",
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT_ALL.key(),
+            "k1", "putKey1", "k2", "putKey2",
             "v1", "putVal1", "v2", "putVal2"));
 
         assertNotNull(ret);
@@ -333,7 +608,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         assertEquals("rmvVal", jcache().localPeek("rmvKey", CachePeekMode.ONHEAP));
 
-        String ret = content(F.asMap("cmd", "rmv", "key", "rmvKey"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REMOVE.key(),
+            "key", "rmvKey"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -359,7 +635,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
         assertEquals("rmvVal3", jcache().localPeek("rmvKey3", CachePeekMode.ONHEAP));
         assertEquals("rmvVal4", jcache().localPeek("rmvKey4", CachePeekMode.ONHEAP));
 
-        String ret = content(F.asMap("cmd", "rmvall", "k1", "rmvKey1", "k2", "rmvKey2"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REMOVE_ALL.key(),
+            "k1", "rmvKey1", "k2", "rmvKey2"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -373,7 +650,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         jsonEquals(ret, cacheBulkPattern(true, true));
 
-        ret = content(F.asMap("cmd", "rmvall"));
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_REMOVE_ALL.key()));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -397,7 +674,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         assertEquals("casOldVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
 
-        String ret = content(F.asMap("cmd", "cas", "key", "casKey", "val2", "casOldVal", "val1", "casNewVal"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CAS.key(),
+            "key", "casKey", "val2", "casOldVal", "val1", "casNewVal"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -419,7 +697,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         assertEquals("repOldVal", jcache().localPeek("repKey", CachePeekMode.ONHEAP));
 
-        String ret = content(F.asMap("cmd", "rep", "key", "repKey", "val", "repVal"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REPLACE.key(),
+            "key", "repKey", "val", "repVal"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -439,7 +718,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         assertEquals("replaceVal", jcache().get("replaceKey"));
 
-        String ret = content(F.asMap("cmd", "rep", "key", "replaceKey", "val", "replaceValNew", "exp", "2000"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REPLACE.key(),
+            "key", "replaceKey", "val", "replaceValNew", "exp", "2000"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -460,7 +740,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     public void testAppend() throws Exception {
         jcache().put("appendKey", "appendVal");
 
-        String ret = content(F.asMap("cmd", "append", "key", "appendKey", "val", "_suffix"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_APPEND.key(),
+            "key", "appendKey", "val", "_suffix"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -476,7 +757,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     public void testPrepend() throws Exception {
         jcache().put("prependKey", "prependVal");
 
-        String ret = content(F.asMap("cmd", "prepend", "key", "prependKey", "val", "prefix_"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PREPEND.key(),
+            "key", "prependKey", "val", "prefix_"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -490,7 +772,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @throws Exception If failed.
      */
     public void testIncrement() throws Exception {
-        String ret = content(F.asMap("cmd", "incr", "key", "incrKey", "init", "2", "delta", "3"));
+        String ret = content(F.asMap("cmd", GridRestCommand.ATOMIC_INCREMENT.key(),
+            "key", "incrKey", "init", "2", "delta", "3"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -499,7 +782,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         assertEquals(5, grid(0).atomicLong("incrKey", 0, true).get());
 
-        ret = content(F.asMap("cmd", "incr", "key", "incrKey", "delta", "10"));
+        ret = content(F.asMap("cmd", GridRestCommand.ATOMIC_INCREMENT.key(), "key", "incrKey", "delta", "10"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -513,7 +796,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @throws Exception If failed.
      */
     public void testDecrement() throws Exception {
-        String ret = content(F.asMap("cmd", "decr", "key", "decrKey", "init", "15", "delta", "10"));
+        String ret = content(F.asMap("cmd", GridRestCommand.ATOMIC_DECREMENT.key(),
+            "key", "decrKey", "init", "15", "delta", "10"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -522,7 +806,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         assertEquals(5, grid(0).atomicLong("decrKey", 0, true).get());
 
-        ret = content(F.asMap("cmd", "decr", "key", "decrKey", "delta", "3"));
+        ret = content(F.asMap("cmd", GridRestCommand.ATOMIC_DECREMENT.key(),
+            "key", "decrKey", "delta", "3"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -540,7 +825,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         assertEquals("casOldVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
 
-        String ret = content(F.asMap("cmd", "cas", "key", "casKey", "val2", "casOldVal"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CAS.key(),
+            "key", "casKey", "val2", "casOldVal"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -558,7 +844,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     public void testPutIfAbsent() throws Exception {
         assertNull(jcache().localPeek("casKey", CachePeekMode.ONHEAP));
 
-        String ret = content(F.asMap("cmd", "cas", "key", "casKey", "val1", "casNewVal"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CAS.key(),
+            "key", "casKey", "val1", "casNewVal"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -578,7 +865,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         assertEquals("casVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
 
-        String ret = content(F.asMap("cmd", "cas", "key", "casKey"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CAS.key(), "key", "casKey"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -594,7 +881,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @throws Exception If failed.
      */
     public void testMetrics() throws Exception {
-        String ret = content(F.asMap("cmd", "cache"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_METRICS.key()));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -608,7 +895,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @throws Exception If failed.
      */
     public void testTopology() throws Exception {
-        String ret = content(F.asMap("cmd", "top", "attr", "false", "mtr", "false"));
+        String ret = content(F.asMap("cmd", GridRestCommand.TOPOLOGY.key(), "attr", "false", "mtr", "false"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -622,7 +909,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @throws Exception If failed.
      */
     public void testNode() throws Exception {
-        String ret = content(F.asMap("cmd", "node", "attr", "true", "mtr", "true", "id",
+        String ret = content(F.asMap("cmd", GridRestCommand.NODE.key(), "attr", "true", "mtr", "true", "id",
             grid(0).localNode().id().toString()));
 
         assertNotNull(ret);
@@ -632,7 +919,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         jsonEquals(ret, pattern("\\{.+\\}", true));
 
-        ret = content(F.asMap("cmd", "node", "attr", "false", "mtr", "false", "ip", LOC_HOST));
+        ret = content(F.asMap("cmd", GridRestCommand.NODE.key(), "attr", "false", "mtr", "false", "ip", LOC_HOST));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -641,7 +928,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         jsonEquals(ret, pattern("\\{.+\\}", true));
 
-        ret = content(F.asMap("cmd", "node", "attr", "false", "mtr", "false", "ip", LOC_HOST, "id",
+        ret = content(F.asMap("cmd", GridRestCommand.NODE.key(), "attr", "false", "mtr", "false", "ip", LOC_HOST, "id",
             UUID.randomUUID().toString()));
 
         assertNotNull(ret);
@@ -660,7 +947,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @throws Exception If failed.
      */
     public void testExe() throws Exception {
-        String ret = content(F.asMap("cmd", "exe"));
+        String ret = content(F.asMap("cmd", GridRestCommand.EXE.key()));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -670,7 +957,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
         jsonEquals(ret, pattern("null", false));
 
         // Attempt to execute unknown task (UNKNOWN_TASK) will result in exception on server.
-        ret = content(F.asMap("cmd", "exe", "name", "UNKNOWN_TASK"));
+        ret = content(F.asMap("cmd", GridRestCommand.EXE.key(), "name", "UNKNOWN_TASK"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -682,7 +969,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
         grid(0).compute().localDeployTask(TestTask1.class, TestTask1.class.getClassLoader());
         grid(0).compute().localDeployTask(TestTask2.class, TestTask2.class.getClassLoader());
 
-        ret = content(F.asMap("cmd", "exe", "name", TestTask1.class.getName()));
+        ret = content(F.asMap("cmd", GridRestCommand.EXE.key(), "name", TestTask1.class.getName()));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -691,7 +978,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         jsonEquals(ret, pattern("\\{.+\\}", true));
 
-        ret = content(F.asMap("cmd", "exe", "name", TestTask2.class.getName()));
+        ret = content(F.asMap("cmd", GridRestCommand.EXE.key(), "name", TestTask2.class.getName()));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -700,7 +987,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         jsonEquals(ret, pattern("\\{.+" + TestTask2.RES + ".+\\}", true));
 
-        ret = content(F.asMap("cmd", "res"));
+        ret = content(F.asMap("cmd", GridRestCommand.RESULT.key()));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -714,7 +1001,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @throws Exception If failed.
      */
     public void testVersion() throws Exception {
-        String ret = content(F.asMap("cmd", "version"));
+        String ret = content(F.asMap("cmd", GridRestCommand.VERSION.key()));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -722,5 +1009,303 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
         jsonEquals(ret, stringPattern(".+", true));
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryArgs() throws Exception {
+        String qry = "salary > ? and salary <= ?";
+
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SQL_QUERY.key());
+        params.put("type", "Person");
+        params.put("psz", "10");
+        params.put("cacheName", "person");
+        params.put("qry", URLEncoder.encode(qry));
+        params.put("arg1", "1000");
+        params.put("arg2", "2000");
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        List items = (List)((Map)json.get("response")).get("items");
+
+        assertEquals(2, items.size());
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQuery() throws Exception {
+        grid(0).cache(null).put("1", "1");
+        grid(0).cache(null).put("2", "2");
+        grid(0).cache(null).put("3", "3");
+
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SQL_QUERY.key());
+        params.put("type", "String");
+        params.put("psz", "1");
+        params.put("qry", URLEncoder.encode("select * from String"));
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        Integer qryId = (Integer)((Map)json.get("response")).get("queryId");
+
+        assertNotNull(qryId);
+
+        ret = content(F.asMap("cmd", GridRestCommand.FETCH_SQL_QUERY.key(),
+            "psz", "1", "qryId", String.valueOf(qryId)));
+
+        json = JSONObject.fromObject(ret);
+
+        Integer qryId0 = (Integer)((Map)json.get("response")).get("queryId");
+
+        Boolean last = (Boolean)((Map)json.get("response")).get("last");
+
+        assertEquals(qryId0, qryId);
+        assertFalse(last);
+
+        ret = content(F.asMap("cmd", GridRestCommand.FETCH_SQL_QUERY.key(),
+            "psz", "1", "qryId", String.valueOf(qryId)));
+
+        json = JSONObject.fromObject(ret);
+
+        qryId0 = (Integer)((Map)json.get("response")).get("queryId");
+
+        last = (Boolean)((Map)json.get("response")).get("last");
+
+        assertEquals(qryId0, qryId);
+        assertTrue(last);
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSqlFieldsQuery() throws Exception {
+        String qry = "select concat(firstName, ' ', lastName) from Person";
+
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SQL_FIELDS_QUERY.key());
+        params.put("psz", "10");
+        params.put("cacheName", "person");
+        params.put("qry", URLEncoder.encode(qry));
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        List items = (List)((Map)json.get("response")).get("items");
+
+        assertEquals(4, items.size());
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSqlFieldsMetadataQuery() throws Exception {
+        String qry = "select firstName, lastName from Person";
+
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SQL_FIELDS_QUERY.key());
+        params.put("psz", "10");
+        params.put("cacheName", "person");
+        params.put("qry", URLEncoder.encode(qry));
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        List items = (List)((Map)json.get("response")).get("items");
+
+        List meta = (List)((Map)json.get("response")).get("fieldsMetadata");
+
+        assertEquals(4, items.size());
+
+        assertEquals(2, meta.size());
+
+        JSONObject o = (JSONObject)meta.get(0);
+
+        assertEquals("FIRSTNAME", o.get("fieldName"));
+        assertEquals("java.lang.String", o.get("fieldTypeName"));
+        assertEquals("person", o.get("schemaName"));
+        assertEquals("PERSON", o.get("typeName"));
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryClose() throws Exception {
+        String qry = "salary > ? and salary <= ?";
+
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SQL_QUERY.key());
+        params.put("type", "Person");
+        params.put("psz", "1");
+        params.put("cacheName", "person");
+        params.put("qry", URLEncoder.encode(qry));
+        params.put("arg1", "1000");
+        params.put("arg2", "2000");
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        List items = (List)((Map)json.get("response")).get("items");
+
+        assertEquals(1, items.size());
+
+        assertTrue(queryCursorFound());
+
+        Integer qryId = (Integer)((Map)json.get("response")).get("queryId");
+
+        assertNotNull(qryId);
+
+        ret = content(F.asMap("cmd", GridRestCommand.CLOSE_SQL_QUERY.key(),
+            "cacheName", "person", "qryId", String.valueOf(qryId)));
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        assertFalse(queryCursorFound());
+    }
+
     protected abstract String signature() throws Exception;
+
+    /**
+     * @return True if any query cursor is available.
+     */
+    private boolean queryCursorFound() {
+        boolean found = false;
+
+        for (int i = 0; i < GRID_CNT; ++i) {
+            Map<GridRestCommand, GridRestCommandHandler> handlers =
+                GridTestUtils.getFieldValue(grid(i).context().rest(), "handlers");
+
+            GridRestCommandHandler qryHnd = handlers.get(GridRestCommand.CLOSE_SQL_QUERY);
+
+            ConcurrentHashMap<Long, Iterator> its = GridTestUtils.getFieldValue(qryHnd, "qryCurs");
+
+            found |= its.size() != 0;
+        }
+
+        return found;
+    }
+
+    /**
+     * Init cache.
+     */
+    private void initCache() {
+        CacheConfiguration<Integer, Person> personCacheCfg = new CacheConfiguration<>("person");
+        personCacheCfg.setIndexedTypes(Integer.class, Person.class);
+
+        IgniteCache<Integer, Person> personCache = grid(0).getOrCreateCache(personCacheCfg);
+
+        personCache.clear();
+
+        Person p1 = new Person("John", "Doe", 2000);
+        Person p2 = new Person("Jane", "Doe", 1000);
+        Person p3 = new Person("John", "Smith", 1000);
+        Person p4 = new Person("Jane", "Smith", 2000);
+
+        personCache.put(p1.getId(), p1);
+        personCache.put(p2.getId(), p2);
+        personCache.put(p3.getId(), p3);
+        personCache.put(p4.getId(), p4);
+
+        SqlQuery<Integer, Person> qry = new SqlQuery<>(Person.class, "salary > ? and salary <= ?");
+
+        qry.setArgs(1000, 2000);
+
+        assertEquals(2, personCache.query(qry).getAll().size());
+    }
+
+    /**
+     * Person class.
+     */
+    public static class Person implements Serializable {
+        /** Person id. */
+        private static int PERSON_ID = 0;
+
+        /** Person ID (indexed). */
+        @QuerySqlField(index = true)
+        private Integer id;
+
+        /** First name (not-indexed). */
+        @QuerySqlField
+        private String firstName;
+
+        /** Last name (not indexed). */
+        @QuerySqlField
+        private String lastName;
+
+        /** Salary (indexed). */
+        @QuerySqlField(index = true)
+        private double salary;
+
+        /**
+         * @param firstName First name.
+         * @param lastName Last name.
+         * @param salary Salary.
+         */
+        Person(String firstName, String lastName, double salary) {
+            id = PERSON_ID++;
+
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.salary = salary;
+        }
+
+        /**
+         * @return First name.
+         */
+        public String getFirstName() {
+            return firstName;
+        }
+
+        /**
+         * @return Last name.
+         */
+        public String getLastName() {
+            return lastName;
+        }
+        /**
+         * @return Salary.
+         */
+        public double getSalary() {
+
+            return salary;
+        }
+
+        /**
+         * @return Id.
+         */
+        public Integer getId() {
+            return id;
+        }
+    }
 }

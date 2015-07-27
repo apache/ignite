@@ -52,6 +52,9 @@ public class IgniteMock implements Ignite {
     /** */
     private final String home;
 
+    /** */
+    private IgniteConfiguration staticCfg;
+
     /**
      * Mock values
      *
@@ -84,6 +87,9 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public IgniteConfiguration configuration() {
+        if (staticCfg != null)
+            return staticCfg;
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setMarshaller(marshaller);
@@ -297,5 +303,12 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
         return null;
+    }
+
+    /**
+     * @param staticCfg Configuration.
+     */
+    public void setStaticCfg(IgniteConfiguration staticCfg) {
+        this.staticCfg = staticCfg;
     }
 }

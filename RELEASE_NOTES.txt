@@ -1,6 +1,11 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 1.4
+---------------------------------------
+* Added support for log4j2.
+
+
 Apache Ignite In-Memory Data Fabric 1.3
 ---------------------------------------
 
