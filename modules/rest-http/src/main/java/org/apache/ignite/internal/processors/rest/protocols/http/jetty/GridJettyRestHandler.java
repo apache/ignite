@@ -323,11 +323,21 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @throws IgniteCheckedException If creation failed.
      */
     @Nullable private GridRestRequest createRequest(GridRestCommand cmd,
-        Map<String, Object> params,
-        ServletRequest req) throws IgniteCheckedException {
+        Map<String, Object> params, HttpServletRequest req) throws IgniteCheckedException {
         GridRestRequest restReq;
 
         switch (cmd) {
+            case GET_OR_CREATE_CACHE:
+            case DESTROY_CACHE: {
+                GridRestCacheRequest restReq0 = new GridRestCacheRequest();
+
+                restReq0.cacheName((String)params.get("cacheName"));
+
+                restReq = restReq0;
+
+                break;
+            }
+
             case ATOMIC_DECREMENT:
             case ATOMIC_INCREMENT: {
                 DataStructuresRequest restReq0 = new DataStructuresRequest();
@@ -341,15 +351,25 @@ public class GridJettyRestHandler extends AbstractHandler {
                 break;
             }
 
+            case CACHE_CONTAINS_KEY:
+            case CACHE_CONTAINS_KEYS:
             case CACHE_GET:
             case CACHE_GET_ALL:
+            case CACHE_GET_AND_PUT:
+            case CACHE_GET_AND_REPLACE:
+            case CACHE_PUT_IF_ABSENT:
+            case CACHE_GET_AND_PUT_IF_ABSENT:
             case CACHE_PUT:
             case CACHE_PUT_ALL:
             case CACHE_REMOVE:
+            case CACHE_REMOVE_VALUE:
+            case CACHE_REPLACE_VALUE:
+            case CACHE_GET_AND_REMOVE:
             case CACHE_REMOVE_ALL:
             case CACHE_ADD:
             case CACHE_CAS:
             case CACHE_METRICS:
+            case CACHE_SIZE:
             case CACHE_REPLACE:
             case CACHE_APPEND:
             case CACHE_PREPEND: {
@@ -370,7 +390,8 @@ public class GridJettyRestHandler extends AbstractHandler {
                 restReq0.cacheFlags(intValue("cacheFlags", params, 0));
                 restReq0.ttl(longValue("exp", params, null));
 
-                if (cmd == CACHE_GET_ALL || cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL) {
+                if (cmd == CACHE_GET_ALL || cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL ||
+                    cmd == CACHE_CONTAINS_KEYS) {
                     List<Object> keys = values("k", params);
                     List<Object> vals = values("v", params);
 
@@ -441,8 +462,66 @@ public class GridJettyRestHandler extends AbstractHandler {
                 break;
             }
 
+            case NAME:
             case VERSION: {
                 restReq = new GridRestRequest();
+
+                break;
+            }
+
+            case EXECUTE_SQL_QUERY:
+            case EXECUTE_SQL_FIELDS_QUERY: {
+                RestSqlQueryRequest restReq0 = new RestSqlQueryRequest();
+
+                restReq0.sqlQuery((String) params.get("qry"));
+
+                restReq0.arguments(values("arg", params).toArray());
+
+                restReq0.typeName((String) params.get("type"));
+
+                String psz = (String) params.get("psz");
+
+                if (psz != null)
+                    restReq0.pageSize(Integer.parseInt(psz));
+
+                restReq0.cacheName((String)params.get("cacheName"));
+
+                restReq = restReq0;
+
+                break;
+            }
+
+            case FETCH_SQL_QUERY: {
+                RestSqlQueryRequest restReq0 = new RestSqlQueryRequest();
+
+                String qryId = (String) params.get("qryId");
+
+                if (qryId != null)
+                    restReq0.queryId(Long.parseLong(qryId));
+
+                String psz = (String) params.get("psz");
+
+                if (psz != null)
+                    restReq0.pageSize(Integer.parseInt(psz));
+
+                restReq0.cacheName((String)params.get("cacheName"));
+
+                restReq = restReq0;
+
+                break;
+            }
+
+            case CLOSE_SQL_QUERY: {
+                RestSqlQueryRequest restReq0 = new RestSqlQueryRequest();
+
+                String qryId = (String) params.get("qryId");
+
+                if (qryId != null)
+                    restReq0.queryId(Long.parseLong(qryId));
+
+                restReq0.cacheName((String)params.get("cacheName"));
+
+                restReq = restReq0;
 
                 break;
             }
