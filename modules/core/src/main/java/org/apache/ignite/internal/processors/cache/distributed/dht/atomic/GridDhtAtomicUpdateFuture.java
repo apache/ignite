@@ -90,6 +90,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     /** */
     private boolean waitForExchange;
 
+    /** */
+    private boolean mapped;
+
     /**
      * @param cctx Cache context.
      * @param completionCb Callback to invoke when future is completed.
@@ -349,36 +352,50 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                 GridAtomicMappingKey mappingKey = e.getKey();
                 GridDhtAtomicUpdateRequest req = e.getValue();
 
+                UUID nodeId = mappingKey.nodeId();
+                int part = mappingKey.partition();
+
+                assert !nodeId.equals(cctx.localNodeId());
+
                 try {
                     if (log.isDebugEnabled())
-                        log.debug("Sending DHT atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
+                        log.debug("Sending DHT atomic update request [nodeId=" + nodeId + ", req=" + req + ']');
 
-                    if (mappingKey.partition() >= 0) {
-                        Object topic = CU.partitionMessageTopic(cctx, mappingKey.partition(), false);
+                    if (part >= 0) {
+                        Object topic = CU.partitionMessageTopic(cctx, part, false);
 
-                        cctx.io().sendOrderedMessage(mappingKey.nodeId(), topic, req, cctx.ioPolicy(),
+                        cctx.io().sendOrderedMessage(nodeId, topic, req, cctx.ioPolicy(),
                             2 * cctx.gridConfig().getNetworkTimeout());
                     }
                     else {
-                        assert mappingKey.partition() == -1;
+                        assert part == -1;
 
-                        cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
+                        cctx.io().send(nodeId, req, cctx.ioPolicy());
                     }
                 }
                 catch (ClusterTopologyCheckedException ignored) {
                     U.warn(log, "Failed to send update request to backup node because it left grid: " +
-                        req.nodeId());
+                        nodeId);
 
                     mappings.remove(mappingKey);
                 }
                 catch (IgniteCheckedException ex) {
                     U.error(log, "Failed to send update request to backup node (did node leave the grid?): "
-                        + req.nodeId(), ex);
+                        + nodeId, ex);
 
                     mappings.remove(mappingKey);
                 }
             }
         }
+
+        mapped = true;
+    }
+
+    /**
+     * On mapped callback.
+     */
+    public void onMapped() {
+        assert mapped;
 
         checkComplete();
 

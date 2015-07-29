@@ -1178,6 +1178,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 e.printStackTrace();
             }
             finally {
+                if (dhtFut != null && !remap)
+                    dhtFut.map();
+
                 if (locked != null)
                     unlockEntries(locked, req.topologyVersion());
 
@@ -1221,8 +1224,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         else {
             // If there are backups, map backup update future.
             if (dhtFut != null)
-                dhtFut.map();
-                // Otherwise, complete the call.
+                dhtFut.onMapped();
+            // Otherwise, complete the call.
             else
                 completionCb.apply(req, res);
         }
@@ -2523,7 +2526,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
         catch (ClusterTopologyCheckedException ignored) {
             U.warn(log, "Failed to send DHT atomic update response to node because it left grid: " +
-                req.nodeId());
+                nodeId);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send DHT atomic update response (did node leave grid?) [nodeId=" + nodeId +

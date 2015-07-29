@@ -44,7 +44,12 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
-    /** Node ID. */
+    /**
+     * Node ID.
+     *
+     * @deprecated Not used anymore, but removal will break compatibility.
+     */
+    @Deprecated
     private UUID nodeId;
 
     /** Future version. */
