@@ -1764,7 +1764,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             dhtFut.addNearWriteEntries(filteredReaders,
                                 entry,
                                 updRes.newValue(),
-                                null,
+                                op == TRANSFORM ? req.entryProcessor(i) : null,
                                 updRes.newTtl(),
                                 updRes.conflictExpireTime());
                     }
