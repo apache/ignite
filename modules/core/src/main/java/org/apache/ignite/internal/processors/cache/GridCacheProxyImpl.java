@@ -221,8 +221,8 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     @Override public <K1, V1> GridCacheProxyImpl<K1, V1> keepPortable() {
         if (opCtx != null && opCtx.isKeepPortable())
             return (GridCacheProxyImpl<K1, V1>)this;
-        
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, 
+
+        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx,
             (GridCacheAdapter<K1, V1>)delegate,
             opCtx != null ? opCtx.keepPortable() : new CacheOperationContext(false, null, true, null, false));
     }
@@ -1486,25 +1486,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(ctx);
-        out.writeObject(delegate);
-        out.writeObject(opCtx);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ctx = (GridCacheContext<K, V>)in.readObject();
-        delegate = (GridCacheAdapter<K, V>)in.readObject();
-        opCtx = (CacheOperationContext)in.readObject();
-
-        gate = ctx.gate();
-
-        aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public ExpiryPolicy expiry() {
         return opCtx != null ? opCtx.expiry() : null;
     }
@@ -1520,6 +1501,25 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         finally {
             gate.leave(prev);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(ctx);
+        out.writeObject(delegate);
+        out.writeObject(opCtx);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings({"unchecked"})
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        ctx = (GridCacheContext<K, V>)in.readObject();
+        delegate = (IgniteInternalCache<K, V>)in.readObject();
+        opCtx = (CacheOperationContext)in.readObject();
+
+        gate = ctx.gate();
+
+        aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 
     /** {@inheritDoc} */
