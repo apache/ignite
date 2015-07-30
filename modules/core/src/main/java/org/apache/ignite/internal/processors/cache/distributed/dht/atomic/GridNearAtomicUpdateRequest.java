@@ -135,9 +135,6 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /** */
     private boolean clientReq;
 
-    /** Partition. */
-    private int part;
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -165,7 +162,6 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip write-through to a persistent storage.
      * @param clientReq Client node request flag.
-     * @param part Partition.
      */
     public GridNearAtomicUpdateRequest(
         int cacheId,
@@ -184,8 +180,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         @Nullable UUID subjId,
         int taskNameHash,
         boolean skipStore,
-        boolean clientReq,
-        int part
+        boolean clientReq
     ) {
         this.cacheId = cacheId;
         this.nodeId = nodeId;
@@ -205,7 +200,6 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
         this.clientReq = clientReq;
-        this.part = part;
 
         keys = new ArrayList<>();
     }
@@ -318,13 +312,6 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
      */
     public boolean skipStore() {
         return skipStore;
-    }
-
-    /**
-     * @return Partition.
-     */
-    public int partition() {
-        return part;
     }
 
     /**
@@ -679,8 +666,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeInt("part", part))
-                    return false;
+//                if (!writer.writeInt("part", part))
+//                    return false;
 
                 writer.incrementState();
 
@@ -863,10 +850,10 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 16:
-                part = reader.readInt("part");
-
-                if (!reader.isLastRead())
-                    return false;
+//                part = reader.readInt("part");
+//
+//                if (!reader.isLastRead())
+//                    return false;
 
                 reader.incrementState();
 

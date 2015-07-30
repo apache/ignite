@@ -394,8 +394,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
                     ctx.cacheId(),
                     nodeId,
-                    req.futureVersion(),
-                    req.partition());
+                    req.futureVersion());
 
                 res.error(req.classError());
 

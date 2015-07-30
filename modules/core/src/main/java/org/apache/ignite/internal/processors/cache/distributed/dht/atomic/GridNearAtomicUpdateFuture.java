@@ -90,7 +90,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /** Mappings. */
     @GridToStringInclude
-    private ConcurrentMap<GridAtomicMappingKey, GridNearAtomicUpdateRequest> mappings;
+    private ConcurrentMap<UUID, GridNearAtomicUpdateRequest> mappings;
 
     /** Error. */
     private volatile CachePartialUpdateCheckedException err;
@@ -246,11 +246,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /** {@inheritDoc} */
     @Override public Collection<? extends ClusterNode> nodes() {
-        return F.view(F.viewReadOnly(mappings.keySet(), new C1<GridAtomicMappingKey, ClusterNode>() {
-            @Override public ClusterNode apply(GridAtomicMappingKey mappingKey) {
-                return cctx.kernalContext().discovery().node(mappingKey.nodeId());
-            }
-        }), F.notNull());
+        return F.view(F.viewReadOnly(mappings.keySet(), U.id2Node(cctx.kernalContext())), F.notNull());
     }
 
     /**
@@ -287,24 +283,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             return false;
         }
 
-        Collection<GridAtomicMappingKey> mappingKeys = new ArrayList<>(mappings.size());
-        Collection<KeyCacheObject> failedKeys = new ArrayList<>();
+        GridNearAtomicUpdateRequest req = mappings.get(nodeId);
 
-        for (Map.Entry<GridAtomicMappingKey, GridNearAtomicUpdateRequest> e : mappings.entrySet()) {
-            if (e.getKey().nodeId().equals(nodeId)) {
-                mappingKeys.add(e.getKey());
+        if (req != null) {
+            addFailedKeys(req.keys(), new ClusterTopologyCheckedException("Primary node left grid before response is " +
+                "received: " + nodeId));
 
-                failedKeys.addAll(e.getValue().keys());
-            }
-        }
-
-        if (!mappingKeys.isEmpty()) {
-            if (!failedKeys.isEmpty())
-                addFailedKeys(failedKeys, new ClusterTopologyCheckedException("Primary node left grid before " +
-                    "response is received: " + nodeId));
-
-            for (GridAtomicMappingKey key : mappingKeys)
-                mappings.remove(key);
+            mappings.remove(nodeId);
 
             checkComplete();
 
@@ -544,9 +529,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             }
         }
         else {
-            GridAtomicMappingKey mappingKey = new GridAtomicMappingKey(nodeId, res.partition());
-
-            GridNearAtomicUpdateRequest req = mappings.get(mappingKey);
+            GridNearAtomicUpdateRequest req = mappings.get(nodeId);
 
             if (req != null) { // req can be null if onResult is being processed concurrently with onNodeLeft.
                 updateNear(req, res);
@@ -564,7 +547,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                         opRes = ret;
                 }
 
-                mappings.remove(mappingKey);
+                mappings.remove(nodeId);
             }
 
             checkComplete();
@@ -780,11 +763,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             if (op != TRANSFORM)
                 val = cctx.toCacheObject(val);
 
-            int part = cctx.affinity().partition(cacheKey);
-            ClusterNode primary = cctx.affinity().primary(part, topVer);
-
-            if (!ccfg.isAtomicOrderedUpdates())
-                part = -1;
+            ClusterNode primary = cctx.affinity().primary(cacheKey, topVer);
 
             if (primary == null) {
                 onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
@@ -810,8 +789,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 subjId,
                 taskNameHash,
                 skipStore,
-                cctx.kernalContext().clientNode(),
-                part);
+                cctx.kernalContext().clientNode());
 
             req.addUpdateEntry(cacheKey,
                 val,
@@ -827,7 +805,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             }
 
             // Optimize mapping for single key.
-            mapSingle(new GridAtomicMappingKey(primary.id(), part), req);
+            mapSingle(primary.id(), req);
 
             return;
         }
@@ -847,18 +825,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         if (conflictRmvVals != null)
             conflictRmvValsIt = conflictRmvVals.iterator();
 
-        Map<GridAtomicMappingKey, GridNearAtomicUpdateRequest> pendingMappings = new HashMap<>(topNodes.size(), 1.0f);
+        Map<UUID, GridNearAtomicUpdateRequest> pendingMappings = new HashMap<>(topNodes.size(), 1.0f);
 
         // Must do this in synchronized block because we need to atomically remove and add mapping.
         // Otherwise checkComplete() may see empty intermediate state.
         synchronized (this) {
-            if (oldNodeId != null) {
-                // TODO: IGNITE-104 - Try to avoid iteration.
-                for (Map.Entry<GridAtomicMappingKey, GridNearAtomicUpdateRequest> e : mappings.entrySet()) {
-                    if (e.getKey().nodeId().equals(oldNodeId))
-                        mappings.remove(e.getKey());
-                }
-            }
+            if (oldNodeId != null)
+                removeMapping(oldNodeId);
 
             // For fastMap mode wait for all responses before remapping.
             if (remap && fastMap && !mappings.isEmpty()) {
@@ -928,10 +901,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 if (op != TRANSFORM)
                     val = cctx.toCacheObject(val);
 
-                T2<Integer, Collection<ClusterNode>> t = mapKey(cacheKey, topVer, fastMap);
-
-                int part = ccfg.isAtomicOrderedUpdates() ? t.get1() : -1;
-                Collection<ClusterNode> affNodes = t.get2();
+                Collection<ClusterNode> affNodes = mapKey(cacheKey, topVer, fastMap);
 
                 if (affNodes.isEmpty()) {
                     onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
@@ -952,9 +922,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                     UUID nodeId = affNode.id();
 
-                    GridAtomicMappingKey mappingKey = new GridAtomicMappingKey(nodeId, part);
-
-                    GridNearAtomicUpdateRequest mapped = pendingMappings.get(mappingKey);
+                    GridNearAtomicUpdateRequest mapped = pendingMappings.get(nodeId);
 
                     if (mapped == null) {
                         mapped = new GridNearAtomicUpdateRequest(
@@ -974,12 +942,11 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                             subjId,
                             taskNameHash,
                             skipStore,
-                            cctx.kernalContext().clientNode(),
-                            part);
+                            cctx.kernalContext().clientNode());
 
-                        pendingMappings.put(mappingKey, mapped);
+                        pendingMappings.put(nodeId, mapped);
 
-                        GridNearAtomicUpdateRequest old = mappings.put(mappingKey, mapped);
+                        GridNearAtomicUpdateRequest old = mappings.put(nodeId, mapped);
 
                         assert old == null || (old != null && remap) :
                             "Invalid mapping state [old=" + old + ", remap=" + remap + ']';
@@ -997,7 +964,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         }
 
         if ((single == null || single) && pendingMappings.size() == 1) {
-            Map.Entry<GridAtomicMappingKey, GridNearAtomicUpdateRequest> entry = F.first(pendingMappings.entrySet());
+            Map.Entry<UUID, GridNearAtomicUpdateRequest> entry = F.first(pendingMappings.entrySet());
 
             single = true;
 
@@ -1020,35 +987,31 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * @param fastMap Flag indicating whether mapping is performed for fast-circuit update.
      * @return Collection of nodes to which key is mapped.
      */
-    private T2<Integer, Collection<ClusterNode>> mapKey(
+    private Collection<ClusterNode> mapKey(
         KeyCacheObject key,
         AffinityTopologyVersion topVer,
         boolean fastMap
     ) {
         GridCacheAffinityManager affMgr = cctx.affinity();
 
-        int part = affMgr.partition(key);
-
         // If we can send updates in parallel - do it.
-        Collection<ClusterNode> nodes = fastMap ?
-            cctx.topology().nodes(part, topVer) :
-            Collections.singletonList(affMgr.primary(part, topVer));
-
-        return new T2<>(part, nodes);
+        return fastMap ?
+            cctx.topology().nodes(affMgr.partition(key), topVer) :
+            Collections.singletonList(affMgr.primary(key, topVer));
     }
 
     /**
      * Maps future to single node.
      *
-     * @param mappingKey Mapping key.
+     * @param nodeId Node ID.
      * @param req Request.
      */
-    private void mapSingle(GridAtomicMappingKey mappingKey, GridNearAtomicUpdateRequest req) {
-        singleNodeId = mappingKey.nodeId();
+    private void mapSingle(UUID nodeId, GridNearAtomicUpdateRequest req) {
+        singleNodeId = nodeId;
         singleReq = req;
 
-        if (cctx.localNodeId().equals(mappingKey.nodeId())) {
-            cache.updateAllAsyncInternal(mappingKey.nodeId(), req,
+        if (cctx.localNodeId().equals(nodeId)) {
+            cache.updateAllAsyncInternal(nodeId, req,
                 new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
                     @Override public void apply(GridNearAtomicUpdateRequest req,
                         GridNearAtomicUpdateResponse res) {
@@ -1063,7 +1026,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 if (log.isDebugEnabled())
                     log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
-                sendRequest(mappingKey, req);
+                cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
 
                 if (syncMode == FULL_ASYNC && cctx.config().getAtomicWriteOrderMode() == PRIMARY)
                     onDone(new GridCacheReturn(cctx, true, null, true));
@@ -1079,37 +1042,34 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      *
      * @param mappings Mappings to send.
      */
-    private void doUpdate(Map<GridAtomicMappingKey, GridNearAtomicUpdateRequest> mappings) {
+    private void doUpdate(Map<UUID, GridNearAtomicUpdateRequest> mappings) {
         UUID locNodeId = cctx.localNodeId();
 
-        Collection<GridNearAtomicUpdateRequest> locUpdates = null;
+        GridNearAtomicUpdateRequest locUpdate = null;
 
         // Send messages to remote nodes first, then run local update.
-        for (Map.Entry<GridAtomicMappingKey, GridNearAtomicUpdateRequest> e : mappings.entrySet()) {
-            GridAtomicMappingKey mappingKey = e.getKey();
-            GridNearAtomicUpdateRequest req = e.getValue();
-
+        for (GridNearAtomicUpdateRequest req : mappings.values()) {
             if (locNodeId.equals(req.nodeId())) {
-                if (locUpdates == null)
-                    locUpdates = new ArrayList<>(mappings.size());
+                assert locUpdate == null : "Cannot have more than one local mapping [locUpdate=" + locUpdate +
+                    ", req=" + req + ']';
 
-                locUpdates.add(req);
+                locUpdate = req;
             }
             else {
                 try {
                     if (log.isDebugEnabled())
                         log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
-                    sendRequest(mappingKey, req);
+                    cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
                 }
-                catch (IgniteCheckedException ex) {
-                    addFailedKeys(req.keys(), ex);
+                catch (IgniteCheckedException e) {
+                    addFailedKeys(req.keys(), e);
 
-                    removeMapping(mappingKey);
+                    removeMapping(req.nodeId());
                 }
 
                 if (syncMode == PRIMARY_SYNC && !req.hasPrimary())
-                    removeMapping(mappingKey);
+                    removeMapping(req.nodeId());
             }
         }
 
@@ -1117,52 +1077,28 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             // In FULL_ASYNC mode always return (null, true).
             opRes = new GridCacheReturn(cctx, true, null, true);
 
-        if (locUpdates != null) {
-            for (GridNearAtomicUpdateRequest locUpdate : locUpdates) {
-                cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
-                    new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
-                        @Override public void apply(GridNearAtomicUpdateRequest req,
-                            GridNearAtomicUpdateResponse res) {
-                            assert res.futureVersion().equals(futVer) : futVer;
+        if (locUpdate != null) {
+            cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
+                new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
+                    @Override public void apply(GridNearAtomicUpdateRequest req,
+                        GridNearAtomicUpdateResponse res) {
+                        assert res.futureVersion().equals(futVer) : futVer;
 
-                            onResult(res.nodeId(), res);
-                        }
-                    });
-            }
+                        onResult(res.nodeId(), res);
+                    }
+                });
         }
 
         checkComplete();
     }
 
     /**
-     * Sends request.
-     *
-     * @param mappingKey Mapping key.
-     * @param req Update request.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private void sendRequest(GridAtomicMappingKey mappingKey, GridNearAtomicUpdateRequest req)
-        throws IgniteCheckedException {
-        if (mappingKey.partition() >= 0) {
-            Object topic = CU.partitionMessageTopic(cctx, mappingKey.partition(), true);
-
-            cctx.io().sendOrderedMessage(mappingKey.nodeId(), topic, req, cctx.ioPolicy(),
-                2 * cctx.gridConfig().getNetworkTimeout());
-        }
-        else {
-            assert mappingKey.partition() == -1;
-
-            cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
-        }
-    }
-
-    /**
      * Removes mapping from future mappings map.
      *
-     * @param mappingKey Mapping key.
+     * @param nodeId Node ID to remove mapping for.
      */
-    private void removeMapping(GridAtomicMappingKey mappingKey) {
-        mappings.remove(mappingKey);
+    private void removeMapping(UUID nodeId) {
+        mappings.remove(nodeId);
     }
 
     /**

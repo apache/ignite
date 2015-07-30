@@ -185,11 +185,10 @@ public enum GridTopic {
     /**
      * @param id1 ID1.
      * @param id2 ID2.
-     * @param id3 ID3.
      * @return Grid message topic with specified IDs.
      */
-    public Object topic(int id1, int id2, byte id3) {
-        return new T9(this, id1, id2, id3);
+    public Object topic(int id1, int id2) {
+        return new T9(this, id1, id2);
     }
 
     /**
@@ -782,9 +781,6 @@ public enum GridTopic {
         /** */
         private int id2;
 
-        /** */
-        private int id3;
-
         /**
          * No-arg constructor needed for {@link Serializable}.
          */
@@ -796,13 +792,11 @@ public enum GridTopic {
          * @param topic Topic.
          * @param id1 ID1.
          * @param id2 ID2.
-         * @param id3 ID3.
          */
-        private T9(GridTopic topic, int id1, int id2, byte id3) {
+        private T9(GridTopic topic, int id1, int id2) {
             this.topic = topic;
             this.id1 = id1;
             this.id2 = id2;
-            this.id3 = id3;
         }
 
         /** {@inheritDoc} */
@@ -811,7 +805,6 @@ public enum GridTopic {
 
             res += 31 * res + id1;
             res += 31 * res + id2;
-            res += 31 * res + id3;
 
             return res;
         }
@@ -821,7 +814,7 @@ public enum GridTopic {
             if (obj.getClass() == T9.class) {
                 T9 that = (T9)obj;
 
-                return topic == that.topic && id1 == that.id1 && id2 == that.id2 && id3 == that.id3;
+                return topic == that.topic && id1 == that.id1 && id2 == that.id2;
             }
 
             return false;
@@ -832,7 +825,6 @@ public enum GridTopic {
             out.writeByte(topic.ordinal());
             out.writeInt(id1);
             out.writeInt(id2);
-            out.writeByte(id3);
         }
 
         /** {@inheritDoc} */
@@ -840,7 +832,6 @@ public enum GridTopic {
             topic = fromOrdinal(in.readByte());
             id1 = in.readInt();
             id2 = in.readInt();
-            id3 = in.readByte();
         }
 
         /** {@inheritDoc} */
