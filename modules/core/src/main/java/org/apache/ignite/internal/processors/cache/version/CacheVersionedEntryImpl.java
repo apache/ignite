@@ -48,8 +48,6 @@ public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> implemen
     public CacheVersionedEntryImpl(K key, V val, GridCacheVersion ver) {
         super(key, val);
 
-        assert val == null;
-
         this.ver = ver;
     }
 

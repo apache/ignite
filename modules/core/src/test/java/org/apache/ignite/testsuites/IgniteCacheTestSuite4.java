@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.integration.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 
 /**
  * Test suite.
@@ -152,6 +153,18 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheReadThroughLocalRestartSelfTest.class);
         suite.addTestSuite(CacheReadThroughLocalAtomicRestartSelfTest.class);
         suite.addTestSuite(CacheReadThroughAtomicRestartSelfTest.class);
+
+        // Versioned entry tests
+        suite.addTestSuite(CacheVersionedEntryLocalAtomicSelfTest.class);
+        suite.addTestSuite(CacheVersionedEntryLocalTransactionalSelfTest.class);
+        suite.addTestSuite(CacheVersionedEntryPartitionedAtomicSelfTest.class);
+        suite.addTestSuite(CacheVersionedEntryPartitionedTransactionalSelfTest.class);
+        suite.addTestSuite(CacheVersionedEntryPartitionedAtomicOffHeapSelfTest.class);
+        suite.addTestSuite(CacheVersionedEntryPartitionedTransactionalOffHeapSelfTest.class);
+        suite.addTestSuite(CacheVersionedEntryReplicatedAtomicSelfTest.class);
+        suite.addTestSuite(CacheVersionedEntryReplicatedTransactionalSelfTest.class);
+        suite.addTestSuite(CacheVersionedEntryReplicatedAtomicOffHeapSelfTest.class);
+        suite.addTestSuite(CacheVersionedEntryPartitionedTransactionalOffHeapSelfTest.class);
 
         return suite;
     }
