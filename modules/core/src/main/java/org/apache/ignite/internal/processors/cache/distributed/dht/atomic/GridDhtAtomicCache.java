@@ -1164,7 +1164,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             }
             catch (GridCacheEntryRemovedException e) {
-                assert false : "Entry should not become obsolete while holding lock.";
+                assert !ctx.deferredDelete() : "Entry should not become obsolete while holding lock.";
 
                 e.printStackTrace();
             }
