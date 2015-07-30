@@ -90,9 +90,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     /** */
     private boolean waitForExchange;
 
-    /** */
-    private boolean mapped;
-
     /**
      * @param cctx Cache context.
      * @param completionCb Callback to invoke when future is completed.
@@ -384,15 +381,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                 }
             }
         }
-
-        mapped = true;
-    }
-
-    /**
-     * On mapped callback.
-     */
-    public void onMapped() {
-        assert mapped;
 
         checkComplete();
 

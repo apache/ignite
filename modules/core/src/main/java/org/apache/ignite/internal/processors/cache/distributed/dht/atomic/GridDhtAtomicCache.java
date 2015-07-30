@@ -1182,9 +1182,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 e.printStackTrace();
             }
             finally {
-                if (dhtFut != null && !remap)
-                    dhtFut.map();
-
                 if (locked != null)
                     unlockEntries(locked, req.topologyVersion());
 
@@ -1228,7 +1225,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         else {
             // If there are backups, map backup update future.
             if (dhtFut != null)
-                dhtFut.onMapped();
+                dhtFut.map();
             // Otherwise, complete the call.
             else
                 completionCb.apply(req, res);
