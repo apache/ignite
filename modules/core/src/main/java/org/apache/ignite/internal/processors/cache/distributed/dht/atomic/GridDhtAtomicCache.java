@@ -1767,7 +1767,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             dhtFut.addNearWriteEntries(filteredReaders,
                                 entry,
                                 updRes.newValue(),
-                                op == TRANSFORM ? req.entryProcessor(i) : null,
                                 updRes.newTtl(),
                                 updRes.conflictExpireTime());
                     }
@@ -2034,13 +2033,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
 
                     if (dhtFut != null) {
-                        EntryProcessor<Object, Object, Object> entryProcessor =
-                            entryProcessorMap == null ? null : entryProcessorMap.get(entry.key());
-
                         if (!batchRes.readersOnly())
                             dhtFut.addWriteEntry(entry,
                                 writeVal,
-                                entryProcessor,
+                                entryProcessorMap == null ? null : entryProcessorMap.get(entry.key()),
                                 updRes.newTtl(),
                                 CU.EXPIRE_TIME_CALCULATE,
                                 null);
@@ -2049,7 +2045,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             dhtFut.addNearWriteEntries(filteredReaders,
                                 entry,
                                 writeVal,
-                                entryProcessor,
                                 updRes.newTtl(),
                                 CU.EXPIRE_TIME_CALCULATE);
                     }
@@ -2465,7 +2460,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
-                            /*check version*/!req.forceTransformBackups(),
+                            /*check version*/op != TRANSFORM || !req.forceTransformBackups(),
                             req.topologyVersion(),
                             CU.empty0(),
                             replicate ? DR_BACKUP : DR_NONE,
