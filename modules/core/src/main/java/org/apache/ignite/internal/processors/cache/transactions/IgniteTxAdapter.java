@@ -1230,7 +1230,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
                 for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                     CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(txEntry.context(),
-                        txEntry.key(), key, cacheVal, val);
+                        txEntry.key(), key, cacheVal, val, txEntry.cached().version());
 
                     try {
                         EntryProcessor<Object, Object, Object> processor = t.get1();

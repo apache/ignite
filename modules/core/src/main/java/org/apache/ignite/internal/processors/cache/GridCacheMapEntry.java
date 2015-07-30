@@ -609,16 +609,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Nullable IgniteCacheExpiryPolicy expirePlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return innerGet0(tx,
-            readSwap,
-            readThrough,
-            evt,
-            unmarshal,
-            updateMetrics,
-            tmp,
-            subjId,
-            transformClo,
-            taskName,
-            expirePlc);
+                         readSwap,
+                         readThrough,
+                         evt,
+                         unmarshal,
+                         updateMetrics,
+                         tmp,
+                         subjId,
+                         transformClo,
+                         taskName,
+                         expirePlc);
     }
 
     /** {@inheritDoc} */
@@ -1385,7 +1385,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 assert entryProcessor != null;
 
-                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(cctx, key, old);
+                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(cctx, key, old, this.ver);
 
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);
@@ -1653,7 +1653,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                         oldVal = rawGetOrUnmarshalUnlocked(true);
 
-                        CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(cctx, key, oldVal);
+                        CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(cctx, key, oldVal, this.ver);
 
                         try {
                             Object computed = entryProcessor.process(entry, invokeArgs);
@@ -1878,7 +1878,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
 
-                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(cctx, key, oldVal);
+                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(cctx, key, oldVal, this.ver);
 
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);
@@ -3531,7 +3531,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 val = rawGetOrUnmarshal(false);
 
             return new CacheEntryImpl<>(key.<K>value(cctx.cacheObjectContext(), false),
-                CU.<V>value(val, cctx, false));
+                CU.<V>value(val, cctx, false), ver);
         }
         catch (GridCacheFilterFailedException ignored) {
             throw new IgniteException("Should never happen.");
@@ -3591,6 +3591,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public synchronized <K, V> CacheVersionedEntryImpl<K, V> wrapVersioned() {
         return new CacheVersionedEntryImpl<>(key.<K>value(cctx.cacheObjectContext(), false), null, ver);
+    }
+
+    /**
+     * @return Entry which holds key, value and version.
+     */
+    private synchronized <K, V> CacheVersionedEntryImpl<K, V> wrapVersionedWithValue() {
+        V val = this.val == null ? null : this.val.<V>value(cctx.cacheObjectContext(), false);
+
+        return new CacheVersionedEntryImpl<>(key.<K>value(cctx.cacheObjectContext(), false), val, ver);
     }
 
     /** {@inheritDoc} */
@@ -4020,7 +4029,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 return (T)wrapEviction();
 
             if (cls.isAssignableFrom(CacheVersionedEntryImpl.class))
-                return (T)wrapVersioned();
+                return cls == CacheVersionedEntryImpl.class ? (T)wrapVersioned() : (T)wrapVersionedWithValue();
+
+            if (cls.isAssignableFrom(GridCacheVersion.class))
+                return (T)ver;
 
             if (cls.isAssignableFrom(GridCacheMapEntry.this.getClass()))
                 return (T)GridCacheMapEntry.this;

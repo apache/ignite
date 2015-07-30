@@ -3691,7 +3691,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     try {
                         V val = localPeek(lazyEntry.getKey(), CachePeekModes.ONHEAP_ONLY, expiryPlc);
 
-                        return new CacheEntryImpl<>(lazyEntry.getKey(), val);
+                        GridCacheVersion ver = null;
+
+                        try {
+                            ver = lazyEntry.unwrap(GridCacheVersion.class);
+                        }
+                        catch (IllegalArgumentException e) {
+                            log.error("Failed to unwrap entry version information", e);
+                        }
+
+                        return new CacheEntryImpl<>(lazyEntry.getKey(), val, ver);
                     }
                     catch (IgniteCheckedException e) {
                         throw CU.convertToCacheException(e);
@@ -4614,7 +4623,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 val0 = ctx.unwrapPortableIfNeeded(val0, true);
             }
 
-            return new CacheEntryImpl<>((K)key0, (V)val0);
+            return new CacheEntryImpl<>((K)key0, (V)val0, entry.version());
         }
         catch (GridCacheFilterFailedException ignore) {
             assert false;
