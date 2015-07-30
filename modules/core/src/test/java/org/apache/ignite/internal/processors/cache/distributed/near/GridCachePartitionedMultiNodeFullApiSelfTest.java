@@ -306,7 +306,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < gridCount(); i++) {
             IgniteEx ignite = grid(i);
 
-            if (!ignite.configuration().isClientMode()) {
+            if (!Boolean.TRUE.equals(ignite.configuration().isClientMode())) {
                 if (ignite0 == null)
                     ignite0 = ignite;
                 else if (ignite1 == null)
@@ -361,7 +361,9 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         boolean nearEnabled = cache2.getConfiguration(CacheConfiguration.class).getNearConfiguration() != null;
 
         assertEquals(nearEnabled ? 2 : 0, cache2.localSize(NEAR));
-        assertEquals(0, cache2.localSize(CachePeekMode.ALL) - cache2.localSize(NEAR));
+
+        if (cacheMode() != REPLICATED)
+            assertEquals(0, cache2.localSize(CachePeekMode.ALL) - cache2.localSize(NEAR));
     }
 
     /**
