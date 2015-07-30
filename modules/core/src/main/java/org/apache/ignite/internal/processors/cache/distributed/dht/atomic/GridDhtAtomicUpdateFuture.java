@@ -73,7 +73,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
     /** Mappings. */
     @GridToStringInclude
-    private ConcurrentMap<GridAtomicMappingKey, GridDhtAtomicUpdateRequest> mappings = new ConcurrentHashMap8<>();
+    private ConcurrentMap<MappingKey, GridDhtAtomicUpdateRequest> mappings = new ConcurrentHashMap8<>();
 
     /** Entries with readers. */
     private Map<KeyCacheObject, GridDhtCacheEntry> nearReadersEntries;
@@ -142,8 +142,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
     /** {@inheritDoc} */
     @Override public Collection<? extends ClusterNode> nodes() {
-        return F.view(F.viewReadOnly(mappings.keySet(), new C1<GridAtomicMappingKey, ClusterNode>() {
-            @Override public ClusterNode apply(GridAtomicMappingKey mappingKey) {
+        return F.view(F.viewReadOnly(mappings.keySet(), new C1<MappingKey, ClusterNode>() {
+            @Override public ClusterNode apply(MappingKey mappingKey) {
                 return cctx.kernalContext().discovery().node(mappingKey.nodeId());
             }
         }), F.notNull());
@@ -154,15 +154,15 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         if (log.isDebugEnabled())
             log.debug("Processing node leave event [fut=" + this + ", nodeId=" + nodeId + ']');
 
-        Collection<GridAtomicMappingKey> mappingKeys = new ArrayList<>(mappings.size());
+        Collection<MappingKey> mappingKeys = new ArrayList<>(mappings.size());
 
-        for (GridAtomicMappingKey mappingKey : mappings.keySet()) {
+        for (MappingKey mappingKey : mappings.keySet()) {
             if (mappingKey.nodeId().equals(nodeId))
                 mappingKeys.add(mappingKey);
         }
 
         if (!mappingKeys.isEmpty()) {
-            for (GridAtomicMappingKey mappingKey : mappingKeys)
+            for (MappingKey mappingKey : mappingKeys)
                 mappings.remove(mappingKey);
 
             checkComplete();
@@ -234,7 +234,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         for (ClusterNode node : dhtNodes) {
             UUID nodeId = node.id();
 
-            GridAtomicMappingKey mappingKey = new GridAtomicMappingKey(nodeId, part);
+            MappingKey mappingKey = new MappingKey(nodeId, part);
 
             if (!nodeId.equals(cctx.localNodeId())) {
                 GridDhtAtomicUpdateRequest updateReq = mappings.get(mappingKey);
@@ -287,7 +287,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         int part = cctx.config().isAtomicOrderedUpdates() ? entry.partition() : -1;
 
         for (UUID nodeId : readers) {
-            GridAtomicMappingKey mappingKey = new GridAtomicMappingKey(nodeId, part);
+            MappingKey mappingKey = new MappingKey(nodeId, part);
 
             GridDhtAtomicUpdateRequest updateReq = mappings.get(mappingKey);
 
@@ -345,8 +345,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      */
     public void map() {
         if (!mappings.isEmpty()) {
-            for (Map.Entry<GridAtomicMappingKey, GridDhtAtomicUpdateRequest> e : mappings.entrySet()) {
-                GridAtomicMappingKey mappingKey = e.getKey();
+            for (Map.Entry<MappingKey, GridDhtAtomicUpdateRequest> e : mappings.entrySet()) {
+                MappingKey mappingKey = e.getKey();
                 GridDhtAtomicUpdateRequest req = e.getValue();
 
                 UUID nodeId = mappingKey.nodeId();
@@ -429,7 +429,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
             }
         }
 
-        mappings.remove(new GridAtomicMappingKey(nodeId, updateRes.partition()));
+        mappings.remove(new MappingKey(nodeId, updateRes.partition()));
 
         checkComplete();
     }
@@ -445,7 +445,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
             log.debug("Received deferred DHT atomic update future result [nodeId=" + nodeId + ']');
 
         for (Integer part : res.partitions())
-            mappings.remove(new GridAtomicMappingKey(nodeId, part));
+            mappings.remove(new MappingKey(nodeId, part));
 
         checkComplete();
     }
@@ -468,4 +468,67 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         return S.toString(GridDhtAtomicUpdateFuture.class, this);
     }
 
+    /**
+     * Mapping Key.
+     */
+    private static class MappingKey {
+        /** Node ID. */
+        private final UUID nodeId;
+
+        /** Partition. */
+        private final int part;
+
+        /**
+         * @param nodeId Node ID.
+         * @param part Partition.
+         */
+        MappingKey(UUID nodeId, int part) {
+            assert nodeId != null;
+            assert part >= -1 : part;
+
+            this.nodeId = nodeId;
+            this.part = part;
+        }
+
+        /**
+         * @return Node ID.
+         */
+        UUID nodeId() {
+            return nodeId;
+        }
+
+        /**
+         * @return Partition.
+         */
+        int partition() {
+            return part;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            MappingKey key = (MappingKey)o;
+
+            return nodeId.equals(key.nodeId) && part == key.part;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = nodeId.hashCode();
+
+            res = 31 * res + part;
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MappingKey.class, this);
+        }
+    }
 }
