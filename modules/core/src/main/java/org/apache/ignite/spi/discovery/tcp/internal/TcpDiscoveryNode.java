@@ -89,6 +89,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @GridToStringExclude
     private volatile long lastUpdateTime = U.currentTimeMillis();
 
+    /** The most recent time when a data chunk was received from a node. */
+    private volatile long lastDataReceivedTime = U.currentTimeMillis();
+
     /** Metrics provider (transient). */
     @GridToStringExclude
     private DiscoveryMetricsProvider metricsProvider;
@@ -387,6 +390,24 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         assert lastUpdateTime > 0;
 
         this.lastUpdateTime = lastUpdateTime;
+    }
+
+    /**
+     * Gets the last time a node received a data chunk from a remote node.
+     *
+     * @return Time in milliseconds.
+     */
+    public long lastDataReceivedTime() {
+        return lastDataReceivedTime;
+    }
+
+    /**
+     * Sets the last time a node receive a data chunk from a remote node in a topology.
+     *
+     * @param lastDataReceivedTime Time in milliseconds.
+     */
+    public void lastDataReceivedTime(long lastDataReceivedTime) {
+        this.lastDataReceivedTime = lastDataReceivedTime;
     }
 
     /**

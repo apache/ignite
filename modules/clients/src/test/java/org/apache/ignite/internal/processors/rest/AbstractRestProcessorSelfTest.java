@@ -84,6 +84,7 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setStatisticsEnabled(true);
+        ccfg.setIndexedTypes(String.class, String.class);
 
         cfg.setCacheConfiguration(ccfg);
 

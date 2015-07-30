@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery;
 
 import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.*;
@@ -43,10 +44,16 @@ import static org.apache.ignite.lang.IgniteProductVersion.*;
 @SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
 public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends GridSpiAbstractTest<T> {
     /** */
-    private static final List<DiscoverySpi> spis = new ArrayList<>();
+    private static final String HTTP_ADAPTOR_MBEAN_NAME = "mbeanAdaptor:protocol=HTTP";
+
+    /** */
+    protected static final List<DiscoverySpi> spis = new ArrayList<>();
 
     /** */
     private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
+
+    /** */
+    private static final List<HttpAdaptor> httpAdaptors = new ArrayList<>();
 
     /** */
     private static long spiStartTime;
@@ -56,6 +63,9 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
     /** */
     private static final String TEST_ATTRIBUTE_NAME = "test.node.prop";
+
+    /** */
+    protected boolean useSsl = false;
 
     /** */
     protected AbstractDiscoverySelfTest() {
@@ -394,6 +404,15 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
                 GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "spiCtx", ctx);
 
+                if (useSsl) {
+                    IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");
+
+                    IgniteConfiguration cfg = ignite.configuration()
+                        .setSslContextFactory(GridTestUtils.sslFactory());
+
+                    ignite.setStaticCfg(cfg);
+                }
+
                 spi.spiStart(getTestGridName() + i);
 
                 spis.add(spi);
@@ -424,9 +443,11 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         adaptor.setPort(Integer.valueOf(GridTestProperties.getProperty("discovery.mbeanserver.selftest.baseport")) +
             idx);
 
-        srv.registerMBean(adaptor, new ObjectName("mbeanAdaptor:protocol=HTTP"));
+        srv.registerMBean(adaptor, new ObjectName(HTTP_ADAPTOR_MBEAN_NAME));
 
         adaptor.start();
+
+        httpAdaptors.add(adaptor);
 
         return srv;
     }
@@ -442,12 +463,21 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
             spi.spiStop();
         }
 
-        for (IgniteTestResources rscrs : spiRsrcs)
+        for (IgniteTestResources rscrs : spiRsrcs) {
+            MBeanServer mBeanServer = rscrs.getMBeanServer();
+
+            mBeanServer.unregisterMBean(new ObjectName(HTTP_ADAPTOR_MBEAN_NAME));
+
             rscrs.stopThreads();
+        }
+
+        for (HttpAdaptor adaptor : httpAdaptors)
+            adaptor.stop();
 
         // Clear.
         spis.clear();
         spiRsrcs.clear();
+        httpAdaptors.clear();
 
         spiStartTime = 0;
 

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.stream.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
@@ -413,6 +414,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     @Override public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
         A.notEmpty(entries, "entries");
 
+        checkSecurityPermission(SecurityPermission.CACHE_PUT);
+
         enterBusy();
 
         try {
@@ -519,6 +522,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> addData(K key, V val) {
         A.notNull(key, "key");
+
+        if (val == null)
+            checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
+        else
+            checkSecurityPermission(SecurityPermission.CACHE_PUT);
 
         KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, key, true);
         CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
@@ -977,6 +985,20 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** {@inheritDoc} */
     @Override public int compareTo(Delayed o) {
         return nextFlushTime() > ((DataStreamerImpl)o).nextFlushTime() ? 1 : -1;
+    }
+
+    /**
+     * Check permissions for streaming.
+     *
+     * @param perm Security permission.
+     * @throws org.apache.ignite.plugin.security.SecurityException If permissions are not enough for streaming.
+     */
+    private void checkSecurityPermission(SecurityPermission perm)
+        throws org.apache.ignite.plugin.security.SecurityException{
+        if (!ctx.security().enabled())
+            return;
+
+        ctx.security().authorize(cacheName, perm, null);
     }
 
     /**
