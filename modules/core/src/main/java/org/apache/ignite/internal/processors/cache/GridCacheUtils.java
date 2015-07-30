@@ -1733,15 +1733,4 @@ public class GridCacheUtils {
             }
         };
     }
-
-    /**
-     * @param ctx Cache context.
-     * @param part Partition.
-     * @return Per-partition message topic.
-     */
-    public static Object partitionMessageTopic(GridCacheContext ctx, int part) {
-        assert part >= 0;
-
-        return TOPIC_CACHE.topic(ctx.cacheId(), part);
-    }
 }

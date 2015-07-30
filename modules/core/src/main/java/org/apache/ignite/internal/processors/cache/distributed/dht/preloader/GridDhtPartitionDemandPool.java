@@ -599,7 +599,7 @@ public class GridDhtPartitionDemandPool {
             if (isCancelled() || topologyChanged())
                 return missed;
 
-            cctx.io().addOrderedHandler(d.topic(), new CI2<UUID, GridDhtPartitionSupplyMessage>() {
+            cctx.io().addPerTopicHandler(d.topic(), new CI2<UUID, GridDhtPartitionSupplyMessage>() {
                 @Override public void apply(UUID nodeId, GridDhtPartitionSupplyMessage msg) {
                     addMessage(new SupplyMessage(nodeId, msg));
                 }
@@ -641,7 +641,7 @@ public class GridDhtPartitionDemandPool {
                                 growTimeout(timeout);
 
                                 // Ordered listener was removed if timeout expired.
-                                cctx.io().removeOrderedHandler(d.topic());
+                                cctx.io().removePerTopicHandler(d.topic());
 
                                 // Must create copy to be able to work with IO manager thread local caches.
                                 d = new GridDhtPartitionDemandMessage(d, remaining);
@@ -650,13 +650,12 @@ public class GridDhtPartitionDemandPool {
                                 d.topic(topic(++cntr));
 
                                 // Create new ordered listener.
-                                cctx.io().addOrderedHandler(d.topic(),
-                                    new CI2<UUID, GridDhtPartitionSupplyMessage>() {
-                                        @Override public void apply(UUID nodeId,
-                                            GridDhtPartitionSupplyMessage msg) {
+                                cctx.io().addPerTopicHandler(d.topic(), new CI2<UUID, GridDhtPartitionSupplyMessage>() {
+                                        @Override public void apply(UUID nodeId, GridDhtPartitionSupplyMessage msg) {
                                             addMessage(new SupplyMessage(nodeId, msg));
                                         }
-                                    });
+                                    }
+                                );
 
                                 // Resend message with larger timeout.
                                 retry = true;
@@ -800,7 +799,7 @@ public class GridDhtPartitionDemandPool {
                 return missed;
             }
             finally {
-                cctx.io().removeOrderedHandler(d.topic());
+                cctx.io().removePerTopicHandler(d.topic());
             }
         }
 
