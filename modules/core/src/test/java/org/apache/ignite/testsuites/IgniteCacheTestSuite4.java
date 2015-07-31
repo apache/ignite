@@ -164,7 +164,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheVersionedEntryReplicatedAtomicSelfTest.class);
         suite.addTestSuite(CacheVersionedEntryReplicatedTransactionalSelfTest.class);
         suite.addTestSuite(CacheVersionedEntryReplicatedAtomicOffHeapSelfTest.class);
-        suite.addTestSuite(CacheVersionedEntryPartitionedTransactionalOffHeapSelfTest.class);
+        suite.addTestSuite(CacheVersionedEntryReplicatedTransactionalOffHeapSelfTest.class);
 
         return suite;
     }
