@@ -358,8 +358,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     if (part >= 0) {
                         Object topic = new GridAtomicRequestTopic(cctx.cacheId(), part, false);
 
-                        cctx.io().sendOrderedMessage(nodeId, topic, req, cctx.ioPolicy(),
-                            2 * cctx.gridConfig().getNetworkTimeout());
+                        cctx.io().sendSequentialMessage(nodeId, topic, req, cctx.ioPolicy());
                     }
                     else {
                         assert part == -1;

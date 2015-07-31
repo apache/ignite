@@ -1146,8 +1146,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         if (mappingKey.partition() >= 0) {
             Object topic = new GridAtomicRequestTopic(cctx.cacheId(), mappingKey.partition(), true);
 
-            cctx.io().sendOrderedMessage(mappingKey.nodeId(), topic, req, cctx.ioPolicy(),
-                2 * cctx.gridConfig().getNetworkTimeout());
+            cctx.io().sendSequentialMessage(mappingKey.nodeId(), topic, req, cctx.ioPolicy());
         }
         else {
             assert mappingKey.partition() == -1;

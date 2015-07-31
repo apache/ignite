@@ -2473,13 +2473,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (updRes.removeVersion() != null) {
                             if (ctx.deferredDelete())
                                 ctx.onDeferredDelete(entry, updRes.removeVersion());
-                            else {
-                                assert entry.obsolete();
-
-                                entry.onMarkedObsolete();
-
+                            else if (entry.markObsoleteVersion(updRes.removeVersion()))
                                 removeEntry(entry);
-                            }
                         }
 
                         entry.onUnlock();
