@@ -2759,6 +2759,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (routerNode.id().equals(getLocalNodeId())) {
                     ClientMessageWorker worker = clientMsgWorkers.get(node.id());
 
+                    if (worker == null)
+                        throw new IgniteSpiException("Client node already disconnected: " + node);
+
                     msg.verify(getLocalNodeId()); // Client worker require verified messages.
 
                     worker.addMessage(msg);
