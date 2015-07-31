@@ -609,16 +609,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Nullable IgniteCacheExpiryPolicy expirePlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return innerGet0(tx,
-                         readSwap,
-                         readThrough,
-                         evt,
-                         unmarshal,
-                         updateMetrics,
-                         tmp,
-                         subjId,
-                         transformClo,
-                         taskName,
-                         expirePlc);
+            readSwap,
+            readThrough,
+            evt,
+            unmarshal,
+            updateMetrics,
+            tmp,
+            subjId,
+            transformClo,
+            taskName,
+            expirePlc);
     }
 
     /** {@inheritDoc} */
