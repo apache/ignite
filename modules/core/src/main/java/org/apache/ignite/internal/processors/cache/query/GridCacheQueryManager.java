@@ -845,7 +845,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         try {
                             val = prj.localPeek(key, CachePeekModes.ONHEAP_ONLY, expiryPlc);
-
                         }
                         catch (IgniteCheckedException e) {
                             if (log.isDebugEnabled())
