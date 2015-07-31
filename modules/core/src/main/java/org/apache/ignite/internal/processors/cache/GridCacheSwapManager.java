@@ -1513,7 +1513,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             @Override protected Map.Entry<K, V> onNext() {
                 final Map.Entry<byte[], byte[]> cur0 = it.next();
 
-                cur = new Map.Entry<K, V>() {
+                cur = new GridVersionedMapEntry<K, V>() {
                     @Override public K getKey() {
                         try {
                             KeyCacheObject key = cctx.toCacheKeyObject(cur0.getKey());
@@ -1536,6 +1536,12 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                         catch (IgniteCheckedException ex) {
                             throw new IgniteException(ex);
                         }
+                    }
+
+                    @Override public GridCacheVersion version() {
+                        GridCacheSwapEntry e = unmarshalSwapEntry(cur0.getValue());
+
+                        return e.version();
                     }
 
                     @Override public V setValue(V val) {

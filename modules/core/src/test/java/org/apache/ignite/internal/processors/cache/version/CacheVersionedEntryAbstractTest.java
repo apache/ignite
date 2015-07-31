@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.*;
  */
 public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractSelfTest {
     /** Entries number to store in a cache. */
-    private static final int ENTRIES_NUM = 1000;
+    private static final int ENTRIES_NUM = 500;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -57,21 +57,19 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
 
         final AtomicInteger invoked = new AtomicInteger();
 
-        for (int i = 0; i < ENTRIES_NUM; i++) {
-            cache.invoke(i, new EntryProcessor<Integer, String, Object>() {
-                @Override public Object process(MutableEntry<Integer, String> entry, Object... arguments)
-                    throws EntryProcessorException {
+        cache.invoke(100, new EntryProcessor<Integer, String, Object>() {
+            @Override public Object process(MutableEntry<Integer, String> entry, Object... arguments)
+                throws EntryProcessorException {
 
-                    invoked.incrementAndGet();
+                invoked.incrementAndGet();
 
-                    VersionedEntry<Integer, String> verEntry = entry.unwrap(VersionedEntry.class);
+                VersionedEntry<Integer, String> verEntry = entry.unwrap(VersionedEntry.class);
 
-                    checkVersionedEntry(verEntry);
+                checkVersionedEntry(verEntry);
 
-                    return entry;
-                }
-            });
-        }
+                return entry;
+            }
+        });
 
         assert invoked.get() > 0;
     }
@@ -114,18 +112,6 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
 
         for (int i = 0; i < 5; i++)
             checkVersionedEntry(cache.randomEntry().unwrap(VersionedEntry.class));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testIterator() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
-
-        Iterator<Cache.Entry<Integer, String>> entries = cache.iterator();
-
-        while (entries.hasNext())
-            checkVersionedEntry(entries.next().unwrap(VersionedEntry.class));
     }
 
     /**
