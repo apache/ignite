@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 /**
  *
  */
-public class CacheVersionedEntryLocalAtomicSelfTest extends CacheVersionedEntryAbstractTest {
+public class CacheVersionedEntryLocalAtomicSwapDisabledSelfTest extends CacheVersionedEntryAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
@@ -36,5 +36,10 @@ public class CacheVersionedEntryLocalAtomicSelfTest extends CacheVersionedEntryA
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean swapEnabled() {
+        return false;
     }
 }

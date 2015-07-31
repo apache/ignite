@@ -55,23 +55,25 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     public void testInvoke() throws Exception {
         Cache<Integer, String> cache = grid(0).cache(null);
 
-        final AtomicBoolean invoked = new AtomicBoolean(false);
+        final AtomicInteger invoked = new AtomicInteger();
 
-        cache.invoke(100, new EntryProcessor<Integer, String, Object>() {
-            @Override public Object process(MutableEntry<Integer, String> entry, Object... arguments)
-                throws EntryProcessorException {
+        for (int i = 0; i < ENTRIES_NUM; i++) {
+            cache.invoke(i, new EntryProcessor<Integer, String, Object>() {
+                @Override public Object process(MutableEntry<Integer, String> entry, Object... arguments)
+                    throws EntryProcessorException {
 
-                invoked.set(true);
+                    invoked.incrementAndGet();
 
-                VersionedEntry<Integer, String> verEntry = entry.unwrap(VersionedEntry.class);
+                    VersionedEntry<Integer, String> verEntry = entry.unwrap(VersionedEntry.class);
 
-                checkVersionedEntry(verEntry);
+                    checkVersionedEntry(verEntry);
 
-                return entry;
-            }
-        });
+                    return entry;
+                }
+            });
+        }
 
-        assertTrue(invoked.get());
+        assert invoked.get() > 0;
     }
 
     /**

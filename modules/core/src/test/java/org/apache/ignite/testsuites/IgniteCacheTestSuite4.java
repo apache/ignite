@@ -155,7 +155,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheReadThroughAtomicRestartSelfTest.class);
 
         // Versioned entry tests
-        suite.addTestSuite(CacheVersionedEntryLocalAtomicSelfTest.class);
+        suite.addTestSuite(CacheVersionedEntryLocalAtomicSwapDisabledSelfTest.class);
         suite.addTestSuite(CacheVersionedEntryLocalTransactionalSelfTest.class);
         suite.addTestSuite(CacheVersionedEntryPartitionedAtomicSelfTest.class);
         suite.addTestSuite(CacheVersionedEntryPartitionedTransactionalSelfTest.class);
