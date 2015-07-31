@@ -121,7 +121,7 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
-        if (cls.isAssignableFrom(VersionedEntry.class))
+        if (cls.isAssignableFrom(VersionedEntry.class) && ver != null)
             return (T)new CacheVersionedEntryImpl<>(getKey(), getValue(), ver);
 
         return super.unwrap(cls);
