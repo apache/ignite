@@ -245,11 +245,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         if (ctx.deferredDelete())
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
                         else {
-                            assert entry.obsolete();
-
-                            entry.onMarkedObsolete();
-
-                            removeEntry(entry);
+                            if (entry.markObsoleteVersion(updRes.removeVersion()))
+                                removeEntry(entry);
                         }
                     }
 
@@ -352,11 +349,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             if (ctx.deferredDelete())
                                 ctx.onDeferredDelete(entry, updRes.removeVersion());
                             else {
-                                assert entry.obsolete();
-
-                                entry.onMarkedObsolete();
-
-                                removeEntry(entry);
+                                if (entry.markObsoleteVersion(updRes.removeVersion()))
+                                    removeEntry(entry);
                             }
                         }
 

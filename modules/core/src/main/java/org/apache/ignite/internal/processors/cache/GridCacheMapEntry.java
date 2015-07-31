@@ -2161,9 +2161,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     }
                 }
 
-                if (!cctx.deferredDelete())
-                    markObsolete0(rmvVer, true);
-
                 res = hadVal;
             }
 
@@ -2458,8 +2455,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public boolean markObsoleteVersion(GridCacheVersion ver) {
-        assert cctx.deferredDelete();
-
         boolean marked;
 
         synchronized (this) {
