@@ -1787,6 +1787,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Connection check frequency. */
         private long connCheckFreq;
 
+        /** Connection check threshold. */
+        private long connCheckThreshold;
+
         /**
          */
         protected RingMessageWorker() {
@@ -1799,19 +1802,22 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Initializes connection check frequency. Used only when failure detection timeout is enabled.
          */
         private void initConnectionCheckFrequency() {
-            if (spi.failureDetectionTimeoutEnabled()) {
-                for (int i = 3; i > 0; i--) {
-                    connCheckFreq = spi.failureDetectionTimeout() / i;
+            if (spi.failureDetectionTimeoutEnabled())
+                connCheckThreshold = spi.failureDetectionTimeout();
+            else
+                connCheckThreshold = Math.min(spi.getSocketTimeout(), spi.getHeartbeatFrequency());
 
-                    if (connCheckFreq > 0)
-                        break;
-                }
+            for (int i = 3; i > 0; i--) {
+                connCheckFreq = connCheckThreshold / i;
 
-                assert connCheckFreq > 0;
-
-                if (log.isDebugEnabled())
-                    log.debug("Connection check frequency is calculated: " + connCheckFreq);
+                if (connCheckFreq > 10)
+                    break;
             }
+
+            assert connCheckFreq > 0;
+
+            if (log.isDebugEnabled())
+                log.debug("Connection check frequency is calculated: " + connCheckFreq);
         }
 
         /**
@@ -2306,9 +2312,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             // If node existed on connection initialization we should check
                             // whether it has not gone yet.
-                            if (nextNodeExists && pingNode(next))
-                                U.error(log, "Failed to send message to next node [msg=" + msg +
-                                    ", next=" + next + ']', err);
+                            if (nextNodeExists)
+                                U.warn(log, "Failed to send message to next node [msg=" + msg + ", next=" + next +
+                                    ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
                             else if (log.isDebugEnabled())
                                 log.debug("Failed to send message to next node [msg=" + msg + ", next=" + next +
                                     ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
@@ -2752,6 +2758,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (routerNode.id().equals(getLocalNodeId())) {
                     ClientMessageWorker worker = clientMsgWorkers.get(node.id());
+
+                    if (worker == null)
+                        throw new IgniteSpiException("Client node already disconnected: " + node);
 
                     msg.verify(getLocalNodeId()); // Client worker require verified messages.
 
@@ -4025,7 +4034,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * Check the last time a heartbeat message received. If the time is bigger than {@code hbCheckTimeout} than
-         * {@link TcpDiscoveryStatusCheckMessage} is sent accros the ring.
+         * {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
          */
         private void checkHeartbeatsReceiving() {
             if (lastTimeStatusMsgSent < locNode.lastUpdateTime())
@@ -4045,11 +4054,9 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Check connection aliveness status.
          */
         private void checkConnection() {
-            if (!spi.failureDetectionTimeoutEnabled())
-                return;
-
-            if (!failureThresholdReached && U.currentTimeMillis() - locNode.lastDataReceivedTime()
-                >= spi.failureDetectionTimeout() && ring.hasRemoteNodes() && spiStateCopy() == CONNECTED) {
+            if (spi.failureDetectionTimeoutEnabled() && !failureThresholdReached &&
+                U.currentTimeMillis() - locNode.lastDataReceivedTime() >= connCheckThreshold &&
+                ring.hasRemoteNodes() && spiStateCopy() == CONNECTED) {
 
                 log.info("Local node seems to be disconnected from topology (failure detection timeout " +
                     "is reached): [failureDetectionTimeout=" + spi.failureDetectionTimeout() +

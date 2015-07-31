@@ -1791,7 +1791,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (log.isTraceEnabled())
             log.trace("Sending message to node [node=" + node + ", msg=" + msg + ']');
 
-        if (node.id().equals(getLocalNode().id()))
+        ClusterNode localNode = getLocalNode();
+
+        if (localNode == null)
+            throw new IgniteSpiException("Local node has not been started or fully initialized " +
+                "[isStopping=" + getSpiContext().isStopping() + ']');
+
+        if (node.id().equals(localNode.id()))
             notifyListener(node.id(), msg, NOOP);
         else {
             GridCommunicationClient client = null;
@@ -1804,7 +1810,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     UUID nodeId = null;
 
-                    if (!client.async() && !getSpiContext().localNode().version().equals(node.version()))
+                    if (!client.async() && !localNode.version().equals(node.version()))
                         nodeId = node.id();
 
                     retry = client.sendMessage(nodeId, msg);
@@ -2435,8 +2441,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     else
                         ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
 
+                    ClusterNode localNode = getLocalNode();
+
+                    if (localNode == null)
+                        throw new IgniteCheckedException("Local node has not been started or " +
+                            "fully initialized [isStopping=" + getSpiContext().isStopping() + ']');
+
                     if (recovery != null) {
-                        HandshakeMessage msg = new HandshakeMessage(getLocalNode().id(),
+                        HandshakeMessage msg = new HandshakeMessage(localNode.id(),
                             recovery.incrementConnectCount(),
                             recovery.receivedCount());
 
@@ -2629,7 +2641,20 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @return Node ID message.
      */
     private NodeIdMessage nodeIdMessage() {
-        return new NodeIdMessage(getLocalNode().id());
+        ClusterNode localNode = getLocalNode();
+
+        UUID id;
+
+        if (localNode == null) {
+            U.warn(log, "Local node is not started or fully initialized [isStopping=" +
+                    getSpiContext().isStopping() + ']');
+
+            id = new UUID(0, 0);
+        }
+        else
+            id = localNode.id();
+
+        return new NodeIdMessage(id);
     }
 
     /** {@inheritDoc} */
@@ -3145,7 +3170,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             }
 
             try {
-                UUID id = getLocalNode().id();
+                ClusterNode localNode = getLocalNode();
+
+                if (localNode == null)
+                    throw new IgniteSpiException("Local node has not been started or fully initialized " +
+                        "[isStopping=" + getSpiContext().isStopping() + ']');
+
+                UUID id = localNode.id();
 
                 NodeIdMessage msg = new NodeIdMessage(id);
 
