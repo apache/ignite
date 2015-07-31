@@ -394,6 +394,11 @@ public class GridNioServer<T> {
 
         int msgCnt = sys ? ses.offerSystemFuture(fut) : ses.offerFuture(fut);
 
+        IgniteInClosure<IgniteException> ackClosure;
+
+        if (!sys && (ackClosure = ses.removeMeta(ACK_CLOSURE.ordinal())) != null)
+            fut.ackClosure(ackClosure);
+
         if (ses.closed()) {
             if (ses.removeFuture(fut))
                 fut.connectionClosed();

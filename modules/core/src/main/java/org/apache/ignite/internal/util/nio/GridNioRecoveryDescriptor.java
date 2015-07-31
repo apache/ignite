@@ -182,6 +182,9 @@ public class GridNioRecoveryDescriptor {
 
             assert fut.isDone() : fut;
 
+            if (fut.ackClosure() != null)
+                fut.ackClosure().apply(null);
+
             acked++;
         }
     }
@@ -358,8 +361,14 @@ public class GridNioRecoveryDescriptor {
      * @param futs Futures to complete.
      */
     private void completeOnNodeLeft(GridNioFuture<?>[] futs) {
-        for (GridNioFuture<?> msg : futs)
-            ((GridNioFutureImpl)msg).onDone(new IOException("Failed to send message, node has left: " + node.id()));
+        for (GridNioFuture<?> msg : futs) {
+            IOException e = new IOException("Failed to send message, node has left: " + node.id());
+
+            ((GridNioFutureImpl)msg).onDone(e);
+
+            if (msg.ackClosure() != null)
+                msg.ackClosure().apply(new IgniteException(e));
+        }
     }
 
     /** {@inheritDoc} */

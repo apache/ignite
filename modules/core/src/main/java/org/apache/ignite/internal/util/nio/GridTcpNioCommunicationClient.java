@@ -20,12 +20,15 @@ package org.apache.ignite.internal.util.nio;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
 import java.util.*;
+
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * Grid client for NIO server.
@@ -97,10 +100,13 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public boolean sendMessage(@Nullable UUID nodeId, Message msg)
+    @Override public boolean sendMessage(@Nullable UUID nodeId, Message msg, IgniteInClosure<IgniteException> closure)
         throws IgniteCheckedException {
         // Node ID is never provided in asynchronous send mode.
         assert nodeId == null;
+
+        if (closure != null)
+            ses.addMeta(ACK_CLOSURE.ordinal(), closure);
 
         GridNioFuture<?> fut = ses.send(msg);
 
@@ -109,6 +115,9 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
                 fut.get();
             }
             catch (IgniteCheckedException e) {
+                if (closure != null)
+                    ses.removeMeta(ACK_CLOSURE.ordinal());
+
                 if (log.isDebugEnabled())
                     log.debug("Failed to send message [client=" + this + ", err=" + e + ']');
 
@@ -118,6 +127,9 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
                     throw new IgniteCheckedException("Failed to send message [client=" + this + ']', e);
             }
         }
+
+        if (closure != null)
+            ses.removeMeta(ACK_CLOSURE.ordinal());
 
         return false;
     }
