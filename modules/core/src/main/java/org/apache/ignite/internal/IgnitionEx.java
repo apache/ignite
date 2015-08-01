@@ -1087,6 +1087,32 @@ public class IgnitionEx {
     }
 
     /**
+     * Gets grid instance without waiting its initialization and not throwing any exception.
+     *
+     * @param locNodeId ID of local node the requested grid instance is managing.
+     * @return Grid instance or {@code null}.
+     */
+    public static IgniteKernal gridxx(UUID locNodeId) {
+        IgniteNamedInstance dfltGrid0 = dfltGrid;
+
+        if (dfltGrid0 != null) {
+            IgniteKernal g = dfltGrid0.grid();
+
+            if (g != null && g.getLocalNodeId().equals(locNodeId))
+                return g;
+        }
+
+        for (IgniteNamedInstance grid : grids.values()) {
+            IgniteKernal g = grid.grid();
+
+            if (g != null && g.getLocalNodeId().equals(locNodeId))
+                return g;
+        }
+
+        return null;
+    }
+
+    /**
      * Gets an named grid instance. If grid name is {@code null} or empty string,
      * then default no-name grid will be returned. Note that caller of this method
      * should not assume that it will return the same instance every time.

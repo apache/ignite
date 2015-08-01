@@ -58,6 +58,9 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
  * Grid communication manager.
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
+    /** */
+    public static volatile boolean TURBO_DEBUG_MODE;
+
     /** Empty array of message factories. */
     public static final MessageFactory[] EMPTY = {};
 
@@ -895,7 +898,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (msgC == null) {
             // Message from local node can be processed in sync manner.
-            assert locNodeId.equals(nodeId);
+            assert locNodeId.equals(nodeId) || TURBO_DEBUG_MODE;
 
             unwindMessageSet(set, lsnr);
 
@@ -1017,6 +1020,85 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).sendMessage(node, ioMsg, ackClosure);
                 else
                     getSpi().sendMessage(node, ioMsg);
+            }
+            catch (IgniteSpiException e) {
+                throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
+                    "TCP connection cannot be established due to firewall issues) " +
+                    "[node=" + node + ", topic=" + topic +
+                    ", msg=" + msg + ", policy=" + plc + ']', e);
+            }
+        }
+    }
+
+    /**
+     * This method can be used for debugging tricky concurrency issues
+     * with multi-nodes in single JVM.
+     * <p>
+     * This method eliminates network between nodes started in single JVM
+     * when {@link #TURBO_DEBUG_MODE} is set to {@code true}.
+     * <p>
+     * How to use it:
+     * <ol>
+     *     <li>Replace {@link #send(ClusterNode, Object, int, Message, byte, boolean, long, boolean)}
+     *          with this method.</li>
+     *     <li>Start all grids for your test, then set {@link #TURBO_DEBUG_MODE} to {@code true}.</li>
+     *     <li>Perform test operations on the topology. No network will be there.</li>
+     *     <li>DO NOT turn on turbo debug before all grids started. This will cause deadlocks.</li>
+     * </ol>
+     *
+     * @param node Destination node.
+     * @param topic Topic to send the message to.
+     * @param topicOrd GridTopic enumeration ordinal.
+     * @param msg Message to send.
+     * @param plc Type of processing.
+     * @param ordered Ordered flag.
+     * @param timeout Timeout.
+     * @param skipOnTimeout Whether message can be skipped on timeout.
+     * @throws IgniteCheckedException Thrown in case of any errors.
+     */
+    private void sendTurboDebug(
+        ClusterNode node,
+        Object topic,
+        int topicOrd,
+        Message msg,
+        byte plc,
+        boolean ordered,
+        long timeout,
+        boolean skipOnTimeout
+    ) throws IgniteCheckedException {
+        assert node != null;
+        assert topic != null;
+        assert msg != null;
+
+        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+
+        IgniteKernal rmt;
+
+        if (locNodeId.equals(node.id())) {
+            assert plc != P2P_POOL;
+
+            CommunicationListener commLsnr = this.commLsnr;
+
+            if (commLsnr == null)
+                throw new IgniteCheckedException("Trying to send message when grid is not fully started.");
+
+            if (ordered)
+                processOrderedMessage(locNodeId, ioMsg, plc, null);
+            else
+                processRegularMessage0(ioMsg, locNodeId);
+        }
+        else if (TURBO_DEBUG_MODE && (rmt = IgnitionEx.gridxx(locNodeId)) != null) {
+            if (ioMsg.isOrdered())
+                rmt.context().io().processOrderedMessage(locNodeId, ioMsg, ioMsg.policy(), null);
+            else
+                rmt.context().io().processRegularMessage0(ioMsg, locNodeId);
+        }
+        else {
+            if (topicOrd < 0)
+                ioMsg.topicBytes(marsh.marshal(topic));
+
+            try {
+                getSpi().sendMessage(node, ioMsg);
             }
             catch (IgniteSpiException e) {
                 throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
