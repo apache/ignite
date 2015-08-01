@@ -44,6 +44,7 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(TcpDiscoverySelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySpiSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoverySpiFailureTimeoutSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySpiStartStopSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySpiConfigSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryMarshallerCheckSelfTest.class));
@@ -54,11 +55,16 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpClientDiscoverySpiSelfTest.class));
         suite.addTest(new TestSuite(TcpClientDiscoveryMarshallerCheckSelfTest.class));
         suite.addTest(new TestSuite(TcpClientDiscoverySpiMulticastTest.class));
+        suite.addTest(new TestSuite(TcpClientDiscoverySpiFailureTimeoutSelfTest.class));
 
         suite.addTest(new TestSuite(TcpDiscoveryNodeConsistentIdSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoveryNodeConfigConsistentIdSelfTest.class));
 
         suite.addTest(new TestSuite(TcpDiscoveryRestartTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryMultiThreadedTest.class));
+
+        // SSL.
+        suite.addTest(new TestSuite(TcpDiscoverySslSelfTest.class));
 
         return suite;
     }

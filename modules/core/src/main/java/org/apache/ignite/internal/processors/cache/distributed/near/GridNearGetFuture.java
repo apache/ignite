@@ -437,17 +437,19 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                 ClusterNode primary = null;
 
-                if (v == null && allowLocRead) {
+                if (v == null && allowLocRead && cctx.affinityNode()) {
                     GridDhtCacheAdapter<K, V> dht = cache().dht();
 
+                    GridCacheEntryEx dhtEntry = null;
+
                     try {
-                        entry = dht.context().isSwapOrOffheapEnabled() ? dht.entryEx(key) : dht.peekEx(key);
+                        dhtEntry = dht.context().isSwapOrOffheapEnabled() ? dht.entryEx(key) : dht.peekEx(key);
 
                         // If near cache does not have value, then we peek DHT cache.
-                        if (entry != null) {
-                            boolean isNew = entry.isNewLocked() || !entry.valid(topVer);
+                        if (dhtEntry != null) {
+                            boolean isNew = dhtEntry.isNewLocked() || !dhtEntry.valid(topVer);
 
-                            v = entry.innerGet(tx,
+                            v = dhtEntry.innerGet(tx,
                                 /*swap*/true,
                                 /*read-through*/false,
                                 /*fail-fast*/true,
@@ -461,7 +463,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                                 expiryPlc);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
-                            if (v == null && isNew && entry.markObsoleteIfEmpty(ver))
+                            if (v == null && isNew && dhtEntry.markObsoleteIfEmpty(ver))
                                 dht.removeIfObsolete(key);
                         }
 
@@ -483,12 +485,12 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                                 near.metrics0().onRead(false);
                         }
                     }
-                    catch (GridDhtInvalidPartitionException ignored) {
+                    catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
                         // No-op.
                     }
                     finally {
-                        if (entry != null && (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))) {
-                            dht.context().evicts().touch(entry, topVer);
+                        if (dhtEntry != null && (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))) {
+                            dht.context().evicts().touch(dhtEntry, topVer);
 
                             entry = null;
                         }

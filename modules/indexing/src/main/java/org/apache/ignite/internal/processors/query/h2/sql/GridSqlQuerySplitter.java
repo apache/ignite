@@ -28,6 +28,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.*;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlPlaceholder.*;
 
 /**
  * Splits a single SQL query into two step map-reduce query.
@@ -70,6 +71,56 @@ public class GridSqlQuerySplitter {
     }
 
     /**
+     * @param qry Query.
+     * @return Select query.
+     */
+    private static GridSqlSelect wrapUnion(GridSqlQuery qry) {
+        if (qry instanceof GridSqlSelect)
+            return (GridSqlSelect)qry;
+
+        // Handle UNION.
+        GridSqlSelect wrapQry = new GridSqlSelect().from(new GridSqlSubquery(qry));
+
+        wrapQry.explain(qry.explain());
+        qry.explain(false);
+
+        GridSqlSelect left = leftest(qry);
+
+        int c = 0;
+
+        for (GridSqlElement expr : left.select(true)) {
+            String colName;
+
+            if (expr instanceof GridSqlAlias)
+                colName = ((GridSqlAlias)expr).alias();
+            else if (expr instanceof GridSqlColumn)
+                colName = ((GridSqlColumn)expr).columnName();
+            else {
+                colName = columnName(c);
+
+                expr = alias(colName, expr);
+
+                // Set generated alias to the expression.
+                left.setSelectExpression(c, expr);
+            }
+
+            GridSqlColumn col = column(colName);
+
+            wrapQry.addSelectExpression(col, true);
+
+            c++;
+        }
+
+        // ORDER BY
+        if (!qry.sort().isEmpty()) {
+            for (GridSqlSortColumn col : qry.sort())
+                wrapQry.addSort(col);
+        }
+
+        return wrapQry;
+    }
+
+    /**
      * @param stmt Prepared statement.
      * @param params Parameters.
      * @param collocated Collocated query.
@@ -79,68 +130,26 @@ public class GridSqlQuerySplitter {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
-        final GridSqlQuery qry0 = GridSqlQueryParser.parse(stmt);
+        Set<String> spaces = new HashSet<>();
 
-        GridSqlSelect srcQry;
+        // Map query will be direct reference to the original query AST.
+        // Thus all the modifications will be performed on the original AST, so we should be careful when
+        // nullifying or updating things, have to make sure that we will not need them in the original form later.
+        final GridSqlSelect mapQry = wrapUnion(collectAllSpaces(GridSqlQueryParser.parse(stmt), spaces));
 
-        if (qry0 instanceof GridSqlSelect)
-            srcQry = (GridSqlSelect)qry0;
-        else { // Handle UNION.
-            srcQry = new GridSqlSelect().from(new GridSqlSubquery(qry0));
+        final String mergeTable = TABLE_FUNC_NAME + "()"; // table(0); TODO IGNITE-1142
 
-            srcQry.explain(qry0.explain());
-
-            GridSqlSelect left = leftest(qry0);
-
-            int c = 0;
-
-            for (GridSqlElement expr : left.select(true)) {
-                String colName;
-
-                if (expr instanceof GridSqlAlias)
-                    colName = ((GridSqlAlias)expr).alias();
-                else if (expr instanceof GridSqlColumn)
-                    colName = ((GridSqlColumn)expr).columnName();
-                else {
-                    colName = columnName(c);
-
-                    expr = alias(colName, expr);
-
-                    // Set generated alias to the expression.
-                    left.setSelectExpression(c, expr);
-                }
-
-                GridSqlColumn col = column(colName);
-
-                srcQry.addSelectExpression(col, true);
-
-                qry0.sort();
-
-                c++;
-            }
-
-            // ORDER BY
-            if (!qry0.sort().isEmpty()) {
-                for (GridSqlSortColumn col : qry0.sort())
-                    srcQry.addSort(col);
-            }
-        }
-
-        final String mergeTable = TABLE_FUNC_NAME + "()"; // table(0); TODO
-
-        // Create map and reduce queries.
-        GridSqlSelect mapQry = srcQry.clone();
+        final boolean explain = mapQry.explain();
 
         mapQry.explain(false);
 
-        GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction(null, TABLE_FUNC_NAME)); // table(mergeTable)); TODO
+        GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction(null, TABLE_FUNC_NAME)); // table(mergeTable)); TODO IGNITE-1142
 
         // Split all select expressions into map-reduce parts.
-        List<GridSqlElement> mapExps = F.addAll(
-            new ArrayList<GridSqlElement>(srcQry.allColumns()),
-            srcQry.select(false));
+        List<GridSqlElement> mapExps = F.addAll(new ArrayList<GridSqlElement>(mapQry.allColumns()),
+            mapQry.select(false));
 
-        GridSqlElement[] rdcExps = new GridSqlElement[srcQry.visibleColumns()];
+        GridSqlElement[] rdcExps = new GridSqlElement[mapQry.visibleColumns()];
 
         Set<String> colNames = new HashSet<>();
 
@@ -162,66 +171,56 @@ public class GridSqlQuerySplitter {
             rdcQry.addSelectExpression(column(((GridSqlAlias)mapExps.get(i)).alias()), false);
 
         // -- GROUP BY
-        if (srcQry.hasGroupBy()) {
-            mapQry.clearGroups();
-
-            for (int col : srcQry.groupColumns())
-                mapQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
-
-            if (!collocated) {
-                for (int col : srcQry.groupColumns())
-                    rdcQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
-            }
-        }
+        if (mapQry.groupColumns() != null && !collocated)
+            rdcQry.groupColumns(mapQry.groupColumns());
 
         // -- HAVING
-        if (srcQry.having() != null && !collocated) {
-            // TODO Find aggregate functions in HAVING clause.
-            rdcQry.whereAnd(column(columnName(srcQry.havingColumn())));
+        if (mapQry.havingColumn() >= 0 && !collocated) {
+            // TODO IGNITE-1140 - Find aggregate functions in HAVING clause or rewrite query to put all aggregates to SELECT clause.
+            rdcQry.whereAnd(column(columnName(mapQry.havingColumn())));
 
-            mapQry.having(null);
+            mapQry.havingColumn(-1);
         }
 
         // -- ORDER BY
-        if (!srcQry.sort().isEmpty()) {
+        if (!mapQry.sort().isEmpty()) {
+            for (GridSqlSortColumn sortCol : mapQry.sort())
+                rdcQry.addSort(sortCol);
+
             if (aggregateFound) // Ordering over aggregates does not make sense.
                 mapQry.clearSort(); // Otherwise map sort will be used by offset-limit.
-
-            for (GridSqlSortColumn sortCol : srcQry.sort())
-                rdcQry.addSort(sortCol);
+            // TODO IGNITE-1141 - Check if sorting is done over aggregated expression, otherwise we can sort and use offset-limit.
         }
 
         // -- LIMIT
-        if (srcQry.limit() != null) {
+        if (mapQry.limit() != null) {
+            rdcQry.limit(mapQry.limit());
+
             if (aggregateFound)
                 mapQry.limit(null);
-
-            rdcQry.limit(srcQry.limit());
         }
 
         // -- OFFSET
-        if (srcQry.offset() != null) {
-            mapQry.offset(null);
+        if (mapQry.offset() != null) {
+            rdcQry.offset(mapQry.offset());
 
-            rdcQry.offset(srcQry.offset());
+            mapQry.offset(null);
         }
 
         // -- DISTINCT
-        if (srcQry.distinct()) {
-            mapQry.distinct(false);
+        if (mapQry.distinct()) {
+            mapQry.distinct(!aggregateFound && mapQry.groupColumns() == null && mapQry.havingColumn() < 0);
             rdcQry.distinct(true);
         }
 
         // Build resulting two step query.
-        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(
-            collectAllSpaces(qry0, new HashSet<String>()),
-            rdcQry.getSQL(),
+        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(spaces, rdcQry.getSQL(),
             findParams(rdcQry, params, new ArrayList<>()).toArray());
 
         res.addMapQuery(mergeTable, mapQry.getSQL(),
             findParams(mapQry, params, new ArrayList<>(params.length)).toArray());
 
-        res.explain(qry0.explain());
+        res.explain(explain);
 
         return res;
     }
@@ -229,19 +228,27 @@ public class GridSqlQuerySplitter {
     /**
      * @param qry Query.
      * @param spaces Space names.
-     * @return Space names.
+     * @return Query.
      */
-    private static Set<String> collectAllSpaces(GridSqlQuery qry, Set<String> spaces) {
+    private static GridSqlQuery collectAllSpaces(GridSqlQuery qry, Set<String> spaces) {
         if (qry instanceof GridSqlUnion) {
             GridSqlUnion union = (GridSqlUnion)qry;
 
             collectAllSpaces(union.left(), spaces);
             collectAllSpaces(union.right(), spaces);
         }
-        else
-            collectAllSpacesInFrom(((GridSqlSelect)qry).from(), spaces);
+        else {
+            GridSqlSelect select = (GridSqlSelect)qry;
 
-        return spaces;
+            collectAllSpacesInFrom(select.from(), spaces);
+
+            for (GridSqlElement el : select.select(false))
+                collectAllSpacesInSubqueries(el, spaces);
+
+            collectAllSpacesInSubqueries(select.where(), spaces);
+        }
+
+        return qry;
     }
 
     /**
@@ -268,6 +275,23 @@ public class GridSqlQuerySplitter {
             collectAllSpacesInFrom(from.child(), spaces);
         else if (!(from instanceof GridSqlFunction))
             throw new IllegalStateException(from.getClass().getName() + " : " + from.getSQL());
+    }
+
+    /**
+     * Searches spaces in subqueries in SELECT and WHERE clauses.
+     * @param el Element.
+     * @param spaces Space names.
+     */
+    private static void collectAllSpacesInSubqueries(GridSqlElement el, Set<String> spaces) {
+        if (el instanceof GridSqlAlias)
+            el = el.child();
+
+        if (el instanceof GridSqlOperation || el instanceof GridSqlFunction) {
+            for (GridSqlElement child : el)
+                collectAllSpacesInSubqueries(child, spaces);
+        }
+        else if (el instanceof GridSqlSubquery)
+            collectAllSpaces(((GridSqlSubquery)el).select(), spaces);
     }
 
     /**
@@ -307,10 +331,7 @@ public class GridSqlQuerySplitter {
         findParams(qry.from(), params, target);
         findParams(qry.where(), params, target);
 
-        for (GridSqlElement el : qry.groups())
-            findParams(el, params, target);
-
-        findParams(qry.having(), params, target);
+        // Don't search in GROUP BY and HAVING since they expected to be in select list.
 
         findParams(qry.limit(), params, target);
         findParams(qry.offset(), params, target);
@@ -362,7 +383,7 @@ public class GridSqlQuerySplitter {
      * @return {@code true} If aggregate was found.
      */
     private static boolean splitSelectExpression(List<GridSqlElement> mapSelect, GridSqlElement[] rdcSelect,
-        Set<String> colNames, int idx, boolean collocated) {
+        Set<String> colNames, final int idx, boolean collocated) {
         GridSqlElement el = mapSelect.get(idx);
 
         GridSqlAlias alias = null;
@@ -374,82 +395,17 @@ public class GridSqlQuerySplitter {
             el = alias.child();
         }
 
-        if (!collocated && el instanceof GridSqlAggregateFunction) {
+        if (!collocated && hasAggregates(el)) {
             aggregateFound = true;
 
-            GridSqlAggregateFunction agg = (GridSqlAggregateFunction)el;
+            if (alias == null)
+                alias = alias(columnName(idx), el);
 
-            GridSqlElement mapAgg, rdcAgg;
+            // We can update original alias here as well since it will be dropped from mapSelect.
+            splitAggregates(alias, 0, mapSelect, idx, true);
 
-            String mapAggAlias = columnName(idx);
-
-            switch (agg.type()) {
-                case AVG: // SUM( AVG(CAST(x AS DOUBLE))*COUNT(x) )/SUM( COUNT(x) ).
-                    //-- COUNT(x) map
-                    GridSqlElement cntMapAgg = aggregate(agg.distinct(), COUNT).addChild(agg.child());
-
-                    // Add generated alias to COUNT(x).
-                    // Using size as index since COUNT will be added as the last select element to the map query.
-                    String cntMapAggAlias = columnName(mapSelect.size());
-
-                    cntMapAgg = alias(cntMapAggAlias, cntMapAgg);
-
-                    mapSelect.add(cntMapAgg);
-
-                    //-- AVG(CAST(x AS DOUBLE)) map
-                    mapAgg = aggregate(agg.distinct(), AVG).addChild( // Add function argument.
-                        function(CAST).setCastType("DOUBLE").addChild(agg.child()));
-
-                    //-- SUM( AVG(x)*COUNT(x) )/SUM( COUNT(x) ) reduce
-                    GridSqlElement sumUpRdc = aggregate(false, SUM).addChild(
-                        op(GridSqlOperationType.MULTIPLY,
-                                column(mapAggAlias),
-                                column(cntMapAggAlias)));
-
-                    GridSqlElement sumDownRdc = aggregate(false, SUM).addChild(column(cntMapAggAlias));
-
-                    rdcAgg = op(GridSqlOperationType.DIVIDE, sumUpRdc, sumDownRdc);
-
-                    break;
-
-                case SUM: // SUM( SUM(x) )
-                case MAX: // MAX( MAX(x) )
-                case MIN: // MIN( MIN(x) )
-                    mapAgg = aggregate(agg.distinct(), agg.type()).addChild(agg.child());
-
-                    rdcAgg = aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias));
-
-                    break;
-
-                case COUNT_ALL: // CAST(SUM( COUNT(*) ) AS BIGINT)
-                case COUNT: // CAST(SUM( COUNT(x) ) AS BIGINT)
-                    mapAgg = aggregate(agg.distinct(), agg.type());
-
-                    if (agg.type() == COUNT)
-                        mapAgg.addChild(agg.child());
-
-                    rdcAgg = aggregate(false, SUM).addChild(column(mapAggAlias));
-
-                    rdcAgg = function(CAST).setCastType("BIGINT").addChild(rdcAgg);
-
-                    break;
-
-                default:
-                    throw new IgniteException("Unsupported aggregate: " + agg.type());
-            }
-
-            assert !(mapAgg instanceof GridSqlAlias);
-
-            // Add generated alias to map aggregate.
-            mapAgg = alias(mapAggAlias, mapAgg);
-
-            if (alias != null) // Add initial alias if it was set.
-                rdcAgg = alias(alias.alias(), rdcAgg);
-
-            // Set map and reduce aggregates to their places in selects.
-            mapSelect.set(idx, mapAgg);
-
-            rdcSelect[idx] = rdcAgg;
+            if (idx < rdcSelect.length)
+                rdcSelect[idx] = alias;
         }
         else {
             String mapColAlias = columnName(idx);
@@ -463,13 +419,13 @@ public class GridSqlQuerySplitter {
             // Always wrap map column into generated alias.
             mapSelect.set(idx, alias(mapColAlias, el)); // `el` is known not to be an alias.
 
-            if (idx < rdcSelect.length) { // SELECT __C0 AS orginal_alias
+            if (idx < rdcSelect.length) { // SELECT __C0 AS original_alias
                 GridSqlElement rdcEl = column(mapColAlias);
 
                 GridSqlType type = el.expressionResultType();
 
                 if (type != null && type.type() == Value.UUID) // There is no JDBC type UUID, so conversion to bytes occurs.
-                    rdcEl = function(CAST).setCastType("UUID").addChild(rdcEl);
+                    rdcEl = function(CAST).setCastType("UUID").addChild(rdcEl); // TODO IGNITE-1142 - remove this cast when table function removed
 
                 if (colNames.add(rdcColAlias)) // To handle column name duplication (usually wildcard for few tables).
                     rdcEl = alias(rdcColAlias, rdcEl);
@@ -479,6 +435,141 @@ public class GridSqlQuerySplitter {
         }
 
         return aggregateFound;
+    }
+
+    /**
+     * @param el Expression.
+     * @return {@code true} If expression contains aggregates.
+     */
+    private static boolean hasAggregates(GridSqlElement el) {
+        if (el instanceof GridSqlAggregateFunction)
+            return true;
+
+        for (GridSqlElement child : el) {
+            if (hasAggregates(child))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param parentExpr Parent expression.
+     * @param childIdx Child index to try to split.
+     * @param mapSelect List of expressions in map SELECT clause.
+     * @param exprIdx Index of the original expression in map SELECT clause.
+     * @param first If the first aggregate is already found in this expression.
+     * @return {@code true} If the first aggregate is already found.
+     */
+    private static boolean splitAggregates(
+        final GridSqlElement parentExpr,
+        final int childIdx,
+        final List<GridSqlElement> mapSelect,
+        final int exprIdx,
+        boolean first) {
+        GridSqlElement el = parentExpr.child(childIdx);
+
+        if (el instanceof GridSqlAggregateFunction) {
+            splitAggregate(parentExpr, childIdx, mapSelect, exprIdx, first);
+
+            return true;
+        }
+
+        for (int i = 0; i < el.size(); i++) {
+            if (splitAggregates(el, i, mapSelect, exprIdx, first))
+                first = false;
+        }
+
+        return !first;
+    }
+
+    /**
+     * @param parentExpr Parent expression.
+     * @param aggIdx Index of the aggregate to split in this expression.
+     * @param mapSelect List of expressions in map SELECT clause.
+     * @param exprIdx Index of the original expression in map SELECT clause.
+     * @param first If this is the first aggregate found in this expression.
+     */
+    private static void splitAggregate(
+        GridSqlElement parentExpr,
+        int aggIdx,
+        List<GridSqlElement> mapSelect,
+        int exprIdx,
+        boolean first
+    ) {
+        GridSqlAggregateFunction agg = parentExpr.child(aggIdx);
+
+        GridSqlElement mapAgg, rdcAgg;
+
+        // Create stubbed map alias to fill it with correct expression later.
+        GridSqlAlias mapAggAlias = alias(columnName(first ? exprIdx : mapSelect.size()), EMPTY);
+
+        // Replace original expression if it is the first aggregate in expression or add to the end.
+        if (first)
+            mapSelect.set(exprIdx, mapAggAlias);
+        else
+            mapSelect.add(mapAggAlias);
+
+        switch (agg.type()) {
+            case AVG: // SUM( AVG(CAST(x AS DOUBLE))*COUNT(x) )/SUM( COUNT(x) ).
+                //-- COUNT(x) map
+                GridSqlElement cntMapAgg = aggregate(agg.distinct(), COUNT).addChild(agg.child());
+
+                // Add generated alias to COUNT(x).
+                // Using size as index since COUNT will be added as the last select element to the map query.
+                String cntMapAggAlias = columnName(mapSelect.size());
+
+                cntMapAgg = alias(cntMapAggAlias, cntMapAgg);
+
+                mapSelect.add(cntMapAgg);
+
+                //-- AVG(CAST(x AS DOUBLE)) map
+                mapAgg = aggregate(agg.distinct(), AVG).addChild( // Add function argument.
+                    function(CAST).setCastType("DOUBLE").addChild(agg.child()));
+
+                //-- SUM( AVG(x)*COUNT(x) )/SUM( COUNT(x) ) reduce
+                GridSqlElement sumUpRdc = aggregate(false, SUM).addChild(
+                    op(GridSqlOperationType.MULTIPLY,
+                        column(mapAggAlias.alias()),
+                        column(cntMapAggAlias)));
+
+                GridSqlElement sumDownRdc = aggregate(false, SUM).addChild(column(cntMapAggAlias));
+
+                rdcAgg = op(GridSqlOperationType.DIVIDE, sumUpRdc, sumDownRdc);
+
+                break;
+
+            case SUM: // SUM( SUM(x) )
+            case MAX: // MAX( MAX(x) )
+            case MIN: // MIN( MIN(x) )
+                mapAgg = aggregate(agg.distinct(), agg.type()).addChild(agg.child());
+                rdcAgg = aggregate(agg.distinct(), agg.type()).addChild(column(mapAggAlias.alias()));
+
+                break;
+
+            case COUNT_ALL: // CAST(SUM( COUNT(*) ) AS BIGINT)
+            case COUNT: // CAST(SUM( COUNT(x) ) AS BIGINT)
+                mapAgg = aggregate(agg.distinct(), agg.type());
+
+                if (agg.type() == COUNT)
+                    mapAgg.addChild(agg.child());
+
+                rdcAgg = aggregate(false, SUM).addChild(column(mapAggAlias.alias()));
+                rdcAgg = function(CAST).setCastType("BIGINT").addChild(rdcAgg);
+
+                break;
+
+            default:
+                throw new IgniteException("Unsupported aggregate: " + agg.type());
+        }
+
+        assert !(mapAgg instanceof GridSqlAlias);
+
+        // Fill the map alias with aggregate.
+        mapAggAlias.child(0, mapAgg);
+
+        // Replace in original expression aggregate with reduce aggregate.
+        parentExpr.child(aggIdx, rdcAgg);
     }
 
     /**

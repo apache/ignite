@@ -19,6 +19,7 @@ package org.apache.ignite.spi;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
@@ -73,6 +74,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
     /** Local node. */
     private ClusterNode locNode;
+
+    /** Failure detection timeout usage switch. */
+    private boolean failureDetectionTimeoutEnabled = true;
+
+    /**
+     *  Failure detection timeout. Initialized with the value of
+     *  {@link IgniteConfiguration#getFailureDetectionTimeout()}.
+     */
+    private long failureDetectionTimeout;
 
     /**
      * Creates new adapter and initializes it from the current (this) class.
@@ -580,6 +590,54 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      */
     protected void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
         spiCtx.removeTimeoutObject(obj);
+    }
+
+    /**
+     * Initiates and checks failure detection timeout value.
+     */
+    protected void initFailureDetectionTimeout() {
+        if (failureDetectionTimeoutEnabled) {
+            failureDetectionTimeout = ignite.configuration().getFailureDetectionTimeout();
+
+            if (failureDetectionTimeout <= 0)
+                throw new IgniteSpiException("Invalid failure detection timeout value: " + failureDetectionTimeout);
+            else if (failureDetectionTimeout <= 10)
+                // Because U.currentTimeInMillis() is updated once in 10 milliseconds.
+                log.warning("Failure detection timeout is too low, it may lead to unpredictable behaviour " +
+                    "[failureDetectionTimeout=" + failureDetectionTimeout + ']');
+        }
+        // Intentionally compare references using '!=' below
+        else if (ignite.configuration().getFailureDetectionTimeout() !=
+                IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT)
+            log.warning("Failure detection timeout will be ignored (one of SPI parameters has been set explicitly)");
+
+    }
+
+    /**
+     * Enables or disables failure detection timeout.
+     *
+     * @param enabled {@code true} if enable, {@code false} otherwise.
+     */
+    public void failureDetectionTimeoutEnabled(boolean enabled) {
+        failureDetectionTimeoutEnabled = enabled;
+    }
+
+    /**
+     * Checks whether failure detection timeout is enabled for this {@link IgniteSpi}.
+     *
+     * @return {@code true} if enabled, {@code false} otherwise.
+     */
+    public boolean failureDetectionTimeoutEnabled() {
+        return failureDetectionTimeoutEnabled;
+    }
+
+    /**
+     * Returns failure detection timeout set to use for network related operations.
+     *
+     * @return failure detection timeout in milliseconds or {@code 0} if the timeout is disabled.
+     */
+    public long failureDetectionTimeout() {
+        return failureDetectionTimeout;
     }
 
     /**

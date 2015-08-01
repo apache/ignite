@@ -248,7 +248,7 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
 
-    /** Maximum size for atomic cache queue delete history. */
+    /** Maximum size for atomic cache queue delete history (default is 200 000 entries per partition). */
     public static final String IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
 
     /**
@@ -315,6 +315,14 @@ public final class IgniteSystemProperties {
      * Default is {@code false}.
      */
     public static final String IGNITE_MBEAN_APPEND_JVM_ID = "IGNITE_MBEAN_APPEND_JVM_ID";
+
+    /**
+     * If this property is set to {@code true} then Ignite will append
+     * hash code of class loader to MXBean name.
+     * <p>
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_MBEAN_APPEND_CLASS_LOADER_ID = "IGNITE_MBEAN_APPEND_CLASS_LOADER_ID";
 
     /**
      * Property controlling size of buffer holding last exception. Default value of {@code 1000}.

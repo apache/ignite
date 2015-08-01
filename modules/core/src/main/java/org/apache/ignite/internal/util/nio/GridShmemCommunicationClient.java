@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
@@ -113,7 +114,8 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean sendMessage(@Nullable UUID nodeId, Message msg)
+    @Override public synchronized boolean sendMessage(@Nullable UUID nodeId, Message msg,
+        IgniteInClosure<IgniteException> closure)
         throws IgniteCheckedException {
         if (closed())
             throw new IgniteCheckedException("Communication client was closed: " + this);
@@ -130,6 +132,9 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         }
 
         markUsed();
+
+        if (closure != null)
+            closure.apply(null);
 
         return false;
     }

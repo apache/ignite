@@ -70,6 +70,9 @@ public class GridNioServer<T> {
     /** SSL system data buffer metadata key. */
     private static final int BUF_SSL_SYSTEM_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** SSL write buf limit. */
+    private static final int WRITE_BUF_LIMIT = GridNioSessionMetaKey.nextUniqueKey();
+
     /** Accept worker thread. */
     @GridToStringExclude
     private final IgniteThread acceptThread;
@@ -311,6 +314,9 @@ public class GridNioServer<T> {
             U.join(clientWorkers, log);
 
             filterChain.stop();
+
+            for (GridSelectorNioSessionImpl ses : sessions)
+                ses.onServerStopped();
         }
     }
 
@@ -387,6 +393,11 @@ public class GridNioServer<T> {
         assert fut != null;
 
         int msgCnt = sys ? ses.offerSystemFuture(fut) : ses.offerFuture(fut);
+
+        IgniteInClosure<IgniteException> ackClosure;
+
+        if (!sys && (ackClosure = ses.removeMeta(ACK_CLOSURE.ordinal())) != null)
+            fut.ackClosure(ackClosure);
 
         if (ses.closed()) {
             if (ses.removeFuture(fut))
@@ -920,6 +931,10 @@ public class GridNioServer<T> {
                 }
 
                 ByteBuffer buf = ses.writeBuffer();
+
+                if (ses.meta(WRITE_BUF_LIMIT) != null)
+                    buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
+
                 NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
 
                 List<NioOperationFuture<?>> doneFuts = null;
@@ -971,13 +986,24 @@ public class GridNioServer<T> {
                             writer.reset();
                     }
 
+                    int sesBufLimit = buf.limit();
+                    int sesCap = buf.capacity();
+
                     buf.flip();
+
+                    buf = sslFilter.encrypt(ses, buf);
 
                     ByteBuffer sesBuf = ses.writeBuffer();
 
-                    buf = sslFilter.encrypt(ses, sesBuf);
-
                     sesBuf.clear();
+
+                    if (sesCap - buf.limit() < 0) {
+                        int limit = sesBufLimit + (sesCap - buf.limit()) - 100;
+
+                        ses.addMeta(WRITE_BUF_LIMIT, limit);
+
+                        sesBuf.limit(limit);
+                    }
 
                     assert buf.hasRemaining();
 
@@ -1016,8 +1042,12 @@ public class GridNioServer<T> {
 
                         break;
                     }
-                    else
+                    else {
                         buf = ses.writeBuffer();
+
+                        if (ses.meta(WRITE_BUF_LIMIT) != null)
+                            buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
+                    }
                 }
             }
             finally {
@@ -1496,6 +1526,9 @@ public class GridNioServer<T> {
 
                     req.onDone(e);
                 }
+
+                if (closed)
+                    ses.onServerStopped();
             }
             catch (ClosedChannelException e) {
                 U.warn(log, "Failed to register accepted socket channel to selector (channel was closed): "
@@ -1524,6 +1557,9 @@ public class GridNioServer<T> {
             }
 
             sessions.remove(ses);
+
+            if (closed)
+                ses.onServerStopped();
 
             SelectionKey key = ses.key();
 

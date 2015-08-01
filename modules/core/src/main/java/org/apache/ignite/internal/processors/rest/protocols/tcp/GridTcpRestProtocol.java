@@ -35,6 +35,7 @@ import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.net.*;
@@ -106,13 +107,23 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             SSLContext sslCtx = null;
 
             if (cfg.isSslEnabled()) {
-                GridSslContextFactory factory = cfg.getSslContextFactory();
+                Factory<SSLContext> igniteFactory = ctx.config().getSslContextFactory();
 
-                if (factory == null)
+                Factory<SSLContext> factory = cfg.getSslFactory();
+
+                // This factory deprecated and will be removed.
+                GridSslContextFactory depFactory = cfg.getSslContextFactory();
+
+                if (factory == null && depFactory == null && igniteFactory == null)
                     // Thrown SSL exception instead of IgniteCheckedException for writing correct warning message into log.
                     throw new SSLException("SSL is enabled, but SSL context factory is not specified.");
 
-                sslCtx = factory.createSslContext();
+                if (factory != null)
+                    sslCtx = factory.create();
+                else if (depFactory != null)
+                    sslCtx = depFactory.createSslContext();
+                else
+                    sslCtx = igniteFactory.create();
             }
 
             int lastPort = cfg.getPort() + cfg.getPortRange() - 1;
@@ -204,7 +215,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             GridNioFilter[] filters;
 
             if (sslCtx != null) {
-                GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, log);
+                GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx,
+                    cfg.isDirectBuffer(), ByteOrder.nativeOrder(), log);
 
                 sslFilter.directMode(false);
 

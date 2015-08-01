@@ -98,6 +98,14 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"-wb", "--writeBehind"}, description = "Enable or disable writeBehind for cache store")
     private boolean writeBehind;
 
+    /** */
+    @Parameter(names = {"-bs", "--batchSize"}, description = "Batch size")
+    private int batch = 500;
+
+    /** */
+    @Parameter(names = {"-col", "--collocated"}, description = "Collocated")
+    private boolean collocated;
+
     /**
      * @return Transaction concurrency.
      */
@@ -229,6 +237,20 @@ public class IgniteBenchmarkArguments {
      */
     public boolean isWriteBehind() {
         return writeBehind;
+    }
+
+    /**
+     * @return Batch size.
+     */
+    public int batch() {
+        return batch;
+    }
+
+    /**
+     * @return Collocated.
+     */
+    public boolean collocated() {
+        return collocated;
     }
 
     /**

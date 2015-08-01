@@ -63,6 +63,9 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
     /** Unsafe instance. */
     private static final sun.misc.Unsafe unsafe = GridUnsafe.unsafe();
 
+    /** Attribute name used to queue node in entry metadata. */
+    private static final int META_KEY = GridMetadataAwareAdapter.EntryKey.CACHE_EVICTION_MANAGER_KEY.key();
+
     /** Eviction policy. */
     private EvictionPolicy plc;
 
@@ -71,9 +74,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
     /** Eviction buffer. */
     private final ConcurrentLinkedDeque8<EvictionInfo> bufEvictQ = new ConcurrentLinkedDeque8<>();
-
-    /** Attribute name used to queue node in entry metadata. */
-    private final UUID meta = UUID.randomUUID();
 
     /** Active eviction futures. */
     private final Map<Long, EvictionFuture> futs = new ConcurrentHashMap8<>();
@@ -1005,12 +1005,12 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      */
     private void enqueue(GridCacheEntryEx entry, CacheEntryPredicate[] filter)
         throws GridCacheEntryRemovedException {
-        Node<EvictionInfo> node = entry.meta(meta);
+        Node<EvictionInfo> node = entry.meta(META_KEY);
 
         if (node == null) {
             node = bufEvictQ.addLastx(new EvictionInfo(entry, entry.version(), filter));
 
-            if (entry.putMetaIfAbsent(meta, node) != null)
+            if (entry.putMetaIfAbsent(META_KEY, node) != null)
                 // Was concurrently added, need to clear it from queue.
                 bufEvictQ.unlinkx(node);
             else if (log.isDebugEnabled())
@@ -1655,7 +1655,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                 for (EvictionInfo info : evictInfos) {
                     // Queue node may have been stored in entry metadata concurrently, but we don't care
                     // about it since we are currently processing this entry.
-                    Node<EvictionInfo> queueNode = info.entry().removeMeta(meta);
+                    Node<EvictionInfo> queueNode = info.entry().removeMeta(META_KEY);
 
                     if (queueNode != null)
                         bufEvictQ.unlinkx(queueNode);

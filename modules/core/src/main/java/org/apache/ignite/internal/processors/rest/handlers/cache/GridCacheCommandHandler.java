@@ -53,26 +53,46 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
 public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     /** Supported commands. */
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(
+        DESTROY_CACHE,
+        GET_OR_CREATE_CACHE,
+        CACHE_CONTAINS_KEYS,
+        CACHE_CONTAINS_KEY,
         CACHE_GET,
+        CACHE_GET_AND_PUT,
+        CACHE_GET_AND_REPLACE,
+        CACHE_GET_AND_PUT_IF_ABSENT,
+        CACHE_PUT_IF_ABSENT,
         CACHE_GET_ALL,
         CACHE_PUT,
         CACHE_ADD,
         CACHE_PUT_ALL,
         CACHE_REMOVE,
+        CACHE_REMOVE_VALUE,
+        CACHE_REPLACE_VALUE,
+        CACHE_GET_AND_REMOVE,
         CACHE_REMOVE_ALL,
         CACHE_REPLACE,
         CACHE_CAS,
         CACHE_APPEND,
         CACHE_PREPEND,
-        CACHE_METRICS
+        CACHE_METRICS,
+        CACHE_SIZE
     );
 
     /** Requests with required parameter {@code key}. */
     private static final EnumSet<GridRestCommand> KEY_REQUIRED_REQUESTS = EnumSet.of(
+        CACHE_CONTAINS_KEY,
         CACHE_GET,
+        CACHE_GET_AND_PUT,
+        CACHE_GET_AND_REPLACE,
+        CACHE_GET_AND_PUT_IF_ABSENT,
+        CACHE_PUT_IF_ABSENT,
         CACHE_PUT,
         CACHE_ADD,
         CACHE_REMOVE,
+        CACHE_REMOVE_VALUE,
+        CACHE_REPLACE_VALUE,
+        CACHE_GET_AND_REMOVE,
         CACHE_REPLACE,
         ATOMIC_INCREMENT,
         ATOMIC_DECREMENT,
@@ -137,6 +157,44 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             IgniteInternalFuture<GridRestResponse> fut;
 
             switch (cmd) {
+                case DESTROY_CACHE: {
+                    fut = ((IgniteKernal)ctx.grid()).destroyCacheAsync(cacheName).chain(
+                        new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
+                            @Override public GridRestResponse applyx(IgniteInternalFuture<?> f)
+                                throws IgniteCheckedException {
+                                return new GridRestResponse(f.get());
+                            }
+                        });
+
+                    break;
+                }
+
+                case GET_OR_CREATE_CACHE: {
+                    fut = ((IgniteKernal)ctx.grid()).getOrCreateCacheAsync(cacheName).chain(
+                        new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
+                            @Override public GridRestResponse applyx(IgniteInternalFuture<?> f)
+                                throws IgniteCheckedException {
+                                return new GridRestResponse(f.get());
+                            }
+                        });
+
+                    break;
+                }
+
+                case CACHE_CONTAINS_KEYS: {
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                        new ContainsKeysCommand(getKeys(req0)));
+
+                    break;
+                }
+
+                case CACHE_CONTAINS_KEY: {
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                        new ContainsKeyCommand(key));
+
+                    break;
+                }
+
                 case CACHE_GET: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
                         new GetCommand(key));
@@ -144,48 +202,51 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     break;
                 }
 
-                case CACHE_GET_ALL: {
-                    Set<Object> keys = req0.values().keySet();
-
-                    if (F.isEmpty(keys))
-                        throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("keys"));
-
-                    // HashSet wrapping for correct serialization
-                    HashSet<Object> keys0 = new HashSet<>();
-
-                    for (Object getKey : keys) {
-                        if (getKey == null)
-                            throw new IgniteCheckedException("Failing getAll operation (null keys are not allowed).");
-
-                        keys0.add(getKey);
-                    }
-
+                case CACHE_GET_AND_PUT: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
-                        new GetAllCommand(keys0));
+                        new GetAndPutCommand(key, getValue(req0)));
+
+                    break;
+                }
+
+                case CACHE_GET_AND_REPLACE: {
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                        new GetAndReplaceCommand(key, getValue(req0)));
+
+                    break;
+                }
+
+                case CACHE_GET_AND_PUT_IF_ABSENT: {
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                        new GetAndPutIfAbsentCommand(key, getValue(req0)));
+
+                    break;
+                }
+
+                case CACHE_PUT_IF_ABSENT: {
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                        new PutIfAbsentCommand(key, getValue(req0)));
+
+                    break;
+                }
+
+                case CACHE_GET_ALL: {
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                        new GetAllCommand(getKeys(req0)));
 
                     break;
                 }
 
                 case CACHE_PUT: {
-                    final Object val = req0.value();
-
-                    if (val == null)
-                        throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
-
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key, new
-                        PutCommand(key, ttl, val));
+                        PutCommand(key, ttl, getValue(req0)));
 
                     break;
                 }
 
                 case CACHE_ADD: {
-                    final Object val = req0.value();
-
-                    if (val == null)
-                        throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
-
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
-                        new AddCommand(key, ttl, val));
+                        new AddCommand(key, ttl, getValue(req0)));
 
                     break;
                 }
@@ -216,6 +277,27 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 case CACHE_REMOVE: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
                         new RemoveCommand(key));
+
+                    break;
+                }
+
+                case CACHE_REMOVE_VALUE: {
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                        new RemoveValueCommand(key, getValue(req0)));
+
+                    break;
+                }
+
+                case CACHE_REPLACE_VALUE: {
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                        new ReplaceValueCommand(key, getValue(req0), req0.value2()));
+
+                    break;
+                }
+
+                case CACHE_GET_AND_REMOVE: {
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                        new GetAndRemoveCommand(key));
 
                     break;
                 }
@@ -274,6 +356,12 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     break;
                 }
 
+                case CACHE_SIZE: {
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, key, new SizeCommand());
+
+                    break;
+                }
+
                 default:
                     throw new IllegalArgumentException("Invalid command for cache handler: " + req);
             }
@@ -294,6 +382,44 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             if (log.isDebugEnabled())
                 log.debug("Handled cache REST request: " + req);
         }
+    }
+
+    /**
+     * @param req Request.
+     * @return Request keys.
+     * @throws IgniteCheckedException If incorrect keys are presented.
+     */
+    private Set<Object> getKeys(GridRestCacheRequest req) throws IgniteCheckedException {
+        Set<Object> keys = req.values().keySet();
+
+        if (F.isEmpty(keys))
+            throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("keys"));
+
+        // HashSet wrapping for correct serialization
+        HashSet<Object> keys0 = new HashSet<>();
+
+        for (Object getKey : keys) {
+            if (getKey == null)
+                throw new IgniteCheckedException("Failing operation (null keys are not allowed).");
+
+            keys0.add(getKey);
+        }
+
+        return keys0;
+    }
+
+    /**
+     * @param req Request.
+     * @return Request value.
+     * @throws IgniteCheckedException If incorrect keys are presented.
+     */
+    private Object getValue(GridRestCacheRequest req) throws IgniteCheckedException {
+        final Object val = req.value();
+
+        if (val == null)
+            throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
+
+        return val;
     }
 
     /**
@@ -702,6 +828,48 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** */
+    private static class ContainsKeyCommand extends CacheProjectionCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final Object key;
+
+        /**
+         * @param key Key.
+         */
+        ContainsKeyCommand(Object key) {
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            return c.containsKeyAsync(key);
+        }
+    }
+
+    /** */
+    private static class ContainsKeysCommand extends CacheProjectionCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final Collection<Object> keys;
+
+        /**
+         * @param keys Keys.
+         */
+        ContainsKeysCommand(Collection<Object> keys) {
+            this.keys = keys;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            return c.containsKeysAsync(keys);
+        }
+    }
+
+    /** */
     private static class GetCommand extends CacheProjectionCommand {
         /** */
         private static final long serialVersionUID = 0L;
@@ -719,6 +887,113 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             return c.getAsync(key);
+        }
+    }
+
+    /** */
+    private static class GetAndPutCommand extends CacheProjectionCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Key. */
+        protected final Object key;
+
+        /** Value.*/
+        protected final Object val;
+
+        /**
+         * @param key Key.
+         * @param val Value.
+         */
+        GetAndPutCommand(Object key, Object val) {
+            this.key = key;
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            return c.getAndPutAsync(key, val);
+        }
+    }
+
+    /** */
+    private static class GetAndReplaceCommand extends GetAndPutCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param key Key.
+         * @param val Value.
+         */
+        GetAndReplaceCommand(Object key, Object val) {
+            super(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            return c.getAndReplaceAsync(key, val);
+        }
+    }
+
+    /** */
+    private static class ReplaceValueCommand extends GetAndReplaceCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final Object oldVal;
+
+        /**
+         * @param key Key.
+         * @param val Value.
+         * @param oldVal Old value.
+         */
+        ReplaceValueCommand(Object key, Object val, Object oldVal) {
+            super(key, val);
+            this.oldVal = oldVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            return c.replaceAsync(key, oldVal, val);
+        }
+    }
+
+    /** */
+    private static class GetAndPutIfAbsentCommand extends GetAndPutCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param key Key.
+         * @param val Value.
+         */
+        GetAndPutIfAbsentCommand(Object key, Object val) {
+            super(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            return c.getAndPutIfAbsentAsync(key, val);
+        }
+    }
+
+    /** */
+    private static class PutIfAbsentCommand extends GetAndPutCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param key Key.
+         * @param val Value.
+         */
+        PutIfAbsentCommand(Object key, Object val) {
+            super(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            return c.putIfAbsentAsync(key, val);
         }
     }
 
@@ -770,7 +1045,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final Object key;
+        protected final Object key;
 
         /**
          * @param key Key.
@@ -782,6 +1057,43 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             return c.removeAsync(key);
+        }
+    }
+
+    /** */
+    private static class RemoveValueCommand extends GetAndPutCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param key Key.
+         * @param val Value.
+         */
+        RemoveValueCommand(Object key, Object val) {
+            super(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            return c.removeAsync(key, val);
+        }
+    }
+
+    /** */
+    private static class GetAndRemoveCommand extends RemoveCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param key Key.
+         */
+        GetAndRemoveCommand(Object key) {
+            super(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            return c.getAndRemoveAsync(key);
         }
     }
 
@@ -1023,6 +1335,17 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 (int)metrics.getCacheHits(),
                 (int)metrics.getCacheMisses())
             );
+        }
+    }
+
+    /** */
+    private static class SizeCommand extends CacheCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            return c.sizeAsync(new CachePeekMode[]{CachePeekMode.PRIMARY});
         }
     }
 }

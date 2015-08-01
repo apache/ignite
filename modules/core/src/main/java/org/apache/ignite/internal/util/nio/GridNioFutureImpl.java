@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 /**
  * Default future implementation.
@@ -29,6 +31,9 @@ public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNi
 
     /** */
     protected boolean msgThread;
+
+    /** */
+    protected IgniteInClosure<IgniteException> ackClosure;
 
     /** {@inheritDoc} */
     @Override public void messageThread(boolean msgThread) {
@@ -43,6 +48,16 @@ public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNi
     /** {@inheritDoc} */
     @Override public boolean skipRecovery() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void ackClosure(IgniteInClosure<IgniteException> closure) {
+        ackClosure = closure;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInClosure<IgniteException> ackClosure() {
+        return ackClosure;
     }
 
     /** {@inheritDoc} */

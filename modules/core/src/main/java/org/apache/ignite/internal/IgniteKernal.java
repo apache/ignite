@@ -709,6 +709,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             // Just wait for 10 secs.
                             Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
 
+                            // Just wait another 60 secs in order to get
+                            // version info even on slow connection.
+                            for (int i = 0; i < 60 && verChecker.latestVersion() == null; i++)
+                                Thread.sleep(1000);
+
                             // Report status if one is available.
                             // No-op if status is NOT available.
                             verChecker.reportStatus(log);
@@ -1177,6 +1182,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         add(ATTR_CONSISTENCY_CHECK_SKIPPED, getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK));
 
+        if (cfg.getConsistentId() != null)
+            add(ATTR_NODE_CONSISTENT_ID, cfg.getConsistentId());
+
         // Build a string from JVM arguments, because parameters with spaces are split.
         SB jvmArgs = new SB(512);
 
@@ -1483,13 +1491,25 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackAsciiLogo() {
         assert log != null;
 
-        String fileName = log.fileName();
-
         if (System.getProperty(IGNITE_NO_ASCII) == null) {
             String ver = "ver. " + ACK_VER_STR;
 
             // Big thanks to: http://patorjk.com/software/taag
             // Font name "Small Slant"
+            if (log.isInfoEnabled()) {
+                log.info(NL + NL +
+                        ">>>    __________  ________________  " + NL +
+                        ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
+                        ">>>  _/ // (7 7    // /  / / / _/    " + NL +
+                        ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
+                        ">>> " + NL +
+                        ">>> " + ver + NL +
+                        ">>> " + COPYRIGHT + NL +
+                        ">>> " + NL +
+                        ">>> Ignite documentation: " + "http://" + SITE + NL
+                );
+            }
+
             if (log.isQuiet()) {
                 U.quiet(false,
                     "   __________  ________________ ",
@@ -1504,26 +1524,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     "",
                     "Quiet mode.");
 
+                String fileName = log.fileName();
+
                 if (fileName != null)
-                    U.quiet(false, "  ^-- Logging to file '" +  fileName + '\'');
+                    U.quiet(false, "  ^-- Logging to file '" + fileName + '\'');
 
                 U.quiet(false,
                     "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite.{sh|bat}",
                     "");
-            }
-
-            if (log.isInfoEnabled()) {
-                log.info(NL + NL +
-                        ">>>    __________  ________________  " + NL +
-                        ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
-                        ">>>  _/ // (7 7    // /  / / / _/    " + NL +
-                        ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
-                        ">>> " + NL +
-                        ">>> " + ver + NL +
-                        ">>> " + COPYRIGHT + NL +
-                        ">>> " + NL +
-                        ">>> Ignite documentation: " + "http://" + SITE + NL
-                );
             }
         }
     }
@@ -2074,8 +2082,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackSecurity() {
         assert log != null;
 
-        if (log.isInfoEnabled())
-            log.info("Security status [authentication=" + onOff(ctx.security().enabled()) + ']');
+        U.quietAndInfo(log, "Security status [authentication=" + onOff(ctx.security().enabled())
+            + ", communication encryption=" + onOff(ctx.config().getSslContextFactory() != null) + ']');
     }
 
     /**
@@ -2444,22 +2452,28 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
-        guard();
-
-        IgniteInternalFuture<?> stopFut;
-
-        try {
-            stopFut = ctx.cache().dynamicDestroyCache(cacheName);
-        }
-        finally {
-            unguard();
-        }
+        IgniteInternalFuture stopFut = destroyCacheAsync(cacheName);
 
         try {
             stopFut.get();
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
+        }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Ignite future.
+     */
+    public IgniteInternalFuture<?> destroyCacheAsync(String cacheName) {
+        guard();
+
+        try {
+            return ctx.cache().dynamicDestroyCache(cacheName);
+        }
+        finally {
+            unguard();
         }
     }
 
@@ -2475,6 +2489,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Future that will be completed when cache is deployed.
+     */
+    public IgniteInternalFuture<?> getOrCreateCacheAsync(String cacheName) {
+        guard();
+
+        try {
+            if (ctx.cache().cache(cacheName) == null)
+                return ctx.cache().getOrCreateFromTemplate(cacheName);
+
+            return new GridFinishedFuture<>();
         }
         finally {
             unguard();
@@ -2726,8 +2758,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
         @Nullable T initVal,
         @Nullable S initStamp,
-        boolean create)
-    {
+        boolean create) {
         guard();
 
         try {
@@ -2745,8 +2776,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
         int cnt,
         boolean autoDel,
-        boolean create)
-    {
+        boolean create) {
         guard();
 
         try {

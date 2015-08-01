@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * Select query.
  */
-public abstract class GridSqlQuery implements Cloneable {
+public abstract class GridSqlQuery {
     /** */
     protected boolean distinct;
 
@@ -145,13 +145,10 @@ public abstract class GridSqlQuery implements Cloneable {
 
             int visibleCols = visibleColumns();
 
-            boolean first = true;
+            buff.resetCount();
 
             for (GridSqlSortColumn col : sort) {
-                if (first)
-                    first = false;
-                else
-                    buff.append(", ");
+                buff.appendExceptFirst(", ");
 
                 int idx = col.column();
 
@@ -183,21 +180,5 @@ public abstract class GridSqlQuery implements Cloneable {
 
         if (offset != null)
             buff.append(" OFFSET ").append(StringUtils.unEnclose(offset.getSQL()));
-
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"CloneCallsConstructors", "CloneDoesntDeclareCloneNotSupportedException"})
-    @Override public GridSqlQuery clone() {
-        try {
-            GridSqlQuery res = (GridSqlQuery)super.clone();
-
-            res.sort = new ArrayList<>(sort);
-
-            return res;
-        }
-        catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e); // Never thrown.
-        }
     }
 }

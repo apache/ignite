@@ -19,10 +19,7 @@ package org.apache.ignite.internal.processors.cache.extras;
 
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
 
 /**
  * Extras where MVCC and TTL are set.
@@ -51,11 +48,6 @@ public class GridCacheMvccTtlEntryExtras extends GridCacheEntryExtrasAdapter {
         this.mvcc = mvcc;
         this.ttl = ttl;
         this.expireTime = expireTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData) {
-        return attrData != null ? new GridCacheAttributesMvccTtlEntryExtras(attrData, mvcc, ttl, expireTime) : this;
     }
 
     /** {@inheritDoc} */

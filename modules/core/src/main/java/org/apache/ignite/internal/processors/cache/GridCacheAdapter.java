@@ -1293,9 +1293,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         if (!F.isEmpty(keys)) {
-            final UUID uid = CU.uuid(); // Get meta UUID for this thread.
-
-            assert keys != null;
+            final Map<KeyCacheObject, GridCacheVersion> keyVers = new HashMap();
 
             for (KeyCacheObject key : keys) {
                 if (key == null)
@@ -1312,11 +1310,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         if (entry == null)
                             break;
 
-                        // Get version before checking filer.
                         GridCacheVersion ver = entry.version();
 
-                        // Tag entry with current version.
-                        entry.addMeta(uid, ver);
+                        keyVers.put(key, ver);
 
                         break;
                     }
@@ -1336,7 +1332,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             final Map<KeyCacheObject, CacheObject> map =
                 ret ? U.<KeyCacheObject, CacheObject>newHashMap(keys.size()) : null;
 
-            final Collection<KeyCacheObject> absentKeys = F.view(keys, CU.keyHasMeta(ctx, uid));
+            final Collection<KeyCacheObject> absentKeys = F.view(keyVers.keySet());
 
             final Collection<KeyCacheObject> loadedKeys = new GridConcurrentHashSet<>();
 
@@ -1353,9 +1349,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                         if (entry != null) {
                             try {
-                                GridCacheVersion curVer = entry.removeMeta(uid);
+                                GridCacheVersion curVer = keyVers.get(key);
 
-                                // If entry passed the filter.
                                 if (curVer != null) {
                                     boolean wasNew = entry.isNewLocked();
 
@@ -1627,7 +1622,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-       if (keyCheck)
+        if (keyCheck)
             validateCacheKeys(keys);
 
         return getAllAsync0(ctx.cacheKeysView(keys),
@@ -2284,7 +2279,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Put future.
      */
     public IgniteInternalFuture<Boolean> putAsync(K key, V val,
-                                                  @Nullable CacheEntryPredicate... filter) {
+        @Nullable CacheEntryPredicate... filter) {
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;

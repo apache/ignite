@@ -33,7 +33,7 @@ import java.util.*;
  */
 public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     /** */
-    private static final UUID META_KEY = UUID.randomUUID();
+    private static final int META_KEY = GridMetadataAwareAdapter.EntryKey.CACHE_EVICTABLE_ENTRY_KEY.key();
 
     /** Cached entry. */
     @GridToStringInclude

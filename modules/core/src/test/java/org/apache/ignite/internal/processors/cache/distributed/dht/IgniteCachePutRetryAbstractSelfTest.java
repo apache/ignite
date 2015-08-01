@@ -71,6 +71,8 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
     public void testPut() throws Exception {
         final AtomicBoolean finished = new AtomicBoolean();
 
+        int keysCnt = keysCount();
+
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!finished.get()) {
@@ -85,13 +87,18 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
             }
         });
 
-        int keysCnt = keysCount();
 
-        for (int i = 0; i < keysCnt; i++)
-            ignite(0).cache(null).put(i, i);
+        try {
+            for (int i = 0; i < keysCnt; i++)
+                ignite(0).cache(null).put(i, i);
 
-        finished.set(true);
-        fut.get();
+            finished.set(true);
+
+            fut.get();
+        }
+        finally {
+            finished.set(true);
+        }
 
         for (int i = 0; i < keysCnt; i++)
             assertEquals(i, ignite(0).cache(null).get(i));
@@ -117,27 +124,34 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
             }
         });
 
-        int keysCnt = keysCount();
+        try {
+            int keysCnt = keysCount();
 
-        boolean exceptionThrown = false;
+            boolean eThrown = false;
 
-        for (int i = 0; i < keysCnt; i++) {
-            try {
-                ignite(0).cache(null).withNoRetries().put(i, i);
+            for (int i = 0; i < keysCnt; i++) {
+                try {
+                    ignite(0).cache(null).withNoRetries().put(i, i);
+                }
+                catch (Exception e) {
+                    assertTrue("Invalid exception: " + e, X.hasCause(e, ClusterTopologyCheckedException.class) ||
+                        X.hasCause(e, CachePartialUpdateException.class));
+
+                    eThrown = true;
+
+                    break;
+                }
             }
-            catch (Exception e) {
-                assertTrue("Invalid exception: " + e, X.hasCause(e, ClusterTopologyCheckedException.class) || X.hasCause(e, CachePartialUpdateException.class));
 
-                exceptionThrown = true;
+            assertTrue(eThrown);
 
-                break;
-            }
+            finished.set(true);
+
+            fut.get();
         }
-
-        assertTrue(exceptionThrown);
-
-        finished.set(true);
-        fut.get();
+        finally {
+            finished.set(true);
+        }
     }
 
     /** {@inheritDoc} */

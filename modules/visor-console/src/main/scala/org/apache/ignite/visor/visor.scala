@@ -228,6 +228,9 @@ object visor extends VisorTag {
     /** */
     @volatile var ignite: IgniteEx = null
 
+    /** */
+    @volatile var prevIgnite: Option[IgniteEx] = None
+
     private var reader: ConsoleReader = null
 
     def reader(reader: ConsoleReader) {

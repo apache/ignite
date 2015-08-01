@@ -372,7 +372,9 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         boolean nearEnabled = cache2.getConfiguration(CacheConfiguration.class).getNearConfiguration() != null;
 
         assertEquals(nearEnabled ? 2 : 0, cache2.localSize(NEAR));
-        assertEquals(0, cache2.localSize(CachePeekMode.ALL) - cache2.localSize(NEAR));
+
+        if (cacheMode() != REPLICATED)
+            assertEquals(0, cache2.localSize(CachePeekMode.ALL) - cache2.localSize(NEAR));
     }
 
     /**

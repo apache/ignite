@@ -89,6 +89,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @GridToStringExclude
     private volatile long lastUpdateTime = U.currentTimeMillis();
 
+    /** The most recent time when a data chunk was received from a node. */
+    private volatile long lastDataReceivedTime = U.currentTimeMillis();
+
     /** Metrics provider (transient). */
     @GridToStringExclude
     private DiscoveryMetricsProvider metricsProvider;
@@ -131,11 +134,15 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      * @param discPort Port.
      * @param metricsProvider Metrics provider.
      * @param ver Version.
+     * @param consistentId Node consistent ID.
      */
     public TcpDiscoveryNode(UUID id,
         Collection<String> addrs,
-        Collection<String> hostNames, int discPort,
-        DiscoveryMetricsProvider metricsProvider, IgniteProductVersion ver)
+        Collection<String> hostNames,
+        int discPort,
+        DiscoveryMetricsProvider metricsProvider,
+        IgniteProductVersion ver,
+        Serializable consistentId)
     {
         assert id != null;
         assert !F.isEmpty(addrs);
@@ -145,6 +152,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         this.id = id;
 
         List<String> sortedAddrs = new ArrayList<>(addrs);
+
         Collections.sort(sortedAddrs);
 
         this.addrs = sortedAddrs;
@@ -153,7 +161,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         this.metricsProvider = metricsProvider;
         this.ver = ver;
 
-        consistentId = U.consistentId(sortedAddrs, discPort);
+        this.consistentId = consistentId != null ? consistentId : U.consistentId(sortedAddrs, discPort);
 
         metrics = metricsProvider.metrics();
         cacheMetrics = metricsProvider.cacheMetrics();
@@ -385,6 +393,24 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     }
 
     /**
+     * Gets the last time a node received a data chunk from a remote node.
+     *
+     * @return Time in milliseconds.
+     */
+    public long lastDataReceivedTime() {
+        return lastDataReceivedTime;
+    }
+
+    /**
+     * Sets the last time a node receive a data chunk from a remote node in a topology.
+     *
+     * @param lastDataReceivedTime Time in milliseconds.
+     */
+    public void lastDataReceivedTime(long lastDataReceivedTime) {
+        this.lastDataReceivedTime = lastDataReceivedTime;
+    }
+
+    /**
      * Gets visible flag.
      *
      * @return {@code true} if node is in visible state.
@@ -452,7 +478,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      * @return Copy of local node for client reconnect request.
      */
     public TcpDiscoveryNode clientReconnectNode() {
-        TcpDiscoveryNode node = new TcpDiscoveryNode(id, addrs, hostNames, discPort, metricsProvider, ver);
+        TcpDiscoveryNode node = new TcpDiscoveryNode(id, addrs, hostNames, discPort, metricsProvider, ver,
+            null);
 
         node.attrs = attrs;
         node.clientRouterNodeId = clientRouterNodeId;
@@ -522,7 +549,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         sockAddrs = U.toSocketAddresses(this, discPort);
 
-        consistentId = U.consistentId(addrs, discPort);
+        Object consistentIdAttr = attrs.get(ATTR_NODE_CONSISTENT_ID);
+
+        consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
 
         // Cluster metrics
         byte[] mtr = U.readByteArray(in);

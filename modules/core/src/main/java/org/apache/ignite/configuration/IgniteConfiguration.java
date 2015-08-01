@@ -52,6 +52,7 @@ import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
+import org.apache.ignite.ssl.*;
 
 import javax.cache.configuration.*;
 import javax.cache.event.*;
@@ -59,6 +60,8 @@ import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
 import javax.management.*;
+import java.io.*;
+import javax.net.ssl.*;
 import java.lang.management.*;
 import java.util.*;
 
@@ -188,6 +191,11 @@ public class IgniteConfiguration {
 
     /** Default value for cache sanity check enabled flag. */
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
+
+    /** Default failure detection timeout in millis. */
+    @SuppressWarnings("UnnecessaryBoxing")
+//    public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
+    public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
 
     /** Optional grid name. */
     private String gridName;
@@ -366,6 +374,9 @@ public class IgniteConfiguration {
     /** Port number range for time server. */
     private int timeSrvPortRange = DFLT_TIME_SERVER_PORT_RANGE;
 
+    /** Failure detection timeout. */
+    private Long failureDetectionTimeout = DFLT_FAILURE_DETECTION_TIMEOUT;
+
     /** Property names to include into node attributes. */
     private String[] includeProps;
 
@@ -399,6 +410,12 @@ public class IgniteConfiguration {
 
     /** Cache store session listeners. */
     private Factory<CacheStoreSessionListener>[] storeSesLsnrs;
+
+    /** Consistent globally unique node ID which survives node restarts. */
+    private Serializable consistentId;
+
+    /** SSL connection factory. */
+    private Factory<SSLContext> sslCtxFactory;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -442,9 +459,10 @@ public class IgniteConfiguration {
         clientMode = cfg.isClientMode();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
+        consistentId = cfg.getConsistentId();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
-        pubPoolSize = cfg.getPublicThreadPoolSize();
+        failureDetectionTimeout = cfg.getFailureDetectionTimeout();
         ggHome = cfg.getIgniteHome();
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
@@ -474,12 +492,14 @@ public class IgniteConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
+        pubPoolSize = cfg.getPublicThreadPoolSize();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
+        sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         svcCfgs = cfg.getServiceConfiguration();
         sysPoolSize = cfg.getSystemThreadPoolSize();
@@ -555,6 +575,27 @@ public class IgniteConfiguration {
         this.gridName = gridName;
 
         return this;
+    }
+
+    /**
+     * Sets consistent globally unique node ID which survives node restarts.
+     *
+     * @param consistentId Node consistent ID.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setConsistentId(Serializable consistentId) {
+        this.consistentId = consistentId;
+
+        return this;
+    }
+
+    /**
+     * Gets consistent globally unique node ID which survives node restarts.
+     *
+     * @return Node consistent ID.
+     */
+    public Serializable getConsistentId() {
+        return consistentId;
     }
 
     /**
@@ -1310,6 +1351,28 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Sets SSL context factory that will be used for creating a secure socket  layer.
+     *
+     * @param sslCtxFactory Ssl context factory.
+     * @see SslContextFactory
+     */
+    public IgniteConfiguration setSslContextFactory(Factory<SSLContext> sslCtxFactory) {
+        this.sslCtxFactory = sslCtxFactory;
+
+        return this;
+    }
+
+    /**
+     * Returns SSL context factory that will be used for creating a secure socket layer.
+     *
+     * @return SSL connection factory.
+     * @see SslContextFactory
+     */
+    public Factory<SSLContext> getSslContextFactory() {
+        return sslCtxFactory;
+    }
+
+    /**
      * Should return fully configured event SPI implementation. If not provided,
      * {@link MemoryEventStorageSpi} will be used.
      *
@@ -1626,6 +1689,30 @@ public class IgniteConfiguration {
         this.failSpi = failSpi;
 
         return this;
+    }
+
+    /**
+     * Returns failure detection timeout used by {@link TcpDiscoverySpi} and {@link TcpCommunicationSpi}.
+     * <p>
+     * Default is {@link #DFLT_FAILURE_DETECTION_TIMEOUT}.
+     *
+     * @see #setFailureDetectionTimeout(long)
+     * @return Failure detection timeout in milliseconds.
+     */
+    public Long getFailureDetectionTimeout() {
+        return failureDetectionTimeout;
+    }
+
+    /**
+     * Sets failure detection timeout to use in {@link TcpDiscoverySpi} and {@link TcpCommunicationSpi}.
+     * <p>
+     * Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before
+     * considering a remote connection failed.
+     *
+     * @param failureDetectionTimeout Failure detection timeout in milliseconds.
+     */
+    public void setFailureDetectionTimeout(long failureDetectionTimeout) {
+        this.failureDetectionTimeout = failureDetectionTimeout;
     }
 
     /**

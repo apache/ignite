@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
@@ -94,10 +95,12 @@ public interface GridCommunicationClient {
     /**
      * @param nodeId Node ID (provided only if versions of local and remote nodes are different).
      * @param msg Message to send.
+     * @param closure Ack closure.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if should try to resend message.
      */
-    public boolean sendMessage(@Nullable UUID nodeId, Message msg) throws IgniteCheckedException;
+    public boolean sendMessage(@Nullable UUID nodeId, Message msg, @Nullable IgniteInClosure<IgniteException> closure)
+        throws IgniteCheckedException;
 
     /**
      * @return {@code True} if send is asynchronous.

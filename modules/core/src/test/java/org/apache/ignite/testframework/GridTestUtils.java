@@ -32,10 +32,12 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.ssl.*;
 import org.apache.ignite.testframework.config.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.lang.annotation.*;
@@ -1328,6 +1330,24 @@ public final class GridTestUtils {
      */
     public static GridSslContextFactory sslContextFactory() {
         GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
+
+        factory.setKeyStoreFilePath(
+            U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
+        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+
+        factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
+
+        return factory;
+    }
+
+
+    /**
+     * Creates test-purposed SSL context factory from test key store with disabled trust manager.
+     *
+     * @return SSL context factory used in test.
+     */
+    public static Factory<SSLContext> sslFactory() {
+        SslContextFactory factory = new SslContextFactory();
 
         factory.setKeyStoreFilePath(
             U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
