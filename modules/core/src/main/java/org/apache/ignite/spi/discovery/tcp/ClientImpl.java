@@ -458,7 +458,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
                     return null;
 
-                U.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
+                LT.warn(log, null, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "in 2000ms): " + addrs0);
 
                 Thread.sleep(2000);

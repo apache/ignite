@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -35,14 +36,15 @@ public class TestTcpCommunicationSpi extends TcpCommunicationSpi {
     private Class ignoreMsg;
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(final ClusterNode node, final Message msg) throws IgniteSpiException {
+    @Override public void sendMessage(final ClusterNode node, final Message msg,
+        IgniteInClosure<IgniteException> ackClosure) throws IgniteSpiException {
         if (stopped)
             return;
 
         if (ignoreMsg != null && ((GridIoMessage)msg).message().getClass().equals(ignoreMsg))
             return;
 
-        super.sendMessage(node, msg);
+        super.sendMessage(node, msg, ackClosure);
     }
 
     /**

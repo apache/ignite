@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -119,7 +120,8 @@ public class IgniteCacheNearTxRollbackTest extends IgniteCacheAbstractTest {
         private volatile boolean sndFail;
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+            throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {
                 Object msg0 = ((GridIoMessage)msg).message();
 
@@ -127,7 +129,7 @@ public class IgniteCacheNearTxRollbackTest extends IgniteCacheAbstractTest {
                     throw new IgniteSpiException("Test error");
             }
 
-            super.sendMessage(node, msg);
+            super.sendMessage(node, msg, ackClosure);
         }
     }
 }

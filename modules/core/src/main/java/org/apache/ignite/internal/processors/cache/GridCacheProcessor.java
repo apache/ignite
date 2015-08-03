@@ -1764,7 +1764,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheIoManager ioMgr = new GridCacheIoManager();
 
         CacheJtaManagerAdapter jta = JTA.createOptional();
-        
+
         return new GridCacheSharedContext(
             kernalCtx,
             tm,
