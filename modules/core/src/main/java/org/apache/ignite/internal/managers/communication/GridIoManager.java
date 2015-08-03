@@ -1121,7 +1121,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * <p>
      * How to use it:
      * <ol>
-     *     <li>Replace {@link #send(ClusterNode, Object, int, Message, byte, boolean, long, boolean, IgniteInClosure)}
+     *     <li>Replace {@link #send(ClusterNode, Object, int, Message, byte, boolean, boolean, long, boolean, IgniteInClosure)}
      *          with this method.</li>
      *     <li>Start all grids for your test, then set {@link #TURBO_DEBUG_MODE} to {@code true}.</li>
      *     <li>Perform test operations on the topology. No network will be there.</li>
@@ -1145,6 +1145,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Message msg,
         byte plc,
         boolean ordered,
+        boolean seq,
         long timeout,
         boolean skipOnTimeout
     ) throws IgniteCheckedException {
@@ -1152,7 +1153,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert topic != null;
         assert msg != null;
 
-        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, seq, timeout, skipOnTimeout);
 
         IgniteKernal rmt;
 
