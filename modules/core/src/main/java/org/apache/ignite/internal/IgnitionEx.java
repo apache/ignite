@@ -583,22 +583,7 @@ public class IgnitionEx {
     public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
     loadConfigurations(String springCfgPath) throws IgniteCheckedException {
         A.notNull(springCfgPath, "springCfgPath");
-
-        URL url;
-
-        try {
-            url = new URL(springCfgPath);
-        }
-        catch (MalformedURLException e) {
-            url = U.resolveIgniteUrl(springCfgPath);
-
-            if (url == null)
-                throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
-                    ". Note that this path should be either absolute or a relative local file system path, " +
-                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
-        }
-
-        return loadConfigurations(url);
+        return loadConfigurations(IgniteUtils.resolveSpringUrl(springCfgPath));
     }
 
     /**
