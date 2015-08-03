@@ -497,7 +497,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cleanup(cfg, cfg.getAffinityMapper(), false);
         cleanup(cfg, cctx.store().configuredStore(), false);
 
-        if (!CU.isUtilityCache(cctx.cache().name()) && !CU.isSystemCache(cctx.cache().name()))
+        if (cfg.isStatisticsEnabled() && !CU.isUtilityCache(cctx.cache().name())
+            && !CU.isSystemCache(cctx.cache().name()))
             cleanup(cfg, cctx.cache().name(), false);
 
         NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
@@ -1359,7 +1360,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheCtx.cache(dht);
         }
 
-        if (!CU.isUtilityCache(cache.name()) && !CU.isSystemCache(cache.name()))
+        if (cfg.isStatisticsEnabled() && !CU.isUtilityCache(cache.name()) && !CU.isSystemCache(cache.name()))
             prepare(cfg, cache.mxBean(), false);
 
         return ret;
