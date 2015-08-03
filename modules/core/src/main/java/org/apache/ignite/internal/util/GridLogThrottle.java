@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -42,7 +42,7 @@ public class GridLogThrottle {
     private static int throttleTimeout = DFLT_THROTTLE_TIMEOUT;
 
     /** Errors. */
-    private static final ConcurrentMap<GridTuple3<Class<? extends Throwable>, String, Boolean>, Long> errors =
+    private static final ConcurrentMap<IgniteBiTuple<Class<? extends Throwable>, String>, Long> errors =
         new ConcurrentHashMap8<>();
 
     /**
@@ -95,6 +95,7 @@ public class GridLogThrottle {
      * @param log Logger.
      * @param e Error (optional).
      * @param msg Message.
+     * @param quite Print warning anyway.
      */
     public static void warn(@Nullable IgniteLogger log, @Nullable Throwable e, String msg, boolean quite) {
         assert !F.isEmpty(msg);
@@ -121,11 +122,22 @@ public class GridLogThrottle {
      *
      * @param log Logger.
      * @param msg Message.
+     * @param quite Print info anyway.
      */
-    public static void info(@Nullable IgniteLogger log, String msg) {
+    public static void info(@Nullable IgniteLogger log, String msg, boolean quite) {
         assert !F.isEmpty(msg);
 
-        log(log, null, msg, null, LogLevel.INFO, false);
+        log(log, null, msg, null, LogLevel.INFO, quite);
+    }
+
+    /**
+     * Logs info if needed.
+     *
+     * @param log Logger.
+     * @param msg Message.
+     */
+    public static void info(@Nullable IgniteLogger log, String msg) {
+        info(log, msg, false);
     }
 
     /**
@@ -149,9 +161,9 @@ public class GridLogThrottle {
         LogLevel level, boolean quiet) {
         assert !F.isEmpty(longMsg);
 
-        GridTuple3<Class<? extends Throwable>, String, Boolean> tup =
-            e != null ? F.<Class<? extends Throwable>, String, Boolean>t(e.getClass(), e.getMessage(), quiet) :
-                F.<Class<? extends Throwable>, String, Boolean>t(null, longMsg, quiet);
+        IgniteBiTuple<Class<? extends Throwable>, String> tup =
+            e != null ? F.<Class<? extends Throwable>, String>t(e.getClass(), e.getMessage()) :
+                F.<Class<? extends Throwable>, String>t(null, longMsg);
 
         while (true) {
             Long loggedTs = errors.get(tup);
@@ -177,7 +189,7 @@ public class GridLogThrottle {
      * @param newStamp New timestamp.
      * @return {@code True} if throttle value was replaced.
      */
-    private static boolean replace(GridTuple3<Class<? extends Throwable>, String, Boolean> t, @Nullable Long oldStamp,
+    private static boolean replace(IgniteBiTuple<Class<? extends Throwable>, String> t, @Nullable Long oldStamp,
         Long newStamp) {
         assert newStamp != null;
 
@@ -222,8 +234,12 @@ public class GridLogThrottle {
         /** Info level. */
         INFO {
             @Override public void doLog(IgniteLogger log, String longMsg, String shortMsg, Throwable e, boolean quiet) {
-                if (log.isInfoEnabled())
-                    log.info(longMsg);
+                if (quiet)
+                    U.quietAndInfo(log, longMsg);
+                else {
+                    if (log.isInfoEnabled())
+                        log.info(longMsg);
+                }
             }
         };
 
