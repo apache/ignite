@@ -3358,7 +3358,7 @@ public abstract class IgniteUtils {
 
     /**
      * @param path Resource path.
-     * @return Resource URL inside jar. Or {@code null}.
+     * @return Resource URL inside classpath or {@code null}.
      */
     @Nullable private static URL resolveInClasspath(String path) {
         ClassLoader clsLdr = Thread.currentThread().getContextClassLoader();
