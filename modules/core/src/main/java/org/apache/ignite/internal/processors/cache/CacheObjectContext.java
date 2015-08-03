@@ -39,6 +39,9 @@ public class CacheObjectContext implements Externalizable {
     /** Cache name. */
     private String cacheName;
 
+    /** Grid name. */
+    private String gridName;
+
     /** */
     private AffinityKeyMapper dfltAffMapper;
 
@@ -79,6 +82,7 @@ public class CacheObjectContext implements Externalizable {
 
         p2pEnabled = kernalCtx.config().isPeerClassLoadingEnabled();
         proc = kernalCtx.cacheObjects();
+        gridName = kernalCtx.gridName();
     }
 
     /**
@@ -100,6 +104,13 @@ public class CacheObjectContext implements Externalizable {
      */
     public boolean storeValue() {
         return storeVal;
+    }
+
+    /**
+     * @param storeVal Store value flag.
+     */
+    public void storeValue(boolean storeVal) {
+        this.storeVal = storeVal;
     }
 
     /**
@@ -251,11 +262,38 @@ public class CacheObjectContext implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        assert false; // TODO IGNITE-950
+        U.writeString(out, gridName);
+        U.writeString(out, cacheName);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        assert false; // TODO IGNITE-950
+        gridName = U.readString(in);
+        cacheName = U.readString(in);
+    }
+
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    protected Object readResolve() throws ObjectStreamException {
+        try {
+            GridKernalContext ctx = IgnitionEx.gridx(gridName).context();
+
+            GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
+
+            return cache == null ?
+                new CacheObjectContext(ctx, cacheName,
+                    ctx.cacheObjects().isFieldsIndexingEnabled() ?
+                        new CacheIndexedObjectDefaultAffinityMapper() :
+                        new GridCacheDefaultAffinityKeyMapper(),
+                    true, false) :
+                cache.context().cacheObjectContext();
+        }
+        catch (IllegalStateException e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
     }
 }

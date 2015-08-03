@@ -52,6 +52,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
  */
 public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     implements GridCacheAtomicFuture<Object>{
+    /** */
+    private static final IgniteUuid EMPTY_UUID = IgniteUuid.randomUuid();
+
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -236,7 +239,11 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
-        return futVer.asGridUuid();
+        GridCacheVersion ver = futVer;
+
+        // Ver may be null in case if future is in a process of the remap, but a concurrent thread observed this
+        // future in MVCC map.
+        return ver != null ? ver.asGridUuid() : EMPTY_UUID;
     }
 
     /** {@inheritDoc} */
