@@ -2409,7 +2409,25 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Sender node ID.
      * @param req Dht atomic update request.
      */
-    private void processDhtAtomicUpdateRequest(UUID nodeId, GridDhtAtomicUpdateRequest req) {
+    private void processDhtAtomicUpdateRequest(final UUID nodeId, final GridDhtAtomicUpdateRequest req) {
+        IgniteInternalFuture fut = ctx.preloader().request(req.keys(), req.topologyVersion());
+
+        if (fut.isDone())
+            processDhtAtomicUpdateRequest0(nodeId, req);
+        else {
+            fut.listen(new CI1<IgniteInternalFuture>() {
+                @Override public void apply(IgniteInternalFuture future) {
+                    processDhtAtomicUpdateRequest0(nodeId, req);
+                }
+            });
+        }
+    }
+
+    /**
+     * @param nodeId Sender node ID.
+     * @param req Dht atomic update request.
+     */
+    private void processDhtAtomicUpdateRequest0(UUID nodeId, GridDhtAtomicUpdateRequest req) {
         if (log.isDebugEnabled())
             log.debug("Processing dht atomic update request [nodeId=" + nodeId + ", req=" + req + ']');
 
