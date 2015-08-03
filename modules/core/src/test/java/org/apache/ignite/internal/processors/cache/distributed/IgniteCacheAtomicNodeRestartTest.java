@@ -30,4 +30,8 @@ public class IgniteCacheAtomicNodeRestartTest extends GridCachePartitionedNodeRe
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
+
+    @Override public void testRestartWithPutTenNodesTwoBackups() throws Throwable {
+
+    }
 }

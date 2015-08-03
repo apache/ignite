@@ -261,11 +261,8 @@ public class IgnitionEx {
     public static boolean stop(@Nullable String name, boolean cancel) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
-        if (grid != null) {
-            IgniteState state = grid.state();
-
-            if (state == STARTED)
-                grid.stop(cancel);
+        if (grid != null && grid.state() == STARTED) {
+            grid.stop(cancel);
 
             boolean fireEvt;
 
@@ -280,18 +277,10 @@ public class IgnitionEx {
                 }
             }
 
-            if (state == STARTED) {
-                if (fireEvt)
-                    notifyStateChange(grid.getName(), grid.state());
+            if (fireEvt)
+                notifyStateChange(grid.getName(), grid.state());
 
-                return true;
-            }
-            else {
-                U.warn(null, "Ignoring stopping grid instance (has not been in STARTED state): [grid=" + name +
-                    ", state=" + state + ']');
-
-                return false;
-            }
+            return true;
         }
 
         // We don't have log at this point...
