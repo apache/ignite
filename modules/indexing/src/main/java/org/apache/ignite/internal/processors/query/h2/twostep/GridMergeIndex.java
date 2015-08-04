@@ -68,6 +68,13 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
+     * @return Return source nodes for this merge index.
+     */
+    public Set<UUID> sources() {
+        return remainingRows.keySet();
+    }
+
+    /**
      * @param nodeId Node ID.
      * @return {@code true} If this index needs data from the given source node.
      */
