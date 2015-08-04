@@ -1000,6 +1000,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         SequentialMessageSet msgSet = seqMsgs.get(msg.topic());
 
         if (msgSet == null) {
+            if (closedTopics.contains(msg.topic())) {
+                if (log.isDebugEnabled())
+                    log.debug("Ignoring message because the topic is already closed: " + msg);
+
+                if (msgC != null)
+                    msgC.run();
+
+                return;
+            }
+
             SequentialMessageSet old = seqMsgs.putIfAbsent(msg.topic(), msgSet = new SequentialMessageSet());
 
             if (old != null)
@@ -1793,6 +1803,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             if (map != null)
                 msgSets = map.values();
+
+            seqMsgs.remove(topic);
         }
         else {
             for (;;) {
@@ -1859,8 +1871,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (rmv && log.isDebugEnabled())
             log.debug("Removed message listener [topic=" + topic + ", lsnr=" + lsnr + ']');
 
-        if (lsnr instanceof ArrayListener)
-        {
+        if (lsnr instanceof ArrayListener) {
             for (GridMessageListener childLsnr : ((ArrayListener)lsnr).arr)
                 closeListener(childLsnr);
         }
