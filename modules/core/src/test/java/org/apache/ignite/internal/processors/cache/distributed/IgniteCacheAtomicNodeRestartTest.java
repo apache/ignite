@@ -36,7 +36,52 @@ public class IgniteCacheAtomicNodeRestartTest extends GridCachePartitionedNodeRe
         super.testRestartWithPutTenNodesTwoBackups();
     }
 
+    public void testRestartWithPutTenNodesTwoBackups2() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+    public void testRestartWithPutTenNodesTwoBackups3() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+    public void testRestartWithPutTenNodesTwoBackups4() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+    public void testRestartWithPutTenNodesTwoBackups5() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+    public void testRestartWithPutTenNodesTwoBackups6() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+    public void testRestartWithPutTenNodesTwoBackups7() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+    public void testRestartWithPutTenNodesTwoBackups8() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+    public void testRestartWithPutTenNodesTwoBackups9() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+    public void testRestartWithPutTenNodesTwoBackups10() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+    public void testRestartWithPutTenNodesTwoBackups11() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+    public void testRestartWithPutTenNodesTwoBackups12() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+    public void testRestartWithPutTenNodesTwoBackups13() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+    public void testRestartWithPutTenNodesTwoBackups14() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+
+    @Override protected long getTestTimeout() {
+        return Long.MAX_VALUE;
+    }
+
     @Override public void testRestart() throws Exception {
+
     }
 
     @Override public void testRestartWithPutTwoNodesNoBackups() throws Throwable {

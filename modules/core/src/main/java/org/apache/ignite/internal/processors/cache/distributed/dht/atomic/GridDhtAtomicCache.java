@@ -1152,11 +1152,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 e.printStackTrace();
             }
-            catch (Exception e) {
-                U.error(log, "FUCK ERROR", e);
-
-                throw e;
-            }
             finally {
                 if (locked != null)
                     unlockEntries(locked, req.topologyVersion());
@@ -1178,6 +1173,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 log.debug("Caught invalid partition exception for cache entry (will remap update request): " + req);
 
             remap = true;
+        }
+        catch (Exception e) {
+            U.error(log, "Unexpected exception during cache update", e);
         }
 
         if (remap) {
