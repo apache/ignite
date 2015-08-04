@@ -583,22 +583,7 @@ public class IgnitionEx {
     public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
     loadConfigurations(String springCfgPath) throws IgniteCheckedException {
         A.notNull(springCfgPath, "springCfgPath");
-
-        URL url;
-
-        try {
-            url = new URL(springCfgPath);
-        }
-        catch (MalformedURLException e) {
-            url = U.resolveIgniteUrl(springCfgPath);
-
-            if (url == null)
-                throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
-                    ". Note that this path should be either absolute or a relative local file system path, " +
-                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
-        }
-
-        return loadConfigurations(url);
+        return loadConfigurations(IgniteUtils.resolveSpringUrl(springCfgPath));
     }
 
     /**
@@ -1084,6 +1069,32 @@ public class IgnitionEx {
 
         throw new IgniteIllegalStateException("Grid instance with given local node ID was not properly " +
             "started or was stopped: " + locNodeId);
+    }
+
+    /**
+     * Gets grid instance without waiting its initialization and not throwing any exception.
+     *
+     * @param locNodeId ID of local node the requested grid instance is managing.
+     * @return Grid instance or {@code null}.
+     */
+    public static IgniteKernal gridxx(UUID locNodeId) {
+        IgniteNamedInstance dfltGrid0 = dfltGrid;
+
+        if (dfltGrid0 != null) {
+            IgniteKernal g = dfltGrid0.grid();
+
+            if (g != null && g.getLocalNodeId().equals(locNodeId))
+                return g;
+        }
+
+        for (IgniteNamedInstance grid : grids.values()) {
+            IgniteKernal g = grid.grid();
+
+            if (g != null && g.getLocalNodeId().equals(locNodeId))
+                return g;
+        }
+
+        return null;
     }
 
     /**

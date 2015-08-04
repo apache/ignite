@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.lang.*;
 
 /**
  * NIO future.
@@ -39,4 +41,16 @@ public interface GridNioFuture<R> extends IgniteInternalFuture<R> {
      * @return {@code True} if skip recovery for this operation.
      */
     public boolean skipRecovery();
+
+    /**
+     * Sets ack closure which will be applied when ack recevied.
+     *
+     * @param closure Ack closure.
+     */
+    public void ackClosure(IgniteInClosure<IgniteException> closure);
+
+    /**
+     * @return Ack closure.
+     */
+    public IgniteInClosure<IgniteException> ackClosure();
 }

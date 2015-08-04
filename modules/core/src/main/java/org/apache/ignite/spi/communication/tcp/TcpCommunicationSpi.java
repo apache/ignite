@@ -1620,6 +1620,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /**
      * Creates new shared memory communication server.
+     *
      * @return Server.
      * @throws IgniteCheckedException If failed.
      */
@@ -1785,11 +1786,41 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+        sendMessage0(node, msg, null);
+    }
+
+    /**
+     * Sends given message to destination node. Note that characteristics of the
+     * exchange such as durability, guaranteed delivery or error notification is
+     * dependant on SPI implementation.
+     *
+     * @param node Destination node.
+     * @param msg Message to send.
+     * @param ackClosure Ack closure.
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown in case of any error during sending the message.
+     *      Note that this is not guaranteed that failed communication will result
+     *      in thrown exception as this is dependant on SPI implementation.
+     */
+    public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+        throws IgniteSpiException {
+        sendMessage0(node, msg, ackClosure);
+    }
+
+    /**
+     * @param node Destination node.
+     * @param msg Message to send.
+     * @param ackClosure Ack closure.
+     * @throws org.apache.ignite.spi.IgniteSpiException Thrown in case of any error during sending the message.
+     *      Note that this is not guaranteed that failed communication will result
+     *      in thrown exception as this is dependant on SPI implementation.
+     */
+    private void sendMessage0(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+        throws IgniteSpiException {
         assert node != null;
         assert msg != null;
 
         if (log.isTraceEnabled())
-            log.trace("Sending message to node [node=" + node + ", msg=" + msg + ']');
+            log.trace("Sending message with ack to node [node=" + node + ", msg=" + msg + ']');
 
         ClusterNode localNode = getLocalNode();
 
@@ -1813,7 +1844,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (!client.async() && !localNode.version().equals(node.version()))
                         nodeId = node.id();
 
-                    retry = client.sendMessage(nodeId, msg);
+                    retry = client.sendMessage(nodeId, msg, ackClosure);
 
                     client.release();
 
@@ -1876,7 +1907,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 GridCommunicationClient old = clients.put(nodeId, client0);
 
                                 assert old == null : "Client already created " +
-                                        "[node=" + node + ", client=" + client0 + ", oldClient=" + old + ']';
+                                    "[node=" + node + ", client=" + client0 + ", oldClient=" + old + ']';
 
                                 if (client0 instanceof GridTcpNioCommunicationClient) {
                                     GridTcpNioCommunicationClient tcpClient = ((GridTcpNioCommunicationClient)client0);
@@ -1979,7 +2010,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @return Client.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected GridCommunicationClient createShmemClient(ClusterNode node, Integer port) throws IgniteCheckedException {
+    @Nullable protected GridCommunicationClient createShmemClient(ClusterNode node,
+        Integer port) throws IgniteCheckedException {
         int attempt = 1;
 
         int connectAttempts = 1;
@@ -2204,6 +2236,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                             meta.put(GridNioSessionMetaKey.SSL_ENGINE.ordinal(), sslEngine);
                         }
+
                         if (recoveryDesc != null) {
                             recoveryDesc.onHandshake(rcvCnt);
 
@@ -2433,7 +2466,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     else if (log.isDebugEnabled())
                         log.debug("Received remote node ID: " + rmtNodeId0);
 
-                    if (isSslEnabled() ) {
+                    if (isSslEnabled()) {
                         assert sslHnd != null;
 
                         ch.write(sslHnd.encrypt(ByteBuffer.wrap(U.IGNITE_HEADER)));
