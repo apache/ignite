@@ -1937,14 +1937,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         GridCacheContext cacheCtx,
         Map<KeyCacheObject, GridCacheDrInfo> drMap
     ) {
-        return this.<Object, Object>putAllAsync0(cacheCtx,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 drMap,
-                                                 false,
-                                                 null,
-                                                 null);
+        return putAllAsync0(cacheCtx,
+            null,
+            null,
+            null,
+            drMap,
+            false,
+            null,
+            null);
     }
 
     /** {@inheritDoc} */
@@ -2237,8 +2237,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             }
                                             catch (GridCacheEntryRemovedException ex) {
                                                 if (log.isDebugEnabled())
-                                                    log.debug("Failed to get entry version: [msg=" +
-                                                        ex.getMessage() + ']');
+                                                    log.debug("Failed to get entry version " +
+                                                        "[err=" + ex.getMessage() + ']');
 
                                                 ver = null;
                                             }
