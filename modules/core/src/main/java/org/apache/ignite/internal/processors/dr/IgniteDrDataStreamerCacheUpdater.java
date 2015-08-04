@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.dr;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -29,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.stream.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Data center replication cache receiver for data streamer.
@@ -37,6 +40,8 @@ public class IgniteDrDataStreamerCacheUpdater implements StreamReceiver<KeyCache
     DataStreamerCacheUpdaters.InternalUpdater {
     /** */
     private static final long serialVersionUID = 0L;
+
+    public static ConcurrentHashMap<Integer, ConcurrentLinkedQueue> map = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public void receive(IgniteCache<KeyCacheObject, CacheObject> cache0,
@@ -79,8 +84,16 @@ public class IgniteDrDataStreamerCacheUpdater implements StreamReceiver<KeyCache
 
                 if (val == null)
                     cache.removeAllConflict(Collections.singletonMap(key, entry.version()));
-                else
+                else {
+                    Affinity affinity = cache0.unwrap(Ignite.class).affinity(cache0.getName());
+                    ClusterNode localNode = cache0.unwrap(Ignite.class).cluster().localNode();
+
+                    Integer key0 = (key.value(null, false));
+
+                    map.putIfAbsent(key0, new ConcurrentLinkedQueue());
+                    map.get(key0).add(localNode.id() + " - " + val.value().value(null, false) + "-prim " + affinity.isPrimary(localNode, key) + " ver " + entry.version());
                     cache.putAllConflict(Collections.singletonMap(key, val));
+                }
             }
 
             if (log.isDebugEnabled())

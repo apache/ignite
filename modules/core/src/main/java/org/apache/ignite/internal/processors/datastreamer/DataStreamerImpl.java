@@ -472,6 +472,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         return addDataInternal(Collections.singleton(new DataStreamerEntry(key, null)));
     }
 
+    public static ConcurrentHashMap<Integer, ConcurrentLinkedQueue> map = new ConcurrentHashMap<>();
+
     /**
      * @param entries Entries.
      * @return Future.
@@ -1291,6 +1293,26 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     topVer);
 
                 try {
+
+                    for (DataStreamerEntry entry : entries) {
+                        try {
+
+                            byte[] bytes = ((GridCacheRawVersionedEntry)entry).valueBytes();
+                            if (bytes != null) {
+                                CacheObject val = ctx.config().getMarshaller().unmarshal(bytes, null);
+                                val.finishUnmarshal(cacheObjCtx, null);
+
+                                Integer key0 = (Integer)(entry.getKey().value(null, false));
+                                map.putIfAbsent(key0, new ConcurrentLinkedQueue());
+                                map.get(key0).add(val.value(null, false));
+
+                            }
+                            // entry.setValue(null);
+                        }
+                        catch (Exception e) {
+                        }
+                    }
+
                     ctx.io().send(node, TOPIC_DATASTREAM, req, PUBLIC_POOL);
 
                     if (log.isDebugEnabled())
