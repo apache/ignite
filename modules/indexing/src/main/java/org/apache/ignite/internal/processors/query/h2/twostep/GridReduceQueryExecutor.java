@@ -1096,7 +1096,7 @@ public class GridReduceQueryExecutor {
             else
                 data.columns = planColumns();
 
-            return new GridMergeTable(data);
+            return new GridMergeTable(data, ctx);
         }
         catch (Exception e) {
             U.closeQuiet(conn);
@@ -1114,32 +1114,6 @@ public class GridReduceQueryExecutor {
         res.add(new Column("PLAN", Value.STRING));
 
         return res;
-    }
-
-    /**
-     * @param conn Connection.
-     * @param qry Query.
-     * @return Table.
-     * @throws IgniteCheckedException If failed.
-     */
-    private GridMergeTable createTable(Connection conn, GridCacheSqlQuery qry) throws IgniteCheckedException {
-        try {
-            try (PreparedStatement s = conn.prepareStatement(
-                "CREATE LOCAL TEMPORARY TABLE " + qry.alias() +
-                " ENGINE \"" + GridMergeTable.Engine.class.getName() + "\" " +
-                " AS SELECT * FROM (" + qry.query() + ") WHERE FALSE")) {
-                h2.bindParameters(s, F.asList(qry.parameters()));
-
-                s.execute();
-            }
-
-            return GridMergeTable.Engine.getCreated();
-        }
-        catch (SQLException e) {
-            U.closeQuiet(conn);
-
-            throw new IgniteCheckedException(e);
-        }
     }
 
     /**
