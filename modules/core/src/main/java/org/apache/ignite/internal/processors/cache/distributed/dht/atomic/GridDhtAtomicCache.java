@@ -2416,9 +2416,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param req Dht atomic update request.
      */
     private void processDhtAtomicUpdateRequest(final UUID nodeId, final GridDhtAtomicUpdateRequest req) {
-        IgniteInternalFuture fut = ctx.preloader().request(req.keys(), req.topologyVersion());
+        IgniteInternalFuture fut = !req.keys().isEmpty() ?
+            ctx.preloader().request(req.keys(), req.topologyVersion()) : null;
 
-        if (fut.isDone())
+        if (fut == null || fut.isDone())
             processDhtAtomicUpdateRequest0(nodeId, req);
         else {
             fut.listen(new CI1<IgniteInternalFuture>() {
