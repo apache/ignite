@@ -1334,7 +1334,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
             }
         }
         else
-            throw new IgniteFieldNotFoundException("Object doesn't have a field with the name: " + fieldName);
+            return null;
     }
 
     /**

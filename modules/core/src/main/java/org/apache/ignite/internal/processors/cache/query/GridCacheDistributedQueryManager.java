@@ -546,7 +546,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.transform(),
                 qry.query().pageSize(),
                 qry.query().includeBackups(),
-                qry.arguments(),
+                cctx.kernalContext().query().wrapQueryArguments(cctx, qry.arguments()),
                 false,
                 qry.query().keepPortable(),
                 qry.query().subjectId(),
@@ -559,7 +559,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             cctx.io().addOrderedHandler(topic, resHnd);
 
             fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> fut) {
+                @Override
+                public void apply(IgniteInternalFuture<?> fut) {
                     cctx.io().removeOrderedHandler(topic);
                 }
             });
@@ -655,7 +656,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.transform(),
                 qry.query().pageSize(),
                 qry.query().includeBackups(),
-                qry.arguments(),
+                cctx.kernalContext().query().wrapQueryArguments(cctx, qry.arguments()),
                 qry.query().includeMetadata(),
                 qry.query().keepPortable(),
                 qry.query().subjectId(),
@@ -668,7 +669,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             cctx.io().addOrderedHandler(topic, resHnd);
 
             fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> fut) {
+                @Override
+                public void apply(IgniteInternalFuture<?> fut) {
                     cctx.io().removeOrderedHandler(topic);
                 }
             });

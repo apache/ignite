@@ -605,10 +605,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 114:
-                msg = new KeyCacheIndexedObjectImpl();
-
-            // [-3..114] - this
+            // [-3..113] - this
             // [120..123] - DR
             // [-4..-22] - SQL
             default:

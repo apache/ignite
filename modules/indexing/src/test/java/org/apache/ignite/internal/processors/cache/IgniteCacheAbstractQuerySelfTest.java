@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -1195,7 +1194,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         QueryCursor<Cache.Entry<UUID, Person>> q = cache.query(new TextQuery<UUID, Person>(Person.class, "White"));
 
-        q.getAll();
+        assertEquals(2, q.getAll().size());
 
         assert latch.await(1000, MILLISECONDS);
         assert execLatch.await(1000, MILLISECONDS);
@@ -1275,7 +1274,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     /**
      *
      */
-    public static class Person implements Externalizable {
+    public static class Person implements Serializable {
         /** */
         @GridToStringExclude
         @QuerySqlField
@@ -1292,7 +1291,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         /** */
         @QuerySqlField(index = true)
-        private int fake$Field;
+        private transient int fake$Field;
 
         /**
          * Required by {@link Externalizable}.
@@ -1332,20 +1331,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
          */
         public double salary() {
             return salary;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeUuid(out, id);
-            U.writeString(out, name);
-            out.writeInt(salary);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            id = U.readUuid(in);
-            name = U.readString(in);
-            salary = in.readInt();
         }
 
         /** {@inheritDoc} */

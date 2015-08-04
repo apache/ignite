@@ -34,7 +34,7 @@ import static org.apache.ignite.marshaller.optimized.OptimizedObjectOutputStream
  * Cache object implementation for classes that support footer injection is their serialized form thus enabling fields
  * search and extraction without necessity to fully deserialize an object.
  */
-public class CacheIndexedObjectImpl extends CacheObjectAdapter implements CacheIndexedObject {
+public class CacheIndexedObjectImpl extends CacheObjectAdapter implements CacheIndexedObject, KeyCacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -119,7 +119,18 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter implements CacheI
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-        return this;
+        try {
+            if (val != null && !ctx.processor().immutable(val)) {
+                toMarshaledFormIfNeeded();
+
+                return new CacheIndexedObjectImpl(ctx, null, valBytes, start, len);
+            }
+
+            return new CacheIndexedObjectImpl(ctx, val, valBytes, start, len);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to marshal object: " + val, e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -142,6 +153,11 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter implements CacheI
     @Override public byte directType() {
         // refer to GridIoMessageFactory.
         return 113;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean internal() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -390,6 +406,9 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter implements CacheI
     protected boolean keepDeserialized(CacheObjectContext ctx, boolean checkCls) {
         if (ctx.copyOnGet())
             return false;
+
+        if (ctx.p2pEnabled())
+            return true;
 
         return !checkCls || ctx.processor().hasClass(typeId());
     }

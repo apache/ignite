@@ -26,6 +26,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -686,7 +687,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         String space = cctx.name();
                         String type = qry.getType();
                         String sqlQry = qry.getSql();
-                        Object[] params = qry.getArgs();
+                        Object[] params = wrapQueryArguments(cctx, qry.getArgs());
 
                         TypeDescriptor typeDesc = typesByName.get(
                             new TypeName(
@@ -784,7 +785,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
                     String space = cctx.name();
                     String sql = qry.getSql();
-                    Object[] args = qry.getArgs();
+                    Object[] args = wrapQueryArguments(cctx, qry.getArgs());
 
                     final GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args),
                         idx.backupFilter(null, null, null));
@@ -852,7 +853,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public static boolean isSqlType(Class<?> cls) {
         cls = U.box(cls);
 
-        return SQL_TYPES.contains(cls) || isGeometryClass(cls);
+        return SQL_TYPES.contains(cls) || isGeometryClass(cls) || (cls.isArray() && isSqlType(cls.getComponentType()));
     }
 
     /**
@@ -1071,6 +1072,39 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Converts arguments to cache indexed objects if needed.
+     *
+     * @param args Arguments to wrap.
+     * @return Wrapped array.
+     */
+    public Object[] wrapQueryArguments(GridCacheContext cctx, Object[] args) {
+        IgniteCacheObjectProcessor objs = ctx.cacheObjects();
+
+        if (!objs.isFieldsIndexingEnabled() || args == null)
+            return args;
+
+        Object[] cpy = null;
+
+        for (int i = 0; i < args.length; i++) {
+            if (args[i] != null && objs.isFieldsIndexingSupported(args[i].getClass())) {
+                if (cpy == null) {
+                    cpy = new Object[args.length];
+
+                    System.arraycopy(args, 0, cpy, 0, i);
+                }
+
+                cpy[i] = objs.toCacheObject(cctx.cacheObjectContext(), args[i], false);
+            }
+            else {
+                if (cpy != null)
+                    cpy[i] = args[i];
+            }
+        }
+
+        return cpy == null ? args : cpy;
+    }
+
+    /**
      * Processes declarative metadata for class.
      *
      * @param meta Type metadata.
@@ -1250,17 +1284,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 int order = 0;
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
+                    Property prop = null;
+
                     // Skip _val field as it is an implicit field.
-                    if (_VAL.equals(idxField.getKey()))
-                        continue;
+                    if (!_VAL.equals(idxField.getKey())) {
+                        prop = buildPortableProperty(idxField.getKey(), idxField.getValue().get1(), aliases);
 
-                    Property prop = buildPortableProperty(idxField.getKey(), idxField.getValue().get1(), aliases);
-
-                    d.addProperty(prop, false);
+                        d.addProperty(prop, false);
+                    }
 
                     Boolean descending = idxField.getValue().get2();
 
-                    d.addFieldToIndex(idxName, prop.name(), order, descending != null && descending);
+                    d.addFieldToIndex(idxName, prop == null ? idxField.getKey() : prop.name(), order,
+                        descending != null && descending);
 
                     order++;
                 }

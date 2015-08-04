@@ -276,10 +276,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     protected KeyCacheObject toCacheKeyObject0(CacheObjectContext ctx, Object obj, boolean userObj) {
         if (!userObj)
-            return isFieldsIndexingSupported(obj.getClass()) ? new KeyCacheIndexedObjectImpl(ctx, obj, null) :
+            return isFieldsIndexingSupported(obj.getClass()) ? new CacheIndexedObjectImpl(ctx, obj, null) :
                 new KeyCacheObjectImpl(obj, null);
 
-        return isFieldsIndexingSupported(obj.getClass()) ? new UserKeyCacheIndexedObjectImpl(ctx, obj) :
+        return isFieldsIndexingSupported(obj.getClass()) ? new UserCacheIndexedObjectImpl(ctx, obj, null) :
             new UserKeyCacheObjectImpl(obj);
     }
 
@@ -575,50 +575,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 }
 
                 return new CacheIndexedObjectImpl(ctx, null, valBytes, start, len);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal object: " + val, e);
-            }
-        }
-    }
-
-    /**
-     * Wraps key provided by user, must be serialized before stored in cache.
-     * Used by classes that support fields indexing. Refer to {@link #isFieldsIndexingSupported(Class)}.
-     */
-    private static class UserKeyCacheIndexedObjectImpl extends KeyCacheIndexedObjectImpl {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         *
-         */
-        public UserKeyCacheIndexedObjectImpl() {
-            //No-op.
-        }
-
-        /**
-         * @param key Key.
-         */
-        UserKeyCacheIndexedObjectImpl(CacheObjectContext ctx, Object key) {
-            super(ctx, key, null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-            try {
-                if (!ctx.processor().immutable(val)) {
-                    toMarshaledFormIfNeeded();
-
-                    ClassLoader ldr = ctx.p2pEnabled() ?
-                        IgniteUtils.detectClassLoader(IgniteUtils.detectClass(val)) : U.gridClassLoader();
-
-                    Object val = ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
-
-                    return new KeyCacheIndexedObjectImpl(ctx, val, valBytes, start, len);
-                }
-
-                return new KeyCacheIndexedObjectImpl(ctx, val, valBytes, start, len);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to marshal object: " + val, e);
