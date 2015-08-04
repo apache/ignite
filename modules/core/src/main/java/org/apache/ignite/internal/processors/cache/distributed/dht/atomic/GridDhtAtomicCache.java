@@ -1153,8 +1153,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 e.printStackTrace();
             }
             catch (Exception e) {
-                if (X.hasCause(e, InterruptedException.class))
-                    U.error(log, "FUCK Interrupted", e);
+                U.error(log, "FUCK ERROR", e);
+
+                throw e;
             }
             finally {
                 if (locked != null)
