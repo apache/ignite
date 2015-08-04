@@ -187,33 +187,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        if (ctx.config().isAtomicOrderedUpdates()) {
-            for (int part = 0; part < ctx.affinity().partitions(); part++) {
-                Object nearTopic = new GridAtomicRequestTopic(ctx.cacheId(), part, true);
+        for (int part = 0; part < ctx.affinity().partitions(); part++) {
+            Object nearTopic = new GridAtomicRequestTopic(ctx.cacheId(), part, true);
 
-                ctx.io().addPerTopicHandler(nearTopic, new CI2<UUID, GridNearAtomicUpdateRequest>() {
-                    @Override public void apply(UUID nodeId, GridNearAtomicUpdateRequest req) {
-                        processNearAtomicUpdateRequest(nodeId, req);
-                    }
-                });
-
-                Object dhtTopic = new GridAtomicRequestTopic(ctx.cacheId(), part, false);
-
-                ctx.io().addPerTopicHandler(dhtTopic, new CI2<UUID, GridDhtAtomicUpdateRequest>() {
-                    @Override public void apply(UUID nodeId, GridDhtAtomicUpdateRequest req) {
-                        processDhtAtomicUpdateRequest(nodeId, req);
-                    }
-                });
-            }
-        }
-        else {
-            ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateRequest.class, new CI2<UUID, GridNearAtomicUpdateRequest>() {
+            ctx.io().addPerTopicHandler(nearTopic, new CI2<UUID, GridNearAtomicUpdateRequest>() {
                 @Override public void apply(UUID nodeId, GridNearAtomicUpdateRequest req) {
                     processNearAtomicUpdateRequest(nodeId, req);
                 }
             });
 
-            ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateRequest.class, new CI2<UUID, GridDhtAtomicUpdateRequest>() {
+            Object dhtTopic = new GridAtomicRequestTopic(ctx.cacheId(), part, false);
+
+            ctx.io().addPerTopicHandler(dhtTopic, new CI2<UUID, GridDhtAtomicUpdateRequest>() {
                 @Override public void apply(UUID nodeId, GridDhtAtomicUpdateRequest req) {
                     processDhtAtomicUpdateRequest(nodeId, req);
                 }
@@ -253,11 +238,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         for (DeferredResponseBuffer buf : pendingResponses.values())
             buf.finish();
 
-        if (ctx.config().isAtomicOrderedUpdates()) {
-            for (int part = 0; part < ctx.affinity().partitions(); part++) {
-                ctx.io().removePerTopicHandler(new GridAtomicRequestTopic(ctx.cacheId(), part, true));
-                ctx.io().removePerTopicHandler(new GridAtomicRequestTopic(ctx.cacheId(), part, false));
-            }
+        for (int part = 0; part < ctx.affinity().partitions(); part++) {
+            ctx.io().removePerTopicHandler(new GridAtomicRequestTopic(ctx.cacheId(), part, true));
+            ctx.io().removePerTopicHandler(new GridAtomicRequestTopic(ctx.cacheId(), part, false));
         }
     }
 

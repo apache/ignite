@@ -123,8 +123,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         waitForExchange = !topLocked;
 
         // We can send entry processor instead of value to backup if updates are ordered.
-        forceTransformBackups = updateReq.operation() == GridCacheOperation.TRANSFORM &&
-            cctx.config().isAtomicOrderedUpdates();
+        forceTransformBackups = updateReq.operation() == GridCacheOperation.TRANSFORM;
     }
 
     /** {@inheritDoc} */
@@ -218,9 +217,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
         Collection<ClusterNode> dhtNodes = cctx.dht().topology().nodes(part, topVer);
 
-        if (!cctx.config().isAtomicOrderedUpdates())
-            part = -1;
-
         if (log.isDebugEnabled())
             log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
 
@@ -281,7 +277,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
-        int part = cctx.config().isAtomicOrderedUpdates() ? entry.partition() : -1;
+        int part = entry.partition();
 
         for (UUID nodeId : readers) {
             GridAtomicMappingKey mappingKey = new GridAtomicMappingKey(nodeId, part);

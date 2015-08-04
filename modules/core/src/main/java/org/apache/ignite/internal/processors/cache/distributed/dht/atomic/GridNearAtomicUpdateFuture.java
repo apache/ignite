@@ -512,7 +512,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
             Collection<KeyCacheObject> remapKeys = fastMap ? null : res.remapKeys();
 
-            mapOnTopology(remapKeys, true, nodeId);
+            mapOnTopology(remapKeys, true, new GridAtomicMappingKey(nodeId, res.partition()));
 
             return;
         }
@@ -591,9 +591,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      *
      * @param keys Keys to map.
      * @param remap Boolean flag indicating if this is partial future remap.
-     * @param oldNodeId Old node ID if remap.
+     * @param remapKey Mapping key (if remap).
      */
-    private void mapOnTopology(final Collection<?> keys, final boolean remap, final UUID oldNodeId) {
+    private void mapOnTopology(final Collection<?> keys, final boolean remap, final GridAtomicMappingKey remapKey) {
         cache.topology().readLock();
 
         AffinityTopologyVersion topVer = null;
@@ -624,7 +624,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                             cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                                 @Override public void run() {
-                                    mapOnTopology(keys, remap, oldNodeId);
+                                    mapOnTopology(keys, remap, remapKey);
                                 }
                             });
                         }
@@ -640,7 +640,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             cache.topology().readUnlock();
         }
 
-        map0(topVer, keys, remap, oldNodeId);
+        map0(topVer, keys, remap, remapKey);
     }
 
     /**
@@ -683,14 +683,14 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * @param topVer Topology version.
      * @param remapKeys Keys to remap or {@code null} to map all keys.
      * @param remap Flag indicating if this is partial remap for this future.
-     * @param oldNodeId Old node ID if was remap.
+     * @param remapKey Mapping key (if remap).
      */
     private void map0(
         AffinityTopologyVersion topVer,
         @Nullable Collection<?> remapKeys,
         boolean remap,
-        @Nullable UUID oldNodeId) {
-        assert oldNodeId == null || remap || fastMapRemap;
+        @Nullable GridAtomicMappingKey remapKey) {
+        assert remapKey == null || remap || fastMapRemap;
 
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
@@ -783,9 +783,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             int part = cctx.affinity().partition(cacheKey);
             ClusterNode primary = cctx.affinity().primary(part, topVer);
 
-            if (!ccfg.isAtomicOrderedUpdates())
-                part = -1;
-
             if (primary == null) {
                 onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
                     "left the grid)."));
@@ -852,13 +849,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         // Must do this in synchronized block because we need to atomically remove and add mapping.
         // Otherwise checkComplete() may see empty intermediate state.
         synchronized (this) {
-            if (oldNodeId != null) {
-                // TODO: IGNITE-104 - Try to avoid iteration.
-                for (Map.Entry<GridAtomicMappingKey, GridNearAtomicUpdateRequest> e : mappings.entrySet()) {
-                    if (e.getKey().nodeId().equals(oldNodeId))
-                        mappings.remove(e.getKey());
-                }
-            }
+            if (remapKey != null)
+                mappings.remove(remapKey);
 
             // For fastMap mode wait for all responses before remapping.
             if (remap && fastMap && !mappings.isEmpty()) {
@@ -930,7 +922,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                 T2<Integer, Collection<ClusterNode>> t = mapKey(cacheKey, topVer, fastMap);
 
-                int part = ccfg.isAtomicOrderedUpdates() ? t.get1() : -1;
+                int part = t.get1();
                 Collection<ClusterNode> affNodes = t.get2();
 
                 if (affNodes.isEmpty()) {

@@ -219,10 +219,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Write ordering mode. */
     private CacheAtomicWriteOrderMode atomicWriteOrderMode;
 
-    /** Ordered updates mode. */
-    // TODO: IGNITE-104 - Switch default to false
-    private boolean atomicOrderedUpdates = true;
-
     /** Number of backups for cache. */
     private int backups = DFLT_BACKUPS;
 
@@ -349,7 +345,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         aff = cc.getAffinity();
         affMapper = cc.getAffinityMapper();
         atomicityMode = cc.getAtomicityMode();
-        atomicOrderedUpdates = cc.isAtomicOrderedUpdates();
         atomicWriteOrderMode = cc.getAtomicWriteOrderMode();
         backups = cc.getBackups();
         cacheLoaderFactory = cc.getCacheLoaderFactory();
@@ -896,23 +891,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setAtomicWriteOrderMode(CacheAtomicWriteOrderMode atomicWriteOrderMode) {
         this.atomicWriteOrderMode = atomicWriteOrderMode;
-
-        return this;
-    }
-
-    /**
-     * @return Ordered updates mode.
-     */
-    public boolean isAtomicOrderedUpdates() {
-        return atomicOrderedUpdates;
-    }
-
-    /**
-     * @param atomicOrderedUpdates Ordered updates mode.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setAtomicOrderedUpdates(boolean atomicOrderedUpdates) {
-        this.atomicOrderedUpdates = atomicOrderedUpdates;
 
         return this;
     }
