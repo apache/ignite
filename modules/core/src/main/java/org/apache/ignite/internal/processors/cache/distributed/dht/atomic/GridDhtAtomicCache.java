@@ -1175,6 +1175,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             remap = true;
         }
         catch (Exception e) {
+            // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
+            // an attempt to use cleaned resources.
             U.error(log, "Unexpected exception during cache update", e);
 
             res.addFailedKeys(keys, e);
@@ -2184,7 +2186,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
         finally {
-            // Release locks.
+            // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
+            // an attempt to use cleaned resources.
+            // That's why releasing locks in the finally block..
             for (GridCacheMapEntry entry : locked) {
                 if (entry != null)
                     UNSAFE.monitorExit(entry);
