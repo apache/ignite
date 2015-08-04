@@ -75,13 +75,7 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
                         if (page != null)
                             break;
 
-                        UUID nodeId = ((GridMergeTable)table).checkSourceNodesAlive();
-
-                        if (nodeId != null) {
-                            fail(nodeId);
-
-                            assert !queue.isEmpty();
-                        }
+                        ((GridMergeTable)table).checkSourceNodesAlive();
                     }
 
                     if (page.isLast())
