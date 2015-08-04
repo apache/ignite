@@ -1047,30 +1047,17 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         singleNodeId = mappingKey.nodeId();
         singleReq = req;
 
-        if (cctx.localNodeId().equals(mappingKey.nodeId())) {
-            cache.updateAllAsyncInternal(mappingKey.nodeId(), req,
-                new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
-                    @Override public void apply(GridNearAtomicUpdateRequest req,
-                        GridNearAtomicUpdateResponse res) {
-                        assert res.futureVersion().equals(futVer) : futVer;
+        try {
+            if (log.isDebugEnabled())
+                log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
-                        onResult(res.nodeId(), res);
-                    }
-                });
+            sendRequest(mappingKey, req);
+
+            if (syncMode == FULL_ASYNC && cctx.config().getAtomicWriteOrderMode() == PRIMARY)
+                onDone(new GridCacheReturn(cctx, true, null, true));
         }
-        else {
-            try {
-                if (log.isDebugEnabled())
-                    log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
-
-                sendRequest(mappingKey, req);
-
-                if (syncMode == FULL_ASYNC && cctx.config().getAtomicWriteOrderMode() == PRIMARY)
-                    onDone(new GridCacheReturn(cctx, true, null, true));
-            }
-            catch (IgniteCheckedException e) {
-                onDone(addFailedKeys(req.keys(), e));
-            }
+        catch (IgniteCheckedException e) {
+            onDone(addFailedKeys(req.keys(), e));
         }
     }
 
@@ -1080,56 +1067,29 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * @param mappings Mappings to send.
      */
     private void doUpdate(Map<GridAtomicMappingKey, GridNearAtomicUpdateRequest> mappings) {
-        UUID locNodeId = cctx.localNodeId();
-
-        Collection<GridNearAtomicUpdateRequest> locUpdates = null;
-
-        // Send messages to remote nodes first, then run local update.
         for (Map.Entry<GridAtomicMappingKey, GridNearAtomicUpdateRequest> e : mappings.entrySet()) {
             GridAtomicMappingKey mappingKey = e.getKey();
             GridNearAtomicUpdateRequest req = e.getValue();
 
-            if (locNodeId.equals(req.nodeId())) {
-                if (locUpdates == null)
-                    locUpdates = new ArrayList<>(mappings.size());
+            try {
+                if (log.isDebugEnabled())
+                    log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
-                locUpdates.add(req);
+                sendRequest(mappingKey, req);
             }
-            else {
-                try {
-                    if (log.isDebugEnabled())
-                        log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
+            catch (IgniteCheckedException ex) {
+                addFailedKeys(req.keys(), ex);
 
-                    sendRequest(mappingKey, req);
-                }
-                catch (IgniteCheckedException ex) {
-                    addFailedKeys(req.keys(), ex);
-
-                    removeMapping(mappingKey);
-                }
-
-                if (syncMode == PRIMARY_SYNC && !req.hasPrimary())
-                    removeMapping(mappingKey);
+                removeMapping(mappingKey);
             }
+
+            if (syncMode == PRIMARY_SYNC && !req.hasPrimary())
+                removeMapping(mappingKey);
         }
 
         if (syncMode == FULL_ASYNC)
             // In FULL_ASYNC mode always return (null, true).
             opRes = new GridCacheReturn(cctx, true, null, true);
-
-        if (locUpdates != null) {
-            for (GridNearAtomicUpdateRequest locUpdate : locUpdates) {
-                cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
-                    new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
-                        @Override public void apply(GridNearAtomicUpdateRequest req,
-                            GridNearAtomicUpdateResponse res) {
-                            assert res.futureVersion().equals(futVer) : futVer;
-
-                            onResult(res.nodeId(), res);
-                        }
-                    });
-            }
-        }
 
         checkComplete();
     }
