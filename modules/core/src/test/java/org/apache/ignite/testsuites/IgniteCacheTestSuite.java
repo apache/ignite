@@ -103,7 +103,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteClientNodeAffinityTest.class);
 
         // Swap tests.
-//        suite.addTestSuite(GridCacheSwapPreloadSelfTest.class); // TODO: IGNITE-104
+        suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);
         suite.addTestSuite(GridCacheSwapReloadSelfTest.class);
 
         // Common tests.
