@@ -1176,6 +1176,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
         catch (Exception e) {
             U.error(log, "Unexpected exception during cache update", e);
+
+            res.addFailedKeys(keys, e);
+
+            completionCb.apply(req, res);
+
+            return;
         }
 
         if (remap) {
@@ -2167,19 +2173,22 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         // Enqueue entries while holding locks.
         Collection<KeyCacheObject> skip = null;
 
-        for (GridCacheMapEntry entry : locked) {
-            if (entry != null && entry.deleted()) {
-                if (skip == null)
-                    skip = new HashSet<>(locked.size(), 1.0f);
+        try {
+            for (GridCacheMapEntry entry : locked) {
+                if (entry != null && entry.deleted()) {
+                    if (skip == null)
+                        skip = new HashSet<>(locked.size(), 1.0f);
 
-                skip.add(entry.key());
+                    skip.add(entry.key());
+                }
             }
         }
-
-        // Release locks.
-        for (GridCacheMapEntry entry : locked) {
-            if (entry != null)
-                UNSAFE.monitorExit(entry);
+        finally {
+            // Release locks.
+            for (GridCacheMapEntry entry : locked) {
+                if (entry != null)
+                    UNSAFE.monitorExit(entry);
+            }
         }
 
         // Try evict partitions.
