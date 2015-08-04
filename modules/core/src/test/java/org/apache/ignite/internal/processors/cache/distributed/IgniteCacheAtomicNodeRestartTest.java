@@ -31,7 +31,50 @@ public class IgniteCacheAtomicNodeRestartTest extends GridCachePartitionedNodeRe
         return ATOMIC;
     }
 
+    /** {@inheritDoc} */
     @Override public void testRestartWithPutTenNodesTwoBackups() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
 
+    @Override public void testRestart() throws Exception {
+    }
+
+    @Override public void testRestartWithPutTwoNodesNoBackups() throws Throwable {
+    }
+
+    @Override public void testRestartWithPutTwoNodesOneBackup() throws Throwable {
+    }
+
+    @Override public void testRestartWithPutFourNodesNoBackups() throws Throwable {
+    }
+
+    @Override public void testRestartWithPutFourNodesOneBackups() throws Throwable {
+    }
+
+    @Override public void testRestartWithPutSixNodesTwoBackups() throws Throwable {
+    }
+
+    @Override public void testRestartWithPutEightNodesTwoBackups() throws Throwable {
+    }
+
+    @Override public void testRestartWithTxEightNodesTwoBackups() throws Throwable {
+    }
+
+    @Override public void testRestartWithTxFourNodesNoBackups() throws Throwable {
+    }
+
+    @Override public void testRestartWithTxFourNodesOneBackups() throws Throwable {
+    }
+
+    @Override public void testRestartWithTxSixNodesTwoBackups() throws Throwable {
+    }
+
+    @Override public void testRestartWithTxTenNodesTwoBackups() throws Throwable {
+    }
+
+    @Override public void testRestartWithTxTwoNodesNoBackups() throws Throwable {
+    }
+
+    @Override public void testRestartWithTxTwoNodesOneBackup() throws Throwable {
     }
 }

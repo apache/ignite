@@ -85,6 +85,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
     private GridNearAtomicCache<K, V> near;
 
+    private ThreadLocal<List<GridDhtCacheEntry>> lockedEntries = new ThreadLocal<>();
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -990,6 +992,20 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final GridNearAtomicUpdateRequest req,
         final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb
     ) {
+        boolean printKeys = false;
+
+        if (lockedEntries.get() != null) {
+            for (GridDhtCacheEntry entry : lockedEntries.get())
+                U.error(log, "Locked entry [entry=" + entry + ']');
+
+            printKeys = true;
+        }
+
+        if (printKeys) {
+            for (KeyCacheObject obj : req.keys())
+                U.error(log, "Key requested: " + obj);
+        }
+
         IgniteInternalFuture<Object> forceFut = preldr.request(req.keys(), req.topologyVersion());
 
         if (forceFut.isDone())
@@ -1032,9 +1048,25 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         IgniteCacheExpiryPolicy expiry = null;
 
         try {
+            boolean printKeys = false;
+
+            if (lockedEntries.get() != null) {
+                for (GridDhtCacheEntry entry : lockedEntries.get())
+                    U.error(log, "Locked entry (2) [entry=" + entry + ']');
+
+                printKeys = true;
+            }
+
+            if (printKeys) {
+                for (KeyCacheObject obj : keys)
+                    U.error(log, "Key requested: " + obj);
+            }
+
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
             List<GridDhtCacheEntry> locked = lockEntries(keys, req.topologyVersion());
+
+            lockedEntries.set(locked);
 
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
 
@@ -1153,8 +1185,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 e.printStackTrace();
             }
             finally {
-                if (locked != null)
+                if (locked != null) {
+                    lockedEntries.set(null);
                     unlockEntries(locked, req.topologyVersion());
+                }
 
                 // Enqueue if necessary after locks release.
                 if (deleted != null) {
