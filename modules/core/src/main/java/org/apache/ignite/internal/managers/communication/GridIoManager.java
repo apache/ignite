@@ -980,10 +980,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param msgC Closure to call when message processing finished.
      */
     private void processSequentialMessage(
-        final UUID nodeId,
-        final GridIoMessage msg,
+        UUID nodeId,
+        GridIoMessage msg,
         byte plc,
-        final IgniteRunnable msgC
+        IgniteRunnable msgC
     ) throws IgniteCheckedException {
         final GridMessageListener lsnr = lsnrMap.get(msg.topic());
 
@@ -1018,39 +1018,41 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         msgSet.add(nodeId, msg, msgC);
 
-        if (msgC == null) {
-            assert locNodeId.equals(nodeId);
+        if (!msgSet.reserved()) {
+            if (msgC == null) {
+                assert locNodeId.equals(nodeId);
 
-            msgSet.unwind(lsnr);
-        }
-        else {
-            assert !locNodeId.equals(nodeId);
-
-            final SequentialMessageSet msgSet0 = msgSet;
-
-            Runnable c = new Runnable() {
-                @Override public void run() {
-                    try {
-                        threadProcessingMessage(true);
-
-                        msgSet0.unwind(lsnr);
-                    }
-                    finally {
-                        threadProcessingMessage(false);
-                    }
-                }
-            };
-
-            try {
-                pool(plc).execute(c);
+                msgSet.unwind(lsnr);
             }
-            catch (RejectedExecutionException e) {
-                U.error(log, "Failed to process sequential message due to execution rejection. " +
-                    "Increase the upper bound on executor service provided by corresponding " +
-                    "configuration property. Will attempt to process message in the listener " +
-                    "thread instead [msgPlc=" + plc + ']', e);
+            else {
+                assert !locNodeId.equals(nodeId);
 
-                c.run();
+                final SequentialMessageSet msgSet0 = msgSet;
+
+                Runnable c = new Runnable() {
+                    @Override public void run() {
+                        try {
+                            threadProcessingMessage(true);
+
+                            msgSet0.unwind(lsnr);
+                        }
+                        finally {
+                            threadProcessingMessage(false);
+                        }
+                    }
+                };
+
+                try {
+                    pool(plc).execute(c);
+                }
+                catch (RejectedExecutionException e) {
+                    U.error(log, "Failed to process sequential message due to execution rejection. " +
+                        "Increase the upper bound on executor service provided by corresponding " +
+                        "configuration property. Will attempt to process message in the listener " +
+                        "thread instead [msgPlc=" + plc + ']', e);
+
+                    c.run();
+                }
             }
         }
     }
@@ -1108,10 +1110,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 ioMsg.topicBytes(marsh.marshal(topic));
 
             try {
-                if ((CommunicationSpi)getSpi() instanceof TcpCommunicationSpi)
-                    ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).sendMessage(node, ioMsg, ackClosure);
+                CommunicationSpi spi = getSpi();
+
+                if (spi instanceof TcpCommunicationSpi)
+                    ((TcpCommunicationSpi)spi).sendMessage(node, ioMsg, ackClosure);
                 else
-                    getSpi().sendMessage(node, ioMsg);
+                    spi.sendMessage(node, ioMsg);
             }
             catch (IgniteSpiException e) {
                 throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
@@ -2533,6 +2537,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         /** */
         private final AtomicBoolean reserve = new AtomicBoolean();
+
+        /**
+         * @return {@code True} if currently reserved.
+         */
+        boolean reserved() {
+            return reserve.get();
+        }
 
         /**
          * @param nodeId Node ID.
