@@ -453,14 +453,14 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
      */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
             throws IgniteSpiException {
             Object msg0 = ((GridIoMessage)msg).message();
 
             if (msg0 instanceof GridDhtPartitionsSingleRequest) // Sent in case of exchange timeout.
                 fail("Unexpected message: " + msg0);
 
-            super.sendMessage(node, msg);
+            super.sendMessage(node, msg, ackClosure);
         }
     }
 }

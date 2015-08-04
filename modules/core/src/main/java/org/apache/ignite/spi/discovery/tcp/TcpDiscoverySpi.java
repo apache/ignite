@@ -74,7 +74,7 @@ import java.util.concurrent.atomic.*;
  * {@link IgniteConfiguration#setFailureDetectionTimeout(long)}. This failure timeout automatically controls the
  * following parameters: {@link #getSocketTimeout()}, {@link #getAckTimeout()}, {@link #getMaxAckTimeout()},
  * {@link #getReconnectCount()}. If any of those parameters is set explicitly, then the failure timeout setting will be
- * ignored.
+ * ignored. As an example, for stable low-latency networks the failure detection timeout may be set to ~120 ms.
  * <p>
  * If it's required to perform advanced settings of failure detection and
  * {@link IgniteConfiguration#getFailureDetectionTimeout()} is unsuitable then various {@code TcpDiscoverySpi}

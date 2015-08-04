@@ -1977,7 +1977,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                                 }
                             }
                         }
-                        catch (IgniteCheckedException ex) {
+                        catch (Exception ex) {
                             U.error(log, "Failed to process swap entry.", ex);
                         }
                     }

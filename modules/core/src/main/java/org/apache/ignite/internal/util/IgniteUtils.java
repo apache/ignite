@@ -3345,12 +3345,28 @@ public abstract class IgniteUtils {
             url = U.resolveIgniteUrl(springCfgPath);
 
             if (url == null)
+                url = resolveInClasspath(springCfgPath);
+
+            if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
                     "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
         }
 
         return url;
+    }
+
+    /**
+     * @param path Resource path.
+     * @return Resource URL inside classpath or {@code null}.
+     */
+    @Nullable private static URL resolveInClasspath(String path) {
+        ClassLoader clsLdr = Thread.currentThread().getContextClassLoader();
+
+        if (clsLdr == null)
+            return null;
+
+        return clsLdr.getResource(path.replaceAll("\\\\", "/"));
     }
 
     /**

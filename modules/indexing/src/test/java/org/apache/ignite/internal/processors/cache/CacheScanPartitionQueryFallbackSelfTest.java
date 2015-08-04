@@ -345,13 +345,14 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public TcpCommunicationSpi create() {
             return new TcpCommunicationSpi() {
-                @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+                @Override public void sendMessage(ClusterNode node, Message msg,
+                    IgniteInClosure<IgniteException> ackClosure) throws IgniteSpiException {
                     Object origMsg = ((GridIoMessage)msg).message();
 
                     if (origMsg instanceof GridCacheQueryRequest)
                         fail(); //should use local node
 
-                    super.sendMessage(node, msg);
+                    super.sendMessage(node, msg, ackClosure);
                 }
             };
         }
@@ -364,13 +365,14 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public TcpCommunicationSpi create() {
             return new TcpCommunicationSpi() {
-                @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+                @Override public void sendMessage(ClusterNode node, Message msg,
+                    IgniteInClosure<IgniteException> ackClosure) throws IgniteSpiException {
                     Object origMsg = ((GridIoMessage)msg).message();
 
                     if (origMsg instanceof GridCacheQueryRequest)
                         assertEquals(expNodeId, node.id());
 
-                    super.sendMessage(node, msg);
+                    super.sendMessage(node, msg, ackClosure);
                 }
             };
         }
@@ -383,7 +385,8 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public TcpCommunicationSpi create() {
             return new TcpCommunicationSpi() {
-                @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+                @Override public void sendMessage(ClusterNode node, Message msg,
+                    IgniteInClosure<IgniteException> ackClosure) throws IgniteSpiException {
                     Object origMsg = ((GridIoMessage)msg).message();
 
                     if (origMsg instanceof GridCacheQueryRequest) {
@@ -400,7 +403,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
                         }
                     }
 
-                    super.sendMessage(node, msg);
+                    super.sendMessage(node, msg, ackClosure);
                 }
             };
         }

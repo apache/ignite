@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.clock.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -215,7 +216,8 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode destNode, Message msg)
+        @Override public void sendMessage(ClusterNode destNode, Message msg,
+            IgniteInClosure<IgniteException> ackClosure)
             throws IgniteSpiException {
             Object msg0 = ((GridIoMessage)msg).message();
 
@@ -231,7 +233,7 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
                 }
             }
 
-            super.sendMessage(destNode, msg);
+            super.sendMessage(destNode, msg, ackClosure);
         }
     }
 }
