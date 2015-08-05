@@ -285,8 +285,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         Collection<KeyCacheObject> backupKeys = req.keys();
 
-        boolean intercept = req.forceTransformBackups() && ctx.config().getInterceptor() != null;
-
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
         for (int i = 0; i < req.nearSize(); i++) {
@@ -341,7 +339,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             expireTime,
                             null,
                             false,
-                            intercept,
+                            /*intercept*/false,
                             req.subjectId(),
                             taskName);
 
