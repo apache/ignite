@@ -5,7 +5,20 @@ Apache Ignite Log4J2 module provides IgniteLogger implementation based on Apache
 
 To enable Log4J2 module when starting a standalone node, move 'optional/ignite-log4j2' folder to
 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
-be added to classpath in this case.
+be added to classpath in this case. Also it is needed to configure ignite logger with Log4J2Logger
+and provide log4j2 configuration.
+
+To enable ignite logging with default configuration use:
+
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    ...
+    <property name="gridLogger">
+        <bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">
+            <constructor-arg type="java.lang.String" value="config/ignite-log4j2.xml"/>
+        </bean>
+    </property>
+    ...
+</bean>
 
 Importing Log4J2 Module In Maven Project
 ---------------------------------------
