@@ -54,15 +54,16 @@ public class GridMergeTable extends TableBase {
     }
 
     /**
-     * @return Failed node or {@code null} if all alive.
+     * Fails merge table if any source node is left.
      */
-    public UUID checkSourceNodesAlive() {
+    public void checkSourceNodesAlive() {
         for (UUID nodeId : idx.sources()) {
-            if (!ctx.discovery().alive(nodeId))
-                return nodeId;
-        }
+            if (!ctx.discovery().alive(nodeId)) {
+                idx.fail(nodeId);
 
-        return null;
+                return;
+            }
+        }
     }
 
     /** {@inheritDoc} */
