@@ -19,7 +19,8 @@ package org.apache.ignite.spark
 
 
 import org.apache.ignite.internal.IgnitionEx
-import org.apache.ignite.{Ignition, Ignite}
+import org.apache.ignite.internal.util.IgniteUtils
+import org.apache.ignite.{IgniteSystemProperties, Ignition, Ignite}
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.sql.SQLContext
@@ -41,8 +42,12 @@ class IgniteContext[K, V](
 
     private val cfgClo = new Once(cfgF)
 
+    private val igniteHome = IgniteUtils.getIgniteHome
+
     if (!client) {
-        val workers = sparkContext.getExecutorStorageStatus.length - 1
+        // Get required number of executors with default equals to number of available executors.
+        val workers = sparkContext.getConf.getInt("spark.executor.instances",
+            sparkContext.getExecutorStorageStatus.length)
 
         if (workers <= 0)
             throw new IllegalStateException("No Spark executors found to start Ignite nodes.")
@@ -125,6 +130,16 @@ class IgniteContext[K, V](
      * @return Ignite instance.
      */
     def ignite(): Ignite = {
+        val home = IgniteUtils.getIgniteHome
+
+        if (home == null && igniteHome != null) {
+            logInfo("Setting IGNITE_HOME from driver not as it is not available on this worker: " + igniteHome)
+
+            IgniteUtils.nullifyHomeDirectory()
+
+            System.setProperty(IgniteSystemProperties.IGNITE_HOME, igniteHome)
+        }
+
         val igniteCfg = cfgClo()
 
         try {
