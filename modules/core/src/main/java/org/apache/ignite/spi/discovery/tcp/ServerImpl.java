@@ -845,10 +845,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                         e.addSuppressed(err);
                 }
 
-                if (e != null && X.hasCause(e, ConnectException.class))
+                if (e != null && X.hasCause(e, ConnectException.class)) {
                     LT.warn(log, null, "Failed to connect to any address from IP finder " +
                         "(make sure IP finder addresses are correct and firewalls are disabled on all host machines): " +
-                        addrs);
+                        toOrderedList(addrs), true);
+                }
 
                 if (spi.joinTimeout > 0) {
                     if (noResStart == 0)

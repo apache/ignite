@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
+import static org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor.*;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.*;
 
 /**
@@ -495,7 +496,7 @@ public class GridMapQueryExecutor {
             if (node.isLocal())
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
             else
-                ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
+                ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
         }
         catch (Exception e) {
             e.addSuppressed(err);
@@ -556,7 +557,7 @@ public class GridMapQueryExecutor {
             if (loc)
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
             else
-                ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
+                ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
         }
         catch (IgniteCheckedException e) {
             log.error("Failed to send message.", e);
@@ -583,7 +584,7 @@ public class GridMapQueryExecutor {
         if (loc)
             h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
         else
-            ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
+            ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
     }
 
     /**

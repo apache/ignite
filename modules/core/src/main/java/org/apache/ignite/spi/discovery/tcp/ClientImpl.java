@@ -408,7 +408,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
                         return null;
 
-                    U.warn(log, "No addresses registered in the IP finder (will retry in 2000ms): " + spi.ipFinder);
+                    LT.warn(log, null, "No addresses registered in the IP finder (will retry in 2000ms): "
+                            + spi.ipFinder, true);
 
                     Thread.sleep(2000);
                 }
@@ -459,7 +460,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     return null;
 
                 LT.warn(log, null, "Failed to connect to any address from IP finder (will retry to join topology " +
-                    "in 2000ms): " + addrs0);
+                    "in 2000ms): " + toOrderedList(addrs0), true);
 
                 Thread.sleep(2000);
             }

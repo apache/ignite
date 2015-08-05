@@ -1889,6 +1889,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         impl.brakeConnection();
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TcpDiscoverySpi.class, this);
+    }
+
     /**
      * Socket timeout object.
      */
