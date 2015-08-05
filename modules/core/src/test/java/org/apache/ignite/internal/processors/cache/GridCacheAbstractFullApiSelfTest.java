@@ -2317,7 +2317,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                             GridCacheEntryEx entry = cctx.isNear() ? cctx.near().dht().peekEx(key) :
                                 cctx.cache().peekEx(key);
 
-                            if (grid(idx).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(idx).localNode())) {
+                            if (atomicityMode() != ATOMIC &&
+                                grid(idx).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(idx).localNode())) {
                                 assertNotNull(entry);
                                 assertTrue(entry.deleted());
                             }
@@ -3394,8 +3395,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // Ensure that old TTL and expire time are not longer "visible".
         entry = internalCache.peekEx(key);
 
-        assertEquals(0, entry.ttl());
-        assertEquals(0, entry.expireTime());
+        if (atomicityMode() == ATOMIC)
+            assertNull(entry);
+        else {
+            assertEquals(0, entry.ttl());
+            assertEquals(0, entry.expireTime());
+        }
 
         // Ensure that next update will not pick old expire time.
 
