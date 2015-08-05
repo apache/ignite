@@ -524,7 +524,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         int part = -1;
 
-        for (int i = startFrom; i < startFrom + 100_000; i++) {
+        for (int i = startFrom; i < startFrom + 1_000_000; i++) {
             Integer key = i;
 
             boolean add = part == -1 ? aff.isPrimary(locNode, key) : aff.partition(key) == part;
