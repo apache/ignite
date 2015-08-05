@@ -395,27 +395,23 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         Iterator<GridCacheDrInfo> conflictPutValsIt = conflictPutVals != null ? conflictPutVals.iterator() : null;
         Iterator<GridCacheVersion> conflictRmvValsIt = conflictRmvVals != null ? conflictRmvVals.iterator() : null;
 
-        for (Object key : failed) {
-            while (keyIt.hasNext()) {
-                Object nextKey = keyIt.next();
-                Object nextVal = valsIt != null ? valsIt.next() : null;
-                GridCacheDrInfo nextConflictPutVal = conflictPutValsIt != null ? conflictPutValsIt.next() : null;
-                GridCacheVersion nextConflictRmvVal = conflictRmvValsIt != null ? conflictRmvValsIt.next() : null;
+        while (keyIt.hasNext()) {
+            Object nextKey = keyIt.next();
+            Object nextVal = valsIt != null ? valsIt.next() : null;
+            GridCacheDrInfo nextConflictPutVal = conflictPutValsIt != null ? conflictPutValsIt.next() : null;
+            GridCacheVersion nextConflictRmvVal = conflictRmvValsIt != null ? conflictRmvValsIt.next() : null;
 
-                if (F.eq(key, nextKey)) {
-                    remapKeys.add(nextKey);
+            if (failed.contains(nextKey)) {
+                remapKeys.add(nextKey);
 
-                    if (remapVals != null)
-                        remapVals.add(nextVal);
+                if (remapVals != null)
+                    remapVals.add(nextVal);
 
-                    if (remapConflictPutVals != null)
-                        remapConflictPutVals.add(nextConflictPutVal);
+                if (remapConflictPutVals != null)
+                    remapConflictPutVals.add(nextConflictPutVal);
 
-                    if (remapConflictRmvVals != null)
-                        remapConflictRmvVals.add(nextConflictRmvVal);
-
-                    break;
-                }
+                if (remapConflictRmvVals != null)
+                    remapConflictRmvVals.add(nextConflictRmvVal);
             }
         }
 
@@ -473,8 +469,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
             CachePartialUpdateCheckedException cause = X.cause(err, CachePartialUpdateCheckedException.class);
 
-            if (F.isEmpty(cause.failedKeys()))
-                cause.printStackTrace();
+            assert !F.isEmpty(cause.failedKeys());
 
             remap(cause.failedKeys());
 
