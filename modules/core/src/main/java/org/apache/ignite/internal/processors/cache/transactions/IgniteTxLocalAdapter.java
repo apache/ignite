@@ -1937,7 +1937,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         GridCacheContext cacheCtx,
         Map<KeyCacheObject, GridCacheDrInfo> drMap
     ) {
-        return putAllAsync0(cacheCtx,
+        return this.<Object, Object>putAllAsync0(cacheCtx,
             null,
             null,
             null,
