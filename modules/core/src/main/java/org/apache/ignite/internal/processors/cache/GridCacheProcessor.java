@@ -504,6 +504,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cleanup(cfg, cfg.getAffinityMapper(), false);
         cleanup(cfg, cctx.store().configuredStore(), false);
 
+        if (!CU.isUtilityCache(cfg.getName()) && !CU.isSystemCache(cfg.getName()))
+            unregisterMbean(cctx.cache().mxBean(), cfg.getName(), false);
+
         NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
 
         if (nearCfg != null)
@@ -1455,6 +1458,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cacheCtx.cache(dht);
         }
+
+        if (!CU.isUtilityCache(cache.name()) && !CU.isSystemCache(cache.name()))
+            registerMbean(cache.mxBean(), cache.name(), false);
 
         return ret;
     }
@@ -3148,7 +3154,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cacheName = near ? cacheName + "-near" : cacheName;
 
         for (Class<?> itf : o.getClass().getInterfaces()) {
-            if (itf.getName().endsWith("MBean")) {
+            if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
                 try {
                     U.registerCacheMBean(srvr, ctx.gridName(), cacheName, o.getClass().getName(), o,
                         (Class<Object>)itf);
@@ -3181,7 +3187,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cacheName = near ? cacheName + "-near" : cacheName;
 
         for (Class<?> itf : o.getClass().getInterfaces()) {
-            if (itf.getName().endsWith("MBean")) {
+            if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
                 try {
                     srvr.unregisterMBean(U.makeCacheMBeanName(ctx.gridName(), cacheName, o.getClass().getName()));
                 }
