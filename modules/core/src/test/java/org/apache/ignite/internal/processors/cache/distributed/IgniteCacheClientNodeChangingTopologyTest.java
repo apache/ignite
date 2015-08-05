@@ -350,7 +350,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         List<Object> msgs = spi.recordedMessages();
 
-        assertEquals(6, msgs.size());
+        assertEquals(writeOrder == CLOCK ? 6 : 3, msgs.size());
 
         for (Object msg : msgs)
             assertTrue(((GridNearAtomicUpdateRequest)msg).clientRequest());
