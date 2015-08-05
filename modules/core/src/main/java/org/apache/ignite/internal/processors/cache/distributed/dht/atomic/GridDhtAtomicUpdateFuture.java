@@ -324,7 +324,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         if (super.onDone(res, err)) {
             cctx.mvcc().removeAtomicFuture(version());
 
-            if (updateReq.writeSynchronizationMode() == FULL_SYNC)
+            if (updateReq.writeSynchronizationMode() == FULL_SYNC && !(err instanceof IgniteLocalNodeStoppedException))
                 completionCb.apply(updateReq, updateRes);
 
             return true;
