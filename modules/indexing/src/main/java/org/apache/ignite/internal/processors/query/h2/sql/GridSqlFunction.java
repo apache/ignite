@@ -50,9 +50,6 @@ public class GridSqlFunction extends GridSqlElement {
     /** */
     protected final GridSqlFunctionType type;
 
-    /**  */
-    private String castType;
-
     /**
      * @param type Function type.
      */
@@ -87,16 +84,6 @@ public class GridSqlFunction extends GridSqlElement {
         this(schema, TYPE_MAP.get(name), name);
     }
 
-    /**
-     * @param castType Type for {@link GridSqlFunctionType#CAST} function.
-     * @return {@code this}.
-     */
-    public GridSqlFunction setCastType(String castType) {
-        this.castType = castType;
-
-        return this;
-    }
-
     /** {@inheritDoc} */
     @Override public String getSQL() {
         StatementBuilder buff = new StatementBuilder();
@@ -123,12 +110,16 @@ public class GridSqlFunction extends GridSqlElement {
         buff.append('(');
 
         if (type == CAST) {
+            String castType = resultType().sql();
+
             assert !F.isEmpty(castType) : castType;
             assert size() == 1;
 
             buff.append(child().getSQL()).append(" AS ").append(castType);
         }
         else if (type == CONVERT) {
+            String castType = resultType().sql();
+
             assert !F.isEmpty(castType) : castType;
             assert size() == 1;
 

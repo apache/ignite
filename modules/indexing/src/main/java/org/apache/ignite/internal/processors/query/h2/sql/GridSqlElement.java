@@ -27,7 +27,7 @@ public abstract class GridSqlElement implements Iterable<GridSqlElement> {
     protected List<GridSqlElement> children;
 
     /** */
-    private GridSqlType expressionResultType;
+    private GridSqlType resultType;
 
     /**
      * @param children Initial child list.
@@ -41,15 +41,18 @@ public abstract class GridSqlElement implements Iterable<GridSqlElement> {
     /**
      * @return Optional expression result type (if this is an expression and result type is known).
      */
-    public GridSqlType expressionResultType() {
-        return expressionResultType;
+    public GridSqlType resultType() {
+        return resultType;
     }
 
     /**
      * @param type Optional expression result type (if this is an expression and result type is known).
+     * @return {@code this}.
      */
-    public void expressionResultType(GridSqlType type) {
-        expressionResultType = type;
+    public GridSqlElement resultType(GridSqlType type) {
+        resultType = type;
+
+        return this;
     }
 
     /**
@@ -109,5 +112,10 @@ public abstract class GridSqlElement implements Iterable<GridSqlElement> {
     /** {@inheritDoc} */
     @Override public Iterator<GridSqlElement> iterator() {
         return children.iterator();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return getSQL();
     }
 }
