@@ -418,8 +418,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             "Please check IP finder configuration" +
                             (spi.ipFinder instanceof TcpDiscoveryMulticastIpFinder ?
                                 " and make sure multicast works on your network. " : ". ") +
-                            "Will retry every 2 secs."
-                            + spi.ipFinder, true);
+                            "Will retry every 2 secs.", true);
 
                     Thread.sleep(2000);
                 }
