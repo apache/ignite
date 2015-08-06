@@ -330,9 +330,10 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                         reqItfs.add(mcastAddr);
                     }
                     catch (IOException e) {
-                        log.debug("Failed to create multicast socket [mcastAddr=" + mcastAddr +
-                            ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ", locAddr=" + mcastAddr +
-                            ", err=" + e + ']');
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to create multicast socket [mcastAddr=" + mcastAddr +
+                                ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ", locAddr=" + mcastAddr +
+                                ", err=" + e + ']');
                     }
                 }
             }
