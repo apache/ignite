@@ -53,7 +53,7 @@ public class GridCacheSqlQuery implements Message {
     /** */
     @GridToStringInclude
     @GridDirectTransient
-    private LinkedHashMap<String, ?> columns;
+    private LinkedHashMap<String, ?> cols;
 
     /**
      * For {@link Message}.
@@ -78,7 +78,7 @@ public class GridCacheSqlQuery implements Message {
      * @return Columns.
      */
     public LinkedHashMap<String, ?> columns() {
-        return columns;
+        return cols;
     }
 
     /**
@@ -86,7 +86,7 @@ public class GridCacheSqlQuery implements Message {
      * @return {@code this}.
      */
     public GridCacheSqlQuery columns(LinkedHashMap<String, ?> columns) {
-        this.columns = columns;
+        this.cols = columns;
 
         return this;
     }
