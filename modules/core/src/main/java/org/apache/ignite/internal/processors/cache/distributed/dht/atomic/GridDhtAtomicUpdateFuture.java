@@ -352,7 +352,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                         log.debug("Sending DHT atomic update request [nodeId=" + nodeId + ", req=" + req + ']');
 
                     if (part >= 0) {
-                        Object topic = new GridAtomicRequestTopic(cctx.cacheId(), part, false);
+                        Object topic = GridAtomicRequestTopic.dhtUpdateRequest(cctx.cacheId(), part);
 
                         cctx.io().sendSequentialMessage(nodeId, topic, req, cctx.ioPolicy());
                     }

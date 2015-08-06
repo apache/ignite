@@ -188,7 +188,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         });
 
         for (int part = 0; part < ctx.affinity().partitions(); part++) {
-            Object nearTopic = new GridAtomicRequestTopic(ctx.cacheId(), part, true);
+            Object nearTopic = GridAtomicRequestTopic.nearUpdateRequest(ctx.cacheId(), part);
 
             ctx.io().addPerTopicHandler(nearTopic, new CI2<UUID, GridNearAtomicUpdateRequest>() {
                 @Override public void apply(UUID nodeId, GridNearAtomicUpdateRequest req) {
@@ -196,7 +196,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
 
-            Object dhtTopic = new GridAtomicRequestTopic(ctx.cacheId(), part, false);
+            Object dhtTopic = GridAtomicRequestTopic.dhtUpdateRequest(ctx.cacheId(), part);
 
             ctx.io().addPerTopicHandler(dhtTopic, new CI2<UUID, GridDhtAtomicUpdateRequest>() {
                 @Override public void apply(UUID nodeId, GridDhtAtomicUpdateRequest req) {
@@ -239,8 +239,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             buf.finish();
 
         for (int part = 0; part < ctx.affinity().partitions(); part++) {
-            ctx.io().removePerTopicHandler(new GridAtomicRequestTopic(ctx.cacheId(), part, true));
-            ctx.io().removePerTopicHandler(new GridAtomicRequestTopic(ctx.cacheId(), part, false));
+            ctx.io().removePerTopicHandler(GridAtomicRequestTopic.nearUpdateRequest(ctx.cacheId(), part));
+            ctx.io().removePerTopicHandler(GridAtomicRequestTopic.dhtUpdateRequest(ctx.cacheId(), part));
         }
     }
 

@@ -28,13 +28,41 @@ class GridAtomicRequestTopic implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
+    private static final byte NEAR_UPDATE_REQ = 1;
+
+    /** */
+    private static final byte DHT_UPDATE_REQ = 2;
+
+    /** */
     private int cacheId;
 
     /** */
     private int part;
 
     /** */
-    private boolean near;
+    private byte type;
+
+    /**
+     * Near request topic.
+     *
+     * @param cacheId Cache ID.
+     * @param part Partition.
+     * @return Topic.
+     */
+    static GridAtomicRequestTopic nearUpdateRequest(int cacheId, int part) {
+        return new GridAtomicRequestTopic(cacheId, part, NEAR_UPDATE_REQ);
+    }
+
+    /**
+     * DHT request topic.
+     *
+     * @param cacheId Cache ID.
+     * @param part Partition.
+     * @return Topic.
+     */
+    static GridAtomicRequestTopic dhtUpdateRequest(int cacheId, int part) {
+        return new GridAtomicRequestTopic(cacheId, part, DHT_UPDATE_REQ);
+    }
 
     /**
      * For {@link Externalizable}.
@@ -46,12 +74,12 @@ class GridAtomicRequestTopic implements Externalizable {
     /**
      * @param cacheId Cache ID.
      * @param part Partition.
-     * @param near Near flag.
+     * @param type Type.
      */
-    GridAtomicRequestTopic(int cacheId, int part, boolean near) {
+    private GridAtomicRequestTopic(int cacheId, int part, byte type) {
         this.cacheId = cacheId;
         this.part = part;
-        this.near = near;
+        this.type = type;
     }
 
     /** {@inheritDoc} */
@@ -62,7 +90,7 @@ class GridAtomicRequestTopic implements Externalizable {
 
         GridAtomicRequestTopic topic = (GridAtomicRequestTopic)o;
 
-        return cacheId == topic.cacheId && part == topic.part && near == topic.near;
+        return cacheId == topic.cacheId && part == topic.part && type == topic.type;
     }
 
     /** {@inheritDoc} */
@@ -70,7 +98,7 @@ class GridAtomicRequestTopic implements Externalizable {
         int res = cacheId;
 
         res = 31 * res + part;
-        res = 31 * res + (near ? 1 : 0);
+        res = 31 * res + type;
 
         return res;
     }
@@ -79,14 +107,14 @@ class GridAtomicRequestTopic implements Externalizable {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(cacheId);
         out.writeInt(part);
-        out.writeBoolean(near);
+        out.writeByte(type);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         cacheId = in.readInt();
         part = in.readInt();
-        near = in.readBoolean();
+        type = in.readByte();
     }
 
     /** {@inheritDoc} */

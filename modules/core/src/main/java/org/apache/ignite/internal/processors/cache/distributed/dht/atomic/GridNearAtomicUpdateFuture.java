@@ -1091,7 +1091,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     private void sendRequest(GridAtomicMappingKey mappingKey, GridNearAtomicUpdateRequest req)
         throws IgniteCheckedException {
         if (mappingKey.partition() >= 0) {
-            Object topic = new GridAtomicRequestTopic(cctx.cacheId(), mappingKey.partition(), true);
+            Object topic = GridAtomicRequestTopic.nearUpdateRequest(cctx.cacheId(), mappingKey.partition());
 
             cctx.io().sendSequentialMessage(mappingKey.nodeId(), topic, req, cctx.ioPolicy());
         }
