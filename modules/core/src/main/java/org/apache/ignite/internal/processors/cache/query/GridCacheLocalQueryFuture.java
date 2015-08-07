@@ -46,7 +46,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     protected GridCacheLocalQueryFuture(GridCacheContext<K, V> ctx, GridCacheQueryBean qry) {
         super(ctx, qry, true);
 
-        run = new LocalQueryRunnable<>();
+        run = new LocalQueryRunnable();
     }
 
     /**
@@ -78,7 +78,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     }
 
     /** */
-    private class LocalQueryRunnable<K, V, R> implements GridPlainRunnable {
+    private class LocalQueryRunnable implements GridPlainRunnable {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
@@ -101,7 +101,6 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
          * @return Query info.
          * @throws IgniteCheckedException In case of error.
          */
-        @SuppressWarnings({"unchecked"})
         private GridCacheQueryInfo localQueryInfo() throws IgniteCheckedException {
             GridCacheQueryBean qry = query();
 
