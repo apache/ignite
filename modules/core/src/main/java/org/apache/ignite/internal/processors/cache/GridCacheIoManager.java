@@ -292,6 +292,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             if (e instanceof Error)
                 throw (Error)e;
+            else if (e instanceof RuntimeException)
+                throw (RuntimeException)e;
         }
         finally {
             if (depEnabled)
@@ -541,7 +543,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         catch (Throwable e) {
             U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=" + msg + ']', e);
 
-            if (e instanceof Error)
+            if (e instanceof Error || e instanceof RuntimeException)
                 throw e;
         }
         finally {
