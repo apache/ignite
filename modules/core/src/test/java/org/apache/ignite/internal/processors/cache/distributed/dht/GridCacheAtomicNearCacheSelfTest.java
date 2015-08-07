@@ -668,7 +668,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         cache0.remove(nearKey); // Remove from grid0, this should remove readers on primary node.
 
         for (int i = 0; i < GRID_CNT; i++)
-            checkEntry(grid(i), nearKey, null, false);
+            checkEntry(grid(i), nearKey, null, i == 0);
 
         Ignite primaryNode = G.ignite((String) aff.mapKeyToNode(nearKey).attribute(ATTR_GRID_NAME));
 
@@ -698,7 +698,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         GridCacheEntryEx nearEntry = near.peekEx(key);
 
-        boolean expectDht = val != null && near.affinity().isPrimaryOrBackup(ignite.cluster().localNode(), key);
+        boolean expectDht = near.affinity().isPrimaryOrBackup(ignite.cluster().localNode(), key);
 
         if (expectNear) {
             assertNotNull("No near entry for: " + key + ", grid: " + ignite.name(), nearEntry);

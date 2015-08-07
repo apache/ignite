@@ -2497,7 +2497,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
                     finally {
                         if (entry != null)
-                            ctx.evicts().touch(entry, req.topologyVersion());
+                            ctx.evicts().touch(entry, req.topologyVersion(), req.writeVersion());
                     }
                 }
             }
