@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
@@ -53,7 +52,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -83,7 +81,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
         super(true);
     }
 
-    @Before
+    @Before @SuppressWarnings("unchecked")
     public void beforeTest() throws Exception {
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
 
@@ -111,7 +109,6 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
         broker.stop();
     }
 
-    @Test
     public void testQueueFromName() throws Exception {
         Destination destination = new ActiveMQQueue(QUEUE_NAME);
 
@@ -138,7 +135,6 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
     }
 
-    @Test
     public void testTopicFromName() throws JMSException, InterruptedException {
         Destination destination = new ActiveMQTopic(TOPIC_NAME);
 
@@ -168,7 +164,6 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
     }
 
-    @Test
     public void testQueueFromExplicitDestination() throws Exception {
         Destination destination = new ActiveMQQueue(QUEUE_NAME);
 
@@ -195,7 +190,6 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
     }
 
-    @Test
     public void testTopicFromExplicitDestination() throws JMSException, InterruptedException {
         Destination destination = new ActiveMQTopic(TOPIC_NAME);
 
@@ -224,7 +218,6 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
     }
 
-    @Test
     public void testInsertMultipleCacheEntriesFromOneMessage() throws Exception {
         Destination destination = new ActiveMQQueue(QUEUE_NAME);
 
@@ -250,7 +243,6 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
     }
 
-    @Test
     public void testDurableSubscriberStartStopStart() throws Exception {
         Destination destination = new ActiveMQTopic(TOPIC_NAME);
 
@@ -288,7 +280,6 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
     }
 
-    @Test
     public void testQueueMessagesConsumedInBatchesCompletionSizeBased() throws Exception {
         Destination destination = new ActiveMQQueue(QUEUE_NAME);
 
@@ -325,7 +316,6 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
     }
 
-    @Test
     public void testQueueMessagesConsumedInBatchesCompletionTimeBased() throws Exception {
         Destination destination = new ActiveMQQueue(QUEUE_NAME);
 
@@ -373,7 +363,6 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
     }
 
-    @Test
     public void testGenerateNoEntries() throws Exception {
         Destination destination = new ActiveMQQueue(QUEUE_NAME);
 
@@ -399,7 +388,6 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
     }
 
-    @Test
     public void testTransactedSessionNoBatching() throws Exception {
         Destination destination = new ActiveMQQueue(QUEUE_NAME);
 
@@ -426,7 +414,6 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
     }
 
-    @Test
     public void testQueueMultipleThreads() throws Exception {
         Destination destination = new ActiveMQQueue(QUEUE_NAME);
 
@@ -470,15 +457,16 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private <T extends Message> JmsStreamer<T, String, String> newJmsStreamer(Class<T> type, IgniteDataStreamer<String, String> dataStreamer) {
         JmsStreamer<T, String, String> jmsStreamer = new JmsStreamer<>();
         jmsStreamer.setIgnite(grid());
         jmsStreamer.setStreamer(dataStreamer);
         jmsStreamer.setConnectionFactory(connectionFactory);
         if (type == ObjectMessage.class) {
-            jmsStreamer.setTransformer((Function<T, Map<String, String>>) TestTransformers.forObjectMessage());
+            jmsStreamer.setTransformer((MessageTransformer<T, String, String>) TestTransformers.forObjectMessage());
         } else {
-            jmsStreamer.setTransformer((Function<T, Map<String, String>>) TestTransformers.forTextMessage());
+            jmsStreamer.setTransformer((MessageTransformer<T, String, String>) TestTransformers.forTextMessage());
         }
 
         dataStreamer.allowOverwrite(true);
@@ -491,7 +479,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
         // Listen to cache PUT events and expect as many as messages as test data items
         final CountDownLatch latch = new CountDownLatch(expect);
-        IgniteBiPredicate<UUID, CacheEvent> callback = new IgniteBiPredicate<UUID, CacheEvent>() {
+        @SuppressWarnings("serial") IgniteBiPredicate<UUID, CacheEvent> callback = new IgniteBiPredicate<UUID, CacheEvent>() {
             @Override public boolean apply(UUID uuid, CacheEvent evt) {
                 latch.countDown();
                 return true;
@@ -510,7 +498,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
             set.add(to);
         }
 
-        int messagesSent = 0;
+        int messagesSent;
         if (singleMessage) {
             mp.send(session.createObjectMessage(set));
             messagesSent = 1;
@@ -540,7 +528,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
             set.add(key + "," + TEST_DATA.get(key));
         }
 
-        int messagesSent = 0;
+        int messagesSent;
         if (singleMessage) {
             StringBuilder sb = new StringBuilder();
             for (String s : set) {

@@ -26,8 +26,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -53,7 +51,7 @@ import org.apache.ignite.stream.StreamAdapter;
  * {@link MessageListener} to receive messages. You must provide your broker's {@link javax.jms.ConnectionFactory}
  * when creating a {@link JmsStreamer}.
  * <p>
- * You must also provide a {@link Function} to convert the incoming message into cache entries.
+ * You must also provide a {@link MessageTransformer} to convert the incoming message into cache entries.
  * <p>
  * This Streamer has many features:
  * <ul>
@@ -61,7 +59,7 @@ import org.apache.ignite.stream.StreamAdapter;
  *     <li>For topics, it supports durable subscriptions.</li>
  *     <li>Concurrent consumers are supported via the <tt>threads</tt> parameter. When consuming from queues,
  *     this component will start as many {@link Session} objects with separate {@link MessageListener} instances each,
- *     therefore achieving <i>native</i> concurrency (in terms of the JMS standard).<p>
+ *     therefore achieving <i>native</i> concurrency (in terms of the JMS standard).<br>
  *     When consuming from topics, obviously we cannot start multiple threads as that would lead us to consume
  *     duplicate messages. Therefore, we achieve concurrency in a <i>virtualized</i> manner through an internal
  *     thread pool.</li>
@@ -69,7 +67,7 @@ import org.apache.ignite.stream.StreamAdapter;
  *     <li>Batched consumption is possible via the <tt>batched</tt> parameter. Depending on the broker, this
  *     technique can provide a higher throughput as it decreases the amount of message acknowledgement round trips
  *     that are necessary, albeit at the expense possible duplicate messages (especially if an incident
- *     occurs in the middle of a transaction).<p>
+ *     occurs in the middle of a transaction).<br>
  *     Batches are committed when the <tt>batchClosureMillis</tt> time has elapsed, or when a Session has received
  *     at least <tt>batchClosureSize</tt> messages. Time-based closure fires with the specified frequency and applies to
  *     all {@link Session}s in parallel. Size-based closure applies individually to each <tt>Session</tt> (as transactions
@@ -92,7 +90,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
      * <i>Compulsory.</i> The message transformer that converts an incoming JMS {@link Message} (or subclass)
      * into one or multiple cache entries.
      */
-    private Function<T, Map<K, V>> transformer;
+    private MessageTransformer<T, K, V> transformer;
 
     /**
      * The JMS {@link ConnectionFactory} to use.
@@ -267,26 +265,20 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
                 scheduler.schedule(new Runnable() {
                     @Override
                     public void run() {
-                        sessions.parallelStream().forEach(new Consumer<Session>() {
-                            @Override
-                            public void accept(Session session) {
-                                try {
-                                    session.commit();
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Committing session " + session + " from time-based batch completion.");
-                                    }
-                                } catch (JMSException e) {
-                                    log.warning("Error while committing session: " + session.toString() + " from " +
-                                            "batch time-based completion.");
+                        for (Session session : sessions) {
+                            try {
+                                session.commit();
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Committing session " + session + " from time-based batch completion.");
                                 }
+                            } catch (JMSException e) {
+                                log.warning("Error while committing session: " + session.toString() + " from " +
+                                        "batch time-based completion.");
                             }
-                        });
-                        listeners.parallelStream().forEach(new Consumer<IgniteJmsMessageListener>() {
-                            @Override
-                            public void accept(IgniteJmsMessageListener ml) {
-                                ml.resetBatchCounter();
-                            }
-                        });
+                        }
+                        for (IgniteJmsMessageListener ml : listeners) {
+                            ml.resetBatchCounter();
+                        }
                     }
                 }, batchClosureMillis, TimeUnit.MILLISECONDS);
             }
@@ -327,6 +319,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     }
 
     /**
+     * Sets the JMS {@link ConnectionFactory}.
      * @param connectionFactory JMS {@link ConnectionFactory} for this streamer to use.
      */
     public void setConnectionFactory(ConnectionFactory connectionFactory) {
@@ -334,10 +327,11 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     }
 
     /**
-     * @param transformer <i>Compulsory;</i> the message transformer that converts an incoming JMS {@link Message}
-     *                    (or subclass) into one or multiple cache entries.
+     * <i>Compulsory.</i> The {@link MessageTransformer} that converts an incoming JMS {@link Message}
+     * (or subclass) into one or multiple cache entries.
+     * @param transformer The implementation of the MessageTransformer to use.
      */
-    public void setTransformer(Function<T, Map<K, V>> transformer) {
+    public void setTransformer(MessageTransformer<T, K, V> transformer) {
         this.transformer = transformer;
     }
 
@@ -360,11 +354,11 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     }
 
     /**
-     * The type of the destination to create, when used in combination with {@link #setDestinationName(String)}.
+     * Sets the type of the destination to create, when used in combination with {@link #setDestinationName(String)}.
      * It can be an interface or the implementation class specific to the broker.
      *
      * @param destinationType The class representing the destination type. Suggested values: {@link Queue} or
-     *                        {@link Topic}.
+     *                        {@link Topic}. <i>Compulsory</i> if using {@link #destinationName}.
      * @see Queue
      * @see Topic
      */
@@ -373,7 +367,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     }
 
     /**
-     * Number of threads to concurrently consume JMS messages.
+     * Sets the number of threads to concurrently consume JMS messages.
      * <p>
      * When working with queues, we will start as many {@link javax.jms.Session} objects as indicated by this field,
      * i.e. you will get native concurrency.
@@ -388,7 +382,8 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     }
 
     /**
-     * @param clientId Client ID in case we're using durable subscribers.
+     * Sets the client ID of the JMS {@link Connection}.
+     * @param clientId Client ID in case we're using durable subscribers. Default: none.
      */
     public void setClientId(String clientId) {
         this.clientId = clientId;
@@ -404,6 +399,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     }
 
     /**
+     * Instructs the streamer whether to use local JMS transactions or not.
      * @param transacted Whether to consume or not in a transacted manner. Default: <tt>false</tt>.
      */
     public void setTransacted(boolean transacted) {
@@ -419,7 +415,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
      * Warning: May lead to duplicate consumption.
      *
      * @param batched Whether to consume messages in batches. Value <tt>true</tt> implies
-     *                <tt>transacted = true</tt>.
+     *                <tt>transacted = true</tt>. Default: <tt>false</tt>.
      * @see #setBatchClosureMillis(long)
      * @see #setBatchClosureSize(int)
      */
@@ -428,27 +424,27 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     }
 
     /**
-     * When using batched consumption, the amount of messages that will be received before a batch is committed.
+     * When using batched consumption, sets the amount of messages that will be received before a batch is committed.
      *
-     * @param batchClosureSize the amount of messages processed before a batch is committed. Default: <tt>50</tt>.
+     * @param batchClosureSize The amount of messages processed before a batch is committed. Default: <tt>50</tt>.
      */
     public void setBatchClosureSize(int batchClosureSize) {
         this.batchClosureSize = batchClosureSize;
     }
 
     /**
-     * When using batched consumption, the time in milliseconds that will elapse before a batch is committed.
+     * When using batched consumption, sets the time in milliseconds that will elapse before a batch is committed.
      *
-     * @param batchClosureMillis milliseconds before a batch is committed. Default: <tt>1000ms</tt>.
+     * @param batchClosureMillis Milliseconds before a batch is committed. Default: <tt>1000ms</tt>.
      */
     public void setBatchClosureMillis(long batchClosureMillis) {
         this.batchClosureMillis = batchClosureMillis;
     }
 
     /**
-     * When using Durable Subscribers, the name of the durable subscriber. It is compulsory.
+     * When using Durable Subscribers, sets the name of the durable subscriber. It is compulsory.
      *
-     * @param durableSubscriptionName
+     * @param durableSubscriptionName Name of the durable subscriber. Default: none.
      */
     public void setDurableSubscriptionName(String durableSubscriptionName) {
         this.durableSubscriptionName = durableSubscriptionName;
@@ -505,6 +501,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
         public IgniteJmsMessageListener(Session session, boolean createThreadPool) {
             this.session = session;
             // if we don't need a thread pool, create a dummy one that executes the task synchronously
+            //noinspection NullableProblems
             this.executor = createThreadPool ? Executors.newFixedThreadPool(threads) : new Executor() {
                 @Override
                 public void execute(Runnable command) {
@@ -520,7 +517,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
             }
 
             executor.execute(new Runnable() {
-                @Override
+                @Override @SuppressWarnings("unchecked")
                 public void run() {
                     processMessage((T) message);
                     if (batched) {
