@@ -31,7 +31,6 @@ public interface GridCacheMapEntryFactory {
      * @param hash Key hash value.
      * @param val Entry value.
      * @param next Next entry in the linked list.
-     * @param ttl Time to live.
      * @param hdrId Header id.
      * @return New cache entry.
      */
@@ -41,6 +40,5 @@ public interface GridCacheMapEntryFactory {
         int hash,
         CacheObject val,
         @Nullable GridCacheMapEntry next,
-        long ttl,
         int hdrId);
 }

@@ -110,7 +110,10 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPolicyConsistency() throws Exception {
-        plc = new FifoEvictionPolicy<Object, Object>(500);
+        FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
+        plc.setMaxSize(500);
+
+        this.plc = plc;
 
         try {
             Ignite ignite = startGrid(1);
@@ -136,7 +139,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
                         info("Stats [iterCnt=" + i + ", size=" + cache.size() + ']');
                 }
 
-                FifoEvictionPolicy<Integer, Integer> plc0 = (FifoEvictionPolicy<Integer, Integer>) plc;
+                FifoEvictionPolicy<Integer, Integer> plc0 = (FifoEvictionPolicy<Integer, Integer>)this.plc;
 
                 if (!plc0.queue().isEmpty()) {
                     for (Cache.Entry<Integer, Integer> e : plc0.queue())
@@ -162,7 +165,10 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testEvictSingle() throws Exception {
-        plc = new FifoEvictionPolicy<Object, Object>(500);
+        FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
+        plc.setMaxSize(500);
+
+        this.plc = plc;
 
         try {
             Ignite ignite = startGrid(1);
@@ -189,7 +195,10 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testEvictAll() throws Exception {
-        plc = new FifoEvictionPolicy<Object, Object>(500);
+        FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
+        plc.setMaxSize(500);
+
+        this.plc = plc;
 
         try {
             Ignite ignite = startGrid(1);
@@ -221,7 +230,10 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReload() throws Exception {
-        plc = new FifoEvictionPolicy<Object, Object>(100);
+        FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
+        plc.setMaxSize(100);
+
+        this.plc = plc;
 
         try {
             Ignite ignite = startGrid(1);

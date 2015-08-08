@@ -1247,7 +1247,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         IgfsBlockKey key = new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
 
-        GridCache<IgfsBlockKey, byte[]> dataCache = igfs.context().kernalContext().cache().cache(
+        IgniteCache<IgfsBlockKey, byte[]> dataCache = igfs.context().kernalContext().cache().jcache(
             igfs.configuration().getDataCacheName());
 
         for (int i = 0; i < 10; i++) {

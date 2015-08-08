@@ -17,9 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -32,14 +33,18 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMess
     private static final long serialVersionUID = 0L;
 
     /** Added node ID. */
-    private UUID nodeId;
+    private final UUID nodeId;
 
     /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
+     * Client node can not get discovery data from TcpDiscoveryNodeAddedMessage, we have to pass discovery data in
+     * TcpDiscoveryNodeAddFinishedMessage
      */
-    public TcpDiscoveryNodeAddFinishedMessage() {
-        // No-op.
-    }
+    @GridToStringExclude
+    private Map<UUID, Map<Integer, byte[]>> clientDiscoData;
+
+    /** */
+    @GridToStringExclude
+    private Map<String, Object> clientNodeAttrs;
 
     /**
      * Constructor.
@@ -62,18 +67,34 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMess
         return nodeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        U.writeUuid(out, nodeId);
+    /**
+     * @return Discovery data for joined client.
+     */
+    public Map<UUID, Map<Integer, byte[]>> clientDiscoData() {
+        return clientDiscoData;
     }
 
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
+    /**
+     * @param clientDiscoData Discovery data for joined client.
+     */
+    public void clientDiscoData(@Nullable Map<UUID, Map<Integer, byte[]>> clientDiscoData) {
+        this.clientDiscoData = clientDiscoData;
 
-        nodeId = U.readUuid(in);
+        assert clientDiscoData == null || !clientDiscoData.containsKey(nodeId);
+    }
+
+    /**
+     * @return Client node attributes.
+     */
+    public Map<String, Object> clientNodeAttributes() {
+        return clientNodeAttrs;
+    }
+
+    /**
+     * @param clientNodeAttrs New client node attributes.
+     */
+    public void clientNodeAttributes(Map<String, Object> clientNodeAttrs) {
+        this.clientNodeAttrs = clientNodeAttrs;
     }
 
     /** {@inheritDoc} */

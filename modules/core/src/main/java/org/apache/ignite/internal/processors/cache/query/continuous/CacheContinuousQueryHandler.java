@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.managers.deployment.*;
@@ -172,7 +173,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                         ctx.discovery().localNode(),
                         "Continuous query executed.",
                         EVT_CACHE_QUERY_EXECUTED,
-                        CacheQueryType.CONTINUOUS,
+                        CacheQueryType.CONTINUOUS.name(),
                         cacheName,
                         null,
                         null,
@@ -198,16 +199,11 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 boolean notify = true;
 
                 if (rmtFilter != null) {
-                    CacheFlag[] f = cctx.forceLocalRead();
-
                     try {
                         notify = rmtFilter.evaluate(evt);
                     }
                     catch (Exception e) {
                         U.error(cctx.logger(CacheContinuousQueryHandler.class), "CacheEntryEventFilter failed: " + e);
-                    }
-                    finally {
-                        cctx.forceFlags(f);
                     }
                 }
 
@@ -231,6 +227,13 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                             ctx.continuous().addNotification(nodeId, routineId, evt.entry(), topic, sync, true);
                         }
+                        catch (ClusterTopologyCheckedException ex) {
+                            IgniteLogger log = ctx.log(getClass());
+
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to send event notification to node, node left cluster " +
+                                    "[node=" + nodeId + ", err=" + ex + ']');
+                        }
                         catch (IgniteCheckedException ex) {
                             U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, ex);
                         }
@@ -241,7 +244,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                             ctx.discovery().localNode(),
                             "Continuous query executed.",
                             EVT_CACHE_QUERY_OBJECT_READ,
-                            CacheQueryType.CONTINUOUS,
+                            CacheQueryType.CONTINUOUS.name(),
                             cacheName,
                             null,
                             null,
@@ -350,8 +353,8 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         Iterable<CacheEntryEvent<? extends K, ? extends V>> evts = F.viewReadOnly(entries,
             new C1<CacheContinuousQueryEntry, CacheEntryEvent<? extends K, ? extends V>>() {
                 @Override public CacheEntryEvent<? extends K, ? extends V> apply(CacheContinuousQueryEntry e) {
-                    return new CacheContinuousQueryEvent<K, V>(cache, cctx, e);
-                };
+                    return new CacheContinuousQueryEvent<>(cache, cctx, e);
+                }
             }
         );
 
@@ -390,6 +393,11 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         catch (CloneNotSupportedException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheContinuousQueryHandler.class, this);
     }
 
     /** {@inheritDoc} */

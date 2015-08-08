@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -27,7 +26,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.Cache;
+import javax.cache.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -64,6 +63,7 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param allowOverwrite Allow overwrite flag for streamer.
      * @throws Exception If failed.
      */
     public void checkStopStartCacheWithDataLoader(final boolean allowOverwrite) throws Exception {
@@ -77,8 +77,7 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             /** {@inheritDoc} */
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 try (IgniteDataStreamer<Integer, Integer> str = ignite(0).dataStreamer(null)) {
                     str.allowOverwrite(allowOverwrite);
 
@@ -89,7 +88,8 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
                             @Override public void apply(IgniteFuture<?> f) {
                                 try {
                                     f.get();
-                                } catch (IgniteException ignore) {
+                                }
+                                catch (CacheException ignore) {
                                     // This may be debugged.
                                 }
                             }
@@ -106,15 +106,18 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        Thread.sleep(500);
+        try {
+            Thread.sleep(500);
 
-        ignite(0).destroyCache(null);
+            ignite(0).destroyCache(null);
 
-        Thread.sleep(500);
+            Thread.sleep(500);
 
-        ignite(0).createCache(ccfg);
-
-        stop.set(true);
+            ignite(0).createCache(ccfg);
+        }
+        finally {
+            stop.set(true);
+        }
 
         fut.get();
 

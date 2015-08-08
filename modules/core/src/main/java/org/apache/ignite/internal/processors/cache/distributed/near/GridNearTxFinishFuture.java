@@ -63,7 +63,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     private IgniteUuid futId;
 
     /** Transaction. */
-    @GridToStringExclude
+    @GridToStringInclude
     private GridNearTxLocal tx;
 
     /** Commit flag. */
@@ -86,11 +86,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     public GridNearTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridNearTxLocal tx, boolean commit) {
         super(cctx.kernalContext(), F.<IgniteInternalTx>identityReducer(tx));
 
-        assert cctx != null;
-
         this.cctx = cctx;
         this.tx = tx;
         this.commit = commit;
+
+        ignoreInterrupts(true);
 
         mappings = tx.mappings();
 
@@ -254,6 +254,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         }
                         catch (Throwable t) {
                             U.error(log, "Failed to invalidate entry.", t);
+
+                            if (t instanceof Error)
+                                throw (Error)t;
                         }
                     }
                 }
@@ -287,7 +290,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @return Synchronous flag.
      */
     private boolean isSync() {
-        return commit ? tx.syncCommit() : tx.syncRollback();
+        return tx.explicitLock() || (commit ? tx.syncCommit() : tx.syncRollback());
     }
 
     /**
@@ -516,7 +519,22 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearTxFinishFuture.class, this, super.toString());
+        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
+            @SuppressWarnings("unchecked")
+            @Override public String apply(IgniteInternalFuture<?> f) {
+                if (isMini(f)) {
+                    return "[node=" + ((MiniFuture) f).node().id() +
+                        ", loc=" + ((MiniFuture) f).node().isLocal() +
+                        ", done=" + f.isDone() + "]";
+                }
+                else
+                    return "[loc=true, done=" + f.isDone() + "]";
+            }
+        });
+
+        return S.toString(GridNearTxFinishFuture.class, this,
+            "innerFuts", futs,
+            "super", super.toString());
     }
 
     /**

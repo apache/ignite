@@ -67,12 +67,12 @@ import java.util.*;
  * </ul>
  * Below is a Java example of configuration for priority collision SPI:
  * <pre name="code" class="java">
- * GridPriorityQueueCollisionSpi colSpi = new GridPriorityQueueCollisionSpi();
+ * PriorityQueueCollisionSpi colSpi = new PriorityQueueCollisionSpi();
  *
  * // Execute all jobs sequentially by setting parallel job number to 1.
  * colSpi.setParallelJobsNumber(1);
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default collision SPI.
  * cfg.setCollisionSpi(colSpi);
@@ -83,7 +83,7 @@ import java.util.*;
  * Here is Spring XML configuration example:
  * <pre name="code" class="xml">
  * &lt;property name="collisionSpi"&gt;
- *     &lt;bean class="org.apache.ignite.spi.collision.priorityqueue.GridPriorityQueueCollisionSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi"&gt;
  *         &lt;property name="priorityAttributeKey" value="myPriorityAttributeKey"/&gt;
  *         &lt;property name="parallelJobsNumber" value="10"/&gt;
  *     &lt;/bean&gt;

@@ -137,9 +137,17 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     }
 
     /**
+     * Sets update error.
+     * @param err
+     */
+    public void error(IgniteCheckedException err){
+        this.err = err;
+    }
+
+    /**
      * @return Update error, if any.
      */
-    public Throwable error() {
+    public IgniteCheckedException error() {
         return err;
     }
 
@@ -335,10 +343,12 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @param e Error cause.
      */
     public synchronized void addFailedKeys(Collection<KeyCacheObject> keys, Throwable e) {
-        if (failedKeys == null)
-            failedKeys = new ArrayList<>(keys.size());
+        if (keys != null) {
+            if (failedKeys == null)
+                failedKeys = new ArrayList<>(keys.size());
 
-        failedKeys.addAll(keys);
+            failedKeys.addAll(keys);
+        }
 
         if (err == null)
             err = new IgniteCheckedException("Failed to update keys on primary node.");

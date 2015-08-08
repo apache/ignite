@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.reducefields;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
@@ -44,7 +44,8 @@ public class GridCacheReduceFieldsQueryPartitionedSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testIncludeBackups() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery("select age from Person");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().
+            createSqlFieldsQuery("select age from Person", false);
 
         qry.includeBackups(true);
 

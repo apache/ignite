@@ -435,14 +435,14 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
 
         TestValue val2 = new TestValue(new byte[10]);
 
-        if (portableEnabled()) // TODO: 9271, check return value when fixed.
+        if (portableEnabled()) // TODO: IGNITE-608, check return value when fixed.
             c.put(key, val);
         else
             assertEquals(val, c.getAndPut(key, val));
 
         checkValue(key, val2);
 
-        if (portableEnabled()) // TODO: 9271, check return value when fixed.
+        if (portableEnabled()) // TODO: IGNITE-608, check return value when fixed.
             c.remove(key);
         else
             assertEquals(val2, c.getAndRemove(key));
@@ -566,7 +566,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         IgniteCache<Integer, Integer> c = grid(0).cache(null);
 
         for (int i = 0; i < gridCount(); i++) {
-            assertEquals("Unexpected entries for grid: " + i, 0, internalCache(i).offHeapEntriesCount());
+            assertEquals("Unexpected entries for grid: " + i, 0, grid(i).cache(null).localSize(CachePeekMode.OFFHEAP));
 
             assertEquals("Unexpected offheap size for grid: " + i, 0, internalCache(i).offHeapAllocatedSize());
         }
@@ -586,7 +586,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         assertNull(c.localPeek(key, CachePeekMode.ONHEAP));
 
         for (int i = 0; i < gridCount(); i++) {
-            assertEquals("Unexpected entries for grid: " + i, 0, internalCache(i).offHeapEntriesCount());
+            assertEquals("Unexpected entries for grid: " + i, 0, grid(i).cache(null).localSize(CachePeekMode.OFFHEAP));
 
             assertEquals("Unexpected offheap size for grid: " + i, 0, internalCache(i).offHeapAllocatedSize());
         }

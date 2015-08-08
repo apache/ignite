@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -41,6 +42,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  */
 public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteCollectionAbstractTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-80");
+    }
+
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
     }
@@ -48,6 +54,11 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
     /** {@inheritDoc} */
     @Override protected CacheMode collectionCacheMode() {
         return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMemoryMode collectionMemoryMode() {
+        return ONHEAP_TIERED;
     }
 
     /** {@inheritDoc} */
@@ -106,7 +117,11 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
         IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    Ignite ignite = startGrid(idx.getAndIncrement());
+                    int idx0 = idx.getAndIncrement();
+
+                    Thread.currentThread().setName("createQueue-" + idx0);
+
+                    Ignite ignite = startGrid(idx0);
 
                     UUID locNodeId = ignite.cluster().localNode().id();
 

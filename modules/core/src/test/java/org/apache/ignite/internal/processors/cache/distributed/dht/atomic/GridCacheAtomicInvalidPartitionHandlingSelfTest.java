@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -41,6 +42,7 @@ import org.jsr166.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -68,15 +70,14 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER).setForceServerMode(true));
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
         cfg.setCommunicationSpi(new DelayCommunicationSpi());
+
+        if (testClientNode() && getTestGridName(0).equals(gridName))
+            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -101,6 +102,18 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         super.beforeTest();
 
         delay = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * @return {@code True} if test updates from client node.
+     */
+    protected boolean testClientNode() {
+        return false;
     }
 
     /**
@@ -162,19 +175,25 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         awaitPartitionMapExchange();
 
         try {
+            assertEquals(testClientNode(), (boolean)grid(0).configuration().isClientMode());
+
             final IgniteCache<Object, Object> cache = grid(0).cache(null);
 
             final int range = 100_000;
 
             final Set<Integer> keys = new LinkedHashSet<>();
 
-            for (int i = 0; i < range; i++) {
-                cache.put(i, 0);
+            try (IgniteDataStreamer<Integer, Integer> streamer = grid(0).dataStreamer(null)) {
+                streamer.allowOverwrite(true);
 
-                keys.add(i);
+                for (int i = 0; i < range; i++) {
+                    streamer.addData(i, 0);
 
-                if (i > 0 && i % 10_000 == 0)
-                    System.err.println("Put: " + i);
+                    keys.add(i);
+
+                    if (i > 0 && i % 10_000 == 0)
+                        System.err.println("Put: " + i);
+                }
             }
 
             final Affinity<Integer> aff = grid(0).affinity(null);
@@ -251,7 +270,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                     return null;
                 }
-            }, 4);
+            }, 4, "putAll-thread");
 
             Random rnd = new Random();
 
@@ -312,7 +331,10 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                     assertEquals("Failed to check value for key [key=" + k + ", node=" +
                                         locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
                                         val, CU.value(entry.rawGetOrUnmarshal(false), entry.context(), false));
-                                    assertEquals(ver, entry.version());
+
+                                    assertEquals("Failed to check version for key [key=" + k + ", node=" +
+                                        locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
+                                        ver, entry.version());
                                 }
                             }
                             else
@@ -320,12 +342,12 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                         }
                         catch (AssertionError e) {
                             if (r == 9) {
-                                System.err.println("Failed to verify cache contents: " + e.getMessage());
+                                info("Failed to verify cache contents: " + e.getMessage());
 
                                 throw e;
                             }
 
-                            System.err.println("Failed to verify cache contents, will retry: " + e.getMessage());
+                            info("Failed to verify cache contents, will retry: " + e.getMessage());
 
                             // Give some time to finish async updates.
                             U.sleep(1000);
@@ -344,7 +366,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
      */
     private static class DelayCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
             throws IgniteSpiException {
             try {
                 if (delayMessage((GridIoMessage)msg))
@@ -354,7 +376,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                 throw new IgniteSpiException(e);
             }
 
-            super.sendMessage(node, msg);
+            super.sendMessage(node, msg, ackClosure);
         }
 
         /**

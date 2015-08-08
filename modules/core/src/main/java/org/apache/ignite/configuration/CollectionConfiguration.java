@@ -18,14 +18,40 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+
+import java.io.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Configuration for Ignite collections.
  */
-public class CollectionConfiguration {
-    /** Cache name. */
-    private String cacheName;
+public class CollectionConfiguration implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Cache atomicity mode. */
+    private CacheAtomicityMode atomicityMode = ATOMIC;
+
+    /** Cache mode. */
+    private CacheMode cacheMode = PARTITIONED;
+
+    /** Cache memory mode. */
+    private CacheMemoryMode memoryMode = ONHEAP_TIERED;
+
+    /** Node filter specifying nodes on which this cache should be deployed. */
+    private IgnitePredicate<ClusterNode> nodeFilter;
+
+    /** Number of backups. */
+    private int backups = 0;
+
+    /** Off-heap memory size. */
+    private long offHeapMaxMem = -1;
 
     /** Collocated flag. */
     private boolean collocated;
@@ -47,17 +73,87 @@ public class CollectionConfiguration {
     }
 
     /**
-     * @return Cache name.
+     * @return Cache atomicity mode.
      */
-    public String getCacheName() {
-        return cacheName;
+    public CacheAtomicityMode getAtomicityMode() {
+        return atomicityMode;
     }
 
     /**
-     * @param cacheName Cache name.
+     * @param atomicityMode Cache atomicity mode.
      */
-    public void setCacheName(String cacheName) {
-        this.cacheName = cacheName;
+    public void setAtomicityMode(CacheAtomicityMode atomicityMode) {
+        this.atomicityMode = atomicityMode;
+    }
+
+    /**
+     * @return Cache mode.
+     */
+    public CacheMode getCacheMode() {
+        return cacheMode;
+    }
+
+    /**
+     * @param cacheMode Cache mode.
+     */
+    public void setCacheMode(CacheMode cacheMode) {
+        this.cacheMode = cacheMode;
+    }
+
+    /**
+     * @return Cache memory mode.
+     */
+    public CacheMemoryMode getMemoryMode() {
+        return memoryMode;
+    }
+
+    /**
+     * @param memoryMode Memory mode.
+     */
+    public void setMemoryMode(CacheMemoryMode memoryMode) {
+        this.memoryMode = memoryMode;
+    }
+
+    /**
+     * @return Predicate specifying on which nodes the cache should be started.
+     */
+    public IgnitePredicate<ClusterNode> getNodeFilter() {
+        return nodeFilter;
+    }
+
+    /**
+     * @param nodeFilter Predicate specifying on which nodes the cache should be started.
+     */
+    public void setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
+        this.nodeFilter = nodeFilter;
+    }
+
+    /**
+     * @return Number of backups.
+     */
+    public int getBackups() {
+        return backups;
+    }
+
+    /**
+     * @param backups Cache number of backups.
+     */
+    public void setBackups(int backups) {
+        this.backups = backups;
+    }
+
+    /**
+     * @return Off-heap memory size.
+     */
+    public long getOffHeapMaxMemory() {
+        return offHeapMaxMem;
+    }
+
+    /**
+     * @param offHeapMaxMemory Off-heap memory size.
+     */
+    public void setOffHeapMaxMemory(long offHeapMaxMemory) {
+        this.offHeapMaxMem = offHeapMaxMemory;
     }
 
     /** {@inheritDoc} */

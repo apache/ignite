@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.hadoop.v2.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 import org.objectweb.asm.*;
@@ -43,6 +44,9 @@ public class HadoopClassLoader extends URLClassLoader {
         registerAsParallelCapable();
     }
 
+    /** Name of the Hadoop daemon class. */
+    public static final String HADOOP_DAEMON_CLASS_NAME = "org.apache.hadoop.util.Daemon";
+
     /** */
     private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
 
@@ -58,13 +62,41 @@ public class HadoopClassLoader extends URLClassLoader {
     /** */
     private static final Map<String, byte[]> bytesCache = new ConcurrentHashMap8<>();
 
+    /** Diagnostic name of this class loader. */
+    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
+    private final String name;
+
+    /**
+     * Gets name for Job class loader. The name is specific for local node id.
+     * @param locNodeId The local node id.
+     * @return The class loader name.
+     */
+    public static String nameForJob(UUID locNodeId) {
+        return "hadoop-job-node-" + locNodeId.toString();
+    }
+
+    /**
+     * Gets name for the task class loader. Task class loader
+     * @param info The task info.
+     * @param prefix Get only prefix (without task type and number)
+     * @return The class loader name.
+     */
+    public static String nameForTask(HadoopTaskInfo info, boolean prefix) {
+        if (prefix)
+            return "hadoop-task-" + info.jobId() + "-";
+        else
+            return "hadoop-task-" + info.jobId() + "-" + info.type() + "-" + info.taskNumber();
+    }
+
     /**
      * @param urls Urls.
      */
-    public HadoopClassLoader(URL[] urls) {
+    public HadoopClassLoader(URL[] urls, String name) {
         super(addHadoopUrls(urls), APP_CLS_LDR);
 
         assert !(getParent() instanceof HadoopClassLoader);
+
+        this.name = name;
     }
 
     /**
@@ -96,6 +128,10 @@ public class HadoopClassLoader extends URLClassLoader {
                     return loadFromBytes(name, HadoopShutdownHookManager.class.getName());
                 else if (name.endsWith(".util.NativeCodeLoader"))
                     return loadFromBytes(name, HadoopNativeCodeLoader.class.getName());
+                else if (name.equals(HADOOP_DAEMON_CLASS_NAME))
+                    // We replace this in order to be able to forcibly stop some daemon threads
+                    // that otherwise never stop (e.g. PeerCache runnables):
+                    return loadFromBytes(name, HadoopDaemon.class.getName());
 
                 return loadClassExplicitly(name, resolve);
             }
@@ -548,5 +584,17 @@ public class HadoopClassLoader extends URLClassLoader {
 
             return hadoopUrls;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(HadoopClassLoader.class, this);
+    }
+
+    /**
+     * Getter for name field.
+     */
+    public String name() {
+        return name;
     }
 }

@@ -184,7 +184,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testPartitionedMixed() throws Exception {
+    public void testPartitionedMixed() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;
 

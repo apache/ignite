@@ -112,7 +112,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     }
 
     /** */
-    public void testNodeNotInTopology() {
+    public void testNodeNotInTopology() throws Exception {
         ComputeTaskSession ses = new GridTestTaskSession();
 
         ClusterNode node = new GridTestNode(UUID.randomUUID());

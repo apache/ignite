@@ -49,13 +49,113 @@ class CacheMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getOffHeapGets() {
+        return cache.metrics0().getOffHeapGets();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapPuts() {
+        return cache.metrics0().getOffHeapPuts();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapRemovals() {
+        return cache.metrics0().getOffHeapRemovals();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapEvictions() {
+        return cache.metrics0().getOffHeapEvictions();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapHits() {
+        return cache.metrics0().getOffHeapHits();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getOffHeapHitPercentage() {
+        return cache.metrics0().getOffHeapHitPercentage();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapMisses() {
+        return cache.metrics0().getOffHeapMisses();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getOffHeapMissPercentage() {
+        return cache.metrics0().getOffHeapMissPercentage();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
         return cache.metrics0().getOffHeapEntriesCount();
     }
 
     /** {@inheritDoc} */
+    @Override public long getOffHeapPrimaryEntriesCount() {
+        return cache.metrics0().getOffHeapPrimaryEntriesCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapBackupEntriesCount() {
+        return cache.metrics0().getOffHeapBackupEntriesCount();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getOffHeapAllocatedSize() {
         return cache.metrics0().getOffHeapAllocatedSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapMaxSize() {
+        return cache.metrics0().getOffHeapMaxSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapGets() {
+        return cache.metrics0().getSwapGets();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapPuts() {
+        return cache.metrics0().getSwapPuts();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapRemovals() {
+        return cache.metrics0().getSwapRemovals();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapHits() {
+        return cache.metrics0().getSwapHits();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapMisses() {
+        return cache.metrics0().getSwapMisses();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getSwapHitPercentage() {
+        return cache.metrics0().getSwapHitPercentage();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getSwapMissPercentage() {
+        return cache.metrics0().getSwapMissPercentage();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapEntriesCount() {
+        return cache.metrics0().getSwapEntriesCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapSize() {
+        return cache.metrics0().getSwapSize();
     }
 
     /** {@inheritDoc} */

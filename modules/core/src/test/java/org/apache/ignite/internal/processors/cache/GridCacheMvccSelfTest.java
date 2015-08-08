@@ -937,7 +937,6 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         ctx.mvcc().addNext(ctx, c4);
 
-        assert c3.previous() == null;
         assert c4 != null;
         assert c4.previous() == c3;
     }

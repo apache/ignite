@@ -33,7 +33,6 @@ public class GridDhtAtomicCacheEntry extends GridDhtCacheEntry {
      * @param hash Key hash value.
      * @param val Entry value.
      * @param next Next entry in the linked list.
-     * @param ttl Time to live.
      * @param hdrId Header id.
      */
     public GridDhtAtomicCacheEntry(GridCacheContext ctx,
@@ -42,10 +41,9 @@ public class GridDhtAtomicCacheEntry extends GridDhtCacheEntry {
         int hash,
         CacheObject val,
         GridCacheMapEntry next,
-        long ttl,
         int hdrId)
     {
-        super(ctx, topVer, key, hash, val, next, ttl, hdrId);
+        super(ctx, topVer, key, hash, val, next, hdrId);
     }
 
     /** {@inheritDoc} */

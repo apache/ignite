@@ -63,7 +63,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     protected IgniteFileSystem igfs;
 
     /** Meta cache. */
-    private GridCache<Object, Object> metaCache;
+    private GridCacheAdapter<Object, Object> metaCache;
 
     /** Meta cache name. */
     private String metaCacheName;
@@ -80,7 +80,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         metaCacheName = cfgs[0].getMetaCacheName();
 
-        metaCache = grid.cachex(metaCacheName);
+        metaCache = ((IgniteKernal)grid).internalCache(metaCacheName);
     }
 
     /** {@inheritDoc} */
@@ -209,7 +209,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             IgfsFileImpl info = (IgfsFileImpl)igfs.info(path);
 
             for (int i = 0; i < nodesCount(); i++) {
-                IgfsFileInfo fileInfo = (IgfsFileInfo)grid(i).cachex(metaCacheName).peek(info.fileId());
+                IgfsFileInfo fileInfo =
+                    (IgfsFileInfo)grid(i).cachex(metaCacheName).localPeek(info.fileId(), ONHEAP_PEEK_MODES, null);
 
                 assertNotNull(fileInfo);
                 assertNotNull(fileInfo.listing());
@@ -683,8 +684,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         IgniteUuid fileId = U.field(igfs.info(path), "fileId");
 
-        GridCache<IgniteUuid, IgfsFileInfo> metaCache = grid(0).cachex(META_CACHE_NAME);
-        GridCache<IgfsBlockKey, byte[]> dataCache = grid(0).cachex(DATA_CACHE_NAME);
+        GridCacheAdapter<IgniteUuid, IgfsFileInfo> metaCache = ((IgniteKernal)grid(0)).internalCache(META_CACHE_NAME);
+        GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = ((IgniteKernal)grid(0)).internalCache(DATA_CACHE_NAME);
 
         IgfsFileInfo info = metaCache.get(fileId);
 

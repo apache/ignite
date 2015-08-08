@@ -24,6 +24,13 @@ import org.apache.ignite.testframework.junits.spi.*;
  */
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
 public class GridTcpCommunicationSpiTcpSelfTest extends GridTcpCommunicationSpiAbstractTest {
+    /**
+     *
+     */
+    public GridTcpCommunicationSpiTcpSelfTest() {
+        super(false);
+    }
+
     /** {@inheritDoc} */
     @Override protected boolean tcpNoDelay() {
         return true;

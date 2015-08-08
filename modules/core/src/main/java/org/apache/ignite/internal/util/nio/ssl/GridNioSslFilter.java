@@ -52,6 +52,12 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** SSL context to use. */
     private SSLContext sslCtx;
 
+    /** Order. */
+    private ByteOrder order;
+
+    /** Allocate direct buffer or heap buffer. */
+    private boolean directBuf;
+
     /** Whether SSLEngine should use client mode. */
     private boolean clientMode;
 
@@ -62,13 +68,17 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * Creates SSL filter.
      *
      * @param sslCtx SSL context.
+     * @param directBuf Direct buffer flag.
+     * @param order Byte order.
      * @param log Logger to use.
      */
-    public GridNioSslFilter(SSLContext sslCtx, IgniteLogger log) {
+    public GridNioSslFilter(SSLContext sslCtx, boolean directBuf, ByteOrder order, IgniteLogger log) {
         super("SSL filter");
 
         this.log = log;
         this.sslCtx = sslCtx;
+        this.directBuf = directBuf;
+        this.order = order;
     }
 
     /**
@@ -151,7 +161,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             engine.setEnabledProtocols(enabledProtos);
 
         try {
-            GridNioSslHandler hnd = new GridNioSslHandler(this, ses, engine, log);
+            GridNioSslHandler hnd = new GridNioSslHandler(this, ses, engine, directBuf, order, log);
 
             ses.addMeta(SSL_HANDLER.ordinal(), hnd);
 
@@ -182,7 +192,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
+    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex)
+        throws IgniteCheckedException {
         proceedExceptionCaught(ses, ex);
     }
 
@@ -327,7 +338,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * @throws GridNioException If failed to forward requests to filter chain.
      * @return Close future.
      */
-    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioSslHandler hnd) throws IgniteCheckedException {
+    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioSslHandler hnd)
+        throws IgniteCheckedException {
         try {
             hnd.closeOutbound();
 
@@ -381,38 +393,5 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
                 "chain?) [ses=" + ses + ", msgClass=" + msg.getClass().getName() +  ']');
 
         return (ByteBuffer)msg;
-    }
-
-    /**
-     * Expands the given byte buffer to the requested capacity.
-     *
-     * @param original Original byte buffer.
-     * @param cap Requested capacity.
-     * @return Expanded byte buffer.
-     */
-    public static ByteBuffer expandBuffer(ByteBuffer original, int cap) {
-        ByteBuffer res = ByteBuffer.allocate(cap);
-
-        original.flip();
-
-        res.put(original);
-
-        return res;
-    }
-
-    /**
-     * Copies the given byte buffer.
-     *
-     * @param original Byte buffer to copy.
-     * @return Copy of the original byte buffer.
-     */
-    public static ByteBuffer copy(ByteBuffer original) {
-        ByteBuffer cp = ByteBuffer.allocate(original.remaining());
-
-        cp.put(original);
-
-        cp.flip();
-
-        return cp;
     }
 }

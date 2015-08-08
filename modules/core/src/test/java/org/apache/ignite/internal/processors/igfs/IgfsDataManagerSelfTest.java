@@ -456,7 +456,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             do {
                 IgfsBlockKey key = new IgfsBlockKey(info.id(), null, false, block);
 
-                ClusterNode affNode = grid(0).cachex(DATA_CACHE_NAME).affinity().mapKeyToNode(key);
+                ClusterNode affNode = grid(0).affinity(DATA_CACHE_NAME).mapKeyToNode(key);
 
                 assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
                     ", nodeId=" + affNode.id() + ", block=" + block + ']', loc.nodeIds().contains(affNode.id()));
@@ -517,8 +517,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param affinity Affinity block locations to check.
      */
     private void checkAffinity(int blockSize, IgfsFileInfo info, Iterable<IgfsBlockLocation> affinity) {
-        GridCache<Object, Object> dataCache = grid(0).cachex(DATA_CACHE_NAME);
-
         for (IgfsBlockLocation loc : affinity) {
             info("Going to check IGFS block location: " + loc);
 
@@ -530,7 +528,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 IgfsBlockKey key = new IgfsBlockKey(info.id(),
                     info.fileMap().affinityKey(block * blockSize, false), false, block);
 
-                ClusterNode affNode = dataCache.affinity().mapKeyToNode(key);
+                ClusterNode affNode = grid(0).affinity(DATA_CACHE_NAME).mapKeyToNode(key);
 
                 assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
                     ", nodeId=" + affNode.id() + ", block=" + block + ']', loc.nodeIds().contains(affNode.id()));

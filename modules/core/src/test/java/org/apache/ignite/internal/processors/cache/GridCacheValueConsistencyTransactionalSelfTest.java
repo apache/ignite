@@ -32,6 +32,6 @@ public class GridCacheValueConsistencyTransactionalSelfTest extends GridCacheVal
 
     /** {@inheritDoc} */
     @Override protected int iterationCount() {
-        return 100_000;
+        return 50_000;
     }
 }

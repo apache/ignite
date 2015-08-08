@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
@@ -398,6 +399,7 @@ public interface GridCacheEntryEx {
      * @param val Value. Type depends on operation.
      * @param invokeArgs Optional arguments for entry processor.
      * @param writeThrough Write through flag.
+     * @param readThrough Read through flag.
      * @param retval Return value flag.
      * @param expiryPlc Expiry policy.
      * @param evt Event flag.
@@ -430,12 +432,14 @@ public interface GridCacheEntryEx {
         @Nullable Object val,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
+        boolean readThrough,
         boolean retval,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         boolean primary,
         boolean checkVer,
+        AffinityTopologyVersion topVer,
         @Nullable CacheEntryPredicate[] filter,
         GridDrType drType,
         long conflictTtl,
@@ -455,6 +459,7 @@ public interface GridCacheEntryEx {
      * @param writeObj Value. Type depends on operation.
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param writeThrough Write through flag.
+     * @param readThrough Read through flag.
      * @param retval Return value flag.
      * @param expiryPlc Expiry policy..
      * @param evt Event flag.
@@ -473,6 +478,7 @@ public interface GridCacheEntryEx {
         @Nullable Object writeObj,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
+        boolean readThrough,
         boolean retval,
         @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
@@ -560,17 +566,6 @@ public interface GridCacheEntryEx {
     /**
      * Peeks into entry without loading value or updating statistics.
      *
-     * @param mode Peek mode.
-     * @param filter Optional filter.
-     * @return Value.
-     * @throws GridCacheEntryRemovedException If entry has been removed.
-     */
-    @Nullable public CacheObject peek(GridCachePeekMode mode, CacheEntryPredicate... filter)
-        throws GridCacheEntryRemovedException;
-
-    /**
-     * Peeks into entry without loading value or updating statistics.
-     *
      * @param heap Read from heap flag.
      * @param offheap Read from offheap flag.
      * @param swap Read from swap flag.
@@ -590,43 +585,19 @@ public interface GridCacheEntryEx {
     /**
      * Peeks into entry without loading value or updating statistics.
      *
-     * @param modes Peek modes.
-     * @param filter Optional filter.
+     * @param heap Read from heap flag.
+     * @param offheap Read from offheap flag.
+     * @param swap Read from swap flag.
+     * @param plc Expiry policy if TTL should be updated.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheObject peek(Collection<GridCachePeekMode> modes,
-        CacheEntryPredicate... filter) throws GridCacheEntryRemovedException;
-
-    /**
-     * @param failFast Fail-fast flag.
-     * @param mode Peek mode.
-     * @param filter Filter.
-     * @param tx Transaction to peek value at (if mode is TX value).
-     * @return Peeked value.
-     * @throws IgniteCheckedException In case of error.
-     * @throws GridCacheEntryRemovedException If removed.
-     * @throws GridCacheFilterFailedException If filter failed.
-     */
-    @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable public GridTuple<CacheObject> peek0(boolean failFast,
-        GridCachePeekMode mode,
-        @Nullable CacheEntryPredicate[] filter,
-        @Nullable IgniteInternalTx tx)
-        throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException;
-
-    /**
-     * This method overwrites current in-memory value with new value.
-     * <p>
-     * Note that this method is non-transactional and non-distributed and should almost
-     * never be used. It is meant to be used when fixing some heurisitic error state.
-     *
-     * @param val Value to set.
-     * @return Previous value.
-     * @throws IgniteCheckedException If poke operation failed.
-     * @throws GridCacheEntryRemovedException if entry was unexpectedly removed.
-     */
-    public CacheObject poke(CacheObject val) throws GridCacheEntryRemovedException, IgniteCheckedException;
+    @Nullable public CacheObject peek(boolean heap,
+        boolean offheap,
+        boolean swap,
+        @Nullable IgniteCacheExpiryPolicy plc)
+        throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
      * Sets new value if current version is <tt>0</tt>
@@ -900,78 +871,82 @@ public interface GridCacheEntryEx {
     /**
      * Unswap ignoring flags.
      *
-     * @param ignoreFlags Whether to ignore swap flags.
      * @param needVal If {@code false} then do not need to deserialize value during unswap.
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheObject unswap(boolean ignoreFlags, boolean needVal) throws IgniteCheckedException;
+    @Nullable public CacheObject unswap(boolean needVal) throws IgniteCheckedException;
 
     /**
      * Tests whether or not given metadata is set.
      *
-     * @param name Name of the metadata to test.
+     * @param key Key of the metadata to test.
      * @return Whether or not given metadata is set.
      */
-    public boolean hasMeta(UUID name);
+    public boolean hasMeta(int key);
 
     /**
-     * Gets metadata by name.
+     * Gets metadata by key.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param <V> Type of the value.
      * @return Metadata value or {@code null}.
      */
-    @Nullable public <V> V meta(UUID name);
+    @Nullable public <V> V meta(int key);
 
     /**
      * Adds a new metadata.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param val Metadata value.
      * @param <V> Type of the value.
      * @return Metadata previously associated with given name, or
      *      {@code null} if there was none.
      */
-    @Nullable public <V> V addMeta(UUID name, V val);
+    @Nullable public <V> V addMeta(int key, V val);
 
     /**
      * Adds given metadata value only if it was absent.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param val Value to add if it's not attached already.
      * @param <V> Type of the value.
      * @return {@code null} if new value was put, or current value if put didn't happen.
      */
-    @Nullable public <V> V putMetaIfAbsent(UUID name, V val);
+    @Nullable public <V> V putMetaIfAbsent(int key, V val);
 
     /**
      * Replaces given metadata with new {@code newVal} value only if its current value
      * is equal to {@code curVal}. Otherwise, it is no-op.
      *
-     * @param name Name of the metadata.
+     * @param key Key of the metadata.
      * @param curVal Current value to check.
      * @param newVal New value.
      * @return {@code true} if replacement occurred, {@code false} otherwise.
      */
-    public <V> boolean replaceMeta(UUID name, V curVal, V newVal);
+    public <V> boolean replaceMeta(int key, V curVal, V newVal);
 
     /**
-     * Removes metadata by name.
+     * Removes metadata by key.
      *
-     * @param name Name of the metadata to remove.
+     * @param key Key of the metadata to remove.
      * @param <V> Type of the value.
      * @return Value of removed metadata or {@code null}.
      */
-    @Nullable public <V> V removeMeta(UUID name);
+    @Nullable public <V> V removeMeta(int key);
 
     /**
      * Removes metadata only if its current value is equal to {@code val} passed in.
      *
-     * @param name Name of metadata attribute.
+     * @param key key of metadata attribute.
      * @param val Value to compare.
      * @param <V> Value type.
      * @return {@code True} if value was removed, {@code false} otherwise.
      */
-    public <V> boolean removeMeta(UUID name, V val);
+    public <V> boolean removeMeta(int key, V val);
+
+    /**
+     * Calls {@link GridDhtLocalPartition#onUnlock()} for this entry's partition.
+     */
+    public void onUnlock();
 }

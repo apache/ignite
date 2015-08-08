@@ -64,6 +64,9 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     private volatile long endTime;
 
     /** */
+    private boolean ignoreInterrupts;
+
+    /** */
     private IgniteInClosure<? super IgniteInternalFuture<R>> lsnr;
 
     /** {@inheritDoc} */
@@ -76,6 +79,13 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         long endTime = this.endTime;
 
         return endTime == 0 ? U.currentTimeMillis() - startTime : endTime - startTime;
+    }
+
+    /**
+     * @param ignoreInterrupts Ignore interrupts flag.
+     */
+    public void ignoreInterrupts(boolean ignoreInterrupts) {
+        this.ignoreInterrupts = ignoreInterrupts;
     }
 
     /**
@@ -98,8 +108,12 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     /** {@inheritDoc} */
     @Override public R get() throws IgniteCheckedException {
         try {
-            if (endTime == 0)
-                acquireSharedInterruptibly(0);
+            if (endTime == 0) {
+                if (ignoreInterrupts)
+                    acquireShared(0);
+                else
+                    acquireSharedInterruptibly(0);
+            }
 
             if (getState() == CANCELLED)
                 throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
@@ -227,8 +241,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
             lsnr.apply(this);
         }
         catch (IllegalStateException e) {
-            U.warn(null, "Failed to notify listener (is grid stopped?) [fut=" + this +
-                ", lsnr=" + lsnr + ", err=" + e.getMessage() + ']');
+            U.error(null, "Failed to notify listener (is grid stopped?) [fut=" + this +
+                ", lsnr=" + lsnr + ", err=" + e.getMessage() + ']', e);
         }
         catch (RuntimeException | Error e) {
             U.error(null, "Failed to notify listener: " + lsnr, e);
@@ -416,7 +430,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(ArrayListener.class, this, "arr", Arrays.toString(arr));
+            return S.toString(ArrayListener.class, this, "arrSize", arr.length);
         }
     }
 

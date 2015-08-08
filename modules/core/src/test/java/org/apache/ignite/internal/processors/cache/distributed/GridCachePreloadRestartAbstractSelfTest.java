@@ -207,15 +207,6 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     }
 
     /**
-     * @param cache Cache.
-     * @return Affinity.
-     */
-    @SuppressWarnings({"unchecked"})
-    private AffinityFunction affinity(GridCache<Integer, ?> cache) {
-        return cache.configuration().getAffinity();
-    }
-
-    /**
      * @param c Cache projection.
      */
     private void affinityBeforeStop(IgniteCache<Integer, String> c) {

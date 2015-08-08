@@ -26,9 +26,9 @@ import static org.apache.ignite.internal.visor.igfs.VisorIgfsProfiler.*;
 
 /**
  * Class to support uniformity calculation.
- *<p>
- *<a href="http://en.wikipedia.org/wiki/Coefficient_of_variation">Uniformity calculated as coefficient of variation.</a>
- *</p>
+ * <p>
+ * <a href="http://en.wikipedia.org/wiki/Coefficient_of_variation">Uniformity calculated as coefficient of variation.</a>
+ * </p>
  * Count read frequency for each file and compare with ideal uniform distribution.
  */
 public class VisorIgfsProfilerUniformityCounters implements Serializable {

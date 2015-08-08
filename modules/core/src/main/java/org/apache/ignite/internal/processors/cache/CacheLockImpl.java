@@ -35,10 +35,10 @@ class CacheLockImpl<K, V> implements Lock {
     private final GridCacheGateway<K, V> gate;
 
     /** */
-    private final GridCacheProjectionEx<K, V> delegate;
+    private final IgniteInternalCache<K, V> delegate;
 
-    /** Projection. */
-    private final GridCacheProjectionImpl<K, V> prj;
+    /** Operation context. */
+    private final CacheOperationContext opCtx;
 
     /** */
     private final Collection<? extends K> keys;
@@ -52,20 +52,20 @@ class CacheLockImpl<K, V> implements Lock {
     /**
      * @param gate Gate.
      * @param delegate Delegate.
-     * @param prj Projection.
+     * @param opCtx Operation context.
      * @param keys Keys.
      */
-    CacheLockImpl(GridCacheGateway<K, V> gate, GridCacheProjectionEx<K, V> delegate, GridCacheProjectionImpl<K, V> prj,
+    CacheLockImpl(GridCacheGateway<K, V> gate, IgniteInternalCache<K, V> delegate, CacheOperationContext opCtx,
         Collection<? extends K> keys) {
         this.gate = gate;
         this.delegate = delegate;
-        this.prj = prj;
+        this.opCtx = opCtx;
         this.keys = keys;
     }
 
     /** {@inheritDoc} */
     @Override public void lock() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheOperationContext prev = gate.enter(opCtx);
 
         try {
             delegate.lockAll(keys, 0);
@@ -98,7 +98,7 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** {@inheritDoc} */
     @Override public boolean tryLock() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheOperationContext prev = gate.enter(opCtx);
 
         try {
             boolean res = delegate.lockAll(keys, -1);
@@ -124,7 +124,7 @@ class CacheLockImpl<K, V> implements Lock {
         if (time <= 0)
             return tryLock();
 
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheOperationContext prev = gate.enter(opCtx);
 
         try {
             IgniteInternalFuture<Boolean> fut = delegate.lockAllAsync(keys, unit.toMillis(time));
@@ -167,7 +167,7 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** {@inheritDoc} */
     @Override public void unlock() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheOperationContext prev = gate.enter(opCtx);
 
         try {
             if (lockedThread != Thread.currentThread()) {

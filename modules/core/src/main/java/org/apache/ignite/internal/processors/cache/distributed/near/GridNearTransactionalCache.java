@@ -37,7 +37,6 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 
 /**
@@ -104,8 +103,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         final boolean deserializePortable,
         final boolean skipVals
     ) {
-        ctx.denyOnFlag(LOCAL);
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -115,6 +113,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        final boolean skipStore = opCtx != null && opCtx.skipStore();
+
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
@@ -123,14 +125,13 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         entry,
                         deserializePortable,
                         skipVals,
-                        false);
+                        false,
+                        skipStore);
                 }
             });
         }
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
-
-        subjId = ctx.subjectIdPerCall(subjId, prj);
+        subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return loadAsync(null,
             ctx.cacheKeysView(keys),
@@ -139,8 +140,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             subjId,
             taskName,
             deserializePortable,
-            skipVals ? null : prj != null ? prj.expiry() : null,
-            skipVals);
+            skipVals ? null : opCtx != null ? opCtx.expiry() : null,
+            skipVals,
+            skipStore);
     }
 
     /**
@@ -149,6 +151,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param readThrough Read through flag.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
      * @return Future.
      */
     IgniteInternalFuture<Map<K, V>> txLoadAsync(GridNearTxLocal tx,
@@ -288,7 +291,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         req.threadId(),
                                         req.version(),
                                         null,
-                                        ctx.system(),
+                                        ctx.systemTx(),
                                         ctx.ioPolicy(),
                                         PESSIMISTIC,
                                         req.isolation(),
@@ -306,7 +309,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                             "(transaction has been completed): " + req.version());
                                 }
 
-                                tx.addEntry(ctx, txKey, GridCacheOperation.NOOP, /*Value.*/null, /*dr version*/null);
+                                tx.addEntry(ctx,
+                                    txKey,
+                                    GridCacheOperation.NOOP,
+                                    null /*Value.*/,
+                                    null /*dr version*/,
+                                    req.skipStore());
                             }
 
                             // Add remote candidate before reordering.
@@ -391,7 +399,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         assert nodeId != null;
         assert res != null;
 
-        GridNearLockFuture<K, V> fut = (GridNearLockFuture<K, V>)ctx.mvcc().<Boolean>future(res.version(),
+        GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().<Boolean>future(res.version(),
             res.futureId());
 
         if (fut != null)
@@ -407,17 +415,19 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
-        long accessTtl,
-        CacheEntryPredicate[] filter
+        long accessTtl
     ) {
-        GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx,
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        GridNearLockFuture fut = new GridNearLockFuture(ctx,
             keys,
             (GridNearTxLocal)tx,
             isRead,
             retval,
             timeout,
             accessTtl,
-            filter);
+            CU.empty0(),
+            opCtx != null && opCtx.skipStore());
 
         if (!ctx.mvcc().addFuture(fut))
             throw new IllegalStateException("Duplicate future ID: " + fut);
@@ -433,7 +443,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @return {@code True} if entry is locally mapped as a primary or back up node.
      */
     protected boolean isNearLocallyMapped(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
-        return ctx.affinity().belongs(ctx.localNode(), e.key(), topVer);
+        return ctx.affinity().belongs(ctx.localNode(), e.partition(), topVer);
     }
 
     /**
@@ -459,7 +469,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys, CacheEntryPredicate[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys) {
         if (keys.isEmpty())
             return;
 
@@ -478,7 +488,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                     GridDistributedCacheEntry entry = peekExx(cacheKey);
 
-                    if (entry == null || !ctx.isAll(entry, filter))
+                    if (entry == null)
                         break; // While.
 
                     try {
@@ -506,6 +516,13 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                             // Send request to remove from remote nodes.
                             ClusterNode primary = ctx.affinity().primary(key, topVer);
+
+                            if (primary == null) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to unlock key (all partition nodes left the grid).");
+
+                                break;
+                            }
 
                             GridNearUnlockRequest req = map.get(primary);
 
@@ -621,6 +638,13 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                 ClusterNode primary = ctx.affinity().primary(key, cand.topologyVersion());
 
+                                if (primary == null) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to unlock key (all partition nodes left the grid).");
+
+                                    break;
+                                }
+
                                 if (!primary.isLocal()) {
                                     req = map.get(primary);
 
@@ -641,9 +665,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         continue;
                                     }
 
-                                    req.addKey(
-                                        entry.key(),
-                                        ctx);
+                                    req.addKey(entry.key(), ctx);
                                 }
                             }
                         }

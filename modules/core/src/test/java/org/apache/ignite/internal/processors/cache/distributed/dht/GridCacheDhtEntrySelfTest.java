@@ -178,10 +178,10 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         assert !internalCache(near0).clearLocally(key);
 
-        assertEquals(1, near0.localSize());
+        assertEquals(1, near0.localSize(CachePeekMode.ALL));
         assertEquals(1, dht0.size());
 
-        assertEquals(1, near1.localSize());
+        assertEquals(1, near1.localSize(CachePeekMode.ALL));
         assertEquals(0, dht1.size());
     }
 
@@ -269,18 +269,18 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         assert !e0.evictInternal(false, dht0.context().versions().next(), null);
 
-        assertEquals(1, near0.localSize());
+        assertEquals(1, near0.localSize(CachePeekMode.ALL));
         assertEquals(1, dht0.localSize(null));
 
-        assertEquals(1, near1.localSize());
+        assertEquals(1, near1.localSize(CachePeekMode.ALL));
         assertEquals(0, dht1.localSize(null));
 
         assert !e0.evictInternal(true, dht0.context().versions().next(), null);
 
-        assertEquals(1, near0.localSize());
+        assertEquals(1, near0.localSize(CachePeekMode.ALL));
         assertEquals(1, dht0.localSize(null));
 
-        assertEquals(1, near1.localSize());
+        assertEquals(1, near1.localSize(CachePeekMode.ALL));
         assertEquals(0, dht1.localSize(null));
     }
 

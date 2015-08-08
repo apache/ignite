@@ -442,7 +442,12 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictSynchronized(true);
-                    cfg.setEvictionPolicy(new FifoEvictionPolicy(100));
+
+                    FifoEvictionPolicy plc = new FifoEvictionPolicy();
+
+                    plc.setMaxSize(100);
+
+                    cfg.setEvictionPolicy(plc);
                     return null;
                 }
             },
@@ -450,7 +455,12 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictSynchronized(false);
-                    cfg.setEvictionPolicy(new FifoEvictionPolicy(100));
+
+                    FifoEvictionPolicy plc = new FifoEvictionPolicy();
+
+                    plc.setMaxSize(100);
+
+                    cfg.setEvictionPolicy(plc);
                     return null;
                 }
             }
@@ -576,7 +586,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             /** {@inheritDoc} */
             @Override public Void apply(CacheConfiguration cfg) {
                 cfg.setDefaultLockTimeout(1000);
-                cfg.setDefaultTimeToLive(1000);
 
                 return null;
             }
@@ -590,7 +599,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             /** {@inheritDoc} */
             @Override public Void apply(CacheConfiguration cfg) {
                 cfg.setDefaultLockTimeout(2 * 1000);
-                cfg.setDefaultTimeToLive(2 * 1000);
 
                 return null;
             }
@@ -601,7 +609,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         String log = strLog.toString();
 
         assertTrue(log.contains("Default lock timeout"));
-        assertTrue(log.contains("Default time to live"));
     }
 
     /**

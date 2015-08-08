@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -44,6 +45,41 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         c.setLifecycleBeans(bean);
 
         return c;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetIgnite() throws Exception {
+        final AtomicBoolean done = new AtomicBoolean();
+
+        bean = new LifeCycleBaseBean() {
+            /** */
+            @IgniteInstanceResource
+            private Ignite ignite;
+
+            @Override public void onLifecycleEvent(LifecycleEventType evt) {
+                super.onLifecycleEvent(evt);
+
+                if (evt == LifecycleEventType.AFTER_NODE_START) {
+                    Ignite ignite0 = Ignition.ignite(ignite.name());
+
+                    assertNotNull(ignite0);
+                    assertNotNull(ignite0.cluster().localNode());
+
+                    done.set(true);
+                }
+            }
+        };
+
+        try {
+            startGrid();
+
+            assertTrue(done.get());
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**

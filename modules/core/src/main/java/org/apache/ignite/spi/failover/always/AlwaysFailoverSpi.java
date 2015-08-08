@@ -50,14 +50,14 @@ import java.util.*;
  *          hence, will fail.
  *      </li>
  * </ul>
- * Here is a Java example how to configure grid with {@code GridAlwaysFailoverSpi} failover SPI.
+ * Here is a Java example how to configure grid with {@link AlwaysFailoverSpi} failover SPI.
  * <pre name="code" class="java">
- * GridAlwaysFailoverSpi spi = new GridAlwaysFailoverSpi();
+ * AlwaysFailoverSpi spi = new AlwaysFailoverSpi();
  *
  * // Override maximum failover attempts.
  * spi.setMaximumFailoverAttempts(5);
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default failover SPI.
  * cfg.setFailoverSpiSpi(spi);
@@ -65,10 +65,10 @@ import java.util.*;
  * // Starts grid.
  * G.start(cfg);
  * </pre>
- * Here is an example of how to configure {@code GridAlwaysFailoverSpi} from Spring XML configuration file.
+ * Here is an example of how to configure {@code AlwaysFailoverSpi} from Spring XML configuration file.
  * <pre name="code" class="xml">
  * &lt;property name="failoverSpi"&gt;
- *     &lt;bean class="org.apache.ignite.spi.failover.always.GridAlwaysFailoverSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.failover.always.AlwaysFailoverSpi"&gt;
  *         &lt;property name="maximumFailoverAttempts" value="5"/&gt;
  *     &lt;/bean&gt;
  * &lt;/property&gt;
@@ -91,6 +91,11 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
      * @see org.apache.ignite.compute.ComputeJobContext
      */
     public static final String FAILED_NODE_LIST_ATTR = "gg:failover:failednodelist";
+
+    /**
+     * Name of job context attribute containing number of affinity call attempts.
+     */
+    public static final String AFFINITY_CALL_ATTEMPT = "ignite:failover:affinitycallattempt";
 
     /** Maximum attempts attribute key should be the same on all nodes. */
     public static final String MAX_FAILOVER_ATTEMPT_ATTR = "gg:failover:maxattempts";
@@ -171,6 +176,26 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
 
             // Nowhere to failover to.
             return null;
+        }
+
+        if (ctx.affinityKey() != null) {
+            Integer affCallAttempt = ctx.getJobResult().getJobContext().getAttribute(AFFINITY_CALL_ATTEMPT);
+
+            if (affCallAttempt == null)
+                affCallAttempt = 1;
+
+            if (maxFailoverAttempts <= affCallAttempt) {
+                U.warn(log, "Job failover failed because number of maximum failover attempts for affinity call" +
+                    " is exceeded [failedJob=" + ctx.getJobResult().getJob() + ", maxFailoverAttempts=" +
+                    maxFailoverAttempts + ']');
+
+                return null;
+            }
+            else {
+                ctx.getJobResult().getJobContext().setAttribute(AFFINITY_CALL_ATTEMPT, affCallAttempt + 1);
+
+                return ignite.affinity(ctx.affinityCacheName()).mapKeyToNode(ctx.affinityKey());
+            }
         }
 
         Collection<UUID> failedNodes = ctx.getJobResult().getJobContext().getAttribute(FAILED_NODE_LIST_ATTR);

@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -32,14 +31,7 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
     private static final long serialVersionUID = 0L;
 
     /** Node with duplicate ID. */
-    private TcpDiscoveryNode node;
-
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryDuplicateIdMessage() {
-        // No-op.
-    }
+    private final TcpDiscoveryNode node;
 
     /**
      * Constructor.
@@ -60,20 +52,6 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
      */
     public TcpDiscoveryNode node() {
         return node;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeObject(node);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        node = (TcpDiscoveryNode)in.readObject();
     }
 
     /** {@inheritDoc} */

@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -32,17 +31,10 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
     private static final long serialVersionUID = 0L;
 
     /** New node that wants to join the topology. */
-    private TcpDiscoveryNode node;
+    private final TcpDiscoveryNode node;
 
     /** Discovery data. */
-    private Map<Integer, Object> discoData;
-
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryJoinRequestMessage() {
-        // No-op.
-    }
+    private final Map<Integer, byte[]> discoData;
 
     /**
      * Constructor.
@@ -50,7 +42,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
      * @param node New node that wants to join.
      * @param discoData Discovery data.
      */
-    public TcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, Map<Integer, Object> discoData) {
+    public TcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, Map<Integer, byte[]> discoData) {
         super(node.id());
 
         this.node = node;
@@ -69,7 +61,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
     /**
      * @return Discovery data.
      */
-    public Map<Integer, Object> discoveryData() {
+    public Map<Integer, byte[]> discoveryData() {
         return discoData;
     }
 
@@ -85,22 +77,6 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
      */
     public void responded(boolean responded) {
         setFlag(RESPONDED_FLAG_POS, responded);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeObject(node);
-        U.writeMap(out, discoData);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        node = (TcpDiscoveryNode)in.readObject();
-        discoData = U.readMap(in);
     }
 
     /** {@inheritDoc} */

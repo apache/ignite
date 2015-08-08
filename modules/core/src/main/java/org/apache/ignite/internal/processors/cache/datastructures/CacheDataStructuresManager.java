@@ -56,7 +56,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     private final ConcurrentMap<IgniteUuid, GridCacheQueueProxy> queuesMap;
 
     /** Queue header view.  */
-    private CacheProjection<GridCacheQueueHeaderKey, GridCacheQueueHeader> queueHdrView;
+    private IgniteInternalCache<GridCacheQueueHeaderKey, GridCacheQueueHeader> queueHdrView;
 
     /** Query notifying about queue update. */
     private UUID queueQryId;
@@ -85,7 +85,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         try {
-            queueHdrView = cctx.cache().projection(GridCacheQueueHeaderKey.class, GridCacheQueueHeader.class);
+            queueHdrView = cctx.cache();
 
             initFlag = true;
         }
@@ -103,6 +103,41 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         for (GridCacheQueueProxy q : queuesMap.values())
             q.delegate().onKernalStop();
+    }
+
+    /**
+     * @param set Set.
+     */
+    public void onRemoved(GridCacheSetProxy set) {
+        setsMap.remove(set.delegate().id(), set);
+    }
+
+    /**
+     * @param clusterRestarted Cluster restarted flag.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        for (Map.Entry<IgniteUuid, GridCacheSetProxy> e : setsMap.entrySet()) {
+            GridCacheSetProxy set = e.getValue();
+
+            if (clusterRestarted) {
+                set.blockOnRemove();
+
+                setsMap.remove(e.getKey(), set);
+            }
+            else
+                set.needCheckNotRemoved();
+        }
+
+        for (Map.Entry<IgniteUuid, GridCacheQueueProxy> e : queuesMap.entrySet()) {
+            GridCacheQueueProxy queue = e.getValue();
+
+            if (clusterRestarted) {
+                queue.delegate().onRemoved(false);
+
+                queuesMap.remove(e.getKey(), queue);
+            }
+        }
     }
 
     /**
@@ -165,7 +200,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             if (create) {
                 hdr = new GridCacheQueueHeader(IgniteUuid.randomUuid(), cap, colloc, 0, 0, null);
 
-                GridCacheQueueHeader old = queueHdrView.putIfAbsent(key, hdr);
+                GridCacheQueueHeader old = queueHdrView.getAndPutIfAbsent(key, hdr);
 
                 if (old != null) {
                     if (old.capacity() != cap || old.collocated() != colloc)
@@ -218,7 +253,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         }
                     },
                     new QueueHeaderPredicate(),
-                    cctx.isLocal() || cctx.isReplicated(),
+                    cctx.isLocal() || (cctx.isReplicated() && cctx.affinityNode()),
                     true);
             }
 
@@ -376,7 +411,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         if (set == null)
             return;
 
-        GridCache cache = cctx.cache();
+        IgniteInternalCache cache = cctx.cache();
 
         final int BATCH_SIZE = 100;
 
@@ -503,11 +538,11 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @return Previous value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryPutIfAbsent(final GridCache cache, final Object key, final T val)
+    @Nullable private <T> T retryPutIfAbsent(final IgniteInternalCache cache, final Object key, final T val)
         throws IgniteCheckedException {
         return DataStructuresProcessor.retry(log, new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
-                return (T)cache.putIfAbsent(key, val);
+                return (T)cache.getAndPutIfAbsent(key, val);
             }
         });
     }
@@ -518,7 +553,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void retryRemoveAll(final GridCache cache, final Collection<GridCacheSetItemKey> keys)
+    private void retryRemoveAll(final IgniteInternalCache cache, final Collection<GridCacheSetItemKey> keys)
         throws IgniteCheckedException {
         DataStructuresProcessor.retry(log, new Callable<Void>() {
             @Override public Void call() throws Exception {

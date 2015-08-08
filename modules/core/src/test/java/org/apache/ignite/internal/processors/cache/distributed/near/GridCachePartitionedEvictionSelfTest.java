@@ -78,8 +78,15 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setEvictionPolicy(new FifoEvictionPolicy(EVICT_CACHE_SIZE));
-        cc.getNearConfiguration().setNearEvictionPolicy(new FifoEvictionPolicy(EVICT_CACHE_SIZE));
+
+        FifoEvictionPolicy plc = new FifoEvictionPolicy();
+        plc.setMaxSize(EVICT_CACHE_SIZE);
+        cc.setEvictionPolicy(plc);
+
+        FifoEvictionPolicy nearPlc = new FifoEvictionPolicy();
+        nearPlc.setMaxSize(EVICT_CACHE_SIZE);
+        cc.getNearConfiguration().setNearEvictionPolicy(nearPlc);
+
         cc.setSwapEnabled(false);
 
         // We set 1 backup explicitly.

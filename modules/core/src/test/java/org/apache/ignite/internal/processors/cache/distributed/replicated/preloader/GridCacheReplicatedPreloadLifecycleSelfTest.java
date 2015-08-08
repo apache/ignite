@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated.preloader;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -151,8 +152,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                 IgniteCache<String, MyValue> c1 = grid(j).cache("one");
                 IgniteCache<String, MyValue> c2 = grid(j).cache("two");
 
-                int size1 = c1.localSize();
-                int size2 = c2.localSize();
+                int size1 = c1.localSize(CachePeekMode.ALL);
+                int size2 = c2.localSize(CachePeekMode.ALL);
 
                 assertEquals(" Invalid cache1 size [i=" + i + ", j=" + j + ", size=" + size1 + ']', keys.length, size1);
                 assertEquals(" Invalid cache2 size [i=" + i + ", j=" + j + ", size=" + size2 + ']', keys.length / 2, size2);
@@ -176,9 +177,9 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                GridCache<Object, MyValue> c2 = ((IgniteKernal)grid(j)).getCache("two");
+                GridCacheAdapter<Object, MyValue> c2 = ((IgniteKernal)grid(j)).internalCache("two");
 
-                CacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
+                CacheQuery<Map.Entry<Object, MyValue>> qry = c2.context().queries().createScanQuery(null, null, false);
 
                 final int i0 = j;
                 final int j0 = i;
@@ -206,8 +207,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                             Object v1 = e.getValue();
                             Object v2 = ((IgniteKernal)grid).getCache("one").get(key);
 
-                            assertNotNull("Cache c1 misses value for key [i=" + j0 + ", j=" + i0 +
-                                ", missedKey=" + key + ", cache=" + ((IgniteKernal)grid).getCache("one").values() + ']', v2);
+                            assertNotNull("Cache c1 misses value for key [i=" + j0 + ", j=" + i0 + ", missedKey=" +
+                                key + ", cache=" + ((IgniteKernal)grid).getCache("one").values() + ']', v2);
                             assertEquals(v1, v2);
                         }
                         catch (IgniteCheckedException e1) {

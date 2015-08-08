@@ -413,9 +413,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, affKey0);
 
+            if (node == null)
+                return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, U.emptyTopologyException());
+
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T5(node, job), null, false);
+            return ctx.task().execute(new T5(node, job, affKey0, cacheName), null, false);
         }
         catch (IgniteCheckedException e) {
             return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, e);
@@ -445,9 +448,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, affKey0);
 
+            if (node == null)
+                return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, U.emptyTopologyException());
+
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T4(node, job), null, false);
+            return ctx.task().execute(new T4(node, job, affKey0, cacheName), null, false);
         }
         catch (IgniteCheckedException e) {
             return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, e);
@@ -760,6 +766,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                             U.error(log, "Closure execution failed with error.", e);
 
                         fut.onDone(U.cast(e));
+
+                        if (e instanceof Error)
+                            throw e;
                     }
                 }
             };
@@ -819,8 +828,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             return runLocal(c, plc);
         }
         catch (Throwable e) {
-            if (e instanceof Error)
+            if (e instanceof Error) {
                 U.error(log, "Closure execution failed with error.", e);
+
+                throw (Error)e;
+            }
 
             // If execution was rejected - rerun locally.
             if (e.getCause() instanceof RejectedExecutionException) {
@@ -833,8 +845,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     return new GridFinishedFuture();
                 }
                 catch (Throwable t) {
-                    if (t instanceof Error)
+                    if (t instanceof Error) {
                         U.error(log, "Closure execution failed with error.", t);
+
+                        throw t;
+                    }
 
                     return new GridFinishedFuture(U.cast(t));
                 }
@@ -890,6 +905,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                             U.error(log, "Closure execution failed with error.", e);
 
                         fut.onDone(U.cast(e));
+
+                        if (e instanceof Error)
+                            throw (Error)e;
                     }
                 }
             };
@@ -1211,7 +1229,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private static class T4 extends TaskNoReduceAdapter<Void> implements GridNoImplicitInjection {
+    private static class T4 extends TaskNoReduceAdapter<Void> implements GridNoImplicitInjection, AffinityTask {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1221,15 +1239,27 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private Runnable job;
 
+        /** */
+        private Object affKey;
+
+        /** */
+        private String affCacheName;
+
         /**
          * @param node Cluster node.
          * @param job Job.
+         * @param affKey Affinity key.
+         * @param affCacheName Affinity cache name.
          */
-        private T4(ClusterNode node, Runnable job) {
+        private T4(ClusterNode node, Runnable job, Object affKey, String affCacheName) {
             super(U.peerDeployAware0(job));
+
+            assert affKey != null;
 
             this.node = node;
             this.job = job;
+            this.affKey = affKey;
+            this.affCacheName = affCacheName;
         }
 
         /** {@inheritDoc} */
@@ -1238,11 +1268,22 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             return Collections.singletonMap(job, node);
         }
+
+        /** {@inheritDoc} */
+        @Override public Object affinityKey() {
+            return affKey;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String affinityCacheName() {
+            return affCacheName;
+        }
     }
 
     /**
      */
-    private static class T5<R> extends GridPeerDeployAwareTaskAdapter<Void, R> implements GridNoImplicitInjection {
+    private static class T5<R> extends GridPeerDeployAwareTaskAdapter<Void, R> implements
+        GridNoImplicitInjection, AffinityTask {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1252,15 +1293,27 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private Callable<R> job;
 
+        /** */
+        private Object affKey;
+
+        /** */
+        private String affCacheName;
+
         /**
          * @param node Cluster node.
          * @param job Job.
+         * @param affKey Affinity key.
+         * @param affCacheName Affinity cache name.
          */
-        private T5(ClusterNode node, Callable<R> job) {
+        private T5(ClusterNode node, Callable<R> job, Object affKey, String affCacheName) {
             super(U.peerDeployAware0(job));
+
+            assert affKey != null;
 
             this.node = node;
             this.job = job;
+            this.affKey = affKey;
+            this.affCacheName = affCacheName;
         }
 
         /** {@inheritDoc} */
@@ -1278,6 +1331,16 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             }
 
             throw new IgniteException("Failed to find successful job result: " + res);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object affinityKey() {
+            return affKey;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String affinityCacheName() {
+            return affCacheName;
         }
     }
 

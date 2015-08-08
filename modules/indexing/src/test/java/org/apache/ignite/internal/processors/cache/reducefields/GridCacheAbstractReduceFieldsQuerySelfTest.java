@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.reducefields;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -62,7 +62,6 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
             cfg.setCacheConfiguration();
 
         cfg.setDiscoverySpi(discovery());
-        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -119,20 +118,20 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 
         startGrid(gridCount());
 
-        GridCache<String, Organization> orgCache = ((IgniteKernal)grid(0)).getCache(null);
+        IgniteCache<String, Organization> orgCache = grid(0).cache(null);
 
         assert orgCache != null;
 
-        assert orgCache.putx("o1", new Organization(1, "A"));
-        assert orgCache.putx("o2", new Organization(2, "B"));
+        orgCache.put("o1", new Organization(1, "A"));
+        orgCache.put("o2", new Organization(2, "B"));
 
-        GridCache<AffinityKey<String>, Person> personCache = ((IgniteKernal)grid(0)).getCache(null);
+        IgniteCache<AffinityKey<String>, Person> personCache = grid(0).cache(null);
 
         assert personCache != null;
 
-        assert personCache.putx(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
-        assert personCache.putx(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
-        assert personCache.putx(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
+        personCache.put(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
+        personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
+        personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
     }
 
     /** {@inheritDoc} */
@@ -162,7 +161,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      */
     public void testNoDataInCache() throws Exception {
         CacheQuery<List<?>> qry = ((IgniteKernal)grid(0))
-            .getCache(null).queries().createSqlFieldsQuery("select age from Person where orgId = 999");
+            .getCache(null).context().queries().createSqlFieldsQuery("select age from Person where orgId = 999", false);
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
@@ -173,7 +172,8 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testAverageQuery() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery("select age from Person");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().
+            createSqlFieldsQuery("select age from Person", false);
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
@@ -184,8 +184,8 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testAverageQueryWithArguments() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery(
-            "select age from Person where orgId = ?");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().createSqlFieldsQuery(
+            "select age from Person where orgId = ?", false);
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer(), 1).get();
 
@@ -231,7 +231,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 //            }
 //        };
 //
-//        CacheProjection<AffinityKey<String>, Person> cachePrj =
+//        InternalCache<AffinityKey<String>, Person> cachePrj =
 //            grid(0).<AffinityKey<String>, Person>cache(null).projection(p);
 //
 //        GridCacheReduceFieldsQuery<AffinityKey<String>, Person, GridBiTuple<Integer, Integer>, Integer> qry =
@@ -375,6 +375,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         /** */
         private int cnt;
 
+        /** {@inheritDoc} */
         @Override public boolean collect(List<?> e) {
             sum += (Integer)e.get(0);
 
@@ -383,6 +384,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public IgniteBiTuple<Integer, Integer> reduce() {
             return F.t(sum, cnt);
         }
@@ -398,6 +400,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
         /** */
         private int cnt;
 
+        /** {@inheritDoc} */
         @Override public boolean collect(IgniteBiTuple<Integer, Integer> t) {
             sum += t.get1();
             cnt += t.get2();
@@ -405,6 +408,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public Integer reduce() {
             return cnt == 0 ? 0 : sum / cnt;
         }

@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.*;
@@ -135,7 +135,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     private boolean sys;
 
     /** IO policy. */
-    private GridIoPolicy plc;
+    private byte plc;
 
     /** */
     protected boolean onePhaseCommit;
@@ -184,7 +184,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     private AtomicReference<GridFutureAdapter<IgniteInternalTx>> finFut = new AtomicReference<>();
 
     /** Topology version. */
-    private AtomicReference<AffinityTopologyVersion> topVer = new AtomicReference<>(AffinityTopologyVersion.NONE);
+    protected AtomicReference<AffinityTopologyVersion> topVer = new AtomicReference<>(AffinityTopologyVersion.NONE);
 
     /** Mutex. */
     private final Lock lock = new ReentrantLock();
@@ -238,7 +238,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         boolean implicitSingle,
         boolean loc,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -298,7 +298,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         GridCacheVersion startVer,
         long threadId,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -371,8 +371,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * @return Flag indicating whether near cache should be updated.
      */
     protected boolean updateNearCache(
-        GridCacheContext<?, ?> cacheCtx, 
-        KeyCacheObject key, 
+        GridCacheContext<?, ?> cacheCtx,
+        KeyCacheObject key,
         AffinityTopologyVersion topVer
     ) {
         return false;
@@ -401,13 +401,27 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public GridIoPolicy ioPolicy() {
+    @Override public byte ioPolicy() {
         return plc;
     }
 
     /** {@inheritDoc} */
     @Override public boolean storeUsed() {
-        return storeEnabled() && store() != null;
+        if (!storeEnabled())
+            return false;
+
+        Collection<Integer> cacheIds = activeCacheIds();
+
+        if (!cacheIds.isEmpty()) {
+            for (int cacheId : cacheIds) {
+                CacheStoreManager store = cctx.cacheContext(cacheId).store();
+
+                if (store.configured())
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -415,13 +429,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      *
      * @return Store manager.
      */
-    protected GridCacheStoreManager store() {
-        if (!activeCacheIds().isEmpty()) {
-            int cacheId = F.first(activeCacheIds());
+    protected Collection<CacheStoreManager> stores() {
+        Collection<Integer> cacheIds = activeCacheIds();
 
-            GridCacheStoreManager store = cctx.cacheContext(cacheId).store();
+        if (!cacheIds.isEmpty()) {
+            Collection<CacheStoreManager> stores = new ArrayList<>(cacheIds.size());
 
-            return store.configured() ? store : null;
+            for (int cacheId : cacheIds) {
+                CacheStoreManager store = cctx.cacheContext(cacheId).store();
+
+                if (store.configured())
+                    stores.add(store);
+            }
+
+            return stores;
         }
 
         return null;
@@ -441,6 +462,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
             }
             catch (Throwable t) {
                 U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
+
+                if (t instanceof Error)
+                    throw (Error)t;
 
                 break;
             }
@@ -492,13 +516,17 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public void onRemap(AffinityTopologyVersion topVer) {
+        assert false : this;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean hasTransforms() {
         return transform;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean markPreparing() {
+    @Override public boolean markPreparing() {
         return preparing.compareAndSet(false, true);
     }
 
@@ -932,6 +960,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         return fut;
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteInternalFuture<?> currentPrepareFuture() {
+        return null;
+    }
+
     /**
      *
      * @param state State to set.
@@ -1046,8 +1079,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
             // Seal transactions maps.
             if (state != ACTIVE)
                 seal();
-
-            cctx.tm().onTxStateChange(prev, state, this);
         }
 
         return valid;
@@ -1092,7 +1123,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
-        state(MARKED_ROLLBACK, true);
+        if (local() && !dht())
+            state(MARKED_ROLLBACK, true);
     }
 
     /** {@inheritDoc} */
@@ -1475,7 +1507,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxAdapter.class, this,
-            "duration", (U.currentTimeMillis() - startTime) + "ms", "onePhaseCommit", onePhaseCommit);
+            "duration", (U.currentTimeMillis() - startTime) + "ms",
+            "onePhaseCommit", onePhaseCommit);
     }
 
     /**
@@ -1635,17 +1668,17 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object addMeta(UUID name, Object val) {
+        @Nullable @Override public Object addMeta(int key, Object val) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object removeMeta(UUID name) {
+        @Nullable @Override public Object removeMeta(int key) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object meta(UUID name) {
+        @Nullable @Override public Object meta(int key) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
@@ -1669,7 +1702,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
-        @Override public GridIoPolicy ioPolicy() {
+        @Override public byte ioPolicy() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
@@ -1690,6 +1723,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public AffinityTopologyVersion topologyVersion(AffinityTopologyVersion topVer) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onRemap(AffinityTopologyVersion topVer) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
@@ -1869,7 +1907,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <K, V> GridTuple<CacheObject> peek(GridCacheContext ctx,
+        @Nullable @Override public GridTuple<CacheObject> peek(GridCacheContext ctx,
             boolean failFast,
             KeyCacheObject key,
             @Nullable CacheEntryPredicate[] filter) {
@@ -1928,6 +1966,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<IgniteInternalTx> finishFuture() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture() {
             return null;
         }
 

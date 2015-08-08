@@ -36,14 +36,12 @@ public abstract class IgniteJdbcStoreAbstractBenchmark extends IgniteAbstractBen
     /**
      * Each benchmark must determine which cache will be used.
      *
-     * @return GridCache Cache to use.
+     * @return IgniteCache Cache to use.
      */
     protected abstract IgniteCache<Object, Object> cache();
 
     /**
      * Each benchmark must determine key range (from {@code 0} to this number) for fill.
-     *
-     * @return GridCache Cache to use.
      */
     protected abstract int fillRange();
 

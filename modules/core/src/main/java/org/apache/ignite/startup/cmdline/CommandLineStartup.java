@@ -120,7 +120,7 @@ public final class CommandLineStartup {
 
             appCls.getDeclaredMethod("setAboutHandler", aboutHndCls).invoke(osxApp, aboutHndProxy);
         }
-        catch (Throwable ignore) {
+        catch (Exception ignore) {
             // Ignore.
         }
     }
@@ -154,10 +154,12 @@ public final class CommandLineStartup {
 
             X.error(
                 "Usage:",
-                "    " + runner + (ignite ? " [?]|[path {-v}]|[-i]" : " [?]|[-v]"),
+                "    " + runner + (ignite ? " [?]|[path {-v}{-np}]|[-i]" : " [?]|[-v]"),
                 "    Where:",
-                "    ?, /help, -help - show this message.",
-                "    -v              - verbose mode (quiet by default).");
+                "    ?, /help, -help, - show this message.",
+                "    -v               - verbose mode (quiet by default).",
+                "    -np              - no pause on exit (pause by default)",
+                "    -nojmx           - disable JMX monitoring (enabled by default)");
 
             if (ignite) {
                 X.error(
@@ -295,6 +297,9 @@ public final class CommandLineStartup {
                 note = "\nNote! You may use 'USER_LIBS' environment variable to specify your classpath.";
 
             exit("Failed to start grid: " + e.getMessage() + note, false, -1);
+
+            if (e instanceof Error)
+                throw e;
 
             return;
         }

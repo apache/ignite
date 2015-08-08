@@ -22,7 +22,31 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 
 /**
- * Transactions facade.
+ * Transactions facade provides ACID-compliant semantic when working with caches. You can
+ * create a transaction when working with one cache or across multiple caches. Caches with
+ * different cache modes, like {@link CacheMode#PARTITIONED PARTITIONED} or
+ * {@link CacheMode#REPLICATED REPLICATED}, can also participate in the same transaction.
+ * <p>
+ * Transactions are {@link AutoCloseable}, so they will automatically rollback unless
+ * explicitly committed.
+ * <p>
+ * Here is an example of a transaction:
+ * <pre class="brush:java">
+ * try (Transaction tx = Ignition.ignite().transactions().txStart()) {
+ *   Account acct = cache.get(acctId);
+ *
+ *   // Current balance.
+ *   double balance = acct.getBalance();
+ *
+ *   // Deposit $100 into account.
+ *   acct.setBalance(balance + 100);
+ *
+ *   // Store updated account in cache.
+ *   cache.put(acctId, acct);
+ *
+ *   tx.commit();
+ * }
+ * </pre>
  */
 public interface IgniteTransactions {
     /**

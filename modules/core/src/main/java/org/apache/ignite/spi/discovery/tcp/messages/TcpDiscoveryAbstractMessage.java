@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Base class to implement discovery messages.
  */
-public abstract class TcpDiscoveryAbstractMessage implements Externalizable {
+public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,8 +40,11 @@ public abstract class TcpDiscoveryAbstractMessage implements Externalizable {
     /** */
     protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
 
+    /** */
+    protected static final int CLIENT_ACK_FLAG_POS = 4;
+
     /** Sender of the message (transient). */
-    private UUID senderNodeId;
+    private transient UUID sndNodeId;
 
     /** Message ID. */
     private IgniteUuid id;
@@ -51,9 +54,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Externalizable {
 
     /** Topology version. */
     private long topVer;
-
-    /** Destination client node ID. */
-    private UUID destClientNodeId;
 
     /** Flags. */
     @GridToStringExclude
@@ -102,16 +102,16 @@ public abstract class TcpDiscoveryAbstractMessage implements Externalizable {
      * @return Sender node ID.
      */
     public UUID senderNodeId() {
-        return senderNodeId;
+        return sndNodeId;
     }
 
     /**
      * Sets sender node ID.
      *
-     * @param senderNodeId Sender node ID.
+     * @param sndNodeId Sender node ID.
      */
-    public void senderNodeId(UUID senderNodeId) {
-        this.senderNodeId = senderNodeId;
+    public void senderNodeId(UUID sndNodeId) {
+        this.sndNodeId = sndNodeId;
     }
 
     /**
@@ -178,20 +178,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Externalizable {
     }
 
     /**
-     * @return Destination client node ID.
-     */
-    public UUID destinationClientNodeId() {
-        return destClientNodeId;
-    }
-
-    /**
-     * @param destClientNodeId Destination client node ID.
-     */
-    public void destinationClientNodeId(UUID destClientNodeId) {
-        this.destClientNodeId = destClientNodeId;
-    }
-
-    /**
      * @return Pending message index.
      */
     public short pendingIndex() {
@@ -232,24 +218,11 @@ public abstract class TcpDiscoveryAbstractMessage implements Externalizable {
             flags &= ~mask;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, id);
-        U.writeUuid(out, verifierNodeId);
-        out.writeLong(topVer);
-        U.writeUuid(out, destClientNodeId);
-        out.writeInt(flags);
-        out.writeShort(pendingIdx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id = U.readGridUuid(in);
-        verifierNodeId = U.readUuid(in);
-        topVer = in.readLong();
-        destClientNodeId = U.readUuid(in);
-        flags = in.readInt();
-        pendingIdx = in.readShort();
+    /**
+     * @return {@code true} if message must be added to head of queue.
+     */
+    public boolean highPriority() {
+        return false;
     }
 
     /** {@inheritDoc} */

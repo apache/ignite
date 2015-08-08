@@ -22,6 +22,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -78,6 +79,16 @@ public class GridCacheTxFinishSync<K, V> {
             return null;
 
         return threadSync.awaitAckAsync(nodeId);
+    }
+
+    /**
+     * @param reconnectFut Reconnect future.
+     */
+    public void onDisconnected(IgniteFuture<?> reconnectFut) {
+       for (ThreadFinishSync threadSync : threadMap.values())
+            threadSync.onDisconnected(reconnectFut);
+
+        threadMap.clear();
     }
 
     /**
@@ -139,6 +150,11 @@ public class GridCacheTxFinishSync<K, V> {
 
                     nodeMap.remove(nodeId);
                 }
+                else if (cctx.kernalContext().clientDisconnected()) {
+                    sync.onDisconnected(cctx.kernalContext().cluster().clientReconnectFuture());
+
+                    nodeMap.remove(nodeId);
+                }
             }
 
             sync.onSend();
@@ -157,6 +173,16 @@ public class GridCacheTxFinishSync<K, V> {
                 return null;
 
             return sync.awaitAckAsync();
+        }
+
+        /**
+         * @param reconnectFut Reconnect future.
+         */
+        public void onDisconnected(IgniteFuture<?> reconnectFut) {
+            for (TxFinishSync sync : nodeMap.values())
+                sync.onDisconnected(reconnectFut);
+
+            nodeMap.clear();
         }
 
         /**
@@ -283,6 +309,26 @@ public class GridCacheTxFinishSync<K, V> {
                 if (pendingFut != null) {
                     pendingFut.onDone(new IgniteCheckedException("Failed to wait for transaction synchronizer " +
                         "completed state (node left grid): " + nodeId));
+
+                    pendingFut = null;
+                }
+            }
+        }
+
+        /**
+         * Client disconnected callback.
+         *
+         * @param reconnectFut Reconnect future.
+         */
+        public void onDisconnected(IgniteFuture<?> reconnectFut) {
+            synchronized (this) {
+                nodeLeft = true;
+
+                if (pendingFut != null) {
+                    IgniteClientDisconnectedCheckedException err = new IgniteClientDisconnectedCheckedException(
+                        reconnectFut,
+                        "Failed to wait for transaction synchronizer, client node disconnected: " + nodeId);
+                    pendingFut.onDone(err);
 
                     pendingFut = null;
                 }

@@ -393,6 +393,62 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testSendAfterServerStop() throws Exception {
+        final AtomicReference<GridNioSession> sesRef = new AtomicReference<>();
+
+        final CountDownLatch connectLatch = new CountDownLatch(1);
+
+        GridNioServerListener lsnr = new GridNioServerListenerAdapter() {
+            @Override public void onConnected(GridNioSession ses) {
+                info("On connected: " + ses);
+
+                sesRef.set(ses);
+
+                connectLatch.countDown();
+            }
+
+            @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
+            }
+
+            @Override public void onMessage(GridNioSession ses, Object msg) {
+                log.info("Message: " + msg);
+            }
+        };
+
+        GridNioServer.Builder<?> builder = serverBuilder(PORT, new GridPlainParser(), lsnr);
+
+        GridNioServer<?> srvr = builder.sendQueueLimit(5).build();
+
+        srvr.start();
+
+        try {
+            Socket s = createSocket();
+
+            s.connect(new InetSocketAddress(U.getLocalHost(), PORT), 1000);
+
+            s.getOutputStream().write(new byte[1]);
+
+            U.await(connectLatch);
+
+            GridNioSession ses = sesRef.get();
+
+            assertNotNull(ses);
+
+            ses.send(new byte[1]);
+
+            srvr.stop();
+
+            for (int i = 0; i < 10; i++)
+                ses.send(new byte[1]);
+        }
+        finally {
+            srvr.stop();
+        }
+    }
+
+    /**
      * Sends message and validates reply.
      *
      * @param msg Message to send.
@@ -480,10 +536,29 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      * @return Started server.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
-    protected GridNioServer<?> startServer(int port, GridNioParser parser, GridNioServerListener lsnr)
+    protected final GridNioServer<?> startServer(int port, GridNioParser parser, GridNioServerListener lsnr)
         throws Exception {
-        GridNioServer<?> srvr = GridNioServer.builder()
+        GridNioServer<?> srvr = serverBuilder(port, parser, lsnr).build();
+
+        srvr.start();
+
+        return srvr;
+    }
+
+    /**
+     * @param port Port to listen.
+     * @param parser Parser to use.
+     * @param lsnr Listener.
+     * @return Server builder.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    protected GridNioServer.Builder<?> serverBuilder(int port,
+        GridNioParser parser,
+        GridNioServerListener lsnr)
+        throws Exception
+    {
+        return GridNioServer.builder()
             .address(U.getLocalHost())
             .port(port)
             .listener(lsnr)
@@ -496,12 +571,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             .socketSendBufferSize(0)
             .socketReceiveBufferSize(0)
             .sendQueueLimit(0)
-            .filters(new GridNioCodecFilter(parser, log, false))
-            .build();
-
-        srvr.start();
-
-        return srvr;
+            .filters(new GridNioCodecFilter(parser, log, false));
     }
 
     /**
@@ -644,7 +714,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                             try {
                                 client = createClient(U.getLocalHost(), PORT, U.getLocalHost());
 
-                                MessageWithId msg = new MessageWithId();
+                                MessageWithId msg = new MessageWithId(idProvider.getAndIncrement());
 
                                 byte[] data = serializeMessage(msg);
 
@@ -746,7 +816,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                         client = createClient(U.getLocalHost(), PORT, U.getLocalHost());
 
                         while (cntr.getAndIncrement() < MSG_CNT * THREAD_CNT) {
-                            MessageWithId msg = new MessageWithId();
+                            MessageWithId msg = new MessageWithId(idProvider.getAndIncrement());
 
                             byte[] data = serializeMessage(msg);
 
@@ -1286,7 +1356,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test client to use instead of {@link GridTcpCommunicationClient}
+     * Test client to use instead of {@link GridTcpNioCommunicationClient}
      */
     private static class TestClient implements AutoCloseable {
         /** Socket implementation to use. */
@@ -1408,7 +1478,14 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      */
     private static class MessageWithId implements Serializable {
         /** */
-        private final int id = idProvider.getAndIncrement();
+        private final int id;
+
+        /**
+         * @param id Message ID.
+         */
+        public MessageWithId(int id) {
+            this.id = id;
+        }
 
         /** */
         @SuppressWarnings({"unused"})

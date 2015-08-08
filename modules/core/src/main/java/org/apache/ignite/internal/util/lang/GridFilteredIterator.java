@@ -35,7 +35,7 @@ public abstract class GridFilteredIterator<T> implements Iterator<T> {
     /**
      * @param it Iterator.
      */
-    public GridFilteredIterator(Iterator<? extends T> it) {
+    protected GridFilteredIterator(Iterator<? extends T> it) {
         assert it != null;
 
         this.it = it;

@@ -89,7 +89,7 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
                         res.put(ip, hostName);
                 }
             }
-            catch (Throwable e) {
+            catch (Exception e) {
                 throw new IgniteException("Failed to resolve host name", e);
             }
 

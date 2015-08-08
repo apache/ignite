@@ -22,6 +22,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.stream.*;
 import org.jetbrains.annotations.*;
 
@@ -88,19 +89,9 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
         if (log.isDebugEnabled())
             log.debug("Running put job [nodeId=" + ctx.localNodeId() + ", size=" + col.size() + ']');
 
-//        TODO IGNITE-77: restore adapter usage.
-//        TODO use cacheContext.awaitStarted() instead of preloader().startFuture().get()
-//        GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
-//
-//        IgniteFuture<?> f = cache.context().preloader().startFuture();
-//
-//        if (!f.isDone())
-//            f.get();
-//
-//        if (ignoreDepOwnership)
-//            cache.context().deploy().ignoreOwnership(true);
+        IgniteCacheProxy cache = ctx.cache().jcache(cacheName).cacheNoGate();
 
-        IgniteCacheProxy cache = ctx.cache().jcache(cacheName);
+        cache.context().awaitStarted();
 
         if (skipStore)
             cache = (IgniteCacheProxy<?, ?>)cache.withSkipStore();
@@ -116,8 +107,13 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
 
                 CacheObject val = e.getValue();
 
-                if (val != null)
+                if (val != null) {
+                    checkSecurityPermission(SecurityPermission.CACHE_PUT);
+
                     val.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+                }
+                else
+                    checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
             }
 
             if (unwrapEntries()) {
@@ -148,5 +144,17 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
      */
     private boolean unwrapEntries() {
         return !(rcvr instanceof DataStreamerCacheUpdaters.InternalUpdater);
+    }
+
+    /**
+     * @param perm Security permission.
+     * @throws org.apache.ignite.plugin.security.SecurityException If permission is not enough.
+     */
+    private void checkSecurityPermission(SecurityPermission perm)
+        throws org.apache.ignite.plugin.security.SecurityException {
+        if (!ctx.security().enabled())
+            return;
+
+        ctx.security().authorize(cacheName, perm, null);
     }
 }

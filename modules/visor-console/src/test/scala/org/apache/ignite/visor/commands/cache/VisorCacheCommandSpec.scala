@@ -36,7 +36,6 @@ import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
  * Unit test for 'events' command.
  */
 class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
-    behavior of "A 'cache' visor command"
 
     /** IP finder. */
     val ipFinder = new TcpDiscoveryVmIpFinder(true)
@@ -54,7 +53,7 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
 
         val arr = Seq(classOf[JavaInt], classOf[Foo]).toArray
 
-        cfg.setIndexedTypes(arr:_*)
+        cfg.setIndexedTypes(arr: _*)
 
         cfg
     }
@@ -65,7 +64,8 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
      * @param name Grid name.
      * @return Grid configuration.
      */
-    override def config(name: String): IgniteConfiguration = {
+    override def config(name: String): IgniteConfiguration =
+    {
         val cfg = new IgniteConfiguration
 
         cfg.setGridName(name)
@@ -81,49 +81,51 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
         cfg
     }
 
-    it should "put/get some values to/from cache and display information about caches" in {
-        val c = Ignition.ignite("node-1").cache[String, String]("replicated")
+    describe("A 'cache' visor command") {
+        it("should put/get some values to/from cache and display information about caches") {
+            val c = Ignition.ignite("node-1").cache[String, String]("replicated")
 
-        for (i <- 0 to 3) {
-            val kv = "" + i
+            for (i <- 0 to 3) {
+                val kv = "" + i
 
-            c.put(kv, kv)
+                c.put(kv, kv)
 
-            c.get(kv)
+                c.get(kv)
+            }
+
+            visor.cache()
         }
 
-        visor.cache()
-    }
+        it("should run query and display information about caches") {
+            val g = Ignition.ignite("node-1")
 
-    it should "run query and display information about caches" in {
-        val g = Ignition.ignite("node-1")
+            val c = g.cache[JavaInt, Foo]("replicated")
 
-        val c = g.cache[JavaInt, Foo]("replicated")
+            c.put(0, Foo(20))
+            c.put(1, Foo(100))
+            c.put(2, Foo(101))
+            c.put(3, Foo(150))
 
-        c.put(0, Foo(20))
-        c.put(1, Foo(100))
-        c.put(2, Foo(101))
-        c.put(3, Foo(150))
+            // Create and execute query that mast return 2 rows.
+            val q1 = c.query(new SqlQuery(classOf[Foo], "_key > ?").setArgs(JavaInt.valueOf(1))).getAll
 
-        // Create and execute query that mast return 2 rows.
-        val q1 = c.query(new SqlQuery(classOf[Foo], "_key > ?").setArgs(JavaInt.valueOf(1))).getAll()
+            assert(q1.size() == 2)
 
-        assert(q1.size() == 2)
+            // Create and execute query that mast return 0 rows.
+            val q2 = c.query(new SqlQuery(classOf[Foo], "_key > ?").setArgs(JavaInt.valueOf(100))).getAll
 
-        // Create and execute query that mast return 0 rows.
-        val q2 = c.query(new SqlQuery(classOf[Foo], "_key > ?").setArgs(JavaInt.valueOf(100))).getAll()
+            assert(q2.size() == 0)
 
-        assert(q2.size() == 0)
+            visor cache "-a"
+        }
 
-        visor cache "-a"
-    }
+        it("should display correct information for 'replicated' cache only") {
+            visor cache "-n=replicated -a"
+        }
 
-    it should "display correct information for 'replicated' cache only" in {
-        visor cache "-n=replicated -a"
-    }
-
-    it should "display correct information for all caches" in {
-        visor cache "-a"
+        it("should display correct information for all caches") {
+            visor cache "-a"
+        }
     }
 }
 

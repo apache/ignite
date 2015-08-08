@@ -20,16 +20,18 @@ package org.apache.ignite.visor.commands.node
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.IgniteNodeAttributes._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.util.{IgniteUtils => U}
-import org.apache.ignite.internal.visor.util.VisorTaskUtils._
+import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.visor._
+
 import org.jetbrains.annotations._
 
 import java.util.UUID
 
-import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.apache.ignite.visor.visor._
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -75,18 +77,8 @@ import scala.util.control.Breaks._
  *         Prints full statistics for specified node.
  * }}}
  */
-class VisorNodeCommand {
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        warn(errMsgs: _*)
-        warn("Type 'help node' to see how to use this command.")
-    }
+class VisorNodeCommand extends VisorConsoleCommand {
+    @impl protected val name = "node"
 
     /**
      * ===Command===
@@ -167,7 +159,7 @@ class VisorNodeCommand {
                         t += ("ID8", nid8(node))
                         t += ("Order", node.order)
 
-                        (0 /: node.addresses())((b, a) => { t += ("Address (" + b + ")", a); b + 1 })
+                        (0 /: sortAddresses(node.addresses))((b, a) => { t += ("Address (" + b + ")", a); b + 1 })
 
                         val m = node.metrics
 
@@ -280,7 +272,7 @@ class VisorNodeCommand {
                 }
             }
             catch {
-                case e: Exception => scold(e.getMessage)
+                case e: Exception => scold(e)
             }
     }
 }
@@ -289,13 +281,16 @@ class VisorNodeCommand {
  * Companion object that does initialization of the command.
  */
 object VisorNodeCommand {
+    /** Singleton command. */
+    private val cmd = new VisorNodeCommand
+
     // Adds command's help to visor.
     addHelp(
-        name = "node",
+        name = cmd.name,
         shortInfo = "Prints node statistics.",
         spec = List(
-            "node {-id8=<node-id8>|-id=<node-id>} {-a}",
-            "node"
+            cmd.name,
+            s"${cmd.name} {-id8=<node-id8>|-id=<node-id>} {-a}"
         ),
         args = List(
             "-id8=<node-id8>" -> List(
@@ -313,18 +308,16 @@ object VisorNodeCommand {
             )
         ),
         examples = List(
-            "node" ->
+            cmd.name ->
                 "Starts command in interactive mode.",
-            "node -id8=12345678" ->
+            s"${cmd.name} -id8=12345678" ->
                 "Prints statistics for specified node.",
-            "node -id8=@n0 -a" ->
+            s"${cmd.name} -id8=@n0 -a" ->
                 "Prints full statistics for specified node with id8 taken from 'n0' memory variable."
         ),
-        ref = VisorConsoleCommand(cmd.node, cmd.node)
+        emptyArgs = cmd.node,
+        withArgs = cmd.node
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorNodeCommand
 
     /**
      * Singleton.

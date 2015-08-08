@@ -18,12 +18,13 @@
 package org.apache.ignite.examples.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
+
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Ignite cache distributed queue example. This example demonstrates {@code FIFO} unbounded
@@ -36,9 +37,6 @@ import java.util.*;
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class IgniteQueueExample {
-    /** Cache name. */
-    private static final String CACHE_NAME = IgniteQueueExample.class.getSimpleName();
-
     /** Number of retries */
     private static final int RETRIES = 20;
 
@@ -56,24 +54,16 @@ public class IgniteQueueExample {
             System.out.println();
             System.out.println(">>> Ignite queue example started.");
 
-            CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>();
+            // Make queue name.
+            String queueName = UUID.randomUUID().toString();
 
-            cfg.setCacheMode(CacheMode.PARTITIONED);
-            cfg.setName(CACHE_NAME);
-            cfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
+            queue = initializeQueue(ignite, queueName);
 
-            try (IgniteCache<Object, Object> cache = ignite.createCache(cfg)) {
-                // Make queue name.
-                String queueName = UUID.randomUUID().toString();
+            readFromQueue(ignite);
 
-                queue = initializeQueue(ignite, queueName);
+            writeToQueue(ignite);
 
-                readFromQueue(ignite);
-
-                writeToQueue(ignite);
-
-                clearAndRemoveQueue();
-            }
+            clearAndRemoveQueue();
         }
 
         System.out.println("Cache queue example finished.");
@@ -90,7 +80,7 @@ public class IgniteQueueExample {
     private static IgniteQueue<String> initializeQueue(Ignite ignite, String queueName) throws IgniteException {
         CollectionConfiguration colCfg = new CollectionConfiguration();
 
-        colCfg.setCacheName(CACHE_NAME);
+        colCfg.setCacheMode(PARTITIONED);
 
         // Initialize new FIFO queue.
         IgniteQueue<String> queue = ignite.queue(queueName, 0, colCfg);

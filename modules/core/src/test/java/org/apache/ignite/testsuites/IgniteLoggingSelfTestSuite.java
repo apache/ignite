@@ -30,7 +30,7 @@ public class IgniteLoggingSelfTestSuite extends TestSuite {
    public static TestSuite suite() {
        TestSuite suite = new TestSuite("Ignite Logging Test Suite");
 
-       suite.addTest(new TestSuite(IgniteJavaLoggerTest.class));
+       suite.addTest(new TestSuite(JavaLoggerTest.class));
 
        return suite;
    }

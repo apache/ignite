@@ -72,8 +72,9 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    // TODO: Activate test when ticket GG-5000 will be ready.
-    public void _testToStringCheckAdvancedRecursionPrevention() throws Exception {
+    public void testToStringCheckAdvancedRecursionPrevention() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-602");
+
         ArrayList<Object> list1 = new ArrayList<>();
         ArrayList<Object> list2 = new ArrayList<>();
 

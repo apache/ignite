@@ -54,9 +54,9 @@ import java.util.*;
  * <h2 class="header">Java Example</h2>
  * {@link SharedFsCheckpointSpi} can be configured as follows:
  * <pre name="code" class="java">
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
- * GridSharedFsCheckpointSpi checkpointSpi = new GridSharedFsCheckpointSpi();
+ * SharedFsCheckpointSpi checkpointSpi = new SharedFsCheckpointSpi();
  *
  * // List of checkpoint directories where all files are stored.
  * Collection<String> dirPaths = new ArrayList<String>();

@@ -38,11 +38,13 @@ import org.apache.ignite.internal.processors.cache.jta.*;
 import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.offheap.*;
+import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -53,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -66,8 +69,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
 /**
  * Cache context.
@@ -127,13 +128,16 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheTtlManager ttlMgr;
 
     /** Store manager. */
-    private GridCacheStoreManager storeMgr;
+    private CacheStoreManager storeMgr;
 
     /** Replication manager. */
     private GridCacheDrManager drMgr;
 
-    /** JTA manager. */
-    private CacheJtaManagerAdapter jtaMgr;
+    /** Conflict resolver manager. */
+    private CacheConflictResolutionManager rslvrMgr;
+
+    /** Cache plugin manager. */
+    private CachePluginManager pluginMgr;
 
     /** Managers. */
     private List<GridCacheManager<K, V>> mgrs = new LinkedList<>();
@@ -148,19 +152,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     private ClusterNode locNode;
 
     /**
-     * Thread local projection. If it's set it means that method call was initiated
-     * by child projection of initial cache.
+     * Thread local operation context. If it's set it means that method call was initiated
+     * by child cache of initial cache.
      */
-    private ThreadLocal<GridCacheProjectionImpl<K, V>> prjPerCall = new ThreadLocal<>();
-
-    /** Thread local forced flags that affect any projection in the same thread. */
-    private ThreadLocal<CacheFlag[]> forcedFlags = new ThreadLocal<>();
-
-    /** Constant array to avoid recreation. */
-    private static final CacheFlag[] FLAG_LOCAL_READ = new CacheFlag[]{LOCAL, READ};
-
-    /** Local flag array. */
-    private static final CacheFlag[] FLAG_LOCAL = new CacheFlag[]{LOCAL};
+    private ThreadLocal<CacheOperationContext> opCtxPerCall = new ThreadLocal<>();
 
     /** Cache name. */
     private String cacheName;
@@ -168,11 +163,11 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache ID. */
     private int cacheId;
 
-    /** System cache flag. */
-    private boolean sys;
+    /** Cache type. */
+    private CacheType cacheType;
 
     /** IO policy. */
-    private GridIoPolicy plc;
+    private byte plc;
 
     /** Default expiry policy. */
     private ExpiryPolicy expiryPlc;
@@ -184,7 +179,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private boolean affNode;
 
     /** Conflict resolver. */
-    private GridCacheVersionAbstractConflictResolver conflictRslvr;
+    private CacheVersionConflictResolver conflictRslvr;
 
     /** */
     private CacheObjectContext cacheObjCtx;
@@ -198,6 +193,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Dynamic cache deployment ID. */
     private IgniteUuid dynamicDeploymentId;
 
+    /** Updates allowed flag. */
+    private boolean updatesAllowed;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -209,6 +207,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param ctx Kernal context.
      * @param sharedCtx Cache shared context.
      * @param cacheCfg Cache configuration.
+     * @param cacheType Cache type.
+     * @param affNode {@code True} if local node is affinity node.
+     * @param updatesAllowed Updates allowed flag.
      * @param evtMgr Cache event manager.
      * @param swapMgr Cache swap manager.
      * @param storeMgr Store manager.
@@ -219,14 +220,17 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param dataStructuresMgr Cache dataStructures manager.
      * @param ttlMgr TTL manager.
      * @param drMgr Data center replication manager.
-     * @param jtaMgr JTA manager.
+     * @param rslvrMgr Conflict resolution manager.
+     * @param pluginMgr Cache plugin manager.
      */
     @SuppressWarnings({"unchecked"})
     public GridCacheContext(
         GridKernalContext ctx,
         GridCacheSharedContext sharedCtx,
         CacheConfiguration cacheCfg,
+        CacheType cacheType,
         boolean affNode,
+        boolean updatesAllowed,
 
         /*
          * Managers in starting order!
@@ -235,7 +239,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         GridCacheEventManager evtMgr,
         GridCacheSwapManager swapMgr,
-        GridCacheStoreManager storeMgr,
+        CacheStoreManager storeMgr,
         GridCacheEvictionManager evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
         CacheContinuousQueryManager contQryMgr,
@@ -243,7 +247,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheDataStructuresManager dataStructuresMgr,
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
-        CacheJtaManagerAdapter jtaMgr) {
+        CacheConflictResolutionManager<K, V> rslvrMgr,
+        CachePluginManager pluginMgr
+    ) {
         assert ctx != null;
         assert sharedCtx != null;
         assert cacheCfg != null;
@@ -257,11 +263,15 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert affMgr != null;
         assert dataStructuresMgr != null;
         assert ttlMgr != null;
+        assert rslvrMgr != null;
+        assert pluginMgr != null;
 
         this.ctx = ctx;
         this.sharedCtx = sharedCtx;
         this.cacheCfg = cacheCfg;
+        this.cacheType = cacheType;
         this.affNode = affNode;
+        this.updatesAllowed = updatesAllowed;
 
         /*
          * Managers in starting order!
@@ -277,7 +287,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.dataStructuresMgr = add(dataStructuresMgr);
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
-        this.jtaMgr = add(jtaMgr);
+        this.rslvrMgr = add(rslvrMgr);
+        this.pluginMgr = add(pluginMgr);
 
         log = ctx.log(getClass());
 
@@ -291,9 +302,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         cacheId = CU.cacheId(cacheName);
 
-        sys = ctx.cache().systemCache(cacheName);
-
-        plc = CU.isMarshallerCache(cacheName) ? MARSH_CACHE_POOL : sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
+        plc = cacheType.ioPolicy();
 
         Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
 
@@ -323,13 +332,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Initialize conflict resolver after all managers are started.
      */
     void initConflictResolver() {
-        // Conflict resolver is determined in two stages:
-        // 1. If DR receiver hub is enabled, then pick it from DR manager.
-        // 2. Otherwise instantiate default resolver in case local store is configured.
-        conflictRslvr = drMgr.conflictResolver();
-
-        if (conflictRslvr == null && storeMgr.isLocalStore())
-            conflictRslvr = new GridCacheVersionConflictResolver();
+        conflictRslvr = rslvrMgr.conflictResolver();
     }
 
     /**
@@ -345,7 +348,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public void awaitStarted() throws IgniteCheckedException {
         U.await(startLatch);
 
-        GridCachePreloader<K, V> prldr = preloader();
+        GridCachePreloader prldr = preloader();
 
         if (prldr != null)
             prldr.startFuture().get();
@@ -358,7 +361,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (startLatch.getCount() != 0)
             return false;
 
-        GridCachePreloader<K, V> prldr = preloader();
+        GridCachePreloader prldr = preloader();
 
         return prldr == null || prldr.startFuture().isDone();
     }
@@ -434,16 +437,23 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return System cache flag.
+     * @return {@code True} if should use system transactions which are isolated from user transactions.
      */
-    public boolean system() {
-        return sys;
+    public boolean systemTx() {
+        return cacheType == CacheType.UTILITY;
+    }
+
+    /**
+     * @return {@code True} if cache created by user.
+     */
+    public boolean userCache() {
+        return cacheType.userCache();
     }
 
     /**
      * @return IO policy for the given cache.
      */
-    public GridIoPolicy ioPolicy() {
+    public byte ioPolicy() {
         return plc;
     }
 
@@ -514,7 +524,21 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if entries should not be deleted from cache immediately.
      */
     public boolean deferredDelete() {
-        return isDht() || isDhtAtomic() || isColocated() || (isNear() && atomic());
+        GridCacheAdapter<K, V> cache = this.cache;
+
+        if (cache == null)
+            throw new IllegalStateException("Cache stopped: " + cacheName);
+
+        return deferredDelete(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     * @return {@code True} if entries should not be deleted from cache immediately.
+     */
+    public boolean deferredDelete(GridCacheAdapter<?, ?> cache) {
+        return cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
+            (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC);
     }
 
     /**
@@ -523,7 +547,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public void incrementPublicSize(GridCacheMapEntry e) {
         assert deferredDelete();
         assert e != null;
-        assert !e.isInternal();
+        assert !e.isInternal() : e;
 
         cache.map().incrementSize(e);
 
@@ -541,7 +565,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public void decrementPublicSize(GridCacheMapEntry e) {
         assert deferredDelete();
         assert e != null;
-        assert !e.isInternal();
+        assert !e.isInternal() : e;
 
         cache.map().decrementSize(e);
 
@@ -660,9 +684,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * @param op Operation to check.
-     * @throws GridSecurityException If security check failed.
+     * @throws SecurityException If security check failed.
      */
-    public void checkSecurity(GridSecurityPermission op) throws GridSecurityException {
+    public void checkSecurity(SecurityPermission op) throws SecurityException {
         if (CU.isSystemCache(name()))
             return;
 
@@ -672,7 +696,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Preloader.
      */
-    public GridCachePreloader<K, V> preloader() {
+    public GridCachePreloader preloader() {
         return cache().preloader();
     }
 
@@ -755,26 +779,37 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Partition topology.
      */
     public GridDhtPartitionTopology topology() {
-        assert isNear() || isDht() || isColocated() || isDhtAtomic();
+        GridCacheAdapter<K, V> cache = this.cache;
 
-        return isNear() ? near().dht().topology() : dht().topology();
+        if (cache == null)
+            throw new IllegalStateException("Cache stopped: " + cacheName);
+
+        assert cache.isNear() || cache.isDht() || cache.isColocated() || cache.isDhtAtomic() : cache;
+
+        return topology(cache);
     }
 
     /**
      * @return Topology version future.
      */
     public GridDhtTopologyFuture topologyVersionFuture() {
-        assert isNear() || isDht() || isColocated() || isDhtAtomic();
+        GridCacheAdapter<K, V> cache = this.cache;
 
-        GridDhtTopologyFuture fut = null;
+        if (cache == null)
+            throw new IllegalStateException("Cache stopped: " + cacheName);
 
-        if (!isDhtAtomic()) {
-            GridDhtCacheAdapter<K, V> cache = isNear() ? near().dht() : colocated();
+        assert cache.isNear() || cache.isDht() || cache.isColocated() || cache.isDhtAtomic() : cache;
 
-            fut = cache.multiUpdateTopologyFuture();
-        }
+        return topology(cache).topologyVersionFuture();
+    }
 
-        return fut == null ? topology().topologyVersionFuture() : fut;
+    /**
+     * @param cache Cache.
+     * @return Partition topology.
+     */
+    private GridDhtPartitionTopology topology(GridCacheAdapter<K, V> cache) {
+        return cache.isNear() ? ((GridNearCacheAdapter<K, V>)cache).dht().topology() :
+            ((GridDhtCacheAdapter<K, V>)cache).topology();
     }
 
     /**
@@ -883,7 +918,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *      are set to {@code true} or the store is local.
      */
     public boolean writeToStoreFromDht() {
-        return store().isLocalStore() || cacheCfg.isWriteBehindEnabled();
+        return store().isLocal() || cacheCfg.isWriteBehindEnabled();
     }
 
     /**
@@ -952,7 +987,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Store manager.
      */
-    public GridCacheStoreManager store() {
+    public CacheStoreManager store() {
         return storeMgr;
     }
 
@@ -1002,7 +1037,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return JTA manager.
      */
     public CacheJtaManagerAdapter jta() {
-        return jtaMgr;
+        return sharedCtx.jta();
+    }
+
+    /**
+     * @return Cache plugin manager.
+     */
+    public CachePluginManager plugin() {
+        return pluginMgr;
     }
 
     /**
@@ -1113,9 +1155,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (F.isEmpty(p))
             return true;
 
-        // We should allow only local read-only operations within filter checking.
-        CacheFlag[] oldFlags = forceFlags(FLAG_LOCAL_READ);
-
         try {
             boolean pass = F.isAll(e, p);
 
@@ -1127,9 +1166,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
         catch (RuntimeException ex) {
             throw U.cast(ex);
-        }
-        finally {
-            forceFlags(oldFlags);
         }
     }
 
@@ -1190,78 +1226,24 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Forces LOCAL flag.
+     * Sets thread local cache operation context.
      *
-     * @return Previously forced flags.
+     * @param opCtx Flags to set.
      */
-    @Nullable public CacheFlag[] forceLocal() {
-        return forceFlags(FLAG_LOCAL);
-    }
-
-    /**
-     * Forces LOCAL and READ flags.
-     *
-     * @return Forced flags that were set prior to method call.
-     */
-    @Nullable public CacheFlag[] forceLocalRead() {
-        return forceFlags(FLAG_LOCAL_READ);
-    }
-
-    /**
-     * Force projection flags for the current thread. These flags will affect all
-     * projections (even without flags) used within the current thread.
-     *
-     * @param flags Flags to force.
-     * @return Forced flags that were set prior to method call.
-     */
-    @Nullable public CacheFlag[] forceFlags(@Nullable CacheFlag[] flags) {
-        CacheFlag[] oldFlags = forcedFlags.get();
-
-        forcedFlags.set(F.isEmpty(flags) ? null : flags);
-
-        return oldFlags;
-    }
-
-    /**
-     * Gets forced flags for current thread.
-     *
-     * @return Forced flags.
-     */
-    public CacheFlag[] forcedFlags() {
-        return forcedFlags.get();
-    }
-
-    /**
-     * Clone cached object.
-     *
-     * @param obj Object to clone
-     * @return Clone of the given object.
-     * @throws IgniteCheckedException If failed to clone object.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public <T> T cloneValue(@Nullable T obj) throws IgniteCheckedException {
-        return obj == null ? null : X.cloneObject(obj, false, true);
-    }
-
-    /**
-     * Sets thread local projection.
-     *
-     * @param prj Flags to set.
-     */
-    public void projectionPerCall(@Nullable GridCacheProjectionImpl<K, V> prj) {
+    public void operationContextPerCall(@Nullable CacheOperationContext opCtx) {
         if (nearContext())
-            dht().near().context().prjPerCall.set(prj);
+            dht().near().context().opCtxPerCall.set(opCtx);
         else
-            prjPerCall.set(prj);
+            opCtxPerCall.set(opCtx);
     }
 
     /**
-     * Gets thread local projection.
+     * Gets thread local cache operation context.
      *
-     * @return Projection per call.
+     * @return Operation context per call.
      */
-    public GridCacheProjectionImpl<K, V> projectionPerCall() {
-        return nearContext() ? dht().near().context().prjPerCall.get() : prjPerCall.get();
+    public CacheOperationContext operationContextPerCall() {
+        return nearContext() ? dht().near().context().opCtxPerCall.get() : opCtxPerCall.get();
     }
 
     /**
@@ -1274,19 +1256,19 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (subjId != null)
             return subjId;
 
-        return subjectIdPerCall(subjId, projectionPerCall());
+        return subjectIdPerCall(subjId, operationContextPerCall());
     }
 
     /**
      * Gets subject ID per call.
      *
      * @param subjId Optional already existing subject ID.
-     * @param prj Optional thread local projection.
+     * @param opCtx Optional thread local operation context.
      * @return Subject ID per call.
      */
-    public UUID subjectIdPerCall(@Nullable UUID subjId, @Nullable GridCacheProjectionImpl<K, V> prj) {
-        if (prj != null)
-            subjId = prj.subjectId();
+    public UUID subjectIdPerCall(@Nullable UUID subjId, @Nullable CacheOperationContext opCtx) {
+        if (opCtx != null)
+            subjId = opCtx.subjectId();
 
         if (subjId == null)
             subjId = ctx.localNodeId();
@@ -1295,140 +1277,24 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     *
-     * @param flag Flag to check.
-     * @return {@code true} if the given flag is set.
+     * @return {@code true} if the skip store flag is set.
      */
-    public boolean hasFlag(CacheFlag flag) {
-        assert flag != null;
-
+    public boolean skipStore() {
         if (nearContext())
-            return dht().near().context().hasFlag(flag);
+            return dht().near().context().skipStore();
 
-        GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
+        CacheOperationContext opCtx = opCtxPerCall.get();
 
-        CacheFlag[] forced = forcedFlags.get();
-
-        return (prj != null && prj.flags().contains(flag)) || (forced != null && U.containsObjectArray(forced, flag));
+        return (opCtx != null && opCtx.skipStore());
     }
 
-    /**
-     * Checks whether any of the given flags is set.
-     *
-     * @param flags Flags to check.
-     * @return {@code true} if any of the given flags is set.
-     */
-    public boolean hasAnyFlags(CacheFlag[] flags) {
-        assert !F.isEmpty(flags);
 
-        if (nearContext())
-            return dht().near().context().hasAnyFlags(flags);
-
-        GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
-
-        if (prj == null && F.isEmpty(forcedFlags.get()))
-            return false;
-
-        for (CacheFlag f : flags)
-            if (hasFlag(f))
-                return true;
-
-        return false;
-    }
-
-    /**
-     * Checks whether any of the given flags is set.
-     *
-     * @param flags Flags to check.
-     * @return {@code true} if any of the given flags is set.
-     */
-    public boolean hasAnyFlags(Collection<CacheFlag> flags) {
-        assert !F.isEmpty(flags);
-
-        if (nearContext())
-            return dht().near().context().hasAnyFlags(flags);
-
-        GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
-
-        if (prj == null && F.isEmpty(forcedFlags.get()))
-            return false;
-
-        for (CacheFlag f : flags)
-            if (hasFlag(f))
-                return true;
-
-        return false;
-    }
 
     /**
      * @return {@code True} if need check near cache context.
      */
     private boolean nearContext() {
         return isDht() || (isDhtAtomic() && dht().near() != null);
-    }
-
-    /**
-     * @param flag Flag to check.
-     */
-    public void denyOnFlag(CacheFlag flag) {
-        assert flag != null;
-
-        if (hasFlag(flag))
-            throw new CacheFlagException(flag);
-    }
-
-    /**
-     *
-     */
-    public void denyOnLocalRead() {
-        denyOnFlags(FLAG_LOCAL_READ);
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void denyOnFlags(CacheFlag[] flags) {
-        assert !F.isEmpty(flags);
-
-        if (hasAnyFlags(flags))
-            throw new CacheFlagException(flags);
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void denyOnFlags(Collection<CacheFlag> flags) {
-        assert !F.isEmpty(flags);
-
-        if (hasAnyFlags(flags))
-            throw new CacheFlagException(flags);
-    }
-
-    /**
-     * Clones cached object depending on whether or not {@link CacheFlag#CLONE} flag
-     * is set thread locally.
-     *
-     * @param obj Object to clone.
-     * @return Clone of the given object.
-     * @throws IgniteCheckedException If failed to clone.
-     */
-    @Nullable public <T> T cloneOnFlag(@Nullable T obj) throws IgniteCheckedException {
-        return hasFlag(CLONE) ? cloneValue(obj) : obj;
-    }
-
-    /**
-     * @param f Target future.
-     * @return Wrapped future that is aware of cloning behaviour.
-     */
-    public IgniteInternalFuture<V> wrapClone(IgniteInternalFuture<V> f) {
-        if (!hasFlag(CLONE))
-            return f;
-
-        return f.chain(new CX1<IgniteInternalFuture<V>, V>() {
-            @Override public V applyx(IgniteInternalFuture<V> f) throws IgniteCheckedException {
-                return cloneValue(f.get());
-            }
-        });
     }
 
     /**
@@ -1444,30 +1310,23 @@ public class GridCacheContext<K, V> implements Externalizable {
     public Runnable projectSafe(final Runnable r) {
         assert r != null;
 
-        // Have to get projection per call used by calling thread to use it in a new thread.
-        final GridCacheProjectionImpl<K, V> prj = projectionPerCall();
+        // Have to get operation context per call used by calling thread to use it in a new thread.
+        final CacheOperationContext opCtx = operationContextPerCall();
 
-        // Get flags in the same thread.
-        final CacheFlag[] flags = forcedFlags();
-
-        if (prj == null && F.isEmpty(flags))
+        if (opCtx == null)
             return r;
 
         return new GPR() {
             @Override public void run() {
-                GridCacheProjectionImpl<K, V> oldPrj = projectionPerCall();
+                CacheOperationContext old = operationContextPerCall();
 
-                projectionPerCall(prj);
-
-                CacheFlag[] oldFlags = forceFlags(flags);
+                operationContextPerCall(opCtx);
 
                 try {
                     r.run();
                 }
                 finally {
-                    projectionPerCall(oldPrj);
-
-                    forceFlags(oldFlags);
+                    operationContextPerCall(old);
                 }
             }
         };
@@ -1486,30 +1345,23 @@ public class GridCacheContext<K, V> implements Externalizable {
     public <T> Callable<T> projectSafe(final Callable<T> r) {
         assert r != null;
 
-        // Have to get projection per call used by calling thread to use it in a new thread.
-        final GridCacheProjectionImpl<K, V> prj = projectionPerCall();
+        // Have to get operation context per call used by calling thread to use it in a new thread.
+        final CacheOperationContext opCtx = operationContextPerCall();
 
-        // Get flags in the same thread.
-        final CacheFlag[] flags = forcedFlags();
-
-        if (prj == null && F.isEmpty(flags))
+        if (opCtx == null)
             return r;
 
         return new GPC<T>() {
             @Override public T call() throws Exception {
-                GridCacheProjectionImpl<K, V> oldPrj = projectionPerCall();
+                CacheOperationContext old = operationContextPerCall();
 
-                projectionPerCall(prj);
-
-                CacheFlag[] oldFlags = forceFlags(flags);
+                operationContextPerCall(opCtx);
 
                 try {
                     return r.call();
                 }
                 finally {
-                    projectionPerCall(oldPrj);
-
-                    forceFlags(oldFlags);
+                    operationContextPerCall(old);
                 }
             }
         };
@@ -1526,7 +1378,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if swap store of off-heap cache are enabled.
      */
     public boolean isSwapOrOffheapEnabled() {
-        return (swapMgr.swapEnabled() && !hasFlag(SKIP_SWAP)) || isOffHeapEnabled();
+        return swapMgr.swapEnabled() || isOffHeapEnabled();
     }
 
     /**
@@ -1540,11 +1392,11 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if store read-through mode is enabled.
      */
     public boolean readThrough() {
-        return cacheCfg.isReadThrough() && !hasFlag(SKIP_STORE);
+        return cacheCfg.isReadThrough() && !skipStore();
     }
 
     /**
-     * @return {@code True} if store read-through mode is enabled.
+     * @return {@code True} if {@link CacheConfiguration#isLoadPreviousValue()} flag is set.
      */
     public boolean loadPreviousValue() {
         return cacheCfg.isLoadPreviousValue();
@@ -1554,21 +1406,21 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if store write-through is enabled.
      */
     public boolean writeThrough() {
-        return cacheCfg.isWriteThrough() && !hasFlag(SKIP_STORE);
+        return cacheCfg.isWriteThrough() && !skipStore();
     }
 
     /**
      * @return {@code True} if invalidation is enabled.
      */
     public boolean isInvalidate() {
-        return cacheCfg.isInvalidate() || hasFlag(INVALIDATE);
+        return cacheCfg.isInvalidate();
     }
 
     /**
      * @return {@code True} if synchronous commit is enabled.
      */
     public boolean syncCommit() {
-        return cacheCfg.getWriteSynchronizationMode() == FULL_SYNC || hasFlag(SYNC_COMMIT);
+        return cacheCfg.getWriteSynchronizationMode() == FULL_SYNC;
     }
 
     /**
@@ -1599,6 +1451,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         UUID nearNodeId,
         AffinityTopologyVersion topVer,
         GridDhtCacheEntry entry,
+        GridCacheVersion explicitLockVer,
         IgniteLogger log,
         Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap,
         @Nullable Map<ClusterNode, List<GridDhtCacheEntry>> nearMap
@@ -1614,6 +1467,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         boolean ret = map(entry, dhtRemoteNodes, dhtMap);
 
+        Collection<ClusterNode> nearRemoteNodes = null;
+
         if (nearMap != null) {
             Collection<UUID> readers = entry.readers();
 
@@ -1628,11 +1483,59 @@ public class GridCacheContext<K, V> implements Externalizable {
             else if (log.isDebugEnabled())
                 log.debug("Entry has no near readers: " + entry);
 
-            if (nearNodes != null && !nearNodes.isEmpty())
-                ret |= map(entry, F.view(nearNodes, F.notIn(dhtNodes)), nearMap);
+            if (nearNodes != null && !nearNodes.isEmpty()) {
+                nearRemoteNodes = F.view(nearNodes, F.notIn(dhtNodes));
+
+                ret |= map(entry, nearRemoteNodes, nearMap);
+            }
+        }
+
+        if (explicitLockVer != null) {
+            Collection<ClusterNode> dhtNodeIds = new ArrayList<>(dhtRemoteNodes);
+            Collection<ClusterNode> nearNodeIds = F.isEmpty(nearRemoteNodes) ? null : new ArrayList<>(nearRemoteNodes);
+
+            entry.mappings(explicitLockVer, dhtNodeIds, nearNodeIds);
         }
 
         return ret;
+    }
+
+    /**
+     * @param entry Entry.
+     * @param log Log.
+     * @param dhtMap Dht mappings.
+     * @param nearMap Near mappings.
+     * @return {@code True} if mapped.
+     * @throws GridCacheEntryRemovedException If reader for entry is removed.
+     */
+    public boolean dhtMap(
+        GridDhtCacheEntry entry,
+        GridCacheVersion explicitLockVer,
+        IgniteLogger log,
+        Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap,
+        Map<ClusterNode, List<GridDhtCacheEntry>> nearMap
+    ) throws GridCacheEntryRemovedException {
+        assert explicitLockVer != null;
+
+        GridCacheMvccCandidate cand = entry.candidate(explicitLockVer);
+
+        if (cand != null) {
+            Collection<ClusterNode> dhtNodes = cand.mappedDhtNodes();
+
+            if (log.isDebugEnabled())
+                log.debug("Mapping explicit lock to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
+
+            Collection<ClusterNode> nearNodes = cand.mappedNearNodes();
+
+            boolean ret = map(entry, dhtNodes, dhtMap);
+
+            if (nearNodes != null && !nearNodes.isEmpty())
+                ret |= map(entry, nearNodes, nearMap);
+
+            return ret;
+        }
+
+        return false;
     }
 
     /**
@@ -1721,9 +1624,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
         assert entry != null;
-        assert !Thread.holdsLock(entry);
+        assert !Thread.holdsLock(entry) : entry;
         assert ver != null;
-        assert deferredDelete();
+        assert deferredDelete() : cache;
 
         cache.onDeferredDelete(entry, ver);
     }
@@ -1761,9 +1664,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Keep portable flag.
      */
     public boolean keepPortable() {
-        GridCacheProjectionImpl<K, V> prj = projectionPerCall();
+        CacheOperationContext opCtx = operationContextPerCall();
 
-        return prj != null && prj.isKeepPortable();
+        return opCtx != null && opCtx.isKeepPortable();
     }
 
     /**
@@ -1771,6 +1674,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean offheapTiered() {
         return cacheCfg.getMemoryMode() == OFFHEAP_TIERED && isOffHeapEnabled();
+    }
+
+    /**
+     * @return {@code True} if should use entry with offheap value pointer.
+     */
+    public boolean useOffheapEntry() {
+        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED || cacheCfg.getMemoryMode() == OFFHEAP_VALUES;
     }
 
     /**
@@ -1874,7 +1784,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws IgniteCheckedException If failed.
      */
     public CacheObject fromOffheap(long valPtr, boolean tmp) throws IgniteCheckedException {
-        assert config().getMemoryMode() == OFFHEAP_TIERED || config().getMemoryMode() == OFFHEAP_VALUES;
+        assert config().getMemoryMode() == OFFHEAP_TIERED || config().getMemoryMode() == OFFHEAP_VALUES : cacheCfg;
         assert valPtr != 0;
 
         return ctx.cacheObjects().toCacheObject(this, valPtr, tmp);
@@ -1918,6 +1828,13 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
         else
             map.put((K1)key, (V1)(skipVals ? true : val));
+    }
+
+    /**
+     * @return Updates allowed.
+     */
+    public boolean updatesAllowed() {
+        return updatesAllowed;
     }
 
     /**

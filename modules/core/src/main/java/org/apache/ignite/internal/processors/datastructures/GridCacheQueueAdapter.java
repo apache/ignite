@@ -523,7 +523,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    public void close() {
+    @Override public void close() {
         if (rmvd)
             return;
 

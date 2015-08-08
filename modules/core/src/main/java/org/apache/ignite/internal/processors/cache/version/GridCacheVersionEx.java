@@ -76,7 +76,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
     }
 
     /** {@inheritDoc} */
-    public GridCacheVersion conflictVersion() {
+    @Override public GridCacheVersion conflictVersion() {
         return drVer;
     }
 

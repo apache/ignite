@@ -18,14 +18,8 @@
 package org.apache.ignite.plugin;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Plugin configuration.
  */
 public interface PluginConfiguration {
-    /**
-     * @return Plugin provider class.
-     */
-    public Class<? extends PluginProvider> providerClass();
+    // No-op.
 }

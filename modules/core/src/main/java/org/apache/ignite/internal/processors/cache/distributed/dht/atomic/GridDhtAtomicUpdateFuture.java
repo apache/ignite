@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -86,8 +87,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     /** Future keys. */
     private Collection<KeyCacheObject> keys;
 
-    /** Future map time. */
-    private volatile long mapTime;
+    /** */
+    private boolean waitForExchange;
 
     /**
      * @param cctx Cache context.
@@ -112,12 +113,14 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         this.completionCb = completionCb;
         this.updateRes = updateRes;
 
-        forceTransformBackups = updateReq.forceTransformBackups();
-
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridDhtAtomicUpdateFuture.class);
 
         keys = new ArrayList<>(updateReq.keys().size());
+
+        boolean topLocked = updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest());
+
+        waitForExchange = !topLocked;
     }
 
     /** {@inheritDoc} */
@@ -143,9 +146,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         GridDhtAtomicUpdateRequest req = mappings.get(nodeId);
 
         if (req != null) {
-            updateRes.addFailedKeys(req.keys(), new ClusterTopologyCheckedException("Failed to write keys on backup " +
-                "(node left grid before response is received): " + nodeId));
-
             // Remove only after added keys to failed set.
             mappings.remove(nodeId);
 
@@ -155,20 +155,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         }
 
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void checkTimeout(long timeout) {
-        long mapTime0 = mapTime;
-
-        if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout) {
-            IgniteCheckedException ex = new CacheAtomicUpdateTimeoutCheckedException("Cache update timeout out " +
-                "(consider increasing networkTimeout configuration property).");
-
-            updateRes.addFailedKeys(keys, ex);
-
-            onDone(ex);
-        }
     }
 
     /** {@inheritDoc} */
@@ -182,14 +168,16 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean waitForPartitionExchange() {
-        // Wait dht update futures in PRIMARY mode.
-        return cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY;
+    @Override public AffinityTopologyVersion topologyVersion() {
+        return updateReq.topologyVersion();
     }
 
     /** {@inheritDoc} */
-    @Override public AffinityTopologyVersion topologyVersion() {
-        return updateReq.topologyVersion();
+    @Override public IgniteInternalFuture<Void> completeFuture(AffinityTopologyVersion topVer) {
+        if (waitForExchange && topologyVersion().compareTo(topVer) < 0)
+            return this;
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -330,8 +318,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      * Sends requests to remote nodes.
      */
     public void map() {
-        mapTime = U.currentTimeMillis();
-
         if (!mappings.isEmpty()) {
             for (GridDhtAtomicUpdateRequest req : mappings.values()) {
                 try {

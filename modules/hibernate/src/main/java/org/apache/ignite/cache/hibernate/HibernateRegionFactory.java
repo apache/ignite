@@ -47,8 +47,8 @@ import static org.hibernate.cache.spi.access.AccessType.*;
  * <pre name="code" class="brush: xml; gutter: false;">
  * org.apache.ignite.hibernate.grid_name=&lt;grid name&gt;
  * </pre>
- * Each Hibernate cache region must be associated with some {@link org.apache.ignite.internal.processors.cache.GridCache}, by default it is assumed that
- * for each cache region there is a {@link org.apache.ignite.internal.processors.cache.GridCache} with the same name. Also it is possible to define
+ * Each Hibernate cache region must be associated with some {@link IgniteInternalCache}, by default it is assumed that
+ * for each cache region there is a {@link IgniteInternalCache} with the same name. Also it is possible to define
  * region to cache mapping using properties with prefix {@code org.apache.ignite.hibernate.region_cache}.
  * For example if for region with name "region1" cache with name "cache1" should be used then following
  * Hibernate property should be specified:
@@ -79,7 +79,7 @@ public class HibernateRegionFactory implements RegionFactory {
     private Ignite ignite;
 
     /** Default cache. */
-    private GridCache<Object, Object> dfltCache;
+    private IgniteInternalCache<Object, Object> dfltCache;
 
     /** Default region access type. */
     private AccessType dfltAccessType;
@@ -204,7 +204,7 @@ public class HibernateRegionFactory implements RegionFactory {
      * @return Cache for given region.
      * @throws CacheException If cache for given region is not configured.
      */
-    private GridCache<Object, Object> regionCache(String regionName) throws CacheException {
+    private IgniteInternalCache<Object, Object> regionCache(String regionName) throws CacheException {
         String cacheName = regionCaches.get(regionName);
 
         if (cacheName == null) {
@@ -214,7 +214,7 @@ public class HibernateRegionFactory implements RegionFactory {
             cacheName = regionName;
         }
 
-        GridCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
+        IgniteInternalCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
 
         if (cache == null)
             throw new CacheException("Cache '" + cacheName + "' for region '" + regionName + "' is not configured.");

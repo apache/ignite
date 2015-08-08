@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.processor.*;
@@ -30,7 +30,6 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
 /**
  * Tests transform for extra traffic.
@@ -64,6 +63,8 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
 
         cfg.setCacheConfiguration(ccfg);
 
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
+
         if (!cache)
             cfg.setClientMode(true);
 
@@ -72,45 +73,23 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
 
     /**
      * @throws Exception If failed.
+     * TODO IGNITE-581 enable when fixed.
      */
-    public void testTransformAtomicPrimaryNoBackups() throws Exception {
-        checkTransform(ATOMIC, PRIMARY, 0);
-    }
+    public void testTransformTransactionalNoBackups() throws Exception {
+        // Test works too long and fails.
+        fail("https://issues.apache.org/jira/browse/IGNITE-581");
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTransformAtomicClockNoBackups() throws Exception {
-        checkTransform(ATOMIC, CLOCK, 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTransformAtomicPrimaryOneBackup() throws Exception {
-        checkTransform(ATOMIC, PRIMARY, 1);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTransformAtomicClockOneBackup() throws Exception {
-        checkTransform(ATOMIC, CLOCK, 1);
-    }
-
-    /**
-     * @throws Exception If failed.
-     * TODO gg-8273 enable when fixed
-     */
-    public void _testTransformTransactionalNoBackups() throws Exception {
         checkTransform(TRANSACTIONAL, PRIMARY, 0);
     }
 
     /**
      * @throws Exception If failed.
-     * TODO gg-8273 enable when fixed
+     * TODO IGNITE-581 enable when fixed.
      */
-    public void _testTransformTransactionalOneBackup() throws Exception {
+    public void testTransformTransactionalOneBackup() throws Exception {
+        // Test works too long and fails.
+        fail("https://issues.apache.org/jira/browse/IGNITE-581");
+
         checkTransform(TRANSACTIONAL, PRIMARY, 1);
     }
 
@@ -141,9 +120,6 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
 
             // Get client grid.
             IgniteCache<Integer, TestObject> cache = grid(2).cache(null);
-
-            if (backups > 0 && atomicityMode == ATOMIC)
-                cache = ((IgniteCacheProxy<Integer, TestObject>)cache).flagOn(FORCE_TRANSFORM_BACKUP);
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, new TestObject());
@@ -187,7 +163,6 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
     /**
      *
      */
-    @IgniteImmutable
     private static class TestObject implements Externalizable {
         /**
          *

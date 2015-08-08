@@ -20,7 +20,6 @@ package org.apache.ignite.examples.datagrid;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
@@ -51,12 +50,7 @@ public class CacheContinuousQueryExample {
             System.out.println();
             System.out.println(">>> Cache continuous query example started.");
 
-            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
-
-            cfg.setCacheMode(CacheMode.PARTITIONED);
-            cfg.setName(CACHE_NAME);
-
-            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
+            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
                 int keyCnt = 20;
 
                 // These entries will be queried by initial predicate.

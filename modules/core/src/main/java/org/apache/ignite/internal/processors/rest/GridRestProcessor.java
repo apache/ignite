@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.handlers.cache.*;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.*;
+import org.apache.ignite.internal.processors.rest.handlers.query.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.internal.processors.rest.handlers.top.*;
 import org.apache.ignite.internal.processors.rest.handlers.version.*;
@@ -36,8 +37,10 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.internal.visor.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.jsr166.*;
 
 import java.lang.reflect.*;
@@ -45,7 +48,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.*;
-import static org.apache.ignite.plugin.security.GridSecuritySubjectType.*;
+import static org.apache.ignite.plugin.security.SecuritySubjectType.*;
 
 /**
  * Rest processor implementation.
@@ -122,6 +125,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
                             U.error(log, "Client request execution failed with error.", e);
 
                         fut.onDone(U.cast(e));
+
+                        if (e instanceof Error)
+                            throw e;
                     }
                     finally {
                         workersCnt.decrement();
@@ -175,7 +181,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 authorize(req, subjCtx);
             }
-            catch (GridSecurityException e) {
+            catch (SecurityException e) {
                 assert subjCtx != null;
 
                 GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
@@ -210,7 +216,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     res = f.get();
                 }
                 catch (Exception e) {
-                    LT.error(log, e, "Failed to handle request: " + req.command());
+                    if (!X.hasCause(e, VisorClusterGroupEmptyException.class))
+                        LT.error(log, e, "Failed to handle request: " + req.command());
 
                     if (log.isDebugEnabled())
                         log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
@@ -244,11 +251,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
         if (isRestEnabled()) {
             // Register handlers.
             addHandler(new GridCacheCommandHandler(ctx));
-            addHandler(new GridCacheQueryCommandHandler(ctx));
             addHandler(new GridTaskCommandHandler(ctx));
             addHandler(new GridTopologyCommandHandler(ctx));
             addHandler(new GridVersionCommandHandler(ctx));
             addHandler(new DataStructuresCommandHandler(ctx));
+            addHandler(new QueryCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();
@@ -379,6 +386,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         if (interceptor != null && res.getResponse() != null) {
             switch (req.command()) {
+                case CACHE_CONTAINS_KEYS:
+                case CACHE_CONTAINS_KEY:
                 case CACHE_GET:
                 case CACHE_GET_ALL:
                 case CACHE_PUT:
@@ -464,21 +473,21 @@ public class GridRestProcessor extends GridProcessorAdapter {
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
 
-        GridSecurityCredentials cred;
+        SecurityCredentials cred;
 
-        if (req.credentials() instanceof GridSecurityCredentials)
-            cred = (GridSecurityCredentials)req.credentials();
+        if (req.credentials() instanceof SecurityCredentials)
+            cred = (SecurityCredentials)req.credentials();
         else if (req.credentials() instanceof String) {
             String credStr = (String)req.credentials();
 
             int idx = credStr.indexOf(':');
 
             cred = idx >= 0 && idx < credStr.length() ?
-                new GridSecurityCredentials(credStr.substring(0, idx), credStr.substring(idx + 1)) :
-                new GridSecurityCredentials(credStr, null);
+                new SecurityCredentials(credStr.substring(0, idx), credStr.substring(idx + 1)) :
+                new SecurityCredentials(credStr, null);
         }
         else {
-            cred = new GridSecurityCredentials();
+            cred = new SecurityCredentials();
 
             cred.setUserObject(req.credentials());
         }
@@ -514,25 +523,28 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /**
      * @param req REST request.
      * @param sCtx Security context.
-     * @throws GridSecurityException If authorization failed.
+     * @throws SecurityException If authorization failed.
      */
-    private void authorize(GridRestRequest req, SecurityContext sCtx) throws GridSecurityException {
-        GridSecurityPermission perm = null;
+    private void authorize(GridRestRequest req, SecurityContext sCtx) throws SecurityException {
+        SecurityPermission perm = null;
         String name = null;
 
         switch (req.command()) {
             case CACHE_GET:
+            case CACHE_CONTAINS_KEY:
+            case CACHE_CONTAINS_KEYS:
             case CACHE_GET_ALL:
-                perm = GridSecurityPermission.CACHE_READ;
+                perm = SecurityPermission.CACHE_READ;
                 name = ((GridRestCacheRequest)req).cacheName();
 
                 break;
 
-            case CACHE_QUERY_EXECUTE:
-            case CACHE_QUERY_FETCH:
-            case CACHE_QUERY_REBUILD_INDEXES:
-                perm = GridSecurityPermission.CACHE_READ;
-                name = ((GridRestCacheQueryRequest)req).cacheName();
+            case EXECUTE_SQL_QUERY:
+            case EXECUTE_SQL_FIELDS_QUERY:
+            case CLOSE_SQL_QUERY:
+            case FETCH_SQL_QUERY:
+                perm = SecurityPermission.CACHE_READ;
+                name = ((RestSqlQueryRequest)req).cacheName();
 
                 break;
 
@@ -543,26 +555,41 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case CACHE_CAS:
             case CACHE_APPEND:
             case CACHE_PREPEND:
-                perm = GridSecurityPermission.CACHE_PUT;
+            case CACHE_GET_AND_PUT:
+            case CACHE_GET_AND_REPLACE:
+            case CACHE_GET_AND_PUT_IF_ABSENT:
+            case CACHE_PUT_IF_ABSENT:
+            case CACHE_REPLACE_VALUE:
+                perm = SecurityPermission.CACHE_PUT;
                 name = ((GridRestCacheRequest)req).cacheName();
 
                 break;
 
             case CACHE_REMOVE:
             case CACHE_REMOVE_ALL:
-                perm = GridSecurityPermission.CACHE_REMOVE;
+            case CACHE_GET_AND_REMOVE:
+            case CACHE_REMOVE_VALUE:
+                perm = SecurityPermission.CACHE_REMOVE;
                 name = ((GridRestCacheRequest)req).cacheName();
 
                 break;
 
             case EXE:
             case RESULT:
-                perm = GridSecurityPermission.TASK_EXECUTE;
+                perm = SecurityPermission.TASK_EXECUTE;
                 name = ((GridRestTaskRequest)req).taskName();
 
                 break;
 
+            case GET_OR_CREATE_CACHE:
+            case DESTROY_CACHE:
+                perm = SecurityPermission.ADMIN_CACHE;
+                name = ((GridRestCacheRequest)req).cacheName();
+
+                break;
+
             case CACHE_METRICS:
+            case CACHE_SIZE:
             case TOPOLOGY:
             case NODE:
             case VERSION:
@@ -570,6 +597,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case QUIT:
             case ATOMIC_INCREMENT:
             case ATOMIC_DECREMENT:
+            case NAME:
+            case LOG:
                 break;
 
             default:

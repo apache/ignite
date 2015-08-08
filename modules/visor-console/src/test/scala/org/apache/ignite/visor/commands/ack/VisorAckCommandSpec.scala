@@ -24,17 +24,17 @@ import org.apache.ignite.visor.commands.ack.VisorAckCommand._
  * Unit test for 'ack' command.
  */
 class VisorAckCommandSpec extends VisorRuntimeBaseSpec(2) {
-    behavior of "A 'ack' visor command"
+    describe("A 'ack' visor command") {
+        it("should properly execute w/o arguments"){
+            visor ack()
+        }
 
-    it should "properly execute w/o arguments" in {
-        visor ack()
-    }
+        it("should properly execute with arguments") {
+            visor ack "Broadcasting!"
+        }
 
-    it should "properly execute with arguments" in {
-        visor ack "Broadcasting!"
-    }
-
-    it should "print error message when not connected" in {
-        visor ack()
+        it("should print error message when not connected") {
+            visor ack()
+        }
     }
 }

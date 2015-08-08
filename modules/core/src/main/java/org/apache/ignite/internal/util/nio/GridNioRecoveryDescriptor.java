@@ -176,9 +176,14 @@ public class GridNioRecoveryDescriptor {
         while (acked < rcvCnt) {
             GridNioFuture<?> fut = msgFuts.pollFirst();
 
-            assert fut != null;
+            assert fut != null : "Missed message future [rcvCnt=" + rcvCnt +
+                ", acked=" + acked +
+                ", desc=" + this + ']';
 
-            assert fut.isDone();
+            assert fut.isDone() : fut;
+
+            if (fut.ackClosure() != null)
+                fut.ackClosure().apply(null);
 
             acked++;
         }
@@ -239,9 +244,12 @@ public class GridNioRecoveryDescriptor {
      * @param rcvCnt Number of messages received by remote node.
      */
     public void onHandshake(long rcvCnt) {
-        ackReceived(rcvCnt);
+        synchronized (this) {
+            if (!nodeLeft)
+                ackReceived(rcvCnt);
 
-        resendCnt = msgFuts.size();
+            resendCnt = msgFuts.size();
+        }
     }
 
     /**
@@ -353,8 +361,14 @@ public class GridNioRecoveryDescriptor {
      * @param futs Futures to complete.
      */
     private void completeOnNodeLeft(GridNioFuture<?>[] futs) {
-        for (GridNioFuture<?> msg : futs)
-            ((GridNioFutureImpl)msg).onDone(new IOException("Failed to send message, node has left: " + node.id()));
+        for (GridNioFuture<?> msg : futs) {
+            IOException e = new IOException("Failed to send message, node has left: " + node.id());
+
+            ((GridNioFutureImpl)msg).onDone(e);
+
+            if (msg.ackClosure() != null)
+                msg.ackClosure().apply(new IgniteException(e));
+        }
     }
 
     /** {@inheritDoc} */

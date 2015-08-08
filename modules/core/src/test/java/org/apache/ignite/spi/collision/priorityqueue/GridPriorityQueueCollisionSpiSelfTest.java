@@ -32,7 +32,7 @@ import static org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisi
 @GridSpiTest(spi = PriorityQueueCollisionSpi.class, group = "Collision SPI")
 public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<PriorityQueueCollisionSpi> {
     /** {@inheritDoc} */
-    @Override protected void afterTest() {
+    @Override protected void afterTest() throws Exception {
         getSpi().setParallelJobsNumber(DFLT_PARALLEL_JOBS_NUM);
     }
 

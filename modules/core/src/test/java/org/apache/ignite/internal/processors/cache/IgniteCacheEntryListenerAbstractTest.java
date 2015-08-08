@@ -77,7 +77,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         super.afterTest();
 
         for (int i = 0; i < gridCount(); i++) {
-            GridContinuousProcessor proc = ((IgniteKernal)grid(i)).context().continuous();
+            GridContinuousProcessor proc = grid(i).context().continuous();
 
             ConcurrentMap<?, ?> syncMsgFuts = GridTestUtils.getFieldValue(proc, "syncMsgFuts");
 
@@ -695,11 +695,11 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
             if (i % 2 == 0)
                 cache.put(key, i + 1);
             else
-                cache.invoke(key, new SetValueProcessor(i + 1));
+                cache.invoke(key, new EntrySetValueProcessor(i + 1));
         }
 
         // Invoke processor does not update value, should not trigger event.
-        assertEquals(String.valueOf(UPDATES), cache.invoke(key, new ToStringProcessor()));
+        assertEquals(String.valueOf(UPDATES), cache.invoke(key, new EntryToStringProcessor()));
 
         assertFalse(cache.putIfAbsent(key, -1));
 
@@ -712,7 +712,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
         expirePlcCache.put(key, 10);
 
-        U.sleep(200);
+        U.sleep(700);
 
         if (!eagerTtl())
             assertNull(primaryCache(key, cache.getName()).get(key)); // Provoke expire event if eager ttl is disabled.
@@ -1122,7 +1122,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    protected static class ToStringProcessor implements EntryProcessor<Integer, Integer, String> {
+    protected static class EntryToStringProcessor implements EntryProcessor<Integer, Integer, String> {
         /** {@inheritDoc} */
         @Override public String process(MutableEntry<Integer, Integer> e, Object... arguments)
             throws EntryProcessorException {
@@ -1131,21 +1131,21 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(ToStringProcessor.class, this);
+            return S.toString(EntryToStringProcessor.class, this);
         }
     }
 
     /**
      *
      */
-    protected static class SetValueProcessor implements EntryProcessor<Integer, Integer, String> {
+    protected static class EntrySetValueProcessor implements EntryProcessor<Integer, Integer, String> {
         /** */
         private Integer val;
 
         /**
          * @param val Value to set.
          */
-        public SetValueProcessor(Integer val) {
+        public EntrySetValueProcessor(Integer val) {
             this.val = val;
         }
 
@@ -1159,7 +1159,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(SetValueProcessor.class, this);
+            return S.toString(EntrySetValueProcessor.class, this);
         }
     }
 

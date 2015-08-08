@@ -19,10 +19,12 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -63,6 +65,16 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReconnected(boolean clusterRestarted) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         plugin.onIgniteStop(cancel);
     }
@@ -73,24 +85,24 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object collectDiscoveryData(UUID nodeId) {
+    @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Object data) {
+    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
         try {
             plugin.validateNewNode(node);
 
             return null;
         }
         catch (PluginValidationException e) {
-            return new IgniteSpiNodeValidationResult(e.nodeId(), e.getMessage(), e.remoteMessage());
+            return new IgniteNodeValidationResult(e.nodeId(), e.getMessage(), e.remoteMessage());
         }
     }
 

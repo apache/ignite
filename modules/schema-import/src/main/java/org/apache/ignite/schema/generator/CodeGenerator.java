@@ -23,6 +23,7 @@ import org.apache.ignite.schema.ui.*;
 import java.io.*;
 import java.text.*;
 import java.util.*;
+import java.util.regex.*;
 
 import static org.apache.ignite.schema.ui.MessageBox.Result.*;
 
@@ -38,6 +39,58 @@ public class CodeGenerator {
     private static final String TAB3 = TAB + TAB + TAB;
     /** */
     private static final String TAB4 = TAB + TAB + TAB + TAB;
+
+    /** Java key words. */
+    private static final Set<String> javaKeywords = new HashSet<>(Arrays.asList(
+        "abstract",     "assert",        "boolean",      "break",           "byte",
+        "case",         "catch",         "char",         "class",           "const",
+        "continue",     "default",       "do",           "double",          "else",
+        "enum",         "extends",       "false",        "final",           "finally",
+        "float",        "for",           "goto",         "if",              "implements",
+        "import",       "instanceof",    "int",          "interface",       "long",
+        "native",       "new",           "null",         "package",         "private",
+        "protected",    "public",        "return",       "short",           "static",
+        "strictfp",     "super",         "switch",       "synchronized",    "this",
+        "throw",        "throws",        "transient",    "true",            "try",
+        "void",         "volatile",      "while"
+    ));
+
+    /** Regexp to validate java identifier. */
+    private static final Pattern VALID_JAVA_IDENTIFIER =
+        Pattern.compile("\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*");
+
+    /**
+     * Checks if string is a valid java identifier.
+     *
+     * @param identifier String to check.
+     * @param split If {@code true} then identifier will be split by dots.
+     * @param msg Identifier type.
+     * @param type Checked type.
+     * @throws IllegalStateException If passed string is not valid java identifier.
+     */
+    private static void checkValidJavaIdentifier(String identifier, boolean split, String msg, String type)
+        throws IllegalStateException {
+        if (identifier.isEmpty())
+            throw new IllegalStateException(msg + " could not be empty!");
+
+        String[] parts = split ? identifier.split("\\.") : new String[] {identifier};
+
+        if (parts.length == 0)
+            throw new IllegalStateException(msg + " could not has empty parts!");
+
+        for (String part : parts) {
+            if (part.isEmpty())
+                throw new IllegalStateException(msg + " could not has empty parts!");
+
+            if (javaKeywords.contains(part))
+                throw new IllegalStateException(msg + " could not contains reserved keyword:" +
+                    " [type = " + type + ", identifier=" + identifier + ", keyword=" + part + "]");
+
+            if (!VALID_JAVA_IDENTIFIER.matcher(part).matches())
+                throw new IllegalStateException("Invalid " + msg.toLowerCase() + " name: " +
+                    " [type = " + type + ", identifier=" + identifier + ", illegal part=" + part + "]");
+        }
+    }
 
     /**
      * Add line to source code without indent.
@@ -211,6 +264,9 @@ public class CodeGenerator {
 
         File out = new File(pkgFolder, type + ".java");
 
+        checkValidJavaIdentifier(pkg, true, "Package", type);
+        checkValidJavaIdentifier(type, false, "Type", type);
+
         if (out.exists()) {
             MessageBox.Result choice = askOverwrite.confirm(out.getName());
 
@@ -234,6 +290,8 @@ public class CodeGenerator {
         // Generate fields declaration.
         for (PojoField field : fields) {
             String fldName = field.javaName();
+
+            checkValidJavaIdentifier(fldName, false, "Field", type);
 
             add1(src, "/** Value for " + fldName + ". */");
 
@@ -491,22 +549,26 @@ public class CodeGenerator {
      * @param varName Variable name to generate.
      * @param mtdName Method name to generate.
      * @param comment Commentary text.
-     * @param first {@code true} if varable should be declared.
+     * @param first {@code true} if variable should be declared.
+     * @return {@code false} if variable was declared.
      */
-    private static void addQueryFields(Collection<String> src, Collection<PojoField> fields, String varName,
+    private static boolean addQueryFields(Collection<String> src, Collection<PojoField> fields, String varName,
         String mtdName, String comment, boolean first) {
-        if (!fields.isEmpty()) {
-            add2(src, comment);
-            add2(src, (first ? "Map<String, Class<?>> " : "") + varName + " = new LinkedHashMap<>();");
-            add0(src, "");
+        if (fields.isEmpty())
+            return true;
 
-            for (PojoField field : fields)
-                add2(src, varName + ".put(\"" + field.javaName() + "\", " + javaTypeName(field) + ".class);");
+        add2(src, comment);
+        add2(src, (first ? "Map<String, Class<?>> " : "") + varName + " = new LinkedHashMap<>();");
+        add0(src, "");
 
-            add0(src, "");
-            add2(src, "type." + mtdName + "(" + varName + ");");
-            add0(src, "");
-        }
+        for (PojoField field : fields)
+            add2(src, varName + ".put(\"" + field.javaName() + "\", " + javaTypeName(field) + ".class);");
+
+        add0(src, "");
+        add2(src, "type." + mtdName + "(" + varName + ");");
+        add0(src, "");
+
+        return false;
     }
 
     /**
@@ -565,6 +627,9 @@ public class CodeGenerator {
         add0(src, "");
 
         boolean first = true;
+        boolean firstAsc = true;
+        boolean firstDesc = true;
+        boolean firstGrps = true;
         boolean firstGrp = true;
 
         for (PojoDescriptor pojo : pojos) {
@@ -603,25 +668,27 @@ public class CodeGenerator {
             addQueryFields(src, pojo.fields(), "qryFlds", "setQueryFields", "// Query fields for " + tbl + ".", first);
 
             // Ascending fields.
-            addQueryFields(src, pojo.ascendingFields(), "ascFlds", "setAscendingFields",
-                "// Ascending fields for " + tbl + ".", first);
+            firstAsc = addQueryFields(src, pojo.ascendingFields(), "ascFlds", "setAscendingFields",
+                "// Ascending fields for " + tbl + ".", firstAsc);
 
             // Descending fields.
-            addQueryFields(src, pojo.descendingFields(), "descFlds", "setDescendingFields",
-                "// Descending fields for " + tbl + ".", first);
+            firstDesc = addQueryFields(src, pojo.descendingFields(), "descFlds", "setDescendingFields",
+                "// Descending fields for " + tbl + ".", firstDesc);
 
             // Groups.
             Map<String, Map<String, IndexItem>> groups = pojo.groups();
 
             if (!groups.isEmpty()) {
                 add2(src, "// Groups for " + tbl + ".");
-                add2(src, (first ? "Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> " : "") +
-                    " grps = new LinkedHashMap<>();");
+                add2(src, (firstGrps ? "Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> " : "") +
+                    "grps = new LinkedHashMap<>();");
                 add0(src, "");
+
+                firstGrps = false;
 
                 for (Map.Entry<String, Map<String, IndexItem>> group : groups.entrySet()) {
                     add2(src, (firstGrp ? "LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> " : "") +
-                            "grpItems = new LinkedHashMap<>();");
+                        "grpItems = new LinkedHashMap<>();");
                     add0(src, "");
 
                     for (Map.Entry<String, IndexItem> grpItem : group.getValue().entrySet()) {

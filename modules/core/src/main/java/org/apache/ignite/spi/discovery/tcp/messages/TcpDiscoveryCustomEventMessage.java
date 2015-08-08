@@ -17,54 +17,73 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.io.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.spi.discovery.*;
+import org.jetbrains.annotations.*;
+
 import java.util.*;
 
 /**
  * Wrapped for custom message.
  */
+@TcpDiscoveryRedirectToClient
 @TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private Serializable msg;
+    private transient volatile DiscoverySpiCustomMessage msg;
 
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryCustomEventMessage() {
-        // No-op.
-    }
+    /** */
+    private byte[] msgBytes;
 
     /**
      * @param creatorNodeId Creator node id.
+     * @param msg Message.
+     * @param msgBytes Serialized message.
      */
-    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, Serializable msg) {
+    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, @Nullable DiscoverySpiCustomMessage msg,
+        @NotNull byte[] msgBytes) {
         super(creatorNodeId);
 
         this.msg = msg;
+        this.msgBytes = msgBytes;
     }
 
     /**
-     * @return Message.
+     * @return Serialized message.
      */
-    public Serializable message() {
+    public byte[] messageBytes() {
+        return msgBytes;
+    }
+
+    /**
+     * @param msg Message.
+     * @param msgBytes Serialized message.
+     */
+    public void message(@Nullable DiscoverySpiCustomMessage msg, @NotNull byte[] msgBytes) {
+        this.msg = msg;
+        this.msgBytes = msgBytes;
+    }
+
+    /**
+     * @return Deserialized message,
+     * @throws java.lang.Throwable if unmarshal failed.
+     */
+    @Nullable public DiscoverySpiCustomMessage message(@NotNull Marshaller marsh) throws Throwable {
+        if (msg == null) {
+            msg = marsh.unmarshal(msgBytes, U.gridClassLoader());
+
+            assert msg != null;
+        }
+
         return msg;
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeObject(msg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        msg = (Serializable)in.readObject();
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryCustomEventMessage.class, this, "super", super.toString());
     }
 }

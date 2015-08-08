@@ -20,19 +20,16 @@ package org.apache.ignite.plugin;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 import java.util.*;
 
 /**
- * TODO: Add class description.
+ * Plugin context.
  */
 public interface PluginContext {
-    /**
-     * @return Plugin configuration.
-     */
-    public <C extends PluginConfiguration> C configuration();
-
     /**
      * @return Ignite configuration.
      */
@@ -44,21 +41,26 @@ public interface PluginContext {
     public Ignite grid();
 
     /**
+     * @return Marshaller context.
+     */
+    public MarshallerContext marshallerContext();
+
+    /**
      * Gets a collection of all grid nodes. Remote nodes are discovered via underlying
-     * {@link org.apache.ignite.spi.discovery.DiscoverySpi} implementation used.
+     * {@link DiscoverySpi} implementation used.
      *
      * @return Collection of grid nodes.
      * @see #localNode()
-     * @see org.apache.ignite.spi.discovery.DiscoverySpi
+     * @see DiscoverySpi
      */
     public Collection<ClusterNode> nodes();
 
     /**
-     * Gets local grid node. Instance of local node is provided by underlying {@link org.apache.ignite.spi.discovery.DiscoverySpi}
+     * Gets local grid node. Instance of local node is provided by underlying {@link DiscoverySpi}
      * implementation used.
      *
      * @return Local grid node.
-     * @see org.apache.ignite.spi.discovery.DiscoverySpi
+     * @see DiscoverySpi
      */
     public ClusterNode localNode();
 

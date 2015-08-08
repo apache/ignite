@@ -66,7 +66,7 @@ class GridUriDeploymentFileResourceLoader {
             // Replace separators.
             str = str.replaceAll("\\/|\\\\", ".");
 
-            // Strip off '.class' extention.
+            // Strip off '.class' extension.
             str = str.substring(0, str.indexOf(".class"));
 
             try {

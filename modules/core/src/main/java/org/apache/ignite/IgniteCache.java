@@ -22,17 +22,19 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
+import javax.cache.event.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
@@ -41,22 +43,30 @@ import java.util.concurrent.locks.*;
  * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
  * method.
  * <h1 class="header">Functionality</h1>
- * This API extends {@link CacheProjection} API which contains vast majority of cache functionality
- * and documentation. In addition to {@link CacheProjection} functionality this API provides:
+ * This API extends {@link javax.cache.Cache} API which contains {@code JCache (JSR107)} cache functionality
+ * and documentation. In addition to {@link javax.cache.Cache} functionality this API provides:
  * <ul>
- * <li>
- *  Various {@code 'loadCache(..)'} methods to load cache either synchronously or asynchronously.
- *  These methods don't specify any keys to load, and leave it to the underlying storage to load cache
- *  data based on the optionally passed in arguments.
- * </li>
- * <li>Various {@code 'query(..)'} methods to allow cache data querying.</li>
- * <li>
- *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
- *  This feature is very useful when integrating cache transactions with some other in-house transactions.
- * </li>
- * <li>Method {@link #metrics()} to provide metrics for the whole cache.</li>
- * <li>Method {@link #getConfiguration(Class)}} to provide cache configuration bean.</li>
+ * <li>Ability to perform basic atomic Map-like operations available on {@code JCache} API.</li>
+ * <li>Ability to bulk load cache via {@link #loadCache(IgniteBiPredicate, Object...)} method.
+ * <li>Distributed lock functionality via {@link #lock(Object)} methods.</li>
+ * <li>Ability to query cache using Predicate, SQL, and Text queries via {@link #query(Query)} method.</li>
+ * <li>Ability to collect cache and query metrics.</li>
+ * <li>Ability to force partition rebalancing via {@link #rebalance()} methopd
+ *  (in case if delayed rebalancing was configured.)</li>
+ * <li>Ability to peek into memory without doing actual {@code get(...)} from cache
+ *  via {@link #localPeek(Object, CachePeekMode...)} methods</li>
+ * <li>Ability to evict and promote entries from on-heap to off-heap or swap and back.</li>
+ * <li>Ability to atomically collocate compute and data via {@link #invoke(Object, CacheEntryProcessor, Object...)}
+ *  methods.</li>
  * </ul>
+ * <h1 class="header">Transactions</h1>
+ * Cache API supports transactions. You can group and set of cache methods within a transaction
+ * to provide ACID-compliant behavior. See {@link IgniteTransactions} for more information.
+ * <h1 class="header">Asynchronous Mode</h1>
+ * Cache API supports asynchronous mode via {@link IgniteAsyncSupport} functionality. To turn on
+ * asynchronous mode invoke {@link #withAsync()} method. Once asynchronous mode is enabled,
+ * all methods with {@link IgniteAsyncSupported @IgniteAsyncSupported} annotation will be executed
+ * asynchronously.
  *
  * @param <K> Cache key type.
  * @param <V> Cache value type.
@@ -80,12 +90,26 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public Entry<K, V> randomEntry();
 
+    /**
+     * Returns cache with the specified expired policy set. This policy will be used for each operation
+     * invoked on the returned cache.
+     * <p>
+     * This method does not modify existing cache instance.
+     *
+     * @param plc Expire policy to use.
+     * @return Cache instance with the specified expiry policy set.
+     */
     public IgniteCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
 
     /**
      * @return Cache with read-through write-through behavior disabled.
      */
     public IgniteCache<K, V> withSkipStore();
+
+    /**
+     * @return Cache with no-retries behavior enabled.
+     */
+    public IgniteCache<K, V> withNoRetries();
 
     /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
@@ -141,9 +165,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#LOCAL}, {@link CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
@@ -151,7 +172,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *      previous value).
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheException If put operation failed.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     @IgniteAsyncSupported
     public V getAndPutIfAbsent(K key, V val) throws CacheException;
@@ -227,27 +247,17 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Attempts to evict all entries associated with keys. Note,
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
-     * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
-     * be swapped to offheap, and then to disk.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#READ}.
      *
      * @param keys Keys to evict.
      */
     public void localEvict(Collection<? extends K> keys);
 
     /**
-     * Peeks at in-memory cached value using default {@link GridCachePeekMode#SMART}
-     * peek mode.
+     * Peeks at in-memory cached value using default optinal peek mode.
      * <p>
      * This method will not load value from any persistent store or from a remote node.
      * <h2 class="header">Transactions</h2>
-     * This method does not participate in any transactions, however, it will
-     * peek at transactional value according to the {@link GridCachePeekMode#SMART} mode
-     * semantics.
+     * This method does not participate in any transactions.
      *
      * @param key Entry key.
      * @return Peeked value, or {@code null} if not found.
@@ -260,18 +270,16 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * into memory.
      * <h2 class="header">Transactions</h2>
      * This method is not transactional.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#SKIP_SWAP}, {@link CacheFlag#READ}.
      *
      * @param keys Keys to promote entries for.
      * @throws CacheException If promote failed.
-     * @throws CacheFlagException If flags validation failed.
      */
     public void localPromote(Set<? extends K> keys) throws CacheException;
 
     /**
-     * Gets the number of all entries cached across all nodes.
+     * Gets the number of all entries cached across all nodes. By default, if {@code peekModes} value isn't defined,
+     * only size of primary copies across all nodes will be returned. This behavior is identical to calling
+     * this method with {@link CachePeekMode#PRIMARY} peek mode.
      * <p>
      * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
      *
@@ -282,7 +290,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public int size(CachePeekMode... peekModes) throws CacheException;
 
     /**
-     * Gets the number of all entries cached on this node.
+     * Gets the number of all entries cached on this node. By default, if {@code peekModes} value isn't defined,
+     * only size of primary copies will be returned. This behavior is identical to calling this method with
+     * {@link CachePeekMode#PRIMARY} peek mode.
      *
      * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
      * @return Cache size on this node.
@@ -308,10 +318,26 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @IgniteAsyncSupported
     @Override public Map<K, V> getAll(Set<? extends K> keys);
 
+    /**
+     * Gets values from cache. Will bypass started transaction, if any, i.e. will not enlist entries
+     * and will not lock any keys if pessimistic transaction is started by thread.
+     *
+     * @param keys The keys whose associated values are to be returned.
+     * @return A map of entries that were found for the given keys.
+     */
+    @IgniteAsyncSupported
+    public Map<K, V> getAllOutTx(Set<? extends K> keys);
+
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public boolean containsKey(K key);
 
+    /**
+     * Determines if the {@link Cache} contains entries for the specified keys.
+     *
+     * @param keys Key whose presence in this cache is to be tested.
+     * @return {@code True} if this cache contains a mapping for the specified keys.
+     */
     @IgniteAsyncSupported
     public boolean containsKeys(Set<? extends K> keys);
 
@@ -359,7 +385,29 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @IgniteAsyncSupported
     @Override public void removeAll(Set<? extends K> keys);
 
-    /** {@inheritDoc} */
+    /**
+     * Removes all of the mappings from this cache.
+     * <p>
+     * The order that the individual entries are removed is undefined.
+     * <p>
+     * For every mapping that exists the following are called:
+     * <ul>
+     *   <li>any registered {@link CacheEntryRemovedListener}s</li>
+     *   <li>if the cache is a write-through cache, the {@link CacheWriter}</li>
+     * </ul>
+     * If the cache is empty, the {@link CacheWriter} is not called.
+     * <p>
+     * This operation is not transactional. It calls broadcast closure that
+     * deletes all primary keys from remote nodes.
+     * <p>
+     * This is potentially an expensive operation as listeners are invoked.
+     * Use {@link #clear()} to avoid this.
+     *
+     * @throws IllegalStateException if the cache is {@link #isClosed()}
+     * @throws CacheException        if there is a problem during the remove
+     * @see #clear()
+     * @see CacheWriter#deleteAll
+     */
     @IgniteAsyncSupported
     @Override public void removeAll();
 
@@ -389,7 +437,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws CacheException        if there is a problem during the clear
      */
     @IgniteAsyncSupported
-    public void clearAll(Set<K> keys);
+    public void clearAll(Set<? extends K> keys);
 
     /**
      * Clear entry from the cache and swap storage, without notifying listeners or
@@ -415,7 +463,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param keys Keys to clear.
      */
-    public void localClearAll(Set<K> keys);
+    public void localClearAll(Set<? extends K> keys);
 
     /** {@inheritDoc} */
     @IgniteAsyncSupported
@@ -496,6 +544,23 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         CacheEntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
+     * Closes this cache instance.
+     * <p>
+     * For local cache equivalent to {@link #destroy()}.
+     * For distributed caches, if called on clients, stops client cache, if called on a server node,
+     * just closes this cache instance and does not destroy cache data.
+     * <p>
+     * After cache instance is closed another {@link IgniteCache} instance for the same
+     * cache can be created using {@link Ignite#cache(String)} method.
+     */
+    @Override public void close();
+
+    /**
+     * Completely deletes the cache with all its data from the system on all cluster nodes.
+     */
+    public void destroy();
+
+    /**
      * This cache node to re-balance its partitions. This method is usually used when
      * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter has non-zero value.
      * When many nodes are started or stopped almost concurrently, it is more efficient to delay
@@ -507,7 +572,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * the left nodes, and that nodes are restarted before
      * {@link CacheConfiguration#getRebalanceDelay() rebalanceDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
-     * {@link RendezvousAffinityFunction#setHashIdResolver(AffinityNodeHashResolver)} to make sure that
+     * {@link IgniteConfiguration#setConsistentId(Serializable)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
      * See {@link CacheConfiguration#getRebalanceDelay()} for more information on how to configure
@@ -523,6 +588,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache metrics.
      */
     public CacheMetrics metrics();
+
+    /**
+     * Gets snapshot metrics for caches in cluster group.
+     *
+     * @param grp Cluster group.
+     * @return Cache metrics.
+     */
+    public CacheMetrics metrics(ClusterGroup grp);
 
     /**
      * Gets MxBean for this cache.

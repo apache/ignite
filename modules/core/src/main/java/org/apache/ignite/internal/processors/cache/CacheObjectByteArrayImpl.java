@@ -37,7 +37,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     protected byte[] val;
 
     /**
-     * Required by {@link org.apache.ignite.plugin.extensions.communication.Message}.
+     * Required by {@link Message}.
      */
     public CacheObjectByteArrayImpl() {
         // No-op.

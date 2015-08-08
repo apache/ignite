@@ -31,7 +31,7 @@ import scala.collection.JavaConversions._
  * Tests for Scalar cache queries API.
  */
 @RunWith(classOf[JUnitRunner])
-class ScalarCacheQueriesSpec extends FlatSpec with ShouldMatchers with BeforeAndAfterAll {
+class ScalarCacheQueriesSpec extends FunSpec with ShouldMatchers with BeforeAndAfterAll {
     /** Entries count. */
     private val ENTRY_CNT = 10
 
@@ -67,142 +67,142 @@ class ScalarCacheQueriesSpec extends FlatSpec with ShouldMatchers with BeforeAnd
         stop()
     }
 
-    behavior of "Scalar cache queries API"
+    describe("Scalar cache queries API") {
+        it("should correctly execute SCAN queries") {
+            var res = c.scan(classOf[ObjectValue], (k: Int, v: ObjectValue) => k > 5 && v.intVal < 8).getAll
 
-    it should "correctly execute SCAN queries" in {
-        var res = c.scan(classOf[ObjectValue], (k: Int, v: ObjectValue) => k > 5 && v.intVal < 8).getAll
+            assert(res.size == 2)
 
-        assert(res.size == 2)
+            res.foreach(t => assert(t.getKey > 5 && t.getKey < 8 && t.getKey == t.getValue.intVal))
 
-        res.foreach(t => assert(t.getKey > 5 && t.getKey < 8 && t.getKey == t.getValue.intVal))
+            res = c.scan((k: Int, v: ObjectValue) => k > 5 && v.intVal < 8).getAll
 
-        res = c.scan((k: Int, v: ObjectValue) => k > 5 && v.intVal < 8).getAll
+            assert(res.size == 2)
 
-        assert(res.size == 2)
+            res.foreach(t => assert(t.getKey > 5 && t.getKey < 8 && t.getKey == t.getValue.intVal))
 
-        res.foreach(t => assert(t.getKey > 5 && t.getKey < 8 && t.getKey == t.getValue.intVal))
+            res = c.scan(classOf[ObjectValue], (k: Int, v: ObjectValue) => k > 5 && v.intVal < 8).getAll
 
-        res = c.scan(classOf[ObjectValue], (k: Int, v: ObjectValue) => k > 5 && v.intVal < 8).getAll
+            assert(res.size == 2)
 
-        assert(res.size == 2)
+            res.foreach(t => assert(t.getKey > 5 && t.getKey < 8 && t.getKey == t.getValue.intVal))
 
-        res.foreach(t => assert(t.getKey > 5 && t.getKey < 8 && t.getKey == t.getValue.intVal))
+            res = c.scan((k: Int, v: ObjectValue) => k > 5 && v.intVal < 8).getAll
 
-        res = c.scan((k: Int, v: ObjectValue) => k > 5 && v.intVal < 8).getAll
+            assert(res.size == 2)
 
-        assert(res.size == 2)
+            res.foreach(t => assert(t.getKey > 5 && t.getKey < 8 && t.getKey == t.getValue.intVal))
+        }
 
-        res.foreach(t => assert(t.getKey > 5 && t.getKey < 8 && t.getKey == t.getValue.intVal))
-    }
+        it("should correctly execute SQL queries") {
+            var res = c.sql(classOf[ObjectValue], "intVal > 5").getAll
 
-    it should "correctly execute SQL queries" in {
-        var res = c.sql(classOf[ObjectValue], "intVal > 5").getAll
+            assert(res.size == ENTRY_CNT - 5)
 
-        assert(res.size == ENTRY_CNT - 5)
+            res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
 
-        res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
+            res = c.sql(classOf[ObjectValue], "intVal > ?", 5).getAll
 
-        res = c.sql(classOf[ObjectValue], "intVal > ?", 5).getAll
+            assert(res.size == ENTRY_CNT - 5)
 
-        assert(res.size == ENTRY_CNT - 5)
+            res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
 
-        res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
+            res = c.sql("intVal > 5").getAll
 
-        res = c.sql("intVal > 5").getAll
+            assert(res.size == ENTRY_CNT - 5)
 
-        assert(res.size == ENTRY_CNT - 5)
+            res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
 
-        res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
+            res = c.sql("intVal > ?", 5).getAll
 
-        res = c.sql("intVal > ?", 5).getAll
+            assert(res.size == ENTRY_CNT - 5)
 
-        assert(res.size == ENTRY_CNT - 5)
+            res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
 
-        res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
+            res = c.sql(classOf[ObjectValue], "intVal > 5").getAll
 
-        res = c.sql(classOf[ObjectValue], "intVal > 5").getAll
+            assert(res.size == ENTRY_CNT - 5)
 
-        assert(res.size == ENTRY_CNT - 5)
+            res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
 
-        res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
+            res = c.sql(classOf[ObjectValue], "intVal > ?", 5).getAll
 
-        res = c.sql(classOf[ObjectValue], "intVal > ?", 5).getAll
+            assert(res.size == ENTRY_CNT - 5)
 
-        assert(res.size == ENTRY_CNT - 5)
+            res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
 
-        res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
+            res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
 
-        res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
+            res = c.sql("intVal > 5").getAll
 
-        res = c.sql("intVal > 5").getAll
+            assert(res.size == ENTRY_CNT - 5)
 
-        assert(res.size == ENTRY_CNT - 5)
+            res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
 
-        res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
+            res = c.sql("intVal > ?", 5).getAll
 
-        res = c.sql("intVal > ?", 5).getAll
+            assert(res.size == ENTRY_CNT - 5)
 
-        assert(res.size == ENTRY_CNT - 5)
+            res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
+        }
 
-        res.foreach(t => assert(t.getKey > 5 && t.getKey == t.getValue.intVal))
-    }
+        it("should correctly execute TEXT queries") {
+            var res = c.text(classOf[ObjectValue], "str").getAll
 
-    it should "correctly execute TEXT queries" in {
-        var res = c.text(classOf[ObjectValue], "str").getAll
+            assert(res.size == ENTRY_CNT)
 
-        assert(res.size == ENTRY_CNT)
+            res = c.text(classOf[ObjectValue], "five").getAll
 
-        res = c.text(classOf[ObjectValue], "five").getAll
+            assert(res.size == 1)
+            assert(res.head.getKey == 5)
 
-        assert(res.size == 1)
-        assert(res.head.getKey == 5)
+            res = c.text("str").getAll
 
-        res = c.text("str").getAll
+            assert(res.size == ENTRY_CNT)
 
-        assert(res.size == ENTRY_CNT)
+            res = c.text("five").getAll
 
-        res = c.text("five").getAll
+            assert(res.size == 1)
+            assert(res.head.getKey == 5)
 
-        assert(res.size == 1)
-        assert(res.head.getKey == 5)
+            res = c.text(classOf[ObjectValue], "str").getAll
 
-        res = c.text(classOf[ObjectValue], "str").getAll
+            assert(res.size == ENTRY_CNT)
 
-        assert(res.size == ENTRY_CNT)
+            res = c.text(classOf[ObjectValue], "five").getAll
 
-        res = c.text(classOf[ObjectValue], "five").getAll
+            assert(res.size == 1)
+            assert(res.head.getKey == 5)
 
-        assert(res.size == 1)
-        assert(res.head.getKey == 5)
+            res = c.text("str").getAll
 
-        res = c.text("str").getAll
+            assert(res.size == ENTRY_CNT)
 
-        assert(res.size == ENTRY_CNT)
+            res = c.text("five").getAll
 
-        res = c.text("five").getAll
+            assert(res.size == 1)
+            assert(res.head.getKey == 5)
+        }
 
-        assert(res.size == 1)
-        assert(res.head.getKey == 5)
-    }
+        it("should correctly execute fields queries") {
+            var res = c.sqlFields("select intVal from ObjectValue where intVal > 5").getAll
 
-    it should "correctly execute fields queries" in {
-        var res = c.sqlFields("select intVal from ObjectValue where intVal > 5").getAll
+            assert(res.size == ENTRY_CNT - 5)
 
-        assert(res.size == ENTRY_CNT - 5)
+            res.foreach(t => assert(t.size == 1 && t.head.asInstanceOf[Int] > 5))
 
-        res.foreach(t => assert(t.size == 1 && t.head.asInstanceOf[Int] > 5))
+            res = c.sqlFields("select intVal from ObjectValue where intVal > ?", 5).getAll
 
-        res = c.sqlFields("select intVal from ObjectValue where intVal > ?", 5).getAll
+            assert(res.size == ENTRY_CNT - 5)
 
-        assert(res.size == ENTRY_CNT - 5)
+            res.foreach(t => assert(t.size == 1 && t.head.asInstanceOf[Int] > 5))
+        }
 
-        res.foreach(t => assert(t.size == 1 && t.head.asInstanceOf[Int] > 5))
-    }
+        it("should correctly execute queries with multiple arguments") {
+            val res = c.sql("from ObjectValue where intVal in (?, ?, ?)", 1, 2, 3).getAll
 
-    it should "correctly execute queries with multiple arguments" in {
-        val res = c.sql("from ObjectValue where intVal in (?, ?, ?)", 1, 2, 3).getAll
-
-        assert(res.size == 3)
+            assert(res.size == 3)
+        }
     }
 }
 

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -190,33 +189,33 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public void rollback() throws IgniteCheckedException;
 
     /**
-     * Removes metadata by name.
+     * Removes metadata by key.
      *
-     * @param name Name of the metadata to remove.
+     * @param key Key of the metadata to remove.
      * @param <T> Type of the value.
      * @return Value of removed metadata or {@code null}.
      */
-    @Nullable public <T> T removeMeta(UUID name);
+    @Nullable public <T> T removeMeta(int key);
 
     /**
-     * Gets metadata by name.
+     * Gets metadata by key.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param <T> Type of the value.
      * @return Metadata value or {@code null}.
      */
-    @Nullable public <T> T meta(UUID name);
+    @Nullable public <T> T meta(int key);
 
     /**
      * Adds a new metadata.
      *
-     * @param name Metadata name.
+     * @param key Metadata key.
      * @param val Metadata value.
      * @param <T> Type of the value.
      * @return Metadata previously associated with given name, or
      *      {@code null} if there was none.
      */
-    @Nullable public <T> T addMeta(UUID name, T val);
+    @Nullable public <T> T addMeta(int key, T val);
 
     /**
      * @return Size of the transaction.
@@ -246,7 +245,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     /**
      * @return Pool where message for the given transaction must be processed.
      */
-    public GridIoPolicy ioPolicy();
+    public byte ioPolicy();
 
     /**
      * @return Last recorded topology version.
@@ -320,8 +319,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
 
     /**
      * Gets node ID which directly started this transaction. In case of DHT local transaction it will be
-     * near node ID, in case of DHT remote transaction it will be primary node ID, in case of replicated remote
-     * transaction it will be starter node ID.
+     * near node ID, in case of DHT remote transaction it will be primary node ID.
      *
      * @return Originating node ID.
      */
@@ -489,7 +487,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @return Current value for the key within transaction.
      * @throws GridCacheFilterFailedException If filter failed and failFast is {@code true}.
      */
-     @Nullable public <K, V> GridTuple<CacheObject> peek(
+     @Nullable public GridTuple<CacheObject> peek(
          GridCacheContext ctx,
          boolean failFast,
          KeyCacheObject key,
@@ -534,7 +532,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      *
      * @return Future for prepare step.
      */
-    public IgniteInternalFuture<IgniteInternalTx> prepareAsync();
+    public IgniteInternalFuture<?> prepareAsync();
 
     /**
      * @param endVer End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
@@ -559,6 +557,11 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @return Future for transaction completion.
      */
     public IgniteInternalFuture<IgniteInternalTx> finishFuture();
+
+    /**
+     * @return Future for transaction prepare if prepare is in progress.
+     */
+    @Nullable public IgniteInternalFuture<?> currentPrepareFuture();
 
     /**
      * @param state Transaction state.
@@ -681,4 +684,9 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @return Public API proxy.
      */
     public TransactionProxy proxy();
+
+    /**
+     * @param topVer New topology version.
+     */
+    public void onRemap(AffinityTopologyVersion topVer);
 }

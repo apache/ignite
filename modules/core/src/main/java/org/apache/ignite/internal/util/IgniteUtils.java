@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.plugin.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
@@ -108,10 +109,13 @@ public abstract class IgniteUtils {
     private static final int[] GRID_EVTS;
 
     /** Empty integers array. */
-    private static final int[] EMPTY_INTS = new int[0];
+    public static final int[] EMPTY_INTS = new int[0];
 
     /** Empty  longs. */
-    private static final long[] EMPTY_LONGS = new long[0];
+    public static final long[] EMPTY_LONGS = new long[0];
+
+    /** Empty  longs. */
+    public static final Field[] EMPTY_FIELDS = new Field[0];
 
     /** System line separator. */
     private static final String NL = System.getProperty("line.separator");
@@ -622,7 +626,36 @@ public abstract class IgniteUtils {
             }
         });
 
+        m.put(IgniteClientDisconnectedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteClientDisconnectedException(
+                    ((IgniteClientDisconnectedCheckedException)e).reconnectFuture(),
+                    e.getMessage(),
+                    e);
+            }
+        });
+
         return m;
+    }
+
+    /**
+     * Gets all plugin providers.
+     *
+     * @return Plugins.
+     */
+    public static List<PluginProvider> allPluginProviders() {
+        return AccessController.doPrivileged(new PrivilegedAction<List<PluginProvider>>() {
+            @Override public List<PluginProvider> run() {
+                List<PluginProvider> providers = new ArrayList<>();
+
+                ServiceLoader<PluginProvider> ldr = ServiceLoader.load(PluginProvider.class);
+
+                for (PluginProvider provider : ldr)
+                    providers.add(provider);
+
+                return providers;
+            }
+        });
     }
 
     /**
@@ -649,6 +682,23 @@ public abstract class IgniteUtils {
      * @return Ignite runtime exception.
      */
     public static IgniteException convertException(IgniteCheckedException e) {
+        IgniteClientDisconnectedException e0 = e.getCause(IgniteClientDisconnectedException.class);
+
+        if (e0 != null) {
+            assert e0.reconnectFuture() != null : e0;
+
+            throw e0;
+        }
+
+        IgniteClientDisconnectedCheckedException disconnectedErr =
+            e.getCause(IgniteClientDisconnectedCheckedException.class);
+
+        if (disconnectedErr != null) {
+            assert disconnectedErr.reconnectFuture() != null : disconnectedErr;
+
+            e = disconnectedErr;
+        }
+
         C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
 
         if (converter != null)
@@ -934,7 +984,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Returns current JVM maxMemory in the same format as {@link #heapSize(org.apache.ignite.cluster.ClusterNode, int)}.
+     * Returns current JVM maxMemory in the same format as {@link #heapSize(ClusterNode, int)}.
      *
      * @param precision Precision.
      * @return Maximum memory size in GB.
@@ -964,6 +1014,14 @@ public abstract class IgniteUtils {
     public static void dumpThreads(@Nullable IgniteLogger log) {
         ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
 
+        final Set<Long> deadlockedThreadsIds = getDeadlockedThreadIds(mxBean);
+
+        if (deadlockedThreadsIds.size() == 0)
+            warn(log, "No deadlocked threads detected.");
+        else
+            warn(log, "Deadlocked threads detected (see thread dump below) " +
+                    "[deadlockedThreadsCnt=" + deadlockedThreadsIds.size() + ']');
+
         ThreadInfo[] threadInfos =
             mxBean.dumpAllThreads(mxBean.isObjectMonitorUsageSupported(), mxBean.isSynchronizerUsageSupported());
 
@@ -971,7 +1029,7 @@ public abstract class IgniteUtils {
             .a(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss z").format(new Date(U.currentTimeMillis()))).a(NL);
 
         for (ThreadInfo info : threadInfos) {
-            printThreadInfo(info, sb);
+            printThreadInfo(info, sb, deadlockedThreadsIds);
 
             sb.a(NL);
 
@@ -988,12 +1046,41 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Get deadlocks from the thread bean.
+     * @param mxBean the bean
+     * @return the set of deadlocked threads (may be empty Set, but never null).
+     */
+    private static Set<Long> getDeadlockedThreadIds(ThreadMXBean mxBean) {
+        final long[] deadlockedIds = mxBean.findDeadlockedThreads();
+
+        final Set<Long> deadlockedThreadsIds;
+
+        if (!F.isEmpty(deadlockedIds)) {
+            Set<Long> set = new HashSet<>();
+
+            for (long id : deadlockedIds)
+                set.add(id);
+
+            deadlockedThreadsIds = Collections.unmodifiableSet(set);
+        }
+        else
+            deadlockedThreadsIds = Collections.emptySet();
+
+        return deadlockedThreadsIds;
+    }
+
+    /**
      * Prints single thread info to a buffer.
      *
      * @param threadInfo Thread info.
      * @param sb Buffer.
      */
-    private static void printThreadInfo(ThreadInfo threadInfo, GridStringBuilder sb) {
+    private static void printThreadInfo(ThreadInfo threadInfo, GridStringBuilder sb, Set<Long> deadlockedIdSet) {
+        final long id = threadInfo.getThreadId();
+
+        if (deadlockedIdSet.contains(id))
+            sb.a("##### DEADLOCKED ");
+
         sb.a("Thread [name=\"").a(threadInfo.getThreadName())
             .a("\", id=").a(threadInfo.getThreadId())
             .a(", state=").a(threadInfo.getThreadState())
@@ -1492,8 +1579,10 @@ public abstract class IgniteUtils {
             return Collections.emptyList();
 
         if (addrs.size() == 1) {
-            if (reachable(addrs.get(1), reachTimeout))
-                return Collections.singletonList(addrs.get(1));
+            InetAddress addr = addrs.get(0);
+
+            if (reachable(addr, reachTimeout))
+                return Collections.singletonList(addr);
 
             return Collections.emptyList();
         }
@@ -1595,10 +1684,10 @@ public abstract class IgniteUtils {
 
         String ipAddr = addr.getHostAddress();
 
-        hostName = F.isEmpty(hostName) || hostName.equals(ipAddr) || addr.isLoopbackAddress() ? "" : hostName;
-
         addrs.add(ipAddr);
-        hostNames.add(hostName);
+
+        if (!F.isEmpty(hostName) && !addr.isLoopbackAddress())
+            hostNames.add(hostName);
     }
 
     /**
@@ -2975,8 +3064,9 @@ public abstract class IgniteUtils {
      * @return {@code true} if and only if the file or directory is successfully deleted,
      *      {@code false} otherwise
      */
-    public static boolean delete(File file) {
-        assert file != null;
+    public static boolean delete(@Nullable File file) {
+        if (file == null)
+            return false;
 
         boolean res = true;
 
@@ -3042,7 +3132,7 @@ public abstract class IgniteUtils {
                 return ggHome0;
         }
 
-        URI uri;
+        URI classesUri;
 
         Class<IgniteUtils> cls = IgniteUtils.class;
 
@@ -3057,11 +3147,11 @@ public abstract class IgniteUtils {
             }
 
             // Resolve path to class-file.
-            uri = domain.getCodeSource().getLocation().toURI();
+            classesUri = domain.getCodeSource().getLocation().toURI();
 
             // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
-            if (isWindows() && uri.getAuthority() != null)
-                uri = new URI(uri.toString().replace("file://", "file:/"));
+            if (isWindows() && classesUri.getAuthority() != null)
+                classesUri = new URI(classesUri.toString().replace("file://", "file:/"));
         }
         catch (URISyntaxException | SecurityException e) {
             logResolveFailed(cls, e);
@@ -3069,7 +3159,18 @@ public abstract class IgniteUtils {
             return null;
         }
 
-        return findProjectHome(new File(uri));
+        File classesFile;
+
+        try {
+            classesFile = new File(classesUri);
+        }
+        catch (IllegalArgumentException e) {
+            logResolveFailed(cls, e);
+
+            return null;
+        }
+
+        return findProjectHome(classesFile);
     }
 
     /**
@@ -3244,12 +3345,28 @@ public abstract class IgniteUtils {
             url = U.resolveIgniteUrl(springCfgPath);
 
             if (url == null)
+                url = resolveInClasspath(springCfgPath);
+
+            if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
                     "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
         }
 
         return url;
+    }
+
+    /**
+     * @param path Resource path.
+     * @return Resource URL inside classpath or {@code null}.
+     */
+    @Nullable private static URL resolveInClasspath(String path) {
+        ClassLoader clsLdr = Thread.currentThread().getContextClassLoader();
+
+        if (clsLdr == null)
+            return null;
+
+        return clsLdr.getResource(path.replaceAll("\\\\", "/"));
     }
 
     /**
@@ -3914,6 +4031,8 @@ public abstract class IgniteUtils {
         throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
 
+        appendClassLoaderHash(sb);
+
         appendJvmId(sb);
 
         if (gridName != null && !gridName.isEmpty())
@@ -3930,12 +4049,22 @@ public abstract class IgniteUtils {
     /**
      * @param sb Sb.
      */
-    private static void appendJvmId(SB sb) {
-        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)) {
-            String gridId = Integer.toHexString(Ignite.class.getClassLoader().hashCode()) + "_"
-                + ManagementFactory.getRuntimeMXBean().getName();
+    private static void appendClassLoaderHash(SB sb) {
+        if (getBoolean(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, true)) {
+            String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
 
-            sb.a("jvmId=").a(gridId).a(',');
+            sb.a("clsLdr=").a(clsLdrHash).a(',');
+        }
+    }
+
+    /**
+     * @param sb Sb.
+     */
+    private static void appendJvmId(SB sb) {
+        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)){
+            String jvmId = ManagementFactory.getRuntimeMXBean().getName();
+
+            sb.a("jvmId=").a(jvmId).a(',');
         }
     }
 
@@ -3962,6 +4091,8 @@ public abstract class IgniteUtils {
     public static ObjectName makeCacheMBeanName(@Nullable String gridName, @Nullable String cacheName, String name)
         throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
+
+        appendClassLoaderHash(sb);
 
         appendJvmId(sb);
 
@@ -7817,6 +7948,9 @@ public abstract class IgniteUtils {
         if (cls != null)
             return cls;
 
+        if (ldr == null)
+            ldr = gridClassLoader;
+
         ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
 
         if (ldrMap == null) {
@@ -7937,7 +8071,7 @@ public abstract class IgniteUtils {
 
             return true;
         }
-        catch (Throwable ignored) {
+        catch (Exception ignored) {
             return false;
         }
     }
@@ -7964,7 +8098,7 @@ public abstract class IgniteUtils {
     /**
      * @param addrs Node's addresses.
      * @param port Port discovery number.
-     * @return A string compatible with {@link org.apache.ignite.cluster.ClusterNode#consistentId()} requirements.
+     * @return A string compatible with {@link ClusterNode#consistentId()} requirements.
      */
     public static String consistentId(Collection<String> addrs, int port) {
         assert !F.isEmpty(addrs);
@@ -8347,7 +8481,7 @@ public abstract class IgniteUtils {
     /**
      * Nullifies work directory. For test purposes only.
      */
-    static void nullifyWorkDirectory() {
+    public static void nullifyWorkDirectory() {
         igniteWork = null;
     }
 
@@ -8757,6 +8891,21 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Creates new map that limited by size.
+     *
+     * @param limit Limit for size.
+     */
+    public static <K, V> Map<K, V> limitedMap(int limit) {
+        if (limit == 0)
+            return Collections.emptyMap();
+
+        if (limit < 5)
+            return new GridLeanMap<>(limit);
+
+        return new HashMap<>(capacity(limit), 0.75f);
+    }
+
+    /**
      * Returns comparator that sorts remote node addresses. If remote node resides on the same host, then put
      * loopback addresses first, last otherwise.
      *
@@ -8955,11 +9104,11 @@ public abstract class IgniteUtils {
                 hasShmem = false;
             else {
                 try {
-                    IpcSharedMemoryNativeLoader.load();
+                    IpcSharedMemoryNativeLoader.load(null);
 
                     hasShmem = true;
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException ignore) {
                     hasShmem = false;
                 }
             }

@@ -17,42 +17,59 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Two step map-reduce style query.
  */
-public class GridCacheTwoStepQuery implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridCacheTwoStepQuery {
     /** */
     public static final int DFLT_PAGE_SIZE = 1000;
 
     /** */
     @GridToStringInclude
-    private Map<String, GridCacheSqlQuery> mapQrys;
+    private List<GridCacheSqlQuery> mapQrys = new ArrayList<>();
 
     /** */
     @GridToStringInclude
-    private GridCacheSqlQuery reduce;
+    private GridCacheSqlQuery rdc;
 
     /** */
     private int pageSize = DFLT_PAGE_SIZE;
 
+    /** */
+    private boolean explain;
+
+    /** */
+    private Set<String> spaces;
+
     /**
-     * @param qry Reduce query.
-     * @param params Reduce query parameters.
+     * @param spaces All spaces accessed in query.
+     * @param rdc Reduce query.
      */
-    public GridCacheTwoStepQuery(String qry, Object ... params) {
-        reduce = new GridCacheSqlQuery(null, qry, params);
+    public GridCacheTwoStepQuery(Set<String> spaces, GridCacheSqlQuery rdc) {
+        assert rdc != null;
+
+        this.spaces = spaces;
+
+        this.rdc = rdc;
+    }
+
+    /**
+     * @return If this is explain query.
+     */
+    public boolean explain() {
+        return explain;
+    }
+
+    /**
+     * @param explain If this is explain query.
+     */
+    public void explain(boolean explain) {
+        this.explain = explain;
     }
 
     /**
@@ -70,32 +87,38 @@ public class GridCacheTwoStepQuery implements Serializable {
     }
 
     /**
-     * @param alias Alias.
      * @param qry SQL Query.
-     * @param params Query parameters.
      */
-    public void addMapQuery(String alias, String qry, Object ... params) {
-        A.ensure(!F.isEmpty(alias), "alias must not be empty");
-
-        if (mapQrys == null)
-            mapQrys = new GridLeanMap<>();
-
-        if (mapQrys.put(alias, new GridCacheSqlQuery(alias, qry, params)) != null)
-            throw new IgniteException("Failed to add query, alias already exists: " + alias + ".");
+    public void addMapQuery(GridCacheSqlQuery qry) {
+        mapQrys.add(qry);
     }
 
     /**
      * @return Reduce query.
      */
     public GridCacheSqlQuery reduceQuery() {
-        return reduce;
+        return rdc;
     }
 
     /**
      * @return Map queries.
      */
-    public Collection<GridCacheSqlQuery> mapQueries() {
-        return new ArrayList<>(mapQrys.values()); // Copy to make it Serializable.
+    public List<GridCacheSqlQuery> mapQueries() {
+        return mapQrys;
+    }
+
+    /**
+     * @return Spaces.
+     */
+    public Set<String> spaces() {
+        return spaces;
+    }
+
+    /**
+     * @param spaces Spaces.
+     */
+    public void spaces(Set<String> spaces) {
+        this.spaces = spaces;
     }
 
     /** {@inheritDoc} */

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -26,14 +25,11 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
-
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Transaction created by system implicitly on remote nodes.
@@ -89,7 +85,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         boolean invalidate,
@@ -160,7 +156,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         boolean invalidate,
@@ -208,6 +204,12 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     /** {@inheritDoc} */
     @Override public boolean enforceSerializable() {
         return false; // Serializable will be enforced on primary mode.
+    }
+
+    /** {@inheritDoc} */
+    public GridCacheVersion ownedVersion(IgniteTxKey key) {
+        // TODO ignite-264 do we need this method?
+        return owned == null ? null : owned.get(key);
     }
 
     /**
@@ -299,7 +301,9 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             cached.unswap();
 
             try {
-                if (cached.peek(GLOBAL, CU.empty0()) == null && cached.evictInternal(false, xidVer, null)) {
+                CacheObject val = cached.peek(true, false, false, null);
+
+                if (val == null && cached.evictInternal(false, xidVer, null)) {
                     evicted.add(entry.txKey());
 
                     return false;
@@ -330,6 +334,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param key Key to add to read set.
      * @param val Value.
      * @param drVer Data center replication version.
+     * @param skipStore Skip store flag.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if entry has been enlisted.
      */
@@ -338,7 +343,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         IgniteTxKey key,
         GridCacheOperation op,
         CacheObject val,
-        @Nullable GridCacheVersion drVer
+        @Nullable GridCacheVersion drVer,
+        boolean skipStore
     ) throws IgniteCheckedException {
         checkInternal(key);
 
@@ -353,7 +359,9 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             else {
                 cached.unswap();
 
-                if (cached.peek(GLOBAL, CU.empty0()) == null && cached.evictInternal(false, xidVer, null)) {
+                CacheObject peek = cached.peek(true, false, false, null);
+
+                if (peek == null && cached.evictInternal(false, xidVer, null)) {
                     cached.context().cache().removeIfObsolete(key.key());
 
                     evicted.add(key);
@@ -368,7 +376,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                         -1L,
                         -1L,
                         cached,
-                        drVer);
+                        drVer,
+                        skipStore);
 
                     writeMap.put(key, txEntry);
 

@@ -210,7 +210,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 removeNode(exchId.nodeId());
 
             // In case if node joins, get topology at the time of joining node.
-            ClusterNode oldest = CU.oldest(cctx, topVer);
+            ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx, topVer);
+
+            assert oldest != null;
 
             if (log.isDebugEnabled())
                 log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
@@ -218,23 +220,23 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             long updateSeq = this.updateSeq.incrementAndGet();
 
             // If this is the oldest node.
-            if (oldest.id().equals(loc.id()) || exchFut.isCacheAdded(cacheId)) {
+            if (oldest.id().equals(loc.id()) || exchFut.isCacheAdded(cacheId, exchId.topologyVersion())) {
                 if (node2part == null) {
-                    node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq);
+                    node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
 
                     if (log.isDebugEnabled())
                         log.debug("Created brand new full topology map on oldest node [exchId=" +
                             exchId + ", fullMap=" + fullMapString() + ']');
                 }
                 else if (!node2part.valid()) {
-                    node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq, node2part, false);
+                    node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
 
                     if (log.isDebugEnabled())
                         log.debug("Created new full topology map on oldest node [exchId=" + exchId + ", fullMap=" +
                             node2part + ']');
                 }
                 else if (!node2part.nodeId().equals(loc.id())) {
-                    node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq, node2part, false);
+                    node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
 
                     if (log.isDebugEnabled())
                         log.debug("Copied old map into new map on oldest node (previous oldest node left) [exchId=" +
@@ -254,17 +256,17 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean afterExchange(GridDhtPartitionExchangeId exchId) throws IgniteCheckedException {
-        AffinityTopologyVersion topVer = exchId.topologyVersion();
+    @Override public boolean afterExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
+        AffinityTopologyVersion topVer = exchFut.topologyVersion();
 
         lock.writeLock().lock();
 
         try {
-            assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
-                topVer + ", exchId=" + exchId + ']';
+            assert topVer.equals(exchFut.topologyVersion()) : "Invalid topology version [topVer=" +
+                topVer + ", exchId=" + exchFut.exchangeId() + ']';
 
             if (log.isDebugEnabled())
-                log.debug("Partition map before afterExchange [exchId=" + exchId + ", fullMap=" +
+                log.debug("Partition map before afterExchange [exchId=" + exchFut.exchangeId() + ", fullMap=" +
                     fullMapString() + ']');
 
             updateSeq.incrementAndGet();
@@ -685,7 +687,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         assert nodeId.equals(cctx.localNodeId());
 
         // In case if node joins, get topology at the time of joining node.
-        ClusterNode oldest = CU.oldest(cctx, topVer);
+        ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx, topVer);
 
         // If this node became the oldest node.
         if (oldest.id().equals(cctx.localNodeId())) {
@@ -735,7 +737,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         assert nodeId != null;
         assert lock.writeLock().isHeldByCurrentThread();
 
-        ClusterNode oldest = CU.oldest(cctx, topVer);
+        ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx, topVer);
 
         ClusterNode loc = cctx.localNode();
 

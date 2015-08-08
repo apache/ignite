@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -54,7 +55,25 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        aff.onKernalStop();
+        IgniteCheckedException err =
+            new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
+
+        aff.onKernalStop(err);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture reconnectFut) {
+        IgniteCheckedException err = new IgniteClientDisconnectedCheckedException(reconnectFut,
+            "Failed to wait for topology update, client disconnected.");
+
+        aff.onKernalStop(err);
+    }
+
+    /**
+     *
+     */
+    public void onReconnected() {
+        aff.onReconnected();
     }
 
     /** {@inheritDoc} */
@@ -140,11 +159,25 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      *
      * @param topVer Topology version to calculate affinity for.
      * @param discoEvt Discovery event that causes this topology change.
+     * @return Affinity assignments.
      */
     public List<List<ClusterNode>> calculateAffinity(AffinityTopologyVersion topVer, DiscoveryEvent discoEvt) {
         assert !cctx.isLocal();
 
         return aff.calculate(topVer, discoEvt);
+    }
+
+    /**
+     * Copies previous affinity assignment when discovery event does not cause affinity assignment changes
+     * (e.g. client node joins on leaves).
+     *
+     * @param evt Event.
+     * @param topVer Topology version.
+     */
+    public void clientEventTopologyChange(DiscoveryEvent evt, AffinityTopologyVersion topVer) {
+        assert !cctx.isLocal();
+
+        aff.clientEventTopologyChange(evt, topVer);
     }
 
     /**
@@ -300,18 +333,6 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         assert part >= 0 : "Invalid partition: " + part;
 
         return nodes(part, topVer).contains(node);
-    }
-
-    /**
-     * @param node Node.
-     * @param key Key to check.
-     * @param topVer Topology version.
-     * @return {@code true} if given key belongs to specified node.
-     */
-    public boolean belongs(ClusterNode node, Object key, AffinityTopologyVersion topVer) {
-        assert node != null;
-
-        return belongs(node, partition(key), topVer);
     }
 
     /**

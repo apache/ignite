@@ -70,6 +70,9 @@ public class GridNioServer<T> {
     /** SSL system data buffer metadata key. */
     private static final int BUF_SSL_SYSTEM_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** SSL write buf limit. */
+    private static final int WRITE_BUF_LIMIT = GridNioSessionMetaKey.nextUniqueKey();
+
     /** Accept worker thread. */
     @GridToStringExclude
     private final IgniteThread acceptThread;
@@ -116,6 +119,10 @@ public class GridNioServer<T> {
     @SuppressWarnings("UnusedDeclaration")
     private boolean skipWrite;
 
+    /** For test purposes only. */
+    @SuppressWarnings("UnusedDeclaration")
+    private boolean skipRead;
+
     /** Local address. */
     private final InetSocketAddress locAddr;
 
@@ -144,6 +151,9 @@ public class GridNioServer<T> {
     /** */
     @GridToStringExclude
     private IgnitePredicate<Message> skipRecoveryPred;
+
+    /** Optional listener to monitor outbound message queue size. */
+    private IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr;
 
     /** Static initializer ensures single-threaded execution of workaround. */
     static {
@@ -174,6 +184,7 @@ public class GridNioServer<T> {
      * @param metricsLsnr Metrics listener.
      * @param formatter Message formatter.
      * @param skipRecoveryPred Skip recovery predicate.
+     * @param msgQueueLsnr Message queue size listener.
      * @param filters Filters for this server.
      * @throws IgniteCheckedException If failed.
      */
@@ -195,6 +206,7 @@ public class GridNioServer<T> {
         GridNioMetricsListener metricsLsnr,
         MessageFormatter formatter,
         IgnitePredicate<Message> skipRecoveryPred,
+        IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         A.notNull(addr, "addr");
@@ -215,6 +227,7 @@ public class GridNioServer<T> {
         this.sockRcvBuf = sockRcvBuf;
         this.sockSndBuf = sockSndBuf;
         this.sndQueueLimit = sndQueueLimit;
+        this.msgQueueLsnr = msgQueueLsnr;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
 
@@ -301,6 +314,9 @@ public class GridNioServer<T> {
             U.join(clientWorkers, log);
 
             filterChain.stop();
+
+            for (GridSelectorNioSessionImpl ses : sessions)
+                ses.onServerStopped();
         }
     }
 
@@ -378,6 +394,11 @@ public class GridNioServer<T> {
 
         int msgCnt = sys ? ses.offerSystemFuture(fut) : ses.offerFuture(fut);
 
+        IgniteInClosure<IgniteException> ackClosure;
+
+        if (!sys && (ackClosure = ses.removeMeta(ACK_CLOSURE.ordinal())) != null)
+            fut.ackClosure(ackClosure);
+
         if (ses.closed()) {
             if (ses.removeFuture(fut))
                 fut.connectionClosed();
@@ -385,6 +406,11 @@ public class GridNioServer<T> {
         else if (msgCnt == 1)
             // Change from 0 to 1 means that worker thread should be waken up.
             clientWorkers.get(ses.selectorIndex()).offer(fut);
+
+        IgniteBiInClosure<GridNioSession, Integer> lsnr0 = msgQueueLsnr;
+
+        if (lsnr0 != null)
+            lsnr0.apply(ses, msgCnt);
     }
 
     /**
@@ -490,13 +516,18 @@ public class GridNioServer<T> {
     public GridNioFuture<GridNioSession> createSession(final SocketChannel ch,
         @Nullable Map<Integer, ?> meta) {
         try {
-            ch.configureBlocking(false);
+            if (!closed) {
+                ch.configureBlocking(false);
 
-            NioOperationFuture<GridNioSession> req = new NioOperationFuture<>(ch, false, meta);
+                NioOperationFuture<GridNioSession> req = new NioOperationFuture<>(ch, false, meta);
 
-            offerBalanced(req);
+                offerBalanced(req);
 
-            return req;
+                return req;
+            }
+            else
+                return new GridNioFinishedFuture<>(
+                    new IgniteCheckedException("Failed to create session, server is stopped."));
         }
         catch (IOException e) {
             return new GridNioFinishedFuture<>(e);
@@ -580,6 +611,9 @@ public class GridNioServer<T> {
             U.close(srvrCh, log);
             U.close(selector, log);
 
+            if (e instanceof Error)
+                throw (Error)e;
+
             throw new IgniteCheckedException("Failed to initialize NIO selector.", e);
         }
     }
@@ -631,6 +665,17 @@ public class GridNioServer<T> {
         * @throws IOException If key read failed.
         */
         @Override protected void processRead(SelectionKey key) throws IOException {
+            if (skipRead) {
+                try {
+                    U.sleep(50);
+                }
+                catch (IgniteInterruptedCheckedException ignored) {
+                    U.warn(log, "Sleep has been interrupted.");
+                }
+
+                return;
+            }
+
             ReadableByteChannel sockCh = (ReadableByteChannel)key.channel();
 
             final GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
@@ -772,6 +817,17 @@ public class GridNioServer<T> {
          * @throws IOException If key read failed.
          */
         @Override protected void processRead(SelectionKey key) throws IOException {
+            if (skipRead) {
+                try {
+                    U.sleep(50);
+                }
+                catch (IgniteInterruptedCheckedException ignored) {
+                    U.warn(log, "Sleep has been interrupted.");
+                }
+
+                return;
+            }
+
             ReadableByteChannel sockCh = (ReadableByteChannel)key.channel();
 
             final GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
@@ -875,6 +931,10 @@ public class GridNioServer<T> {
                 }
 
                 ByteBuffer buf = ses.writeBuffer();
+
+                if (ses.meta(WRITE_BUF_LIMIT) != null)
+                    buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
+
                 NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
 
                 List<NioOperationFuture<?>> doneFuts = null;
@@ -926,13 +986,24 @@ public class GridNioServer<T> {
                             writer.reset();
                     }
 
+                    int sesBufLimit = buf.limit();
+                    int sesCap = buf.capacity();
+
                     buf.flip();
+
+                    buf = sslFilter.encrypt(ses, buf);
 
                     ByteBuffer sesBuf = ses.writeBuffer();
 
-                    buf = sslFilter.encrypt(ses, sesBuf);
-
                     sesBuf.clear();
+
+                    if (sesCap - buf.limit() < 0) {
+                        int limit = sesBufLimit + (sesCap - buf.limit()) - 100;
+
+                        ses.addMeta(WRITE_BUF_LIMIT, limit);
+
+                        sesBuf.limit(limit);
+                    }
 
                     assert buf.hasRemaining();
 
@@ -971,8 +1042,12 @@ public class GridNioServer<T> {
 
                         break;
                     }
-                    else
+                    else {
                         buf = ses.writeBuffer();
+
+                        if (ses.meta(WRITE_BUF_LIMIT) != null)
+                            buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
+                    }
                 }
             }
             finally {
@@ -1169,6 +1244,9 @@ public class GridNioServer<T> {
             }
             catch (Throwable e) {
                 U.error(log, "Caught unhandled exception in NIO worker thread (restart the node).", e);
+
+                if (e instanceof Error)
+                    throw e;
             }
         }
 
@@ -1448,6 +1526,9 @@ public class GridNioServer<T> {
 
                     req.onDone(e);
                 }
+
+                if (closed)
+                    ses.onServerStopped();
             }
             catch (ClosedChannelException e) {
                 U.warn(log, "Failed to register accepted socket channel to selector (channel was closed): "
@@ -1476,6 +1557,9 @@ public class GridNioServer<T> {
             }
 
             sessions.remove(ses);
+
+            if (closed)
+                ses.onServerStopped();
 
             SelectionKey key = ses.key();
 
@@ -2102,6 +2186,9 @@ public class GridNioServer<T> {
         /** Skip recovery predicate. */
         private IgnitePredicate<Message> skipRecoveryPred;
 
+        /** Message queue size listener. */
+        private IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr;
+
         /**
          * Finishes building the instance.
          *
@@ -2127,6 +2214,7 @@ public class GridNioServer<T> {
                 metricsLsnr,
                 formatter,
                 skipRecoveryPred,
+                msgQueueLsnr,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -2336,6 +2424,16 @@ public class GridNioServer<T> {
          */
         public Builder<T> skipRecoveryPredicate(IgnitePredicate<Message> skipRecoveryPred) {
             this.skipRecoveryPred = skipRecoveryPred;
+
+            return this;
+        }
+
+        /**
+         * @param msgQueueLsnr Message queue size listener.
+         * @return Instance of this builder for chaining.
+         */
+        public Builder<T> messageQueueSizeListener(IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr) {
+            this.msgQueueLsnr = msgQueueLsnr;
 
             return this;
         }

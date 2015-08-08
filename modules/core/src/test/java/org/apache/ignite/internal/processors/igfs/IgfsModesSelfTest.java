@@ -471,7 +471,9 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testPropagationDualAsync() throws Exception {
+    public void testPropagationDualAsync() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-822");
+
         mode = DUAL_ASYNC;
 
         checkPropagation();

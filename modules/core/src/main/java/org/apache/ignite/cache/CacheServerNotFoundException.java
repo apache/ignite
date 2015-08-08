@@ -26,18 +26,18 @@ public class CacheServerNotFoundException extends CacheException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param message Error message.
+     * @param msg Error message.
      */
-    public CacheServerNotFoundException(String message) {
-        super(message);
+    public CacheServerNotFoundException(String msg) {
+        super(msg);
     }
 
     /**
-     * @param message Error message.
+     * @param msg Error message.
      * @param cause Error cause.
      */
-    public CacheServerNotFoundException(String message, Throwable cause) {
-        super(message, cause);
+    public CacheServerNotFoundException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 
     /**

@@ -110,6 +110,20 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        IgniteClientDisconnectedCheckedException err = new IgniteClientDisconnectedCheckedException(reconnectFut,
+            "Query was cancelled, client node disconnected.");
+
+        for (Map.Entry<Long, GridCacheDistributedQueryFuture<?, ?, ?>> e : futs.entrySet()) {
+            GridCacheDistributedQueryFuture<?, ?, ?> fut = e.getValue();
+
+            fut.onPage(null, null, err, true);
+
+            futs.remove(e.getKey(), fut);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         super.printMemoryStats();
 
@@ -125,6 +139,14 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      */
     protected void addQueryFuture(long reqId, GridCacheDistributedQueryFuture<?, ?, ?> fut) {
         futs.put(reqId, fut);
+
+        if (cctx.kernalContext().clientDisconnected()) {
+            IgniteClientDisconnectedCheckedException err = new IgniteClientDisconnectedCheckedException(
+                cctx.kernalContext().cluster().clientReconnectFuture(),
+                "Query was cancelled, client node disconnected.");
+
+            fut.onDone(err);
+        }
     }
 
     /**
@@ -191,6 +213,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                         U.error(log(), "Failed to run query.", e);
 
                         sendQueryResponse(sndId, new GridCacheQueryResponse(cctx.cacheId(), req.id(), e.getCause()), 0);
+
+                        if (e instanceof Error)
+                            throw (Error)e;
                     }
                     finally {
                         threads.remove(req.id());
@@ -226,6 +251,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 false,
                 null,
                 req.keyValueFilter(),
+                req.partition(),
                 req.className(),
                 req.clause(),
                 req.includeMetaData(),
@@ -515,6 +541,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().clause(),
                 clsName,
                 qry.query().scanFilter(),
+                qry.query().partition(),
                 qry.reducer(),
                 qry.transform(),
                 qry.query().pageSize(),
@@ -621,6 +648,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().type(),
                 true,
                 qry.query().clause(),
+                null,
                 null,
                 null,
                 qry.reducer(),

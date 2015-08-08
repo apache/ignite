@@ -32,6 +32,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.*;
+
 /**
  * Affinity cached function.
  */
@@ -67,7 +69,7 @@ public class GridAffinityAssignmentCache {
     private IgniteLogger log;
 
     /** Node stop flag. */
-    private volatile boolean stopping;
+    private volatile IgniteCheckedException stopErr;
 
     /**
      * Constructs affinity cached calculations.
@@ -116,22 +118,37 @@ public class GridAffinityAssignmentCache {
         head.set(assignment);
 
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
-            if (entry.getKey().compareTo(topVer) >= 0)
+            if (entry.getKey().compareTo(topVer) <= 0) {
+                if (log.isDebugEnabled())
+                    log.debug("Completing topology ready future (initialized affinity) " +
+                        "[locNodeId=" + ctx.localNodeId() + ", futVer=" + entry.getKey() + ", topVer=" + topVer + ']');
+
                 entry.getValue().onDone(topVer);
+            }
         }
     }
 
     /**
      * Kernal stop callback.
+     *
+     * @param err Error.
      */
-    public void onKernalStop() {
-        stopping = true;
-
-        IgniteCheckedException err =
-            new IgniteCheckedException("Failed to wait for topology update, node is stopping.");
+    public void onKernalStop(IgniteCheckedException err) {
+        stopErr = err;
 
         for (AffinityReadyFuture fut : readyFuts.values())
             fut.onDone(err);
+    }
+
+    /**
+     *
+     */
+    public void onReconnected() {
+        affCache.clear();
+
+        head.set(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
+
+        stopErr = null;
     }
 
     /**
@@ -216,6 +233,35 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
+     * Copies previous affinity assignment when discovery event does not cause affinity assignment changes
+     * (e.g. client node joins on leaves).
+     *
+     * @param evt Event.
+     * @param topVer Topology version.
+     */
+    public void clientEventTopologyChange(DiscoveryEvent evt, AffinityTopologyVersion topVer) {
+        GridAffinityAssignment aff = head.get();
+
+        assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT  || aff.primaryPartitions(evt.eventNode().id()).isEmpty() : evt;
+        assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT  || aff.backupPartitions(evt.eventNode().id()).isEmpty() : evt;
+
+        GridAffinityAssignment assignmentCpy = new GridAffinityAssignment(topVer, aff);
+
+        affCache.put(topVer, assignmentCpy);
+        head.set(assignmentCpy);
+
+        for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
+            if (entry.getKey().compareTo(topVer) <= 0) {
+                if (log.isDebugEnabled())
+                    log.debug("Completing topology ready future (use previous affinity) " +
+                        "[locNodeId=" + ctx.localNodeId() + ", futVer=" + entry.getKey() + ", topVer=" + topVer + ']');
+
+                entry.getValue().onDone(topVer);
+            }
+        }
+    }
+
+    /**
      * @return Last calculated affinity version.
      */
     public AffinityTopologyVersion lastVersion() {
@@ -276,8 +322,8 @@ public class GridAffinityAssignmentCache {
 
             fut.onDone(topVer);
         }
-        else if (stopping)
-            fut.onDone(new IgniteCheckedException("Failed to wait for topology update, node is stopping."));
+        else if (stopErr != null)
+            fut.onDone(stopErr);
 
         return fut;
     }
@@ -370,8 +416,12 @@ public class GridAffinityAssignmentCache {
 
             if (cache == null) {
                 throw new IllegalStateException("Getting affinity for topology version earlier than affinity is " +
-                    "calculated [locNodeId=" + ctx.localNodeId() + ", topVer=" + topVer +
-                    ", head=" + head.get().topologyVersion() + ']');
+                    "calculated [locNodeId=" + ctx.localNodeId() +
+                    ", cache=" + cacheName +
+                    ", topVer=" + topVer +
+                    ", head=" + head.get().topologyVersion() +
+                    ", history=" + affCache.keySet() +
+                    ']');
             }
         }
 
@@ -417,6 +467,7 @@ public class GridAffinityAssignmentCache {
 
         /**
          *
+         * @param reqTopVer Required topology version.
          */
         private AffinityReadyFuture(AffinityTopologyVersion reqTopVer) {
             this.reqTopVer = reqTopVer;

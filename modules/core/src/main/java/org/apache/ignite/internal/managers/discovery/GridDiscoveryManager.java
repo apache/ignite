@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -26,8 +27,10 @@ import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.security.*;
+import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -55,7 +58,7 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.IgniteVersionUtils.*;
-import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
+import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.*;
 
 /**
  * Discovery SPI manager.
@@ -92,6 +95,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private static final IgnitePredicate<ClusterNode> daemonFilter = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
             return !n.isDaemon();
+        }
+    };
+
+    /** Predicate filtering client nodes. */
+    private static final IgnitePredicate<ClusterNode> clientFilter = new P1<ClusterNode>() {
+        @Override public boolean apply(ClusterNode n) {
+            return CU.clientNode(n);
         }
     };
 
@@ -163,13 +173,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private final GridLocalMetrics metrics = createMetrics();
 
     /** Metrics update worker. */
-    private final MetricsUpdater metricsUpdater = new MetricsUpdater();
+    private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
 
     /** Custom event listener. */
-    private GridPlainInClosure<Serializable> customEvtLsnr;
+    private ConcurrentMap<Class<?>, List<CustomEventListener<DiscoveryCustomMessage>>> customEvtLsnrs =
+        new ConcurrentHashMap8<>();
 
     /** Map of dynamic cache filters. */
     private Map<String, CachePredicate> registeredCaches = new HashMap<>();
+
+    /** */
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+
+    /** Received custom messages history. */
+    private final ArrayDeque<IgniteUuid> rcvdCustomMsgs = new ArrayDeque<>();
+
+    /** */
+    private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
@@ -209,6 +229,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @param cacheName Cache name.
      * @param filter Cache filter.
+     * @param nearEnabled Near enabled flag.
      * @param loc {@code True} if cache is local.
      */
     public void setCacheFilter(
@@ -235,12 +256,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @param cacheName Cache name.
      * @param clientNodeId Near node ID.
+     * @param nearEnabled Near enabled flag.
      */
     public void addClientNode(String cacheName, UUID clientNodeId, boolean nearEnabled) {
+        CachePredicate pred = registeredCaches.get(cacheName);
+
+        if (pred != null)
+            pred.addClientNode(clientNodeId, nearEnabled);
+    }
+
+    /**
+     * Removes near node ID from cache filter.
+     *
+     * @param cacheName Cache name.
+     * @param clientNodeId Near node ID.
+     */
+    public void onClientCacheClose(String cacheName, UUID clientNodeId) {
         CachePredicate predicate = registeredCaches.get(cacheName);
 
         if (predicate != null)
-            predicate.addClientNode(clientNodeId, nearEnabled);
+            predicate.onNodeLeft(clientNodeId);
     }
 
     /**
@@ -274,17 +309,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
-    /**
-     * @param evtType Event type.
-     * @return Next affinity topology version.
-     */
-    private AffinityTopologyVersion nextTopologyVersion(int evtType, long topVer) {
-        if (evtType == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT)
-            minorTopVer++;
-        else if (evtType != EVT_NODE_METRICS_UPDATED)
-            minorTopVer = 0;
-
-        return new AffinityTopologyVersion(topVer, minorTopVer);
+    /** {@inheritDoc} */
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
+        if (Boolean.TRUE.equals(ctx.config().isClientMode()) && !getSpi().isClientMode())
+            ctx.performance().add("Enable client mode for TcpDiscoverySpi " +
+                    "(set TcpDiscoverySpi.forceServerMode to false)");
     }
 
     /** {@inheritDoc} */
@@ -308,7 +337,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         isLocDaemon = ctx.isDaemon();
 
-        hasRslvrs = !F.isEmpty(ctx.config().getSegmentationResolvers());
+        hasRslvrs = !ctx.config().isClientMode() && !F.isEmpty(ctx.config().getSegmentationResolvers());
 
         segChkFreq = ctx.config().getSegmentCheckFrequency();
 
@@ -320,16 +349,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 U.warn(log, "Configuration parameter 'segmentCheckFrequency' is too low " +
                     "(at least 2000 ms recommended): " + segChkFreq);
 
+            int segResAttemp = ctx.config().getSegmentationResolveAttempts();
+
+            if (segResAttemp < 1)
+                throw new IgniteCheckedException(
+                    "Segment resolve attempts cannot be negative or zero: " + segResAttemp);
+
             checkSegmentOnStart();
         }
 
-        new IgniteThread(metricsUpdater).start();
+        metricsUpdateTask = ctx.timeout().schedule(new MetricsUpdater(), METRICS_UPDATE_FREQ, METRICS_UPDATE_FREQ);
 
         spi.setMetricsProvider(createMetricsProvider());
 
         if (ctx.security().enabled()) {
             spi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
-                @Override public SecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) {
+                @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
                     try {
                         return ctx.security().authenticateNode(node, cred);
                     }
@@ -345,20 +380,63 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         spi.setListener(new DiscoverySpiListener() {
+            private long gridStartTime;
+
             @Override public void onDiscovery(
-                int type,
-                long topVer,
-                ClusterNode node,
-                Collection<ClusterNode> topSnapshot,
-                Map<Long, Collection<ClusterNode>> snapshots,
-                @Nullable Serializable data
+                final int type,
+                final long topVer,
+                final ClusterNode node,
+                final Collection<ClusterNode> topSnapshot,
+                final Map<Long, Collection<ClusterNode>> snapshots,
+                @Nullable DiscoverySpiCustomMessage spiCustomMsg
             ) {
+                if (type == EVT_NODE_JOINED && node.isLocal() && ctx.clientDisconnected()) {
+                    discoCacheHist.clear();
+
+                    topHist.clear();
+
+                    topSnap.set(new Snapshot(AffinityTopologyVersion.ZERO, null));
+                }
+
+                DiscoveryCustomMessage customMsg = spiCustomMsg == null ? null
+                    : ((CustomMessageWrapper)spiCustomMsg).delegate();
+
+                if (skipMessage(type, customMsg))
+                    return;
+
                 final ClusterNode locNode = localNode();
 
                 if (snapshots != null)
                     topHist = snapshots;
 
-                AffinityTopologyVersion nextTopVer = nextTopologyVersion(type, topVer);
+                boolean verChanged;
+
+                if (type == EVT_NODE_METRICS_UPDATED)
+                    verChanged = false;
+                else if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
+                    assert customMsg != null;
+
+                    if (customMsg.incrementMinorTopologyVersion()) {
+                        minorTopVer++;
+
+                        verChanged = true;
+                    }
+                    else
+                        verChanged = false;
+                }
+                else {
+                    if (type != EVT_NODE_SEGMENTED &&
+                        type != EVT_CLIENT_NODE_DISCONNECTED &&
+                        type != EVT_CLIENT_NODE_RECONNECTED) {
+                        minorTopVer = 0;
+
+                        verChanged = true;
+                    }
+                    else
+                        verChanged = false;
+                }
+
+                final AffinityTopologyVersion nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
                 if (type == EVT_NODE_FAILED || type == EVT_NODE_LEFT) {
                     for (DiscoCache c : discoCacheHist.values())
@@ -368,18 +446,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
 
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
-                    try {
-                        customEvtLsnr.apply(data);
-                    }
-                    catch (Exception e) {
-                        U.error(log, "Failed to notify direct custom event listener: " + data, e);
+                    for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
+                        List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
+
+                        if (list != null) {
+                            for (CustomEventListener<DiscoveryCustomMessage> lsnr : list) {
+                                try {
+                                    lsnr.onCustomEvent(node, customMsg);
+                                }
+                                catch (Exception e) {
+                                    U.error(log, "Failed to notify direct custom event listener: " + customMsg, e);
+                                }
+                            }
+                        }
                     }
                 }
 
                 // Put topology snapshot into discovery history.
                 // There is no race possible between history maintenance and concurrent discovery
                 // event notifications, since SPI notifies manager about all events from this listener.
-                if (type != EVT_NODE_METRICS_UPDATED) {
+                if (verChanged) {
                     DiscoCache cache = new DiscoCache(locNode, F.view(topSnapshot, F.remoteNodes(locNode.id())));
 
                     discoCacheHist.put(nextTopVer, cache);
@@ -393,6 +479,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 // If this is a local join event, just save it and do not notify listeners.
                 if (type == EVT_NODE_JOINED && node.id().equals(locNode.id())) {
+                    if (gridStartTime == 0)
+                        gridStartTime = getSpi().getGridStartTime();
+
+                    updateTopologyVersionIfGreater(new AffinityTopologyVersion(locNode.order()),
+                        new DiscoCache(localNode(), getSpi().getRemoteNodes()));
+
+                    startLatch.countDown();
+
                     DiscoveryEvent discoEvt = new DiscoveryEvent();
 
                     discoEvt.node(ctx.discovery().localNode());
@@ -410,19 +504,59 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return;
                 }
+                else if (type == EVT_CLIENT_NODE_DISCONNECTED) {
+                    /*
+                     * Notify all components from discovery thread to avoid concurrent
+                     * reconnect while disconnect handling is in progress.
+                     */
 
-                discoWrk.addEvent(type, nextTopVer, node, topSnapshot, data);
+                    assert locNode.isClient() : locNode;
+                    assert node.isClient() : node;
+
+                    ((IgniteKernal)ctx.grid()).onDisconnected();
+
+                    locJoinEvt = new GridFutureAdapter<>();
+
+                    registeredCaches.clear();
+                }
+                else if (type == EVT_CLIENT_NODE_RECONNECTED) {
+                    assert locNode.isClient() : locNode;
+                    assert node.isClient() : node;
+
+                    boolean clusterRestarted = gridStartTime != getSpi().getGridStartTime();
+
+                    gridStartTime = getSpi().getGridStartTime();
+
+                    ((IgniteKernal)ctx.grid()).onReconnected(clusterRestarted);
+
+                    ctx.cluster().clientReconnectFuture().listen(new CI1<IgniteFuture<?>>() {
+                        @Override public void apply(IgniteFuture<?> fut) {
+                            try {
+                                fut.get();
+
+                                discoWrk.addEvent(type, nextTopVer, node, topSnapshot, null);
+                            }
+                            catch (IgniteException ignore) {
+                                // No-op.
+                            }
+                        }
+                    });
+
+                    return;
+                }
+
+                discoWrk.addEvent(type, nextTopVer, node, topSnapshot, customMsg);
             }
         });
 
         spi.setDataExchange(new DiscoverySpiDataExchange() {
-            @Override public Map<Integer, Object> collect(UUID nodeId) {
+            @Override public Map<Integer, Serializable> collect(UUID nodeId) {
                 assert nodeId != null;
 
-                Map<Integer, Object> data = new HashMap<>();
+                Map<Integer, Serializable> data = new HashMap<>();
 
                 for (GridComponent comp : ctx.components()) {
-                    Object compData = comp.collectDiscoveryData(nodeId);
+                    Serializable compData = comp.collectDiscoveryData(nodeId);
 
                     if (compData != null) {
                         assert comp.discoveryDataType() != null;
@@ -434,8 +568,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 return data;
             }
 
-            @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Object> data) {
-                for (Map.Entry<Integer, Object> e : data.entrySet()) {
+            @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data) {
+                for (Map.Entry<Integer, Serializable> e : data.entrySet()) {
                     GridComponent comp = null;
 
                     for (GridComponent c : ctx.components()) {
@@ -456,6 +590,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         startSpi();
 
+        try {
+            U.await(startLatch);
+        }
+        catch (IgniteInterruptedException e) {
+            throw new IgniteCheckedException("Failed to start discovery manager (thread has been interrupted).", e);
+        }
+
         // Start segment check worker only if frequency is greater than 0.
         if (hasRslvrs && segChkFreq > 0) {
             segChkWrk = new SegmentCheckWorker();
@@ -467,9 +608,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         locNode = spi.getLocalNode();
 
-        updateTopologyVersionIfGreater(new AffinityTopologyVersion(locNode.order()), new DiscoCache(localNode(),
-            getSpi().getRemoteNodes()));
-
         checkAttributes(discoCache().remoteNodes());
 
         // Start discovery worker.
@@ -480,10 +618,43 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * @param customEvtLsnr Custom event listener.
+     * @param type Message type.
+     * @param customMsg Custom message.
+     * @return {@code True} if should not process message.
      */
-    public void setCustomEventListener(GridPlainInClosure<Serializable> customEvtLsnr) {
-        this.customEvtLsnr = customEvtLsnr;
+    private boolean skipMessage(int type, @Nullable DiscoveryCustomMessage customMsg) {
+        if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
+            assert customMsg != null && customMsg.id() != null : customMsg;
+
+            if (rcvdCustomMsgs.contains(customMsg.id())) {
+                if (log.isDebugEnabled())
+                    log.debug("Received duplicated custom message, will ignore [msg=" + customMsg + "]");
+
+                return true;
+            }
+
+            rcvdCustomMsgs.addLast(customMsg.id());
+
+            while (rcvdCustomMsgs.size() > DISCOVERY_HISTORY_SIZE)
+                rcvdCustomMsgs.pollFirst();
+        }
+
+        return false;
+    }
+
+    /**
+     * @param msgCls Message class.
+     * @param lsnr Custom event listener.
+     */
+    public <T extends DiscoveryCustomMessage> void setCustomEventListener(Class<T> msgCls, CustomEventListener<T> lsnr) {
+        List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(msgCls);
+
+        if (list == null) {
+            list = F.addIfAbsent(customEvtLsnrs, msgCls,
+                new CopyOnWriteArrayList<CustomEventListener<DiscoveryCustomMessage>>());
+        }
+
+        list.add((CustomEventListener<DiscoveryCustomMessage>)lsnr);
     }
 
     /**
@@ -643,6 +814,29 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 return nm;
             }
+
+            /** {@inheritDoc} */
+            @Override public Map<Integer, CacheMetrics> cacheMetrics() {
+                Collection<GridCacheAdapter<?, ?>> caches = ctx.cache().internalCaches();
+
+                if (F.isEmpty(caches))
+                    return Collections.emptyMap();
+
+                Map<Integer, CacheMetrics> metrics = null;
+
+                for (GridCacheAdapter<?, ?> cache : caches) {
+                    if (cache.configuration().isStatisticsEnabled() &&
+                        cache.context().started() &&
+                        cache.context().affinity().affinityTopologyVersion().topologyVersion() > 0) {
+                        if (metrics == null)
+                            metrics = U.newHashMap(caches.size());
+
+                        metrics.put(cache.context().cacheId(), cache.metrics());
+                    }
+                }
+
+                return metrics == null ? Collections.<Integer, CacheMetrics>emptyMap() : metrics;
+            }
         };
     }
 
@@ -714,11 +908,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Object locMode = locNode.attribute(ATTR_DEPLOYMENT_MODE);
 
+        int locJvmMajVer = nodeJavaMajorVersion(locNode);
+
         boolean locP2pEnabled = locNode.attribute(ATTR_PEER_CLASSLOADING);
 
         boolean warned = false;
 
         for (ClusterNode n : nodes) {
+            int rmtJvmMajVer = nodeJavaMajorVersion(n);
+
+            if (locJvmMajVer != rmtJvmMajVer)
+                throw new IgniteCheckedException("Local node's java major version is different from remote node's one" +
+                    " [locJvmMajVer=" + locJvmMajVer + ", rmtJvmMajVer=" + rmtJvmMajVer + "]");
+
             String rmtPreferIpV4 = n.attribute("java.net.preferIPv4Stack");
 
             if (!F.eq(rmtPreferIpV4, locPreferIpV4)) {
@@ -760,6 +962,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Gets Java major version running on the node.
+     *
+     * @param node Cluster node.
+     * @return Java major version.
+     * @throws IgniteCheckedException If failed to get the version.
+     */
+    private int nodeJavaMajorVersion(ClusterNode node) throws IgniteCheckedException {
+        try {
+            // The format is identical for Oracle JDK, OpenJDK and IBM JDK.
+            return Integer.parseInt(node.<String>attribute("java.version").split("\\.")[1]);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get java major version (unknown 'java.version' format) [ver=" +
+                node.<String>attribute("java.version") + "]", e);
+
+            return 0;
+        }
+    }
+
+    /**
      * @param nodes Nodes.
      * @return Total CPUs.
      */
@@ -798,6 +1020,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Collection<ClusterNode> rmtNodes = discoCache.remoteNodes();
 
+        Collection<ClusterNode> srvNodes = F.view(discoCache.allNodes(), F.not(clientFilter));
+
+        Collection<ClusterNode> clientNodes = F.view(discoCache.allNodes(), clientFilter);
+
         ClusterNode locNode = discoCache.localNode();
 
         Collection<ClusterNode> allNodes = discoCache.allNodes();
@@ -814,7 +1040,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         double heap = U.heapSize(allNodes, 2);
 
         if (log.isQuiet())
-            U.quiet(false, topologySnapshotMessage(rmtNodes.size(), totalCpus, heap));
+            U.quiet(false, topologySnapshotMessage(srvNodes.size(), clientNodes.size(), totalCpus, heap));
 
         if (log.isDebugEnabled()) {
             String dbg = "";
@@ -824,7 +1050,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ">>> " + PREFIX + "." + U.nl() +
                 ">>> +----------------+" + U.nl() +
                 ">>> Grid name: " + (ctx.gridName() == null ? "default" : ctx.gridName()) + U.nl() +
-                ">>> Number of nodes: " + (rmtNodes.size() + 1) + U.nl() +
+                ">>> Number of server nodes: " + srvNodes.size() + U.nl() +
+                ">>> Number of client nodes: " + clientNodes.size() + U.nl() +
                 (discoOrdered ? ">>> Topology version: " + topVer + U.nl() : "") +
                 ">>> Topology hash: 0x" + Long.toHexString(hash).toUpperCase() + U.nl();
 
@@ -857,26 +1084,29 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             log.debug(dbg);
         }
         else if (log.isInfoEnabled())
-            log.info(topologySnapshotMessage(rmtNodes.size(), totalCpus, heap));
+            log.info(topologySnapshotMessage(srvNodes.size(), clientNodes.size(), totalCpus, heap));
     }
 
     /**
-     * @param rmtNodesNum Remote nodes number.
+     * @param srvNodesNum Server nodes number.
+     * @param clientNodesNum Client nodes number.
      * @param totalCpus Total cpu number.
      * @param heap Heap size.
      * @return Topology snapshot message.
      */
-    private String topologySnapshotMessage(int rmtNodesNum, int totalCpus, double heap) {
+    private String topologySnapshotMessage(int srvNodesNum, int clientNodesNum, int totalCpus, double heap) {
         return PREFIX + " [" +
             (discoOrdered ? "ver=" + topSnap.get().topVer.topologyVersion() + ", " : "") +
-            "nodes=" + (rmtNodesNum + 1) +
+            "servers=" + srvNodesNum +
+            ", clients=" + clientNodesNum +
             ", CPUs=" + totalCpus +
-            ", heap=" + heap + "GB" +
-            ']';
+            ", heap=" + heap + "GB]";
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop0(boolean cancel) {
+        startLatch.countDown();
+
         // Stop segment check worker.
         if (segChkWrk != null) {
             segChkWrk.cancel();
@@ -885,20 +1115,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         if (!locJoinEvt.isDone())
-            locJoinEvt.onDone(new IgniteCheckedException("Failed to wait for local node joined event (grid is stopping)."));
+            locJoinEvt.onDone(
+                new IgniteCheckedException("Failed to wait for local node joined event (grid is stopping)."));
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        busyLock.block();
+
         // Stop receiving notifications.
         getSpi().setListener(null);
 
         // Stop discovery worker and metrics updater.
+        U.closeQuiet(metricsUpdateTask);
+
         U.cancel(discoWrk);
-        U.cancel(metricsUpdater);
 
         U.join(discoWrk, log);
-        U.join(metricsUpdater, log);
 
         // Stop SPI itself.
         stopSpi();
@@ -927,9 +1160,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node for given ID is alive.
      */
     public boolean alive(UUID nodeId) {
+        return getAlive(nodeId) != null;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @return Node if node is alive.
+     */
+    @Nullable public ClusterNode getAlive(UUID nodeId) {
         assert nodeId != null;
 
-        return getSpi().getNode(nodeId) != null; // Go directly to SPI without checking disco cache.
+        return getSpi().getNode(nodeId); // Go directly to SPI without checking disco cache.
     }
 
     /**
@@ -945,11 +1186,50 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * @param nodeId ID of the node.
      * @return {@code True} if ping succeeded.
+     * @throws IgniteClientDisconnectedCheckedException If ping failed.
      */
-    public boolean pingNode(UUID nodeId) {
+    public boolean pingNode(UUID nodeId) throws IgniteClientDisconnectedCheckedException {
         assert nodeId != null;
 
-        return getSpi().pingNode(nodeId);
+        if (!busyLock.enterBusy())
+            return false;
+
+        try {
+            return getSpi().pingNode(nodeId);
+        }
+        catch (IgniteException e) {
+            if (e.hasCause(IgniteClientDisconnectedCheckedException.class)) {
+                IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();
+
+                throw new IgniteClientDisconnectedCheckedException(reconnectFut, e.getMessage());
+            }
+
+            throw e;
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param nodeId ID of the node.
+     * @return {@code True} if ping succeeded.
+     */
+    public boolean pingNodeNoError(UUID nodeId) {
+        assert nodeId != null;
+
+        if (!busyLock.enterBusy())
+            return false;
+
+        try {
+            return getSpi().pingNode(nodeId);
+        }
+        catch (IgniteException e) {
+            return false;
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
@@ -1030,16 +1310,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return Discovery collection cache.
      */
     public DiscoCache discoCache() {
-        Snapshot cur;
+        Snapshot cur = topSnap.get();
 
-        while ((cur = topSnap.get()) == null) {
-            // Wrap the SPI collection to avoid possible floating collection.
-            if (topSnap.compareAndSet(null, cur = new Snapshot(
-                AffinityTopologyVersion.ZERO,
-                new DiscoCache(localNode(), getSpi().getRemoteNodes())))) {
-                return cur.discoCache;
-            }
-        }
+        assert cur != null;
 
         return cur.discoCache;
     }
@@ -1152,13 +1425,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Gets alive remote nodes with at least one cache configured.
+     * Gets alive remote server nodes with at least one cache configured.
      *
      * @param topVer Topology version (maximum allowed node order).
      * @return Collection of alive cache nodes.
      */
-    public Collection<ClusterNode> aliveRemoteNodesWithCaches(AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(null, topVer).aliveRemoteNodesWithCaches(topVer.topologyVersion());
+    public Collection<ClusterNode> aliveRemoteServerNodesWithCaches(AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(null, topVer).aliveRemoteServerNodesWithCaches(topVer.topologyVersion());
+    }
+
+    /**
+     * Gets alive server nodes with at least one cache configured.
+     *
+     * @param topVer Topology version (maximum allowed node order).
+     * @return Collection of alive cache nodes.
+     */
+    public Collection<ClusterNode> aliveServerNodesWithCaches(AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(null, topVer).aliveServerNodesWithCaches(topVer.topologyVersion());
     }
 
     /**
@@ -1190,9 +1473,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node is a cache data node.
      */
     public boolean cacheAffinityNode(ClusterNode node, String cacheName) {
-        CachePredicate predicate = registeredCaches.get(cacheName);
+        CachePredicate pred = registeredCaches.get(cacheName);
 
-        return predicate != null && predicate.dataNode(node);
+        return pred != null && pred.dataNode(node);
     }
 
     /**
@@ -1201,15 +1484,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node has near cache enabled.
      */
     public boolean cacheNearNode(ClusterNode node, String cacheName) {
-        CachePredicate predicate = registeredCaches.get(cacheName);
+        CachePredicate pred = registeredCaches.get(cacheName);
 
-        return predicate != null && predicate.nearNode(node);
+        return pred != null && pred.nearNode(node);
     }
 
+    /**
+     * @param node Node to check.
+     * @param cacheName Cache name.
+     * @return {@code True} if node has client cache (without near cache).
+     */
     public boolean cacheClientNode(ClusterNode node, String cacheName) {
-        CachePredicate predicate = registeredCaches.get(cacheName);
+        CachePredicate pred = registeredCaches.get(cacheName);
 
-        return predicate != null && predicate.clientNode(node);
+        return pred != null && pred.clientNode(node);
     }
 
     /**
@@ -1218,9 +1506,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return If cache with the given name is accessible on the given node.
      */
     public boolean cacheNode(ClusterNode node, String cacheName) {
-        CachePredicate predicate = registeredCaches.get(cacheName);
+        CachePredicate pred = registeredCaches.get(cacheName);
 
-        return predicate != null && predicate.cacheNode(node);
+        return pred != null && pred.cacheNode(node);
     }
 
     /**
@@ -1313,10 +1601,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * @param evt Event.
+     * @param msg Custom message.
+     * @throws IgniteCheckedException If failed.
      */
-    public void sendCustomEvent(Serializable evt) {
-        getSpi().sendCustomEvent(evt);
+    public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
+        try {
+            getSpi().sendCustomEvent(new CustomMessageWrapper(msg));
+        }
+        catch (IgniteClientDisconnectedException e) {
+            IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();
+
+            throw new IgniteClientDisconnectedCheckedException(reconnectFut, e.getMessage());
+        }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**
@@ -1329,9 +1628,49 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * @param nodeId Node ID.
+     * @param warning Warning message to be shown on all nodes.
+     * @return Whether node is failed.
+     */
+    public boolean tryFailNode(UUID nodeId, @Nullable String warning) {
+        if (!busyLock.enterBusy())
+            return false;
+
+        try {
+            if (!getSpi().pingNode(nodeId)) {
+                getSpi().failNode(nodeId, warning);
+
+                return true;
+            }
+
+            return false;
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param nodeId Node ID to fail.
+     * @param warning Warning message to be shown on all nodes.
+     */
+    public void failNode(UUID nodeId, @Nullable String warning) {
+        if (!busyLock.enterBusy())
+            return;
+
+        try {
+            getSpi().failNode(nodeId, warning);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
      * Updates topology version if current version is smaller than updated.
      *
      * @param updated Updated topology version.
+     * @param discoCache Discovery cache.
      * @return {@code True} if topology was updated.
      */
     private boolean updateTopologyVersionIfGreater(AffinityTopologyVersion updated, DiscoCache discoCache) {
@@ -1449,8 +1788,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Worker for discovery events. */
     private class DiscoveryWorker extends GridWorker {
         /** Event queue. */
-        private final BlockingQueue<GridTuple5<Integer, AffinityTopologyVersion, ClusterNode, Collection<ClusterNode>, Serializable>> evts =
-            new LinkedBlockingQueue<>();
+        private final BlockingQueue<GridTuple5<Integer, AffinityTopologyVersion, ClusterNode, Collection<ClusterNode>,
+            DiscoveryCustomMessage>> evts = new LinkedBlockingQueue<>();
 
         /** Node segmented event fired flag. */
         private boolean nodeSegFired;
@@ -1498,6 +1837,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 else if (type == EVT_NODE_SEGMENTED)
                     evt.message("Node segmented: " + node);
 
+                else if (type == EVT_CLIENT_NODE_DISCONNECTED)
+                    evt.message("Client node disconnected: " + node);
+
+                else if (type == EVT_CLIENT_NODE_RECONNECTED)
+                    evt.message("Client node reconnected: " + node);
+
                 else
                     assert false;
 
@@ -1510,15 +1855,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param topVer Topology version.
          * @param node Node.
          * @param topSnapshot Topology snapshot.
+         * @param data Custom message.
          */
         void addEvent(
             int type,
             AffinityTopologyVersion topVer,
             ClusterNode node,
             Collection<ClusterNode> topSnapshot,
-            @Nullable Serializable data
+            @Nullable DiscoveryCustomMessage data
         ) {
-            assert node != null;
+            assert node != null : data;
 
             evts.add(F.t(type, topVer, node, topSnapshot, data));
         }
@@ -1547,6 +1893,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
                 catch (Throwable t) {
                     U.error(log, "Unexpected exception in discovery worker thread (ignored).", t);
+
+                    if (t instanceof Error)
+                        throw (Error)t;
                 }
             }
         }
@@ -1554,7 +1903,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** @throws InterruptedException If interrupted. */
         @SuppressWarnings("DuplicateCondition")
         private void body0() throws InterruptedException {
-            GridTuple5<Integer, AffinityTopologyVersion, ClusterNode, Collection<ClusterNode>, Serializable> evt = evts.take();
+            GridTuple5<Integer, AffinityTopologyVersion, ClusterNode, Collection<ClusterNode>,
+                DiscoveryCustomMessage> evt = evts.take();
 
             int type = evt.get1();
 
@@ -1611,6 +1961,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                     else if (log.isDebugEnabled())
                         log.debug("Daemon node left topology: " + node);
+
+                    break;
+                }
+
+                case EVT_CLIENT_NODE_DISCONNECTED: {
+                    // No-op.
+
+                    break;
+                }
+
+                case EVT_CLIENT_NODE_RECONNECTED: {
+                    if (log.isInfoEnabled())
+                        log.info("Client node reconnected to topology: " + node);
+
+                    ackTopology(topVer.topologyVersion(), true);
 
                     break;
                 }
@@ -1672,7 +2037,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         customEvt.type(type);
                         customEvt.topologySnapshot(topVer.topologyVersion(), null);
                         customEvt.affinityTopologyVersion(topVer);
-                        customEvt.data(evt.get5());
+                        customEvt.customMessage(evt.get5());
 
                         ctx.event().record(customEvt);
                     }
@@ -1698,7 +2063,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          *
          */
         private void onSegmentation() {
-            GridSegmentationPolicy segPlc = ctx.config().getSegmentationPolicy();
+            SegmentationPolicy segPlc = ctx.config().getSegmentationPolicy();
 
             // Always disconnect first.
             try {
@@ -1737,28 +2102,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      *
      */
-    private class MetricsUpdater extends GridWorker {
+    private class MetricsUpdater implements Runnable {
         /** */
         private long prevGcTime = -1;
 
         /** */
         private long prevCpuTime = -1;
 
-        /**
-         *
-         */
-        private MetricsUpdater() {
-            super(ctx.gridName(), "metrics-updater", GridDiscoveryManager.this.log);
-        }
-
         /** {@inheritDoc} */
-        @Override protected void body() throws IgniteInterruptedCheckedException {
-            while (!isCancelled()) {
-                U.sleep(METRICS_UPDATE_FREQ);
-
-                gcCpuLoad = getGcCpuLoad();
-                cpuLoad = getCpuLoad();
-            }
+        @Override public void run() {
+            gcCpuLoad = getGcCpuLoad();
+            cpuLoad = getCpuLoad();
         }
 
         /**
@@ -1891,16 +2245,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private final AffinityTopologyVersion topVer;
 
         /** */
+        @GridToStringExclude
         private final DiscoCache discoCache;
 
         /**
          * @param topVer Topology version.
          * @param discoCache Disco cache.
          */
-        private Snapshot(AffinityTopologyVersion topVer,
-            DiscoCache discoCache) {
+        private Snapshot(AffinityTopologyVersion topVer, DiscoCache discoCache) {
             this.topVer = topVer;
             this.discoCache = discoCache;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Snapshot.class, this);
         }
     }
 
@@ -1969,9 +2328,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private final Collection<ClusterNode> aliveNodesWithCaches;
 
         /**
-         * Cached alive remote nodes with caches.
+         * Cached alive server remote nodes with caches.
          */
-        private final Collection<ClusterNode> aliveRmtNodesWithCaches;
+        private final Collection<ClusterNode> aliveSrvNodesWithCaches;
+
+        /**
+         * Cached alive remote server nodes with caches.
+         */
+        private final Collection<ClusterNode> aliveRmtSrvNodesWithCaches;
 
         /**
          * @param loc Local node.
@@ -1992,21 +2356,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             all.addAll(rmtNodes);
 
+            Collections.sort(all, GridNodeOrderComparator.INSTANCE);
+
             allNodes = Collections.unmodifiableList(all);
 
-            Map<String, Collection<ClusterNode>> cacheMap =
-                new HashMap<>(allNodes.size(), 1.0f);
-            Map<String, Collection<ClusterNode>> rmtCacheMap =
-                new HashMap<>(allNodes.size(), 1.0f);
-            Map<String, Collection<ClusterNode>> dhtNodesMap =
-                new HashMap<>(allNodes.size(), 1.0f);
+            Map<String, Collection<ClusterNode>> cacheMap = new HashMap<>(allNodes.size(), 1.0f);
+            Map<String, Collection<ClusterNode>> rmtCacheMap = new HashMap<>(allNodes.size(), 1.0f);
+            Map<String, Collection<ClusterNode>> dhtNodesMap =new HashMap<>(allNodes.size(), 1.0f);
             Collection<ClusterNode> nodesWithCaches = new HashSet<>(allNodes.size());
             Collection<ClusterNode> rmtNodesWithCaches = new HashSet<>(allNodes.size());
 
             aliveCacheNodes = new ConcurrentHashMap8<>(allNodes.size(), 1.0f);
             aliveRmtCacheNodes = new ConcurrentHashMap8<>(allNodes.size(), 1.0f);
             aliveNodesWithCaches = new ConcurrentSkipListSet<>();
-            aliveRmtNodesWithCaches = new ConcurrentSkipListSet<>();
+            aliveSrvNodesWithCaches = new ConcurrentSkipListSet<>();
+            aliveRmtSrvNodesWithCaches = new ConcurrentSkipListSet<>();
             nodesByVer = new TreeMap<>();
 
             long maxOrder0 = 0;
@@ -2058,8 +2422,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (alive(node.id())) {
                         aliveNodesWithCaches.add(node);
 
-                        if (!loc.id().equals(node.id()))
-                            aliveRmtNodesWithCaches.add(node);
+                        if (!CU.clientNode(node)) {
+                            aliveSrvNodesWithCaches.add(node);
+
+                            if (!loc.id().equals(node.id()))
+                                aliveRmtSrvNodesWithCaches.add(node);
+                        }
                     }
                 }
 
@@ -2141,13 +2509,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** @return All nodes. */
         Collection<ClusterNode> allNodes() {
             return allNodes;
-        }
-
-        /**
-         * @return All nodes with at least one cache configured.
-         */
-        Collection<ClusterNode> allNodesWithCaches() {
-            return allNodesWithCaches;
         }
 
         /**
@@ -2249,13 +2610,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /**
-         * Gets all alive remote nodes with at least one cache configured.
+         * Gets all alive remote server nodes with at least one cache configured.
          *
          * @param topVer Topology version.
          * @return Collection of nodes.
          */
-        Collection<ClusterNode> aliveRemoteNodesWithCaches(final long topVer) {
-            return filter(topVer, aliveRmtNodesWithCaches);
+        Collection<ClusterNode> aliveRemoteServerNodesWithCaches(final long topVer) {
+            return filter(topVer, aliveRmtSrvNodesWithCaches);
+        }
+
+        /**
+         * Gets all alive server nodes with at least one cache configured.
+         *
+         * @param topVer Topology version.
+         * @return Collection of nodes.
+         */
+        Collection<ClusterNode> aliveServerNodesWithCaches(final long topVer) {
+            return filter(topVer, aliveSrvNodesWithCaches);
         }
 
         /**
@@ -2292,7 +2663,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             filterNodeMap(aliveRmtCacheNodes, leftNode);
 
             aliveNodesWithCaches.remove(leftNode);
-            aliveRmtNodesWithCaches.remove(leftNode);
+            aliveSrvNodesWithCaches.remove(leftNode);
+            aliveRmtSrvNodesWithCaches.remove(leftNode);
         }
 
         /**
@@ -2384,11 +2756,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private boolean loc;
 
         /** Collection of client near nodes. */
-        private Map<UUID, Boolean> clientNodes;
+        private ConcurrentHashMap<UUID, Boolean> clientNodes;
 
         /**
          * @param cacheFilter Cache filter.
          * @param nearEnabled Near enabled flag.
+         * @param loc {@code True} if cache is local.
          */
         private CachePredicate(IgnitePredicate<ClusterNode> cacheFilter, boolean nearEnabled, boolean loc) {
             assert cacheFilter != null;
@@ -2402,9 +2775,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         /**
          * @param nodeId Near node ID to add.
+         * @param nearEnabled Near enabled flag.
          */
         public void addClientNode(UUID nodeId, boolean nearEnabled) {
-            clientNodes.put(nodeId, nearEnabled);
+            clientNodes.putIfAbsent(nodeId, nearEnabled);
         }
 
         /**
@@ -2419,7 +2793,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if this node is a data node for given cache.
          */
         public boolean dataNode(ClusterNode node) {
-            return !node.isDaemon() && cacheFilter.apply(node);
+            return !node.isDaemon() && CU.affinityNode(node, cacheFilter);
         }
 
         /**
@@ -2427,7 +2801,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if cache is accessible on the given node.
          */
         public boolean cacheNode(ClusterNode node) {
-            return !node.isDaemon() && (cacheFilter.apply(node) || clientNodes.containsKey(node.id()));
+            return !node.isDaemon() && (CU.affinityNode(node, cacheFilter) || clientNodes.containsKey(node.id()));
         }
 
         /**
@@ -2438,8 +2812,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             if (node.isDaemon())
                 return false;
 
-            if (nearEnabled && cacheFilter.apply(node))
-                return true;
+            if (CU.affinityNode(node, cacheFilter))
+                return nearEnabled;
 
             Boolean near = clientNodes.get(node.id());
 
@@ -2448,7 +2822,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         /**
          * @param node Node to check.
-         * @return {@code True} if near cache is present on the given nodes.
+         * @return {@code True} if client cache is present on the given nodes.
          */
         public boolean clientNode(ClusterNode node) {
             if (node.isDaemon())

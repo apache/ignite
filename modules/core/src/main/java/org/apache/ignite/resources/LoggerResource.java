@@ -36,7 +36,7 @@ import java.lang.annotation.*;
  * public class MyGridJob implements ComputeJob {
  *      ...
  *      &#64;LoggerResource
- *      private GridLogger log;
+ *      private IgniteLogger log;
  *      ...
  *  }
  * </pre>

@@ -50,9 +50,6 @@ public class GridSqlFunction extends GridSqlElement {
     /** */
     protected final GridSqlFunctionType type;
 
-    /**  */
-    private String castType;
-
     /**
      * @param type Function type.
      */
@@ -66,6 +63,8 @@ public class GridSqlFunction extends GridSqlElement {
      * @param name Name.
      */
     private GridSqlFunction(String schema, GridSqlFunctionType type, String name) {
+        super(new ArrayList<GridSqlElement>());
+
         if (name == null)
             throw new NullPointerException();
 
@@ -85,16 +84,6 @@ public class GridSqlFunction extends GridSqlElement {
         this(schema, TYPE_MAP.get(name), name);
     }
 
-    /**
-     * @param castType Type for {@link GridSqlFunctionType#CAST} function.
-     * @return {@code this}.
-     */
-    public GridSqlFunction setCastType(String castType) {
-        this.castType = castType;
-
-        return this;
-    }
-
     /** {@inheritDoc} */
     @Override public String getSQL() {
         StatementBuilder buff = new StatementBuilder();
@@ -105,14 +94,14 @@ public class GridSqlFunction extends GridSqlElement {
         buff.append(Parser.quoteIdentifier(name));
 
         if (type == CASE) {
-            if (!children.isEmpty())
-                buff.append(" ").append(child().getSQL());
+            buff.append(' ').append(child().getSQL());
 
             for (int i = 1, len = children.size() - 1; i < len; i += 2) {
                 buff.append(" WHEN ").append(child(i).getSQL());
                 buff.append(" THEN ").append(child(i + 1).getSQL());
             }
-            if (children.size() % 2 == 0)
+
+            if ((children.size() & 1) == 0)
                 buff.append(" ELSE ").append(child(children.size() - 1).getSQL());
 
             return buff.append(" END").toString();
@@ -121,12 +110,16 @@ public class GridSqlFunction extends GridSqlElement {
         buff.append('(');
 
         if (type == CAST) {
+            String castType = resultType().sql();
+
             assert !F.isEmpty(castType) : castType;
             assert size() == 1;
 
             buff.append(child().getSQL()).append(" AS ").append(castType);
         }
         else if (type == CONVERT) {
+            String castType = resultType().sql();
+
             assert !F.isEmpty(castType) : castType;
             assert size() == 1;
 

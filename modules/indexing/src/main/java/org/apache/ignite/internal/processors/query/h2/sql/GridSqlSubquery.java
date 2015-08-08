@@ -17,17 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.util.*;
+
 /**
  * Subquery.
  */
 public class GridSqlSubquery extends GridSqlElement {
     /** */
-    private GridSqlSelect select;
+    private GridSqlQuery select;
 
     /**
      * @param select Select.
      */
-    public GridSqlSubquery(GridSqlSelect select) {
+    public GridSqlSubquery(GridSqlQuery select) {
+        super(Collections.<GridSqlElement>emptyList());
+
         this.select = select;
     }
 
@@ -39,14 +43,14 @@ public class GridSqlSubquery extends GridSqlElement {
     /**
      * @return Select.
      */
-    public GridSqlSelect select() {
+    public GridSqlQuery select() {
         return select;
     }
 
     /**
      * @param select New select.
      */
-    public void select(GridSqlSelect select) {
+    public void select(GridSqlQuery select) {
         this.select = select;
     }
 }

@@ -34,7 +34,7 @@ public class HibernateTimestampsRegion extends HibernateGeneralDataRegion implem
      * @param cache Region cache.
      */
     public HibernateTimestampsRegion(HibernateRegionFactory factory, String name,
-        Ignite ignite, GridCache<Object, Object> cache) {
+        Ignite ignite, IgniteInternalCache<Object, Object> cache) {
         super(factory, name, ignite, cache);
     }
 }

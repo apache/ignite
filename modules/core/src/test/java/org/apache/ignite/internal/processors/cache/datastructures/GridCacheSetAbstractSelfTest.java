@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -27,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
@@ -49,17 +47,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMarshaller(new OptimizedMarshaller(false));
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected TestCollectionConfiguration collectionConfiguration() {
-        TestCollectionConfiguration colCfg = super.collectionConfiguration();
+    @Override protected CollectionConfiguration collectionConfiguration() {
+        CollectionConfiguration colCfg = super.collectionConfiguration();
 
         if (colCfg.getCacheMode() == PARTITIONED)
             colCfg.setBackups(1);
@@ -563,20 +552,26 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     }
 
     /**
-     * TODO: GG-7952, enable when fixed.
-     *
      * @throws Exception If failed.
      */
-    public void _testNodeJoinsAndLeaves() throws Exception {
+    public void testNodeJoinsAndLeaves() throws Exception {
+        if (collectionCacheMode() == LOCAL)
+            return;
+
+        fail("https://issues.apache.org/jira/browse/IGNITE-584");
+
         testNodeJoinsAndLeaves(false);
     }
 
     /**
-     * TODO: GG-7952, enable when fixed.
-     *
      * @throws Exception If failed.
      */
-    public void _testNodeJoinsAndLeavesCollocated() throws Exception {
+    public void testNodeJoinsAndLeavesCollocated() throws Exception {
+        if (collectionCacheMode() == LOCAL)
+            return;
+
+        fail("https://issues.apache.org/jira/browse/IGNITE-584");
+
         testNodeJoinsAndLeaves(true);
     }
 
@@ -585,9 +580,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @throws Exception If failed.
      */
     private void testNodeJoinsAndLeaves(boolean collocated) throws Exception {
-        if (collectionCacheMode() == LOCAL)
-            return;
-
         CollectionConfiguration colCfg = config(collocated);
 
         Set<Integer> set0 = grid(0).set(SET_NAME, colCfg);
@@ -761,7 +753,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteInternalFuture<?> fut;
 
         try {
-                fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     try {
                         while (!stop.get()) {
@@ -791,7 +783,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         for (int i = 0; i < gridCount(); i++) {
             Iterator<GridCacheEntryEx> entries =
-                    ((IgniteKernal)grid(i)).context().cache().internalCache(cctx.name()).map().allEntries0().iterator();
+                (grid(i)).context().cache().internalCache(cctx.name()).map().allEntries0().iterator();
 
             while (entries.hasNext()) {
                 GridCacheEntryEx entry = entries.next();

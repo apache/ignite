@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.testframework.*;
 import org.jsr166.*;
 
@@ -71,6 +73,18 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
     private String sizePropVal;
 
     /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
+
+        if (testClientNode() && getTestGridName(0).equals(gridName))
+            cfg.setClientMode(true);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return GRID_CNT;
     }
@@ -106,9 +120,18 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
     }
 
     /**
+     * @return {@code True} if test updates from client node.
+     */
+    protected boolean testClientNode() {
+        return false;
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testPutAndRemove() throws Exception {
+        assertEquals(testClientNode(), (boolean)grid(0).configuration().isClientMode());
+
         final IgniteCache<Integer, Integer> sndCache0 = grid(0).cache(null);
 
         final AtomicBoolean stop = new AtomicBoolean();

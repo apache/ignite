@@ -23,7 +23,7 @@ import org.scalatest._
 /**
  * Unit test for 'help' command.
  */
-class VisorHelpCommandSpec extends FlatSpec with Matchers {
+class VisorHelpCommandSpec extends FunSpec with Matchers {
     // Pre-initialize command so that help can be registered.
     commands.ack.VisorAckCommand
     commands.ping.VisorPingCommand
@@ -40,29 +40,34 @@ class VisorHelpCommandSpec extends FlatSpec with Matchers {
     commands.deploy.VisorDeployCommand
     commands.start.VisorStartCommand
 
-    "General help" should "properly execute via alias" in { visor.help() }
-    "General help" should "properly execute w/o alias" in { visor.help() }
-    "Help for 'start' command" should "properly execute" in { visor.help("start") }
-    "Help for 'deploy' command" should "properly execute" in { visor.help("deploy") }
-    "Help for 'events' command" should "properly execute" in { visor.help("events") }
-    "Help for 'mclear' command" should "properly execute" in { visor.help("mclear") }
-    "Help for 'cache' command" should "properly execute" in { visor.help("cache") }
-    "Help for 'disco' command" should "properly execute" in { visor.help("disco") }
-    "Help for 'alert' command" should "properly execute" in { visor.help("alert") }
-    "Help for 'node' command" should "properly execute" in { visor.help("node") }
-    "Help for 'vvm' command" should "properly execute" in { visor.help("vvm") }
-    "Help for 'kill' command" should "properly execute" in { visor.help("kill") }
-    "Help for 'top' command" should "properly execute" in { visor.help("top") }
-    "Help for 'config' command" should "properly execute" in { visor.help("config") }
-    "Help for 'ack' command" should "properly execute" in { visor.help("ack") }
-    "Help for 'ping' command" should "properly execute" in { visor.help("ping") }
-    "Help for 'close' command" should "properly execute" in { visor.help("close") }
-    "Help for 'open' command" should "properly execute" in { visor.help("open") }
-    "Help for 'status' command" should "properly execute" in { visor.help("status") }
-    "Help for 'mset' command" should "properly execute" in { visor.help("mset") }
-    "Help for 'mget' command" should "properly execute" in { visor.help("mget") }
-    "Help for 'mlist' command" should "properly execute" in { visor.help("mlist") }
-    "Help for 'help' command" should "properly execute" in { visor.help("help") }
-    "Help for 'log' command" should "properly execute" in { visor.help("log") }
-    "Help for 'dash' command" should "properly execute" in { visor.help("dash") }
+
+    describe("General help") {
+        it ("should properly execute via alias") { visor.searchCmd("?").get.emptyArgs }
+        it ("should properly execute w/o alias") { visor.searchCmd("help").get.emptyArgs }
+    }
+
+    describe("Help for command") {
+        it ("should properly execute for 'start' command") { visor.help("start") }
+        it ("should properly execute for 'deploy' command") { visor.help("deploy") }
+        it ("should properly execute for 'events' command") { visor.help("events") }
+        it ("should properly execute for 'mclear' command") { visor.help("mclear") }
+        it ("should properly execute for 'cache' command") { visor.help("cache") }
+        it ("should properly execute for 'disco' command") { visor.help("disco") }
+        it ("should properly execute for 'alert' command") { visor.help("alert") }
+        it ("should properly execute for 'node' command") { visor.help("node") }
+        it ("should properly execute for 'vvm' command") { visor.help("vvm") }
+        it ("should properly execute for 'kill' command") { visor.help("kill") }
+        it ("should properly execute for 'top' command") { visor.help("top") }
+        it ("should properly execute for 'config' command") { visor.help("config") }
+        it ("should properly execute for 'ack' command") { visor.help("ack") }
+        it ("should properly execute for 'ping' command") { visor.help("ping") }
+        it ("should properly execute for 'close' command") { visor.help("close") }
+        it ("should properly execute for 'open' command") { visor.help("open") }
+        it ("should properly execute for 'start' status") { visor.help("status") }
+        it ("should properly execute for 'start' mset") { visor.help("mset") }
+        it ("should properly execute for 'start' mget") { visor.help("mget") }
+        it ("should properly execute for 'start' mlist") { visor.help("mlist") }
+        it ("should properly execute for 'start' log") { visor.help("log") }
+        it ("should properly execute for 'start' dash") { visor.help("dash") }
+    }
 }

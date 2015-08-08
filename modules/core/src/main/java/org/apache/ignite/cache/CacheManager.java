@@ -130,6 +130,7 @@ public class CacheManager implements javax.cache.CacheManager {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <K, V, C extends Configuration<K, V>> Cache<K, V> createCache(String cacheName, C cacheCfg)
         throws IllegalArgumentException {
         kernalGateway.readLock();
@@ -155,10 +156,10 @@ public class CacheManager implements javax.cache.CacheManager {
 
             IgniteCache<K, V> res = ignite.createCache(igniteCacheCfg);
 
-            ((IgniteCacheProxy<K, V>)res).setCacheManager(this);
-
             if (res == null)
                 throw new CacheException();
+
+            ((IgniteCacheProxy<K, V>)res).setCacheManager(this);
 
             if (igniteCacheCfg.isManagementEnabled())
                 enableManagement(cacheName, true);
@@ -219,6 +220,7 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /**
      * @param cacheName Cache name.
+     * @return Cache.
      */
     @Nullable private <K, V> IgniteCache<K, V> getCache0(String cacheName) {
         if (cacheName == null)
@@ -272,11 +274,13 @@ public class CacheManager implements javax.cache.CacheManager {
         }
 
         if (cache != null)
-            cache.close();
+            cache.destroy();
     }
 
     /**
      * @param cacheName Cache name.
+     * @param objName Object name.
+     * @return Object name instance.
      */
     private ObjectName getObjectName(String cacheName, String objName) {
         String mBeanName = "javax.cache:type=" + objName + ",CacheManager="
@@ -339,7 +343,8 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /**
      * @param mxbean MXBean.
-     * @param name cache name.
+     * @param name Cache name.
+     * @param beanType Bean type.
      */
     private void registerCacheObject(Object mxbean, String name, String beanType) {
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();

@@ -35,7 +35,7 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
      * @param cache Region cache.
      */
     public HibernateGeneralDataRegion(HibernateRegionFactory factory, String name,
-        Ignite ignite, GridCache<Object, Object> cache) {
+        Ignite ignite, IgniteInternalCache<Object, Object> cache) {
         super(factory, name, ignite, cache);
     }
 
@@ -51,7 +51,7 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
     /** {@inheritDoc} */
     @Override public void put(Object key, Object val) throws CacheException {
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
         } catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }

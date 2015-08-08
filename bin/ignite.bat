@@ -102,7 +102,7 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 :: Set IGNITE_LIBS
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
-call "%SCRIPTS_HOME%\include\target-classpath.bat" &:: Will be removed in release.
+call "%SCRIPTS_HOME%\include\build-classpath.bat" &:: Will be removed in the binary release.
 set CP=%IGNITE_LIBS%
 
 ::
@@ -129,8 +129,12 @@ set RESTART_SUCCESS_OPT=-DIGNITE_SUCCESS_FILE=%RESTART_SUCCESS_FILE%
 ::
 :: You can specify IGNITE_JMX_PORT environment variable for overriding automatically found JMX port
 ::
-for /F "tokens=*" %%A in ('""%JAVA_HOME%\bin\java" -cp %CP% org.apache.ignite.internal.util.portscanner.GridJmxPortFinder"') do (
-    set JMX_PORT=%%A
+:: This is executed if -nojmx is not specified
+::
+if not "%NO_JMX%" == "1" (
+    for /F "tokens=*" %%A in ('""%JAVA_HOME%\bin\java" -cp %CP% org.apache.ignite.internal.util.portscanner.GridJmxPortFinder"') do (
+        set JMX_PORT=%%A
+    )
 )
 
 ::
@@ -195,7 +199,7 @@ if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.startup.cmdline.Command
 ::
 :: Remote debugging (JPDA).
 :: Uncomment and change if remote debugging is required.
-:: set JVM_OPTS=-Xdebug -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n %JVM_OPTS%
+:: set JVM_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 %JVM_OPTS%
 ::
 
 if "%INTERACTIVE%" == "1" (

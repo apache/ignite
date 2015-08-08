@@ -25,7 +25,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -62,8 +61,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        c.setMarshaller(new OptimizedMarshaller(true));
-
         // Cache.
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -92,7 +89,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testAllExamples() throws Exception {
         checkQuery("select ? limit ? offset ?");
@@ -172,6 +169,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select count(*) as a from Person");
         checkQuery("select count(*) as a, count(p.*), count(p.name) from Person p");
         checkQuery("select count(distinct p.name) from Person p");
+        checkQuery("select name, count(*) cnt from Person group by name order by cnt desc limit 10");
 
         checkQuery("select p.name, avg(p.old), max(p.old) from Person p group by p.name");
         checkQuery("select p.name n, avg(p.old) a, max(p.old) m from Person p group by p.name");
@@ -197,17 +195,38 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select addr.street from Person p, (select a.street from Address a where a.street is not null) addr");
 
         checkQuery("select p.name n from \"\".Person p order by p.old + 10");
+
+        checkQuery("select case when p.name is null then 'Vasya' end x from \"\".Person p");
+        checkQuery("select case when p.name like 'V%' then 'Vasya' else 'Other' end x from \"\".Person p");
+        checkQuery("select case when upper(p.name) = 'VASYA' then 'Vasya' when p.name is not null then p.name else 'Other' end x from \"\".Person p");
+
+        checkQuery("select case p.name when 'Vasya' then 1 end z from \"\".Person p");
+        checkQuery("select case p.name when 'Vasya' then 1 when 'Petya' then 2 end z from \"\".Person p");
+        checkQuery("select case p.name when 'Vasya' then 1 when 'Petya' then 2 else 3 end z from \"\".Person p");
+        checkQuery("select case p.name when 'Vasya' then 1 else 3 end z from \"\".Person p");
+
+        checkQuery("select count(*) as a from Person union select count(*) as a from Address");
+        checkQuery("select old, count(*) as a from Person group by old union select 1, count(*) as a from Address");
+        checkQuery("select name from Person MINUS select street from Address");
+        checkQuery("select name from Person EXCEPT select street from Address");
+        checkQuery("select name from Person INTERSECT select street from Address");
+        checkQuery("select name from Person UNION select street from Address limit 5");
+        checkQuery("select name from Person UNION select street from Address limit ?");
+        checkQuery("select name from Person UNION select street from Address limit ? offset ?");
+        checkQuery("(select name from Person limit 4) UNION (select street from Address limit 1) limit ? offset ?");
+        checkQuery("(select 2 a) union all (select 1) order by 1");
+        checkQuery("(select 2 a) union all (select 1) order by a desc nulls first limit ? offset ?");
     }
 
     /**
      *
      */
     public void testExample1() throws Exception {
-        Select select = parse("select p.name n, max(p.old) maxOld, min(p.old) minOld from Person p group by p.name having maxOld > 10 and min(p.old) < 1");
+        Query select = parse("select p.name n, max(p.old) maxOld, min(p.old) minOld from Person p group by p.name having maxOld > 10 and min(p.old) < 1");
 
         GridSqlQueryParser ses = new GridSqlQueryParser();
 
-        GridSqlSelect gridSelect = ses.parse(select);
+        GridSqlQuery gridSelect = ses.parse(select);
 
         //System.out.println(select.getPlanSQL());
         System.out.println(gridSelect.getSQL());
@@ -217,7 +236,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     private JdbcConnection connection() throws Exception {
-        GridKernalContext ctx = ((IgniteKernal)ignite).context();
+        GridKernalContext ctx = ((IgniteEx)ignite).context();
 
         GridQueryProcessor qryProcessor = ctx.query();
 
@@ -266,14 +285,14 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         String res;
 
-        if (prepared instanceof Select)
-            res = ses.parse((Select) prepared).getSQL();
+        if (prepared instanceof Query)
+            res = ses.parse((Query) prepared).getSQL();
         else
             throw new UnsupportedOperationException();
 
-        assertSqlEquals(prepared.getPlanSQL(), res);
-
         System.out.println(normalizeSql(res));
+
+        assertSqlEquals(prepared.getPlanSQL(), res);
     }
 
     @QuerySqlFunction

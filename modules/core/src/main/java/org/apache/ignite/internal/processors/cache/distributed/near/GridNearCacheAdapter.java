@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -37,9 +36,6 @@ import javax.cache.*;
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
-
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Common logic for near caches.
@@ -76,12 +72,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 int hash,
                 CacheObject val,
                 GridCacheMapEntry next,
-                long ttl,
                 int hdrId
             ) {
                 // Can't hold any locks here - this method is invoked when
                 // holding write-lock on the whole cache map.
-                return new GridNearCacheEntry(ctx, key, hash, val, next, ttl, hdrId);
+                if (ctx.useOffheapEntry())
+                    return new GridNearOffHeapCacheEntry(ctx, key, hash, val, next, hdrId);
+
+                return new GridNearCacheEntry(ctx, key, hash, val, next, hdrId);
             }
         });
     }
@@ -92,12 +90,20 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     public abstract GridDhtCacheAdapter<K, V> dht();
 
     /** {@inheritDoc} */
+    @Override public void onReconnected() {
+        map = new GridCacheConcurrentMap(ctx,
+            ctx.config().getNearConfiguration().getNearStartSize(),
+            0.75F,
+            map.getEntryFactory());
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isNear() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCachePreloader<K, V> preloader() {
+    @Override public GridCachePreloader preloader() {
         return dht().preloader();
     }
 
@@ -202,24 +208,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             taskName,
             true,
             null,
-            skipVals);
-    }
-
-    /** {@inheritDoc} */
-    @Override public V reload(K key)
-        throws IgniteCheckedException {
-        V val;
-
-        try {
-            val = dht().reload(key);
-        }
-        catch (GridDhtInvalidPartitionException ignored) {
-            return null;
-        }
-
-        V nearVal = super.reload(key);
-
-        return val == null ? nearVal : val;
+            skipVals,
+            /*skip store*/false);
     }
 
     /**
@@ -231,6 +221,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
+     * @param skipVal Skip value flag.
+     * @param skipStore Skip store flag.
      * @return Loaded values.
      */
     public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable IgniteInternalTx tx,
@@ -241,7 +233,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         String taskName,
         boolean deserializePortable,
         @Nullable ExpiryPolicy expiryPlc,
-        boolean skipVal
+        boolean skipVal,
+        boolean skipStore
     ) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -252,7 +245,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
-            true,
+            !skipStore,
             reload,
             forcePrimary,
             txx,
@@ -409,101 +402,16 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<V> primaryValues(@Nullable CacheEntryPredicate... filter) {
-        return new GridCacheValueCollection<>(
-            ctx,
-            entrySet(filter),
-            ctx.vararg(
-                CU.<K, V>cachePrimary0(ctx.grid().<K>affinity(ctx.name()), ctx.localNode())));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean evict(K key, @Nullable CacheEntryPredicate[] filter) {
+    @Override public boolean evict(K key) {
         // Use unary 'and' to make sure that both sides execute.
-        return super.evict(key, filter) & dht().evict(key, filter);
-    }
-
-    /**
-     * @param key Key to evict.
-     * @param filter Optional filter.
-     * @return {@code True} if evicted.
-     */
-    public boolean evictNearOnly(K key, @Nullable CacheEntryPredicate[] filter) {
-        return super.evict(key, filter);
+        return super.evict(key) & dht().evict(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void evictAll(Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate[] filter) {
-        super.evictAll(keys, filter);
+    @Override public void evictAll(Collection<? extends K> keys) {
+        super.evictAll(keys);
 
-        dht().evictAll(keys, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Cache.Entry<K, V> entry(K key) {
-        // We don't try wrap entry from near or dht cache.
-        // Created object will be wrapped once some method is called.
-        return new CacheEntryImpl<>(key, peek(key));
-    }
-
-    /**
-     * Peeks only near cache without looking into DHT cache.
-     *
-     * @param key Key.
-     * @return Peeked value.
-     */
-    @Nullable public V peekNearOnly(K key) {
-        try {
-            GridTuple<V> peek = peek0(true, key, SMART, CU.empty0());
-
-            return peek != null ? peek.get() : null;
-        }
-        catch (GridCacheFilterFailedException ignored) {
-            if (log.isDebugEnabled())
-                log.debug("Filter validation failed for key: " + key);
-
-            return null;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public V peek(K key, @Nullable CacheEntryPredicate filter) {
-        try {
-            GridTuple<V> res = peek0(false, key, SMART, filter);
-
-            if (res != null)
-                return res.get();
-        }
-        catch (GridCacheFilterFailedException e) {
-            e.printStackTrace();
-
-            assert false : "Filter should not fail since fail-fast is false";
-        }
-
-        return dht().peek(key, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
-        GridTuple<V> val = null;
-
-        if (!modes.contains(PARTITIONED_ONLY)) {
-            try {
-                val = peek0(true, key, modes, ctx.tm().txx());
-            }
-            catch (GridCacheFilterFailedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Filter validation failed for key: " + key);
-
-                return null;
-            }
-        }
-
-        if (val != null)
-            return val.get();
-
-        return !modes.contains(NEAR_ONLY) ? dht().peek(key, modes) : null;
+        dht().evictAll(keys);
     }
 
     /** {@inheritDoc} */
@@ -521,24 +429,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public V promote(K key, boolean deserializePortable) throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
-
         // Unswap only from dht(). Near cache does not have swap storage.
         return dht().promote(key, deserializePortable);
     }
 
     /** {@inheritDoc} */
-    @Override public V promote(K key) throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
-
-        // Unswap only from dht(). Near cache does not have swap storage.
-        return dht().promote(key);
-    }
-
-    /** {@inheritDoc} */
     @Override public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
-
         // Unswap only from dht(). Near cache does not have swap storage.
         // In near-only cache this is a no-op.
         if (ctx.affinityNode())
@@ -548,18 +444,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Nullable @Override public Cache.Entry<K, V> randomEntry() {
         return ctx.affinityNode() && ctx.isNear() ? dht().randomEntry() : super.randomEntry();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(SKIP_SWAP));
-
-        return dht().swapIterator();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException {
-        return dht().offHeapIterator();
     }
 
     /** {@inheritDoc} */
@@ -731,19 +615,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             currIter.remove();
 
             try {
-                GridNearCacheAdapter.this.remove(currEntry.getKey(), CU.empty0());
+                GridNearCacheAdapter.this.getAndRemove(currEntry.getKey());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
         }
-    }
-
-    /**
-     * @return Near entries iterator.
-     */
-    public Iterator<Cache.Entry<K, V>> nearEntriesIterator() {
-        return iterator(map.entries0().iterator(), !ctx.keepPortable());
     }
 
     /** {@inheritDoc} */

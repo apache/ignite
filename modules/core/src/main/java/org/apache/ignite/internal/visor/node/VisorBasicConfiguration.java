@@ -54,6 +54,9 @@ public class VisorBasicConfiguration implements Serializable {
     /** Deployment Mode. */
     private Object deployMode;
 
+    /** Client mode flag. */
+    private Boolean clientMode;
+
     /** Whether this node daemon or not. */
     private boolean daemon;
 
@@ -110,6 +113,7 @@ public class VisorBasicConfiguration implements Serializable {
         cfg.nodeId = ignite.localNode().id();
         cfg.marsh = compactClass(c.getMarshaller());
         cfg.deployMode = compactObject(c.getDeploymentMode());
+        cfg.clientMode = c.isClientMode();
         cfg.daemon = boolValue(IGNITE_DAEMON, c.isDaemon());
         cfg.jmxRemote = ignite.isJmxRemoteEnabled();
         cfg.restart = ignite.isRestartEnabled();
@@ -168,6 +172,13 @@ public class VisorBasicConfiguration implements Serializable {
      */
     public Object deploymentMode() {
         return deployMode;
+    }
+
+    /**
+     * @return Client mode flag.
+     */
+    public Boolean clientMode() {
+        return clientMode;
     }
 
     /**

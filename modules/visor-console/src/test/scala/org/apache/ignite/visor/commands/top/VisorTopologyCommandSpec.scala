@@ -24,39 +24,39 @@ import org.apache.ignite.visor.commands.top.VisorTopologyCommand._
  * Unit test for topology commands.
  */
 class VisorTopologyCommandSpec extends VisorRuntimeBaseSpec(2) {
-    behavior of "A 'top' visor command"
+    describe("A 'top' visor command") {
+        it("should advise to connect") {
+            closeVisorQuiet()
 
-    it should "advise to connect" in {
-        closeVisorQuiet()
+            visor.top()
+        }
 
-        visor.top()
-    }
+        it("should print error message") {
+            visor.top("-cc=eq1x")
+        }
 
-    it should "print error message" in {
-        visor.top("-cc=eq1x")
-    }
+        it("should print full topology") {
+            visor.top()
+        }
 
-    it should "print full topology" in {
-        visor.top()
-    }
+        it("should print nodes with idle time greater than 12000ms") {
+            visor.top("-it=gt12000")
+        }
 
-    it should "print nodes with idle time greater than 12000ms" in {
-        visor.top("-it=gt12000")
-    }
+        it("should print nodes with idle time greater than 12sec") {
+            visor.top("-it=gt12s")
+        }
 
-    it should "print nodes with idle time greater than 12sec" in {
-        visor.top("-it=gt12s")
-    }
+        it("should print full information about all nodes") {
+            visor.top("-a")
+        }
 
-    it should "print full information about all nodes" in {
-        visor.top("-a")
-    }
+        it("should print information about nodes on localhost") {
+            visor.top("-h=192.168.1.100")
+        }
 
-    it should "print information about nodes on localhost" in {
-        visor.top("-h=192.168.1.100")
-    }
-
-    it should "print full information about nodes on localhost" in {
-        visor.top("-h=localhost")
+        it("should print full information about nodes on localhost") {
+            visor.top("-h=localhost")
+        }
     }
 }

@@ -20,27 +20,28 @@ package org.apache.ignite.visor.commands.vvm
 import org.apache.ignite.visor.visor
 import org.scalatest._
 
+import org.apache.ignite.visor.commands.open.VisorOpenCommand._
 import org.apache.ignite.visor.commands.vvm.VisorVvmCommand._
 
 /**
  * Unit test for 'vvm' command.
  */
-class VisorVvmCommandSpec extends FlatSpec with Matchers {
-    behavior of "A 'vvm' visor command"
+class VisorVvmCommandSpec extends FunSpec with Matchers {
+    describe("A 'vvm' visor command") {
+        it("should print error message when not connected") {
+            visor.vvm()
+        }
 
-    it should "print error message when not connected" in {
-        visor.vvm()
-    }
+        it("should open VisualVM connected to all nodes skipping ones with disabled JMX") {
+            visor.open("-d")
+            visor.vvm()
+            visor.close()
+        }
 
-    it should "open VisualVM connected to all nodes skipping ones with disabled JMX" in {
-        visor.open("-d")
-        visor.vvm()
-        visor.close()
-    }
-
-    it should "open VisualVM connected to first node if it has JMX enabled" in {
-        visor.open("-d")
-        visor.vvm("-id8=@n1")
-        visor.close()
+        it("should open VisualVM connected to first node if it has JMX enabled") {
+            visor.open("-d")
+            visor.vvm("-id8=@n1")
+            visor.close()
+        }
     }
 }

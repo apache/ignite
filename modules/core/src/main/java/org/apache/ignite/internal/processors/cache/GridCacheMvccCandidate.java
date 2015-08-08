@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -93,6 +95,14 @@ public class GridCacheMvccCandidate implements Externalizable,
 
     /** Other lock version (near version vs dht version). */
     private transient GridCacheVersion otherVer;
+
+    /** Mapped DHT node IDs. */
+    @GridToStringInclude
+    private transient volatile Collection<ClusterNode> mappedDhtNodes;
+
+    /** Mapped near node IDs. */
+    @GridToStringInclude
+    private transient volatile Collection<ClusterNode> mappedNearNodes;
 
     /** Owned lock version by the moment this candidate was added. */
     @GridToStringInclude
@@ -229,13 +239,6 @@ public class GridCacheMvccCandidate implements Externalizable,
     }
 
     /**
-     * @return {@code True} if has reentry.
-     */
-    public boolean hasReentry() {
-        return reentry != null;
-    }
-
-    /**
      * @return Removed reentry candidate or {@code null}.
      */
     @Nullable public GridCacheMvccCandidate unenter() {
@@ -279,6 +282,39 @@ public class GridCacheMvccCandidate implements Externalizable,
      */
     public void otherNodeId(UUID otherNodeId) {
         this.otherNodeId = otherNodeId;
+    }
+
+    /**
+     * @return Mapped node IDs.
+     */
+    public Collection<ClusterNode> mappedDhtNodes() {
+        return mappedDhtNodes;
+    }
+
+    /**
+     * @return Mapped node IDs.
+     */
+    public Collection<ClusterNode> mappedNearNodes() {
+        return mappedNearNodes;
+    }
+
+    /**
+     * @param mappedDhtNodes Mapped DHT node IDs.
+     */
+    public void mappedNodeIds(Collection<ClusterNode> mappedDhtNodes, Collection<ClusterNode> mappedNearNodes) {
+        this.mappedDhtNodes = mappedDhtNodes;
+        this.mappedNearNodes = mappedNearNodes;
+    }
+
+    /**
+     * @param node Node to remove.
+     */
+    public void removeMappedNode(ClusterNode node) {
+        if (mappedDhtNodes.contains(node))
+            mappedDhtNodes = new ArrayList<>(F.view(mappedDhtNodes, F.notEqualTo(node)));
+
+        if (mappedNearNodes != null && mappedNearNodes.contains(node))
+            mappedNearNodes = new ArrayList<>(F.view(mappedNearNodes, F.notEqualTo(node)));
     }
 
     /**

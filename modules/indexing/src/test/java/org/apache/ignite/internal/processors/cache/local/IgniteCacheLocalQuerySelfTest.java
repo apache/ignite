@@ -78,5 +78,11 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
         assert iter.next() != null;
         assert iter.next() != null;
         assert !iter.hasNext();
+
+        // Test explain for primitive index.
+        List<List<?>> res = cache.query(new SqlFieldsQuery(
+            "explain select _key from String where _val > 'value1'").setLocal(true)).getAll();
+
+        assertTrue("__ explain: \n" + res, ((String)res.get(0).get(0)).contains("_val_idx"));
     }
 }

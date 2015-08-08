@@ -312,7 +312,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
             }
         }
         catch (IgniteCheckedException e) {
-            throw new IOError(e); // Something unrecoverable.
+            throw new IOException("File to close the file: " + fileInfo.path(), e);
         }
         finally {
             closed = true;

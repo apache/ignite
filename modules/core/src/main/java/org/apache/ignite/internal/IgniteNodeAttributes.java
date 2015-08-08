@@ -31,9 +31,6 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_BUILD_DATE = ATTR_PREFIX + ".build.date";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_COMPATIBLE_VERS = ATTR_PREFIX + ".compatible.vers";
-
-    /** Internal attribute name constant. */
     public static final String ATTR_MARSHALLER = ATTR_PREFIX + ".marshaller";
 
     /** Internal attribute name constant. */
@@ -129,8 +126,14 @@ public final class IgniteNodeAttributes {
     /** Security subject for authenticated node. */
     public static final String ATTR_SECURITY_SUBJECT = ATTR_PREFIX + ".security.subject";
 
-    /** Cache interceptors. */
+    /** Client mode flag. */
     public static final String ATTR_CLIENT_MODE = ATTR_PREFIX + ".cache.client";
+
+    /** Configuration consistency check disabled flag. */
+    public static final String ATTR_CONSISTENCY_CHECK_SKIPPED = ATTR_PREFIX + ".consistency.check.skipped";
+
+    /** Node consistent id. */
+    public static final String ATTR_NODE_CONSISTENT_ID = ATTR_PREFIX + ".consistent.id";
 
     /**
      * Enforces singleton.

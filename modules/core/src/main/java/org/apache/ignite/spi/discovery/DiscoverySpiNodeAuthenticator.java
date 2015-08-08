@@ -35,7 +35,7 @@ public interface DiscoverySpiNodeAuthenticator {
      * @throws IgniteException If authentication process failed
      *      (invalid credentials should not lead to this exception).
      */
-    public SecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) throws IgniteException;
+    public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteException;
 
     /**
      * Gets global node authentication flag.

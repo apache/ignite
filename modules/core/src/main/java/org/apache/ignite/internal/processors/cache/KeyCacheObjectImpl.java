@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 /**
  *
  */
-public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheObject, Comparable<KeyCacheObjectImpl> {
+public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,15 +46,6 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public int compareTo(KeyCacheObjectImpl other) {
-        assert val instanceof Comparable : val;
-        assert other.val instanceof Comparable : val;
-
-        return ((Comparable)val).compareTo(other.val);
-    }
-
-    /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
             valBytes = ctx.processor().marshal(ctx, val);
@@ -72,18 +63,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-        cpy = cpy && needCopy(ctx);
-
-        if (cpy) {
-            try {
-                return (T)ctx.processor().unmarshal(ctx,
-                    valBytes,
-                    val.getClass().getClassLoader());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal object.", e);
-            }
-        }
+        assert val != null;
 
         return (T)val;
     }

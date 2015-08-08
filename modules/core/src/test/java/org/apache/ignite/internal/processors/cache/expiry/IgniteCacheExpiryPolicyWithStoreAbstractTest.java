@@ -137,7 +137,9 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     /**
      * @throws Exception If failed.
      */
-    public void _testReadThrough() throws Exception {
+    public void testReadThrough() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-821");
+
         IgniteCache<Integer, Integer> cache = jcache(0);
 
         final Integer key = primaryKeys(cache, 1, 100_000).get(0);
@@ -197,9 +199,9 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
 
             if (e == null) {
                 if (primaryOnly)
-                    assertTrue("Not found " + key, !cache.affinity().isPrimary(grid.localNode(), key));
+                    assertTrue("Not found " + key, !grid.affinity(null).isPrimary(grid.localNode(), key));
                 else
-                    assertTrue("Not found " + key, !cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
+                    assertTrue("Not found " + key, !grid.affinity(null).isPrimaryOrBackup(grid.localNode(), key));
             }
             else {
                 found = true;

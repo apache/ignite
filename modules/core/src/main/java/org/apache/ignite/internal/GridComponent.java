@@ -19,9 +19,11 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -81,16 +83,17 @@ public interface GridComponent {
      * @return Discovery data object or {@code null} if there is nothing
      *      to send for this component.
      */
-    @Nullable public Object collectDiscoveryData(UUID nodeId);
+    @Nullable public Serializable collectDiscoveryData(UUID nodeId);
 
     /**
      * Receives discovery data object from remote nodes (called
      * on new node during discovery process).
+     *
      * @param joiningNodeId Joining node ID.
      * @param rmtNodeId Remote node ID for which data is provided.
      * @param data Discovery data object or {@code null} if nothing was
      */
-    public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Object data);
+    public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data);
 
     /**
      * Prints memory statistics (sizes of internal structures, etc.).
@@ -106,7 +109,7 @@ public interface GridComponent {
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable public IgniteSpiNodeValidationResult validateNode(ClusterNode node);
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
 
     /**
      * Gets unique component type to distinguish components providing discovery data. Must return non-null value
@@ -115,4 +118,20 @@ public interface GridComponent {
      * @return Unique component type for discovery data exchange.
      */
     @Nullable public DiscoveryDataExchangeType discoveryDataType();
+
+    /**
+     * Client disconnected callback.
+     *
+     * @param reconnectFut Reconnect future.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException;
+
+    /**
+     * Client reconnected callback.
+     *
+     * @param clusterRestarted Cluster restarted flag.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onReconnected(boolean clusterRestarted) throws IgniteCheckedException;
 }

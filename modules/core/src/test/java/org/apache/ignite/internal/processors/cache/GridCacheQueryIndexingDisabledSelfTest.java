@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.testframework.*;
 
-import java.util.*;
+import javax.cache.*;
 import java.util.concurrent.*;
 
 /**
@@ -48,7 +48,7 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
      * @param c Closure.
      */
     private void doTest(Callable<Object> c) {
-        GridTestUtils.assertThrows(log, c, IgniteCheckedException.class, "Indexing is disabled for cache: null");
+        GridTestUtils.assertThrows(log, c, CacheException.class, "Indexing is disabled for cache: null");
     }
 
     /**
@@ -57,8 +57,7 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
     public void testSqlFieldsQuery() throws IgniteCheckedException {
         doTest(new Callable<Object>() {
             @Override public Object call() throws IgniteCheckedException {
-                return cache().queries().createSqlFieldsQuery("select * from dual").execute()
-                    .get();
+                return jcache().query(new SqlFieldsQuery("select * from dual")).getAll();
             }
         });
     }
@@ -69,8 +68,7 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
     public void testTextQuery() throws IgniteCheckedException {
         doTest(new Callable<Object>() {
             @Override public Object call() throws IgniteCheckedException {
-                return cache().queries().createFullTextQuery(String.class, "text")
-                    .execute().get();
+                return jcache().query(new TextQuery<>(String.class, "text")).getAll();
             }
         });
     }
@@ -81,8 +79,7 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
     public void testSqlQuery() throws IgniteCheckedException {
         doTest(new Callable<Object>() {
             @Override public Object call() throws IgniteCheckedException {
-                return cache().queries().createSqlQuery(String.class, "1 = 1")
-                    .execute().get();
+                return jcache().query(new SqlQuery<>(String.class, "1 = 1")).getAll();
             }
         });
     }
@@ -91,8 +88,6 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
      * @throws IgniteCheckedException If failed.
      */
     public void testScanQuery() throws IgniteCheckedException {
-        CacheQuery<Map.Entry<String, Integer>> qry = cache().queries().createScanQuery(null);
-
-        qry.execute().get();
+        jcache().query(new ScanQuery<>(null)).getAll();
     }
 }

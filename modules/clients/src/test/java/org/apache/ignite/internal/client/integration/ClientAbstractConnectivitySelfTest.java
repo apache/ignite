@@ -19,9 +19,10 @@ package org.apache.ignite.internal.client.integration;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.client.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -123,6 +124,19 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
     }
 
     /**
+     * Simple test of address list filtering.
+     * @throws Exception
+     */
+    public void testResolveReachableOneAddress() throws Exception {
+        InetAddress addr = InetAddress.getByAddress(new byte[] {127, 0, 0, 1} );
+
+        List <InetAddress> filtered = IgniteUtils.filterReachable(Collections.singletonList(addr));
+
+        assertEquals(1, filtered.size());
+        assertEquals(addr, filtered.get(0));
+    }
+
+    /**
      * Tests correct behavior in case of 1 REST-enabled node
      * with explicitly specified loopback address setting.
      *
@@ -132,7 +146,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
         startRestNode("grid1", LOOPBACK_IP, defaultRestPort());
 
         checkConnectivityByIp(LOOPBACK_IP, F.t((Collection<String>)Collections.singleton(LOOPBACK_IP),
-            (Collection<String>)Collections.singleton("")));
+            (Collection<String>)Collections.<String>emptySet()));
     }
 
     /**

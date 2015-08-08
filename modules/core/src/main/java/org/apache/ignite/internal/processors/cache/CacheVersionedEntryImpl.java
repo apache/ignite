@@ -19,12 +19,24 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.jetbrains.annotations.*;
 
+import java.io.*;
+
 /**
  *
  */
 public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Version. */
-    private final Object ver;
+    private Object ver;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public CacheVersionedEntryImpl() {
+        // No-op.
+    }
 
     /**
      * @param key Key.
@@ -44,6 +56,21 @@ public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> {
      */
     @Nullable public Object version() {
         return ver;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+
+        out.writeObject(ver);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+
+        ver = in.readObject();
     }
 
     /** {@inheritDoc} */

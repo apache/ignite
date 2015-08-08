@@ -18,8 +18,6 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
@@ -53,12 +51,7 @@ public class CacheEventsExample {
             System.out.println();
             System.out.println(">>> Cache events example started.");
 
-            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
-
-            cfg.setCacheMode(CacheMode.PARTITIONED);
-            cfg.setName(CACHE_NAME);
-
-            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
+            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
                 // This optional local callback is called for each event notification
                 // that passed remote predicate listener.
                 IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {

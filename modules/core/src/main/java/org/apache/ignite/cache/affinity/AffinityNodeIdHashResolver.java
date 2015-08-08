@@ -18,12 +18,18 @@
 package org.apache.ignite.cache.affinity;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+
+import java.io.*;
 
 /**
  * Node hash resolver which uses generated node ID as node hash value. As new node ID is generated
  * on each node start, this resolver do not provide ability to map keys to the same nodes after restart.
+ *
+ * @deprecated Use {@link IgniteConfiguration#setConsistentId(Serializable)} instead.
  */
+@Deprecated
 public class AffinityNodeIdHashResolver implements AffinityNodeHashResolver {
     /** */
     private static final long serialVersionUID = 0L;

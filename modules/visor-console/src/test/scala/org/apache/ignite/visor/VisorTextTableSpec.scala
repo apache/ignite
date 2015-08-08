@@ -17,7 +17,8 @@
 
 package org.apache.ignite.visor
 
-import org.apache.ignite.visor.commands.VisorTextTable
+import org.apache.ignite.visor.commands.common.VisorTextTable
+
 import org.scalatest._
 
 import scala.collection._

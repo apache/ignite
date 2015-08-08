@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+    GridGain Spring configuration file to startup grid cache.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd">
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="fileSystemConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
+                    <property name="name" value="test"/>
+                    <property name="metaCacheName" value="meta"/>
+                    <property name="dataCacheName" value="data"/>
+
+                    <property name="maxSpaceSize" value="#{100L * 1024 * 1024}"/>
+
+                    <!-- Loopback endpoint. -->
+                    <property name="ipcEndpointConfiguration">
+                        <bean class="org.apache.ignite.igfs.IgfsIpcEndpointConfiguration">
+                            <property name="type" value="TCP" />
+                        </bean>
+                    </property>
+                </bean>
+            </list>
+        </property>
+
+        <!-- Cache configurations (all properties are optional). -->
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <!-- Configure type metadata to enable queries. -->
+                    <property name="typeMetadata">
+                        <list>
+                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                                <property name="keyType" value="java.lang.Integer"/>
+                                <property name="valueType" value="Organization"/>
+                                <property name="ascendingFields">
+                                    <map>
+                                        <entry key="name" value="java.lang.String"/>
+                                    </map>
+                                </property>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.CacheTypeMetadata2"/>
+                        </list>
+                    </property>
+                </bean>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="grid.cfg.failed" class="org.apache.ignite.configuration.IgniteConfiguration2"/>
+</beans>

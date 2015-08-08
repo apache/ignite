@@ -53,8 +53,7 @@ case "$1" in
 
         # Set default JVM options if they was not passed.
         if [ -z "$JVM_OPTS" ]; then
-            JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts"
-            [ "$HADOOP_EDITION" = "1" ] && JVM_OPTS="${JVM_OPTS} -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled"
+            JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=512m"
         fi
 
         # Resolve config directory.
@@ -66,9 +65,12 @@ case "$1" in
         # Discover path to Java executable and check it's version.
         checkJava
 
+        # Clear output log.
+        echo >"${IGNITE_LOG_DIR}"/ignite.out
+
         # And run.
         $JAVA $JVM_OPTS -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-        -DIGNITE_PROG_NAME="$0" -cp "$IGNITE_LIBS" "$MAIN_CLASS" "$DEFAULT_CONFIG" &>/dev/null &
+          -DIGNITE_PROG_NAME="$0" -cp "$IGNITE_LIBS" "$MAIN_CLASS" "$DEFAULT_CONFIG" >& "${IGNITE_LOG_DIR}"/ignite.out &
 
         # Write process id.
         echo $! >$PIDFILE

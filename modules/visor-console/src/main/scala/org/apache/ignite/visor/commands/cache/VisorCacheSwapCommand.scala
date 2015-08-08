@@ -17,20 +17,17 @@
 
 package org.apache.ignite.visor.commands.cache
 
-import org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask
-import org.apache.ignite.internal.visor.util.VisorTaskUtils._
-
-import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
+import org.apache.ignite.visor.commands.common.VisorTextTable
+import org.apache.ignite.visor.visor._
 
 import java.util.Collections
 
-import org.apache.ignite.visor.commands.VisorTextTable
-import org.apache.ignite.visor.visor
-import visor._
+import org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
-import scala.util.control.Breaks._
 
 /**
  * ==Overview==
@@ -87,7 +84,7 @@ class VisorCacheSwapCommand {
      *
      * @param argLst Command arguments.
      */
-    def swap(argLst: ArgList, node: Option[ClusterNode]) = breakable {
+    def swap(argLst: ArgList, node: Option[ClusterNode]) {
         val cacheArg = argValue("c", argLst)
 
         val cacheName = cacheArg match {
@@ -95,45 +92,42 @@ class VisorCacheSwapCommand {
 
             case Some(s) if s.startsWith("@") =>
                 warn("Can't find cache variable with specified name: " + s,
-                    "Type 'cache' to see available cache variables."
-                )
+                    "Type 'cache' to see available cache variables.")
 
-                break()
+                return
 
             case Some(name) => name
         }
 
-        val prj = if (node.isDefined) ignite.cluster.forNode(node.get) else ignite.cluster.forCacheNodes(cacheName)
+        try {
+            val grp = groupForDataNode(node, cacheName)
 
-        if (prj.nodes().isEmpty) {
-            val msg =
-                if (cacheName == null)
-                    "Can't find nodes with default cache."
-                else
-                    "Can't find nodes with specified cache: " + cacheName
+            val t = VisorTextTable()
 
-            scold(msg).^^
+            t #=("Node ID8(@)", "Entries Swapped", "Cache Size Before", "Cache Size After")
+
+            for (node <- grp.nodes()) {
+                val nid = node.id()
+
+                val r = executeOne(nid, classOf[VisorCacheSwapBackupsTask], Collections.singleton(cacheName)).
+                    get(cacheName)
+
+                if (r != null)
+                    t +=(nodeId8(nid), r.get1() - r.get2(), r.get1(), r.get2())
+            }
+
+            if (t.nonEmpty) {
+                println("Swapped entries in cache: " + escapeName(cacheName))
+
+                t.render()
+            }
+            else
+                scold(messageNodeNotFound(node, cacheName))
         }
-
-        val t = VisorTextTable()
-
-        t #= ("Node ID8(@)", "Entries Swapped", "Cache Size Before", "Cache Size After")
-
-        val cacheSet = Collections.singleton(cacheName)
-
-        prj.nodes().foreach(node => {
-            val r = ignite.compute(ignite.cluster.forNode(node))
-                .withName("visor-cswap-task")
-                .withNoFailover()
-                .execute(classOf[VisorCacheSwapBackupsTask], toTaskArgument(node.id(), cacheSet))
-                .get(cacheName)
-
-            t += (nodeId8(node.id()), r.get1() - r.get2(), r.get1(), r.get2())
-        })
-
-        println("Swapped entries in cache: " + escapeName(cacheName))
-
-        t.render()
+        catch {
+            case e: ClusterGroupEmptyException => scold(messageNodeNotFound(node, cacheName))
+            case e: Throwable => scold(e)
+        }
     }
 }
 

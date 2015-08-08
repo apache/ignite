@@ -102,7 +102,7 @@ public class GridifyAspectJAspect {
             // If task name was specified.
             return ignite.compute().withTimeout(ann.timeout()).execute(ann.taskName(), arg);
         }
-        catch (Throwable e) {
+        catch (Exception e) {
             for (Class<?> ex : ((MethodSignature) joinPnt.getSignature()).getMethod().getExceptionTypes()) {
                 // Descend all levels down.
                 Throwable cause = e.getCause();

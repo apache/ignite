@@ -552,4 +552,14 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Marshaller context.
      */
     public MarshallerContextImpl marshallerContext();
+
+    /**
+     * @return {@code True} if local node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).
+     */
+    public boolean clientNode();
+
+    /**
+     * @return {@code True} if local node in disconnected state.
+     */
+    public boolean clientDisconnected();
 }

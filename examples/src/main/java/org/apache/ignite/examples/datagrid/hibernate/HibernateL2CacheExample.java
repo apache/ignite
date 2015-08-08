@@ -31,7 +31,6 @@ import java.net.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -188,10 +187,8 @@ public class HibernateL2CacheExample {
      * @return Cache configuration.
      */
     private static IgniteCache createCache(String name, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(name);
 
-        ccfg.setName(name);
-        ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 

@@ -19,7 +19,6 @@ package org.apache.ignite.examples.datagrid.store.auto;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.jdbc.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.transactions.*;
@@ -45,6 +44,9 @@ import java.util.*;
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheAutoStoreExample {
+    /** Cache name. */
+    public static final String CACHE_NAME = CacheAutoStoreLoadDataExample.class.getSimpleName();
+
     /** Global person ID to use across entire example. */
     private static final Long id = Math.abs(UUID.randomUUID().getLeastSignificantBits());
 
@@ -60,9 +62,7 @@ public class CacheAutoStoreExample {
             System.out.println();
             System.out.println(">>> Cache auto store example started.");
 
-            CacheConfiguration<Long, Person> cacheCfg = CacheConfig.jdbcPojoStoreCache();
-
-            try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheCfg)) {
+            try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(CacheConfig.jdbcPojoStoreCache(CACHE_NAME))) {
                 try (Transaction tx = ignite.transactions().txStart()) {
                     Person val = cache.get(id);
 

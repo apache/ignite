@@ -44,8 +44,9 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
 
     /** {@inheritDoc} */
     @Override protected void addPage0(GridResultPage page) {
-        if (!page.rows().isEmpty() || page.isLast() || queue.isEmpty())
-            queue.add(page);
+        assert page.rowsInPage() > 0 || page.isLast() || page.isFail();
+
+        queue.add(page);
     }
 
     /** {@inheritDoc} */
@@ -60,14 +61,21 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
             Iterator<Value[]> iter = Collections.emptyIterator();
 
             @Override public boolean hasNext() {
-                while (!iter.hasNext()){
+                while (!iter.hasNext()) {
                     GridResultPage page;
 
-                    try {
-                        page = queue.take();
-                    }
-                    catch (InterruptedException e) {
-                        throw new CacheException("Query execution was interrupted.", e);
+                    for (;;) {
+                        try {
+                            page = queue.poll(500, TimeUnit.MILLISECONDS);
+                        }
+                        catch (InterruptedException e) {
+                            throw new CacheException("Query execution was interrupted.", e);
+                        }
+
+                        if (page != null)
+                            break;
+
+                        ((GridMergeTable)table).checkSourceNodesAlive();
                     }
 
                     if (page.isLast())
@@ -75,7 +83,7 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
 
                     fetchNextPage(page);
 
-                    iter = page.rows().iterator();
+                    iter = page.rows();
                 }
 
                 return true;

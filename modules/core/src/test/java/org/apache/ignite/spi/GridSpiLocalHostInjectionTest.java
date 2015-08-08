@@ -141,7 +141,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
      * @param cfgVal {@code true} if {@code localHost} property value should be set to configuration.
      * @return Resource processor.
      */
-    private GridResourceProcessor getResourceProcessor(boolean cfgVal) {
+    private GridResourceProcessor getResourceProcessor(boolean cfgVal) throws IgniteCheckedException {
         GridTestKernalContext ctx = newContext();
 
         if (cfgVal)

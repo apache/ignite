@@ -24,15 +24,15 @@ import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
  * Unit test for 'open' command.
  */
 class VisorOpenCommandSpec extends VisorRuntimeBaseSpec(3) {
-    behavior of "A 'open' visor command"
+    describe("A 'open' visor command") {
+        it("should properly connect using default configuration") {
+            visor.mlist()
+        }
 
-    it should "properly connect using default configuration" in {
-        visor.mlist()
-    }
-
-    it should "print error message when already connected" in {
-        intercept[IgniteException] {
-            openVisor()
+        it("should print error message when already connected") {
+            intercept[IgniteException] {
+                openVisor()
+            }
         }
     }
 }

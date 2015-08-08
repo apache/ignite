@@ -48,19 +48,12 @@ public class VisorCacheTypeFieldMetadata implements Serializable {
     public static VisorCacheTypeFieldMetadata from(CacheTypeFieldMetadata f) {
         VisorCacheTypeFieldMetadata fieldMetadata = new VisorCacheTypeFieldMetadata();
 
-        fieldMetadata.dbName(f.getDatabaseName());
-        fieldMetadata.dbType(f.getDatabaseType());
-        fieldMetadata.javaName(f.getJavaName());
-        fieldMetadata.javaType(U.compact(f.getJavaType().getName()));
+        fieldMetadata.dbName = f.getDatabaseName();
+        fieldMetadata.dbType = f.getDatabaseType();
+        fieldMetadata.javaName = f.getJavaName();
+        fieldMetadata.javaType = U.compact(f.getJavaType().getName());
 
         return fieldMetadata;
-    }
-
-    /**
-     * @param dbName New column name in database.
-     */
-    public void dbName(String dbName) {
-        this.dbName = dbName;
     }
 
     /**
@@ -71,13 +64,6 @@ public class VisorCacheTypeFieldMetadata implements Serializable {
     }
 
     /**
-     * @param dbType New column JDBC type in database.
-     */
-    public void dbType(int dbType) {
-        this.dbType = dbType;
-    }
-
-    /**
      * @return Column JDBC type in database.
      */
     public int dbType() {
@@ -85,24 +71,10 @@ public class VisorCacheTypeFieldMetadata implements Serializable {
     }
 
     /**
-     * @param javaName New field name in java object.
-     */
-    public void javaName(String javaName) {
-        this.javaName = javaName;
-    }
-
-    /**
      * @return Field name in java object.
      */
     public String javaName() {
         return javaName;
-    }
-
-    /**
-     * @param javaType New corresponding java type.
-     */
-    public void javaType(String javaType) {
-        this.javaType = javaType;
     }
 
     /**

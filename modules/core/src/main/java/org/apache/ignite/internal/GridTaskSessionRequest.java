@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Task session request.
  */
-public class GridTaskSessionRequest implements Message, GridTaskMessage {
+public class GridTaskSessionRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -84,9 +84,9 @@ public class GridTaskSessionRequest implements Message, GridTaskMessage {
     }
 
     /**
-     * @return Session ID.
+     * @return Task session ID.
      */
-    @Override public IgniteUuid getSessionId() {
+    public IgniteUuid getSessionId() {
         return sesId;
     }
 

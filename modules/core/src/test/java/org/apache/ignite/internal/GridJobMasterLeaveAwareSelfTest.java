@@ -26,7 +26,6 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -90,7 +89,6 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCommunicationSpi(new CommunicationSpi());
-        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -732,9 +730,9 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         private CountDownLatch waitLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
             throws IgniteSpiException {
-            sendMessage0(node, msg);
+            sendMessage0(node, msg, ackClosure);
         }
 
         /**
@@ -743,9 +741,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
          *
          * @param node Destination node.
          * @param msg Message to be sent.
+         * @param ackClosure Ack closure.
          * @throws org.apache.ignite.spi.IgniteSpiException If failed.
          */
-        private void sendMessage0(ClusterNode node, Message msg) throws IgniteSpiException {
+        private void sendMessage0(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+            throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {
                 GridIoMessage msg0 = (GridIoMessage)msg;
 
@@ -764,7 +764,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
             }
 
             if (!block)
-                super.sendMessage(node, msg);
+                super.sendMessage(node, msg, ackClosure);
         }
 
         /**

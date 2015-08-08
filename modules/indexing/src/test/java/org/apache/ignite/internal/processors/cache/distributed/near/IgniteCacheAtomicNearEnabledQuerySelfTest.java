@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.configuration.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheDistributionMode.*;
 
 /**
  * Tests for atomic cache with near cache enabled.
@@ -33,7 +32,7 @@ public class IgniteCacheAtomicNearEnabledQuerySelfTest extends IgniteCachePartit
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    @Override protected NearCacheConfiguration nearCacheConfiguration() {
+        return new NearCacheConfiguration();
     }
 }

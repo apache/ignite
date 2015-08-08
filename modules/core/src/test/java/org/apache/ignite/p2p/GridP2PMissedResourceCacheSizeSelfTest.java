@@ -160,7 +160,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * TODO GG-3804
+     * TODO https://issues.apache.org/jira/browse/IGNITE-603
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */

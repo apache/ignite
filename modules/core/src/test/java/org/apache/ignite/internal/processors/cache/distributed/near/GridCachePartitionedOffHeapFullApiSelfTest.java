@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheMemoryMode.*;
+
 /**
  * Tests partitioned cache with values being stored off-heap.
  */
 public class GridCachePartitionedOffHeapFullApiSelfTest extends GridCachePartitionedFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean offHeapValues() {
-        return true;
+    @Override protected CacheMemoryMode memoryMode() {
+        return OFFHEAP_VALUES;
     }
 }

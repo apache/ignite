@@ -63,7 +63,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @param hash Key hash value.
      * @param val Entry value.
      * @param next Next entry in the linked list.
-     * @param ttl Time to live.
      * @param hdrId Header id.
      */
     public GridDhtCacheEntry(GridCacheContext ctx,
@@ -72,10 +71,9 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         int hash,
         CacheObject val,
         GridCacheMapEntry next,
-        long ttl,
         int hdrId)
     {
-        super(ctx, key, hash, val, next, ttl, hdrId);
+        super(ctx, key, hash, val, next, hdrId);
 
         // Record this entry with partition.
         locPart = ctx.dht().topology().onAdded(topVer, this);
@@ -293,10 +291,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         return ret;
     }
 
-    /**
-     * Calls {@link GridDhtLocalPartition#onUnlock()} for this entry's partition.
-     */
-    public void onUnlock() {
+    /** {@inheritDoc} */
+    @Override public void onUnlock() {
         locPart.onUnlock();
     }
 
@@ -430,11 +426,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 for (GridCacheMvccCandidate c : cands) {
                     IgniteInternalTx tx = cctx.tm().tx(c.version());
 
-                    if (tx != null) {
-                        assert tx.local();
-
+                    if (tx != null && tx.local())
                         txFut.addTx(tx);
-                    }
                 }
             }
 
@@ -563,8 +556,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                         log.debug("Entry has been cleared from swap storage: " + this);
                 }
 
-                if (cctx.store().isLocalStore())
-                    cctx.store().removeFromStore(null, keyValue(false));
+                if (cctx.store().isLocal())
+                    cctx.store().remove(null, keyValue(false));
 
                 rmv = true;
 
@@ -603,7 +596,9 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         List<ReaderId> newRdrs = null;
 
         for (int i = 0; i < rdrs.length; i++) {
-            if (!cctx.discovery().alive(rdrs[i].nodeId())) {
+            ClusterNode node = cctx.discovery().getAlive(rdrs[i].nodeId());
+
+            if (node == null || !cctx.discovery().cacheNode(node, cacheName())) {
                 // Node has left and if new list has already been created, just skip.
                 // Otherwise, create new list and add alive nodes.
                 if (newRdrs == null) {
@@ -643,13 +638,34 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Candidate, if one existed for the version, or {@code null} if candidate was not found.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @Nullable public synchronized GridCacheMvccCandidate mappings(GridCacheVersion ver)
-        throws GridCacheEntryRemovedException {
+    @Nullable public synchronized GridCacheMvccCandidate mappings(
+        GridCacheVersion ver,
+        Collection<ClusterNode> dhtNodeIds,
+        Collection<ClusterNode> nearNodeIds
+    ) throws GridCacheEntryRemovedException {
         checkObsolete();
 
         GridCacheMvcc mvcc = mvccExtras();
 
-        return mvcc == null ? null : mvcc.candidate(ver);
+        GridCacheMvccCandidate cand = mvcc == null ? null : mvcc.candidate(ver);
+
+        if (cand != null)
+            cand.mappedNodeIds(dhtNodeIds, nearNodeIds);
+
+        return cand;
+    }
+
+    /**
+     * @param ver Version.
+     * @param mappedNode Mapped node to remove.
+     */
+    public synchronized void removeMapping(GridCacheVersion ver, ClusterNode mappedNode) {
+        GridCacheMvcc mvcc = mvccExtras();
+
+        GridCacheMvccCandidate cand = mvcc == null ? null : mvcc.candidate(ver);
+
+        if (cand != null)
+            cand.removeMappedNode(mappedNode);
     }
 
     /**

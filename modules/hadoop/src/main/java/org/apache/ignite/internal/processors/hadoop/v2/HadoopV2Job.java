@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.v2;
 
+import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapred.JobID;
@@ -31,15 +31,18 @@ import org.apache.ignite.internal.processors.hadoop.v1.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
 import java.io.*;
 import java.lang.reflect.*;
+import java.net.*;
 import java.util.*;
 import java.util.Queue;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopUtils.*;
+import static org.apache.ignite.internal.processors.hadoop.fs.HadoopFileSystemCacheUtils.*;
 
 /**
  * Hadoop job implementation for v2 API.
@@ -55,7 +58,7 @@ public class HadoopV2Job implements HadoopJob {
     private final HadoopJobId jobId;
 
     /** Job info. */
-    protected HadoopJobInfo jobInfo;
+    protected final HadoopJobInfo jobInfo;
 
     /** */
     private final JobID hadoopJobID;
@@ -68,10 +71,16 @@ public class HadoopV2Job implements HadoopJob {
         new ConcurrentHashMap8<>();
 
     /** Pooling task context class and thus class loading environment. */
-    private final Queue<Class<?>> taskCtxClsPool = new ConcurrentLinkedQueue<>();
+    private final Queue<Class<? extends HadoopTaskContext>> taskCtxClsPool = new ConcurrentLinkedQueue<>();
+
+    /** All created contexts. */
+    private final Queue<Class<? extends HadoopTaskContext>> fullCtxClsQueue = new ConcurrentLinkedDeque<>();
+
+    /** File system cache map. */
+    private final HadoopLazyConcurrentMap<FsCacheKey, FileSystem> fsMap = createHadoopLazyConcurrentMap();
 
     /** Local node ID */
-    private UUID locNodeId;
+    private volatile UUID locNodeId;
 
     /** Serialized JobConf. */
     private volatile byte[] jobConfData;
@@ -90,12 +99,7 @@ public class HadoopV2Job implements HadoopJob {
 
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
-        HadoopClassLoader clsLdr = (HadoopClassLoader)getClass().getClassLoader();
-
-        // Before create JobConf instance we should set new context class loader.
-        Thread.currentThread().setContextClassLoader(clsLdr);
-
-        jobConf = new JobConf();
+        jobConf = HadoopUtils.safeCreateJobConf();
 
         HadoopFileSystemsUtils.setupFileSystems(jobConf);
 
@@ -106,7 +110,7 @@ public class HadoopV2Job implements HadoopJob {
 
         jobCtx = new JobContextImpl(jobConf, hadoopJobID);
 
-        rsrcMgr = new HadoopV2JobResourceManager(jobId, jobCtx, log);
+        rsrcMgr = new HadoopV2JobResourceManager(jobId, jobCtx, log, this);
     }
 
     /** {@inheritDoc} */
@@ -136,7 +140,9 @@ public class HadoopV2Job implements HadoopJob {
 
             Path jobDir = new Path(jobDirPath);
 
-            try (FileSystem fs = FileSystem.get(jobDir.toUri(), jobConf)) {
+            try {
+                FileSystem fs = fileSystem(jobDir.toUri(), jobConf);
+
                 JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs, jobConf,
                     jobDir);
 
@@ -169,7 +175,10 @@ public class HadoopV2Job implements HadoopJob {
                 }
             }
             catch (Throwable e) {
-                throw transformException(e);
+                if (e instanceof Error)
+                    throw (Error)e;
+                else
+                    throw transformException(e);
             }
         }
         finally {
@@ -178,6 +187,7 @@ public class HadoopV2Job implements HadoopJob {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public HadoopTaskContext getTaskContext(HadoopTaskInfo info) throws IgniteCheckedException {
         T2<HadoopTaskType, Integer> locTaskId = new T2<>(info.type(),  info.taskNumber());
 
@@ -191,14 +201,19 @@ public class HadoopV2Job implements HadoopJob {
         if (old != null)
             return old.get();
 
-        Class<?> cls = taskCtxClsPool.poll();
+        Class<? extends HadoopTaskContext> cls = taskCtxClsPool.poll();
 
         try {
             if (cls == null) {
                 // If there is no pooled class, then load new one.
-                HadoopClassLoader ldr = new HadoopClassLoader(rsrcMgr.classPath());
+                // Note that the classloader identified by the task it was initially created for,
+                // but later it may be reused for other tasks.
+                HadoopClassLoader ldr = new HadoopClassLoader(rsrcMgr.classPath(),
+                    HadoopClassLoader.nameForTask(info, false));
 
-                cls = ldr.loadClass(HadoopV2TaskContext.class.getName());
+                cls = (Class<? extends HadoopTaskContext>)ldr.loadClass(HadoopV2TaskContext.class.getName());
+
+                fullCtxClsQueue.add(cls);
             }
 
             Constructor<?> ctr = cls.getConstructor(HadoopTaskInfo.class, HadoopJob.class,
@@ -227,13 +242,21 @@ public class HadoopV2Job implements HadoopJob {
 
             fut.onDone(te);
 
+            if (e instanceof Error)
+                throw (Error)e;
+
             throw te;
         }
     }
 
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws IgniteCheckedException {
+        assert locNodeId != null;
+
         this.locNodeId = locNodeId;
+
+        assert ((HadoopClassLoader)getClass().getClassLoader()).name()
+            .equals(HadoopClassLoader.nameForJob(this.locNodeId));
 
         Thread.currentThread().setContextClassLoader(jobConf.getClassLoader());
 
@@ -246,13 +269,94 @@ public class HadoopV2Job implements HadoopJob {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ThrowFromFinallyBlock")
     @Override public void dispose(boolean external) throws IgniteCheckedException {
-        if (rsrcMgr != null && !external) {
-            File jobLocDir = jobLocalDir(locNodeId, jobId);
+        try {
+            if (rsrcMgr != null && !external) {
+                File jobLocDir = jobLocalDir(locNodeId, jobId);
 
-            if (jobLocDir.exists())
-                U.delete(jobLocDir);
+                if (jobLocDir.exists())
+                    U.delete(jobLocDir);
+            }
         }
+        finally {
+            taskCtxClsPool.clear();
+
+            Throwable err = null;
+
+            // Stop the daemon threads that have been created
+            // with the task class loaders:
+            while (true) {
+                Class<? extends HadoopTaskContext> cls = fullCtxClsQueue.poll();
+
+                if (cls == null)
+                    break;
+
+                try {
+                    final ClassLoader ldr = cls.getClassLoader();
+
+                    try {
+                        // Stop Hadoop daemons for this *task*:
+                        stopHadoopFsDaemons(ldr);
+                    }
+                    catch (Exception e) {
+                        if (err == null)
+                            err = e;
+                    }
+
+                    // Also close all the FileSystems cached in
+                    // HadoopLazyConcurrentMap for this *task* class loader:
+                    closeCachedTaskFileSystems(ldr);
+                }
+                catch (Throwable e) {
+                    if (err == null)
+                        err = e;
+
+                    if (e instanceof Error)
+                        throw (Error)e;
+                }
+            }
+
+            assert fullCtxClsQueue.isEmpty();
+
+            try {
+                // Close all cached file systems for this *Job*:
+                fsMap.close();
+            }
+            catch (Exception e) {
+                if (err == null)
+                    err = e;
+            }
+
+            if (err != null)
+                throw U.cast(err);
+        }
+    }
+
+    /**
+     * Stops Hadoop Fs daemon threads.
+     * @param ldr The task ClassLoader to stop the daemons for.
+     * @throws Exception On error.
+     */
+    private void stopHadoopFsDaemons(ClassLoader ldr) throws Exception {
+        Class<?> daemonCls = ldr.loadClass(HadoopClassLoader.HADOOP_DAEMON_CLASS_NAME);
+
+        Method m = daemonCls.getMethod("dequeueAndStopAll");
+
+        m.invoke(null);
+    }
+
+    /**
+     * Closes all the file systems user by task
+     * @param ldr The task class loader.
+     * @throws Exception On error.
+     */
+    private void closeCachedTaskFileSystems(ClassLoader ldr) throws Exception {
+        Class<?> clazz = ldr.loadClass(HadoopV2TaskContext.class.getName());
+
+        Method m = clazz.getMethod("close");
+
+        m.invoke(null);
     }
 
     /** {@inheritDoc} */
@@ -264,7 +368,7 @@ public class HadoopV2Job implements HadoopJob {
     @Override public void cleanupTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException {
         HadoopTaskContext ctx = ctxs.remove(new T2<>(info.type(), info.taskNumber())).get();
 
-        taskCtxClsPool.offer(ctx.getClass());
+        taskCtxClsPool.add(ctx.getClass());
 
         File locDir = taskLocalDir(locNodeId, info);
 
@@ -274,7 +378,25 @@ public class HadoopV2Job implements HadoopJob {
 
     /** {@inheritDoc} */
     @Override public void cleanupStagingDirectory() {
-        if (rsrcMgr != null)
-            rsrcMgr.cleanupStagingDirectory();
+        rsrcMgr.cleanupStagingDirectory();
+    }
+
+    /**
+     * Getter for job configuration.
+     * @return The job configuration.
+     */
+    public JobConf jobConf() {
+        return jobConf;
+    }
+
+    /**
+     * Gets file system for this job.
+     * @param uri The uri.
+     * @param cfg The configuration.
+     * @return The file system.
+     * @throws IOException On error.
+     */
+    public FileSystem fileSystem(@Nullable URI uri, Configuration cfg) throws IOException {
+        return fileSystemForMrUserWithCaching(uri, cfg, fsMap);
     }
 }

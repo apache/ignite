@@ -319,7 +319,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
 
         assertNotNull(cache);
 
-        cache.evictAll();
+        cache.evictAll(cache.keySet());
 
         assert null != cache.get(new GridCacheInternalKeyImpl(locSeqName));
     }

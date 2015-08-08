@@ -37,3 +37,4 @@ public class IgniteStartStopRestartTestSuite {
         return suite;
     }
 }
+

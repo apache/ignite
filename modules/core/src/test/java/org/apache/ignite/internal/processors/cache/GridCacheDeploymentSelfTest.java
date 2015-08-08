@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -85,8 +85,6 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(null);
-
-        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -247,11 +245,11 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             stopGrid(GRID_NAME);
 
-            assert g1.cache(null).localSize() == 1;
-            assert g1.cache(null).localSize() == 1;
+            assert g1.cache(null).localSize(CachePeekMode.ALL) == 1;
+            assert g1.cache(null).localSize(CachePeekMode.ALL) == 1;
 
-            assert g2.cache(null).localSize() == 1;
-            assert g2.cache(null).localSize() == 1;
+            assert g2.cache(null).localSize(CachePeekMode.ALL) == 1;
+            assert g2.cache(null).localSize(CachePeekMode.ALL) == 1;
 
             startGrid(3);
         }

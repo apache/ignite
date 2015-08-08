@@ -23,6 +23,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -202,18 +203,20 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
+        boolean found = false;
+
         for (IgniteInternalFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
+                    found = true;
 
-                    return true;
+                    f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
                 }
             }
 
-        return false;
+        return found;
     }
 
     /**
@@ -221,7 +224,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param res Result.
      */
     public void onResult(UUID nodeId, GridNearGetResponse res) {
-        for (IgniteInternalFuture<Map<K, V>> fut : futures())
+        for (IgniteInternalFuture<Map<K, V>> fut : futures()) {
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -231,6 +234,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     f.onResult(res);
                 }
             }
+        }
     }
 
     /** {@inheritDoc} */
@@ -267,7 +271,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         AffinityTopologyVersion topVer
     ) {
         if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-            onDone(new ClusterTopologyCheckedException("Failed to map keys for cache " +
+            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
                 "(all partition nodes left the grid)."));
 
             return;
@@ -381,7 +385,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        fut.onResult((ClusterTopologyCheckedException)e);
+                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
                     else
                         fut.onResult(e);
                 }
@@ -458,6 +462,13 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 }
 
                 ClusterNode node = cctx.affinity().primary(key, topVer);
+
+                if (node == null) {
+                    onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+                        "(all partition nodes left the grid)."));
+
+                    return false;
+                }
 
                 remote = !node.isLocal();
 
@@ -555,6 +566,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         /** Topology version on which this future was mapped. */
         private AffinityTopologyVersion topVer;
 
+        /** {@code True} if remapped after node left. */
+        private boolean remapped;
+
         /**
          * @param node Node.
          * @param keys Keys.
@@ -602,16 +616,46 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
          * @param e Failure exception.
          */
         @SuppressWarnings("UnusedParameters")
-        void onResult(ClusterTopologyCheckedException e) {
+        synchronized void onNodeLeft(ClusterTopologyCheckedException e) {
+            if (remapped)
+                return;
+
+            remapped = true;
+
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
-            AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
+            final AffinityTopologyVersion updTopVer =
+                new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
-            // Remap.
-            map(keys.keySet(), F.t(node, keys), updTopVer);
+            final GridFutureRemapTimeoutObject timeout = new GridFutureRemapTimeoutObject(this,
+                cctx.kernalContext().config().getNetworkTimeout(),
+                updTopVer,
+                e);
 
-            onDone(Collections.<K, V>emptyMap());
+            cctx.affinity().affinityReadyFuture(updTopVer).listen(
+                new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                        if (timeout.finish()) {
+                            cctx.kernalContext().timeout().removeTimeoutObject(timeout);
+
+                            try {
+                                fut.get();
+
+                                // Remap.
+                                map(keys.keySet(), F.t(node, keys), updTopVer);
+
+                                onDone(Collections.<K, V>emptyMap());
+                            }
+                            catch (IgniteCheckedException e) {
+                                GridPartitionedGetFuture.this.onDone(e);
+                            }
+                        }
+                    }
+                }
+            );
+
+            cctx.kernalContext().timeout().addTimeoutObject(timeout);
         }
 
         /**
@@ -666,8 +710,14 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     }
                 });
             }
-            else
-                onDone(createResultMap(res.entries()));
+            else {
+                try {
+                    onDone(createResultMap(res.entries()));
+                }
+                catch (Exception e) {
+                    onDone(e);
+                }
+            }
         }
 
         /** {@inheritDoc} */

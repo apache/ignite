@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.ipc.shmem;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -25,6 +26,8 @@ import java.net.*;
 import java.nio.channels.*;
 import java.security.*;
 import java.util.*;
+import java.util.jar.*;
+import java.util.zip.*;
 
 import static org.apache.ignite.internal.IgniteVersionUtils.*;
 
@@ -33,17 +36,17 @@ import static org.apache.ignite.internal.IgniteVersionUtils.*;
  */
 @SuppressWarnings("ErrorNotRethrown")
 public class IpcSharedMemoryNativeLoader {
-    /** Loaded flag. */
-    private static volatile boolean loaded;
-
     /** Library name base. */
     private static final String LIB_NAME_BASE = "igniteshmem";
 
-    /** Lock file path. */
-    private static final File LOCK_FILE = new File(System.getProperty("java.io.tmpdir"), "igniteshmem.lock");
+    /** Library jar name base. */
+    private static final String JAR_NAME_BASE = "shmem";
 
     /** Library name. */
     static final String LIB_NAME = LIB_NAME_BASE + "-" + VER_STR;
+
+    /** Loaded flag. */
+    private static volatile boolean loaded;
 
     /**
      * @return Operating system name to resolve path to library.
@@ -87,9 +90,10 @@ public class IpcSharedMemoryNativeLoader {
     }
 
     /**
+     * @param log Logger, if available. If null, warnings will be printed out to console.
      * @throws IgniteCheckedException If failed.
      */
-    public static void load() throws IgniteCheckedException {
+    public static void load(IgniteLogger log) throws IgniteCheckedException {
         if (loaded)
             return;
 
@@ -97,7 +101,7 @@ public class IpcSharedMemoryNativeLoader {
             if (loaded)
                 return;
 
-            doLoad();
+            doLoad(log);
 
             loaded = true;
         }
@@ -106,7 +110,7 @@ public class IpcSharedMemoryNativeLoader {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private static void doLoad() throws IgniteCheckedException {
+    private static void doLoad(IgniteLogger log) throws IgniteCheckedException {
         assert Thread.holdsLock(IpcSharedMemoryNativeLoader.class);
 
         Collection<Throwable> errs = new ArrayList<>();
@@ -121,17 +125,46 @@ public class IpcSharedMemoryNativeLoader {
             errs.add(e);
         }
 
+        File tmpDir = getUserSpecificTempDir();
+
+        File lockFile = new File(tmpDir, "igniteshmem.lock");
+
         // Obtain lock on file to prevent concurrent extracts.
-        try (RandomAccessFile randomAccessFile = new RandomAccessFile(LOCK_FILE, "rws");
-             FileLock ignored = randomAccessFile.getChannel().lock()) {
-            if (extractAndLoad(errs, platformSpecificResourcePath()))
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile(lockFile, "rws");
+            FileLock ignored = randomAccessFile.getChannel().lock()) {
+            if (extractAndLoad(errs, tmpDir, platformSpecificResourcePath()))
                 return;
 
-            if (extractAndLoad(errs, osSpecificResourcePath()))
+            if (extractAndLoad(errs, tmpDir, osSpecificResourcePath()))
                 return;
 
-            if (extractAndLoad(errs, resourcePath()))
+            if (extractAndLoad(errs, tmpDir, resourcePath()))
                 return;
+
+            try {
+                if (log != null)
+                    LT.warn(log, null, "Failed to load 'igniteshmem' library from classpath. Will try to load it from IGNITE_HOME.");
+
+                String igniteHome = X.resolveIgniteHome();
+
+                File shmemJar = findShmemJar(errs, igniteHome);
+
+                if (shmemJar != null) {
+                    try (JarFile jar = new JarFile(shmemJar, false, JarFile.OPEN_READ)) {
+                        if (extractAndLoad(errs, jar, tmpDir, platformSpecificResourcePath()))
+                            return;
+
+                        if (extractAndLoad(errs, jar, tmpDir, osSpecificResourcePath()))
+                            return;
+
+                        if (extractAndLoad(errs, jar, tmpDir, resourcePath()))
+                            return;
+                    }
+                }
+            }
+            catch (IgniteCheckedException ignore) {
+                // No-op.
+            }
 
             // Failed to find the library.
             assert !errs.isEmpty();
@@ -139,8 +172,55 @@ public class IpcSharedMemoryNativeLoader {
             throw new IgniteCheckedException("Failed to load native IPC library: " + errs);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to obtain file lock: " + LOCK_FILE, e);
+            throw new IgniteCheckedException("Failed to obtain file lock: " + lockFile, e);
         }
+    }
+
+    /**
+     * Tries to find shmem jar in IGNITE_HOME/libs folder.
+     *
+     * @param errs Collection of errors to add readable exception to.
+     * @param igniteHome Resolver IGNITE_HOME variable.
+     * @return File, if found.
+     */
+    private static File findShmemJar(Collection<Throwable> errs, String igniteHome) {
+        File libs = new File(igniteHome, "libs");
+
+        if (!libs.exists() || libs.isFile()) {
+            errs.add(new IllegalStateException("Failed to find libs folder in resolved IGNITE_HOME: " + igniteHome));
+
+            return null;
+        }
+
+        for (File lib : libs.listFiles()) {
+            if (lib.getName().endsWith(".jar") && lib.getName().contains(JAR_NAME_BASE))
+                return lib;
+        }
+
+        errs.add(new IllegalStateException("Failed to find shmem jar in resolved IGNITE_HOME: " + igniteHome));
+
+        return null;
+    }
+
+    /**
+     * Gets temporary directory unique for each OS user.
+     * The directory guaranteed to exist, though may not be empty.
+     */
+    private static File getUserSpecificTempDir() throws IgniteCheckedException {
+        String tmp = System.getProperty("java.io.tmpdir");
+
+        String userName = System.getProperty("user.name");
+
+        File tmpDir = new File(tmp, userName);
+
+        if (!tmpDir.exists())
+            //noinspection ResultOfMethodCallIgnored
+            tmpDir.mkdirs();
+
+        if (!(tmpDir.exists() && tmpDir.isDirectory()))
+            throw new IgniteCheckedException("Failed to create temporary directory [dir=" + tmpDir + ']');
+
+        return tmpDir;
     }
 
     /**
@@ -181,16 +261,34 @@ public class IpcSharedMemoryNativeLoader {
      * @param rsrcPath Path.
      * @return {@code True} if library was found and loaded.
      */
-    private static boolean extractAndLoad(Collection<Throwable> errs, String rsrcPath) {
+    private static boolean extractAndLoad(Collection<Throwable> errs, File tmpDir, String rsrcPath) {
         ClassLoader clsLdr = U.detectClassLoader(IpcSharedMemoryNativeLoader.class);
 
         URL rsrc = clsLdr.getResource(rsrcPath);
 
         if (rsrc != null)
-            return extract(errs, rsrc, new File(System.getProperty("java.io.tmpdir"), mapLibraryName(LIB_NAME)));
+            return extract(errs, rsrc, new File(tmpDir, mapLibraryName(LIB_NAME)));
         else {
             errs.add(new IllegalStateException("Failed to find resource with specified class loader " +
                 "[rsrc=" + rsrcPath + ", clsLdr=" + clsLdr + ']'));
+
+            return false;
+        }
+    }
+
+    /**
+     * @param errs Errors collection.
+     * @param rsrcPath Path.
+     * @return {@code True} if library was found and loaded.
+     */
+    private static boolean extractAndLoad(Collection<Throwable> errs, JarFile jar, File tmpDir, String rsrcPath) {
+        ZipEntry rsrc = jar.getEntry(rsrcPath);
+
+        if (rsrc != null)
+            return extract(errs, rsrc, jar, new File(tmpDir, mapLibraryName(LIB_NAME)));
+        else {
+            errs.add(new IllegalStateException("Failed to find resource within specified jar file " +
+                "[rsrc=" + rsrcPath + ", jar=" + jar.getName() + ']'));
 
             return false;
         }
@@ -208,7 +306,7 @@ public class IpcSharedMemoryNativeLoader {
         InputStream is = null;
 
         try {
-            if (!target.exists() || !haveEqualMD5(target, src)) {
+            if (!target.exists() || !haveEqualMD5(target, src.openStream())) {
                 is = src.openStream();
 
                 if (is != null) {
@@ -243,20 +341,69 @@ public class IpcSharedMemoryNativeLoader {
     }
 
     /**
-     * @param target Target.
+     * @param errs Errors collection.
      * @param src Source.
+     * @param target Target.
+     * @return {@code True} if resource was found and loaded.
+     */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private static boolean extract(Collection<Throwable> errs, ZipEntry src, JarFile jar, File target) {
+        FileOutputStream os = null;
+        InputStream is = null;
+
+        try {
+            if (!target.exists() || !haveEqualMD5(target, jar.getInputStream(src))) {
+                is = jar.getInputStream(src);
+
+                if (is != null) {
+                    os = new FileOutputStream(target);
+
+                    int read;
+
+                    byte[] buf = new byte[4096];
+
+                    while ((read = is.read(buf)) != -1)
+                        os.write(buf, 0, read);
+                }
+            }
+
+            // chmod 775.
+            if (!U.isWindows())
+                Runtime.getRuntime().exec(new String[] {"chmod", "775", target.getCanonicalPath()}).waitFor();
+
+            System.load(target.getPath());
+
+            return true;
+        }
+        catch (IOException | UnsatisfiedLinkError | InterruptedException | NoSuchAlgorithmException e) {
+            errs.add(e);
+        }
+        finally {
+            U.closeQuiet(os);
+            U.closeQuiet(is);
+        }
+
+        return false;
+    }
+
+    /**
+     * @param target Target.
+     * @param srcIS Source input stream.
      * @return {@code True} if target md5-sum equal to source md5-sum.
      * @throws NoSuchAlgorithmException If md5 algorithm was not found.
      * @throws IOException If an I/O exception occurs.
      */
-    private static boolean haveEqualMD5(File target, URL src) throws NoSuchAlgorithmException, IOException {
-        try (InputStream targetIS = new FileInputStream(target);
-             InputStream srcIS = src.openStream()) {
+    private static boolean haveEqualMD5(File target, InputStream srcIS) throws NoSuchAlgorithmException, IOException {
+        try {
+            try (InputStream targetIS = new FileInputStream(target)) {
+                String targetMD5 = U.calculateMD5(targetIS);
+                String srcMD5 = U.calculateMD5(srcIS);
 
-            String targetMD5 = U.calculateMD5(targetIS);
-            String srcMD5 = U.calculateMD5(srcIS);
-
-            return targetMD5.equals(srcMD5);
+                return targetMD5.equals(srcMD5);
+            }
+        }
+        finally {
+            srcIS.close();
         }
     }
 }

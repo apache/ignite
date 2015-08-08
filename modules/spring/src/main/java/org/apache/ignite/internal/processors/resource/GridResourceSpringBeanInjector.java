@@ -56,7 +56,7 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
         // Check for 'transient' modifier only in serializable classes.
         if (!Modifier.isTransient(field.getField().getModifiers()) &&
             Serializable.class.isAssignableFrom(field.getField().getDeclaringClass())) {
-            throw new IgniteCheckedException("@GridSpringResource must only be used with 'transient' fields: " +
+            throw new IgniteCheckedException("@SpringResource must only be used with 'transient' fields: " +
                 field.getField());
         }
 

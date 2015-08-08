@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.lucene.analysis.standard.*;
 import org.apache.lucene.document.*;
@@ -33,6 +34,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryParser.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.*;
+import org.h2.util.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -55,9 +57,6 @@ public class GridLuceneIndex implements Closeable {
     public static final String EXPIRATION_TIME_FIELD_NAME = "_gg_expires__";
 
     /** */
-    private final Marshaller marshaller;
-
-    /** */
     private final String spaceName;
 
     /** */
@@ -68,9 +67,6 @@ public class GridLuceneIndex implements Closeable {
 
     /** */
     private final String[] idxdFields;
-
-    /** */
-    private final boolean storeVal;
 
     /** */
     private final AtomicLong updateCntr = new GridAtomicLong();
@@ -85,20 +81,16 @@ public class GridLuceneIndex implements Closeable {
      * Constructor.
      *
      * @param ctx Kernal context.
-     * @param marshaller Indexing marshaller.
      * @param mem Unsafe memory.
      * @param spaceName Space name.
      * @param type Type descriptor.
-     * @param storeVal Store value in index.
      * @throws IgniteCheckedException If failed.
      */
-    public GridLuceneIndex(GridKernalContext ctx, Marshaller marshaller, @Nullable GridUnsafeMemory mem,
-        @Nullable String spaceName, GridQueryTypeDescriptor type, boolean storeVal) throws IgniteCheckedException {
+    public GridLuceneIndex(GridKernalContext ctx, @Nullable GridUnsafeMemory mem,
+        @Nullable String spaceName, GridQueryTypeDescriptor type) throws IgniteCheckedException {
         this.ctx = ctx;
-        this.marshaller = marshaller;
         this.spaceName = spaceName;
         this.type = type;
-        this.storeVal = storeVal;
 
         dir = new GridLuceneDirectory(mem == null ? new GridUnsafeMemory(0) : mem);
 
@@ -137,15 +129,30 @@ public class GridLuceneIndex implements Closeable {
     }
 
     /**
+     * @return Cache object context.
+     */
+    private CacheObjectContext objectContext() {
+        if (ctx == null)
+            return null;
+
+        return ctx.cache().internalCache(spaceName).context().cacheObjectContext();
+    }
+
+    /**
      * Stores given data in this fulltext index.
      *
-     * @param key Key.
-     * @param val Value.
+     * @param k Key.
+     * @param v Value.
      * @param ver Version.
      * @param expires Expiration time.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(Object key, Object val, byte[] ver, long expires) throws IgniteCheckedException {
+    public void store(CacheObject k, CacheObject v, byte[] ver, long expires) throws IgniteCheckedException {
+        CacheObjectContext coctx = objectContext();
+
+        Object key = k.value(coctx, false);
+        Object val = v.value(coctx, false);
+
         Document doc = new Document();
 
         boolean stringsFound = false;
@@ -166,7 +173,7 @@ public class GridLuceneIndex implements Closeable {
             }
         }
 
-        String keyStr = org.apache.commons.codec.binary.Base64.encodeBase64String(marshaller.marshal(key));
+        String keyStr = org.apache.commons.codec.binary.Base64.encodeBase64String(k.valueBytes(coctx));
 
         try {
             // Delete first to avoid duplicates.
@@ -177,8 +184,8 @@ public class GridLuceneIndex implements Closeable {
 
             doc.add(new Field(KEY_FIELD_NAME, keyStr, Field.Store.YES, Field.Index.NOT_ANALYZED));
 
-            if (storeVal && type.valueClass() != String.class)
-                doc.add(new Field(VAL_FIELD_NAME, marshaller.marshal(val)));
+            if (type.valueClass() != String.class)
+                doc.add(new Field(VAL_FIELD_NAME, v.valueBytes(coctx)));
 
             doc.add(new Field(VER_FIELD_NAME, ver));
 
@@ -201,9 +208,10 @@ public class GridLuceneIndex implements Closeable {
      * @param key Key.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(Object key) throws IgniteCheckedException {
+    public void remove(CacheObject key) throws IgniteCheckedException {
         try {
-            writer.deleteDocuments(new Term(KEY_FIELD_NAME, org.apache.commons.codec.binary.Base64.encodeBase64String(marshaller.marshal(key))));
+            writer.deleteDocuments(new Term(KEY_FIELD_NAME,
+                org.apache.commons.codec.binary.Base64.encodeBase64String(key.valueBytes(objectContext()))));
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -297,6 +305,9 @@ public class GridLuceneIndex implements Closeable {
         /** */
         private IgniteBiTuple<K, V> curr;
 
+        /** */
+        private CacheObjectContext coctx;
+
         /**
          * Constructor.
          *
@@ -313,6 +324,8 @@ public class GridLuceneIndex implements Closeable {
             this.docs = docs;
             this.filters = filters;
 
+            coctx = objectContext();
+
             findNext();
         }
 
@@ -328,10 +341,25 @@ public class GridLuceneIndex implements Closeable {
         }
 
         /**
+         * @param bytes Bytes.
+         * @param ldr Class loader.
+         * @return Object.
+         * @throws IgniteCheckedException If failed.
+         */
+        @SuppressWarnings("unchecked")
+        private <Z> Z unmarshall(byte[] bytes, ClassLoader ldr) throws IgniteCheckedException {
+            if (coctx == null) // For tests.
+                return (Z)Utils.deserialize(bytes, null);
+
+            return (Z)coctx.processor().unmarshal(coctx, bytes, ldr);
+        }
+
+        /**
          * Finds next element.
          *
          * @throws IgniteCheckedException If failed.
          */
+        @SuppressWarnings("unchecked")
         private void findNext() throws IgniteCheckedException {
             curr = null;
 
@@ -345,25 +373,21 @@ public class GridLuceneIndex implements Closeable {
                     throw new IgniteCheckedException(e);
                 }
 
-                String keyStr = doc.get(KEY_FIELD_NAME);
-
                 ClassLoader ldr = null;
 
                 if (ctx != null && ctx.deploy().enabled())
                     ldr = ctx.cache().internalCache(spaceName).context().deploy().globalLoader();
 
-                K k = marshaller.unmarshal(org.apache.commons.codec.binary.Base64.decodeBase64(keyStr), ldr);
+                K k = unmarshall(org.apache.commons.codec.binary.Base64.decodeBase64(doc.get(KEY_FIELD_NAME)), ldr);
 
-                byte[] valBytes = doc.getBinaryValue(VAL_FIELD_NAME);
+                V v = type.valueClass() == String.class ?
+                    (V)doc.get(VAL_STR_FIELD_NAME) :
+                    this.<V>unmarshall(doc.getBinaryValue(VAL_FIELD_NAME), ldr);
 
-                V v = valBytes != null ? marshaller.<V>unmarshal(valBytes, ldr) :
-                    type.valueClass() == String.class ?
-                    (V)doc.get(VAL_STR_FIELD_NAME): null;
+                assert v != null;
 
                 if (!filter(k, v))
                     continue;
-
-//                byte[] ver = doc.getBinaryValue(VER_FIELD_NAME); TODO rm version
 
                 curr = new IgniteBiTuple<>(k, v);
 

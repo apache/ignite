@@ -235,14 +235,12 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                             done.set(true);
 
                             for (int j = 0; j < KEY_CNT; j++) {
-                                Cache.Entry<Integer, Integer> entry = internalCache(cache).entry(j);
+                                Integer val = internalCache(cache).get(j);
 
-                                assert entry != null;
-
-                                Integer val = entry.getValue();
+                                assert val != null;
 
                                 if (j % FREQUENCY == 0)
-                                    info("Read entry: " + entry.getKey() + " -> " + val);
+                                    info("Read entry: " + j + " -> " + val);
 
                                 assert val != null && val == j;
                             }

@@ -255,7 +255,7 @@ public final class X {
             return !deep ? shallowClone(obj) : (T)deepClone(new GridLeanMap<Integer, Integer>(),
                 new ArrayList<>(), obj, honorCloneable);
         }
-        catch (Throwable e) {
+        catch (Exception e) {
             throw new IgniteException("Unable to clone instance of class: " + obj.getClass(), e);
         }
     }

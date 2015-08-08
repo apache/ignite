@@ -39,6 +39,11 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-804");
+    }
+
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
     }

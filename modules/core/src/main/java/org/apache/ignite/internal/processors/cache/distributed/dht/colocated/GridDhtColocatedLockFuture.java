@@ -46,7 +46,7 @@ import static org.apache.ignite.events.EventType.*;
 /**
  * Colocated cache lock future.
  */
-public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
+public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture<Boolean>
     implements GridCacheFuture<Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -59,7 +59,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
     /** Cache registry. */
     @GridToStringExclude
-    private GridCacheContext<K, V> cctx;
+    private GridCacheContext<?, ?> cctx;
 
     /** Lock owner thread. */
     @GridToStringInclude
@@ -109,6 +109,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** Skip store flag. */
+    private final boolean skipStore;
+
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -118,16 +121,18 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @param timeout Lock acquisition timeout.
      * @param accessTtl TTL for read operation.
      * @param filter Filter.
+     * @param skipStore Skip store flag.
      */
     public GridDhtColocatedLockFuture(
-        GridCacheContext<K, V> cctx,
+        GridCacheContext<?, ?> cctx,
         Collection<KeyCacheObject> keys,
         @Nullable GridNearTxLocal tx,
         boolean read,
         boolean retval,
         long timeout,
         long accessTtl,
-        CacheEntryPredicate[] filter) {
+        CacheEntryPredicate[] filter,
+        boolean skipStore) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;
@@ -140,6 +145,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         this.timeout = timeout;
         this.accessTtl = accessTtl;
         this.filter = filter;
+        this.skipStore = skipStore;
+
+        ignoreInterrupts(true);
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
 
@@ -284,7 +292,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     false,
                     false);
 
-                cand.topologyVersion(new AffinityTopologyVersion(topVer.get().topologyVersion()));
+                cand.topologyVersion(topVer.get());
             }
         }
         else {
@@ -303,7 +311,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     false,
                     false);
 
-                cand.topologyVersion(new AffinityTopologyVersion(topVer.get().topologyVersion()));
+                cand.topologyVersion(topVer.get());
             }
             else
                 cand = cand.reenter();
@@ -318,13 +326,14 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * Undoes all locks.
      *
      * @param dist If {@code true}, then remove locks from remote nodes as well.
+     * @param rollback {@code True} if should rollback tx.
      */
-    private void undoLocks(boolean dist) {
+    private void undoLocks(boolean dist, boolean rollback) {
         // Transactions will undo during rollback.
         if (dist && tx == null)
             cctx.colocated().removeLocks(threadId, lockVer, keys);
         else {
-            if (tx != null) {
+            if (rollback && tx != null) {
                 if (tx.setRollbackOnly()) {
                     if (log.isDebugEnabled())
                         log.debug("Marked transaction as rollback only because locks could not be acquired: " + tx);
@@ -335,16 +344,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         }
 
         cctx.mvcc().recheckPendingLocks();
-    }
-
-    /**
-     *
-     * @param dist {@code True} if need to distribute lock release.
-     */
-    private void onFailed(boolean dist) {
-        undoLocks(dist);
-
-        complete(false);
     }
 
     /**
@@ -467,7 +466,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 ", fut=" + this + ']');
 
         if (!success)
-            undoLocks(distribute);
+            undoLocks(distribute, true);
 
         if (tx != null)
             cctx.tm().txContext(tx);
@@ -517,14 +516,32 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      */
     void map() {
         // Obtain the topology version to use.
-        AffinityTopologyVersion topVer = tx != null ? tx.topologyVersionSnapshot() :
-            cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
+        AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
+
+        if (topVer != null && tx != null)
+            tx.topologyVersion(topVer);
+
+        if (topVer == null && tx != null)
+            topVer = tx.topologyVersionSnapshot();
 
         if (topVer != null) {
+            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()){
+                if (fut.topologyVersion().equals(topVer)){
+                    if (!fut.isCacheTopologyValid(cctx)) {
+                        onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
+                            cctx.name()));
+
+                        return;
+                    }
+
+                    break;
+                }
+            }
+
             // Continue mapping on the same topology version as it was before.
             this.topVer.compareAndSet(null, topVer);
 
-            map(keys);
+            map(keys, false);
 
             markInitialized();
 
@@ -532,14 +549,17 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         }
 
         // Must get topology snapshot and map on that version.
-        mapOnTopology();
+        mapOnTopology(false, null);
     }
 
     /**
      * Acquires topology future and checks it completeness under the read lock. If it is not complete,
      * will asynchronously wait for it's completeness and then try again.
+     *
+     * @param remap Remap flag.
+     * @param c Optional closure to run after map.
      */
-    private void mapOnTopology() {
+    private void mapOnTopology(final boolean remap, @Nullable final Runnable c) {
         // We must acquire topology snapshot from the topology version future.
         cctx.topology().readLock();
 
@@ -554,21 +574,39 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
+                if (!fut.isCacheTopologyValid(cctx)) {
+                    onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
+                        cctx.name()));
+
+                    return;
+                }
+
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
-                if (tx != null)
-                    tx.topologyVersion(topVer);
+                if (remap) {
+                    if (tx != null)
+                        tx.onRemap(topVer);
 
-                this.topVer.compareAndSet(null, topVer);
+                    this.topVer.set(topVer);
+                }
+                else {
+                    if (tx != null)
+                        tx.topologyVersion(topVer);
 
-                map(keys);
+                    this.topVer.compareAndSet(null, topVer);
+                }
+
+                map(keys, remap);
+
+                if (c != null)
+                    c.run();
 
                 markInitialized();
             }
             else {
                 fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
-                        mapOnTopology();
+                        mapOnTopology(remap, c);
                     }
                 });
             }
@@ -584,8 +622,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * groups belonging to one primary node and locks for these groups are acquired sequentially.
      *
      * @param keys Keys.
+     * @param remap Remap flag.
      */
-    private void map(Collection<KeyCacheObject> keys) {
+    private void map(Collection<KeyCacheObject> keys, boolean remap) {
         try {
             AffinityTopologyVersion topVer = this.topVer.get();
 
@@ -600,8 +639,12 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 return;
             }
 
+            boolean clientNode = cctx.kernalContext().clientNode();
+
+            assert !remap || (clientNode && (tx == null || !tx.hasRemoteLocks()));
+
             // First assume this node is primary for all keys passed in.
-            if (mapAsPrimary(keys, topVer))
+            if (!clientNode && mapAsPrimary(keys, topVer))
                 return;
 
             Deque<GridNearLockMapping> mappings = new ConcurrentLinkedDeque8<>();
@@ -635,6 +678,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
             boolean hasRmtNodes = false;
 
+            boolean first = true;
+
             // Create mini futures.
             for (Iterator<GridNearLockMapping> iter = mappings.iterator(); iter.hasNext(); ) {
                 GridNearLockMapping mapping = iter.next();
@@ -651,15 +696,30 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 Collection<KeyCacheObject> distributedKeys = new ArrayList<>(mappedKeys.size());
 
                 for (KeyCacheObject key : mappedKeys) {
-                    boolean explicit;
-
                     IgniteTxKey txKey = cctx.txKey(key);
 
-                    while (true) {
-                        GridDistributedCacheEntry entry = null;
+                    GridDistributedCacheEntry entry = null;
 
+                    if (tx != null) {
+                        IgniteTxEntry txEntry = tx.entry(txKey);
+
+                        if (txEntry != null) {
+                            entry = (GridDistributedCacheEntry)txEntry.cached();
+
+                            if (entry != null && !(loc ^ entry.detached())) {
+                                entry = cctx.colocated().entryExx(key, topVer, true);
+
+                                txEntry.cached(entry);
+                            }
+                        }
+                    }
+
+                    boolean explicit;
+
+                    while (true) {
                         try {
-                            entry = cctx.colocated().entryExx(key, topVer, true);
+                            if (entry == null)
+                                entry = cctx.colocated().entryExx(key, topVer, true);
 
                             if (!cctx.isAll(entry, filter)) {
                                 if (log.isDebugEnabled())
@@ -688,6 +748,14 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                             if (cand != null && !cand.reentry()) {
                                 if (req == null) {
+                                    boolean clientFirst = false;
+
+                                    if (first) {
+                                        clientFirst = clientNode && (tx == null || !tx.hasRemoteLocks());
+
+                                        first = false;
+                                    }
+
                                     req = new GridNearLockRequest(
                                         cctx.cacheId(),
                                         topVer,
@@ -708,7 +776,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                         inTx() && tx.syncCommit(),
                                         inTx() ? tx.subjectId() : null,
                                         inTx() ? tx.taskNameHash() : 0,
-                                        read ? accessTtl : -1L);
+                                        read ? accessTtl : -1L,
+                                        skipStore,
+                                        clientFirst);
 
                                     mapping.request(req);
                                 }
@@ -735,6 +805,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                         catch (GridCacheEntryRemovedException ignored) {
                             if (log.isDebugEnabled())
                                 log.debug("Got removed entry in lockAsync(..) method (will retry): " + entry);
+
+                            entry = null;
                         }
                     }
 
@@ -764,7 +836,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             if (hasRmtNodes) {
                 trackable = true;
 
-                if (!cctx.mvcc().addFuture(this))
+                if (!remap && !cctx.mvcc().addFuture(this))
                     throw new IllegalStateException("Duplicate future ID: " + this);
             }
             else
@@ -874,7 +946,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             retval,
             timeout,
             accessTtl,
-            filter);
+            filter,
+            skipStore);
 
         // Add new future.
         add(new GridEmbeddedFuture<>(
@@ -939,6 +1012,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         // Assign keys to primary nodes.
         Collection<KeyCacheObject> distributedKeys = new ArrayList<>(keys.size());
 
+        boolean explicit = false;
+
         for (KeyCacheObject key : keys) {
             if (!cctx.affinity().primary(cctx.localNode(), key, topVer)) {
                 // Remove explicit locks added so far.
@@ -948,7 +1023,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 return false;
             }
 
-            addLocalKey(key, topVer, distributedKeys);
+            explicit |= addLocalKey(key, topVer, distributedKeys);
 
             if (isDone())
                 return true;
@@ -956,8 +1031,12 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         trackable = false;
 
-        if (tx != null)
+        if (tx != null) {
+            if (explicit)
+                tx.markExplicit(cctx.localNodeId());
+
             tx.colocatedLocallyMapped(true);
+        }
 
         if (!distributedKeys.isEmpty()) {
             if (tx != null) {
@@ -982,7 +1061,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      */
     private boolean addLocalKey(
         KeyCacheObject key,
-        AffinityTopologyVersion topVer, 
+        AffinityTopologyVersion topVer,
         Collection<KeyCacheObject> distributedKeys
     ) throws IgniteCheckedException {
         GridDistributedCacheEntry entry = cctx.colocated().entryExx(key, topVer, false);
@@ -1014,13 +1093,17 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @throws IgniteCheckedException If mapping failed.
      */
     private GridNearLockMapping map(
-        KeyCacheObject key, 
+        KeyCacheObject key,
         @Nullable GridNearLockMapping mapping,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
         assert mapping == null || mapping.node() != null;
 
         ClusterNode primary = cctx.affinity().primary(key, topVer);
+
+        if (primary == null)
+            throw new ClusterTopologyServerNotFoundException("Failed to lock keys " +
+                "(all partition nodes left the grid).");
 
         if (cctx.discovery().node(primary.id()) == null)
             // If primary node left the grid before lock acquisition, fail the whole future.
@@ -1187,33 +1270,49 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     return;
                 }
 
-                int i = 0;
+                if (res.clientRemapVersion() != null) {
+                    assert cctx.kernalContext().clientNode();
 
-                for (KeyCacheObject k : keys) {
-                    IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup = valMap.get(k);
+                    IgniteInternalFuture<?> affFut =
+                        cctx.shared().exchange().affinityReadyFuture(res.clientRemapVersion());
 
-                    CacheObject newVal = res.value(i);
-
-                    GridCacheVersion dhtVer = res.dhtVersion(i);
-
-                    if (newVal == null) {
-                        if (oldValTup != null) {
-                            if (oldValTup.get1().equals(dhtVer))
-                                newVal = oldValTup.get2();
-                        }
+                    if (affFut != null && !affFut.isDone()) {
+                        affFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> fut) {
+                                remap();
+                            }
+                        });
                     }
+                    else
+                        remap();
+                }
+                else  {
+                    int i = 0;
 
-                    if (inTx()) {
-                        IgniteTxEntry txEntry = tx.entry(cctx.txKey(k));
+                    for (KeyCacheObject k : keys) {
+                        IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup = valMap.get(k);
 
-                        // In colocated cache we must receive responses only for detached entries.
-                        assert txEntry.cached().detached();
+                        CacheObject newVal = res.value(i);
 
-                        txEntry.markLocked();
+                        GridCacheVersion dhtVer = res.dhtVersion(i);
 
-                        GridDhtDetachedCacheEntry entry = (GridDhtDetachedCacheEntry)txEntry.cached();
+                        if (newVal == null) {
+                            if (oldValTup != null) {
+                                if (oldValTup.get1().equals(dhtVer))
+                                    newVal = oldValTup.get2();
+                            }
+                        }
 
-                        try {
+                        if (inTx()) {
+                            IgniteTxEntry txEntry = tx.entry(cctx.txKey(k));
+
+                            // In colocated cache we must receive responses only for detached entries.
+                            assert txEntry.cached().detached() : txEntry;
+
+                            txEntry.markLocked();
+
+                            GridDhtDetachedCacheEntry entry = (GridDhtDetachedCacheEntry)txEntry.cached();
+
                             if (res.dhtVersion(i) == null) {
                                 onDone(new IgniteCheckedException("Failed to receive DHT version from remote node " +
                                     "(will fail the lock): " + res));
@@ -1224,45 +1323,58 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                             // Set value to detached entry.
                             entry.resetFromPrimary(newVal, dhtVer);
 
+                            tx.hasRemoteLocks(true);
+
                             if (log.isDebugEnabled())
                                 log.debug("Processed response for entry [res=" + res + ", entry=" + entry + ']');
                         }
-                        catch (IgniteCheckedException e) {
-                            onDone(e);
+                        else
+                            cctx.mvcc().markExplicitOwner(k, threadId);
 
-                            return;
+                        if (retval && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
+                            cctx.events().addEvent(cctx.affinity().partition(k),
+                                k,
+                                tx,
+                                null,
+                                EVT_CACHE_OBJECT_READ,
+                                newVal,
+                                newVal != null,
+                                null,
+                                false,
+                                CU.subjectId(tx, cctx.shared()),
+                                null,
+                                tx == null ? null : tx.resolveTaskName());
                         }
-                    }
-                    else
-                        cctx.mvcc().markExplicitOwner(k, threadId);
 
-                    if (retval && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
-                        cctx.events().addEvent(cctx.affinity().partition(k),
-                            k,
-                            tx,
-                            null,
-                            EVT_CACHE_OBJECT_READ,
-                            newVal,
-                            newVal != null,
-                            null,
-                            false,
-                            CU.subjectId(tx, cctx.shared()),
-                            null,
-                            tx == null ? null : tx.resolveTaskName());
+                        i++;
                     }
 
-                    i++;
-                }
+                    try {
+                        proceedMapping(mappings);
+                    }
+                    catch (IgniteCheckedException e) {
+                        onDone(e);
+                    }
 
-                try {
-                    proceedMapping(mappings);
+                    onDone(true);
                 }
-                catch (IgniteCheckedException e) {
-                    onDone(e);
-                }
-
-                onDone(true);
             }
+        }
+
+        /**
+         *
+         */
+        private void remap() {
+            undoLocks(false, false);
+
+            for (KeyCacheObject key : GridDhtColocatedLockFuture.this.keys)
+                cctx.mvcc().removeExplicitLock(threadId, key, lockVer);
+
+            mapOnTopology(true, new Runnable() {
+                @Override public void run() {
+                    onDone(true);
+                }
+            });
         }
 
         /** {@inheritDoc} */

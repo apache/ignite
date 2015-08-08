@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -31,6 +32,7 @@ import org.jetbrains.annotations.*;
 import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -493,5 +495,76 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         fut1.get();
         fut2.get();
+    }
+
+    /**
+     * @throws Throwable If failed.
+     */
+    public void testLockReentrancy() throws Throwable {
+        Affinity<Integer> aff = ignite1.affinity(null);
+
+        for (int i = 10; i < 100; i++) {
+            log.info("Test lock [key=" + i +
+                ", primary=" + aff.isPrimary(ignite1.cluster().localNode(), i) +
+                ", backup=" + aff.isBackup(ignite1.cluster().localNode(), i) + ']');
+
+            final int i0 = i;
+
+            final Lock lock = cache1.lock(i);
+
+            lock.lockInterruptibly();
+
+            try {
+                final AtomicReference<Throwable> err = new AtomicReference<>();
+
+                Thread t =  new Thread(new Runnable() {
+                    @Override public void run() {
+                        try {
+                            assert !lock.tryLock();
+                            assert !lock.tryLock(100, TimeUnit.MILLISECONDS);
+
+                            assert !cache1.lock(i0).tryLock();
+                            assert !cache1.lock(i0).tryLock(100, TimeUnit.MILLISECONDS);
+                        }
+                        catch (Throwable e) {
+                            err.set(e);
+                        }
+                    }
+                });
+
+                t.start();
+                t.join();
+
+                if (err.get() != null)
+                    throw err.get();
+
+                lock.lock();
+                lock.unlock();
+
+                t =  new Thread(new Runnable() {
+                    @Override public void run() {
+                        try {
+                            assert !lock.tryLock();
+                            assert !lock.tryLock(100, TimeUnit.MILLISECONDS);
+
+                            assert !cache1.lock(i0).tryLock();
+                            assert !cache1.lock(i0).tryLock(100, TimeUnit.MILLISECONDS);
+                        }
+                        catch (Throwable e) {
+                            err.set(e);
+                        }
+                    }
+                });
+
+                t.start();
+                t.join();
+
+                if (err.get() != null)
+                    throw err.get();
+            }
+            finally {
+                lock.unlock();
+            }
+        }
     }
 }

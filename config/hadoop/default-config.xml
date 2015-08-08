@@ -130,14 +130,19 @@
                         </bean>
                     </property>
 
-                    <!-- Example secondary file system configuration (IGFS configured over Hadoop HDFS): -->
+                    <!-- Sample secondary file system configuration.
+                        'uri'      - the URI of the secondary file system.
+                        'cfgPath'  - optional configuration path of the secondary file system,
+                            e.g. /opt/foo/core-site.xml. Typically left to be null.
+                        'userName' - optional user name to access the secondary file system on behalf of. Use it
+                            if Hadoop client and the Ignite node are running on behalf of different users.
+                    -->
                     <!--
-                    <property name="defaultMode" value="PROXY"/>
-
                     <property name="secondaryFileSystem">
                         <bean class="org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem">
-                            <constructor-arg name="uri"     value="hdfs://1.2.3.4:9000"/>
-                            <constructor-arg name="cfgPath" value="/opt/hadoop-server/etc/hadoop/core-site.xml"/>
+                            <constructor-arg name="uri" value="hdfs://localhost:9000"/>
+                            <constructor-arg name="cfgPath"><null/></constructor-arg>
+                            <constructor-arg name="userName" value="client-user-name"/>
                         </bean>
                     </property>
                     -->

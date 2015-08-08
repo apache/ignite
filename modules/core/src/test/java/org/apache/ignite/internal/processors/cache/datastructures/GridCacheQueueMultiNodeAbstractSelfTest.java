@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
 
@@ -95,7 +94,6 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
 
         cfg.setSystemThreadPoolSize(RETRIES * 2);
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
         cfg.setConnectorConfiguration(null);
 
         return cfg;
@@ -459,8 +457,9 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
-    // TODO: GG-4807 Uncomment when fix
-    public void _testIterator() throws Exception {
+    public void testIterator() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-583");
+
         final String queueName = UUID.randomUUID().toString();
 
         info("Queue name: " + queueName);

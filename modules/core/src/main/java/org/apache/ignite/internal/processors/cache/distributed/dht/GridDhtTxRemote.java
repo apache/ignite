@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -90,7 +89,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         boolean invalidate,
@@ -163,7 +162,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         boolean invalidate,
@@ -200,6 +199,13 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         writeMap = new ConcurrentLinkedHashMap<>(txSize, 1.0f);
 
         topologyVersion(topVer);
+    }
+
+    /**
+     * @param txNodes Transaction nodes.
+     */
+    public void transactionNodes(Map<UUID, Collection<UUID>> txNodes) {
+        this.txNodes = txNodes;
     }
 
     /** {@inheritDoc} */
@@ -310,13 +316,15 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param val Value.
      * @param entryProcessors Entry processors.
      * @param ttl TTL.
+     * @param skipStore Skip store flag.
      */
     public void addWrite(GridCacheContext cacheCtx,
         GridCacheOperation op,
         IgniteTxKey key,
         @Nullable CacheObject val,
         @Nullable Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessors,
-        long ttl) {
+        long ttl,
+        boolean skipStore) {
         checkInternal(key);
 
         if (isSystemInvalidate())
@@ -331,7 +339,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             ttl,
             -1L,
             cached,
-            null);
+            null,
+            skipStore);
 
         txEntry.entryProcessors(entryProcessors);
 

@@ -63,12 +63,14 @@ public class IgniteTestResources {
     private GridResourceProcessor rsrcProc;
 
     /** */
-    public IgniteTestResources() {
+    public IgniteTestResources() throws IgniteCheckedException {
         log = rootLog.getLogger(getClass());
         nodeId = UUID.randomUUID();
         jmx = ManagementFactory.getPlatformMBeanServer();
         home = U.getIgniteHome();
         locHost = localHost();
+
+        U.setWorkDirectory(null, null);
 
         GridTestKernalContext ctx = new GridTestKernalContext(log);
 
@@ -78,7 +80,7 @@ public class IgniteTestResources {
     /**
      * @param jmx JMX server.
      */
-    public IgniteTestResources(MBeanServer jmx) {
+    public IgniteTestResources(MBeanServer jmx) throws IgniteCheckedException {
         assert jmx != null;
 
         this.jmx = jmx;
@@ -97,7 +99,7 @@ public class IgniteTestResources {
     /**
      * @param log Logger.
      */
-    public IgniteTestResources(IgniteLogger log) {
+    public IgniteTestResources(IgniteLogger log) throws IgniteCheckedException {
         assert log != null;
 
         this.log = log.getLogger(getClass());
@@ -191,6 +193,7 @@ public class IgniteTestResources {
     }
 
     /**
+     * @param cls Class.
      * @return Logger for specified class.
      */
     public static IgniteLogger getLogger(Class<?> cls) {
@@ -224,17 +227,17 @@ public class IgniteTestResources {
      */
     @SuppressWarnings("unchecked")
     public synchronized Marshaller getMarshaller() throws IgniteCheckedException {
-        String marshallerName = GridTestProperties.getProperty("marshaller.class");
+        String marshallerName = GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME);
 
-        Marshaller marshaller;
+        Marshaller marsh;
 
         if (marshallerName == null)
-            marshaller = new OptimizedMarshaller();
+            marsh = new OptimizedMarshaller();
         else {
             try {
                 Class<? extends Marshaller> cls = (Class<? extends Marshaller>)Class.forName(marshallerName);
 
-                marshaller = cls.newInstance();
+                marsh = cls.newInstance();
             }
             catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
                 throw new IgniteCheckedException("Failed to create test marshaller [marshaller=" +
@@ -242,8 +245,11 @@ public class IgniteTestResources {
             }
         }
 
-        marshaller.setContext(new MarshallerContextTestImpl());
+        if (marsh instanceof OptimizedMarshaller)
+            ((OptimizedMarshaller)marsh).setRequireSerializable(false);
 
-        return marshaller;
+        marsh.setContext(new MarshallerContextTestImpl());
+
+        return marsh;
     }
 }

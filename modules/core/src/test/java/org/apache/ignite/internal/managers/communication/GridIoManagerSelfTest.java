@@ -45,13 +45,20 @@ import static org.mockito.Mockito.*;
  */
 public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /** Grid test context. */
-    private GridTestKernalContext ctx = new GridTestKernalContext(log);
+    private GridTestKernalContext ctx;
 
     /** Test local node. */
     private GridTestNode locNode = new GridTestNode(UUID.randomUUID());
 
     /** Test remote node. */
     private GridTestNode rmtNode = new GridTestNode(UUID.randomUUID());
+
+    /**
+     * @throws IgniteCheckedException In case of error.
+     */
+    public GridIoManagerSelfTest() throws IgniteCheckedException {
+        ctx = new GridTestKernalContext(log);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -182,7 +189,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(ClusterNode node, GridTopic topic, Message msg, GridIoPolicy plc)
+        @Override public void send(ClusterNode node, GridTopic topic, Message msg, byte plc)
             throws IgniteCheckedException {
             // No-op.
         }

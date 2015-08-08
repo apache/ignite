@@ -42,7 +42,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
         " WHERE a.owner = ? and a.table_name = ? AND a.constraint_type = 'P'";
 
     /** SQL to get indexes metadata. */
-    private static final String SQL_INDEXES = "select i.index_name, u.column_expression, i.column_name, i.descend" +
+    private static final String SQL_INDEXES = "SELECT i.index_name, u.column_expression, i.column_name, i.descend" +
         " FROM all_ind_columns i" +
         " LEFT JOIN user_ind_expressions u on u.index_name = i.index_name and i.table_name = u.table_name" +
         " WHERE i.index_owner = ? and i.table_name = ?" +
@@ -189,7 +189,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
      * @param owner DB owner.
      * @param tbl Table name.
      * @return Index columns.
-     * @throws SQLException If failed to retrieve indexe columns.
+     * @throws SQLException If failed to retrieve indexes columns.
      */
     private Map<String, Map<String, Boolean>> indexes(PreparedStatement stmt, String owner, String tbl)
         throws SQLException {
@@ -238,7 +238,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
             String user = conn.getMetaData().getUserName().toUpperCase();
 
             String sql = String.format(SQL_COLUMNS,
-                tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name" : "", user);
+                tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name and a.owner = b.owner" : "", user);
 
             try (ResultSet colsRs = colsStmt.executeQuery(sql)) {
                 String prevSchema = "";

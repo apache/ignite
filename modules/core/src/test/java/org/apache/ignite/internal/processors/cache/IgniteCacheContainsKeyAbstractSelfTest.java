@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -38,7 +39,7 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cache(0).removeAll();
+        jcache(0).removeAll();
     }
 
     /** {@inheritDoc} */
@@ -73,12 +74,12 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
     public void testDistributedContains() throws Exception {
         String key = "1";
 
-        cache(0).put(key, 1);
+        jcache(0).put(key, 1);
 
         for (int i = 0; i < gridCount(); i++) {
-            assertTrue("Invalid result on grid: " + i, cache(i).containsKey(key));
+            assertTrue("Invalid result on grid: " + i, jcache(i).containsKey(key));
 
-            assertFalse("Invalid result on grid: " + i, cache(i).containsKey("2"));
+            assertFalse("Invalid result on grid: " + i, jcache(i).containsKey("2"));
         }
     }
 
@@ -90,9 +91,9 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
             String key = "1";
 
             for (int i = 0; i < gridCount(); i++)
-                assertFalse("Invalid result on grid: " + i, cache(i).containsKey(key));
+                assertFalse("Invalid result on grid: " + i, jcache(i).containsKey(key));
 
-            GridCache<String, Integer> cache = cache(0);
+            IgniteCache<String, Integer> cache = jcache(0);
 
             for (TransactionConcurrency conc : TransactionConcurrency.values()) {
                 for (TransactionIsolation iso : TransactionIsolation.values()) {
@@ -109,7 +110,7 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
                     }
 
                     for (int i = 0; i < gridCount(); i++)
-                        assertFalse("Invalid result on grid: " + i, cache(i).containsKey(key));
+                        assertFalse("Invalid result on grid: " + i, jcache(i).containsKey(key));
                 }
             }
         }

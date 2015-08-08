@@ -32,7 +32,7 @@ public class GridNoopManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testEnabledManager() {
+    public void testEnabledManager() throws IgniteCheckedException {
         GridTestKernalContext ctx = new GridTestKernalContext(new GridStringLogger());
 
         assertTrue(new Manager(ctx, new Spi()).enabled());

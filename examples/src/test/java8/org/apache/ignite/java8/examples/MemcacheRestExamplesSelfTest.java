@@ -24,6 +24,8 @@ import org.apache.ignite.testframework.junits.common.*;
  * MemcacheRestExample self test.
  */
 public class MemcacheRestExamplesSelfTest extends GridAbstractExamplesTest {
+//    TODO: IGNITE-711 next example(s) should be implemented for java 8
+//    or testing method(s) should be removed if example(s) does not applicable for java 8.
 //    /**
 //     * @throws Exception If failed.
 //     */

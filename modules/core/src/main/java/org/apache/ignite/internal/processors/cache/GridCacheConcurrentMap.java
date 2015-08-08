@@ -36,8 +36,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-
 /**
  * Concurrent implementation of cache map.
  */
@@ -281,11 +279,17 @@ public class GridCacheConcurrentMap {
      * @param loadFactor  the load factor threshold, used to control resizing.
      *      Resizing may be performed when the average number of elements per
      *      bin exceeds this threshold.
+     * @param factory Entries factory.
      * @throws IllegalArgumentException if the initial capacity of
      *      elements is negative or the load factor is non-positive.
      */
-    public GridCacheConcurrentMap(GridCacheContext ctx, int initCap, float loadFactor) {
+    public GridCacheConcurrentMap(GridCacheContext ctx,
+        int initCap,
+        float loadFactor,
+        @Nullable GridCacheMapEntryFactory factory) {
         this(ctx, initCap, loadFactor, DFLT_CONCUR_LEVEL);
+
+        this.factory = factory;
     }
 
     /**
@@ -311,6 +315,13 @@ public class GridCacheConcurrentMap {
         assert factory != null;
 
         this.factory = factory;
+    }
+
+    /**
+     * @return Entries factory.
+     */
+    public GridCacheMapEntryFactory getEntryFactory() {
+        return factory;
     }
 
     /**
@@ -463,24 +474,22 @@ public class GridCacheConcurrentMap {
      * @param topVer Topology version.
      * @param key Key.
      * @param val Value.
-     * @param ttl Time to live.
      * @return Cache entry for corresponding key-value pair.
      */
-    public GridCacheMapEntry putEntry(AffinityTopologyVersion topVer, KeyCacheObject key, @Nullable CacheObject val, long ttl) {
+    public GridCacheMapEntry putEntry(AffinityTopologyVersion topVer, KeyCacheObject key, @Nullable CacheObject val) {
         assert key != null;
 
         checkWeakQueue();
 
         int hash = hash(key.hashCode());
 
-        return segmentFor(hash).put(key, hash, val, topVer, ttl);
+        return segmentFor(hash).put(key, hash, val, topVer);
     }
 
     /**
      * @param topVer Topology version.
      * @param key Key.
      * @param val Value.
-     * @param ttl Time to live.
      * @param create Create flag.
      * @return Triple where the first element is current entry associated with the key,
      *      the second is created entry and the third is doomed (all may be null).
@@ -489,7 +498,6 @@ public class GridCacheConcurrentMap {
         AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable CacheObject val,
-        long ttl,
         boolean create)
     {
         assert key != null;
@@ -498,7 +506,7 @@ public class GridCacheConcurrentMap {
 
         int hash = hash(key.hashCode());
 
-        return segmentFor(hash).putIfObsolete(key, hash, val, topVer, ttl, create);
+        return segmentFor(hash).putIfObsolete(key, hash, val, topVer, create);
     }
 
     /**
@@ -507,12 +515,11 @@ public class GridCacheConcurrentMap {
      * this map had for any of the keys currently in the specified map.
      *
      * @param m mappings to be stored in this map.
-     * @param ttl Time to live.
      * @throws NullPointerException If the specified map is null.
      */
-    public void putAll(Map<KeyCacheObject, CacheObject> m, long ttl) {
+    public void putAll(Map<KeyCacheObject, CacheObject> m) {
         for (Map.Entry<KeyCacheObject, CacheObject> e : m.entrySet())
-            putEntry(AffinityTopologyVersion.NONE, e.getKey(), e.getValue(), ttl);
+            putEntry(AffinityTopologyVersion.NONE, e.getKey(), e.getValue());
     }
 
     /**
@@ -632,7 +639,19 @@ public class GridCacheConcurrentMap {
     public <K, V> Set<K> keySet(CacheEntryPredicate... filter) {
         checkWeakQueue();
 
-        return new KeySet<>(this, filter);
+        return new KeySet<>(this, filter, false);
+    }
+
+    /**
+     * Key set including internal keys.
+     *
+     * @param filter Filter.
+     * @return Set of the keys contained in this map.
+     */
+    public <K, V> Set<K> keySetx(CacheEntryPredicate... filter) {
+        checkWeakQueue();
+
+        return new KeySet<>(this, filter, true);
     }
 
     /**
@@ -898,15 +917,14 @@ public class GridCacheConcurrentMap {
          * @param hash Hash.
          * @param val Value.
          * @param topVer Topology version.
-         * @param ttl TTL.
          * @return Associated value.
          */
         @SuppressWarnings({"unchecked"})
-        GridCacheMapEntry put(KeyCacheObject key, int hash, @Nullable CacheObject val, AffinityTopologyVersion topVer, long ttl) {
+        GridCacheMapEntry put(KeyCacheObject key, int hash, @Nullable CacheObject val, AffinityTopologyVersion topVer) {
             lock();
 
             try {
-                return put0(key, hash, val, topVer, ttl);
+                return put0(key, hash, val, topVer);
             }
             finally {
                 unlock();
@@ -918,11 +936,10 @@ public class GridCacheConcurrentMap {
          * @param hash Hash.
          * @param val Value.
          * @param topVer Topology version.
-         * @param ttl TTL.
          * @return Associated value.
          */
         @SuppressWarnings({"unchecked", "SynchronizationOnLocalVariableOrMethodParameter"})
-        private GridCacheMapEntry put0(KeyCacheObject key, int hash, CacheObject val, AffinityTopologyVersion topVer, long ttl) {
+        private GridCacheMapEntry put0(KeyCacheObject key, int hash, CacheObject val, AffinityTopologyVersion topVer) {
             try {
                 SegmentHeader hdr = this.hdr;
 
@@ -952,12 +969,12 @@ public class GridCacheConcurrentMap {
                 if (e != null) {
                     retVal = e;
 
-                    e.rawPut(val, ttl);
+                    e.rawPut(val, 0);
                 }
                 else {
                     GridCacheMapEntry next = bin != null ? bin : null;
 
-                    GridCacheMapEntry newRoot = factory.create(ctx, topVer, key, hash, val, next, ttl, hdr.id());
+                    GridCacheMapEntry newRoot = factory.create(ctx, topVer, key, hash, val, next, hdr.id());
 
                     // Avoiding delete (decrement) before creation (increment).
                     synchronized (newRoot) {
@@ -991,7 +1008,6 @@ public class GridCacheConcurrentMap {
          * @param hash Hash.
          * @param val Value.
          * @param topVer Topology version.
-         * @param ttl TTL.
          * @param create Create flag.
          * @return Triple where the first element is current entry associated with the key,
          *      the second is created entry and the third is doomed (all may be null).
@@ -1001,7 +1017,6 @@ public class GridCacheConcurrentMap {
             int hash,
             @Nullable CacheObject val,
             AffinityTopologyVersion topVer,
-            long ttl,
             boolean create)
         {
             lock();
@@ -1023,7 +1038,7 @@ public class GridCacheConcurrentMap {
 
                 if (bin == null) {
                     if (create)
-                        cur = created = put0(key, hash, val, topVer, ttl);
+                        cur = created = put0(key, hash, val, topVer);
 
                     return new GridTriple<>(cur, created, doomed);
                 }
@@ -1038,13 +1053,13 @@ public class GridCacheConcurrentMap {
                         doomed = remove(key, hash, null);
 
                         if (create)
-                            cur = created = put0(key, hash, val, topVer, ttl);
+                            cur = created = put0(key, hash, val, topVer);
                     }
                     else
                         cur = e;
                 }
                 else if (create)
-                    cur = created = put0(key, hash, val, topVer, ttl);
+                    cur = created = put0(key, hash, val, topVer);
 
                 return new GridTriple<>(cur, created, doomed);
             }
@@ -1746,7 +1761,7 @@ public class GridCacheConcurrentMap {
             curVal = null;
 
             try {
-                ((IgniteKernal)ctx.grid()).getCache(ctx.name()).remove(e.key());
+                ((IgniteKernal)ctx.grid()).getCache(ctx.name()).getAndRemove(e.key());
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);
@@ -1801,13 +1816,7 @@ public class GridCacheConcurrentMap {
         private GridCacheContext<K, V> ctx;
 
         /** */
-        private GridCacheProjectionImpl prjPerCall;
-
-        /** */
-        private CacheFlag[] forcedFlags;
-
-        /** */
-        private boolean clone;
+        private CacheOperationContext opCtxPerCall;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -1828,9 +1837,7 @@ public class GridCacheConcurrentMap {
 
             ctx = map.ctx;
 
-            prjPerCall = ctx.projectionPerCall();
-            forcedFlags = ctx.forcedFlags();
-            clone = ctx.hasFlag(CLONE);
+            opCtxPerCall = ctx.operationContextPerCall();
         }
 
         /** {@inheritDoc} */
@@ -1842,7 +1849,7 @@ public class GridCacheConcurrentMap {
          * @return Entry iterator.
          */
         Iterator<Cache.Entry<K, V>> entryIterator() {
-            return new EntryIterator<>(map, filter, ctx, prjPerCall, forcedFlags);
+            return new EntryIterator<>(map, filter, ctx, opCtxPerCall);
         }
 
         /**
@@ -1856,7 +1863,7 @@ public class GridCacheConcurrentMap {
          * @return Value iterator.
          */
         Iterator<V> valueIterator() {
-            return new ValueIterator<>(map, filter, ctx, clone);
+            return new ValueIterator<>(map, filter, ctx);
         }
 
         /**
@@ -1939,7 +1946,7 @@ public class GridCacheConcurrentMap {
 
         /** {@inheritDoc} */
         @Override public void clear() {
-            ctx.cache().clearLocally0(new KeySet<K, V>(map, filter));
+            ctx.cache().clearLocally0(new KeySet<K, V>(map, filter, false));
         }
 
         /** {@inheritDoc} */
@@ -1981,10 +1988,7 @@ public class GridCacheConcurrentMap {
         private GridCacheContext<K, V> ctx;
 
         /** */
-        private GridCacheProjectionImpl<K, V> prjPerCall;
-
-        /** */
-        private CacheFlag[] forcedFlags;
+        private CacheOperationContext opCtxPerCall;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -1997,20 +2001,17 @@ public class GridCacheConcurrentMap {
          * @param map Cache map.
          * @param filter Entry filter.
          * @param ctx Cache context.
-         * @param prjPerCall Projection per call.
-         * @param forcedFlags Forced flags.
+         * @param opCtxPerCall Operation context per call.
          */
         EntryIterator(
             GridCacheConcurrentMap map,
             CacheEntryPredicate[] filter,
             GridCacheContext<K, V> ctx,
-            GridCacheProjectionImpl<K, V> prjPerCall,
-            CacheFlag[] forcedFlags) {
+            CacheOperationContext opCtxPerCall) {
             it = new Iterator0<>(map, false, filter, -1, -1);
 
             this.ctx = ctx;
-            this.prjPerCall = prjPerCall;
-            this.forcedFlags = forcedFlags;
+            this.opCtxPerCall = opCtxPerCall;
         }
 
         /** {@inheritDoc} */
@@ -2020,18 +2021,15 @@ public class GridCacheConcurrentMap {
 
         /** {@inheritDoc} */
         @Override public Cache.Entry<K, V> next() {
-            GridCacheProjectionImpl<K, V> oldPrj = ctx.projectionPerCall();
+            CacheOperationContext old = ctx.operationContextPerCall();
 
-            ctx.projectionPerCall(prjPerCall);
-
-            CacheFlag[] oldFlags = ctx.forceFlags(forcedFlags);
+            ctx.operationContextPerCall(opCtxPerCall);
 
             try {
                 return it.next().wrapLazyValue();
             }
             finally {
-                ctx.projectionPerCall(oldPrj);
-                ctx.forceFlags(oldFlags);
+                ctx.operationContextPerCall(old);
             }
         }
 
@@ -2044,8 +2042,7 @@ public class GridCacheConcurrentMap {
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(it);
             out.writeObject(ctx);
-            out.writeObject(prjPerCall);
-            out.writeObject(forcedFlags);
+            out.writeObject(opCtxPerCall);
         }
 
         /** {@inheritDoc} */
@@ -2053,8 +2050,7 @@ public class GridCacheConcurrentMap {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             it = (Iterator0<K, V>)in.readObject();
             ctx = (GridCacheContext<K, V>)in.readObject();
-            prjPerCall = (GridCacheProjectionImpl<K, V>)in.readObject();
-            forcedFlags = (CacheFlag[])in.readObject();
+            opCtxPerCall = (CacheOperationContext)in.readObject();
         }
     }
 
@@ -2073,9 +2069,6 @@ public class GridCacheConcurrentMap {
         /** Context. */
         private GridCacheContext<K, V> ctx;
 
-        /** */
-        private boolean clone;
-
         /**
          * Empty constructor required for {@link Externalizable}.
          */
@@ -2087,17 +2080,14 @@ public class GridCacheConcurrentMap {
          * @param map Base map.
          * @param filter Value filter.
          * @param ctx Cache context.
-         * @param clone Clone flag.
          */
         private ValueIterator(
             GridCacheConcurrentMap map,
             CacheEntryPredicate[] filter,
-            GridCacheContext ctx,
-            boolean clone) {
+            GridCacheContext ctx) {
             it = new Iterator0<>(map, true, filter, -1, -1);
 
             this.ctx = ctx;
-            this.clone = clone;
         }
 
         /** {@inheritDoc} */
@@ -2112,12 +2102,7 @@ public class GridCacheConcurrentMap {
             // Cached value.
             V val = it.currentValue();
 
-            try {
-                return clone ? ctx.cloneValue(val) : val;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            return val;
         }
 
         /** {@inheritDoc} */
@@ -2129,7 +2114,6 @@ public class GridCacheConcurrentMap {
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(it);
             out.writeObject(ctx);
-            out.writeBoolean(clone);
         }
 
         /** {@inheritDoc} */
@@ -2137,7 +2121,6 @@ public class GridCacheConcurrentMap {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             it = (Iterator0)in.readObject();
             ctx = (GridCacheContext<K, V>)in.readObject();
-            clone = in.readBoolean();
         }
     }
 
@@ -2213,11 +2196,12 @@ public class GridCacheConcurrentMap {
         /**
          * @param map Base map.
          * @param filter Key filter.
+         * @param internal Whether to allow internal keys.
          */
-        private KeySet(GridCacheConcurrentMap map, CacheEntryPredicate[] filter) {
+        private KeySet(GridCacheConcurrentMap map, CacheEntryPredicate[] filter, boolean internal) {
             assert map != null;
 
-            set = new Set0<>(map, nonInternal(filter));
+            set = new Set0<>(map, internal ? filter : nonInternal(filter));
         }
 
         /** {@inheritDoc} */

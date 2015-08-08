@@ -19,15 +19,22 @@ package org.apache.ignite.plugin;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
- * Pluggable ignite component.
+ * Pluggable Ignite component.
+ * <p>
+ * Ignite plugins are loaded using JDK {@link ServiceLoader}.
+ * First method called to initialize plugin is {@link PluginProvider#initExtensions(PluginContext, ExtensionRegistry)}.
+ * If plugin requires configuration it can be set in {@link IgniteConfiguration} using
+ * {@link IgniteConfiguration#setPluginConfigurations(PluginConfiguration...)}.
  *
- * @author @java.author
- * @version @java.version
+ * @see IgniteConfiguration#setPluginConfigurations(PluginConfiguration...)
+ * @see PluginContext
  */
 public interface PluginProvider<C extends PluginConfiguration> {
     /**
@@ -51,17 +58,21 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public <T extends IgnitePlugin> T plugin();
 
     /**
-     * @param cls Ignite component class.
-     * @return Ignite component or {@code null} if component is not supported.
-     */
-    @Nullable public <T> T createComponent(PluginContext ctx, Class<T> cls);
-
-    /**
-     * Register extensions.
+     * Registers extensions.
+     *
      * @param ctx Plugin context.
      * @param registry Extension registry.
      */
     public void initExtensions(PluginContext ctx, ExtensionRegistry registry);
+
+    /**
+     * Creates Ignite component.
+     *
+     * @param ctx Plugin context.
+     * @param cls Ignite component class.
+     * @return Ignite component or {@code null} if component is not supported.
+     */
+    @Nullable public <T> T createComponent(PluginContext ctx, Class<T> cls);
 
     /**
      * Starts grid component.
@@ -103,7 +114,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @return Discovery data object or {@code null} if there is nothing
      *      to send for this component.
      */
-    @Nullable public Object provideDiscoveryData(UUID nodeId);
+    @Nullable public Serializable provideDiscoveryData(UUID nodeId);
 
     /**
      * Receives plugin discovery data object from remote nodes (called
@@ -114,7 +125,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @param data Discovery data object or {@code null} if nothing was
      *      sent for this component.
      */
-    public void receiveDiscoveryData(UUID nodeId, Object data);
+    public void receiveDiscoveryData(UUID nodeId, Serializable data);
 
     /**
      * Validates that new node can join grid topology, this method is called on coordinator

@@ -26,7 +26,7 @@ public interface SecurityContext {
     /**
      * @return Security subject.
      */
-    public GridSecuritySubject subject();
+    public SecuritySubject subject();
 
     /**
      * Checks whether task operation is allowed.
@@ -35,7 +35,7 @@ public interface SecurityContext {
      * @param perm Permission to check.
      * @return {@code True} if task operation is allowed.
      */
-    public boolean taskOperationAllowed(String taskClsName, GridSecurityPermission perm);
+    public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm);
 
     /**
      * Checks whether cache operation is allowed.
@@ -44,7 +44,7 @@ public interface SecurityContext {
      * @param perm Permission to check.
      * @return {@code True} if cache operation is allowed.
      */
-    public boolean cacheOperationAllowed(String cacheName, GridSecurityPermission perm);
+    public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm);
 
     /**
      * Checks whether system-wide permission is allowed (excluding Visor task operations).
@@ -52,5 +52,5 @@ public interface SecurityContext {
      * @param perm Permission to check.
      * @return {@code True} if system operation is allowed.
      */
-    public boolean systemOperationAllowed(GridSecurityPermission perm);
+    public boolean systemOperationAllowed(SecurityPermission perm);
 }

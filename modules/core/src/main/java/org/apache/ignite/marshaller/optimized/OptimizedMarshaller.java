@@ -35,7 +35,7 @@ import java.util.concurrent.*;
  * about 20 times faster as it removes lots of serialization overhead that exists in
  * default JDK implementation.
  * <p>
- * {@code GridOptimizedMarshaller} is tested only on Java HotSpot VM on other VMs
+ * {@code OptimizedMarshaller} is tested only on Java HotSpot VM on other VMs
  * it could yield unexpected results. It is the default marshaller on Java HotSpot VMs
  * and will be used if no other marshaller was explicitly configured.
  * <p>
@@ -44,12 +44,12 @@ import java.util.concurrent.*;
  * This marshaller has no mandatory configuration parameters.
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
- * GridOptimizedMarshaller marshaller = new GridOptimizedMarshaller();
+ * OptimizedMarshaller marshaller = new OptimizedMarshaller();
  *
  * // Enforce Serializable interface.
  * marshaller.setRequireSerializable(true);
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override marshaller.
  * cfg.setMarshaller(marshaller);
@@ -63,7 +63,7 @@ import java.util.concurrent.*;
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.apache.ignite.marshaller.optimized.GridOptimizedMarshaller"&gt;
+ *         &lt;bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller"&gt;
  *             &lt;property name="requireSerializable"&gt;true&lt;/property&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;

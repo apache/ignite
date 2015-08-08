@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.cacheobject;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -32,8 +30,9 @@ import org.jetbrains.annotations.*;
 public interface IgniteCacheObjectProcessor extends GridProcessor {
     /**
      * @see GridComponent#onKernalStart()
+     * @throws IgniteCheckedException If failed.
      */
-    public void onCacheProcessorStarted();
+    public void onUtilityCacheStarted() throws IgniteCheckedException;
 
     /**
      * @param typeName Type name.
@@ -75,6 +74,13 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public boolean isPortableObject(Object obj);
 
     /**
+     * Checks whether given class is portable.
+     *
+     * @return {@code true} If portable objects are enabled.
+     */
+    public boolean isPortableEnabled();
+
+    /**
      * @param obj Portable object to get field from.
      * @param fieldName Field name.
      * @return Field value.
@@ -108,12 +114,11 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr) throws IgniteCheckedException;
 
     /**
-     * @param node Node.
-     * @param cacheName Cache name.
+     * @param ccfg Cache configuration.
      * @return Cache object context.
+     * @throws IgniteCheckedException If failed.
      */
-    public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName,
-        @Nullable CacheConfiguration ccfg);
+    public CacheObjectContext contextForCache(CacheConfiguration ccfg) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache context.
@@ -152,14 +157,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
 
     /**
      * @param obj Value.
-     * @return {@code True} if object is of known immutable type of it is marked
-     *          with {@link IgniteImmutable} annotation.
+     * @return {@code True} if object is of known immutable type.
      */
     public boolean immutable(Object obj);
-
-    /**
-     * @param cacheName Cache name.
-     * @return {@code True} if portable format should be preserved when passing values to cache store.
-     */
-    public boolean keepPortableInStore(@Nullable String cacheName);
 }

@@ -20,20 +20,18 @@
 <!--
     POM file.
 -->
-<project
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite</artifactId>
-        <version>${ignite.version}</version>
-        <relativePath>../..</relativePath>
+        <artifactId>ignite-parent</artifactId>
+        <version>1</version>
+        <relativePath>../../parent</relativePath>
     </parent>
 
     <artifactId>ignite-core</artifactId>
+    <version>1.4.1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -53,6 +51,13 @@
             <groupId>commons-dbcp</groupId>
             <artifactId>commons-dbcp</artifactId>
             <version>1.4</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>1.4.8</version>
             <scope>test</scope>
         </dependency>
 
@@ -87,14 +92,14 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlets</artifactId>
-            <version>9.0.5.v20130815</version>
+            <version>${jetty.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-webapp</artifactId>
-            <version>9.0.5.v20130815</version>
+            <version>${jetty.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -131,6 +136,32 @@
             <groupId>org.gridgain</groupId>
             <artifactId>ignite-shmem</artifactId>
             <version>1.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>${spring.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.4</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -179,7 +210,7 @@
                     <dependency>
                         <groupId>org.apache.ignite</groupId>
                         <artifactId>ignite-tools</artifactId>
-                        <version>${ignite.version}</version>
+                        <version>${project.version}</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -213,7 +244,7 @@
 #
                                     ]]>
                                 </argument>
-                                <argument>org.apache.ignite:org.jdk8.backport</argument>
+                                <argument>org.apache.ignite</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -243,48 +274,47 @@
                                 </goals>
                                 <phase>process-resources</phase>
                                 <configuration>
+                                    <failOnError>false</failOnError>
                                     <target>
-                                        <exec executable="${git.exec}" outputproperty="ignite.build"
-                                              failonerror="yes">
-                                            <arg line="log -1 --format=%ct"/>
-                                        </exec>
-
-                                        <exec executable="${git.exec}" outputproperty="ignite.revision"
-                                              failonerror="yes">
-                                            <arg line="log -1 --format=%H"/>
-                                        </exec>
-
                                         <tstamp>
-                                            <format property="ignite.rel.date" pattern="ddMMyyyy" locale="en"/>
+                                            <format property="ignite.rel.date" pattern="ddMMyyyy" locale="en" />
                                         </tstamp>
 
-                                        <property name="props.file"
-                                                  value="../../modules/core/target/classes/ignite.properties"/>
+                                        <property name="props.file" value="../../modules/core/target/classes/ignite.properties" />
 
                                         <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.version=.*"/>
-                                            <substitution expression="ignite.version=${ignite.version}"/>
+                                            <regexp pattern="ignite.rel.date=.*" />
+                                            <substitution expression="ignite.rel.date=${ignite.rel.date}" />
                                         </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.build=.*"/>
-                                            <substitution expression="ignite.build=${ignite.build}"/>
+                                            <regexp pattern="ignite.update.status.params=.*" />
+                                            <substitution expression="ignite.update.status.params=ver=${project.version}" />
                                         </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.revision=.*"/>
-                                            <substitution expression="ignite.revision=${ignite.revision}"/>
+                                            <regexp pattern="ignite.version=.*" />
+                                            <substitution expression="ignite.version=${project.version}" />
+                                        </replaceregexp>
+
+                                        <!-- git (to be replaced by git hooks)-->
+
+                                        <exec executable="${git.exec}" outputproperty="ignite.build" failonerror="true">
+                                            <arg line="log -1 --format=%ct" />
+                                        </exec>
+
+                                        <exec executable="${git.exec}" outputproperty="ignite.revision" failonerror="true">
+                                            <arg line="log -1 --format=%H" />
+                                        </exec>
+
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.revision=.*" />
+                                            <substitution expression="ignite.revision=${ignite.revision}" />
                                         </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.rel.date=.*"/>
-                                            <substitution expression="ignite.rel.date=${ignite.rel.date}"/>
-                                        </replaceregexp>
-
-                                        <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.update.status.params=.*"/>
-                                            <substitution
-                                                    expression="ignite.update.status.params=ver=${ignite.version}"/>
+                                            <regexp pattern="ignite.build=.*" />
+                                            <substitution expression="ignite.build=${ignite.build}" />
                                         </replaceregexp>
                                     </target>
                                 </configuration>

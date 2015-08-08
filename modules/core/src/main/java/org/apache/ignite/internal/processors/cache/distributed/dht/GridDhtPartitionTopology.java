@@ -85,11 +85,11 @@ public interface GridDhtPartitionTopology {
     /**
      * Post-initializes this topology.
      *
-     * @param exchId Exchange ID for this post-initialization.
+     * @param exchFut Exchange future.
      * @return {@code True} if mapping was changed.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean afterExchange(GridDhtPartitionExchangeId exchId) throws IgniteCheckedException;
+    public boolean afterExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException;
 
     /**
      * @param topVer Topology version at the time of creation.

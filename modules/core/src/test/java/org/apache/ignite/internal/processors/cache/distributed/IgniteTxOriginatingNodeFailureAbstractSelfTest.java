@@ -128,22 +128,20 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
         Map<Integer, Collection<ClusterNode>> nodeMap = new HashMap<>();
 
-        GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(1)).internalCache();
-
         info("Node being checked: " + grid(1).localNode().id());
 
         for (Integer key : keys) {
             Collection<ClusterNode> nodes = new ArrayList<>();
 
-            nodes.addAll(cache.affinity().mapKeyToPrimaryAndBackups(key));
+            nodes.addAll(grid(1).affinity(null).mapKeyToPrimaryAndBackups(key));
 
             nodes.remove(txNode);
 
             nodeMap.put(key, nodes);
         }
 
-        info("Starting tx [values=" + map + ", topVer=" +
-            ((IgniteKernal)grid(1)).context().discovery().topologyVersion() + ']');
+        info("Starting optimistic tx " +
+            "[values=" + map + ", topVer=" + (grid(1)).context().discovery().topologyVersion() + ']');
 
         if (partial)
             ignoreMessages(grid(1).localNode().id(), ignoreMessageClass());
@@ -158,7 +156,9 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
                 TransactionProxyImpl tx = (TransactionProxyImpl)txIgniteNode.transactions().txStart();
 
-                IgniteInternalTx txEx = GridTestUtils.getFieldValue(tx, "tx");
+                IgniteInternalTx txEx = tx.tx();
+
+                assertTrue(txEx.optimistic());
 
                 cache.putAll(map);
 
@@ -239,10 +239,10 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
-            @Override public void sendMessage(ClusterNode node, Message msg)
-                throws IgniteSpiException {
+            @Override public void sendMessage(ClusterNode node, Message msg,
+                IgniteInClosure<IgniteException> ackClosure) throws IgniteSpiException {
                 if (!F.eq(ignoreMsgNodeId, node.id()) || !ignoredMessage((GridIoMessage)msg))
-                    super.sendMessage(node, msg);
+                    super.sendMessage(node, msg, ackClosure);
             }
         });
 

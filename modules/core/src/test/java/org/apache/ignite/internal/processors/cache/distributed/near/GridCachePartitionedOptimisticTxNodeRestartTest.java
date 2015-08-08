@@ -31,6 +31,12 @@ import static org.apache.ignite.transactions.TransactionConcurrency.*;
  */
 public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAbstractNodeRestartSelfTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (nearEnabled())
+            fail("https://issues.apache.org/jira/browse/IGNITE-1090");
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -42,14 +48,23 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_ASYNC);
         cc.setStartSize(20);
-        cc.setRebalanceMode(preloadMode);
-        cc.setRebalanceBatchSize(preloadBatchSize);
+        cc.setRebalanceMode(rebalancMode);
+        cc.setRebalanceBatchSize(rebalancBatchSize);
         cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
+
+        cc.setNearConfiguration(nearEnabled() ? new NearCacheConfiguration() : null);
 
         c.setCacheConfiguration(cc);
 
         return c;
+    }
+
+    /**
+     * @return {@code True} if near cache enabled.
+     */
+    protected boolean nearEnabled() {
+        return true;
     }
 
     /** {@inheritDoc} */

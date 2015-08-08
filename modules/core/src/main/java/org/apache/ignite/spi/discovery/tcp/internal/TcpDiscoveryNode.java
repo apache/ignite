@@ -17,8 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp.internal;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -73,6 +75,10 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @GridToStringExclude
     private volatile ClusterMetrics metrics;
 
+    /** Node cache metrics. */
+    @GridToStringExclude
+    private volatile Map<Integer, CacheMetrics> cacheMetrics;
+
     /** Node order in the topology. */
     private volatile long order;
 
@@ -82,6 +88,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     /** The most recent time when heartbeat message was received from the node. */
     @GridToStringExclude
     private volatile long lastUpdateTime = U.currentTimeMillis();
+
+    /** The most recent time when a data chunk was received from a node. */
+    private volatile long lastDataReceivedTime = U.currentTimeMillis();
 
     /** Metrics provider (transient). */
     @GridToStringExclude
@@ -105,6 +114,10 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @GridToStringExclude
     private UUID clientRouterNodeId;
 
+    /** */
+    @GridToStringExclude
+    private volatile transient InetSocketAddress lastSuccessfulAddr;
+
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -121,25 +134,52 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      * @param discPort Port.
      * @param metricsProvider Metrics provider.
      * @param ver Version.
+     * @param consistentId Node consistent ID.
      */
-    public TcpDiscoveryNode(UUID id, Collection<String> addrs, Collection<String> hostNames, int discPort,
-                            DiscoveryMetricsProvider metricsProvider, IgniteProductVersion ver) {
+    public TcpDiscoveryNode(UUID id,
+        Collection<String> addrs,
+        Collection<String> hostNames,
+        int discPort,
+        DiscoveryMetricsProvider metricsProvider,
+        IgniteProductVersion ver,
+        Serializable consistentId)
+    {
         assert id != null;
         assert !F.isEmpty(addrs);
         assert metricsProvider != null;
         assert ver != null;
 
         this.id = id;
-        this.addrs = addrs;
+
+        List<String> sortedAddrs = new ArrayList<>(addrs);
+
+        Collections.sort(sortedAddrs);
+
+        this.addrs = sortedAddrs;
         this.hostNames = hostNames;
         this.discPort = discPort;
         this.metricsProvider = metricsProvider;
         this.ver = ver;
 
-        consistentId = U.consistentId(addrs, discPort);
+        this.consistentId = consistentId != null ? consistentId : U.consistentId(sortedAddrs, discPort);
 
         metrics = metricsProvider.metrics();
+        cacheMetrics = metricsProvider.cacheMetrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
+    }
+
+    /**
+     * @return Last successfully connected address.
+     */
+    @Nullable public InetSocketAddress lastSuccessfulAddress() {
+        return lastSuccessfulAddr;
+    }
+
+    /**
+     * @param lastSuccessfulAddr Last successfully connected address.
+     */
+    public void lastSuccessfulAddress(InetSocketAddress lastSuccessfulAddr) {
+        this.lastSuccessfulAddr = lastSuccessfulAddr;
     }
 
     /** {@inheritDoc} */
@@ -192,8 +232,13 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /** {@inheritDoc} */
     @Override public ClusterMetrics metrics() {
-        if (metricsProvider != null)
-            metrics = metricsProvider.metrics();
+        if (metricsProvider != null) {
+            ClusterMetrics metrics0 = metricsProvider.metrics();
+
+            metrics = metrics0;
+
+            return metrics0;
+        }
 
         return metrics;
     }
@@ -207,6 +252,37 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         assert metrics != null;
 
         this.metrics = metrics;
+    }
+
+    /**
+     * Gets collections of cache metrics for this node. Note that node cache metrics are constantly updated
+     * and provide up to date information about caches.
+     * <p>
+     * Cache metrics are updated with some delay which is directly related to heartbeat
+     * frequency. For example, when used with default
+     * {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} the update will happen every {@code 2} seconds.
+     *
+     * @return Runtime metrics snapshots for this node.
+     */
+    public Map<Integer, CacheMetrics> cacheMetrics() {
+        if (metricsProvider != null) {
+            Map<Integer, CacheMetrics> cacheMetrics0 = metricsProvider.cacheMetrics();
+
+            cacheMetrics = cacheMetrics0;
+
+            return cacheMetrics0;
+        }
+
+        return cacheMetrics;
+    }
+
+    /**
+     * Sets node cache metrics.
+     *
+     * @param cacheMetrics Cache metrics.
+     */
+    public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
+        this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
     }
 
     /**
@@ -236,7 +312,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      * @param order Order of the node.
      */
     public void order(long order) {
-        assert order >= 0 : "Order is invalid: " + this;
+        assert order > 0 : "Order is invalid: " + this;
 
         this.order = order;
     }
@@ -317,6 +393,24 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     }
 
     /**
+     * Gets the last time a node received a data chunk from a remote node.
+     *
+     * @return Time in milliseconds.
+     */
+    public long lastDataReceivedTime() {
+        return lastDataReceivedTime;
+    }
+
+    /**
+     * Sets the last time a node receive a data chunk from a remote node in a topology.
+     *
+     * @param lastDataReceivedTime Time in milliseconds.
+     */
+    public void lastDataReceivedTime(long lastDataReceivedTime) {
+        this.lastDataReceivedTime = lastDataReceivedTime;
+    }
+
+    /**
      * Gets visible flag.
      *
      * @return {@code true} if node is in visible state.
@@ -373,6 +467,26 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         this.clientRouterNodeId = clientRouterNodeId;
     }
 
+    /**
+     * @param newId New node ID.
+     */
+    public void onClientDisconnected(UUID newId) {
+        id = newId;
+    }
+
+    /**
+     * @return Copy of local node for client reconnect request.
+     */
+    public TcpDiscoveryNode clientReconnectNode() {
+        TcpDiscoveryNode node = new TcpDiscoveryNode(id, addrs, hostNames, discPort, metricsProvider, ver,
+            null);
+
+        node.attrs = attrs;
+        node.clientRouterNodeId = clientRouterNodeId;
+
+        return node;
+    }
+
     /** {@inheritDoc} */
     @Override public int compareTo(@Nullable TcpDiscoveryNode node) {
         if (node == null)
@@ -397,15 +511,26 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         U.writeCollection(out, hostNames);
         out.writeInt(discPort);
 
+        // Cluster metrics
         byte[] mtr = null;
 
-        if (metrics != null) {
-            mtr = new byte[ClusterMetricsSnapshot.METRICS_SIZE];
+        ClusterMetrics metrics = this.metrics;
 
-            ClusterMetricsSnapshot.serialize(mtr, 0, metrics);
-        }
+        if (metrics != null)
+            mtr = ClusterMetricsSnapshot.serialize(metrics);
 
         U.writeByteArray(out, mtr);
+
+        // Cache metrics
+        Map<Integer, CacheMetrics> cacheMetrics = this.cacheMetrics;
+
+        out.writeInt(cacheMetrics == null ? 0 : cacheMetrics.size());
+
+        if (!F.isEmpty(cacheMetrics))
+            for (Map.Entry<Integer, CacheMetrics> m : cacheMetrics.entrySet()) {
+                out.writeInt(m.getKey());
+                out.writeObject(m.getValue());
+            }
 
         out.writeLong(order);
         out.writeLong(intOrder);
@@ -424,12 +549,28 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         sockAddrs = U.toSocketAddresses(this, discPort);
 
-        consistentId = U.consistentId(addrs, discPort);
+        Object consistentIdAttr = attrs.get(ATTR_NODE_CONSISTENT_ID);
 
+        consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
+
+        // Cluster metrics
         byte[] mtr = U.readByteArray(in);
 
         if (mtr != null)
             metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
+
+        // Cache metrics
+        int size = in.readInt();
+
+        Map<Integer, CacheMetrics> cacheMetrics =
+            size > 0 ? U.<Integer, CacheMetrics>newHashMap(size) : Collections.<Integer, CacheMetrics>emptyMap();
+
+        for (int i = 0; i < size; i++) {
+            int id = in.readInt();
+            CacheMetricsSnapshot m = (CacheMetricsSnapshot) in.readObject();
+
+            cacheMetrics.put(id, m);
+        }
 
         order = in.readLong();
         intOrder = in.readLong();

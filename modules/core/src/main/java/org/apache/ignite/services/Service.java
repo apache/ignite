@@ -55,14 +55,11 @@ import java.io.*;
  * ...
  * GridServices svcs = grid.services();
  *
- * GridFuture&lt;?&gt; fut = svcs.deployClusterSingleton("mySingleton", new MyGridService());
- *
- * // Wait for deployment to complete.
- * fut.get();
+ * svcs.deployClusterSingleton("mySingleton", new MyGridService());
  * </pre>
  * Or from grid configuration on startup:
  * <pre name="code" class="java">
- * GridConfiguration gridCfg = new GridConfiguration();
+ * IgniteConfiguration gridCfg = new IgniteConfiguration();
  *
  * GridServiceConfiguration svcCfg = new GridServiceConfiguration();
  *

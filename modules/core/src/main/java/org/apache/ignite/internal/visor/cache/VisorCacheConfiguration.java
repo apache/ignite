@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -61,9 +61,6 @@ public class VisorCacheConfiguration implements Serializable {
 
     /** Start size. */
     private int startSize;
-
-    /** Name of class implementing GridCacheTmLookup. */
-    private String tmLookupClsName;
 
     /** Off-heap max memory. */
     private long offHeapMaxMemory;
@@ -116,61 +113,45 @@ public class VisorCacheConfiguration implements Serializable {
     /** Query configuration. */
     private VisorCacheQueryConfiguration qryCfg;
 
+    /** System cache flag. */
+    private boolean sys;
+
     /**
      * @param ignite Grid.
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache configuration properties.
      */
-    public static VisorCacheConfiguration from(Ignite ignite, CacheConfiguration ccfg) {
-        VisorCacheConfiguration cfg = new VisorCacheConfiguration();
+    public VisorCacheConfiguration from(IgniteEx ignite, CacheConfiguration ccfg) {
+        name = ccfg.getName();
+        mode = ccfg.getCacheMode();
+        atomicityMode = ccfg.getAtomicityMode();
+        atomicWriteOrderMode = ccfg.getAtomicWriteOrderMode();
+        eagerTtl = ccfg.isEagerTtl();
+        writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
+        swapEnabled = ccfg.isSwapEnabled();
+        invalidate = ccfg.isInvalidate();
+        startSize = ccfg.getStartSize();
+        offHeapMaxMemory = ccfg.getOffHeapMaxMemory();
+        maxConcurrentAsyncOps = ccfg.getMaxConcurrentAsyncOperations();
+        memoryMode = ccfg.getMemoryMode();
+        interceptor = compactClass(ccfg.getInterceptor());
+        typeMeta = VisorCacheTypeMetadata.list(ccfg.getTypeMetadata());
+        statisticsEnabled = ccfg.isStatisticsEnabled();
+        mgmtEnabled = ccfg.isManagementEnabled();
+        ldrFactory = compactClass(ccfg.getCacheLoaderFactory());
+        writerFactory = compactClass(ccfg.getCacheWriterFactory());
+        expiryPlcFactory = compactClass(ccfg.getExpiryPolicyFactory());
+        sys = ignite.context().cache().systemCache(ccfg.getName());
 
-        cfg.name = ccfg.getName();
-        cfg.mode = ccfg.getCacheMode();
-        cfg.atomicityMode = ccfg.getAtomicityMode();
-        cfg.atomicWriteOrderMode = ccfg.getAtomicWriteOrderMode();
-        cfg.eagerTtl = ccfg.isEagerTtl();
-        cfg.writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
-        cfg.swapEnabled = ccfg.isSwapEnabled();
-        cfg.invalidate = ccfg.isInvalidate();
-        cfg.startSize = ccfg.getStartSize();
-        cfg.tmLookupClsName = ccfg.getTransactionManagerLookupClassName();
-        cfg.offHeapMaxMemory = ccfg.getOffHeapMaxMemory();
-        cfg.maxConcurrentAsyncOps = ccfg.getMaxConcurrentAsyncOperations();
-        cfg.memoryMode = ccfg.getMemoryMode();
-        cfg.interceptor = compactClass(ccfg.getInterceptor());
-        cfg.typeMeta = VisorCacheTypeMetadata.list(ccfg.getTypeMetadata());
-        cfg.statisticsEnabled = ccfg.isStatisticsEnabled();
-        cfg.mgmtEnabled = ccfg.isManagementEnabled();
-        cfg.ldrFactory = compactClass(ccfg.getCacheLoaderFactory());
-        cfg.writerFactory = compactClass(ccfg.getCacheWriterFactory());
-        cfg.expiryPlcFactory = compactClass(ccfg.getExpiryPolicyFactory());
+        affinityCfg = VisorCacheAffinityConfiguration.from(ccfg);
+        rebalanceCfg = VisorCacheRebalanceConfiguration.from(ccfg);
+        evictCfg = VisorCacheEvictionConfiguration.from(ccfg);
+        nearCfg = VisorCacheNearConfiguration.from(ccfg);
+        dfltCfg = VisorCacheDefaultConfiguration.from(ccfg);
+        storeCfg = VisorCacheStoreConfiguration.from(ignite, ccfg);
+        qryCfg = VisorCacheQueryConfiguration.from(ccfg);
 
-        cfg.affinityCfg = VisorCacheAffinityConfiguration.from(ccfg);
-        cfg.rebalanceCfg = VisorCacheRebalanceConfiguration.from(ccfg);
-        cfg.evictCfg = VisorCacheEvictionConfiguration.from(ccfg);
-        cfg.nearCfg = VisorCacheNearConfiguration.from(ccfg);
-        cfg.dfltCfg = VisorCacheDefaultConfiguration.from(ccfg);
-        cfg.storeCfg = VisorCacheStoreConfiguration.from(ignite, ccfg);
-        cfg.qryCfg = VisorCacheQueryConfiguration.from(ccfg);
-
-        return cfg;
-    }
-
-    /**
-     * @param ignite Grid.
-     * @param caches Cache configurations.
-     * @return Data transfer object for cache configurations properties.
-     */
-    public static Iterable<VisorCacheConfiguration> list(Ignite ignite, CacheConfiguration[] caches) {
-        if (caches == null)
-            return Collections.emptyList();
-
-        final Collection<VisorCacheConfiguration> cfgs = new ArrayList<>(caches.length);
-
-        for (CacheConfiguration cache : caches)
-            cfgs.add(from(ignite, cache));
-
-        return cfgs;
+        return this;
     }
 
     /**
@@ -237,13 +218,6 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return Name of class implementing GridCacheTmLookup.
-     */
-    @Nullable public String transactionManagerLookupClassName() {
-        return tmLookupClsName;
-    }
-
-    /**
      * @return Off-heap max memory.
      */
     public long offsetHeapMaxMemory() {
@@ -262,13 +236,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public CacheMemoryMode memoryMode() {
         return memoryMode;
-    }
-
-    /**
-     * @param memoryMode New memory mode.
-     */
-    public void memoryMode(CacheMemoryMode memoryMode) {
-        this.memoryMode = memoryMode;
     }
 
     /**
@@ -367,6 +334,13 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public VisorCacheQueryConfiguration queryConfiguration() {
         return qryCfg;
+    }
+
+    /**
+     * @return System cache state.
+     */
+    public boolean system() {
+        return sys;
     }
 
     /** {@inheritDoc} */

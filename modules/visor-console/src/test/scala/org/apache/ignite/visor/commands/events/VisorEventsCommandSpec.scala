@@ -40,23 +40,23 @@ class VisorEventsCommandSpec extends VisorRuntimeBaseSpec(1) {
         cfg
     }
 
-    behavior of "A 'events' visor command"
+    describe("A 'events' visor command") {
+        it("should print error message when not connected") {
+            closeVisorQuiet()
 
-    it should "print error message when not connected" in {
-        closeVisorQuiet()
+            visor.events()
+        }
 
-        visor.events()
-    }
+        it("should display all events from remote node") {
+            visor.events("-id8=@n0")
+        }
 
-    it should "display all events from remote node" in {
-        visor.events("-id8=@n0")
-    }
+        it("should display top 3 events from remote node") {
+            visor.events("-id8=@n0 -c=3")
+        }
 
-    it should "display top 3 events from remote node" in {
-        visor.events("-id8=@n0 -c=3")
-    }
-
-    it should "print error message with invalid count" in {
-        visor.events("-id8=@n0 -c=x")
+        it("should print error message with invalid count") {
+            visor.events("-id8=@n0 -c=x")
+        }
     }
 }

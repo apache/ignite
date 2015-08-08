@@ -398,6 +398,9 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                 }
                 catch (Throwable e) {
                     fut.onDone(new IgniteCheckedException("Failed to initialize child process: " + job, e));
+
+                    if (e instanceof Error)
+                        throw (Error)e;
                 }
                 finally {
                     busyLock.readUnlock();

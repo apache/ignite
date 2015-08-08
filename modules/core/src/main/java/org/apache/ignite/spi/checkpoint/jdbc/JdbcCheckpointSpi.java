@@ -62,7 +62,7 @@ import java.text.*;
  * <h2 class="header">Java Example</h2>
  * {@link JdbcCheckpointSpi} can be configured as follows:
  * <pre name="code" class="java">
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * GridJdbcCheckpointSpi checkpointSpi = new GridJdbcCheckpointSpi();
  *

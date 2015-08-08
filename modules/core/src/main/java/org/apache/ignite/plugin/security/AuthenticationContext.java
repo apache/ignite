@@ -25,13 +25,13 @@ import java.util.*;
  */
 public class AuthenticationContext {
     /** Subject type. */
-    private GridSecuritySubjectType subjType;
+    private SecuritySubjectType subjType;
 
     /** Subject ID.w */
     private UUID subjId;
 
     /** Credentials. */
-    private GridSecurityCredentials credentials;
+    private SecurityCredentials credentials;
 
     /** Subject address. */
     private InetSocketAddress addr;
@@ -41,7 +41,7 @@ public class AuthenticationContext {
      *
      * @return Subject type.
      */
-    public GridSecuritySubjectType subjectType() {
+    public SecuritySubjectType subjectType() {
         return subjType;
     }
 
@@ -50,7 +50,7 @@ public class AuthenticationContext {
      *
      * @param subjType Subject type.
      */
-    public void subjectType(GridSecuritySubjectType subjType) {
+    public void subjectType(SecuritySubjectType subjType) {
         this.subjType = subjType;
     }
 
@@ -77,7 +77,7 @@ public class AuthenticationContext {
      *
      * @return Security credentials.
      */
-    public GridSecurityCredentials credentials() {
+    public SecurityCredentials credentials() {
         return credentials;
     }
 
@@ -86,7 +86,7 @@ public class AuthenticationContext {
      *
      * @param credentials Security credentials.
      */
-    public void credentials(GridSecurityCredentials credentials) {
+    public void credentials(SecurityCredentials credentials) {
         this.credentials = credentials;
     }
 

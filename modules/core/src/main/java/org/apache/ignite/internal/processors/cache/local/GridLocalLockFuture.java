@@ -111,6 +111,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         this.filter = filter;
         this.tx = tx;
 
+        ignoreInterrupts(true);
+
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
 
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();

@@ -94,6 +94,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
+     * @param skipStore Skip store flag.
      */
     public GridDhtLockRequest(
         int cacheId,
@@ -114,7 +115,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
-        long accessTtl
+        long accessTtl,
+        boolean skipStore
     ) {
         super(cacheId,
             nodeId,
@@ -128,7 +130,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             isInvalidate,
             timeout,
             dhtCnt == 0 ? nearCnt : dhtCnt,
-            txSize);
+            txSize,
+            skipStore);
 
         this.topVer = topVer;
 
@@ -303,7 +306,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 writer.incrementState();
 
-            case 25:
+            case 23:
                 if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
                     return false;
 
@@ -327,7 +330,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 writer.incrementState();
 
-            case 30:
+            case 29:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -373,7 +376,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 25:
+            case 23:
                 nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -405,7 +408,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 30:
+            case 29:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())

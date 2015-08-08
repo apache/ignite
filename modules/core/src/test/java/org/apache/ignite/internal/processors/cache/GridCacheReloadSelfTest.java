@@ -74,7 +74,11 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
         cacheCfg.setName(CACHE_NAME);
         cacheCfg.setCacheMode(cacheMode);
-        cacheCfg.setEvictionPolicy(new LruEvictionPolicy(MAX_CACHE_ENTRIES));
+
+        LruEvictionPolicy plc = new LruEvictionPolicy();
+        plc.setMaxSize(MAX_CACHE_ENTRIES);
+
+        cacheCfg.setEvictionPolicy(plc);
         cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
 
         final CacheStore store = new CacheStoreAdapter<Integer, Integer>() {
@@ -121,8 +125,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
-    //TODO: Active when ticket GG-3926 will be ready.
-    public void _testReloadEvictionPartitionedCacheNearEnabled() throws Exception {
+    public void testReloadEvictionPartitionedCacheNearEnabled() throws Exception {
         cacheMode = PARTITIONED;
 
         doTest();

@@ -76,14 +76,16 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     private final LongAdder8 execTasks = new LongAdder8();
 
     /** */
-    private final ThreadLocal<Map<GridTaskThreadContextKey, Object>> thCtx =
-        new ThreadLocal<>();
+    private final ThreadLocal<Map<GridTaskThreadContextKey, Object>> thCtx = new ThreadLocal<>();
 
     /** */
     private final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
     /** Internal metadata cache. */
-    private GridCache<GridTaskNameHashKey, String> tasksMetaCache;
+    private volatile IgniteInternalCache<GridTaskNameHashKey, String> tasksMetaCache;
+
+    /** */
+    private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /**
      * @param ctx Kernal context.
@@ -110,7 +112,28 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws IgniteCheckedException {
-        tasksMetaCache = ctx.security().enabled() ? ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
+        tasksMetaCache = ctx.security().enabled() && !ctx.isDaemon() ?
+            ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
+
+        startLatch.countDown();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        IgniteClientDisconnectedCheckedException err = disconnectedError(reconnectFut);
+
+        for (GridTaskWorker<?, ?> worker : tasks.values())
+            worker.finishTask(null, err);
+    }
+
+    /**
+     * @param reconnectFut Reconnect future.
+     * @return Client disconnected exception.
+     */
+    private IgniteClientDisconnectedCheckedException disconnectedError(@Nullable IgniteFuture<?> reconnectFut) {
+        return new IgniteClientDisconnectedCheckedException(
+            reconnectFut != null ? reconnectFut : ctx.cluster().clientReconnectFuture(),
+            "Failed to execute task, client node disconnected.");
     }
 
     /** {@inheritDoc} */
@@ -188,6 +211,18 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Finished executing task processor onKernalStop() callback.");
+    }
+
+    /**
+     * @return Task metadata cache.
+     */
+    private IgniteInternalCache<GridTaskNameHashKey, String> taskMetaCache() {
+        assert ctx.security().enabled();
+
+        if (tasksMetaCache == null)
+            U.awaitQuiet(startLatch);
+
+        return tasksMetaCache;
     }
 
     /** {@inheritDoc} */
@@ -343,7 +378,13 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         assert ctx.security().enabled();
 
-        return tasksMetaCache.peek(new GridTaskNameHashKey(taskNameHash));
+        try {
+            return taskMetaCache().localPeek(
+                new GridTaskNameHashKey(taskNameHash), CachePeekModes.ONHEAP_ONLY, null);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -395,7 +436,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         else
             taskClsName = taskCls != null ? taskCls.getName() : taskName;
 
-        ctx.security().authorize(taskClsName, GridSecurityPermission.TASK_EXECUTE, null);
+        ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE, null);
 
         // Get values from thread-local context.
         Map<GridTaskThreadContextKey, Object> map = thCtx.get();
@@ -529,7 +570,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         // Creates task session with task name and task version.
         GridTaskSessionImpl ses = ctx.session().createTaskSession(
             sesId,
-            ctx.config().getNodeId(),
+            ctx.localNodeId(),
             taskName,
             dep,
             taskCls == null ? null : taskCls.getName(),
@@ -574,25 +615,29 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
 
-                if (dep.annotation(taskCls, ComputeTaskMapAsync.class) != null) {
-                    try {
-                        // Start task execution in another thread.
-                        if (sys)
-                            ctx.getSystemExecutorService().execute(taskWorker);
-                        else
-                            ctx.getExecutorService().execute(taskWorker);
-                    }
-                    catch (RejectedExecutionException e) {
-                        tasks.remove(sesId);
+                if (!ctx.clientDisconnected()) {
+                    if (dep.annotation(taskCls, ComputeTaskMapAsync.class) != null) {
+                        try {
+                            // Start task execution in another thread.
+                            if (sys)
+                                ctx.getSystemExecutorService().execute(taskWorker);
+                            else
+                                ctx.getExecutorService().execute(taskWorker);
+                        }
+                        catch (RejectedExecutionException e) {
+                            tasks.remove(sesId);
 
-                        release(dep);
+                            release(dep);
 
-                        handleException(new ComputeExecutionRejectedException("Failed to execute task " +
-                            "due to thread pool execution rejection: " + taskName, e), fut);
+                            handleException(new ComputeExecutionRejectedException("Failed to execute task " +
+                                "due to thread pool execution rejection: " + taskName, e), fut);
+                        }
                     }
+                    else
+                        taskWorker.run();
                 }
                 else
-                    taskWorker.run();
+                    taskWorker.finishTask(null, disconnectedError(null));
             }
         }
         else {
@@ -669,6 +714,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * Saves task name metadata to utility cache.
      *
      * @param taskName Task name.
+     * @throws IgniteCheckedException If failed.
      */
     private void saveTaskMetadata(String taskName) throws IgniteCheckedException {
         if (ctx.isDaemon())
@@ -684,10 +730,12 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         GridTaskNameHashKey key = new GridTaskNameHashKey(nameHash);
 
+        IgniteInternalCache<GridTaskNameHashKey, String> tasksMetaCache = taskMetaCache();
+
         String existingName = tasksMetaCache.get(key);
 
         if (existingName == null)
-            existingName = tasksMetaCache.putIfAbsent(key, taskName);
+            existingName = tasksMetaCache.getAndPutIfAbsent(key, taskName);
 
         if (existingName != null && !F.eq(existingName, taskName))
             throw new IgniteCheckedException("Task name hash collision for security-enabled node " +
@@ -1126,12 +1174,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg) {
-            if (!(msg instanceof GridTaskMessage)) {
-                U.warn(log, "Received message of unknown type: " + msg);
-
-                return;
-            }
-
             if (msg instanceof GridJobExecuteResponse)
                 processJobExecuteResponse(nodeId, (GridJobExecuteResponse)msg);
             else if (jobResOnly)
@@ -1151,17 +1193,22 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         @Override public void onEvent(Event evt) {
             assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-            UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+            final UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-            lock.readLock();
+            ctx.closure().runLocalSafe(new Runnable() {
+                @Override public void run() {
+                    if (!lock.tryReadLock())
+                        return;
 
-            try {
-                for (GridTaskWorker<?, ?> task : tasks.values())
-                    task.onNodeLeft(nodeId);
-            }
-            finally {
-                lock.readUnlock();
-            }
+                    try {
+                        for (GridTaskWorker<?, ?> task : tasks.values())
+                            task.onNodeLeft(nodeId);
+                    }
+                    finally {
+                        lock.readUnlock();
+                    }
+                }
+            }, false);
         }
     }
 

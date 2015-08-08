@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.configuration.*;
 
 /**
- *
+ * TODO: IGNITE-809.
  */
 public class GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest extends GridCacheMultinodeUpdateNearEnabledSelfTest {
     /** {@inheritDoc} */

@@ -19,7 +19,6 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -51,7 +50,7 @@ public interface CacheInterceptor<K, V> extends Serializable {
      * @param key Key.
      * @param val Value mapped to {@code key} at the moment of {@code get()} operation.
      * @return The new value to be returned as result of {@code get()} operation.
-     * @see CacheProjection#get(Object)
+     * @see Cache#get(Object)
      */
     @Nullable public V onGet(K key, @Nullable V val);
 
@@ -83,7 +82,8 @@ public interface CacheInterceptor<K, V> extends Serializable {
      * <p>
      * This method should not throw any exception.
      *
-     * @param entry Current entry. If {@link CacheConfiguration#isCopyOnRead()} is {@code true} then is copy.
+     * @param entry Current entry. If {@link CacheConfiguration#isCopyOnRead()} is {@code true} then
+     *      entry is a copy.
      */
     public void onAfterPut(Cache.Entry<K, V> entry);
 
@@ -98,7 +98,8 @@ public interface CacheInterceptor<K, V> extends Serializable {
      * <p>
      * This method should not throw any exception.
      *
-     * @param entry Old entry. If {@link CacheConfiguration#isCopyOnRead()} is {@code true} then is copy.
+     * @param entry Old entry. If {@link CacheConfiguration#isCopyOnRead()} is {@code true} then
+     *      entry is a copy.
      * @return Tuple. The first value is the flag whether remove should be cancelled or not.
      *      The second is the value to be returned as result of {@code remove()} operation,
      *      may be {@code null}.
@@ -116,7 +117,8 @@ public interface CacheInterceptor<K, V> extends Serializable {
      * <p>
      * This method should not throw any exception.
      *
-     * @param entry Removed entry. If {@link CacheConfiguration#isCopyOnRead()} is {@code true} then is copy.
+     * @param entry Removed entry. If {@link CacheConfiguration#isCopyOnRead()} is {@code true} then
+     *      entry is a copy.
      */
     public void onAfterRemove(Cache.Entry<K, V> entry);
 }

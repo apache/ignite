@@ -71,7 +71,7 @@ public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map
             Map<String, IgniteBiTuple<Integer, Integer>> total = new HashMap<>();
             ClusterNode locNode = g.localNode();
 
-            for (GridCache c : ignite.cachesx()) {
+            for (IgniteInternalCache c : ignite.cachesx()) {
                 String cacheName = c.name();
                 Affinity<Object> aff = g.affinity(c.name());
 

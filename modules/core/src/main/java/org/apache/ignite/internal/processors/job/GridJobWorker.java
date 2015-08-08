@@ -354,12 +354,15 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * Sets halt flags.
      */
-    public void hold() {
-        held.incrementAndGet();
-
+    public boolean hold() {
         HOLD.set(true);
 
-        holdLsnr.onHold(this);
+        boolean res;
+
+        if (res = holdLsnr.onHeld(this))
+            held.incrementAndGet();
+
+        return res;
     }
 
     /**
@@ -397,6 +400,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             ex = handleThrowable(e);
 
             assert ex != null;
+
+            if (e instanceof Error)
+                throw e;
         }
         finally {
             if (ex != null)
@@ -431,7 +437,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     }
 
     /**
-     * @param skipNtf {@code True} to skip job processor {@code onUnhold()}
+     * @param skipNtf {@code True} to skip job processor {@code onUnheld()}
      *      notification (only from {@link #body()}).
      */
     private void execute0(boolean skipNtf) {
@@ -443,13 +449,11 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             super.cancel();
 
         if (!skipNtf) {
-            holdLsnr.onUnhold(this);
-
-            int c = held.decrementAndGet();
-
-            if (c > 0) {
+            if (holdLsnr.onUnheld(this))
+                held.decrementAndGet();
+            else {
                 if (log.isDebugEnabled())
-                    log.debug("Ignoring job execution (job was held several times) [c=" + c + ']');
+                    log.debug("Ignoring job execution (job was not held).");
 
                 return;
             }
@@ -520,6 +524,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             ex = handleThrowable(e);
 
             assert ex != null;
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
         finally {
             // Finish here only if not held by this thread.
@@ -616,6 +623,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         catch (Throwable e) {
             U.error(log, "Failed to cancel job due to undeclared user exception [jobId=" + ses.getJobId() +
                 ", ses=" + ses + ']', e);
+
+            if (e instanceof Error)
+                throw e;
         }
     }
 
@@ -853,7 +863,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @return {@code true} if node is dead, {@code false} is node is alive.
      */
     private boolean isDeadNode(UUID uid) {
-        return ctx.discovery().node(uid) == null || !ctx.discovery().pingNode(uid);
+        return ctx.discovery().node(uid) == null || !ctx.discovery().pingNodeNoError(uid);
     }
 
     /** {@inheritDoc} */

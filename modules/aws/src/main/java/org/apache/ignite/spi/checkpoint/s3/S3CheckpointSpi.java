@@ -55,7 +55,7 @@ import java.util.*;
  * <h2 class="header">Java Example</h2>
  * {@link S3CheckpointSpi} can be configured as follows:
  * <pre name="code" class="java">
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * S3CheckpointSpi spi = new S3CheckpointSpi();
  *

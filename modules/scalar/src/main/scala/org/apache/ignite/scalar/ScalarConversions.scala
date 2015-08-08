@@ -867,14 +867,6 @@ trait ScalarConversions {
         GridFunc.as(r)
 
     /**
-     * Implicit converter from `java.util.concurrent.Callable` to `GridOutClosure`.
-     *
-     * @param c Java callable to convert.
-     */
-    implicit def toOutClosure2[R](c: java.util.concurrent.Callable[R]): IgniteOutClosure[R] =
-        GridFunc.as0(c)
-
-    /**
      * Implicit converter from Scala predicate to Scala wrapping predicate.
      *
      * @param f Scala predicate to convert.

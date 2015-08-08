@@ -32,10 +32,12 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.ssl.*;
 import org.apache.ignite.testframework.config.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.configuration.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.lang.annotation.*;
@@ -137,7 +139,7 @@ public final class GridTestUtils {
                 }
             }
 
-            if (msg != null && (e.getMessage() == null || !e.getMessage().startsWith(msg))) {
+            if (msg != null && (e.getMessage() == null || !e.getMessage().contains(msg))) {
                 U.error(log, "Unexpected exception message.", e);
 
                 fail("Exception message is not as expected [expected=" + msg + ", actual=" + e.getMessage() + ']', e);
@@ -837,14 +839,6 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Cache context.
      */
-    public static <K, V> GridCacheContext<K, V> cacheContext(GridCache<K, V> cache) {
-        return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache().context();
-    }
-
-    /**
-     * @param cache Cache.
-     * @return Cache context.
-     */
     public static <K, V> GridCacheContext<K, V> cacheContext(IgniteCache<K, V> cache) {
         return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache().context();
     }
@@ -853,7 +847,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Near cache.
      */
-    public static <K, V> GridNearCacheAdapter<K, V> near(GridCache<K, V> cache) {
+    public static <K, V> GridNearCacheAdapter<K, V> near(IgniteCache<K, V> cache) {
         return cacheContext(cache).near();
     }
 
@@ -861,7 +855,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return DHT cache.
      */
-    public static <K, V> GridDhtCacheAdapter<K, V> dht(GridCache<K, V> cache) {
+    public static <K, V> GridDhtCacheAdapter<K, V> dht(IgniteCache<K, V> cache) {
         return near(cache).dht();
     }
 
@@ -875,7 +869,7 @@ public final class GridTestUtils {
     public static <K, V> void waitTopologyUpdate(@Nullable String cacheName, int backups, IgniteLogger log)
         throws Exception {
         for (Ignite g : Ignition.allGrids()) {
-            GridCache<K, V> cache = ((IgniteEx)g).cachex(cacheName);
+            IgniteCache<K, V> cache = ((IgniteEx)g).cache(cacheName);
 
             GridDhtPartitionTopology top = dht(cache).topology();
 
@@ -1346,6 +1340,24 @@ public final class GridTestUtils {
         return factory;
     }
 
+
+    /**
+     * Creates test-purposed SSL context factory from test key store with disabled trust manager.
+     *
+     * @return SSL context factory used in test.
+     */
+    public static Factory<SSLContext> sslFactory() {
+        SslContextFactory factory = new SslContextFactory();
+
+        factory.setKeyStoreFilePath(
+            U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
+        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+
+        factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
+
+        return factory;
+    }
+
     /**
      * @param o1 Object 1.
      * @param o2 Object 2.
@@ -1502,5 +1514,34 @@ public final class GridTestUtils {
      */
     public static String apacheIgniteTestPath() {
         return System.getProperty("IGNITE_TEST_PATH", U.getIgniteHome() + "/target/ignite");
+    }
+
+    /**
+     * {@link Class#getSimpleName()} does not return outer class name prefix for inner classes, for example,
+     * getSimpleName() returns "RegularDiscovery" instead of "GridDiscoveryManagerSelfTest$RegularDiscovery"
+     * This method return correct simple name for inner classes.
+     *
+     * @param cls Class
+     * @return Simple name with outer class prefix.
+     */
+    public static String fullSimpleName(@NotNull Class cls) {
+        if (cls.getEnclosingClass() != null)
+            return cls.getEnclosingClass().getSimpleName() + "." + cls.getSimpleName();
+        else
+            return cls.getSimpleName();
+    }
+
+    /**
+     * Adds test to the suite only if it's not in {@code ignoredTests} set.
+     *
+     * @param suite TestSuite where to place the test.
+     * @param test Test.
+     * @param ignoredTests Tests to ignore.
+     */
+    public static void addTestIfNeeded(TestSuite suite, Class test, Set<Class> ignoredTests) {
+        if (ignoredTests != null && ignoredTests.contains(test))
+            return;
+
+        suite.addTestSuite(test);
     }
 }

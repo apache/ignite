@@ -71,11 +71,11 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
         final int KEYS = 10;
 
         for (int i = 0; i < KEYS; i++)
-            cache(0).put(String.valueOf(i), i);
+            jcache(0).put(String.valueOf(i), i);
 
         for (int g = 0 ; g < gridCount(); g++) {
             for (int i = 0; i < KEYS; i++)
-                assertNotNull(cache(g).peek(String.valueOf(i)));
+                assertNotNull(jcache(g).localPeek(String.valueOf(i)));
         }
 
         Collection<IgniteFuture<Event>> futs = new ArrayList<>();
@@ -86,7 +86,7 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
         for (int g = 0; g < gridCount(); g++) {
             for (int i = 0; i < KEYS; i++) {
                 if (grid(g).affinity(null).isPrimary(grid(g).localNode(), String.valueOf(i)))
-                    assertTrue(cache(g).evict(String.valueOf(i)));
+                    jcache(g).localEvict(Collections.singleton(String.valueOf(i)));
             }
         }
 
@@ -97,7 +97,7 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
             @Override public boolean apply() {
                 for (int g = 0 ; g < gridCount(); g++) {
                     for (int i = 0; i < KEYS; i++) {
-                        if (cache(g).peek(String.valueOf(i)) != null) {
+                        if (jcache(g).localPeek(String.valueOf(i)) != null) {
                             log.info("Non-null value, will wait [grid=" + g + ", key=" + i + ']');
 
                             return false;

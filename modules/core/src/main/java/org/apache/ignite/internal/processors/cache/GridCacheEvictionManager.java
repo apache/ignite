@@ -63,6 +63,9 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
     /** Unsafe instance. */
     private static final sun.misc.Unsafe unsafe = GridUnsafe.unsafe();
 
+    /** Attribute name used to queue node in entry metadata. */
+    private static final int META_KEY = GridMetadataAwareAdapter.EntryKey.CACHE_EVICTION_MANAGER_KEY.key();
+
     /** Eviction policy. */
     private EvictionPolicy plc;
 
@@ -71,9 +74,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
     /** Eviction buffer. */
     private final ConcurrentLinkedDeque8<EvictionInfo> bufEvictQ = new ConcurrentLinkedDeque8<>();
-
-    /** Attribute name used to queue node in entry metadata. */
-    private final UUID meta = UUID.randomUUID();
 
     /** Active eviction futures. */
     private final Map<Long, EvictionFuture> futs = new ConcurrentHashMap8<>();
@@ -253,11 +253,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         if (plcEnabled && evictSync && !cctx.isNear()) {
             // Add dummy event to worker.
-            ClusterNode locNode = cctx.localNode();
-
-            DiscoveryEvent evt = new DiscoveryEvent(locNode, "Dummy event.", EVT_NODE_JOINED, locNode);
-
-            evt.topologySnapshot(locNode.order(), cctx.discovery().topology(locNode.order()));
+            DiscoveryEvent evt = cctx.discovery().localJoinEvent();
 
             backupWorker.addEvent(evt);
 
@@ -755,7 +751,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
         }
 
-        if (memoryMode == OFFHEAP_TIERED) {
+        if (!cctx.isNear() && memoryMode == OFFHEAP_TIERED) {
             try {
                 evict0(cctx.cache(), e, cctx.versions().next(), null, false);
             }
@@ -919,6 +915,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         List<GridCacheEntryEx> locked = new ArrayList<>(keys.size());
 
+        Set<GridCacheEntryEx> notRemove = null;
+
         Collection<GridCacheBatchSwapEntry> swapped = new ArrayList<>(keys.size());
 
         boolean recordable = cctx.events().isRecordable(EVT_CACHE_ENTRY_EVICTED);
@@ -948,6 +946,13 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
                 locked.add(entry);
 
+                if (entry.obsolete()) {
+                    if (notRemove == null)
+                        notRemove = new HashSet<>();
+
+                    notRemove.add(entry);
+                }
+
                 if (obsoleteVer == null)
                     obsoleteVer = cctx.versions().next();
 
@@ -975,7 +980,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
             // Remove entries and fire events outside the locks.
             for (GridCacheEntryEx entry : locked) {
-                if (entry.obsolete()) {
+                if (entry.obsolete() && (notRemove == null || !notRemove.contains(entry))) {
                     entry.onMarkedObsolete();
 
                     cache.removeEntry(entry);
@@ -1000,12 +1005,12 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      */
     private void enqueue(GridCacheEntryEx entry, CacheEntryPredicate[] filter)
         throws GridCacheEntryRemovedException {
-        Node<EvictionInfo> node = entry.meta(meta);
+        Node<EvictionInfo> node = entry.meta(META_KEY);
 
         if (node == null) {
             node = bufEvictQ.addLastx(new EvictionInfo(entry, entry.version(), filter));
 
-            if (entry.putMetaIfAbsent(meta, node) != null)
+            if (entry.putMetaIfAbsent(META_KEY, node) != null)
                 // Was concurrently added, need to clear it from queue.
                 bufEvictQ.unlinkx(node);
             else if (log.isDebugEnabled())
@@ -1650,7 +1655,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                 for (EvictionInfo info : evictInfos) {
                     // Queue node may have been stored in entry metadata concurrently, but we don't care
                     // about it since we are currently processing this entry.
-                    Node<EvictionInfo> queueNode = info.entry().removeMeta(meta);
+                    Node<EvictionInfo> queueNode = info.entry().removeMeta(META_KEY);
 
                     if (queueNode != null)
                         bufEvictQ.unlinkx(queueNode);

@@ -46,11 +46,6 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
-    }
-
     /**
      * @param exchId Exchange ID.
      * @param lastVer Last version.
@@ -58,6 +53,16 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
     GridDhtPartitionsAbstractMessage(GridDhtPartitionExchangeId exchId, @Nullable GridCacheVersion lastVer) {
         this.exchId = exchId;
         this.lastVer = lastVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean allowForStartup() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean partitionExchangeMessage() {
+        return true;
     }
 
     /**

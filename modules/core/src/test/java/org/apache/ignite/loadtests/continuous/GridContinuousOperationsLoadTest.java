@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -85,7 +84,7 @@ public class GridContinuousOperationsLoadTest {
 
             // Continuous query manager, used to monitor queue size.
             final CacheContinuousQueryManager contQryMgr =
-                ((GridCacheAdapter)((GridCacheProxyImpl)cache).cache()).context().continuousQueries();
+                ((IgniteKernal)ignite).context().cache().cache().context().continuousQueries();
 
             if (contQryMgr == null)
                 throw new IgniteCheckedException("Could not access CacheContinuousQueryManager");

@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cluster;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.lang.*;
 
 /**
  *
@@ -42,5 +44,14 @@ public class ClusterProcessor extends GridProcessorAdapter {
      */
     public IgniteClusterImpl get() {
         return cluster;
+    }
+
+    /**
+     * @return Client reconnect future.
+     */
+    public IgniteFuture<?> clientReconnectFuture() {
+        IgniteFuture<?> fut = cluster.clientReconnectFuture();
+
+        return fut != null ? fut : new IgniteFinishedFutureImpl<>();
     }
 }

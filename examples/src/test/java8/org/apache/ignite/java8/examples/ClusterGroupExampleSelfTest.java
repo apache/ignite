@@ -17,7 +17,6 @@
 
 package org.apache.ignite.java8.examples;
 
-//import org.apache.ignite.examples.java8.computegrid.cluster.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
@@ -30,6 +29,8 @@ public class ClusterGroupExampleSelfTest extends GridAbstractExamplesTest {
         startGrid("ignite-cluster-groups-example", DFLT_CFG);
     }
 
+//    TODO: IGNITE-711 next example(s) should be implemented for java 8
+//    or testing method(s) should be removed if example(s) does not applicable for java 8.
 //    /**
 //     * @throws Exception If failed.
 //     */

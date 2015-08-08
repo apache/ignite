@@ -22,7 +22,7 @@ package org.apache.ignite.internal.util.nodestart;
  */
 public class IgniteSshHelperImpl implements IgniteSshHelper {
     /** {@inheritDoc} */
-    @Override public IgniteNodeCallable nodeStartCallable(IgniteRemoteStartSpecification spec, int timeout) {
-        return new IgniteNodeCallableImpl(spec, timeout);
+    @Override public StartNodeCallable nodeStartCallable(IgniteRemoteStartSpecification spec, int timeout) {
+        return new StartNodeCallableImpl(spec, timeout);
     }
 }

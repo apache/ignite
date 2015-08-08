@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -33,6 +34,7 @@ import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -45,9 +47,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Key partition.
  */
-public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> {
+public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable {
     /** Maximum size for delete queue. */
-    private static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
+    public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
         200_000);
 
     /** Static logger to avoid re-creation. */
@@ -61,7 +63,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
 
     /** State. */
     @GridToStringExclude
-    private AtomicStampedReference<GridDhtPartitionState> state =
+    private final AtomicStampedReference<GridDhtPartitionState> state =
         new AtomicStampedReference<>(MOVING, 0);
 
     /** Rent future. */
@@ -88,7 +90,10 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
     private final LongAdder8 mapPubSize = new LongAdder8();
 
     /** Remove queue. */
-    private GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
+    private final GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
+
+    /** Group reservations. */
+    private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
 
     /**
      * @param cctx Context.
@@ -119,6 +124,27 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
     }
 
     /**
+     * Adds group reservation to this partition.
+     *
+     * @param r Reservation.
+     * @return {@code false} If such reservation already added.
+     */
+    public boolean addReservation(GridDhtPartitionsReservation r) {
+        assert state.getReference() != EVICTED : "we can reserve only active partitions";
+        assert state.getStamp() != 0 : "partition must be already reserved before adding group reservation";
+
+        return reservations.addIfAbsent(r);
+    }
+
+    /**
+     * @param r Reservation.
+     */
+    public void removeReservation(GridDhtPartitionsReservation r) {
+        if (!reservations.remove(r))
+            throw new IllegalStateException("Reservation was already removed.");
+    }
+
+    /**
      * @return Partition ID.
      */
     public int id() {
@@ -144,6 +170,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
      */
     public int reservations() {
         return state.getStamp();
+    }
+
+    /**
+     * @return Keys belonging to partition.
+     */
+    public Set<KeyCacheObject> keySet() {
+        return map.keySet();
     }
 
     /**
@@ -203,7 +236,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
     void onAdded(GridDhtCacheEntry entry) {
         GridDhtPartitionState state = state();
 
-        assert state != EVICTED : "Adding entry to invalid partition: " + this;
+        if (state == EVICTED)
+            throw new GridDhtInvalidPartitionException(id, "Adding entry to invalid partition [part=" + id + ']');
 
         map.put(entry.key(), entry);
 
@@ -322,7 +356,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
      *
      * @return {@code True} if reserved.
      */
-    public boolean reserve() {
+    @Override public boolean reserve() {
         while (true) {
             int reservations = state.getStamp();
 
@@ -339,7 +373,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
     /**
      * Releases previously reserved partition.
      */
-    public void release() {
+    @Override public void release() {
         while (true) {
             int reservations = state.getStamp();
 
@@ -420,8 +454,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
      * @param updateSeq Update sequence.
      * @return Future for evict attempt.
      */
-    private IgniteInternalFuture<Boolean> tryEvictAsync(boolean updateSeq) {
-        if (map.isEmpty() && state.compareAndSet(RENTING, EVICTED, 0, 0)) {
+    IgniteInternalFuture<Boolean> tryEvictAsync(boolean updateSeq) {
+        if (map.isEmpty() && !GridQueryProcessor.isEnabled(cctx.config()) &&
+            state.compareAndSet(RENTING, EVICTED, 0, 0)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
@@ -449,19 +484,34 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
     }
 
     /**
+     * @return {@code true} If there is a group reservation.
+     */
+    private boolean groupReserved() {
+        for (GridDhtPartitionsReservation reservation : reservations) {
+            if (!reservation.invalidate())
+                return true; // Failed to invalidate reservation -> we are reserved.
+        }
+
+        return false;
+    }
+
+    /**
      * @param updateSeq Update sequence.
      * @return {@code True} if entry has been transitioned to state EVICTED.
      */
-    private boolean tryEvict(boolean updateSeq) {
+    boolean tryEvict(boolean updateSeq) {
+        if (state.getReference() != RENTING || state.getStamp() != 0 || groupReserved())
+            return false;
+
         // Attempt to evict partition entries from cache.
-        if (state.getReference() == RENTING && state.getStamp() == 0)
-            clearAll();
+        clearAll();
 
         if (map.isEmpty() && state.compareAndSet(RENTING, EVICTED, 0, 0)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
-            clearSwap();
+            if (!GridQueryProcessor.isEnabled(cctx.config()))
+                clearSwap();
 
             if (cctx.isDrEnabled())
                 cctx.dr().partitionEvicted(id);
@@ -485,11 +535,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
      */
     private void clearSwap() {
         assert state() == EVICTED;
+        assert !GridQueryProcessor.isEnabled(cctx.config()) : "Indexing needs to have unswapped values.";
 
         try {
             GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it = cctx.swap().iterator(id);
 
-            boolean isLocStore = cctx.store().isLocalStore();
+            boolean isLocStore = cctx.store().isLocal();
 
             if (it != null) {
                 // We can safely remove these values because no entries will be created for evicted partition.
@@ -503,7 +554,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
                     cctx.swap().remove(key);
 
                     if (isLocStore)
-                        cctx.store().removeFromStore(null, key.value(cctx.cacheObjectContext(), false));
+                        cctx.store().remove(null, key.value(cctx.cacheObjectContext(), false));
                 }
             }
         }
@@ -537,27 +588,93 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
 
         boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
-        for (Iterator<GridDhtCacheEntry> it = map.values().iterator(); it.hasNext();) {
-            GridDhtCacheEntry cached = it.next();
+        Iterator<GridDhtCacheEntry> it = map.values().iterator();
+
+        GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> swapIt = null;
+
+        if (swap && GridQueryProcessor.isEnabled(cctx.config())) { // Indexing needs to unswap cache values.
+            Iterator<GridDhtCacheEntry> unswapIt = null;
 
             try {
-                if (cached.clearInternal(clearVer, swap)) {
-                    it.remove();
+                swapIt = cctx.swap().iterator(id);
+                unswapIt = unswapIterator(swapIt);
+            }
+            catch (Exception e) {
+                U.error(log, "Failed to clear swap for evicted partition: " + this, e);
+            }
 
-                    if (!cached.isInternal()) {
-                        mapPubSize.decrement();
+            if (unswapIt != null)
+                it = F.concat(it, unswapIt);
+        }
 
-                        if (rec)
-                            cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), (IgniteUuid)null,
-                                null, EVT_CACHE_REBALANCE_OBJECT_UNLOADED, null, false, cached.rawGet(),
-                                cached.hasValue(), null, null, null);
+        try {
+            while (it.hasNext()) {
+                GridDhtCacheEntry cached = it.next();
+
+                try {
+                    if (cached.clearInternal(clearVer, swap)) {
+                        map.remove(cached.key(), cached);
+
+                        if (!cached.isInternal()) {
+                            mapPubSize.decrement();
+
+                            if (rec)
+                                cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
+                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_UNLOADED, null, false,
+                                    cached.rawGet(), cached.hasValue(), null, null, null);
+                        }
                     }
                 }
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
+                }
             }
         }
+        finally {
+            U.close(swapIt, log);
+        }
+    }
+
+    /**
+     * @param it Swap iterator.
+     * @return Unswapping iterator over swapped entries.
+     */
+    private Iterator<GridDhtCacheEntry> unswapIterator(
+        final GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it) {
+        if (it == null)
+            return null;
+
+        return new Iterator<GridDhtCacheEntry>() {
+            /** */
+            GridDhtCacheEntry lastEntry;
+
+            @Override public boolean hasNext() {
+                return it.hasNext();
+            }
+
+            @Override public GridDhtCacheEntry next() {
+                Map.Entry<byte[], GridCacheSwapEntry> entry = it.next();
+
+                byte[] keyBytes = entry.getKey();
+
+                try {
+                    KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
+
+                    lastEntry = (GridDhtCacheEntry)cctx.cache().entryEx(key, false);
+
+                    lastEntry.unswap(true);
+
+                    return lastEntry;
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e);
+                }
+            }
+
+            @Override public void remove() {
+                map.remove(lastEntry.key(), lastEntry);
+            }
+        };
     }
 
     /**

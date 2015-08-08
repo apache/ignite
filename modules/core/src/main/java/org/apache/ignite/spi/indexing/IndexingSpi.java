@@ -36,9 +36,9 @@ import java.util.*;
  *
  * Here is a Java example on how to configure SPI.
  * <pre name="code" class="java">
- * GridIndexingSpi spi = new MyIndexingSpi();
+ * IndexingSpi spi = new MyIndexingSpi();
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Overrides default indexing SPI.
  * cfg.setIndexingSpi(spi);

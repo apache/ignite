@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -35,6 +33,8 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -76,21 +76,23 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setCacheMode(CacheMode.PARTITIONED);
+        cc.setCacheMode(PARTITIONED);
         cc.setAffinity(new RendezvousAffinityFunction(false, 18));
         cc.setBackups(1);
-        cc.setRebalanceMode(CacheRebalanceMode.SYNC);
+        cc.setRebalanceMode(SYNC);
 
         c.setCacheConfiguration(cc);
 
         return c;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         // Set salvage timeout system property.
         salvageTimeoutOld = System.setProperty(IGNITE_TX_SALVAGE_TIMEOUT, SALVAGE_TIMEOUT.toString());
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         // Restore salvage timeout system property to its initial state.
         if (salvageTimeoutOld != null)
@@ -99,14 +101,17 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
             System.clearProperty(IGNITE_TX_SALVAGE_TIMEOUT);
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         // Start the grid.
         startGridsMultiThreaded(GRID_CNT);
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        // Shutwodn the gird.
         stopAllGrids();
+
+        System.gc();
     }
 
     /**
@@ -141,8 +146,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * Check whether caches has no transactions after salvage timeout.
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
-     * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
+     * @param prepare Whether to prepare transaction state (i.e. call {@link IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
     private void checkSalvageAfterTimeout(TransactionConcurrency mode, boolean prepare) throws Exception {
@@ -160,8 +164,8 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * Check whether caches still has all transactions before salvage timeout.
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
-     * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
+     * @param prepare Whether to prepare transaction state
+     *                (i.e. call {@link IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
     private void checkSalvageBeforeTimeout(TransactionConcurrency mode, boolean prepare) throws Exception {
@@ -187,14 +191,13 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * Start new transaction on the grid(0) and put some keys to it.
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
-     * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
+     * @param prepare Whether to prepare transaction state (i.e. call {@link IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
     private void startTxAndPutKeys(final TransactionConcurrency mode, final boolean prepare) throws Exception {
         Ignite ignite = grid(0);
 
-        final Collection<Integer> keys = nearKeys(ignite);
+        final Collection<Integer> keys = nearKeys(ignite.cache(null), KEY_CNT, 0);
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
@@ -206,9 +209,8 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
                     for (Integer key : keys)
                         c.put(key, "val" + key);
 
-                    // Unproxy.
                     if (prepare)
-                        U.<IgniteInternalTx>field(tx, "tx").prepare();
+                        ((TransactionProxyImpl)tx).tx().prepare();
                 }
                 catch (IgniteCheckedException e) {
                     info("Failed to put keys to cache: " + e.getMessage());
@@ -234,31 +236,6 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Gets keys that are not primary nor backup for node.
-     *
-     * @param ignite Grid.
-     * @return Collection of keys.
-     */
-    private Collection<Integer> nearKeys(Ignite ignite) {
-        final Collection<Integer> keys = new ArrayList<>(KEY_CNT);
-
-        IgniteKernal kernal = (IgniteKernal) ignite;
-
-        GridCacheAffinityManager affMgr = kernal.internalCache().context().affinity();
-
-        for (int i = 0; i < KEY_CNT * GRID_CNT * 1.5; i++) {
-            if (!affMgr.localNode((Object)i, new AffinityTopologyVersion(kernal.context().discovery().topologyVersion()))) {
-                keys.add(i);
-
-                if (keys.size() == KEY_CNT)
-                    break;
-            }
-        }
-
-        return keys;
-    }
-
-    /**
      * Checks that transaction manager for cache context does not have any pending transactions.
      *
      * @param ctx Cache context.
@@ -278,7 +255,6 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     private void checkTxsNotEmpty(GridCacheContext ctx, int exp) {
         int size = ctx.tm().txs().size();
 
-        assert size == exp : "Some transactions were salvaged unexpectedly: " + exp +
-            " expected, but only " + size + " found.";
+        assertEquals("Some transactions were salvaged unexpectedly", exp, size);
     }
 }

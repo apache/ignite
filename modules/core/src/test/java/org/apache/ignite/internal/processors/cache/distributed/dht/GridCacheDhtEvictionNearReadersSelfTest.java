@@ -77,13 +77,20 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         // Set eviction queue size explicitly.
         cacheCfg.setEvictSynchronizedKeyBufferSize(1);
         cacheCfg.setEvictMaxOverflowRatio(0);
-        cacheCfg.setEvictionPolicy(new FifoEvictionPolicy(10));
+
+        FifoEvictionPolicy plc = new FifoEvictionPolicy();
+        plc.setMaxSize(10);
+
+        cacheCfg.setEvictionPolicy(plc);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-        nearCfg.setNearEvictionPolicy(new FifoEvictionPolicy(10));
+        FifoEvictionPolicy nearPlc = new FifoEvictionPolicy();
+        nearPlc.setMaxSize(10);
 
-        cfg.setNearCacheConfiguration(nearCfg);
+        nearCfg.setNearEvictionPolicy(nearPlc);
+
+        cacheCfg.setNearConfiguration(nearCfg);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -228,7 +235,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         String val = "v1";
 
         // Put on primary node.
-        nearPrimary.put(key, val);
+        nearPrimary.getAndPut(key, val);
 
         GridDhtCacheEntry entryPrimary = (GridDhtCacheEntry)dhtPrimary.peekEx(key);
         GridDhtCacheEntry entryBackup = (GridDhtCacheEntry)dhtBackup.peekEx(key);
@@ -256,7 +263,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         assert entryPrimary != null;
         assert entryBackup != null;
 
-        assertEquals(val, nearOther.peek(key));
+        assertEquals(val, localPeek(nearOther, key));
 
         assertTrue(!entryPrimary.readers().isEmpty());
 
@@ -268,13 +275,13 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         futBackup.get(3000);
         futPrimary.get(3000);
 
-        assertNull(dhtPrimary.peek(key));
-        assertNull(nearPrimary.peek(key));
+        assertNull(localPeek(dhtPrimary, key));
+        assertNull(localPeek(nearPrimary, key));
 
-        assertNull(dhtBackup.peek(key));
-        assertNull(nearBackup.peek(key));
+        assertNull(localPeek(dhtBackup, key));
+        assertNull(localPeek(nearBackup, key));
 
-        assertNull(dhtOther.peek(key));
-        assertNull(nearOther.peek(key));
+        assertNull(localPeek(dhtOther, key));
+        assertNull(localPeek(nearOther, key));
     }
 }

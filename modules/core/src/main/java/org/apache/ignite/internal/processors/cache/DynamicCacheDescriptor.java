@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -47,15 +49,53 @@ public class DynamicCacheDescriptor {
     /** Started flag. */
     private boolean started;
 
+    /** Cache type. */
+    private CacheType cacheType;
+
     /** */
     private volatile Map<UUID, CacheConfiguration> rmtCfgs;
 
+    /** Template configuration flag. */
+    private boolean template;
+
+    /** Cache plugin manager. */
+    private final CachePluginManager pluginMgr;
+
+    /** */
+    private boolean updatesAllowed = true;
+
     /**
+     * @param ctx Context.
      * @param cacheCfg Cache configuration.
+     * @param cacheType Cache type.
+     * @param template {@code True} if this is template configuration.
+     * @param deploymentId Deployment ID.
      */
-    public DynamicCacheDescriptor(CacheConfiguration cacheCfg, IgniteUuid deploymentId) {
+    public DynamicCacheDescriptor(GridKernalContext ctx,
+        CacheConfiguration cacheCfg,
+        CacheType cacheType,
+        boolean template,
+        IgniteUuid deploymentId) {
         this.cacheCfg = cacheCfg;
+        this.cacheType = cacheType;
+        this.template = template;
         this.deploymentId = deploymentId;
+
+        pluginMgr = new CachePluginManager(ctx, cacheCfg);
+    }
+
+    /**
+     * @return {@code True} if this is template configuration.
+     */
+    public boolean template() {
+        return template;
+    }
+
+    /**
+     * @return Cache type.
+     */
+    public CacheType cacheType() {
+        return cacheType;
     }
 
     /**
@@ -121,6 +161,13 @@ public class DynamicCacheDescriptor {
     }
 
     /**
+     * @return Cache plugin manager.
+     */
+    public CachePluginManager pluginManager() {
+        return pluginMgr;
+    }
+
+    /**
      * Sets cancelled flag.
      */
     public void onCancelled() {
@@ -164,8 +211,22 @@ public class DynamicCacheDescriptor {
         rmtCfgs = null;
     }
 
+    /**
+     * @return Updates allowed flag.
+     */
+    public boolean updatesAllowed() {
+        return updatesAllowed;
+    }
+
+    /**
+     * @param updatesAllowed Updates allowed flag.
+     */
+    public void updatesAllowed(boolean updatesAllowed) {
+        this.updatesAllowed = updatesAllowed;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DynamicCacheDescriptor.class, this, "cacheName", cacheCfg.getName());
+        return S.toString(DynamicCacheDescriptor.class, this, "cacheName", U.maskName(cacheCfg.getName()));
     }
 }

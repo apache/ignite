@@ -89,9 +89,9 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cache().removeAll();
+        jcache().removeAll();
 
-        assert cache().isEmpty();
+        assert jcache().localSize() == 0;
         assert size(ValueObject.class) == 0;
 
         STORE_MAP.clear();
@@ -208,14 +208,18 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     public void testReloadAsync() throws Exception {
         STORE_MAP.put(1, new ValueObject(1));
 
-        GridCache<Integer, ValueObject> cache = cache();
+        IgniteCache<Integer, ValueObject> cache = jcache();
 
-        assert cache.reloadAsync(1).get().value() == 1;
+        IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
+
+        asyncCache.get(1);
+
+        assert ((ValueObject)asyncCache.future().get()).value() == 1;
 
         assert cache.size() == 1;
 
-        Collection<Map.Entry<Integer, ValueObject>> res =
-            cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
+        Collection<Cache.Entry<Integer, ValueObject>> res =
+            cache.query(new SqlQuery(ValueObject.class, "val >= 0")).getAll();
 
         assert res != null;
         assert res.size() == 1;
@@ -229,7 +233,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < PUT_CNT; i++)
             STORE_MAP.put(i, new ValueObject(i));
 
-        GridCache<Integer, ValueObject> cache = cache();
+        IgniteCache<Integer, ValueObject> cache = jcache();
 
         Integer[] keys = new Integer[PUT_CNT - 5];
 
@@ -244,8 +248,8 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         assert cache.size() == PUT_CNT - 5;
 
-        Collection<Map.Entry<Integer, ValueObject>> res =
-            cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
+        Collection<Cache.Entry<Integer, ValueObject>> res =
+            cache.query(new SqlQuery(ValueObject.class, "val >= 0")).getAll();
 
         assert res != null;
         assert res.size() == PUT_CNT - 5;
@@ -253,7 +257,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         cache.clear();
 
-        assert cache.isEmpty();
+        assert cache.size() == 0;
         assertEquals(0, cache.size());
 
         fut = new CompletionListenerFuture();
@@ -264,7 +268,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         assertEquals(PUT_CNT - 5, cache.size());
 
-        res = cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
+        res = cache.query(new SqlQuery(ValueObject.class, "val >= 0")).getAll();
 
         assert res != null;
         assert res.size() == PUT_CNT - 5;

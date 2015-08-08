@@ -47,7 +47,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     private final GridCacheContext ctx;
 
     /** Cache. */
-    private final GridCache<GridCacheSetItemKey, Boolean> cache;
+    private final IgniteInternalCache<GridCacheSetItemKey, Boolean> cache;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -101,6 +101,19 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         return rmvd;
     }
 
+    /**
+     * @return {@code True} if set header found in cache.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public boolean checkHeader() throws IgniteCheckedException {
+        IgniteInternalCache<GridCacheSetHeaderKey, GridCacheSetHeader> cache0 = ctx.cache();
+
+        GridCacheSetHeader hdr = cache0.get(new GridCacheSetHeaderKey(name));
+
+        return hdr != null && hdr.id().equals(id);
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public int size() {
@@ -114,7 +127,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             }
 
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id, collocated), false, false);
+                new GridSetQueryPredicate<>(id, collocated), null, false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -165,7 +178,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
         return retry(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                return cache.putxIfAbsent(key, true);
+                return cache.putIfAbsent(key, true);
             }
         });
     }
@@ -178,7 +191,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
         return retry(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                return cache.removex(key);
+                return cache.remove(key);
             }
         });
     }
@@ -345,7 +358,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     private GridCloseableIterator<T> iterator0() {
         try {
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id, collocated), false, false);
+                new GridSetQueryPredicate<>(id, collocated), null, false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -476,7 +489,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /**
      * @return Set ID.
      */
-    IgniteUuid id() {
+    public IgniteUuid id() {
         return id;
     }
 

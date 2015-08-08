@@ -113,7 +113,7 @@ public class GridifySetToSetAspectJAspect extends GridifySetToSetAbstractAspect 
             return execute(ignite.compute(), joinPnt.getSignature().getDeclaringType(), arg, nodeFilter,
                 ann.threshold(), ann.splitSize(), ann.timeout());
         }
-        catch (Throwable e) {
+        catch (Exception e) {
             for (Class<?> ex : ((MethodSignature) joinPnt.getSignature()).getMethod().getExceptionTypes()) {
                 // Descend all levels down.
                 Throwable cause = e.getCause();

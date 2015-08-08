@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -31,14 +30,7 @@ public class TcpDiscoveryPingRequest extends TcpDiscoveryAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** Pinged client node ID. */
-    private UUID clientNodeId;
-
-    /**
-     * For {@link Externalizable}.
-     */
-    public TcpDiscoveryPingRequest() {
-        // No-op.
-    }
+    private final UUID clientNodeId;
 
     /**
      * @param creatorNodeId Creator node ID.
@@ -58,16 +50,7 @@ public class TcpDiscoveryPingRequest extends TcpDiscoveryAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        U.writeUuid(out, clientNodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        clientNodeId = U.readUuid(in);
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryPingRequest.class, this, "super", super.toString());
     }
 }

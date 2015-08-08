@@ -20,7 +20,6 @@ package org.apache.ignite.internal.cluster;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -98,7 +97,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(File file,
+    @Override public Collection<ClusterStartNodeResult> startNodes(File file,
         boolean restart,
         int timeout,
         int maxConn)
@@ -112,7 +111,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(
+    @Override public Collection<ClusterStartNodeResult> startNodes(
         Collection<Map<String, Object>> hosts,
         @Nullable Map<String, Object> dflts,
         boolean restart,
@@ -193,7 +192,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forAttribute(String name, @Nullable String val) {
+    @Override public ClusterGroup forAttribute(String name, @Nullable Object val) {
         return cluster.forAttribute(name, val);
     }
 
@@ -233,6 +232,11 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Override public ClusterGroup forHost(String host, String... hosts) {
+        return cluster.forHost(host, hosts);
+    }
+
+    /** {@inheritDoc} */
     @Override public ClusterGroup forDaemons() {
         return cluster.forDaemons();
     }
@@ -263,6 +267,11 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<String> hostNames() {
+        return cluster.hostNames();
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public ClusterNode node() {
         return cluster.node();
     }
@@ -275,6 +284,11 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     /** {@inheritDoc} */
     @Override public ClusterMetrics metrics() {
         return cluster.metrics();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteFuture<?> clientReconnectFuture() {
+        return cluster.clientReconnectFuture();
     }
 
     /** {@inheritDoc} */

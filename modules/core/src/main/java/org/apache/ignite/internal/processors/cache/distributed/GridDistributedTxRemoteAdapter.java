@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -105,7 +104,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
-        GridIoPolicy plc,
+        byte plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         boolean invalidate,
@@ -193,7 +192,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridTuple<CacheObject> peek(GridCacheContext cacheCtx,
+    @Override public GridTuple<CacheObject> peek(GridCacheContext cacheCtx,
         boolean failFast,
         KeyCacheObject key,
         CacheEntryPredicate[] filter)
@@ -480,7 +479,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         nearCached = cacheCtx.dht().near().peekExx(txEntry.key());
 
                                     if (!F.isEmpty(txEntry.entryProcessors()) || !F.isEmpty(txEntry.filters()))
-                                        txEntry.cached().unswap(true, false);
+                                        txEntry.cached().unswap(false);
 
                                     IgniteBiTuple<GridCacheOperation, CacheObject> res =
                                         applyTransformClosures(txEntry, false);
@@ -549,7 +548,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     val0,
                                                     cached.expireTime(),
                                                     cached.ttl(),
-                                                    nodeId);
+                                                    nodeId,
+                                                    topVer);
                                             }
                                         }
                                     }
@@ -560,7 +560,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                         // Keep near entry up to date.
                                         if (nearCached != null)
-                                            nearCached.updateOrEvict(xidVer, null, 0, 0, nodeId);
+                                            nearCached.updateOrEvict(xidVer, null, 0, 0, nodeId, topVer);
                                     }
                                     else if (op == RELOAD) {
                                         CacheObject reloaded = cached.innerReload();
@@ -568,8 +568,12 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         if (nearCached != null) {
                                             nearCached.innerReload();
 
-                                            nearCached.updateOrEvict(cached.version(), reloaded,
-                                                cached.expireTime(), cached.ttl(), nodeId);
+                                            nearCached.updateOrEvict(cached.version(),
+                                                reloaded,
+                                                cached.expireTime(),
+                                                cached.ttl(),
+                                                nodeId,
+                                                topVer);
                                         }
                                     }
                                     else if (op == READ) {
@@ -591,7 +595,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     val0,
                                                     cached.expireTime(),
                                                     cached.ttl(),
-                                                    nodeId);
+                                                    nodeId,
+                                                    topVer);
                                             }
                                         }
                                     }
@@ -619,14 +624,19 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             }
                         }
                         catch (Throwable ex) {
-                            uncommit();
-
-                            state(UNKNOWN);
-
                             // In case of error, we still make the best effort to commit,
                             // as there is no way to rollback at this point.
                             err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
                                 "(all transaction entries will be invalidated): " + CU.txString(this), ex);
+
+                            U.error(log, "Commit failed.", err);
+
+                            uncommit();
+
+                            state(UNKNOWN);
+
+                            if (ex instanceof Error)
+                                throw (Error)ex;
                         }
                     }
                 }

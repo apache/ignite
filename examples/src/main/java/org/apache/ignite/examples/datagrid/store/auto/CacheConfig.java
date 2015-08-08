@@ -37,8 +37,8 @@ public class CacheConfig {
     /**
      * Configure cache with store.
      */
-    public static CacheConfiguration<Long, Person> jdbcPojoStoreCache() {
-        CacheConfiguration<Long, Person> cfg = new CacheConfiguration<>();
+    public static CacheConfiguration<Long, Person> jdbcPojoStoreCache(String name) {
+        CacheConfiguration<Long, Person> cfg = new CacheConfiguration<>(name);
 
         // Set atomicity as transaction, since we are showing transactions in the example.
         cfg.setAtomicityMode(TRANSACTIONAL);

@@ -73,19 +73,19 @@ public class CacheQueryExample {
             System.out.println();
             System.out.println(">>> Cache query example started.");
 
-            CacheConfiguration<?, ?> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
+            CacheConfiguration<UUID, Organization> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
 
             orgCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
             orgCacheCfg.setIndexedTypes(UUID.class, Organization.class);
 
-            CacheConfiguration<?, ?> personCacheCfg = new CacheConfiguration<>(PERSON_CACHE);
+            CacheConfiguration<AffinityKey<UUID>, Person> personCacheCfg = new CacheConfiguration<>(PERSON_CACHE);
 
             personCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
             personCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
 
             try (
-                IgniteCache<?, ?> orgCache = ignite.createCache(orgCacheCfg);
-                IgniteCache<?, ?> personCache = ignite.createCache(personCacheCfg)
+                IgniteCache<UUID, Organization> orgCache = ignite.createCache(orgCacheCfg);
+                IgniteCache<AffinityKey<UUID>, Person> personCache = ignite.createCache(personCacheCfg)
             ) {
                 // Populate cache.
                 initialize();
@@ -167,9 +167,9 @@ public class CacheQueryExample {
             "and lower(org.name) = lower(?)";
 
         // Execute queries for find employees for different organizations.
-        print("Following people are 'GridGain' employees: ",
+        print("Following people are 'ApacheIgnite' employees: ",
             cache.query(new SqlQuery<AffinityKey<UUID>, Person>(Person.class, joinSql).
-                setArgs("GridGain")).getAll());
+                setArgs("ApacheIgnite")).getAll());
 
         print("Following people are 'Other' employees: ",
             cache.query(new SqlQuery<AffinityKey<UUID>, Person>(Person.class, joinSql).
@@ -200,7 +200,7 @@ public class CacheQueryExample {
     private static void sqlQueryWithAggregation() {
         IgniteCache<AffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
 
-        // Calculate average of salary of all persons in GridGain.
+        // Calculate average of salary of all persons in ApacheIgnite.
         // Note that we also join on Organization cache as well.
         String sql =
             "select avg(salary) " +
@@ -208,10 +208,10 @@ public class CacheQueryExample {
             "where Person.orgId = org.id " +
             "and lower(org.name) = lower(?)";
 
-        QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(sql).setArgs("GridGain"));
+        QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(sql).setArgs("ApacheIgnite"));
 
         // Calculate average salary for a specific organization.
-        print("Average salary for 'GridGain' employees: ", cursor.getAll());
+        print("Average salary for 'ApacheIgnite' employees: ", cursor.getAll());
     }
 
     /**
@@ -219,7 +219,7 @@ public class CacheQueryExample {
      * fields instead of whole key-value pairs.
      */
     private static void sqlFieldsQuery() {
-        IgniteCache<?, ?> cache = Ignition.ignite().cache(PERSON_CACHE);
+        IgniteCache<AffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
 
         // Execute query to get names of all employees.
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(
@@ -237,7 +237,7 @@ public class CacheQueryExample {
      * fields instead of whole key-value pairs.
      */
     private static void sqlFieldsQueryWithJoin() {
-        IgniteCache<?, ?> cache = Ignition.ignite().cache(PERSON_CACHE);
+        IgniteCache<AffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
 
         // Execute query to get names of all employees.
         String sql =
@@ -261,7 +261,7 @@ public class CacheQueryExample {
         IgniteCache<UUID, Organization> orgCache = Ignition.ignite().cache(ORG_CACHE);
 
         // Organizations.
-        Organization org1 = new Organization("GridGain");
+        Organization org1 = new Organization("ApacheIgnite");
         Organization org2 = new Organization("Other");
 
         orgCache.put(org1.id, org1);

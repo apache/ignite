@@ -38,9 +38,9 @@ import java.util.*;
  * <p>
  * Here is a Java example on how to configure grid with {@code GridNeverFailoverSpi}:
  * <pre name="code" class="java">
- * GridNeverFailoverSpi spi = new GridNeverFailoverSpi();
+ * NeverFailoverSpi spi = new NeverFailoverSpi();
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default failover SPI.
  * cfg.setFailoverSpiSpi(spi);
@@ -48,10 +48,10 @@ import java.util.*;
  * // Starts grid.
  * G.start(cfg);
  * </pre>
- * Here is an example on how to configure grid with {@code GridNeverFailoverSpi} from Spring XML configuration file:
+ * Here is an example on how to configure grid with {@link NeverFailoverSpi} from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;property name="failoverSpi"&gt;
- *     &lt;bean class="org.apache.ignite.spi.failover.never.GridNeverFailoverSpi"/&gt;
+ *     &lt;bean class="org.apache.ignite.spi.failover.never.NeverFailoverSpi"/&gt;
  * &lt;/property&gt;
  * </pre>
  * <p>

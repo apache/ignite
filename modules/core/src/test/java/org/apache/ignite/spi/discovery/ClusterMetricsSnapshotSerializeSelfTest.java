@@ -26,6 +26,20 @@ import org.apache.ignite.testframework.junits.common.*;
  */
 @GridCommonTest(group = "Utils")
 public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractTest {
+    /** Metrics serialized by Ignite 1.0 */
+    private static final byte[] METRICS_V1 = {0, 0, 0, 22, 0, 0, 0, 8, 64, 0, 0, 0, 0, 0, 0, 27, 0, 0, 0, 15, 64,
+        (byte)-32, 0, 0, 0, 0, 0, 26, 0, 0, 0, 14, 64, (byte)-64, 0, 0, 0, 0, 0, 23, 0, 0, 0, 9, 64, 64, 0, 0, 0, 0, 0,
+        39, 0, 0, 0, 36, 0, 0, 0, 37, 0, 0, 0, 0, 0, 0, 0, 25, 0, 0, 0, 0, 0, 0, 0, 13, 64, 20, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 12, 64, 16, 0, 0, 0, 0, 0, 0, (byte)-1, (byte)-1, (byte)-1, (byte)-1, 0,
+        0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 38, 0, 0, 0, 1, 64, 65, 0, 0, 0, 0, 0, 0, (byte)-65, (byte)-16, 0, 0,
+        0, 0, 0, 0, (byte)-65, (byte)-16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0,
+        0, 0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 29, 0, 0, 0, 0, 0, 0, 0,
+        31, 0, 0, 0, 0, 0, 0, 0, 28, 0, 0, 0, 0, 0, 0, 0, 30, 0, 0, 0, 0, 0, 0, 0, 47, 0, 0, 0, 0, 0, 0, 0, 33,
+        (byte)-1, (byte)-1, (byte)-1, (byte)-1, (byte)-1, (byte)-1, (byte)-1, (byte)-1, 0, 0, 0, 0, 0, 0, 0, 41, 0, 0,
+        0, 35, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 40, 0, 0, 0, 16, (byte)-1, (byte)-1, (byte)-1, (byte)-1, (byte)-1,
+        (byte)-1, (byte)-1, (byte)-1, 0, 0, 0, 42, 0, 0, 0, 0, 0, 0, 0, 43, 0, 0, 0, 44, 0, 0, 0, 0, 0, 0, 0, 45, 0, 0,
+        0, 46, (byte)-1, (byte)-1, (byte)-1, (byte)-1};
+
     /** */
     public ClusterMetricsSnapshotSerializeSelfTest() {
         super(false /*don't start grid*/);
@@ -63,6 +77,15 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
         assert metrics2 != null;
 
         assert isMetricsEquals(metrics1, metrics2);
+    }
+
+    /**
+     * Checks compatibility with old serialized metrics.
+     */
+    public void testMetricsCompatibility() {
+        ClusterMetrics metrics = ClusterMetricsSnapshot.deserialize(METRICS_V1, 0);
+
+        assert metrics != null;
     }
 
     /**
@@ -123,6 +146,11 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
         return metrics;
     }
 
+    /**
+     * @param obj Object.
+     * @param obj1 Object 1.
+     */
+    @SuppressWarnings("FloatingPointEquality")
     private boolean isMetricsEquals(ClusterMetrics obj, ClusterMetrics obj1) {
         return
             obj.getAverageActiveJobs() == obj1.getAverageActiveJobs() &&

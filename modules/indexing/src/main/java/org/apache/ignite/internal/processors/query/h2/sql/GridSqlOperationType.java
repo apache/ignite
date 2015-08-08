@@ -70,6 +70,8 @@ public enum GridSqlOperationType {
      * @param sqlGenerator sqlGenerator.
      */
     GridSqlOperationType(int childrenCnt, SqlGenerator sqlGenerator) {
+        assert childrenCnt > 0 || sqlGenerator instanceof ConditionInSqlGenerator : childrenCnt;
+
         this.childrenCnt = childrenCnt;
         this.sqlGenerator = sqlGenerator;
     }
@@ -131,7 +133,7 @@ public enum GridSqlOperationType {
         @Override public String getSql(GridSqlOperation operation) {
             assert operation.opType().childrenCnt == 2;
 
-            return "(INTERSECTS(" + operation.child(0) + ", " + operation.child(1) + "))";
+            return "(INTERSECTS(" + operation.child(0).getSQL() + ", " + operation.child(1).getSQL() + "))";
         }
     }
 

@@ -46,14 +46,17 @@ public class IgniteDrDataStreamerCacheUpdater implements StreamReceiver<KeyCache
 
             GridKernalContext ctx = ((IgniteKernal)cache0.unwrap(Ignite.class)).context();
             IgniteLogger log = ctx.log(IgniteDrDataStreamerCacheUpdater.class);
-            GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
+            GridCacheAdapter internalCache = ctx.cache().internalCache(cacheName);
+
+            CacheOperationContext opCtx = ((IgniteCacheProxy)cache0).operationContext();
+
+            IgniteInternalCache cache =
+                opCtx != null ? new GridCacheProxyImpl(internalCache.context(), internalCache, opCtx) : internalCache;
 
             assert !F.isEmpty(col);
 
             if (log.isDebugEnabled())
                 log.debug("Running DR put job [nodeId=" + ctx.localNodeId() + ", cacheName=" + cacheName + ']');
-
-            cache.context().awaitStarted();
 
             CacheObjectContext cacheObjCtx = cache.context().cacheObjectContext();
 

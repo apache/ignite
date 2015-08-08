@@ -17,10 +17,18 @@
 
 package org.apache.ignite.visor.commands
 
+import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite.internal.IgniteVersionUtils._
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.startup.cmdline.AboutDialog
+import org.apache.ignite.visor.visor
+import org.apache.ignite.visor.visor._
+
+import jline.TerminalSupport
+import jline.console.ConsoleReader
+import jline.console.completer.Completer
+import jline.internal.Configuration
 
 import javax.swing.ImageIcon
 import java._
@@ -30,177 +38,185 @@ import java.text.SimpleDateFormat
 
 import scala.io._
 
-// Built-in commands.
-// Note the importing of implicit conversions.
-import org.apache.ignite.visor.commands.ack.VisorAckCommand
-import org.apache.ignite.visor.commands.alert.VisorAlertCommand
-import org.apache.ignite.visor.commands.cache.{VisorCacheClearCommand, VisorCacheCommand, VisorCacheSwapCommand}
-import org.apache.ignite.visor.commands.config.VisorConfigurationCommand
-import org.apache.ignite.visor.commands.deploy.VisorDeployCommand
-import org.apache.ignite.visor.commands.disco.VisorDiscoveryCommand
-import org.apache.ignite.visor.commands.events.VisorEventsCommand
-import org.apache.ignite.visor.commands.gc.VisorGcCommand
-import org.apache.ignite.visor.commands.kill.VisorKillCommand
-import org.apache.ignite.visor.commands.node.VisorNodeCommand
-import org.apache.ignite.visor.commands.ping.VisorPingCommand
-import org.apache.ignite.visor.commands.start.VisorStartCommand
-import org.apache.ignite.visor.commands.tasks.VisorTasksCommand
-import org.apache.ignite.visor.commands.top.VisorTopologyCommand
-import org.apache.ignite.visor.commands.vvm.VisorVvmCommand
-import org.apache.ignite.visor.visor
-import org.apache.ignite.visor.visor._
-
-import scala.tools.jline.console.ConsoleReader
-import scala.tools.jline.console.completer.Completer
-import scala.tools.jline.internal.Configuration
-
 /**
  * Command line Visor.
  */
-object VisorConsole extends App {
+class VisorConsole {
     /** Version number. */
-    private final val VISOR_VER = VER_STR
-
-    /** Release date. */
-    private final val VISOR_RELEASE_DATE = RELEASE_DATE_STR
+    protected def version() = VER_STR
 
     /** Copyright. */
-    private final val VISOR_COPYRIGHT = COPYRIGHT
+    protected def copyright() = COPYRIGHT
 
-    /** Release date (another format). */
-    private final val releaseDate = new SimpleDateFormat("ddMMyyyy").parse(VISOR_RELEASE_DATE)
+    /** Release date. */
+    protected def releaseDate() = new SimpleDateFormat("ddMMyyyy").parse(RELEASE_DATE_STR)
 
-    // Pre-initialize built-in commands.
-    VisorAckCommand
-    VisorAlertCommand
-    VisorCacheCommand
-    VisorCacheClearCommand
-    VisorCacheSwapCommand
-    VisorConfigurationCommand
-    VisorDeployCommand
-    VisorDiscoveryCommand
-    VisorEventsCommand
-    VisorGcCommand
-    VisorKillCommand
-    VisorNodeCommand
-    VisorPingCommand
-    VisorTopologyCommand
-    VisorStartCommand
-    VisorTasksCommand
-    VisorVvmCommand
+    /** Program name. */
+    protected val progName = sys.props.getOrElse(IGNITE_PROG_NAME, "ignitevisorcmd")
 
-    // Setting up Mac OS specific system menu.
-    customizeUI()
-
-    // Wrap line symbol for user input.
-    private val wrapLine = if (U.isWindows) "^" else "\\"
-
-    private val emptyArg = "^([a-zA-z!?]+)$".r
-    private val varArg = "^([a-zA-z!?]+)\\s+(.+)$".r
-
-    private var line: String = null
-
-    private val buf = new StringBuilder
-
-    line = args.mkString(" ")
-
-    val argLst = parseArgs(args.mkString(" "))
-
-    val batchFile = argValue("b", argLst)
-    val batchCommand = argValue("e", argLst)
-
-    if (batchFile.isDefined && batchCommand.isDefined) {
-        visor.warn(
-            "Illegal options can't contains both command file and commands",
-            "Usage: ignitevisorcmd {-b=<batch commands file path>} {-e=command1;command2}"
-        )
-
-        visor.quit()
+    /**
+     * Built-in commands.
+     */
+    protected def addCommands() {
+        // Note the importing of implicit conversions.
+        org.apache.ignite.visor.commands.ack.VisorAckCommand
+        org.apache.ignite.visor.commands.alert.VisorAlertCommand
+        org.apache.ignite.visor.commands.cache.VisorCacheClearCommand
+        org.apache.ignite.visor.commands.cache.VisorCacheCommand
+        org.apache.ignite.visor.commands.cache.VisorCacheSwapCommand
+        org.apache.ignite.visor.commands.config.VisorConfigurationCommand
+        org.apache.ignite.visor.commands.deploy.VisorDeployCommand
+        org.apache.ignite.visor.commands.disco.VisorDiscoveryCommand
+        org.apache.ignite.visor.commands.events.VisorEventsCommand
+        org.apache.ignite.visor.commands.gc.VisorGcCommand
+        org.apache.ignite.visor.commands.kill.VisorKillCommand
+        org.apache.ignite.visor.commands.node.VisorNodeCommand
+        org.apache.ignite.visor.commands.open.VisorOpenCommand
+        org.apache.ignite.visor.commands.ping.VisorPingCommand
+        org.apache.ignite.visor.commands.start.VisorStartCommand
+        org.apache.ignite.visor.commands.tasks.VisorTasksCommand
+        org.apache.ignite.visor.commands.top.VisorTopologyCommand
+        org.apache.ignite.visor.commands.vvm.VisorVvmCommand
     }
 
-    var batchStream: Option[String] = None
+    protected def parse(args: String) = {
+        val argLst = parseArgs(args)
 
-    batchFile.foreach(name => {
-        val f = U.resolveIgnitePath(name)
+        if (hasArgFlag("?", argLst) || hasArgFlag("help", argLst)) {
+            println("Usage:")
+            println(s"    $progName [?]|[{-v}{-np}]|[{-b=<batch commands file path>} {-e=command1;command2}]")
+            println("    Where:")
+            println("        ?, /help, -help - show this message.")
+            println("        -v              - verbose mode (quiet by default).")
+            println("        -np             - no pause on exit (pause by default)")
+            println("        -b              - batch mode with file)")
+            println("        -e              - batch mode with commands)")
 
-        if (f == null) {
+            visor.quit()
+        }
+
+        argLst
+    }
+
+    protected def buildReader(argLst: ArgList) = {
+        val batchFile = argValue("b", argLst)
+        val batchCommand = argValue("e", argLst)
+
+        if (batchFile.isDefined && batchCommand.isDefined) {
             visor.warn(
-                "Can't find batch commands file: " + name,
-                "Usage: ignitevisorcmd {-b=<batch command file path>} {-e=command1;command2}"
+                "Illegal options can't contains both command file and commands",
+                s"Usage: $progName {-b=<batch commands file path>} {-e=command1;command2}"
             )
 
             visor.quit()
         }
 
-        batchStream = Some(Source.fromFile(f).getLines().mkString("\n"))
-    })
+        var batchStream: Option[String] = None
 
-    batchCommand.foreach(commands => batchStream = Some(commands.replaceAll(";", "\n")))
+        batchFile.foreach(name => {
+            val f = U.resolveIgnitePath(name)
 
-    val inputStream = batchStream match {
-        case Some(cmd) => new ByteArrayInputStream((cmd + "\nquit\n").getBytes("UTF-8"))
-        case None => new FileInputStream(FileDescriptor.in)
+            if (f == null) {
+                visor.warn(
+                    "Can't find batch commands file: " + name,
+                    s"Usage: $progName {-b=<batch command file path>} {-e=command1;command2}"
+                )
+
+                visor.quit()
+            }
+
+            batchStream = Some(Source.fromFile(f).getLines().mkString("\n"))
+        })
+
+        batchCommand.foreach(commands => batchStream = Some(commands.replaceAll(";", "\n")))
+
+        val inputStream = batchStream match {
+            case Some(cmd) => new ByteArrayInputStream((cmd + "\nquit\n").getBytes("UTF-8"))
+            case None => new FileInputStream(FileDescriptor.in)
+        }
+
+        // Workaround for IDEA terminal.
+        val term = try {
+            Class.forName("com.intellij.rt.execution.application.AppMain")
+
+            new TerminalSupport(false) {}
+        } catch {
+            case ignored: ClassNotFoundException => null
+        }
+
+        val reader = new ConsoleReader(inputStream, System.out, term)
+
+        reader.addCompleter(new VisorCommandCompleter(visor.commands))
+        reader.addCompleter(new VisorFileNameCompleter())
+
+        reader
     }
 
-    private val reader = new ConsoleReader(inputStream, System.out, null, null)
+    protected def mainLoop(reader: ConsoleReader) {
+        welcomeMessage()
 
-    reader.addCompleter(new VisorCommandCompleter(visor.commands))
-    reader.addCompleter(new VisorFileNameCompleter())
+        var ok = true
 
-    welcomeMessage()
+        // Wrap line symbol for user input.
+        val wrapLine = if (U.isWindows) "^" else "\\"
 
-    private var ok = true
+        val emptyArg = "^([a-zA-z!?]+)$".r
+        val varArg = "^([a-zA-z!?]+)\\s+(.+)$".r
 
-    while (ok) {
-        line = reader.readLine("visor> ")
+        var line: String = null
 
-        ok = line != null
+        val buf = new StringBuilder
 
-        if (ok) {
-            line = line.trim
+        while (ok) {
+            line = reader.readLine("visor> ")
 
-            if (line.endsWith(wrapLine)) {
-                buf.append(line.dropRight(1))
-            }
-            else {
-                if (buf.size != 0) {
-                    buf.append(line)
+            ok = line != null
 
-                    line = buf.toString()
+            if (ok) {
+                line = line.trim
 
-                    buf.clear()
+                if (line.endsWith(wrapLine)) {
+                    buf.append(line.dropRight(1))
                 }
+                else {
+                    if (buf.nonEmpty) {
+                        buf.append(line)
 
-                try {
-                    line match {
-                        case emptyArg(c) =>
-                            visor.searchCmd(c) match {
-                                case Some(cmdHolder) => cmdHolder.impl.invoke()
-                                case _ => adviseToHelp(c)
-                            }
-                        case varArg(c, args) =>
-                            visor.searchCmd(c) match {
-                                case Some(cmdHolder) => cmdHolder.impl.invoke(args.trim)
-                                case _ => adviseToHelp(c)
-                            }
-                        case s if "".equals(s.trim) => // Ignore empty user input.
-                        case _ => adviseToHelp(line)
+                        line = buf.toString()
+
+                        buf.clear()
                     }
-                } catch {
-                    case ignore: Exception => adviseToHelp(line)
+
+                    try {
+                        line match {
+                            case emptyArg(c) =>
+                                visor.searchCmd(c) match {
+                                    case Some(cmdHolder) => cmdHolder.emptyArgs()
+                                    case _ => adviseToHelp(c)
+                                }
+                            case varArg(c, a) =>
+                                visor.searchCmd(c) match {
+                                    case Some(cmdHolder) => cmdHolder.withArgs(a.trim)
+                                    case _ => adviseToHelp(c)
+                                }
+                            case s if "".equals(s.trim) => // Ignore empty user input.
+                            case _ => adviseToHelp(line)
+                        }
+                    } catch {
+                        case ignore: Exception =>
+                            ignore.printStackTrace()
+
+                            adviseToHelp(line)
+                    }
                 }
             }
         }
     }
 
-    def terminalWidth() = reader.getTerminal.getWidth
-
-    def consoleReader() = reader
-
     /**
      * Prints standard 'Invalid command' error message.
      */
-    private def adviseToHelp(input: String) {
+    protected def adviseToHelp(input: String) {
         visor.warn(
             "Invalid command name: '" + input + "'",
             "Type 'help' to print commands list."
@@ -210,20 +226,31 @@ object VisorConsole extends App {
     /**
      * Print banner, hint message on start.
      */
-    private def welcomeMessage() {
-        visor.status()
+    protected def welcomeMessage() {
+        println("___    _________________________ ________" +  NL +
+                "__ |  / /____  _/__  ___/__  __ \\___  __ \\" +  NL +
+                "__ | / /  __  /  _____ \\ _  / / /__  /_/ /" +  NL +
+                "__ |/ /  __/ /   ____/ / / /_/ / _  _, _/" +  NL +
+                "_____/   /___/   /____/  \\____/  /_/ |_|" +  NL +
+                NL +
+                "ADMIN CONSOLE" + NL +
+                copyright())
+
+        nl()
+
+        status()
 
         println("\nType 'help' for more information.")
         println("Type 'open' to join the grid.")
         println("Type 'quit' to quit form Visor console.")
 
-        visor.nl()
+        nl()
     }
 
     /**
-     * Setting up mac os specific menu.
+     * Setting up Mac OS specific system menu.
      */
-    private def customizeUI() {
+    protected def addAboutDialog() {
         def urlIcon(iconName: String) = {
             val iconPath = "org/apache/ignite/startup/cmdline/" + iconName
 
@@ -252,7 +279,7 @@ object VisorConsole extends App {
                 new java.lang.reflect.InvocationHandler {
                     def invoke(proxy: Any, mth: java.lang.reflect.Method, args: Array[Object]) = {
                         AboutDialog.centerShow("Visor - Ignite Shell Console", bannerIconUrl.toExternalForm,
-                            VISOR_VER, releaseDate, VISOR_COPYRIGHT)
+                            version(), releaseDate(), copyright())
 
                         null
                     }
@@ -265,6 +292,23 @@ object VisorConsole extends App {
             case _: Throwable =>
         }
     }
+}
+
+/**
+ * Command line Visor entry point.
+ */
+object VisorConsole extends VisorConsole with App {
+    addAboutDialog()
+
+    addCommands()
+
+    private val argLst = parse(args.mkString(" "))
+    
+    private val reader = buildReader(argLst)
+
+    visor.reader(reader)
+
+    mainLoop(reader)
 }
 
 /**
@@ -323,7 +367,7 @@ private[commands] class VisorFileNameCompleter extends Completer {
                     else if (left.count(_ == '\'') % 2 == 1) "\'"
                     else ""
 
-                val splitterSz = quote.size + " ".size
+                val splitterSz = quote.length + " ".length
 
                 // path begin marker index.
                 ixBegin = left.lastIndexOf(" " + quote)
@@ -347,7 +391,7 @@ private[commands] class VisorFileNameCompleter extends Completer {
         if (dir != null && dir.listFiles != null) {
             val files = for (file <- dir.listFiles if file.getName.startsWith(partOfName)) yield file
 
-            if (files.size == 1) {
+            if (files.length == 1) {
                 val candidate = files(0)
 
                 candidates.add(candidate.getName + (if (candidate.isDirectory) separator else " "))

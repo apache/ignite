@@ -236,14 +236,11 @@ public final class IgniteSystemProperties {
     /**
      * System property to disable buffered communication if node sends less messages count than
      * specified by this property. Default value is {@code 512}.
+     *
+     * @deprecated Not used anymore.
      */
+    @Deprecated
     public static final String IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT = "IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT";
-
-    /**
-     * System property to manage ratio for communication buffer resize. Buffer size will either
-     * increase or decrease according to this ratio depending on system behavior. Default value is {@code 0.8}.
-     */
-    public static final String IGNITE_COMMUNICATION_BUF_RESIZE_RATIO = "IGNITE_COMMUNICATION_BUF_RESIZE_RATIO";
 
     /**
      * Flag that will force Ignite to fill memory block with some recognisable pattern right before
@@ -251,7 +248,7 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
 
-    /** Maximum size for atomic cache queue delete history. */
+    /** Maximum size for atomic cache queue delete history (default is 200 000 entries per partition). */
     public static final String IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
 
     /**
@@ -320,6 +317,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MBEAN_APPEND_JVM_ID = "IGNITE_MBEAN_APPEND_JVM_ID";
 
     /**
+     * If this property is set to {@code true} then Ignite will append
+     * hash code of class loader to MXBean name.
+     * <p>
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_MBEAN_APPEND_CLASS_LOADER_ID = "IGNITE_MBEAN_APPEND_CLASS_LOADER_ID";
+
+    /**
      * Property controlling size of buffer holding last exception. Default value of {@code 1000}.
      */
     public static final String IGNITE_EXCEPTION_REGISTRY_MAX_SIZE = "IGNITE_EXCEPTION_REGISTRY_MAX_SIZE";
@@ -335,6 +340,19 @@ public final class IgniteSystemProperties {
      * for different class loaders.
      */
     public static final String IGNITE_JCACHE_DEFAULT_ISOLATED = "IGNITE_CACHE_CLIENT";
+
+    /**
+     * Property controlling maximum number of SQL result rows which can be fetched into a merge table.
+     * If there are less rows than this threshold then multiple passes throw a table will be possible,
+     * otherwise only one pass (e.g. only result streaming is possible).
+     */
+    public static final String IGNITE_SQL_MERGE_TABLE_MAX_SIZE = "IGNITE_SQL_MERGE_TABLE_MAX_SIZE";
+
+    /** Maximum size for affinity assignment history. */
+    public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
+
+    /** Number of cache operation retries in case of topology exceptions. */
+    public static final String IGNITE_CACHE_RETRIES_COUNT = "IGNITE_CACHE_RETRIES_COUNT";
 
     /**
      * Enforces singleton.

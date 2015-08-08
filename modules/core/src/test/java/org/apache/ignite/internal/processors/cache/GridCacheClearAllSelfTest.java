@@ -159,7 +159,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT - 1; i++) {
             IgniteCache<Object, Object> cache = grid(i).cache(CACHE_NAME);
 
-            assertEquals("Key set [i=" + i + ']', KEY_CNT, cache.localSize());
+            assertEquals("Key set [i=" + i + ']', KEY_CNT, cache.localSize(CachePeekMode.ALL));
         }
 
         assert grid(GRID_CNT - 1).cache(CACHE_NAME_OTHER).localSize() == KEY_CNT_OTHER;

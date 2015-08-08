@@ -22,7 +22,7 @@ import java.util.*;
 
 /**
  * Scanner listener interface. Whatever deployment scanner is used
- * (ftp, http, file and so on) following events happens:
+ * (http, file and so on) following events happens:
  * <ul>
  * <li>{@code onNewOrUpdatedFile} - happens when new file has been found or updated.</li>
  * <li>{@code onDeletedFiles} - happens when file(s) has been removed.</li>

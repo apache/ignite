@@ -191,7 +191,7 @@ class OptimizedMarshallerUtils {
             try {
                 registered = ctx.registerClass(typeId, cls);
             }
-            catch (Exception e) {
+            catch (IgniteCheckedException e) {
                 throw new IOException("Failed to register class: " + cls.getName(), e);
             }
 
@@ -246,7 +246,14 @@ class OptimizedMarshallerUtils {
         ClassLoader ldr,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper) throws IOException, ClassNotFoundException {
-        Class cls = ctx.getClass(id, ldr);
+        Class cls;
+
+        try {
+            cls = ctx.getClass(id, ldr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IOException("Failed to resolve class for ID: " + id, e);
+        }
 
         OptimizedClassDescriptor desc = clsMap.get(cls);
 

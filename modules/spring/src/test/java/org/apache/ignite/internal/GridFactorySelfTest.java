@@ -62,7 +62,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     private static final AtomicInteger cnt = new AtomicInteger();
 
     /** */
-    private static final String CUSTOM_CFG_PATH = "modules/core/src/test/config/factory/custom-grid-name-spring-test.xml";
+    private static final String CUSTOM_CFG_PATH =
+        "modules/core/src/test/config/factory/custom-grid-name-spring-test.xml";
 
     /**
      *
@@ -820,6 +821,15 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         ignite.compute().execute(TestTask.class, null);
 
         G.stop(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConfigInClassPath() throws Exception {
+        try (Ignite ignite = Ignition.start("config/ignite-test-config.xml")) {
+            assert "config-in-classpath".equals(ignite.name());
+        }
     }
 
     /**

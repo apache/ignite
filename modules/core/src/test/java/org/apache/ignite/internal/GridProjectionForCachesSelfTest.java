@@ -52,9 +52,14 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoverySpi());
 
-        cfg.setCacheConfiguration(
-            cacheConfiguration(null, new AttributeFilter(getTestGridName(0)), false),
-            cacheConfiguration(CACHE_NAME, new AttributeFilter(getTestGridName(2), getTestGridName(3)), true));
+        List<CacheConfiguration> ccfgs = new ArrayList<>();
+
+        if (gridName.equals(getTestGridName(0)))
+            ccfgs.add(cacheConfiguration(null, new AttributeFilter(getTestGridName(0)), false));
+        else if (gridName.equals(getTestGridName(2)) || gridName.equals(getTestGridName(3)))
+            ccfgs.add(cacheConfiguration(CACHE_NAME, new AttributeFilter(getTestGridName(2), getTestGridName(3)), true));
+
+        cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
         return cfg;
     }
@@ -121,13 +126,13 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     public void testProjectionForDefaultCache() throws Exception {
         ClusterGroup prj = ignite.cluster().forCacheNodes(null);
 
-        assert prj != null;
-        assert prj.nodes().size() == 3;
-        assert prj.nodes().contains(grid(0).localNode());
-        assert !prj.nodes().contains(grid(1).localNode());
-        assert prj.nodes().contains(grid(2).localNode());
-        assert prj.nodes().contains(grid(3).localNode());
-        assert !prj.nodes().contains(grid(4).localNode());
+        assertNotNull(prj);
+        assertEquals(3, prj.nodes().size());
+        assertTrue(prj.nodes().contains(grid(0).localNode()));
+        assertFalse(prj.nodes().contains(grid(1).localNode()));
+        assertTrue(prj.nodes().contains(grid(2).localNode()));
+        assertTrue(prj.nodes().contains(grid(3).localNode()));
+        assertFalse(prj.nodes().contains(grid(4).localNode()));
     }
 
     /**

@@ -52,15 +52,11 @@ public class CacheTransactionExample {
             System.out.println();
             System.out.println(">>> Cache transaction example started.");
 
-            CacheConfiguration<Integer, Account> cfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, Account> cfg = new CacheConfiguration<>(CACHE_NAME);
 
-            cfg.setCacheMode(CacheMode.PARTITIONED);
-            cfg.setName(CACHE_NAME);
             cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-            NearCacheConfiguration<Integer, Account> nearCacheCfg = new NearCacheConfiguration<>();
-
-            try (IgniteCache<Integer, Account> cache = ignite.createCache(cfg, nearCacheCfg)) {
+            try (IgniteCache<Integer, Account> cache = ignite.getOrCreateCache(cfg, new NearCacheConfiguration<Integer, Account>())) {
                 // Initialize.
                 cache.put(1, new Account(1, 100));
                 cache.put(2, new Account(1, 200));
@@ -93,11 +89,9 @@ public class CacheTransactionExample {
      */
     private static void deposit(IgniteCache<Integer, Account> cache, int acctId, double amount) throws IgniteException {
         try (Transaction tx = Ignition.ignite().transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            Account acct0 = cache.get(acctId);
+            Account acct = cache.get(acctId);
 
-            assert acct0 != null;
-
-            Account acct = new Account(acct0.id, acct0.balance);
+            assert acct != null;
 
             // Deposit into account.
             acct.update(amount);

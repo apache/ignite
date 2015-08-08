@@ -34,7 +34,7 @@ public class VisorSegmentationConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Segmentation policy. */
-    private GridSegmentationPolicy plc;
+    private SegmentationPolicy plc;
 
     /** Segmentation resolvers. */
     private String resolvers;
@@ -67,7 +67,7 @@ public class VisorSegmentationConfiguration implements Serializable {
     /**
      * @return Segmentation policy.
      */
-    public GridSegmentationPolicy policy() {
+    public SegmentationPolicy policy() {
         return plc;
     }
 

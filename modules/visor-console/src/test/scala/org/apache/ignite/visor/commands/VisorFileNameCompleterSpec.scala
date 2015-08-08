@@ -25,34 +25,34 @@ import java.util
 /**
  * Test for visor's file name completer.
  */
-class VisorFileNameCompleterSpec extends FlatSpec with ShouldMatchers {
-    behavior of "A visor file name completer"
+class VisorFileNameCompleterSpec extends FunSpec with ShouldMatchers {
+    describe("A visor file name completer") {
+        it("should properly parse empty path") {
+            val c = new VisorFileNameCompleter()
 
-    it should "properly parse empty path" in {
-        val c = new VisorFileNameCompleter()
+            val res = new util.ArrayList[CharSequence]()
 
-        val res = new util.ArrayList[CharSequence]()
+            c.complete("", 0, res)
 
-        c.complete("", 0, res)
+            assertResult(new File("").getAbsoluteFile.listFiles().length)(res.size)
 
-        assertResult(new File("").getAbsoluteFile.listFiles().length)(res.size)
+            res.clear()
 
-        res.clear()
+            c.complete(null, 0, res)
 
-        c.complete(null, 0, res)
+            assertResult(new File("").getAbsoluteFile.listFiles().length)(res.size)
 
-        assertResult(new File("").getAbsoluteFile.listFiles().length)(res.size)
+            res.clear()
 
-        res.clear()
+            c.complete("    ", 2, res)
 
-        c.complete("    ", 2, res)
+            assertResult(new File("").getAbsoluteFile.listFiles().length)(res.size)
 
-        assertResult(new File("").getAbsoluteFile.listFiles().length)(res.size)
+            res.clear()
 
-        res.clear()
+            c.complete("help ", 5, res)
 
-        c.complete("help ", 5, res)
-
-        assertResult(new File("").getAbsoluteFile.listFiles().length)(res.size)
+            assertResult(new File("").getAbsoluteFile.listFiles().length)(res.size)
+        }
     }
 }

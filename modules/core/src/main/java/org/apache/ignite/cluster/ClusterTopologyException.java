@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
- * This exception is used to indicate error with grid topology (e.g., crashed node, etc.).
+ * This exception is used to indicate error with the cluster topology (e.g., crashed node, etc.).
  */
 public class ClusterTopologyException extends IgniteException {
     /** */

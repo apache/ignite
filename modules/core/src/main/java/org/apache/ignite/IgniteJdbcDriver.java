@@ -90,101 +90,101 @@ import java.util.logging.*;
  *         <th>Optional</th>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.protocol</b></td>
+ *         <td><b>ignite.client.protocol</b></td>
  *         <td>Communication protocol ({@code TCP} or {@code HTTP}).</td>
  *         <td>{@code TCP}</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.connectTimeout</b></td>
+ *         <td><b>ignite.client.connectTimeout</b></td>
  *         <td>Socket connection timeout.</td>
  *         <td>{@code 0} (infinite timeout)</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.tcp.noDelay</b></td>
+ *         <td><b>ignite.client.tcp.noDelay</b></td>
  *         <td>Flag indicating whether TCP_NODELAY flag should be enabled for outgoing connections.</td>
  *         <td>{@code true}</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.ssl.enabled</b></td>
+ *         <td><b>ignite.client.ssl.enabled</b></td>
  *         <td>Flag indicating that {@code SSL} is needed for connection.</td>
  *         <td>{@code false}</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.ssl.protocol</b></td>
+ *         <td><b>ignite.client.ssl.protocol</b></td>
  *         <td>SSL protocol ({@code SSL} or {@code TLS}).</td>
  *         <td>{@code TLS}</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.ssl.key.algorithm</b></td>
+ *         <td><b>ignite.client.ssl.key.algorithm</b></td>
  *         <td>Key manager algorithm.</td>
  *         <td>{@code SunX509}</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.ssl.keystore.location</b></td>
+ *         <td><b>ignite.client.ssl.keystore.location</b></td>
  *         <td>Key store to be used by client to connect with Ignite topology.</td>
  *         <td>&nbsp;</td>
  *         <td>No (if {@code SSL} is enabled)</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.ssl.keystore.password</b></td>
+ *         <td><b>ignite.client.ssl.keystore.password</b></td>
  *         <td>Key store password.</td>
  *         <td>&nbsp;</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.ssl.keystore.type</b></td>
+ *         <td><b>ignite.client.ssl.keystore.type</b></td>
  *         <td>Key store type.</td>
  *         <td>{@code jks}</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.ssl.truststore.location</b></td>
+ *         <td><b>ignite.client.ssl.truststore.location</b></td>
  *         <td>Trust store to be used by client to connect with Ignite topology.</td>
  *         <td>&nbsp;</td>
  *         <td>No (if {@code SSL} is enabled)</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.ssl.truststore.password</b></td>
+ *         <td><b>ignite.client.ssl.truststore.password</b></td>
  *         <td>Trust store password.</td>
  *         <td>&nbsp;</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.ssl.truststore.type</b></td>
+ *         <td><b>ignite.client.ssl.truststore.type</b></td>
  *         <td>Trust store type.</td>
  *         <td>{@code jks}</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.credentials</b></td>
+ *         <td><b>ignite.client.credentials</b></td>
  *         <td>Client credentials used in authentication process.</td>
  *         <td>&nbsp;</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.cache.top</b></td>
+ *         <td><b>ignite.client.cache.top</b></td>
  *         <td>
  *             Flag indicating that topology is cached internally. Cache will be refreshed in
- *             the background with interval defined by {@code gg.client.topology.refresh}
+ *             the background with interval defined by {@code ignite.client.topology.refresh}
  *             property (see below).
  *         </td>
  *         <td>{@code false}</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.topology.refresh</b></td>
+ *         <td><b>ignite.client.topology.refresh</b></td>
  *         <td>Topology cache refresh frequency (ms).</td>
  *         <td>{@code 2000}</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>gg.client.idleTimeout</b></td>
+ *         <td><b>ignite.client.idleTimeout</b></td>
  *         <td>Maximum amount of time that connection can be idle before it is closed (ms).</td>
  *         <td>{@code 30000}</td>
  *         <td>Yes</td>
@@ -225,7 +225,7 @@ import java.util.logging.*;
 @SuppressWarnings("JavadocReference")
 public class IgniteJdbcDriver implements Driver {
     /** Prefix for property names. */
-    private static final String PROP_PREFIX = "gg.jdbc.";
+    private static final String PROP_PREFIX = "ignite.jdbc.";
 
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
@@ -236,11 +236,8 @@ public class IgniteJdbcDriver implements Driver {
     /** Cache name property name. */
     public static final String PROP_CACHE = PROP_PREFIX + "cache";
 
-    /** Node ID URL parameter name. */
-    public static final String PARAM_NODE_ID = "nodeId";
-
     /** Node ID property name. */
-    public static final String PROP_NODE_ID = PROP_PREFIX + PARAM_NODE_ID;
+    public static final String PROP_NODE_ID = PROP_PREFIX + "nodeId";
 
     /** URL prefix. */
     public static final String URL_PREFIX = "jdbc:ignite://";
@@ -290,40 +287,40 @@ public class IgniteJdbcDriver implements Driver {
         props[1] = new PropertyInfo("Port number", info.getProperty(PROP_PORT), "");
         props[2] = new PropertyInfo("Cache name", info.getProperty(PROP_CACHE), "");
         props[3] = new PropertyInfo("Node ID", info.getProperty(PROP_NODE_ID, ""));
-        props[4] = new PropertyInfo("gg.client.protocol", info.getProperty("gg.client.protocol", "TCP"),
+        props[4] = new PropertyInfo("ignite.client.protocol", info.getProperty("ignite.client.protocol", "TCP"),
             "Communication protocol (TCP or HTTP).");
-        props[5] = new PropertyInfo("gg.client.connectTimeout", info.getProperty("gg.client.connectTimeout", "0"),
+        props[5] = new PropertyInfo("ignite.client.connectTimeout", info.getProperty("ignite.client.connectTimeout", "0"),
             "Socket connection timeout.");
-        props[6] = new PropertyInfo("gg.client.tcp.noDelay", info.getProperty("gg.client.tcp.noDelay", "true"),
+        props[6] = new PropertyInfo("ignite.client.tcp.noDelay", info.getProperty("ignite.client.tcp.noDelay", "true"),
             "Flag indicating whether TCP_NODELAY flag should be enabled for outgoing connections.");
-        props[7] = new PropertyInfo("gg.client.ssl.enabled", info.getProperty("gg.client.ssl.enabled", "false"),
+        props[7] = new PropertyInfo("ignite.client.ssl.enabled", info.getProperty("ignite.client.ssl.enabled", "false"),
             "Flag indicating that SSL is needed for connection.");
-        props[8] = new PropertyInfo("gg.client.ssl.protocol", info.getProperty("gg.client.ssl.protocol", "TLS"),
+        props[8] = new PropertyInfo("ignite.client.ssl.protocol", info.getProperty("ignite.client.ssl.protocol", "TLS"),
             "SSL protocol.");
-        props[9] = new PropertyInfo("gg.client.ssl.key.algorithm", info.getProperty("gg.client.ssl.key.algorithm",
+        props[9] = new PropertyInfo("ignite.client.ssl.key.algorithm", info.getProperty("ignite.client.ssl.key.algorithm",
             "SunX509"), "Key manager algorithm.");
-        props[10] = new PropertyInfo("gg.client.ssl.keystore.location",
-            info.getProperty("gg.client.ssl.keystore.location", ""),
+        props[10] = new PropertyInfo("ignite.client.ssl.keystore.location",
+            info.getProperty("ignite.client.ssl.keystore.location", ""),
             "Key store to be used by client to connect with Ignite topology.");
-        props[11] = new PropertyInfo("gg.client.ssl.keystore.password",
-            info.getProperty("gg.client.ssl.keystore.password", ""), "Key store password.");
-        props[12] = new PropertyInfo("gg.client.ssl.keystore.type", info.getProperty("gg.client.ssl.keystore.type",
+        props[11] = new PropertyInfo("ignite.client.ssl.keystore.password",
+            info.getProperty("ignite.client.ssl.keystore.password", ""), "Key store password.");
+        props[12] = new PropertyInfo("ignite.client.ssl.keystore.type", info.getProperty("ignite.client.ssl.keystore.type",
             "jks"), "Key store type.");
-        props[13] = new PropertyInfo("gg.client.ssl.truststore.location",
-            info.getProperty("gg.client.ssl.truststore.location", ""),
+        props[13] = new PropertyInfo("ignite.client.ssl.truststore.location",
+            info.getProperty("ignite.client.ssl.truststore.location", ""),
             "Trust store to be used by client to connect with Ignite topology.");
-        props[14] = new PropertyInfo("gg.client.ssl.keystore.password",
-            info.getProperty("gg.client.ssl.truststore.password", ""), "Trust store password.");
-        props[15] = new PropertyInfo("gg.client.ssl.truststore.type", info.getProperty("gg.client.ssl.truststore.type",
+        props[14] = new PropertyInfo("ignite.client.ssl.keystore.password",
+            info.getProperty("ignite.client.ssl.truststore.password", ""), "Trust store password.");
+        props[15] = new PropertyInfo("ignite.client.ssl.truststore.type", info.getProperty("ignite.client.ssl.truststore.type",
             "jks"), "Trust store type.");
-        props[16] = new PropertyInfo("gg.client.credentials", info.getProperty("gg.client.credentials", ""),
+        props[16] = new PropertyInfo("ignite.client.credentials", info.getProperty("ignite.client.credentials", ""),
             "Client credentials used in authentication process.");
-        props[17] = new PropertyInfo("gg.client.cache.top", info.getProperty("gg.client.cache.top", "false"),
+        props[17] = new PropertyInfo("ignite.client.cache.top", info.getProperty("ignite.client.cache.top", "false"),
             "Flag indicating that topology is cached internally. Cache will be refreshed in the background with " +
                 "interval defined by topologyRefreshFrequency property (see below).");
-        props[18] = new PropertyInfo("gg.client.topology.refresh", info.getProperty("gg.client.topology.refresh",
+        props[18] = new PropertyInfo("ignite.client.topology.refresh", info.getProperty("ignite.client.topology.refresh",
             "2000"), "Topology cache refresh frequency (ms).");
-        props[19] = new PropertyInfo("gg.client.idleTimeout", info.getProperty("gg.client.idleTimeout", "30000"),
+        props[19] = new PropertyInfo("ignite.client.idleTimeout", info.getProperty("ignite.client.idleTimeout", "30000"),
             "Maximum amount of time that connection can be idle before it is closed (ms).");
 
         return props;

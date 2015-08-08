@@ -57,7 +57,7 @@ public class IgniteCacheNearReadCommittedTest extends GridCacheAbstractSelfTest 
 
         cache.put(key, key);
 
-        assertEquals(1, cache.localSize());
+        assertEquals(1, cache.localSize(CachePeekMode.ALL));
 
         try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             assertEquals(key, cache.get(key));
@@ -67,6 +67,6 @@ public class IgniteCacheNearReadCommittedTest extends GridCacheAbstractSelfTest 
 
         ignite(1).cache(null).remove(key); // Remove from primary node.
 
-        assertEquals(0, cache.localSize());
+        assertEquals(0, cache.localSize(CachePeekMode.ALL));
     }
 }

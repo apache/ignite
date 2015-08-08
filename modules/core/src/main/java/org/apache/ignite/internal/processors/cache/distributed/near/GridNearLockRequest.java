@@ -77,6 +77,9 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** Flag indicating whether cache operation requires a previous value. */
     private boolean retVal;
 
+    /** {@code True} if first lock request for lock operation sent from client node. */
+    private boolean firstClientReq;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -95,6 +98,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param implicitTx Flag to indicate that transaction is implicit.
      * @param implicitSingleTx Implicit-transaction-with-one-key flag.
      * @param isRead Indicates whether implicit lock is for read or write operation.
+     * @param retVal Return value flag.
      * @param isolation Transaction isolation.
      * @param isInvalidate Invalidation flag.
      * @param timeout Lock timeout.
@@ -104,6 +108,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
+     * @param skipStore Skip store flag.
+     * @param firstClientReq {@code True} if first lock request for lock operation sent from client node.
      */
     public GridNearLockRequest(
         int cacheId,
@@ -125,7 +131,9 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         boolean syncCommit,
         @Nullable UUID subjId,
         int taskNameHash,
-        long accessTtl
+        long accessTtl,
+        boolean skipStore,
+        boolean firstClientReq
     ) {
         super(
             cacheId,
@@ -140,7 +148,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             isInvalidate,
             timeout,
             keyCnt,
-            txSize);
+            txSize,
+            skipStore);
 
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
@@ -152,8 +161,16 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         this.taskNameHash = taskNameHash;
         this.accessTtl = accessTtl;
         this.retVal = retVal;
+        this.firstClientReq = firstClientReq;
 
         dhtVers = new GridCacheVersion[keyCnt];
+    }
+
+    /**
+     * @return {@code True} if first lock request for lock operation sent from client node.
+     */
+    public boolean firstClientRequest() {
+        return firstClientReq;
     }
 
     /**
@@ -329,7 +346,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         }
 
         switch (writer.state()) {
-            case 18:
+            case 20:
                 if (!writer.writeLong("accessTtl", accessTtl))
                     return false;
 
@@ -348,6 +365,12 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 21:
+                if (!writer.writeBoolean("firstClientReq", firstClientReq))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
                 if (!writer.writeBoolean("hasTransforms", hasTransforms))
                     return false;
 
@@ -371,31 +394,31 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 writer.incrementState();
 
-            case 30:
+            case 29:
                 if (!writer.writeBoolean("retVal", retVal))
                     return false;
 
                 writer.incrementState();
 
-            case 31:
+            case 30:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 32:
+            case 31:
                 if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
                 writer.incrementState();
 
-            case 33:
+            case 32:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 34:
+            case 33:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -441,24 +464,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 21:
-                hasTransforms = reader.readBoolean("hasTransforms");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 22:
-                implicitSingleTx = reader.readBoolean("implicitSingleTx");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 23:
-                implicitTx = reader.readBoolean("implicitTx");
+                firstClientReq = reader.readBoolean("firstClientReq");
 
                 if (!reader.isLastRead())
                     return false;
@@ -466,7 +473,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 24:
-                miniId = reader.readIgniteUuid("miniId");
+                hasTransforms = reader.readBoolean("hasTransforms");
 
                 if (!reader.isLastRead())
                     return false;
@@ -474,6 +481,38 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 25:
+                implicitSingleTx = reader.readBoolean("implicitSingleTx");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 26:
+                implicitTx = reader.readBoolean("implicitTx");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 27:
+                miniId = reader.readIgniteUuid("miniId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 29:
+                retVal = reader.readBoolean("retVal");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 30:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())

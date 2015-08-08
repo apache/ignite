@@ -60,12 +60,21 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderOffHeapFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledOffHeapFullApiSelfTest.class);
 
+        // One node with off-heap tiered mode.
+        suite.addTestSuite(GridCacheLocalOffHeapTieredFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheLocalAtomicOffHeapTieredFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedOffHeapTieredFullApiSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedOffHeapTieredFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicOffHeapTieredFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderOffHeapTieredFullApiSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedNearDisabledOffHeapTieredFullApiSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedNearDisabledOffHeapTieredAtomicFullApiSelfTest.class);
+
         // Multi-node.
         suite.addTestSuite(GridCacheReplicatedMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedMultiNodeP2PDisabledFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicPrimaryWriteOrderMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedRendezvousAffinityMultiNodeFullApiSelfTest.class);
 
         suite.addTestSuite(GridCachePartitionedMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedCopyOnReadDisabledMultiNodeFullApiSelfTest.class);
@@ -91,6 +100,14 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicNearOnlyMultiNodeP2PDisabledFullApiSelfTest.class);
 
+        suite.addTestSuite(GridCachePartitionedFairAffinityMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedNearDisabledFairAffinityMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicFairAffinityMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicNearEnabledFairAffinityMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderFairAffinityMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheNearOnlyFairAffinityMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicClientOnlyFairAffinityMultiNodeFullApiSelfTest.class);
+
         suite.addTestSuite(GridCacheNearReloadAllSelfTest.class);
         suite.addTestSuite(GridCacheColocatedReloadAllSelfTest.class);
         suite.addTestSuite(GridCacheAtomicReloadAllSelfTest.class);
@@ -105,16 +122,18 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicPrimaryWrityOrderOffHeapMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledOffHeapMultiNodeFullApiSelfTest.class);
 
-        // Private cache API.
-        suite.addTestSuite(GridCacheExLocalFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheExReplicatedFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheExNearFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheExColocatedFullApiSelfTest.class);
+        // Multi-node with off-heap tiered mode.
+        suite.addTestSuite(GridCacheReplicatedOffHeapTieredMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedOffHeapTieredMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicOffHeapTieredMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicPrimaryWrityOrderOffHeapTieredMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedNearDisabledOffHeapTieredMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedNearDisabledAtomicOffHeapTieredMultiNodeFullApiSelfTest.class);
 
-//        Multithreaded // TODO: GG-708
-//        suite.addTestSuite(GridCacheLocalFullApiMultithreadedSelfTest.class);
-//        suite.addTestSuite(GridCacheReplicatedFullApiMultithreadedSelfTest.class);
-//        suite.addTestSuite(GridCachePartitionedFullApiMultithreadedSelfTest.class);
+        // Multithreaded
+        suite.addTestSuite(GridCacheLocalFullApiMultithreadedSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedFullApiMultithreadedSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedFullApiMultithreadedSelfTest.class);
 
         return suite;
     }

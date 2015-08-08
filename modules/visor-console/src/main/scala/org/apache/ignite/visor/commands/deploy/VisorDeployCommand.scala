@@ -18,18 +18,19 @@
 package org.apache.ignite.visor.commands.deploy
 
 import org.apache.ignite.internal.util.io.GridFilenameUtils
+import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.util.{IgniteUtils => U}
+import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.common.VisorConsoleCommand
+import org.apache.ignite.visor.visor._
 
 import com.jcraft.jsch._
 
 import java.io._
 import java.net.UnknownHostException
 import java.util.concurrent._
-
-import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands.VisorConsoleCommand
-import org.apache.ignite.visor.visor._
 
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
@@ -142,92 +143,73 @@ private case class VisorCopier(
      * @return `IGNITE_HOME` value.
      */
     private def ggHome(): String = {
-        /**
-         * Non interactively execute command.
-         *
-         * @param cmd command.
-         * @return command results
-         */
+        // Non interactively execute command.
         def exec(cmd: String) = {
-            val ch = ses.openChannel("exec").asInstanceOf[ChannelExec]
-
             try {
-                ch.setCommand(cmd)
+                val ch = ses.openChannel("exec").asInstanceOf[ChannelExec]
 
-                ch.connect()
+                try {
+                    ch.setCommand(cmd)
 
-                new BufferedReader(new InputStreamReader(ch.getInputStream)).readLine
+                    ch.connect()
+
+                    new BufferedReader(new InputStreamReader(ch.getInputStream)).readLine
+                }
+                finally {
+                    if (ch.isConnected)
+                        ch.disconnect()
+                }
             }
             catch {
-                case e: JSchException =>
+                case e: Throwable =>
                     warn(e.getMessage)
 
                     ""
             }
-            finally {
-                if (ch.isConnected)
-                    ch.disconnect()
-            }
         }
 
-        /**
-         * Interactively execute command.
-         *
-         * @param cmd command.
-         * @return command results.
-         */
-        def shell(cmd: String): String = {
-            val ch = ses.openChannel("shell").asInstanceOf[ChannelShell]
-
+        // Interactively execute command.
+        def shell(cmd: String) = {
             try {
-                ch.connect()
+                val ch = ses.openChannel("shell").asInstanceOf[ChannelShell]
 
-                // Added to skip login message.
-                U.sleep(1000)
+                try {
+                    ch.connect()
 
-                val writer = new PrintStream(ch.getOutputStream, true)
+                    // Added to skip login message.
+                    U.sleep(1000)
 
-                val reader = new BufferedReader(new InputStreamReader(ch.getInputStream))
+                    val writer = new PrintStream(ch.getOutputStream, true)
 
-                // Send command.
-                writer.println(cmd)
+                    val reader = new BufferedReader(new InputStreamReader(ch.getInputStream))
 
-                // Read echo command.
-                reader.readLine()
+                    // Send command.
+                    writer.println(cmd)
 
-                // Read command result.
-                reader.readLine()
+                    // Read echo command.
+                    reader.readLine()
+
+                    // Read command result.
+                    reader.readLine()
+                }
+                finally {
+                    if (ch.isConnected)
+                        ch.disconnect()
+                }
             }
             catch {
-                case e: JSchException =>
+                case e: Throwable =>
                     warn(e.getMessage)
 
                     ""
             }
-            finally {
-                if (ch.isConnected)
-                    ch.disconnect()
-            }
         }
 
-        /**
-         * Checks whether host is running Windows OS.
-         *
-         * @return Whether host is running Windows OS.
-         * @throws JSchException In case of SSH error.
-         */
-        def windows = {
-            try
-                exec("cmd.exe") != null
-            catch {
-                case ignored: IOException => false
-            }
-        }
-
-        if (windows)
-            exec("echo %IGNITE_HOME%")
+        // Use interactive shell under nix because need read env from .profile and etc.
+        if (F.isEmpty(exec("cmd.exe")))
+            shell("echo $IGNITE_HOME")
         else
-            shell("echo $IGNITE_HOME") // Use interactive shell under nix because need read env from .profile and etc.
+            exec("echo %IGNITE_HOME%")
     }
 
     /**
@@ -326,26 +308,14 @@ private case class VisorCopier(
  *         Copies file or directory to remote host (private key authentication).
  * }}}
  */
-class VisorDeployCommand {
+class VisorDeployCommand extends VisorConsoleCommand {
+    @impl protected val name: String = "deploy"
+
     /** Default port. */
     private val DFLT_PORT = 22
 
     /** String that specifies range of IPs. */
     private val RANGE_SMB = "~"
-
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        nl()
-
-        warn(errMsgs: _*)
-        warn("Type 'help deploy' to see how to use this command.")
-    }
 
     /**
      * Catch point for missing arguments case.
@@ -385,7 +355,7 @@ class VisorDeployCommand {
             try
                 hosts ++= mkHosts(h, dfltUname, dfltPasswd, key.isDefined)
             catch {
-                case e: IllegalArgumentException => scold(e.getMessage).^^
+                case e: IllegalArgumentException => scold(e).^^
             }
         })
 
@@ -432,7 +402,7 @@ class VisorDeployCommand {
 
             val port =
                 try
-                    if (hostPort.size > 1) hostPort(1).toInt else DFLT_PORT
+                    if (hostPort.length > 1) hostPort(1).toInt else DFLT_PORT
                 catch {
                     case e: NumberFormatException =>
                         scold("Invalid port number: " + hostPort(1)).^^
@@ -447,7 +417,7 @@ class VisorDeployCommand {
             (hosts, port)
         }
 
-        if (arr.size == 1) {
+        if (arr.length == 1) {
             val (hosts, port) = extractHostsPort(arr(0))
 
             val uname = dfltUname getOrElse System.getProperty("user.name")
@@ -455,7 +425,7 @@ class VisorDeployCommand {
 
             hosts.map(VisorHost(_, port, uname, passwd))
         }
-        else if (arr.size == 2) {
+        else if (arr.length == 2) {
             val (hosts, port) = extractHostsPort(arr(1))
 
             arr = arr(0).split(':')
@@ -463,7 +433,7 @@ class VisorDeployCommand {
             val uname = arr(0)
 
             val passwd =
-                if (arr.size > 1)
+                if (arr.length > 1)
                     Some(arr(1))
                 else if (!hasKey)
                     Some(dfltPasswd getOrElse askPassword(uname))
@@ -542,15 +512,18 @@ class VisorDeployCommand {
  * Companion object that does initialization of the command.
  */
 object VisorDeployCommand {
+    /** Singleton command. */
+    private val cmd = new VisorDeployCommand
+
     addHelp(
-        name = "deploy",
+        name = cmd.name,
         shortInfo = "Copies file or folder to remote host.",
         longInfo = List(
             "Copies file or folder to remote host.",
             "Command relies on SFTP protocol."
         ),
         spec = List(
-            "deploy -h={<username>{:<password>}@}<host>{:<port>} {-u=<username>}",
+            s"${cmd.name} -h={<username>{:<password>}@}<host>{:<port>} {-u=<username>}",
             "    {-p=<password>} {-k=<path>} -s=<path> {-d<path>}"
         ),
         args = List(
@@ -586,16 +559,14 @@ object VisorDeployCommand {
             )
         ),
         examples = List(
-            "deploy -h=uname:passwd@host -s=/local/path -d=/remote/path" ->
+            s"${cmd.name} -h=uname:passwd@host -s=/local/path -d=/remote/path" ->
                 "Copies file or folder to remote host (password authentication).",
-            "deploy -h=uname@host -k=ssh-key.pem -s=/local/path -d=/remote/path" ->
+            s"${cmd.name} -h=uname@host -k=ssh-key.pem -s=/local/path -d=/remote/path" ->
                 "Copies file or folder to remote host (private key authentication)."
         ),
-        ref = VisorConsoleCommand(cmd.deploy, cmd.deploy)
+        emptyArgs = cmd.deploy,
+        withArgs = cmd.deploy
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorDeployCommand
 
     /**
      * Singleton.

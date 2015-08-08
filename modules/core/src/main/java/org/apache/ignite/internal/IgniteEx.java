@@ -34,11 +34,9 @@ public interface IgniteEx extends Ignite {
     /**
      * Gets utility cache.
      *
-     * @param keyCls Key class.
-     * @param valCls Value class.
      * @return Utility cache.
      */
-    public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls, Class<V> valCls);
+    public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache();
 
     /**
      * Gets the cache instance for the given name if one is configured or
@@ -49,17 +47,17 @@ public interface IgniteEx extends Ignite {
      * @param name Cache name.
      * @return Cache instance for given name or <tt>null</tt> if one does not exist.
      */
-    @Nullable public <K, V> GridCache<K, V> cachex(@Nullable String name);
+    @Nullable public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name);
 
     /**
      * Gets default cache instance if one is configured or <tt>null</tt> otherwise returning even non-public caches.
-     * The {@link org.apache.ignite.internal.processors.cache.GridCache#name()} method on default instance returns <tt>null</tt>.
+     * The {@link IgniteInternalCache#name()} method on default instance returns <tt>null</tt>.
      *
      * @param <K> Key type.
      * @param <V> Value type.
      * @return Default cache instance.
      */
-    @Nullable public <K, V> GridCache<K, V> cachex();
+    @Nullable public <K, V> IgniteInternalCache<K, V> cachex();
 
     /**
      * Gets configured cache instance that satisfy all provided predicates including non-public caches. If no
@@ -68,7 +66,7 @@ public interface IgniteEx extends Ignite {
      * @param p Predicates. If none provided - all configured caches will be returned.
      * @return Configured cache instances that satisfy all provided predicates.
      */
-    public Collection<GridCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super GridCache<?, ?>>... p);
+    public Collection<IgniteInternalCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p);
 
     /**
      * Checks if the event type is user-recordable.
@@ -88,13 +86,6 @@ public interface IgniteEx extends Ignite {
      * @throws IllegalArgumentException If {@code types} contains user event type.
      */
     public boolean allEventsUserRecordable(int[] types);
-
-    /**
-     * Gets list of compatible versions.
-     *
-     * @return Compatible versions.
-     */
-    public Collection<String> compatibleVersions();
 
     /**
      * Whether or not remote JMX management is enabled for this node.

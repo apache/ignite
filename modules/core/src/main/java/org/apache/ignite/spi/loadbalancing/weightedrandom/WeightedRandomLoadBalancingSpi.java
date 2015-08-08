@@ -108,7 +108,7 @@ import static org.apache.ignite.events.EventType.*;
  * <p>
  * <h1 class="header">Configuration</h1>
  * In order to use this load balancer, you should configure your grid instance
- * to use {@code GridRandomLoadBalancingSpi} either from Spring XML file or
+ * to use {@link WeightedRandomLoadBalancingSpi} either from Spring XML file or
  * directly. The following configuration parameters are supported:
  * <h2 class="header">Mandatory</h2>
  * This SPI has no mandatory configuration parameters.
@@ -126,7 +126,7 @@ import static org.apache.ignite.events.EventType.*;
  * </ul>
  * Below is Java configuration example:
  * <pre name="code" class="java">
- * GridWeightedRandomLoadBalancingSpi = new GridWeightedLoadBalancingSpi();
+ * WeightedRandomLoadBalancingSpi spi = new WeightedRandomLoadBalancingSpi();
  *
  * // Configure SPI to used weighted
  * // random load balancing.
@@ -135,7 +135,7 @@ import static org.apache.ignite.events.EventType.*;
  * // Set weight for the local node.
  * spi.setWeight( *);
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default load balancing SPI.
  * cfg.setLoadBalancingSpi(spi);
@@ -143,10 +143,10 @@ import static org.apache.ignite.events.EventType.*;
  * // Starts grid.
  * G.start(cfg);
  * </pre>
- * Here is how you can configure {@code GridRandomLoadBalancingSpi} using Spring XML configuration:
+ * Here is how you can configure {@link WeightedRandomLoadBalancingSpi} using Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
- *     &lt;bean class="org.apache.ignite.spi.loadBalancing.weightedrandom.GridWeightedRandomLoadBalancingSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.loadBalancing.weightedrandom.WeightedRandomLoadBalancingSpi"&gt;
  *         &lt;property name="useWeights" value="true"/&gt;
  *         &lt;property name="nodeWeight" value="10"/&gt;
  *     &lt;/bean&gt;

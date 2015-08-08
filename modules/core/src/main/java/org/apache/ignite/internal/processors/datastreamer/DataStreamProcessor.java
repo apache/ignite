@@ -22,10 +22,12 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.stream.*;
 import org.apache.ignite.thread.*;
@@ -62,13 +64,15 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     public DataStreamProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
-                assert msg instanceof DataStreamerRequest;
+        if (!ctx.clientNode()) {
+            ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
+                @Override public void onMessage(UUID nodeId, Object msg) {
+                    assert msg instanceof DataStreamerRequest;
 
-                processRequest(nodeId, (DataStreamerRequest)msg);
-            }
-        });
+                    processRequest(nodeId, (DataStreamerRequest)msg);
+                }
+            });
+        }
 
         marsh = ctx.config().getMarshaller();
     }
@@ -112,7 +116,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        ctx.io().removeMessageListener(TOPIC_DATASTREAM);
+        if (!ctx.clientNode())
+            ctx.io().removeMessageListener(TOPIC_DATASTREAM);
 
         busyLock.block();
 
@@ -136,6 +141,12 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Stopped data streamer processor.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        for (DataStreamerImpl<?, ?> ldr : ldrs)
+            ldr.onDisconnected(reconnectFut);
     }
 
     /**
@@ -173,7 +184,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
      * @param nodeId Sender ID.
      * @param req Request.
      */
-    private void processRequest(UUID nodeId, DataStreamerRequest req) {
+    private void processRequest(final UUID nodeId, final DataStreamerRequest req) {
         if (!busyLock.enterBusy()) {
             if (log.isDebugEnabled())
                 log.debug("Ignoring data load request (node is stopping): " + req);
@@ -184,6 +195,31 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         try {
             if (log.isDebugEnabled())
                 log.debug("Processing data load request: " + req);
+
+            AffinityTopologyVersion locAffVer = ctx.cache().context().exchange().readyAffinityVersion();
+            AffinityTopologyVersion rmtAffVer = req.topologyVersion();
+
+            if (locAffVer.compareTo(rmtAffVer) < 0) {
+                if (log.isDebugEnabled())
+                    log.debug("Received request has higher affinity topology version [request=" + req +
+                        ", locTopVer=" + locAffVer + ", rmtTopVer=" + rmtAffVer + ']');
+
+                IgniteInternalFuture<?> fut = ctx.cache().context().exchange().affinityReadyFuture(rmtAffVer);
+
+                if (fut != null && !fut.isDone()) {
+                    fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                        @Override public void apply(IgniteInternalFuture<?> t) {
+                            ctx.closure().runLocalSafe(new Runnable() {
+                                @Override public void run() {
+                                    processRequest(nodeId, req);
+                                }
+                            }, false);
+                        }
+                    });
+
+                    return;
+                }
+            }
 
             Object topic;
 
@@ -229,6 +265,9 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
             try {
                 updater = marsh.unmarshal(req.updaterBytes(), clsLdr);
+
+                if (updater != null)
+                    ctx.resource().injectGeneric(updater);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to unmarshal message [nodeId=" + nodeId + ", req=" + req + ']', e);

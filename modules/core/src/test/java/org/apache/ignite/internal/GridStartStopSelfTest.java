@@ -68,10 +68,14 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * TODO: GG-7704
+     * TODO: IGNITE-580.
+     *
      * @throws Exception If failed.
      */
-    public void _testStopWhileInUse() throws Exception {
+    public void testStopWhileInUse() throws Exception {
+        // Test works too long.
+        fail("https://issues.apache.org/jira/browse/IGNITE-580");
+        
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setConnectorConfiguration(null);

@@ -93,6 +93,7 @@ public class VisorRestConfiguration implements Serializable {
     public boolean restEnabled() {
         return restEnabled;
     }
+
     /**
      * @return Whether or not SSL is enabled for TCP binary protocol.
      */

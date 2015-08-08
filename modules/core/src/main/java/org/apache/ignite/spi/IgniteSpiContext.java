@@ -24,7 +24,6 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.swapspace.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -253,30 +252,6 @@ public interface IgniteSpiContext {
     public <K> boolean containsKey(String cacheName, K key);
 
     /**
-     * Writes object to swap.
-     *
-     * @param spaceName Swap space name.
-     * @param key Key.
-     * @param val Value.
-     * @param ldr Class loader (optional).
-     * @throws IgniteException If any exception occurs.
-     */
-    public void writeToSwap(String spaceName, Object key, @Nullable Object val, @Nullable ClassLoader ldr)
-        throws IgniteException;
-
-    /**
-     * Reads object from swap.
-     *
-     * @param spaceName Swap space name.
-     * @param key Key.
-     * @param ldr Class loader (optional).
-     * @return Swapped value.
-     * @throws IgniteException If any exception occurs.
-     */
-    @Nullable public <T> T readFromSwap(String spaceName, SwapKey key, @Nullable ClassLoader ldr)
-        throws IgniteException;
-
-    /**
      * Calculates partition number for given key.
      *
      * @param cacheName Cache name.
@@ -286,23 +261,13 @@ public interface IgniteSpiContext {
     public int partition(String cacheName, Object key);
 
     /**
-     * Removes object from swap.
-     *
-     * @param spaceName Swap space name.
-     * @param key Key.
-     * @param ldr Class loader (optional).
-     * @throws IgniteException If any exception occurs.
-     */
-    public void removeFromSwap(String spaceName, Object key, @Nullable ClassLoader ldr) throws IgniteException;
-
-    /**
      * Validates that new node can join grid topology, this method is called on coordinator
      * node before new node joins topology.
      *
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable public IgniteSpiNodeValidationResult validateNode(ClusterNode node);
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
 
     /**
      * Gets collection of authenticated subjects together with their permissions.
@@ -310,7 +275,7 @@ public interface IgniteSpiContext {
      * @return Collection of authenticated subjects.
      * @throws IgniteException If any exception occurs.
      */
-    public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteException;
+    public Collection<SecuritySubject> authenticatedSubjects() throws IgniteException;
 
     /**
      * Gets security subject based on subject ID.
@@ -319,19 +284,7 @@ public interface IgniteSpiContext {
      * @return Authorized security subject.
      * @throws IgniteException If any exception occurs.
      */
-    public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteException;
-
-    /**
-     * Reads swapped cache value from off-heap and swap.
-     *
-     * @param spaceName Off-heap space name.
-     * @param key Key.
-     * @param ldr Class loader for unmarshalling.
-     * @return Value.
-     * @throws IgniteException If any exception occurs.
-     */
-    @Nullable public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
-        @Nullable ClassLoader ldr) throws IgniteException;
+    public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteException;
 
     /**
      * Gets message formatter.
@@ -346,4 +299,32 @@ public interface IgniteSpiContext {
      * @return Message factory.
      */
     public MessageFactory messageFactory();
+
+    /**
+     * @return {@code True} if node started shutdown sequence.
+     */
+    public boolean isStopping();
+
+    /**
+     * @param nodeId Node ID.
+     * @param warning Warning to be shown on all cluster nodes.
+     * @return If node was failed.
+     */
+    public boolean tryFailNode(UUID nodeId, @Nullable String warning);
+
+    /**
+     * @param nodeId Node ID.
+     * @param warning Warning to be shown on all cluster nodes.
+     */
+    public void failNode(UUID nodeId, @Nullable String warning);
+
+    /**
+     * @param c Timeout object.
+     */
+    public void addTimeoutObject(IgniteSpiTimeoutObject c);
+
+    /**
+     * @param c Timeout object.
+     */
+    public void removeTimeoutObject(IgniteSpiTimeoutObject c);
 }

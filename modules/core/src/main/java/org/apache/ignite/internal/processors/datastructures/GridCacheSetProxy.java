@@ -57,6 +57,9 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     /** Busy lock. */
     private GridSpinBusyLock busyLock;
 
+    /** Check removed flag. */
+    private boolean rmvCheck;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -75,6 +78,13 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         gate = cctx.gate();
 
         busyLock = new GridSpinBusyLock();
+    }
+
+    /**
+     * @return Set delegate.
+     */
+    public GridCacheSetImpl delegate() {
+        return delegate;
     }
 
     /**
@@ -510,8 +520,43 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
      * Enters busy state.
      */
     private void enterBusy() {
+        boolean rmvd;
+
+        if (rmvCheck) {
+            try {
+                rmvd = !delegate().checkHeader();
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+
+            rmvCheck = false;
+
+            if (rmvd) {
+                delegate.removed(true);
+
+                cctx.dataStructures().onRemoved(this);
+
+                throw removedError();
+            }
+        }
+
         if (!busyLock.enterBusy())
-            throw new IllegalStateException("Set has been removed from cache: " + delegate);
+            throw removedError();
+    }
+
+    /**
+     *
+     */
+    public void needCheckNotRemoved() {
+        rmvCheck = true;
+    }
+
+    /**
+     * @return Error.
+     */
+    private IllegalStateException removedError() {
+        return new IllegalStateException("Set has been removed from cache: " + delegate);
     }
 
     /**

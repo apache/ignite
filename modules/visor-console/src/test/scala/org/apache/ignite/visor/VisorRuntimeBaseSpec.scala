@@ -19,12 +19,14 @@ package org.apache.ignite.visor
 
 import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.visor.commands.open.VisorOpenCommand._
+
 import org.scalatest._
 
 /**
  * Base abstract class for unit tests requiring Visor runtime.
  */
-abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FlatSpec with Matchers
+abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FunSpec with Matchers
     with BeforeAndAfterAll with BeforeAndAfterEach {
     assert(num >= 1)
 

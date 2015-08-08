@@ -45,7 +45,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
     private final Map<KeyCacheObject, Deque<GridCacheMvccCandidate>> cands = new HashMap<>();
 
     /** Span lock release future. */
-    @GridToStringInclude
+    @GridToStringExclude
     private final GridFutureAdapter<Object> releaseFut = new GridFutureAdapter<>();
 
     /**

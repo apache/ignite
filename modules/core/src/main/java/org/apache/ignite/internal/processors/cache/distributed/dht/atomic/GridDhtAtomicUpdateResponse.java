@@ -88,6 +88,14 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     }
 
     /**
+     * Sets update error.
+     * @param err
+     */
+    public void onError(IgniteCheckedException err){
+        this.err = err;
+    }
+
+    /**
      * @return Gets update error.
      */
     public IgniteCheckedException error() {

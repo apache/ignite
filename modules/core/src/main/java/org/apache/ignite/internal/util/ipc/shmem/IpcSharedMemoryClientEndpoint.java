@@ -59,8 +59,9 @@ public class IpcSharedMemoryClientEndpoint implements IpcEndpoint {
      * @param outSpace Out space.
      * @param parent Parent logger.
      */
-    public IpcSharedMemoryClientEndpoint(IpcSharedMemorySpace inSpace, IpcSharedMemorySpace outSpace,
-                                         IgniteLogger parent) {
+    public IpcSharedMemoryClientEndpoint(IpcSharedMemorySpace inSpace,
+        IpcSharedMemorySpace outSpace,
+        IgniteLogger parent) {
         assert inSpace != null;
         assert outSpace != null;
 
@@ -112,7 +113,7 @@ public class IpcSharedMemoryClientEndpoint implements IpcEndpoint {
         boolean clear = true;
 
         try {
-            IpcSharedMemoryNativeLoader.load();
+            IpcSharedMemoryNativeLoader.load(log);
 
             sock.connect(new InetSocketAddress("127.0.0.1", port), timeout);
 

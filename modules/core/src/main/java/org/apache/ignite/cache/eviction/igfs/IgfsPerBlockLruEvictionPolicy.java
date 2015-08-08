@@ -34,7 +34,8 @@ import java.util.regex.*;
 /**
  * IGFS eviction policy which evicts particular blocks.
  */
-public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKey, byte[]>, IgfsPerBlockLruEvictionPolicyMXBean, Externalizable {
+public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKey, byte[]>,
+    IgfsPerBlockLruEvictionPolicyMXBean, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
 import org.apache.ignite.internal.managers.collision.*;
@@ -31,8 +32,6 @@ import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.dr.*;
-import org.apache.ignite.internal.processors.cache.dr.os.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
@@ -55,10 +54,11 @@ import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
+import org.apache.ignite.internal.processors.nodevalidation.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.util.spring.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.spring.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -304,6 +304,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Marshaller context. */
     private MarshallerContextImpl marshCtx;
 
+    /** */
+    private ClusterNode locNode;
+
+    /** */
+    private volatile boolean disconnected;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -319,12 +325,15 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param cfg Grid configuration.
      * @param gw Kernal gateway.
      * @param utilityCachePool Utility cache pool.
+     * @param marshCachePool Marshaller cache pool.
      * @param execSvc Public executor service.
      * @param sysExecSvc System executor service.
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc REST executor service.
+     * @param plugins Plugin providers.
+     * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -339,7 +348,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
-        ExecutorService restExecSvc) {
+        ExecutorService restExecSvc,
+        List<PluginProvider> plugins) throws IgniteCheckedException {
         assert grid != null;
         assert cfg != null;
         assert gw != null;
@@ -356,7 +366,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
 
-        marshCtx = new MarshallerContextImpl();
+        marshCtx = new MarshallerContextImpl(plugins);
 
         try {
             spring = SPRING.create(false);
@@ -387,6 +397,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /**
      * @param comp Manager to add.
+     * @param addToList If {@code true} component is added to components list.
      */
     public void add(GridComponent comp, boolean addToList) {
         assert comp != null;
@@ -474,7 +485,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             dataStructuresProc = (DataStructuresProcessor)comp;
         else if (comp instanceof ClusterProcessor)
             cluster = (ClusterProcessor)comp;
-        else
+        else if (!(comp instanceof DiscoveryNodeValidationProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
         if (addToList)
@@ -495,14 +506,18 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean isStopping() {
-        GridKernalState state = gw.getState();
-
-        return state == GridKernalState.STOPPING || state == GridKernalState.STOPPED;
+        return ((IgniteKernal)grid).isStopping();
     }
 
     /** {@inheritDoc} */
     @Override public UUID localNodeId() {
-        return cfg.getNodeId();
+        if (locNode != null)
+            return locNode.id();
+
+        if (discoMgr != null)
+            locNode = discoMgr.localNode();
+
+        return locNode != null ? locNode.id() : config().getNodeId();
     }
 
     /** {@inheritDoc} */
@@ -787,10 +802,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         if (res != null)
             return res;
 
-        if (cls.equals(GridCacheDrManager.class))
-            return (T)new GridOsCacheDrManager();
-        else if (cls.equals(IgniteCacheObjectProcessor.class))
+        if (cls.equals(IgniteCacheObjectProcessor.class))
             return (T)new IgniteCacheObjectProcessorImpl(this);
+
+        if (cls.equals(CacheConflictResolutionManager.class))
+            return null;
 
         throw new IgniteException("Unsupported component type: " + cls);
     }
@@ -893,6 +909,26 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public MarshallerContextImpl marshallerContext() {
         return marshCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean clientNode() {
+        return cfg.isClientMode() || cfg.isDaemon();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean clientDisconnected() {
+        if (locNode == null)
+            locNode = discoMgr != null ? discoMgr.localNode() : null;
+
+        return locNode != null ? (locNode.isClient() && disconnected) : false;
+    }
+
+    /**
+     * @param disconnected Disconnected flag.
+     */
+    void disconnected(boolean disconnected) {
+        this.disconnected = disconnected;
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -99,11 +100,13 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.ensure(timeout >= 0, "timeout cannot be negative");
         A.ensure(txSize >= 0, "transaction size cannot be negative");
 
+        checkTransactional(ctx);
+
         return txStart0(concurrency,
             isolation,
             timeout,
             txSize,
-            ctx.system() ? ctx : null);
+            ctx.systemTx() ? ctx : null);
     }
 
     /** {@inheritDoc} */
@@ -115,13 +118,15 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
+        checkTransactional(ctx);
+
         TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
 
         return txStart0(concurrency,
             isolation,
             cfg.getDefaultTxTimeout(),
             0,
-            ctx.system() ? ctx : null);
+            ctx.systemTx() ? ctx : null);
     }
 
     /**
@@ -135,33 +140,39 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     @SuppressWarnings("unchecked")
     private IgniteInternalTx txStart0(TransactionConcurrency concurrency, TransactionIsolation isolation,
         long timeout, int txSize, @Nullable GridCacheContext sysCacheCtx) {
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
+        cctx.kernalContext().gateway().readLock();
 
-        if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
-            throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
-                "'txSerializableEnabled' configuration property)");
+        try {
+            TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
 
-        IgniteInternalTx tx = cctx.tm().userTx(sysCacheCtx);
+            if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
+                throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
+                    "'txSerializableEnabled' configuration property)");
 
-        if (tx != null)
-            throw new IllegalStateException("Failed to start new transaction " +
-                "(current thread already has a transaction): " + tx);
+            IgniteInternalTx tx = cctx.tm().userTx(sysCacheCtx);
 
-        tx = cctx.tm().newTx(
-            false,
-            false,
-            sysCacheCtx,
-            concurrency,
-            isolation,
-            timeout,
-            false,
-            true,
-            txSize
-        );
+            if (tx != null)
+                throw new IllegalStateException("Failed to start new transaction " +
+                    "(current thread already has a transaction): " + tx);
 
-        assert tx != null;
+            tx = cctx.tm().newTx(
+                false,
+                false,
+                sysCacheCtx,
+                concurrency,
+                isolation,
+                timeout,
+                true,
+                txSize
+            );
 
-        return tx;
+            assert tx != null;
+
+            return tx;
+        }
+        finally {
+            cctx.kernalContext().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -179,5 +190,13 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
         cctx.resetTxMetrics();
+    }
+
+    /**
+     * @param ctx Cache context.
+     */
+    private void checkTransactional(GridCacheContext ctx) {
+        if (!ctx.transactional())
+            throw new IgniteException("Failed to start transaction on non-transactional cache: " + ctx.name());
     }
 }

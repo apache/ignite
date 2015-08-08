@@ -20,18 +20,22 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.*;
 
+import javax.cache.event.*;
+import java.io.*;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
  * Marshaller context implementation.
  */
 public class MarshallerContextImpl extends MarshallerContextAdapter {
-    /** Class names cache update retries count. */
-    private static final int CACHE_UPDATE_RETRIES_CNT = 5;
-
     /** */
     private final CountDownLatch latch = new CountDownLatch(1);
+
+    /** */
+    private final File workDir;
 
     /** */
     private IgniteLogger log;
@@ -39,10 +43,37 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     /** */
     private volatile GridCacheAdapter<Integer, String> cache;
 
+    /** Non-volatile on purpose. */
+    private int failedCnt;
+
+    /**
+     * @param plugins Plugins.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public MarshallerContextImpl(List<PluginProvider> plugins) throws IgniteCheckedException {
+        super(plugins);
+
+        workDir = U.resolveWorkDirectory("marshaller", false);
+    }
+
     /**
      * @param ctx Kernal context.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void onMarshallerCacheReady(GridKernalContext ctx) {
+    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
+            new ContinuousQueryListener(log, workDir),
+            null,
+            ctx.cache().marshallerCache().context().affinityNode(),
+            true
+        );
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void onMarshallerCachePreloaded(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
         log = ctx.log(MarshallerContextImpl.class);
@@ -52,57 +83,114 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         latch.countDown();
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean registerClassName(int id, String clsName) {
-        try {
-            GridCacheAdapter<Integer, String> cache0 = cache;
-
-            if (cache0 == null)
-                return false;
-
-            for (int i = 0; i < CACHE_UPDATE_RETRIES_CNT; i++) {
-                try {
-                    String old;
-
-                    try {
-                        old = cache0.tryPutIfAbsent(id, clsName);
-                    }
-                    catch (GridCacheTryPutFailedException ignored) {
-                        return false;
-                    }
-
-                    if (old != null && !old.equals(clsName))
-                        throw new IgniteException("Type ID collision occurred in OptimizedMarshaller. Use " +
-                            "OptimizedMarshallerIdMapper to resolve it [id=" + id + ", clsName1=" + clsName +
-                            "clsName2=" + old + ']');
-
-                    break;
-                }
-                catch (IgniteCheckedException e) {
-                    if (i == CACHE_UPDATE_RETRIES_CNT - 1)
-                        throw e;
-                    else
-                        U.error(log, "Failed to update marshaller cache, will retry: " + e);
-                }
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-
-        return true;
+    /**
+     * Release marshaller context.
+     */
+    public void onKernalStop() {
+        latch.countDown();
     }
 
     /** {@inheritDoc} */
-    @Override protected String className(int id) {
-        try {
-            if (cache == null)
-                U.awaitQuiet(latch);
+    @Override protected boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
+        GridCacheAdapter<Integer, String> cache0 = cache;
 
-            return cache.get(id);
+        if (cache0 == null)
+            return false;
+
+        String old;
+
+        try {
+            old = cache0.tryPutIfAbsent(id, clsName);
+
+            if (old != null && !old.equals(clsName))
+                throw new IgniteCheckedException("Type ID collision detected [id=" + id + ", clsName1=" + clsName +
+                    ", clsName2=" + old + ']');
+
+            failedCnt = 0;
+
+            return true;
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (CachePartialUpdateCheckedException | GridCacheTryPutFailedException e) {
+            if (++failedCnt > 10) {
+                U.quietAndWarn(log, e, "Failed to register marshalled class for more than 10 times in a row " +
+                    "(may affect performance).");
+
+                failedCnt = 0;
+            }
+
+            return false;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String className(int id) throws IgniteCheckedException {
+        GridCacheAdapter<Integer, String> cache0 = cache;
+
+        if (cache0 == null) {
+            U.awaitQuiet(latch);
+
+            cache0 = cache;
+
+            if (cache0 == null)
+                throw new IllegalStateException("Failed to initialize marshaller context (grid is stopping).");
+        }
+
+        String clsName = cache0.get(id);
+
+        if (clsName == null) {
+            File file = new File(workDir, id + ".classname");
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                clsName = reader.readLine();
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to read class name from file [id=" + id +
+                    ", file=" + file.getAbsolutePath() + ']', e);
+            }
+
+            // Must explicitly put entry to cache to invoke other continuous queries.
+            registerClassName(id, clsName);
+        }
+
+        return clsName;
+    }
+
+    /**
+     */
+    private static class ContinuousQueryListener implements CacheEntryUpdatedListener<Integer, String> {
+        /** */
+        private final IgniteLogger log;
+
+        /** */
+        private final File workDir;
+
+        /**
+         * @param log Logger.
+         * @param workDir Work directory.
+         */
+        private ContinuousQueryListener(IgniteLogger log, File workDir) {
+            this.log = log;
+            this.workDir = workDir;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> events)
+            throws CacheEntryListenerException {
+            for (CacheEntryEvent<? extends Integer, ? extends String> evt : events) {
+                assert evt.getOldValue() == null : "Received non-null old value for system marshaller cache: " + evt;
+
+                File file = new File(workDir, evt.getKey() + ".classname");
+
+                try (Writer writer = new FileWriter(file)) {
+                    writer.write(evt.getValue());
+
+                    writer.flush();
+                }
+                catch (IOException e) {
+                    U.error(log, "Failed to write class name to file [id=" + evt.getKey() +
+                        ", clsName=" + evt.getValue() + ", file=" + file.getAbsolutePath() + ']', e);
+                }
+            }
         }
     }
 }

@@ -66,10 +66,10 @@ public class DirectByteBufferStream {
     private static final short[] SHORT_ARR_EMPTY = new short[0];
 
     /** */
-    private static final int[] INT_ARR_EMPTY = new int[0];
+    private static final int[] INT_ARR_EMPTY = U.EMPTY_INTS;
 
     /** */
-    private static final long[] LONG_ARR_EMPTY = new long[0];
+    private static final long[] LONG_ARR_EMPTY = U.EMPTY_LONGS;
 
     /** */
     private static final float[] FLOAT_ARR_EMPTY = new float[0];

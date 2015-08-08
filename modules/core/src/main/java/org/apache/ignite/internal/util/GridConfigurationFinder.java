@@ -106,45 +106,48 @@ public final class GridConfigurationFinder {
 
         LinkedList<GridTuple3<String, Long, File>> paths = new LinkedList<>();
 
-        for (String name : dir.list()) {
-            File file = new File(dir, name);
+        String[] configs = dir.list();
 
-            if (file.isDirectory())
-                paths.addAll(listFiles(file));
-            else if (file.getName().endsWith(".xml")) {
-                try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-                    boolean springCfg = false;
-                    boolean ggCfg = false;
+        if (configs != null)
+            for (String name : configs) {
+                File file = new File(dir, name);
 
-                    String line;
+                if (file.isDirectory())
+                    paths.addAll(listFiles(file));
+                else if (file.getName().endsWith(".xml")) {
+                    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                        boolean springCfg = false;
+                        boolean ggCfg = false;
 
-                    while ((line = reader.readLine()) != null) {
-                        if (line.contains("http://www.springframework.org/schema/beans"))
-                            springCfg = true;
+                        String line;
 
-                        if (line.contains("class=\"org.apache.ignite.configuration.IgniteConfiguration\""))
-                            ggCfg = true;
+                        while ((line = reader.readLine()) != null) {
+                            if (line.contains("http://www.springframework.org/schema/beans"))
+                                springCfg = true;
 
-                        if (springCfg && ggCfg)
-                            break;
-                    }
+                            if (line.contains("class=\"org.apache.ignite.configuration.IgniteConfiguration\""))
+                                ggCfg = true;
 
-                    if (springCfg) {
-                        String path = file.getAbsolutePath().substring(U.getIgniteHome().length());
+                            if (springCfg && ggCfg)
+                                break;
+                        }
 
-                        if (path.startsWith(File.separator))
-                            path = path.substring(File.separator.length());
+                        if (springCfg) {
+                            String path = file.getAbsolutePath().substring(U.getIgniteHome().length());
 
-                        if (!path.equals(DFLT_CFG)) {
-                            if (!ggCfg)
-                                path = Q_PREFIX + ' ' + path;
+                            if (path.startsWith(File.separator))
+                                path = path.substring(File.separator.length());
 
-                            paths.add(F.t(path, file.lastModified(), file));
+                            if (!path.equals(DFLT_CFG)) {
+                                if (!ggCfg)
+                                    path = Q_PREFIX + ' ' + path;
+
+                                paths.add(F.t(path, file.lastModified(), file));
+                            }
                         }
                     }
                 }
             }
-        }
 
         return paths;
     }

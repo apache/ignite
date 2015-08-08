@@ -49,6 +49,7 @@ public interface ComputeJobContinuation {
      * language. Basically, the job is held to be continued later, hence the name of the method.
      *
      * @return Always returns {@code null} for convenience to be used in code with return statement.
+     * @throws IllegalStateException If job has been already held before.
      */
     @Nullable public <T> T holdcc();
 
@@ -71,6 +72,7 @@ public interface ComputeJobContinuation {
      *
      * @param timeout Timeout in milliseconds after which job will be automatically resumed.
      * @return Always returns {@code null} for convenience to be used in code with return statement.
+     * @throws IllegalStateException If job has been already held before
      */
     @Nullable public <T> T holdcc(long timeout);
 

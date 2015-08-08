@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.h2.api.*;
 import org.h2.command.ddl.*;
@@ -27,6 +28,7 @@ import org.h2.message.*;
 import org.h2.result.*;
 import org.h2.schema.*;
 import org.h2.table.*;
+import org.h2.value.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -104,7 +106,7 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If row was found.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean onSwap(Object key) throws IgniteCheckedException {
+    public boolean onSwap(CacheObject key) throws IgniteCheckedException {
         return onSwapUnswap(key, null);
     }
 
@@ -116,7 +118,7 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If row was found.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean onUnswap(Object key, Object val) throws IgniteCheckedException {
+    public boolean onUnswap(CacheObject key, CacheObject val) throws IgniteCheckedException {
         assert val != null : "Key=" + key;
 
         return onSwapUnswap(key, val);
@@ -131,14 +133,14 @@ public class GridH2Table extends TableBase {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean onSwapUnswap(Object key, @Nullable Object val) throws IgniteCheckedException {
+    private boolean onSwapUnswap(CacheObject key, @Nullable CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
         GridH2TreeIndex pk = pk();
 
         assert desc != null;
 
-        GridH2AbstractKeyValueRow row = desc.createRow(key, null, 0); // Create search row.
+        GridH2Row searchRow = desc.createRow(key, null, 0);
 
         GridUnsafeMemory mem = desc.memory();
 
@@ -148,7 +150,7 @@ public class GridH2Table extends TableBase {
             desc.guard().begin();
 
         try {
-            row = pk.findOne(row);
+            GridH2AbstractKeyValueRow row = (GridH2AbstractKeyValueRow)pk.findOne(searchRow);
 
             if (row == null)
                 return false;
@@ -156,7 +158,7 @@ public class GridH2Table extends TableBase {
             if (val == null)
                 row.onSwap();
             else
-                row.onUnswap(val);
+                row.onUnswap(val, false);
 
             return true;
         }
@@ -295,15 +297,17 @@ public class GridH2Table extends TableBase {
      * @param key Key.
      * @param val Value.
      * @param expirationTime Expiration time.
-     * @return {@code True} if operation succeeded.
+     * @param rmv If {@code true} then remove, else update row.
+     * @return {@code true} If operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean update(Object key, @Nullable Object val, long expirationTime) throws IgniteCheckedException {
+    public boolean update(CacheObject key, CacheObject val, long expirationTime, boolean rmv)
+        throws IgniteCheckedException {
         assert desc != null;
 
         GridH2Row row = desc.createRow(key, val, expirationTime);
 
-        return doUpdate(row, val == null);
+        return doUpdate(row, rmv);
     }
 
     /**
@@ -334,7 +338,7 @@ public class GridH2Table extends TableBase {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    boolean doUpdate(GridH2Row row, boolean del) throws IgniteCheckedException {
+    boolean doUpdate(final GridH2Row row, boolean del) throws IgniteCheckedException {
         // Here we assume that each key can't be updated concurrently and case when different indexes
         // getting updated from different threads with different rows with the same key is impossible.
         GridUnsafeMemory mem = desc == null ? null : desc.memory();
@@ -374,15 +378,22 @@ public class GridH2Table extends TableBase {
             }
             else {
                 //  index(1) is PK, get full row from there (search row here contains only key but no other columns).
-                row = pk.remove(row);
+                GridH2Row old = pk.remove(row);
 
-                if (row != null) {
+                if (old instanceof GridH2AbstractKeyValueRow) { // Unswap value.
+                    Value v = row.getValue(GridH2AbstractKeyValueRow.VAL_COL);
+
+                    if (v != null)
+                        ((GridH2AbstractKeyValueRow)old).onUnswap(v.getObject(), true);
+                }
+
+                if (old != null) {
                     // Remove row from all indexes.
                     // Start from 2 because 0 - Scan (don't need to update), 1 - PK (already updated).
                     for (int i = 2, len = idxs.size(); i < len; i++) {
-                        Row res = index(i).remove(row);
+                        Row res = index(i).remove(old);
 
-                        assert eq(pk, res, row): "\n" + row + "\n" + res;
+                        assert eq(pk, res, old): "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
                     }
                 }
                 else

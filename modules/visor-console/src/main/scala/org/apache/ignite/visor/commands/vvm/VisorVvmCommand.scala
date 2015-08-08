@@ -20,17 +20,18 @@ package org.apache.ignite.visor.commands.vvm
 import org.apache.ignite.IgniteSystemProperties
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.IgniteNodeAttributes._
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
-import org.apache.ignite.internal.visor.util.{VisorTaskUtils => TU}
+import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.common.VisorConsoleCommand
+import org.apache.ignite.visor.visor._
 
 import org.jetbrains.annotations.Nullable
 
 import java.io.File
 import java.net._
 
-import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands.VisorConsoleCommand
-import org.apache.ignite.visor.visor._
+import org.apache.ignite.internal.visor.util.{VisorTaskUtils => TU}
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -77,18 +78,8 @@ import scala.util.control.Breaks._
  *         Opens VisualVM connected to all nodes.
  * }}}
  */
-class VisorVvmCommand {
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        warn(errMsgs: _*)
-        warn("Type 'help vvm' to see how to use this command.")
-    }
+class VisorVvmCommand extends VisorConsoleCommand {
+    @impl protected val name = "vvm"
 
     /**
      * ===Command===
@@ -254,6 +245,9 @@ class VisorVvmCommand {
  * Companion object that does initialization of the command.
  */
 object VisorVvmCommand {
+    /** Singleton command. */
+    private val cmd = new VisorVvmCommand
+
     // Adds command's help to visor.
     addHelp(
         name = "vvm",
@@ -286,11 +280,9 @@ object VisorVvmCommand {
             "vvm" ->
                 "Opens VisualVM connected to all nodes."
         ),
-        ref = VisorConsoleCommand(cmd.vvm, cmd.vvm)
+        emptyArgs = cmd.vvm,
+        withArgs = cmd.vvm
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorVvmCommand
 
     /**
      * Singleton.

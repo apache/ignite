@@ -68,18 +68,18 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
 
     /**
      * @param ctx Cache context.
-     * @param keyObject Key cache object.
+     * @param keyObj Key cache object.
      * @param key Key value.
      * @param valObj Cache object
      * @param val Cache value.
      */
     public CacheLazyEntry(GridCacheContext<K, V> ctx, 
-        KeyCacheObject keyObject, 
-        K key, 
-        CacheObject valObj, 
+        KeyCacheObject keyObj,
+        K key,
+        CacheObject valObj,
         V val) {
         this.cctx = ctx;
-        this.keyObj = keyObject;
+        this.keyObj = keyObj;
         this.key = key;
         this.valObj = valObj;
         this.val = val;

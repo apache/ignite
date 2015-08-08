@@ -18,8 +18,8 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -33,17 +33,13 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** ID of the failed node. */
-    private UUID failedNodeId;
+    private final UUID failedNodeId;
 
     /** Internal order of the failed node. */
-    private long order;
+    private final long order;
 
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryNodeFailedMessage() {
-        // No-op.
-    }
+    /** */
+    private String warning;
 
     /**
      * Constructor.
@@ -63,6 +59,20 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
+     * @param warning Warning message to be shown on all nodes.
+     */
+    public void warning(String warning) {
+        this.warning = warning;
+    }
+
+    /**
+     * @return Warning message to be shown on all nodes.
+     */
+    @Nullable public String warning() {
+        return warning;
+    }
+
+    /**
      * Gets ID of the failed node.
      *
      * @return ID of the failed node.
@@ -76,22 +86,6 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
      */
     public long order() {
         return order;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        U.writeUuid(out, failedNodeId);
-        out.writeLong(order);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        failedNodeId = U.readUuid(in);
-        order = in.readLong();
     }
 
     /** {@inheritDoc} */

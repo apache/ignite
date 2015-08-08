@@ -224,6 +224,6 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
     private void validate(HadoopConfiguration hadoopCfg) throws IgniteCheckedException {
         if (ctx.config().isPeerClassLoadingEnabled())
             throw new IgniteCheckedException("Peer class loading cannot be used with Hadoop (disable it using " +
-                "GridConfiguration.setPeerClassLoadingEnabled()).");
+                "IgniteConfiguration.setPeerClassLoadingEnabled()).");
     }
 }

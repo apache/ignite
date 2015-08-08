@@ -70,14 +70,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi spi;
-
-        if (gridName.contains("FailBeforeNodeAddedSentSpi"))
-            spi = new FailBeforeNodeAddedSentSpi();
-        else if (gridName.contains("FailBeforeNodeLeftSentSpi"))
-            spi = new FailBeforeNodeLeftSentSpi();
-        else
-            spi = new TcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         discoMap.put(gridName, spi);
 
@@ -156,9 +149,47 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testThreeNodesStartStop() throws Exception {
         try {
-            startGrid(1);
-            startGrid(2);
-            startGrid(3);
+            IgniteEx ignite1 = startGrid(1);
+            IgniteEx ignite2 = startGrid(2);
+            IgniteEx ignite3 = startGrid(3);
+
+            TcpDiscoverySpi spi1 = (TcpDiscoverySpi)ignite1.configuration().getDiscoverySpi();
+            TcpDiscoverySpi spi2 = (TcpDiscoverySpi)ignite2.configuration().getDiscoverySpi();
+            TcpDiscoverySpi spi3 = (TcpDiscoverySpi)ignite3.configuration().getDiscoverySpi();
+
+            TcpDiscoveryNode node = (TcpDiscoveryNode)spi1.getNode(ignite2.localNode().id());
+
+            assertNotNull(node);
+            assertNotNull(node.lastSuccessfulAddress());
+
+            LinkedHashSet<InetSocketAddress> addrs = spi1.getNodeAddresses(node);
+
+            assertEquals(addrs.iterator().next(), node.lastSuccessfulAddress());
+
+            assertTrue(spi1.pingNode(ignite3.localNode().id()));
+
+            node = (TcpDiscoveryNode)spi1.getNode(ignite3.localNode().id());
+
+            assertNotNull(node);
+            assertNotNull(node.lastSuccessfulAddress());
+
+            addrs = spi1.getNodeAddresses(node);
+            assertEquals(addrs.iterator().next(), node.lastSuccessfulAddress());
+
+            node = (TcpDiscoveryNode)spi2.getNode(ignite1.localNode().id());
+
+            assertNotNull(node);
+            assertNotNull(node.lastSuccessfulAddress());
+
+            node = (TcpDiscoveryNode)spi2.getNode(ignite3.localNode().id());
+
+            assertNotNull(node);
+            assertNotNull(node.lastSuccessfulAddress());
+
+            node = (TcpDiscoveryNode)spi3.getNode(ignite1.localNode().id());
+
+            assertNotNull(node);
+            assertNotNull(node.lastSuccessfulAddress());
         }
         finally {
             stopAllGrids();
@@ -182,7 +213,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }, 4, "grid-starter");
 
-            Collection<TcpDiscoveryNode> nodes = discoMap.get(g1.name()).ring().allNodes();
+            Collection<TcpDiscoveryNode> nodes = ((ServerImpl)discoMap.get(g1.name()).impl).ring().allNodes();
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
@@ -365,8 +396,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                         return true;
                     }
                 },
-                EVT_NODE_LEFT
-            );
+                EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             info("Nodes were started");
 
@@ -398,7 +428,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     return true;
                 }
-            }, EVT_NODE_LEFT);
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             info("Nodes were started");
 
@@ -601,7 +631,17 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_NODE_JOINED, EVT_NODE_FAILED);
 
-            startGrid("FailBeforeNodeAddedSentSpi");
+            final Ignite g = startGrid("FailBeforeNodeAddedSentSpi");
+
+            discoMap.get(g.name()).addSendMessageListener(new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
+                @Override public void apply(TcpDiscoveryAbstractMessage msg) {
+                    if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                        discoMap.get(g.name()).simulateNodeFailure();
+
+                        throw new RuntimeException("Avoid message sending: " + msg.getClass());
+                    }
+                }
+            });
 
             startGrid(3);
 
@@ -621,7 +661,17 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             startGrid(1);
             startGrid(2);
 
-            startGrid("FailBeforeNodeLeftSentSpi");
+            final Ignite g = startGrid("FailBeforeNodeLeftSentSpi");
+
+            discoMap.get(g.name()).addSendMessageListener(new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
+                @Override public void apply(TcpDiscoveryAbstractMessage msg) {
+                    if (msg instanceof TcpDiscoveryNodeLeftMessage) {
+                        discoMap.get(g.name()).simulateNodeFailure();
+
+                        throw new RuntimeException("Avoid message sending: " + msg.getClass());
+                    }
+                }
+            });
 
             Ignite g3 = startGrid(3);
 
@@ -954,37 +1004,5 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     private Ignite startGridNoOptimize(String gridName) throws Exception {
         return G.start(getConfiguration(gridName));
-    }
-
-    /**
-     *
-     */
-    private static class FailBeforeNodeAddedSentSpi extends TcpDiscoverySpi {
-        /** */
-        private int i;
-
-        /** {@inheritDoc} */
-        @Override void onBeforeMessageSentAcrossRing(Serializable msg) {
-            if (msg instanceof TcpDiscoveryNodeAddedMessage)
-                if (++i == 2) {
-                    simulateNodeFailure();
-
-                    throw new RuntimeException("Avoid message sending: " + msg.getClass());
-                }
-        }
-    }
-
-    /**
-     *
-     */
-    private static class FailBeforeNodeLeftSentSpi extends TcpDiscoverySpi {
-        /** {@inheritDoc} */
-        @Override void onBeforeMessageSentAcrossRing(Serializable msg) {
-            if (msg instanceof TcpDiscoveryNodeLeftMessage) {
-                simulateNodeFailure();
-
-                throw new RuntimeException("Avoid message sending: " + msg.getClass());
-            }
-        }
     }
 }

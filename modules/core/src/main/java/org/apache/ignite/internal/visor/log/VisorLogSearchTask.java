@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.log;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -137,7 +136,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
          * @param searchStr Search string.
          * @param limit Max number of search results.
          * @return Collection of found descriptors.
-         * @throws IOException
+         * @throws IOException In case of I/O error.
          */
         private List<GridTuple3<String[], Integer, Integer>> searchInFile(File f, Charset charset, String searchStr,
             int limit) throws IOException {
@@ -146,14 +145,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
             int line = 0;
 
             try (GridReversedLinesFileReader reader = new GridReversedLinesFileReader(f, 4096, charset)) {
-                Collection<String> lastLines = new LinkedList<String>() {
-                    @Override public boolean add(String s) {
-                        if (size() >= HALF)
-                            removeFirst();
-
-                        return super.add(s);
-                    }
-                };
+                Deque<String> lastLines = new LinkedList<>();
 
                 String s;
                 int lastFoundLine = 0, foundCnt = 0;
@@ -196,6 +188,9 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
                         }
                     }
 
+                    if (lastLines.size() >= HALF)
+                        lastLines.removeFirst();
+
                     lastLines.add(s);
                 }
             }
@@ -213,7 +208,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
             URL url = U.resolveIgniteUrl(arg.folder);
 
             if (url == null)
-                throw U.convertException(new GridInternalException(new FileNotFoundException("Log folder not found: " + arg.folder)));
+                throw new IgniteException(new FileNotFoundException("Log folder not found: " + arg.folder));
 
             UUID uuid = ignite.localNode().id();
             String nid = uuid.toString().toLowerCase();

@@ -31,6 +31,9 @@ import java.util.concurrent.atomic.*;
  * peer class loading.
  */
 public class GridMessagingNoPeerClassLoadingSelfTest extends GridMessagingSelfTest {
+    /** */
+    private static CountDownLatch rcvLatch;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -56,9 +59,9 @@ public class GridMessagingNoPeerClassLoadingSelfTest extends GridMessagingSelfTe
 
         final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
 
-        final CountDownLatch rcvLatch = new CountDownLatch(1);
+        rcvLatch = new CountDownLatch(1);
 
-        ignite2.message().remoteListen("", new P2<UUID, Object>() {
+        ignite2.message().remoteListen(null, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');

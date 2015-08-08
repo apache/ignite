@@ -62,7 +62,7 @@ object ScalarCacheAffinityExample extends App {
             visitUsingMapKeysToNodes(cache)
         }
         finally {
-            cache.close()
+            cache.destroy()
         }
     }
 

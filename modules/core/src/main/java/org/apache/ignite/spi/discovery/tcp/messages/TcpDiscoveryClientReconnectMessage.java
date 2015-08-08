@@ -21,7 +21,6 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -32,21 +31,14 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
     private static final long serialVersionUID = 0L;
 
     /** New router nodeID. */
-    private UUID routerNodeId;
+    private final UUID routerNodeId;
 
     /** Last message ID. */
-    private IgniteUuid lastMsgId;
+    private final IgniteUuid lastMsgId;
 
     /** Pending messages. */
     @GridToStringExclude
     private Collection<TcpDiscoveryAbstractMessage> msgs;
-
-    /**
-     * For {@link Externalizable}.
-     */
-    public TcpDiscoveryClientReconnectMessage() {
-        // No-op.
-    }
 
     /**
      * @param creatorNodeId Creator node ID.
@@ -100,24 +92,6 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
      */
     public boolean success() {
         return getFlag(CLIENT_RECON_SUCCESS_FLAG_POS);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        U.writeUuid(out, routerNodeId);
-        U.writeGridUuid(out, lastMsgId);
-        U.writeCollection(out, msgs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        routerNodeId = U.readUuid(in);
-        lastMsgId = U.readGridUuid(in);
-        msgs = U.readCollection(in);
     }
 
     /** {@inheritDoc} */

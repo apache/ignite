@@ -66,7 +66,11 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setEvictionPolicy(new FifoEvictionPolicy<>(1000));
+
+        FifoEvictionPolicy plc = new FifoEvictionPolicy();
+        plc.setMaxMemorySize(1000);
+
+        cc.setEvictionPolicy(plc);
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setEvictSynchronized(false);
@@ -106,9 +110,9 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
             grid(0).cache(null).removeAll();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            internalCache(i).clearLocally();
+            grid(i).cache(null).clear();
 
-            assert internalCache(i).isEmpty();
+            assert grid(i).cache(null).localSize() == 0;
         }
     }
 

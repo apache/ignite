@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.events.*;
+import org.apache.ignite.internal.interop.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
@@ -50,9 +51,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  * Grid event storage SPI manager.
  */
 public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi> {
-    /** */
-    private static final int[] EMPTY = new int[0];
-
     /** Local event listeners. */
     private final ConcurrentMap<Integer, Set<GridLocalEventListener>> lsnrs = new ConcurrentHashMap8<>();
 
@@ -106,7 +104,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         int[] cfgInclEvtTypes0 = ctx.config().getIncludeEventTypes();
 
         if (F.isEmpty(cfgInclEvtTypes0))
-            cfgInclEvtTypes = EMPTY;
+            cfgInclEvtTypes = U.EMPTY_INTS;
         else {
             cfgInclEvtTypes0 = copy(cfgInclEvtTypes0);
 
@@ -303,7 +301,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public synchronized void enableEvents(int[] types) {
         assert types != null;
 
-        ctx.security().authorize(null, GridSecurityPermission.EVENTS_ENABLE, null);
+        ctx.security().authorize(null, SecurityPermission.EVENTS_ENABLE, null);
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
@@ -346,7 +344,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public synchronized void disableEvents(int[] types) {
         assert types != null;
 
-        ctx.security().authorize(null, GridSecurityPermission.EVENTS_DISABLE, null);
+        ctx.security().authorize(null, SecurityPermission.EVENTS_DISABLE, null);
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
@@ -653,6 +651,14 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             }
         }
 
+        if (lsnr instanceof UserListenerWrapper)
+        {
+            IgnitePredicate p = ((UserListenerWrapper)lsnr).listener();
+
+            if (p instanceof InteropLocalEventListener)
+                ((InteropLocalEventListener)p).close();
+        }
+
         return found;
     }
 
@@ -740,6 +746,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 }
                 catch (Throwable e) {
                     U.error(log, "Unexpected exception in listener notification for event: " + evt, e);
+
+                    if (e instanceof Error)
+                        throw (Error)e;
                 }
             }
         }
@@ -752,7 +761,20 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) {
         assert p != null;
 
-        return getSpi().localEvents(p);
+        if (p instanceof InteropAwareEventFilter) {
+            InteropAwareEventFilter p0 = (InteropAwareEventFilter)p;
+
+            p0.initialize(ctx);
+
+            try {
+                return getSpi().localEvents(p0);
+            }
+            finally {
+                p0.close();
+            }
+        }
+        else
+            return getSpi().localEvents(p);
     }
 
     /**
@@ -964,7 +986,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @throws IgniteCheckedException If sending failed.
      */
     private void sendMessage(Collection<? extends ClusterNode> nodes, GridTopic topic,
-        GridEventStorageMessage msg, GridIoPolicy plc) throws IgniteCheckedException {
+        GridEventStorageMessage msg, byte plc) throws IgniteCheckedException {
         ClusterNode locNode = F.find(nodes, null, F.localNode(ctx.localNodeId()));
 
         Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(ctx.localNodeId()));
@@ -1077,6 +1099,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     evts = Collections.emptyList();
 
                     ex = e;
+
+                    if (e instanceof Error)
+                        throw (Error)e;
                 }
 
                 // Response message.

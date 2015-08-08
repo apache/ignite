@@ -92,31 +92,33 @@ public class GridCacheTxLoadFromStoreOnLockSelfTest extends GridCommonAbstractTe
         cacheCfg.setBackups(backups);
         cacheCfg.setLoadPreviousValue(true);
 
-        try (IgniteCache<Integer, Integer> cache = ignite(0).createCache(cacheCfg)) {
-            for (int i = 0; i < 10; i++)
-                assertEquals((Integer)i, cache.get(i));
+        IgniteCache<Integer, Integer> cache = ignite(0).createCache(cacheCfg);
 
-            cache.removeAll();
+        for (int i = 0; i < 10; i++)
+            assertEquals((Integer)i, cache.get(i));
 
-            assertEquals(0, cache.size());
+        cache.removeAll();
 
-            for (TransactionConcurrency conc : TransactionConcurrency.values()) {
-                for (TransactionIsolation iso : TransactionIsolation.values()) {
-                    info("Checking transaction [conc=" + conc + ", iso=" + iso + ']');
+        assertEquals(0, cache.size());
 
-                    try (Transaction tx = ignite(0).transactions().txStart(conc, iso)) {
-                        for (int i = 0; i < 10; i++)
-                            assertEquals("Invalid value for transaction [conc=" + conc + ", iso=" + iso + ']',
-                                (Integer)i, cache.get(i));
+        for (TransactionConcurrency conc : TransactionConcurrency.values()) {
+            for (TransactionIsolation iso : TransactionIsolation.values()) {
+                info("Checking transaction [conc=" + conc + ", iso=" + iso + ']');
 
-                        tx.commit();
-                    }
+                try (Transaction tx = ignite(0).transactions().txStart(conc, iso)) {
+                    for (int i = 0; i < 10; i++)
+                        assertEquals("Invalid value for transaction [conc=" + conc + ", iso=" + iso + ']',
+                            (Integer)i, cache.get(i));
 
-                    cache.removeAll();
-                    assertEquals(0, cache.size());
+                    tx.commit();
                 }
+
+                cache.removeAll();
+                assertEquals(0, cache.size());
             }
         }
+
+        cache.destroy();
     }
 
     /**

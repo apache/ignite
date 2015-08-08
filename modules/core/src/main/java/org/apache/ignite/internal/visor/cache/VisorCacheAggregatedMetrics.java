@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -30,7 +31,13 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */
-    private final String cacheName;
+    private String name;
+
+    /** Cache mode. */
+    private CacheMode mode;
+
+    /** Cache system state. */
+    private boolean sys;
 
     /** Node IDs with cache metrics. */
     private final Map<UUID, VisorCacheMetrics> metrics = new HashMap<>();
@@ -99,19 +106,36 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     private transient Integer failsQry;
 
     /**
-     * Create data transfer object with given parameters.
+     * Create data transfer object for aggregated cache metrics.
      *
-     * @param cacheName Cache name.
+     * @param cm Source cache metrics.
+     * @return Data transfer object for aggregated cache metrics.
      */
-    public VisorCacheAggregatedMetrics(String cacheName) {
-        this.cacheName = cacheName;
+    public static VisorCacheAggregatedMetrics from(VisorCacheMetrics cm) {
+        VisorCacheAggregatedMetrics acm = new VisorCacheAggregatedMetrics();
+
+        acm.name = cm.name();
+        acm.mode = cm.mode();
+        acm.sys = cm.system();
+
+        return acm;
     }
 
     /**
      * @return Cache name.
      */
-    public String cacheName() {
-        return cacheName;
+    public String name() {
+        return name;
+    }
+
+    /** @return Cache mode. */
+    public CacheMode mode() {
+        return mode;
+    }
+
+    /** @return Cache system state. */
+    public boolean system() {
+        return sys;
     }
 
     /**

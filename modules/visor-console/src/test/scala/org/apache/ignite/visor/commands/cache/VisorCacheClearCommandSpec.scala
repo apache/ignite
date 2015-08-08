@@ -75,43 +75,43 @@ class VisorCacheClearCommandSpec extends VisorRuntimeBaseSpec(2) {
         cfg
     }
 
-    behavior of "An 'cclear' visor command"
+    describe("An 'cclear' visor command") {
+        it("should show correct result for default cache") {
+            Ignition.ignite("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-    it should "show correct result for default cache" in {
-        Ignition.ignite("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+            val lock = Ignition.ignite("node-1").cache[Int, Int](null).lock(1)
 
-        val lock = Ignition.ignite("node-1").cache[Int, Int](null).lock(1)
+            lock.lock()
 
-        lock.lock()
+            VisorCacheClearCommand().clear(Nil, None)
 
-        VisorCacheClearCommand().clear(Nil, None)
+            lock.unlock()
 
-        lock.unlock()
+            VisorCacheClearCommand().clear(Nil, None)
+        }
 
-        VisorCacheClearCommand().clear(Nil, None)
-    }
+        it("should show correct result for named cache") {
+            Ignition.ignite("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-    it should "show correct result for named cache" in {
-        Ignition.ignite("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+            val lock = Ignition.ignite("node-1").cache[Int, Int]("cache").lock(1)
 
-        val lock = Ignition.ignite("node-1").cache[Int, Int]("cache").lock(1)
+            lock.lock()
 
-        lock.lock()
+            visor.cache("-clear -c=cache")
 
-        visor.cache("-clear -c=cache")
+            lock.unlock()
 
-        lock.unlock()
+            visor.cache("-clear -c=cache")
+        }
 
-        visor.cache("-clear -c=cache")
-    }
+        it("should show correct help") {
+            VisorCacheCommand
 
-    it should "show correct help" in {
-        VisorCacheCommand
+            visor.help("cache")
+        }
 
-        visor.help("cache")
-    }
-
-    it should "show empty projection error message" in {
-        visor.cache("-clear -c=wrong")
+        it("should show empty projection error message") {
+            visor.cache("-clear -c=wrong")
+        }
     }
 }
