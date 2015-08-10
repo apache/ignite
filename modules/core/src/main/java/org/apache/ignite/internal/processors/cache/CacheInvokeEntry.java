@@ -49,14 +49,15 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     public CacheInvokeEntry(GridCacheContext cctx,
         KeyCacheObject keyObj,
         @Nullable CacheObject valObj,
-        GridCacheVersion ver) {
+        GridCacheVersion ver
+    ) {
         super(cctx, keyObj, valObj);
 
         this.hadVal = valObj != null;
         this.ver = ver;
     }
 
-    /** 
+    /**
      * @param ctx Cache context.
      * @param keyObj Key cache object.
      * @param key Key value.

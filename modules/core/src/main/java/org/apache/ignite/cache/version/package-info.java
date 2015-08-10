@@ -16,6 +16,6 @@
  */
 
 /**
- * Contains cache version based implementations.
+ * Contains cache versioned entry interface.
  */
 package org.apache.ignite.cache.version;
