@@ -962,15 +962,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         for (GridDhtPartitionsExchangeFuture fut : pendingExchangeFuts)
             U.warn(log, ">>> " + fut);
 
-        U.warn(log, "Last 10 exchange futures (total: " + exchFuts.size() + "):");
+        ExchangeFutureSet exchFuts = this.exchFuts;
 
-        int cnt = 0;
+        if (exchFuts != null) {
+            U.warn(log, "Last 10 exchange futures (total: " + exchFuts.size() + "):");
 
-        for (GridDhtPartitionsExchangeFuture fut : exchFuts) {
-            U.warn(log, ">>> " + fut);
+            int cnt = 0;
 
-            if (++cnt == 10)
-                break;
+            for (GridDhtPartitionsExchangeFuture fut : exchFuts) {
+                U.warn(log, ">>> " + fut);
+
+                if (++cnt == 10)
+                    break;
+            }
         }
 
         dumpPendingObjects();
