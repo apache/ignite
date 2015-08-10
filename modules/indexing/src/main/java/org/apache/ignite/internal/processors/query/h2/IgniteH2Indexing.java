@@ -599,6 +599,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             String name = rsMeta.getColumnLabel(i);
             String type = rsMeta.getColumnClassName(i);
 
+            if (type == null) // Expression always returns NULL.
+                type = Void.class.getName();
+
             meta.add(new SqlFieldMetadata(schemaName, typeName, name, type));
         }
 
@@ -850,6 +853,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         catch (SQLException e) {
             throw new CacheException("Failed to parse query: " + sqlQry, e);
+        }
+
+        try {
+            bindParameters(stmt, F.asList(qry.getArgs()));
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException("Failed to bind parameters: [qry=" + sqlQry + ", params=" +
+                Arrays.deepToString(qry.getArgs()) + "]", e);
         }
 
         GridCacheTwoStepQuery twoStepQry;
@@ -1318,13 +1329,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
-        executeStatement("INFORMATION_SCHEMA", "SHUTDOWN");
-
         for (Connection c : conns)
             U.close(c, log);
 
         conns.clear();
         schemas.clear();
+
+        try (Connection c = DriverManager.getConnection(dbUrl);
+             Statement s = c.createStatement()) {
+            s.execute("SHUTDOWN");
+        }
+        catch (SQLException e) {
+            U.error(log, "Failed to shutdown database.", e);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
@@ -1340,9 +1357,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Cache already registered: " + U.maskName(ccfg.getName()));
 
         createSchema(schema);
-
-        executeStatement(schema, "CREATE ALIAS " + GridSqlQuerySplitter.TABLE_FUNC_NAME +
-            " NOBUFFER FOR \"" + GridReduceQueryExecutor.class.getName() + ".mergeTableFunction\"");
 
         createSqlFunctions(schema, ccfg.getSqlFunctionClasses());
     }
@@ -1881,8 +1895,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param type Type.
          */
         SqlFieldMetadata(@Nullable String schemaName, @Nullable String typeName, String name, String type) {
-            assert name != null;
-            assert type != null;
+            assert name != null && type != null : schemaName + " | " + typeName + " | " + name + " | " + type;
 
             this.schemaName = schemaName;
             this.typeName = typeName;

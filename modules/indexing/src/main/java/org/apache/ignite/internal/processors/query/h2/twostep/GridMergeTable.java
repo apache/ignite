@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.h2.api.*;
+import org.apache.ignite.internal.*;
 import org.h2.command.ddl.*;
 import org.h2.engine.*;
 import org.h2.index.*;
@@ -32,6 +32,9 @@ import java.util.*;
  */
 public class GridMergeTable extends TableBase {
     /** */
+    private final GridKernalContext ctx;
+
+    /** */
     private final ArrayList<Index> idxs = new ArrayList<>(1);
 
     /** */
@@ -39,13 +42,28 @@ public class GridMergeTable extends TableBase {
 
     /**
      * @param data Data.
+     * @param ctx Kernal context.
      */
-    public GridMergeTable(CreateTableData data) {
+    public GridMergeTable(CreateTableData data, GridKernalContext ctx) {
         super(data);
 
+        this.ctx = ctx;
         idx = new GridMergeIndexUnsorted(this, "merge_scan");
 
         idxs.add(idx);
+    }
+
+    /**
+     * Fails merge table if any source node is left.
+     */
+    public void checkSourceNodesAlive() {
+        for (UUID nodeId : idx.sources()) {
+            if (!ctx.discovery().alive(nodeId)) {
+                idx.fail(nodeId);
+
+                return;
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -152,35 +170,5 @@ public class GridMergeTable extends TableBase {
     /** {@inheritDoc} */
     @Override public void checkRename() {
         throw DbException.getUnsupportedException("rename");
-    }
-
-    /**
-     * Engine.
-     */
-    public static class Engine implements TableEngine {
-        /** */
-        private static ThreadLocal<GridMergeTable> createdTbl = new ThreadLocal<>();
-
-        /**
-         * @return Created table.
-         */
-        public static GridMergeTable getCreated() {
-            GridMergeTable tbl = createdTbl.get();
-
-            assert tbl != null;
-
-            createdTbl.remove();
-
-            return tbl;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Table createTable(CreateTableData data) {
-            GridMergeTable tbl = new GridMergeTable(data);
-
-            createdTbl.set(tbl);
-
-            return tbl;
-        }
     }
 }

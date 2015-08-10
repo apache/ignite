@@ -64,11 +64,18 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
                 while (!iter.hasNext()) {
                     GridResultPage page;
 
-                    try {
-                        page = queue.take();
-                    }
-                    catch (InterruptedException e) {
-                        throw new CacheException("Query execution was interrupted.", e);
+                    for (;;) {
+                        try {
+                            page = queue.poll(500, TimeUnit.MILLISECONDS);
+                        }
+                        catch (InterruptedException e) {
+                            throw new CacheException("Query execution was interrupted.", e);
+                        }
+
+                        if (page != null)
+                            break;
+
+                        ((GridMergeTable)table).checkSourceNodesAlive();
                     }
 
                     if (page.isLast())

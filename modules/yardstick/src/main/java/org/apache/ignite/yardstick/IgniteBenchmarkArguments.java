@@ -106,6 +106,17 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"-col", "--collocated"}, description = "Collocated")
     private boolean collocated;
 
+    /** */
+    @Parameter(names = {"-jdbc", "--jdbcUrl"}, description = "JDBC url")
+    private String jdbcUrl;
+
+    /**
+     * @return JDBC url.
+     */
+    public String jdbcUrl() {
+        return jdbcUrl;
+    }
+
     /**
      * @return Transaction concurrency.
      */

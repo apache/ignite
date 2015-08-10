@@ -138,7 +138,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
                 if (cache == null)
                     return new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                        "No cache with name [cacheName=" + req.cacheName() + "]");
+                        "Failed to find cache with name: " + req.cacheName());
 
                 QueryCursor qryCur = cache.query(qry);
 
@@ -204,7 +204,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
                 if (cur == null)
                     return new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                        "Cannot find query [qryId=" + req.queryId() + "]");
+                        "Failed to find query with ID: " + req.queryId());
 
                 cur.close();
 
@@ -247,7 +247,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
                 if (cur == null)
                     return new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                        "Cannot find query [qryId=" + req.queryId() + "]");
+                        "Failed to find query with ID: " + req.queryId());
 
                 CacheQueryResult res = createQueryResult(qryCurs, cur, req, req.queryId());
 

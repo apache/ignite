@@ -88,9 +88,9 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
         stopAllGrids();
+
+        super.afterTest();
     }
 
     /** {@inheritDoc} */
@@ -102,8 +102,6 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
      * @throws Exception If any error occurs.
      */
     public void testMultiThreadedClientsRestart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1139");
-
         clientFlagGlobal = false;
 
         info("Test timeout: " + (getTestTimeout() / (60 * 1000)) + " min.");
@@ -126,7 +124,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                     int idx = clientIdx.getAndIncrement();
 
                     while (!done.get()) {
-                        stopGrid(idx);
+                        stopGrid(idx, true);
                         startGrid(idx);
                     }
 

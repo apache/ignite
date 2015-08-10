@@ -26,6 +26,7 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.net.*;
 import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -289,5 +290,19 @@ abstract class TcpDiscoveryImpl {
         }
 
         return true;
+    }
+
+    /**
+     * @param addrs Addresses.
+     */
+    protected static List<String> toOrderedList(Collection<InetSocketAddress> addrs) {
+        List<String> res = new ArrayList<>(addrs.size());
+
+        for (InetSocketAddress addr : addrs)
+            res.add(addr.toString());
+
+        Collections.sort(res);
+
+        return res;
     }
 }

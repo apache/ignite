@@ -138,6 +138,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param fieldName Field name.
      * @param obj Cache object.
      * @return Field value from object.
+     * @throws CacheException in case of error.
      */
     @Nullable protected abstract Object extractParameter(@Nullable String cacheName, String typeName, String fieldName,
         Object obj) throws CacheException;
@@ -179,6 +180,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     /**
      * Prepare internal store specific builders for provided types metadata.
      *
+     * @param cacheName Cache name to prepare builders for.
      * @param types Collection of types.
      * @throws CacheException If failed to prepare internal builders for types.
      */
@@ -503,6 +505,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     }
 
     /**
+     * @param cacheName Cache name to check mapping for.
      * @param clsName Class name.
      * @param fields Fields descriptors.
      * @throws CacheException If failed to check type metadata.
@@ -546,6 +549,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     }
 
     /**
+     * @param cacheName Cache name to check mappings for.
      * @return Type mappings for specified cache name.
      * @throws CacheException If failed to initialize cache mappings.
      */
@@ -607,9 +611,12 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     private EntryMapping entryMapping(String cacheName, Object keyTypeId, Object key) throws CacheException {
         EntryMapping em = cacheMappings(cacheName).get(keyTypeId);
 
-        if (em == null)
+        if (em == null) {
+            String maskedCacheName = U.maskName(cacheName);
+
             throw new CacheException("Failed to find mapping description [key=" + key +
-                ", cache=" + U.maskName(cacheName) + "]");
+                ", cache=" + maskedCacheName + "]. Please configure CacheTypeMetadata to associate '" + maskedCacheName + "' with JdbcPojoStore.");
+        }
 
         return em;
     }
@@ -1541,6 +1548,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
          * Extract database column names from {@link CacheTypeFieldMetadata}.
          *
          * @param dsc collection of {@link CacheTypeFieldMetadata}.
+         * @return Collection with database column names.
          */
         private static Collection<String> databaseColumns(Collection<CacheTypeFieldMetadata> dsc) {
             return F.transform(dsc, new C1<CacheTypeFieldMetadata, String>() {
@@ -1555,6 +1563,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
          * Construct query for select values with key count less or equal {@code maxKeysPerStmt}
          *
          * @param keyCnt Key count.
+         * @return Load query statement text.
          */
         protected String loadQuery(int keyCnt) {
             assert keyCnt <= maxKeysPerStmt;
@@ -1579,12 +1588,16 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             return dialect.loadCacheRangeQuery(fullTblName, keyCols, cols, appendLowerBound, appendUpperBound);
         }
 
-        /** Key type. */
+        /**
+         * @return Key type.
+         */
         protected String keyType() {
             return typeMeta.getKeyType();
         }
 
-        /** Value type. */
+        /**
+         * @return Value type.
+         */
         protected String valueType() {
             return typeMeta.getValueType();
         }

@@ -237,7 +237,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
                         }
                     }
                     catch (IllegalAccessException | NoSuchFieldException e) {
-                        error("Faild to get file name. Looks like the implementation of log4j 2 was changed.", e);
+                        error("Failed to get file name (was the implementation of log4j2 changed?).", e);
                     }
                 }
             }

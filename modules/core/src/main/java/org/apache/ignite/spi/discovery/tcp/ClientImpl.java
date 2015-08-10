@@ -29,6 +29,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
@@ -159,7 +160,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
-        spi.initLocalNode(0, true);
+        spi.initLocalNode(
+            0,
+            true);
 
         locNode = spi.locNode;
 
@@ -190,7 +193,10 @@ class ClientImpl extends TcpDiscoveryImpl {
             throw new IgniteSpiException("Thread has been interrupted.", e);
         }
 
-        timer.schedule(new HeartbeatSender(), spi.hbFreq, spi.hbFreq);
+        timer.schedule(
+            new HeartbeatSender(),
+            spi.hbFreq,
+            spi.hbFreq);
 
         spi.printStartInfo();
     }
@@ -408,7 +414,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                     if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
                         return null;
 
-                    U.warn(log, "No addresses registered in the IP finder (will retry in 2000ms): " + spi.ipFinder);
+                    LT.warn(log, null, "IP finder returned empty addresses list. " +
+                            "Please check IP finder configuration" +
+                            (spi.ipFinder instanceof TcpDiscoveryMulticastIpFinder ?
+                                " and make sure multicast works on your network. " : ". ") +
+                            "Will retry every 2 secs.", true);
 
                     Thread.sleep(2000);
                 }
@@ -458,8 +468,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
                     return null;
 
-                U.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
-                    "in 2000ms): " + addrs0);
+                LT.warn(log, null, "Failed to connect to any address from IP finder (will retry to join topology " +
+                    "every 2 secs): " + toOrderedList(addrs0), true);
 
                 Thread.sleep(2000);
             }
@@ -681,7 +691,9 @@ class ClientImpl extends TcpDiscoveryImpl {
         U.interrupt(msgWorker);
 
         U.join(sockWriter, log);
-        U.join(msgWorker, log);
+        U.join(
+            msgWorker,
+            log);
     }
 
     /** {@inheritDoc} */
@@ -986,7 +998,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
 
-                    spi.writeToSocket(sock, msg, socketTimeout);
+                    spi.writeToSocket(
+                        sock,
+                        msg,
+                        socketTimeout);
 
                     msg = null;
 
