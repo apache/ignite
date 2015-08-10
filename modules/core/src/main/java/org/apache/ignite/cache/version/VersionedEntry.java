@@ -73,30 +73,31 @@ public interface VersionedEntry<K, V> extends Cache.Entry<K, V> {
     };
 
     /**
-     * Gets entry's topology version.
+     * Gets the topology version at the time when the entry with a given pair of key and value has been created.
      *
      * @return Topology version plus number of seconds from the start time of the first grid node.
      */
     public int topologyVersion();
 
     /**
-     * Gets entry's order.
+     * Gets versioned entry unique order.
+     * Each time a cache entry for a given key is updated a new {@code VersionedEntry} with increased order is created.
      *
-     * @return Version order.
+     * @return Versioned entry unique order.
      */
     public long order();
 
     /**
-     * Gets entry's node order.
+     * Gets local node order at the time when the entry with a given pair of key and value has been created.
      *
-     * @return Node order on which this version was assigned.
+     * @return Local node order on which this version has been assigned.
      */
     public int nodeOrder();
 
     /**
-     * Gets entry's global time.
+     * Gets the time when the entry with a given pair of key and value has been created.
      *
-     * @return Adjusted time.
+     * @return Time in milliseconds.
      */
-    public long globalTime();
+    public long creationTime();
 }

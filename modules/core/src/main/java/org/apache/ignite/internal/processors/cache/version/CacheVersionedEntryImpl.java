@@ -74,7 +74,7 @@ public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> implemen
     }
 
     /** {@inheritDoc} */
-    @Override public long globalTime() {
+    @Override public long creationTime() {
         return ver.globalTime();
     }
 
@@ -95,6 +95,6 @@ public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> implemen
     /** {@inheritDoc} */
     public String toString() {
         return "VersionedEntry [key=" + getKey() + ", val=" + getValue() + ", topVer=" + ver.topologyVersion() +
-            ", nodeOrder=" + ver.nodeOrder() + ", order=" + ver.order() + ", globalTime=" + ver.globalTime() + ']';
+            ", nodeOrder=" + ver.nodeOrder() + ", order=" + ver.order() + ", creationTime=" + ver.globalTime() + ']';
     }
 }

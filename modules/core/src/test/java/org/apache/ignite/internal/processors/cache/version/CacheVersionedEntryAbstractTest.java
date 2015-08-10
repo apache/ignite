@@ -164,7 +164,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
         assert entry.topologyVersion() > 0;
         assert entry.order() > 0;
         assert entry.nodeOrder() > 0;
-        assert entry.globalTime() > 0;
+        assert entry.creationTime() > 0;
 
         assertNotNull(entry.getKey());
         assertNotNull(entry.getValue());
