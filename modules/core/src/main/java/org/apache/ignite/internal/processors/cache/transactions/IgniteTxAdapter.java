@@ -1234,6 +1234,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                     ver = txEntry.cached().version();
                 }
                 catch (GridCacheEntryRemovedException e) {
+                    assert optimistic() : txEntry;
+
                     if (log.isDebugEnabled())
                         log.debug("Failed to get entry version: [msg=" + e.getMessage() + ']');
 

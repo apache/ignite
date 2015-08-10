@@ -2236,6 +2236,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 ver = entry.version();
                                             }
                                             catch (GridCacheEntryRemovedException ex) {
+                                                assert optimistic() : txEntry;
+
                                                 if (log.isDebugEnabled())
                                                     log.debug("Failed to get entry version " +
                                                         "[err=" + ex.getMessage() + ']');
@@ -2311,6 +2313,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 ver = entry.version();
                             }
                             catch (GridCacheEntryRemovedException e) {
+                                assert optimistic() : txEntry;
+
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to get entry version: [msg=" + e.getMessage() + ']');
 
@@ -2362,6 +2366,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 ver = e.cached().version();
                             }
                             catch (GridCacheEntryRemovedException ex) {
+                                assert optimistic() : e;
+
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to get entry version: [msg=" + ex.getMessage() + ']');
 
@@ -2489,6 +2495,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     ver = cached.version();
                                 }
                                 catch (GridCacheEntryRemovedException e) {
+                                    assert optimistic() : txEntry;
+
                                     if (log.isDebugEnabled())
                                         log.debug("Failed to get entry version: [msg=" + e.getMessage() + ']');
 

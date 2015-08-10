@@ -17,17 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
-import java.util.*;
-
 /**
- * This interface extends {@link java.util.Map.Entry} by adding the method that returns entry's
- * {@link GridCacheVersion}.
+ * Interface implemented by classes that holds version related information.
  */
-public interface GridVersionedMapEntry<K, V> extends Map.Entry<K, V> {
+public interface GridCacheVersionAware {
     /**
-     * Gets entry version.
+     * Gets version.
      *
-     * @return Entry version.
+     * @return Cache entry version.
      */
     public GridCacheVersion version();
 }

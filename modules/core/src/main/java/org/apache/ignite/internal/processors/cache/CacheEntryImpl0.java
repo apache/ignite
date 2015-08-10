@@ -52,8 +52,8 @@ public class CacheEntryImpl0<K, V> implements Cache.Entry<K, V> {
     @Override public <T> T unwrap(Class<T> cls) {
         if(cls.isAssignableFrom(getClass()))
             return cls.cast(this);
-        else if (cls.isAssignableFrom(VersionedEntry.class) && e instanceof GridVersionedMapEntry)
-            return (T)new CacheVersionedEntryImpl<>(e.getKey(), e.getValue(), ((GridVersionedMapEntry)e).version());
+        else if (cls.isAssignableFrom(VersionedEntry.class) && e instanceof GridCacheVersionAware)
+            return (T)new CacheVersionedEntryImpl<>(e.getKey(), e.getValue(), ((GridCacheVersionAware)e).version());
 
         throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
     }

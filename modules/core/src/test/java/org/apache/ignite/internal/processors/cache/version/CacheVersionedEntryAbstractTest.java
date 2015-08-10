@@ -152,7 +152,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
                     }
             });
 
-        assert VersionedEntry.VERSIONS_COMPARATOR.compare(ver1, ver2) < 0;
+        assert VersionedEntry.VER_COMP.compare(ver1, ver2) < 0;
     }
 
     /**

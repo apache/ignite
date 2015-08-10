@@ -56,7 +56,7 @@ public interface VersionedEntry<K, V> extends Cache.Entry<K, V> {
     /**
      * Versions comparator.
      */
-    public static final Comparator<VersionedEntry> VERSIONS_COMPARATOR = new Comparator<VersionedEntry>() {
+    public static final Comparator<VersionedEntry> VER_COMP = new Comparator<VersionedEntry>() {
         @Override public int compare(VersionedEntry o1, VersionedEntry o2) {
             int res = Integer.compare(o1.topologyVersion(), o2.topologyVersion());
 

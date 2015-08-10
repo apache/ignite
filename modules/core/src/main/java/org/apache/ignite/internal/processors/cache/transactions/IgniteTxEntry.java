@@ -577,7 +577,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
             ver = entry.version();
         }
         catch (GridCacheEntryRemovedException e) {
-            assert tx.optimistic() : tx;
+            assert tx == null || tx.optimistic() : tx;
 
             ver = null;
         }
