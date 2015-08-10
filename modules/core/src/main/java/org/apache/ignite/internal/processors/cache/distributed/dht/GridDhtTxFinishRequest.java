@@ -261,7 +261,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 writer.incrementState();
 
-            case 24:
+            case 21:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 

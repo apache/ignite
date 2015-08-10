@@ -357,7 +357,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 writer.incrementState();
 
-            case 12:
+            case 10:
                 if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
 

@@ -71,7 +71,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         try {
             final Ignite ignite = ignite(0);
 
-            final IgniteCache<Object, Object> cache = ignite.jcache(null);
+            final IgniteCache<Object, Object> cache = ignite.cache(null);
 
             final int key = generateKey(ignite);
 
@@ -124,7 +124,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
      *      {@code ignite(1)}.
      */
     private int generateKey(Ignite ignite) {
-        CacheAffinity<Object> aff = ignite.affinity(null);
+        Affinity<Object> aff = ignite.affinity(null);
 
         for (int key = 0;;key++) {
             if (aff.isPrimaryOrBackup(ignite(0).cluster().localNode(), key))

@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -162,7 +161,7 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                 try {
                     cctx.io().send(nearNodeId, req, tx.ioPolicy());
                 }
-                catch (ClusterTopologyCheckedException e) {
+                catch (ClusterTopologyCheckedException ignore) {
                     fut.onNodeLeft();
                 }
                 catch (IgniteCheckedException e) {
@@ -299,32 +298,6 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                     fut.onError(e);
 
                     break;
-                }
-            }
-        }
-
-        // Specifically check originating near node.
-        if (tx instanceof GridDhtTxRemote) {
-            UUID nearNodeId = ((GridDhtTxRemote)tx).nearNodeId();
-
-            if (cctx.localNodeId().equals(nearNodeId))
-                add(cctx.tm().nearTxCommitted(tx.nearXidVersion()));
-            else {
-                MiniFuture fut = new MiniFuture(nearNodeId);
-
-                add(fut);
-
-                GridCacheOptimisticCheckPreparedTxRequest<K, V> req = new GridCacheOptimisticCheckPreparedTxRequest<>(
-                    tx, 1, futureId(), fut.futureId(), true);
-
-                try {
-                    cctx.io().send(nearNodeId, req, tx.ioPolicy());
-                }
-                catch (ClusterTopologyCheckedException ignored) {
-                    fut.onNodeLeft();
-                }
-                catch (IgniteCheckedException e) {
-                    fut.onError(e);
                 }
             }
         }

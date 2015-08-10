@@ -77,9 +77,9 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setBackups(backups);
-        ccfg.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
+        ccfg.setNearConfiguration(new NearCacheConfiguration());
 
         return ccfg;
     }
@@ -97,7 +97,7 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
 
             int key = generateNearKey();
 
-            IgniteCache<Object, Object> cache = ignite(0).jcache(null);
+            IgniteCache<Object, Object> cache = ignite(0).cache(null);
 
             checkKey(ignite(0).transactions(), cache, key);
         }
@@ -144,7 +144,7 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
                     for (int i = 0; i < GRID_CNT; i++) {
                         GridCacheAdapter<Object, Object> cache = ((IgniteKernal)ignite(i)).internalCache();
 
-                        GridCacheEntryEx<Object, Object> entry = cache.peekEx(key);
+                        GridCacheEntryEx entry = cache.peekEx(key);
 
                         if (entry != null) {
                             if (entry.lockedByAny()) {
@@ -201,7 +201,7 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
      * @return Key.
      */
     protected int generateNearKey() {
-        CacheAffinity<Object> aff = ignite(0).affinity(null);
+        Affinity<Object> aff = ignite(0).affinity(null);
 
         int key = 0;
 

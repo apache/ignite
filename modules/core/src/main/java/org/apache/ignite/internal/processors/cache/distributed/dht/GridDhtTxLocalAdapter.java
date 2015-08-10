@@ -144,6 +144,20 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
+     * @return {@code True} if explicit lock transaction.
+     */
+    public boolean explicitLock() {
+        return explicitLock;
+    }
+
+    /**
+     * @param explicitLock Explicit lock flag.
+     */
+    public void explicitLock(boolean explicitLock) {
+        this.explicitLock = explicitLock;
+    }
+
+    /**
      * @return Nodes where transactions were started on lock step.
      */
     @Nullable public Set<ClusterNode> lockTransactionNodes() {

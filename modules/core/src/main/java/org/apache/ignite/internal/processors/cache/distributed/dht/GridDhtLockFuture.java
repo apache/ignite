@@ -754,7 +754,14 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                 try {
                     while (true) {
                         try {
-                            cctx.dhtMap(nearNodeId, topVer, entry, log, dhtMap, null);
+                            cctx.dhtMap(
+                                nearNodeId,
+                                topVer,
+                                entry,
+                                tx == null ? lockVer : null,
+                                log,
+                                dhtMap,
+                                null);
 
                             GridCacheMvccCandidate cand = entry.candidate(lockVer);
 

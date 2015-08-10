@@ -577,11 +577,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
             cctx.io().send(tx.nearNodeId(), res, tx.ioPolicy());
         }
-        else {
-            assert completeCb != null;
-
-            completeCb.apply(res);
-        }
     }
 
     /**
@@ -1081,7 +1076,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         entry.cached().partition());
 
                     if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.EVICTED) {
-                        V procVal = entry.entryProcessorCalculatedValue();
+                        CacheObject procVal = entry.entryProcessorCalculatedValue();
 
                         entry.op(procVal == null ? DELETE : UPDATE);
                         entry.value(procVal, true, false);

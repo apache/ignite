@@ -225,7 +225,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundIdentit
             m.dhtVersion(res.dhtVersion(), writeVer);
 
             if (m.near())
-                tx.readyNearLocks(m, res.pending(), res.committedVersions(), res.rolledbackVersions());
+                tx.readyNearLocks(m);
         }
     }
 }

@@ -128,7 +128,7 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
      * @return Near check flag.
      */
     public boolean nearCheck() {
-        return nearCheck;
+        return nearTxCheck;
     }
 
     /** {@inheritDoc} */

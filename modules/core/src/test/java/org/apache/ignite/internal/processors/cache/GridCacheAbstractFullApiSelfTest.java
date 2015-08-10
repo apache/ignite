@@ -2827,7 +2827,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                         GridCacheAdapter<Object, Object> cache = ((IgniteKernal)ignite(i)).internalCache();
 
                         for (String key : keys0) {
-                            GridCacheEntryEx<Object, Object> entry = cache.peekEx(key);
+                            GridCacheEntryEx entry = cache.peekEx(key);
 
                             if (entry != null) {
                                 if (entry.lockedByAny()) {

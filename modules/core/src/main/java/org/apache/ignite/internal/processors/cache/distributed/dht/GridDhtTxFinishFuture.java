@@ -245,7 +245,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     /**
      * Initializes future.
      */
-    @SuppressWarnings("SimplifiableIfStatement")
+    @SuppressWarnings({"SimplifiableIfStatement", "IfMayBeConditional"})
     public void finish() {
         boolean sync;
 
@@ -267,7 +267,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param nodes Nodes.
      * @return {@code True} in case there is at least one synchronous {@code MiniFuture} to wait for.
      */
-    private boolean rollbackLockTransactions(Set<ClusterNode> nodes) {
+    private boolean rollbackLockTransactions(Collection<ClusterNode> nodes) {
         assert !commit;
         assert !F.isEmpty(nodes);
 
@@ -304,10 +304,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.isSystemInvalidate(),
                 sync,
                 sync,
-                tx.completedBase(),
-                tx.committedVersions(),
-                tx.rolledbackVersions(),
-                tx.pendingVersions(),
                 tx.size(),
                 tx.subjectId(),
                 tx.taskNameHash());
@@ -499,7 +495,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         /**
          * @param node Node.
          */
-        public MiniFuture(ClusterNode node) {
+        private MiniFuture(ClusterNode node) {
             this.node = node;
         }
 

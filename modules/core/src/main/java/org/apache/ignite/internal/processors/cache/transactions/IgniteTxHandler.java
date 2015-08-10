@@ -327,6 +327,7 @@ public class IgniteTxHandler {
                     req.timeout(),
                     req.isInvalidate(),
                     true,
+                    req.onePhaseCommit(),
                     req.txSize(),
                     req.transactionNodes(),
                     req.subjectId(),
@@ -880,15 +881,15 @@ public class IgniteTxHandler {
                 completeFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                     @Override
                     public void apply(IgniteInternalFuture<IgniteInternalTx> igniteTxIgniteFuture) {
-                        sendReply(nodeId, req);
+                        sendReply(nodeId, req, req.commit());
                     }
                 });
             }
             else
-                sendReply(nodeId, req);
+                sendReply(nodeId, req, req.commit());
         }
         else
-            sendReply(nodeId, req);
+            sendReply(nodeId, req, req.commit());
     }
 
     /**
