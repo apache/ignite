@@ -219,12 +219,19 @@ public class MessageCodeGenerator {
         for (Class<? extends Message> cls : classes) {
             boolean isAbstract = Modifier.isAbstract(cls.getModifiers());
 
-            System.out.println("Processing class: " + cls.getName() + (isAbstract ? " (abstract)" : ""));
+            try {
+                System.out.println("Processing class: " + cls.getName() + (isAbstract ? " (abstract)" : ""));
 
-            if (write)
-                generateAndWrite(cls);
-            else
-                generate(cls);
+                if (write)
+                    generateAndWrite(cls);
+                else
+                    generate(cls);
+            }
+            catch (IllegalStateException e) {
+                fields.clear();
+
+                System.out.println("Will not write class " + cls.getName() + ": " + e.getMessage());
+            }
         }
     }
 

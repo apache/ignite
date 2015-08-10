@@ -173,7 +173,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
 
                 writer.incrementState();
 
-            case 6:
+            case 4:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -203,7 +203,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
 
                 reader.incrementState();
 
-            case 6:
+            case 4:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())

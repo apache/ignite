@@ -261,14 +261,10 @@ public class GridIoMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                byte plc0;
-
-                plc0 = reader.readByte("plc");
+                plc = reader.readByte("plc");
 
                 if (!reader.isLastRead())
                     return false;
-
-                plc = plc0;
 
                 reader.incrementState();
 

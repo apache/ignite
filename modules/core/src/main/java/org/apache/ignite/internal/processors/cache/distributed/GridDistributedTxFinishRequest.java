@@ -205,61 +205,61 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
         }
 
         switch (writer.state()) {
-            case 6:
+            case 5:
                 if (!writer.writeBoolean("commit", commit))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 6:
                 if (!writer.writeMessage("commitVer", commitVer))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 7:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 9:
                 if (!writer.writeByte("plc", plc))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 10:
                 if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 11:
                 if (!writer.writeBoolean("syncRollback", syncRollback))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 12:
                 if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
+            case 13:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
-            case 17:
+            case 14:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
@@ -281,7 +281,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
             return false;
 
         switch (reader.state()) {
-            case 6:
+            case 5:
                 commit = reader.readBoolean("commit");
 
                 if (!reader.isLastRead())
@@ -289,7 +289,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 7:
+            case 6:
                 commitVer = reader.readMessage("commitVer");
 
                 if (!reader.isLastRead())
@@ -297,7 +297,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 8:
+            case 7:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -305,7 +305,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 invalidate = reader.readBoolean("invalidate");
 
                 if (!reader.isLastRead())
@@ -313,19 +313,15 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 12:
-                byte plcOrd;
-
-                plcOrd = reader.readByte("plc");
+            case 9:
+                plc = reader.readByte("plc");
 
                 if (!reader.isLastRead())
                     return false;
 
-                plc = plcOrd;
-
                 reader.incrementState();
 
-            case 13:
+            case 10:
                 syncCommit = reader.readBoolean("syncCommit");
 
                 if (!reader.isLastRead())
@@ -333,7 +329,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 14:
+            case 11:
                 syncRollback = reader.readBoolean("syncRollback");
 
                 if (!reader.isLastRead())
@@ -341,7 +337,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 15:
+            case 12:
                 sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
@@ -349,7 +345,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 16:
+            case 13:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -357,7 +353,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 17:
+            case 14:
                 txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
@@ -377,7 +373,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 18;
+        return 15;
     }
 
     /** {@inheritDoc} */

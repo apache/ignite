@@ -330,7 +330,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 writer.incrementState();
 
-            case 29:
+            case 25:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -408,7 +408,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 29:
+            case 25:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
