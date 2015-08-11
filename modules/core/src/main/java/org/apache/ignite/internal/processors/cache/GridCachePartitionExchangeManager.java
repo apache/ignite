@@ -984,25 +984,33 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      *
      */
     public void dumpPendingObjects() {
-        U.warn(log, "Pending transactions:");
+        IgniteTxManager tm = cctx.tm();
 
-        for (IgniteInternalTx tx : cctx.tm().activeTransactions())
-            U.warn(log, ">>> " + tx);
+        if (tm != null) {
+            U.warn(log, "Pending transactions:");
 
-        U.warn(log, "Pending explicit locks:");
+            for (IgniteInternalTx tx : tm.activeTransactions())
+                U.warn(log, ">>> " + tx);
+        }
 
-        for (GridCacheExplicitLockSpan lockSpan : cctx.mvcc().activeExplicitLocks())
-            U.warn(log, ">>> " + lockSpan);
+        GridCacheMvccManager mvcc = cctx.mvcc();
 
-        U.warn(log, "Pending cache futures:");
+        if (mvcc != null) {
+            U.warn(log, "Pending explicit locks:");
 
-        for (GridCacheFuture<?> fut : cctx.mvcc().activeFutures())
-            U.warn(log, ">>> " + fut);
+            for (GridCacheExplicitLockSpan lockSpan : mvcc.activeExplicitLocks())
+                U.warn(log, ">>> " + lockSpan);
 
-        U.warn(log, "Pending atomic cache futures:");
+            U.warn(log, "Pending cache futures:");
 
-        for (GridCacheFuture<?> fut : cctx.mvcc().atomicFutures())
-            U.warn(log, ">>> " + fut);
+            for (GridCacheFuture<?> fut : mvcc.activeFutures())
+                U.warn(log, ">>> " + fut);
+
+            U.warn(log, "Pending atomic cache futures:");
+
+            for (GridCacheFuture<?> fut : mvcc.atomicFutures())
+                U.warn(log, ">>> " + fut);
+        }
     }
 
     /**
