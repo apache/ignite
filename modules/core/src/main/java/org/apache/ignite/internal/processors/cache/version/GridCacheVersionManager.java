@@ -196,7 +196,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      * @return Next version for cache store operations.
      */
     public GridCacheVersion nextForLoad(GridCacheVersion ver) {
-        return next(ver.topologyOrder(), false, true);
+        return next(ver.topologyVersion(), false, true);
     }
 
     /**
@@ -206,7 +206,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      * @return Next version based on given cache version.
      */
     public GridCacheVersion next(GridCacheVersion ver) {
-        return next(ver.topologyOrder(), false, false);
+        return next(ver.topologyVersion(), false, false);
     }
 
     /**

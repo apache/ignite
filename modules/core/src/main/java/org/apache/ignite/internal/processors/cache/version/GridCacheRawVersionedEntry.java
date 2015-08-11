@@ -155,7 +155,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
 
     /** {@inheritDoc} */
     @Override public int topologyVersion() {
-        return ver.topologyOrder();
+        return ver.topologyVersion();
     }
 
     /** {@inheritDoc} */

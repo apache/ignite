@@ -42,7 +42,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     private static final int DR_ID_MASK = 0x1F;
 
     /** Topology version. */
-    private int topOrder;
+    private int topVer;
 
     /** Node order (used as global order) and DR ID. */
     private int nodeOrderDrId;
@@ -76,7 +76,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
         if (nodeOrder > NODE_ORDER_MASK)
             throw new IllegalArgumentException("Node order overflow: " + nodeOrder);
 
-        this.topOrder = topVer;
+        this.topVer = topVer;
         this.globalTime = globalTime;
         this.order = order;
 
@@ -91,7 +91,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
      * @param order Version order.
      */
     public GridCacheVersion(int topVer, int nodeOrderDrId, long globalTime, long order) {
-        this.topOrder = topVer;
+        this.topVer = topVer;
         this.nodeOrderDrId = nodeOrderDrId;
         this.globalTime = globalTime;
         this.order = order;
@@ -100,8 +100,8 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     /**
      * @return Topology version plus number of seconds from the start time of the first grid node..
      */
-    public int topologyOrder() {
-        return topOrder;
+    public int topologyVersion() {
+        return topVer;
     }
 
     /**
@@ -184,12 +184,12 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
      * @return Version represented as {@code GridUuid}
      */
     public IgniteUuid asGridUuid() {
-        return new IgniteUuid(new UUID(((long)topOrder << 32) | nodeOrderDrId, globalTime), order);
+        return new IgniteUuid(new UUID(((long)topVer << 32) | nodeOrderDrId, globalTime), order);
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(topOrder);
+        out.writeInt(topVer);
         out.writeLong(globalTime);
         out.writeLong(order);
         out.writeInt(nodeOrderDrId);
@@ -197,7 +197,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
-        topOrder = in.readInt();
+        topVer = in.readInt();
         globalTime = in.readLong();
         order = in.readLong();
         nodeOrderDrId = in.readInt();
@@ -213,12 +213,12 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
         GridCacheVersion that = (GridCacheVersion)o;
 
-        return topOrder == that.topOrder && order == that.order && nodeOrder() == that.nodeOrder();
+        return topVer == that.topVer && order == that.order && nodeOrder() == that.nodeOrder();
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = topOrder;
+        int res = topVer;
 
         res = 31 * res + nodeOrder();
 
@@ -230,7 +230,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
     @Override public int compareTo(GridCacheVersion other) {
-        int res = Integer.compare(topologyOrder(), other.topologyOrder());
+        int res = Integer.compare(topologyVersion(), other.topologyVersion());
 
         if (res != 0)
             return res;
@@ -274,7 +274,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeInt("topVer", topOrder))
+                if (!writer.writeInt("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -317,7 +317,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
                 reader.incrementState();
 
             case 3:
-                topOrder = reader.readInt("topVer");
+                topVer = reader.readInt("topVer");
 
                 if (!reader.isLastRead())
                     return false;

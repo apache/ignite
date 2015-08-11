@@ -77,7 +77,7 @@ public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> implemen
 
     /** {@inheritDoc} */
     public String toString() {
-        return "VersionedEntry [key=" + getKey() + ", val=" + getValue() + ", topVer=" + ver.topologyOrder() +
-            ", nodeOrder=" + ver.nodeOrder() + ", order=" + ver.order() + ", creationTime=" + ver.globalTime() + ']';
+        return "VersionedEntry [key=" + getKey() + ", val=" + getValue() + ", topVer=" + ver.topologyVersion() +
+            ", nodeOrder=" + ver.nodeOrder() + ", order=" + ver.order() + ", updateTime=" + ver.globalTime() + ']';
     }
 }
