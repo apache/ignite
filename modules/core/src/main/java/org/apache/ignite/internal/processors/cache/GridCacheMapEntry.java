@@ -1609,7 +1609,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         CacheObject oldVal;
         CacheObject updated;
 
-        GridCacheVersion enqueueVer = null;
+        GridCacheVersion rmvVer = null;
 
         GridCacheVersionConflictContext<?, ?> conflictCtx = null;
 
@@ -2118,7 +2118,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     }
                 }
 
-                enqueueVer = newVer;
+                rmvVer = newVer;
 
                 boolean hasValPtr = hasOffHeapPointer();
 
@@ -2192,7 +2192,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             invokeRes,
             newSysTtl,
             newSysExpireTime,
-            enqueueVer,
+            rmvVer,
             conflictCtx,
             true);
     }
@@ -2455,8 +2455,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public boolean markObsoleteVersion(GridCacheVersion ver) {
-        assert cctx.deferredDelete();
-
         boolean marked;
 
         synchronized (this) {
@@ -3846,7 +3844,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     protected void deletedUnlocked(boolean deleted) {
         assert Thread.holdsLock(this);
-        assert cctx.deferredDelete();
+
+        if (!cctx.deferredDelete())
+            return;
 
         if (deleted) {
             assert !deletedUnlocked() : this;

@@ -41,6 +41,10 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
     @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> futVers;
 
+    /** Partitions. */
+    @GridDirectCollection(int.class)
+    private Collection<Integer> parts;
+
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
         return CACHE_MSG_IDX;
@@ -57,12 +61,15 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
      * Constructor.
      *
      * @param futVers Future versions.
+     * @param parts Partitions.
      */
-    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<GridCacheVersion> futVers) {
+    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<GridCacheVersion> futVers,
+        Collection<Integer> parts) {
         assert !F.isEmpty(futVers);
 
         this.cacheId = cacheId;
         this.futVers = futVers;
+        this.parts = parts;
     }
 
     /**
@@ -70,6 +77,13 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
      */
     public Collection<GridCacheVersion> futureVersions() {
         return futVers;
+    }
+
+    /**
+     * @return Partitions.
+     */
+    public Collection<Integer> partitions() {
+        return parts;
     }
 
     /** {@inheritDoc} */
@@ -89,6 +103,12 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
         switch (writer.state()) {
             case 3:
                 if (!writer.writeCollection("futVers", futVers, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeCollection("parts", parts, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
@@ -117,6 +137,14 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
                 reader.incrementState();
 
+            case 4:
+                parts = reader.readCollection("parts", MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return true;
@@ -129,6 +157,6 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 }

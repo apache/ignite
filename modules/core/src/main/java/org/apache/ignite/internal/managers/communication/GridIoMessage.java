@@ -49,6 +49,9 @@ public class GridIoMessage implements Message {
     /** Message ordered flag. */
     private boolean ordered;
 
+    /** Sequential message flag. */
+    private boolean seq;
+
     /** Message timeout. */
     private long timeout;
 
@@ -72,6 +75,7 @@ public class GridIoMessage implements Message {
      * @param topicOrd Topic ordinal value.
      * @param msg Message.
      * @param ordered Message ordered flag.
+     * @param seq Sequential message flag.
      * @param timeout Timeout.
      * @param skipOnTimeout Whether message can be skipped on timeout.
      */
@@ -81,18 +85,21 @@ public class GridIoMessage implements Message {
         int topicOrd,
         Message msg,
         boolean ordered,
+        boolean seq,
         long timeout,
         boolean skipOnTimeout
     ) {
         assert topic != null;
         assert topicOrd <= Byte.MAX_VALUE;
         assert msg != null;
+        assert !ordered || !seq; // Message can't be ordered and sequential at the same time.
 
         this.plc = plc;
         this.msg = msg;
         this.topic = topic;
         this.topicOrd = topicOrd;
         this.ordered = ordered;
+        this.seq = seq;
         this.timeout = timeout;
         this.skipOnTimeout = skipOnTimeout;
     }
@@ -167,6 +174,13 @@ public class GridIoMessage implements Message {
         return ordered;
     }
 
+    /**
+     * @return Sequential message flag.
+     */
+    boolean isSequential() {
+        return seq;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
         throw new AssertionError();
@@ -208,24 +222,30 @@ public class GridIoMessage implements Message {
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeBoolean("skipOnTimeout", skipOnTimeout))
+                if (!writer.writeBoolean("seq", seq))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeLong("timeout", timeout))
+                if (!writer.writeBoolean("skipOnTimeout", skipOnTimeout))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByteArray("topicBytes", topicBytes))
+                if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
             case 6:
+                if (!writer.writeByteArray("topicBytes", topicBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
                 if (!writer.writeInt("topicOrd", topicOrd))
                     return false;
 
@@ -261,19 +281,15 @@ public class GridIoMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                byte plc0;
-
-                plc0 = reader.readByte("plc");
+                plc = reader.readByte("plc");
 
                 if (!reader.isLastRead())
                     return false;
 
-                plc = plc0;
-
                 reader.incrementState();
 
             case 3:
-                skipOnTimeout = reader.readBoolean("skipOnTimeout");
+                seq = reader.readBoolean("seq");
 
                 if (!reader.isLastRead())
                     return false;
@@ -281,7 +297,7 @@ public class GridIoMessage implements Message {
                 reader.incrementState();
 
             case 4:
-                timeout = reader.readLong("timeout");
+                skipOnTimeout = reader.readBoolean("skipOnTimeout");
 
                 if (!reader.isLastRead())
                     return false;
@@ -289,7 +305,7 @@ public class GridIoMessage implements Message {
                 reader.incrementState();
 
             case 5:
-                topicBytes = reader.readByteArray("topicBytes");
+                timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
                     return false;
@@ -297,6 +313,14 @@ public class GridIoMessage implements Message {
                 reader.incrementState();
 
             case 6:
+                topicBytes = reader.readByteArray("topicBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
                 topicOrd = reader.readInt("topicOrd");
 
                 if (!reader.isLastRead())
@@ -316,7 +340,7 @@ public class GridIoMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /** {@inheritDoc} */

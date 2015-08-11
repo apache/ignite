@@ -503,6 +503,17 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is primary.
      */
     protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
+        return primaryKeys(cache, cnt, startFrom, false);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
+     * @param singlePart Single partition.
+     * @return Collection of keys for which given cache is primary.
+     */
+    protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, int cnt, int startFrom, boolean singlePart) {
         assert cnt > 0 : cnt;
 
         List<Integer> found = new ArrayList<>(cnt);
@@ -511,10 +522,17 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         Affinity<Integer> aff = (Affinity<Integer>)affinity(cache);
 
-        for (int i = startFrom; i < startFrom + 100_000; i++) {
+        int part = -1;
+
+        for (int i = startFrom; i < startFrom + 1_000_000; i++) {
             Integer key = i;
 
-            if (aff.isPrimary(locNode, key)) {
+            boolean add = part == -1 ? aff.isPrimary(locNode, key) : aff.partition(key) == part;
+
+            if (add) {
+                if (singlePart)
+                    part = aff.partition(key);
+
                 found.add(key);
 
                 if (found.size() == cnt)

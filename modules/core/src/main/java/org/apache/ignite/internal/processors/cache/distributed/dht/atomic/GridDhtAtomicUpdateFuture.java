@@ -73,7 +73,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
     /** Mappings. */
     @GridToStringInclude
-    private ConcurrentMap<UUID, GridDhtAtomicUpdateRequest> mappings = new ConcurrentHashMap8<>();
+    private ConcurrentMap<GridAtomicMappingKey, GridDhtAtomicUpdateRequest> mappings = new ConcurrentHashMap8<>();
 
     /** Entries with readers. */
     private Map<KeyCacheObject, GridDhtCacheEntry> nearReadersEntries;
@@ -121,6 +121,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         boolean topLocked = updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest());
 
         waitForExchange = !topLocked;
+
+        // We can send entry processor instead of value to backup if updates are ordered.
+        forceTransformBackups = updateReq.operation() == GridCacheOperation.TRANSFORM;
     }
 
     /** {@inheritDoc} */
@@ -135,7 +138,11 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
     /** {@inheritDoc} */
     @Override public Collection<? extends ClusterNode> nodes() {
-        return F.view(F.viewReadOnly(mappings.keySet(), U.id2Node(cctx.kernalContext())), F.notNull());
+        return F.view(F.viewReadOnly(mappings.keySet(), new C1<GridAtomicMappingKey, ClusterNode>() {
+            @Override public ClusterNode apply(GridAtomicMappingKey mappingKey) {
+                return cctx.kernalContext().discovery().node(mappingKey.nodeId());
+            }
+        }), F.notNull());
     }
 
     /** {@inheritDoc} */
@@ -143,11 +150,16 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         if (log.isDebugEnabled())
             log.debug("Processing node leave event [fut=" + this + ", nodeId=" + nodeId + ']');
 
-        GridDhtAtomicUpdateRequest req = mappings.get(nodeId);
+        Collection<GridAtomicMappingKey> mappingKeys = new ArrayList<>(mappings.size());
 
-        if (req != null) {
-            // Remove only after added keys to failed set.
-            mappings.remove(nodeId);
+        for (GridAtomicMappingKey mappingKey : mappings.keySet()) {
+            if (mappingKey.nodeId().equals(nodeId))
+                mappingKeys.add(mappingKey);
+        }
+
+        if (!mappingKeys.isEmpty()) {
+            for (GridAtomicMappingKey mappingKey : mappingKeys)
+                mappings.remove(mappingKey);
 
             checkComplete();
 
@@ -201,7 +213,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         @Nullable GridCacheVersion conflictVer) {
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
-        Collection<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
+        int part = entry.partition();
+
+        Collection<ClusterNode> dhtNodes = cctx.dht().topology().nodes(part, topVer);
 
         if (log.isDebugEnabled())
             log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
@@ -213,8 +227,10 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         for (ClusterNode node : dhtNodes) {
             UUID nodeId = node.id();
 
+            GridAtomicMappingKey mappingKey = new GridAtomicMappingKey(nodeId, part);
+
             if (!nodeId.equals(cctx.localNodeId())) {
-                GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);
+                GridDhtAtomicUpdateRequest updateReq = mappings.get(mappingKey);
 
                 if (updateReq == null) {
                     updateReq = new GridDhtAtomicUpdateRequest(
@@ -227,9 +243,10 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                         forceTransformBackups,
                         this.updateReq.subjectId(),
                         this.updateReq.taskNameHash(),
-                        forceTransformBackups ? this.updateReq.invokeArguments() : null);
+                        forceTransformBackups ? this.updateReq.invokeArguments() : null,
+                        part);
 
-                    mappings.put(nodeId, updateReq);
+                    mappings.put(mappingKey, updateReq);
                 }
 
                 updateReq.addWriteValue(entry.key(),
@@ -246,14 +263,12 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      * @param readers Entry readers.
      * @param entry Entry.
      * @param val Value.
-     * @param entryProcessor Entry processor..
      * @param ttl TTL for near cache update (optional).
      * @param expireTime Expire time for near cache update (optional).
      */
     public void addNearWriteEntries(Iterable<UUID> readers,
         GridDhtCacheEntry entry,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long expireTime) {
         CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
@@ -262,8 +277,12 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
+        int part = entry.partition();
+
         for (UUID nodeId : readers) {
-            GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);
+            GridAtomicMappingKey mappingKey = new GridAtomicMappingKey(nodeId, part);
+
+            GridDhtAtomicUpdateRequest updateReq = mappings.get(mappingKey);
 
             if (updateReq == null) {
                 ClusterNode node = cctx.discovery().node(nodeId);
@@ -282,9 +301,10 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     forceTransformBackups,
                     this.updateReq.subjectId(),
                     this.updateReq.taskNameHash(),
-                    forceTransformBackups ? this.updateReq.invokeArguments() : null);
+                    forceTransformBackups ? this.updateReq.invokeArguments() : null,
+                    part);
 
-                mappings.put(nodeId, updateReq);
+                mappings.put(mappingKey, updateReq);
             }
 
             if (nearReadersEntries == null)
@@ -294,7 +314,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
             updateReq.addNearWriteValue(entry.key(),
                 val,
-                entryProcessor,
                 ttl,
                 expireTime);
         }
@@ -305,7 +324,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         if (super.onDone(res, err)) {
             cctx.mvcc().removeAtomicFuture(version());
 
-            if (updateReq.writeSynchronizationMode() == FULL_SYNC)
+            if (updateReq.writeSynchronizationMode() == FULL_SYNC && !(err instanceof IgniteLocalNodeStoppedException))
                 completionCb.apply(updateReq, updateRes);
 
             return true;
@@ -319,24 +338,41 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      */
     public void map() {
         if (!mappings.isEmpty()) {
-            for (GridDhtAtomicUpdateRequest req : mappings.values()) {
+            for (Map.Entry<GridAtomicMappingKey, GridDhtAtomicUpdateRequest> e : mappings.entrySet()) {
+                GridAtomicMappingKey mappingKey = e.getKey();
+                GridDhtAtomicUpdateRequest req = e.getValue();
+
+                UUID nodeId = mappingKey.nodeId();
+                int part = mappingKey.partition();
+
+                assert !nodeId.equals(cctx.localNodeId());
+
                 try {
                     if (log.isDebugEnabled())
-                        log.debug("Sending DHT atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
+                        log.debug("Sending DHT atomic update request [nodeId=" + nodeId + ", req=" + req + ']');
 
-                    cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
+                    if (part >= 0) {
+                        Object topic = GridAtomicRequestTopic.dhtUpdateRequest(cctx.cacheId(), part);
+
+                        cctx.io().sendSequentialMessage(nodeId, topic, req, cctx.ioPolicy());
+                    }
+                    else {
+                        assert part == -1;
+
+                        cctx.io().send(nodeId, req, cctx.ioPolicy());
+                    }
                 }
                 catch (ClusterTopologyCheckedException ignored) {
                     U.warn(log, "Failed to send update request to backup node because it left grid: " +
-                        req.nodeId());
+                        nodeId);
 
-                    mappings.remove(req.nodeId());
+                    mappings.remove(mappingKey);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException ex) {
                     U.error(log, "Failed to send update request to backup node (did node leave the grid?): "
-                        + req.nodeId(), e);
+                        + nodeId, ex);
 
-                    mappings.remove(req.nodeId());
+                    mappings.remove(mappingKey);
                 }
             }
         }
@@ -376,7 +412,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
             }
         }
 
-        mappings.remove(nodeId);
+        mappings.remove(new GridAtomicMappingKey(nodeId, updateRes.partition()));
 
         checkComplete();
     }
@@ -385,12 +421,14 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      * Deferred update response.
      *
      * @param nodeId Backup node ID.
+     * @param res Response.
      */
-    public void onResult(UUID nodeId) {
+    public void onResult(UUID nodeId, GridDhtAtomicDeferredUpdateResponse res) {
         if (log.isDebugEnabled())
             log.debug("Received deferred DHT atomic update future result [nodeId=" + nodeId + ']');
 
-        mappings.remove(nodeId);
+        for (Integer part : res.partitions())
+            mappings.remove(new GridAtomicMappingKey(nodeId, part));
 
         checkComplete();
     }
@@ -412,4 +450,5 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     @Override public String toString() {
         return S.toString(GridDhtAtomicUpdateFuture.class, this);
     }
+
 }

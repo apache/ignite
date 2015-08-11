@@ -322,11 +322,13 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
                     boolean primary = affinity(cache).isPrimary(ignite.cluster().localNode(), expVal.getKey());
                     boolean backup = affinity(cache).isBackup(ignite.cluster().localNode(), expVal.getKey());
 
-                    log.error("Unexpected cache data [exp=" + expVal +
+                    log.error("Unexpected cache data [" +
+                        "key=" + expVal.getKey() +
+                        ", exp=" + expVal.getValue().get() +
                         ", actual=" + val +
                         ", nodePrimary=" + primary +
                         ", nodeBackup=" + backup +
-                        ", nodeIdx" + i +
+                        ", nodeIdx=" + i +
                         ", nodeId=" + ignite.cluster().localNode().id() + ']');
                 }
             }
