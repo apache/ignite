@@ -224,14 +224,14 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         if (topVer == -1)
             topVer = cctx.kernalContext().discovery().topologyVersion();
 
+        long globalTime = cctx.kernalContext().clockSync().adjustedTime(topVer);
+
         if (addTime) {
             if (gridStartTime == 0)
                 gridStartTime = cctx.kernalContext().discovery().gridStartTime();
 
             topVer += (gridStartTime - TOP_VER_BASE_TIME) / 1000;
         }
-
-        long globalTime = cctx.kernalContext().clockSync().adjustedTime(topVer);
 
         int locNodeOrder = (int)cctx.localNode().order();
 

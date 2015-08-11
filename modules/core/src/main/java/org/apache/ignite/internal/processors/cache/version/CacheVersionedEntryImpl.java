@@ -51,30 +51,13 @@ public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> implemen
         this.ver = ver;
     }
 
-    /**
-     * @return Version.
-     */
-    @Nullable public GridCacheVersion version() {
+    /** {@inheritDoc} */
+    public GridCacheVersion version() {
         return ver;
     }
 
     /** {@inheritDoc} */
-    @Override public int topologyVersion() {
-        return ver.topologyOrder();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int nodeOrder() {
-        return ver.nodeOrder();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long order() {
-        return ver.order();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long creationTime() {
+    @Override public long updateTime() {
         return ver.globalTime();
     }
 

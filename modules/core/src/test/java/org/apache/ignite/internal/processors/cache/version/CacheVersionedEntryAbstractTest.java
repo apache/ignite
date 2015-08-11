@@ -152,7 +152,8 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
                     }
             });
 
-        assert VersionedEntry.VER_COMP.compare(ver1, ver2) < 0;
+        assert ver1.version().compareTo(ver2.version()) < 0;
+        assert ver1.updateTime() < ver2.updateTime();
     }
 
     /**
@@ -161,10 +162,8 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     private void checkVersionedEntry(VersionedEntry<Integer, String> entry) {
         assertNotNull(entry);
 
-        assert entry.topologyVersion() > 0;
-        assert entry.order() > 0;
-        assert entry.nodeOrder() > 0;
-        assert entry.creationTime() > 0;
+        assertNotNull(entry.version());
+        assert entry.updateTime() > 0;
 
         assertNotNull(entry.getKey());
         assertNotNull(entry.getValue());
