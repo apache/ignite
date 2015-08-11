@@ -266,7 +266,7 @@ public class IgniteTxHandler {
             GridDhtPartitionTopology top = null;
 
             if (req.firstClientRequest()) {
-                assert req.concurrency().equals(OPTIMISTIC) : req;
+                assert req.concurrency() == OPTIMISTIC : req;
                 assert CU.clientNode(nearNode) : nearNode;
 
                 top = firstEntry.context().topology();
@@ -297,7 +297,7 @@ public class IgniteTxHandler {
                     try {
                         ctx.io().send(nearNode, res, req.policy());
                     }
-                    catch (ClusterTopologyCheckedException e) {
+                    catch (ClusterTopologyCheckedException ignored) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send client tx remap response, client node failed " +
                                 "[node=" + nearNode + ", req=" + req + ']');
@@ -333,6 +333,9 @@ public class IgniteTxHandler {
                     req.subjectId(),
                     req.taskNameHash()
                 );
+
+                if (req.near())
+                    tx.nearOnOriginatingNode(true);
 
                 tx = ctx.tm().onCreated(null, tx);
 

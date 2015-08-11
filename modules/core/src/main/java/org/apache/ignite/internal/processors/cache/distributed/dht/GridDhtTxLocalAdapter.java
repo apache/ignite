@@ -65,6 +65,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** */
     protected boolean explicitLock;
 
+    /** Flag indicating that originating node has near cache. */
+    private boolean nearOnOriginatingNode;
+
     /** Nodes where transactions were started on lock step. */
     private Set<ClusterNode> lockTxNodes;
 
@@ -141,6 +144,15 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             lockTxNodes = new HashSet<>();
 
         lockTxNodes.add(node);
+    }
+
+    /**
+     * Sets flag that indicates that originating node has a near cache that participates in this transaction.
+     *
+     * @param hasNear Has near cache flag.
+     */
+    public void nearOnOriginatingNode(boolean hasNear) {
+        nearOnOriginatingNode = hasNear;
     }
 
     /**
@@ -803,13 +815,14 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @return {@code True} if transaction is finished on prepare step.
      */
     protected final boolean commitOnPrepare() {
-        return onePhaseCommit() && !near();
+        return onePhaseCommit() && !near() && !nearOnOriginatingNode;
     }
 
     /**
      * @param prepFut Prepare future.
      * @return If transaction if finished on prepare step returns future which is completed after transaction finish.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     protected final IgniteInternalFuture<GridNearTxPrepareResponse> chainOnePhasePrepare(
         final GridDhtTxPrepareFuture prepFut) {
         if (commitOnPrepare()) {

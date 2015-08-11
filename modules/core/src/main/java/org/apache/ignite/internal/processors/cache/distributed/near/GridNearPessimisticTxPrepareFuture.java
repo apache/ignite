@@ -320,6 +320,9 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
          * @param e Error.
          */
         void onNodeLeft(ClusterTopologyCheckedException e) {
+            if (tx.onePhaseCommit())
+                tx.markForBackupCheck();
+
             onError(e);
         }
 

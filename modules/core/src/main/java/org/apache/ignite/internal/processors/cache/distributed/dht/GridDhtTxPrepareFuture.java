@@ -487,11 +487,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (tx.optimistic())
             tx.clearPrepareFuture(this);
 
-        // Check if originating node has a near cache participating in transaction.
-        boolean hasNearCache = originatingNodeHasNearCache();
-
         // Do not commit one-phase commit transaction if originating node has near cache enabled.
-        if (tx.onePhaseCommit() && !hasNearCache) {
+        if (tx.onePhaseCommit() && tx.commitOnPrepare()) {
             assert last;
 
             // Must create prepare response before transaction is committed to grab correct return value.
@@ -620,13 +617,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (node == null)
             return false;
 
-        GridCacheAttributes[] attrs = node.attribute(IgniteNodeAttributes.ATTR_CACHE);
-
-        for (GridCacheAttributes attr : attrs) {
-            if (attr.nearCacheEnabled()) {
-                if (tx.activeCacheIds().contains(CU.cacheId(attr.cacheName())))
-                    return true;
-            }
+        for (int cacheId : tx.activeCacheIds()) {
+            if (cctx.discovery().cacheNearNode(node, cctx.cacheContext(cacheId).name()))
+                return true;
         }
 
         return false;

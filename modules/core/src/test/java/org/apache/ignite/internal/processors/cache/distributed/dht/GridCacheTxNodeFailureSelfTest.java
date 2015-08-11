@@ -33,6 +33,9 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
+
 /**
  * Tests one-phase commit transactions when some of the nodes fail in the middle of the transaction.
  */
@@ -64,7 +67,21 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPrimaryNodeFailureBackupCommit() throws Exception {
+    public void testPrimaryNodeFailureBackipCommitPessimistic() throws Exception {
+        checkPrimaryNodeFailureBackupCommit(PESSIMISTIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryNodeFailureBackupCommitOptimistic() throws Exception {
+        checkPrimaryNodeFailureBackupCommit(OPTIMISTIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkPrimaryNodeFailureBackupCommit(final TransactionConcurrency conc) throws Exception {
         startGrids(gridCount());
         awaitPartitionMapExchange();
 
@@ -82,7 +99,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    try (Transaction tx = ignite.transactions().txStart()) {
+                    try (Transaction tx = ignite.transactions().txStart(conc, REPEATABLE_READ)) {
                         cache.put(key, key);
 
                         Transaction asyncTx = (Transaction)tx.withAsync();
