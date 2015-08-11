@@ -295,6 +295,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         IgniteEx ignite1 = startGrid(1);
         IgniteEx ignite2 = startGrid(2);
 
+        awaitPartitionMapExchange();
+
         client = true;
 
         Ignite ignite3 = startGrid(3);
@@ -348,7 +350,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         List<Object> msgs = spi.recordedMessages();
 
-        assertEquals(3, msgs.size());
+        assertEquals(writeOrder == CLOCK ? 6 : 3, msgs.size());
 
         for (Object msg : msgs)
             assertTrue(((GridNearAtomicUpdateRequest)msg).clientRequest());

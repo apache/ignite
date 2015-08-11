@@ -44,7 +44,12 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
-    /** Node ID. */
+    /**
+     * Node ID.
+     *
+     * @deprecated Not used anymore, but removal will break compatibility.
+     */
+    @Deprecated
     private UUID nodeId;
 
     /** Future version. */
@@ -127,6 +132,9 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /** Task name hash. */
     private int taskNameHash;
 
+    /** Partition. */
+    private int part;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -147,6 +155,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
      * @param forceTransformBackups Force transform backups flag.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param part Partition.
      */
     public GridDhtAtomicUpdateRequest(
         int cacheId,
@@ -158,7 +167,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         boolean forceTransformBackups,
         UUID subjId,
         int taskNameHash,
-        Object[] invokeArgs
+        Object[] invokeArgs,
+        int part
     ) {
         assert invokeArgs == null || forceTransformBackups;
 
@@ -172,6 +182,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.invokeArgs = invokeArgs;
+        this.part = part;
 
         keys = new ArrayList<>();
 
@@ -256,36 +267,21 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.
-     * @param entryProcessor Entry processor.
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
     public void addNearWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long expireTime)
     {
         if (nearKeys == null) {
             nearKeys = new ArrayList<>();
-
-            if (forceTransformBackups) {
-                nearEntryProcessors = new ArrayList<>();
-                nearEntryProcessorsBytes = new ArrayList<>();
-            }
-            else
-                nearVals = new ArrayList<>();
+            nearVals = new ArrayList<>();
         }
 
         nearKeys.add(key);
-
-        if (forceTransformBackups) {
-            assert entryProcessor != null;
-
-            nearEntryProcessors.add(entryProcessor);
-        }
-        else
-            nearVals.add(val);
+        nearVals.add(val);
 
         if (ttl >= 0) {
             if (nearTtls == null) {
@@ -315,6 +311,13 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
         return CACHE_MSG_IDX;
+    }
+
+    /**
+     * @return Partition.
+     */
+    public int partition() {
+        return part;
     }
 
     /**
@@ -661,42 +664,48 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeInt("part", part))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeMessage("ttls", ttls))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("ttls", ttls))
                     return false;
 
                 writer.incrementState();
 
             case 22:
+                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 23:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
@@ -823,7 +832,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 reader.incrementState();
 
             case 16:
-                subjId = reader.readUuid("subjId");
+                part = reader.readInt("part");
 
                 if (!reader.isLastRead())
                     return false;
@@ -831,6 +840,14 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 reader.incrementState();
 
             case 17:
+                subjId = reader.readUuid("subjId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 18:
                 byte syncModeOrd;
 
                 syncModeOrd = reader.readByte("syncMode");
@@ -842,7 +859,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
                 reader.incrementState();
 
-            case 18:
+            case 19:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -850,7 +867,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
                 reader.incrementState();
 
-            case 19:
+            case 20:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -858,7 +875,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
                 reader.incrementState();
 
-            case 20:
+            case 21:
                 ttls = reader.readMessage("ttls");
 
                 if (!reader.isLastRead())
@@ -866,7 +883,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
                 reader.incrementState();
 
-            case 21:
+            case 22:
                 vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -874,7 +891,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
                 reader.incrementState();
 
-            case 22:
+            case 23:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
@@ -894,7 +911,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 23;
+        return 24;
     }
 
     /** {@inheritDoc} */

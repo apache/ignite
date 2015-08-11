@@ -457,13 +457,13 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         caches[0].invoke(key1, new Transformer());
 
-        checkEventNodeIdsStrict(primaryIdsForKeys(key1));
+        checkEventNodeIdsStrict(idsForKeys(key1));
 
         assert evts.isEmpty();
 
         caches[0].invokeAll(keys, new Transformer());
 
-        checkEventNodeIdsStrict(primaryIdsForKeys(key1, key2));
+        checkEventNodeIdsStrict(idsForKeys(key1, key2));
     }
 
     /**
@@ -502,16 +502,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      */
     private UUID[] idsForKeys(int... keys) {
         return idsForKeys(false, keys);
-    }
-
-    /**
-     * Get primary node IDs where the given keys must reside.
-     *
-     * @param keys Keys.
-     * @return Node IDs.
-     */
-    private UUID[] primaryIdsForKeys(int... keys) {
-        return idsForKeys(true, keys);
     }
 
     /**
