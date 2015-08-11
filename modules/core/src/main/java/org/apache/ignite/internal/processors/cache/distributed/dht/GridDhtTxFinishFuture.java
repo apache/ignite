@@ -381,7 +381,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.subjectId(),
                 tx.taskNameHash());
 
-            req.writeVersion(tx.writeVersion());
+            req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
