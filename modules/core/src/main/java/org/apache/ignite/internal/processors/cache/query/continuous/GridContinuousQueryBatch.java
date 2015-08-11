@@ -17,45 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import org.apache.ignite.internal.processors.continuous.*;
+import org.jsr166.*;
+
 import java.util.*;
 
 /**
- * Continuous query listener.
+ * Continuous query batch.
  */
-interface CacheContinuousQueryListener<K, V> {
-    /**
-     * Query execution callback.
-     */
-    public void onExecution();
+class GridContinuousQueryBatch extends GridContinuousBatchAdapter {
+    /** Update indexes. */
+    private final Map<Integer, Long> updateIdxs = new ConcurrentHashMap8<>();
 
     /**
-     * Entry update callback.
-     *
-     * @param evt Event
-     * @param primary Primary flag.
-     * @param recordIgniteEvt Whether to record event.
+     * @return Update indexes.
      */
-    public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt, boolean primary, boolean recordIgniteEvt);
+    Map<Integer, Long> updateIndexes() {
+        return updateIdxs;
+    }
 
-    /**
-     * Listener unregistered callback.
-     */
-    public void onUnregister();
+    /** {@inheritDoc} */
+    @Override public void add(Object obj) {
+        super.add(obj);
 
-    /**
-     * Cleans backup queue.
-     *
-     * @param updateIdxs Update indexes map.
-     */
-    public void cleanupBackupQueue(Map<Integer, Long> updateIdxs);
+        CacheContinuousQueryEntry entry = (CacheContinuousQueryEntry)obj;
 
-    /**
-     * @return Whether old value is required.
-     */
-    public boolean oldValueRequired();
-
-    /**
-     * @return Whether to notify on existing entries.
-     */
-    public boolean notifyExisting();
+        updateIdxs.put(entry.partition(), entry.updateIndex());
+    }
 }

@@ -23,6 +23,7 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -83,6 +84,16 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         // Append cache name to the topic.
         topicPrefix = "CONTINUOUS_QUERY" + (cctx.name() == null ? "" : "_" + cctx.name());
+
+        cctx.io().addHandler(cctx.cacheId(), CacheContinuousQueryBatchAck.class,
+            new CI2<UUID, CacheContinuousQueryBatchAck>() {
+                @Override public void apply(UUID uuid, CacheContinuousQueryBatchAck msg) {
+                    CacheContinuousQueryListener lsnr = lsnrs.get(msg.routineId());
+
+                    if (lsnr != null)
+                        lsnr.cleanupBackupQueue(msg.updateIndexes());
+                }
+            });
     }
 
     /** {@inheritDoc} */
@@ -123,11 +134,15 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         KeyCacheObject key,
         CacheObject newVal,
         CacheObject oldVal,
-        boolean preload)
+        boolean primary,
+        boolean preload,
+        AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
         assert e != null;
         assert key != null;
+
+        assert Thread.holdsLock(e);
 
         boolean internal = e.isInternal() || !e.context().userCache();
 
@@ -150,11 +165,16 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         if (!hasNewVal && !hasOldVal)
             return;
 
+        GridDhtLocalPartition locPart = cctx.topology().localPartition(e.partition(), topVer, false);
+
+        assert locPart != null;
+
+        long updateIdx = locPart.nextContinuousQueryUpdateIndex();
+
         EventType evtType = !hasNewVal ? REMOVED : !hasOldVal ? CREATED : UPDATED;
 
         boolean initialized = false;
 
-        boolean primary = cctx.affinity().primary(cctx.localNode(), key, AffinityTopologyVersion.NONE);
         boolean recordIgniteEvt = !internal && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
         for (CacheContinuousQueryListener lsnr : lsnrCol.values()) {
@@ -180,7 +200,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 evtType,
                 key,
                 newVal,
-                lsnr.oldValueRequired() ? oldVal : null);
+                lsnr.oldValueRequired() ? oldVal : null,
+                e.partition(),
+                updateIdx);
 
             CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(
                 cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
@@ -199,6 +221,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         throws IgniteCheckedException {
         assert e != null;
         assert key != null;
+
+        assert Thread.holdsLock(e);
 
         if (e.isInternal())
             return;
@@ -230,7 +254,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                    EXPIRED,
                    key,
                    null,
-                   lsnr.oldValueRequired() ? oldVal : null);
+                   lsnr.oldValueRequired() ? oldVal : null,
+                   e.partition(),
+                   0);
 
                 CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent(
                     cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
@@ -466,10 +492,12 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
                                 GridCacheEntryEx e = it.next();
 
+                                CacheContinuousQueryEntry entry = new CacheContinuousQueryEntry(
+                                    cctx.cacheId(), CREATED, e.key(), e.rawGet(), null, 0, 0);
+
                                 next = new CacheContinuousQueryEvent<>(
                                     cctx.kernalContext().cache().jcache(cctx.name()),
-                                    cctx,
-                                    new CacheContinuousQueryEntry(cctx.cacheId(), CREATED, e.key(), e.rawGet(), null));
+                                    cctx, entry);
 
                                 if (rmtFilter != null && !rmtFilter.evaluate(next))
                                     next = null;

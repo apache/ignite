@@ -1061,8 +1061,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     subjId, null, taskName);
             }
 
-            if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
-                cctx.continuousQueries().onEntryUpdated(this, key, val, old, false);
+            if (!isNear())
+                cctx.continuousQueries().onEntryUpdated(this, key, val, old, tx.local(), false, topVer);
 
             cctx.dataStructures().onEntryUpdated(key, false);
         }
@@ -1219,8 +1219,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     taskName);
             }
 
-            if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
-                cctx.continuousQueries().onEntryUpdated(this, key, null, old, false);
+            if (!isNear())
+                cctx.continuousQueries().onEntryUpdated(this, key, null, old, tx.local(), false, topVer);
 
             cctx.dataStructures().onEntryUpdated(key, true);
         }
@@ -1557,7 +1557,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (res)
                 updateMetrics(op, metrics);
 
-            cctx.continuousQueries().onEntryUpdated(this, key, val, old, false);
+            if (!isNear())
+                cctx.continuousQueries().onEntryUpdated(this, key, val, old, true, false, AffinityTopologyVersion.NONE);
 
             cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE);
 
@@ -2167,8 +2168,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (res)
                 updateMetrics(op, metrics);
 
-            if (cctx.isReplicated() || primary)
-                cctx.continuousQueries().onEntryUpdated(this, key, val, oldVal, false);
+            if (!isNear())
+                cctx.continuousQueries().onEntryUpdated(this, key, val, oldVal, primary, false, topVer);
 
             cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE);
 
@@ -2984,8 +2985,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 drReplicate(drType, val, ver);
 
                 if (!skipQryNtf) {
-                    if (cctx.isLocal() || cctx.isReplicated() || cctx.affinity().primary(cctx.localNode(), key, topVer))
-                        cctx.continuousQueries().onEntryUpdated(this, key, val, null, preload);
+                    cctx.continuousQueries().onEntryUpdated(this, key, val, null, true, preload, topVer);
 
                     cctx.dataStructures().onEntryUpdated(key, false);
                 }

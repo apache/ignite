@@ -197,8 +197,8 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                                     }
                                                 }
 
-                                                ctx.continuous().addNotification(t3.get1(), t3.get2(), wrapper, null, false,
-                                                    false);
+                                                ctx.continuous().addNotification(t3.get1(), t3.get2(), wrapper, null,
+                                                    false, false);
                                             }
                                             catch (ClusterTopologyCheckedException ignored) {
                                                 // No-op.
@@ -358,6 +358,16 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
             filter = ctx.config().getMarshaller().unmarshal(filterBytes, dep.classLoader());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridContinuousBatch createBatch() {
+        return new GridContinuousBatchAdapter();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx) {
+        // No-op.
     }
 
     /** {@inheritDoc} */

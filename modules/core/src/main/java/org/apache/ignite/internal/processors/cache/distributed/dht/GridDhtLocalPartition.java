@@ -95,6 +95,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Group reservations. */
     private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
 
+    /** Continuous query update index. */
+    private final AtomicLong contQueryUpdIdx = new AtomicLong();
+
     /**
      * @param cctx Context.
      * @param id Partition ID.
@@ -576,6 +579,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     public boolean primary(AffinityTopologyVersion topVer) {
         return cctx.affinity().primary(cctx.localNode(), id, topVer);
+    }
+
+    /**
+     * @return Next update index.
+     */
+    public long nextContinuousQueryUpdateIndex() {
+        return contQueryUpdIdx.incrementAndGet();
     }
 
     /**

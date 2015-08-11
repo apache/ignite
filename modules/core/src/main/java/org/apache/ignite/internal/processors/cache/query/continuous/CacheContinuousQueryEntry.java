@@ -70,6 +70,12 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     @GridDirectTransient
     private GridDeploymentInfo depInfo;
 
+    /** Partition. */
+    private int part;
+
+    /** Update index. */
+    private long updateIdx;
+
     /**
      * Required by {@link org.apache.ignite.plugin.extensions.communication.Message}.
      */
@@ -83,18 +89,24 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @param key Key.
      * @param newVal New value.
      * @param oldVal Old value.
+     * @param part Partition.
+     * @param updateIdx Update index.
      */
     CacheContinuousQueryEntry(
         int cacheId,
         EventType evtType,
         KeyCacheObject key,
         @Nullable CacheObject newVal,
-        @Nullable CacheObject oldVal) {
+        @Nullable CacheObject oldVal,
+        int part,
+        long updateIdx) {
         this.cacheId = cacheId;
         this.evtType = evtType;
         this.key = key;
         this.newVal = newVal;
         this.oldVal = oldVal;
+        this.part = part;
+        this.updateIdx = updateIdx;
     }
 
     /**
@@ -109,6 +121,20 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      */
     EventType eventType() {
         return evtType;
+    }
+
+    /**
+     * @return Partition.
+     */
+    int partition() {
+        return part;
+    }
+
+    /**
+     * @return Update index.
+     */
+    long updateIndex() {
+        return updateIdx;
     }
 
     /**
@@ -220,6 +246,18 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
                 writer.incrementState();
 
+            case 5:
+                if (!writer.writeInt("part", part))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeLong("updateIdx", updateIdx))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -277,6 +315,22 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
                 reader.incrementState();
 
+            case 5:
+                part = reader.readInt("part");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                updateIdx = reader.readLong("updateIdx");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return true;
@@ -284,7 +338,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 7;
     }
 
     /** {@inheritDoc} */

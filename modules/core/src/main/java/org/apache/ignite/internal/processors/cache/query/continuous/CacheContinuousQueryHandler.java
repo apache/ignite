@@ -23,13 +23,16 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.event.*;
 import javax.cache.event.EventType;
@@ -80,6 +83,9 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
     /** Whether to skip primary check for REPLICATED cache. */
     private transient boolean skipPrimaryCheck;
+
+    /** Backup queue. */
+    private transient Queue<CacheContinuousQueryEntry> backupQueue;
 
     /**
      * Required by {@link Externalizable}.
@@ -164,6 +170,8 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         if (rmtFilter != null)
             ctx.resource().injectGeneric(rmtFilter);
 
+        backupQueue = new ConcurrentLinkedDeque8<>();
+
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
         CacheContinuousQueryListener<K, V> lsnr = new CacheContinuousQueryListener<K, V>() {
@@ -212,20 +220,24 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                         locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
                     else {
                         try {
-                            ClusterNode node = ctx.discovery().node(nodeId);
+                            final CacheContinuousQueryEntry entry = evt.entry();
 
-                            if (ctx.config().isPeerClassLoadingEnabled() && node != null) {
-                                evt.entry().prepareMarshal(cctx);
+                            if (primary) {
+                                if (ctx.config().isPeerClassLoadingEnabled() && ctx.discovery().node(nodeId) != null) {
+                                    entry.prepareMarshal(cctx);
 
-                                GridCacheDeploymentManager depMgr =
-                                    ctx.cache().internalCache(cacheName).context().deploy();
+                                    GridCacheDeploymentManager depMgr =
+                                        ctx.cache().internalCache(cacheName).context().deploy();
 
-                                depMgr.prepare(evt.entry());
+                                    depMgr.prepare(entry);
+                                }
+                                else
+                                    entry.prepareMarshal(cctx);
+
+                                ctx.continuous().addNotification(nodeId, routineId, entry, topic, sync, true);
                             }
                             else
-                                evt.entry().prepareMarshal(cctx);
-
-                            ctx.continuous().addNotification(nodeId, routineId, evt.entry(), topic, sync, true);
+                                backupQueue.add(entry);
                         }
                         catch (ClusterTopologyCheckedException ex) {
                             IgniteLogger log = ctx.log(getClass());
@@ -267,6 +279,31 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     ((CacheContinuousQueryFilterEx)rmtFilter).onQueryUnregister();
             }
 
+            @Override public void cleanupBackupQueue(Map<Integer, Long> updateIdxs) {
+                Iterator<CacheContinuousQueryEntry> it = backupQueue.iterator();
+
+                while (it.hasNext()) {
+                    CacheContinuousQueryEntry backupEntry = it.next();
+
+                    assert backupEntry != null;
+
+                    Long updateIdx = updateIdxs.get(backupEntry.partition());
+
+                    if (updateIdx != null) {
+                        assert backupEntry.updateIndex() <= updateIdx;
+
+                        it.remove();
+
+                        if (backupEntry.updateIndex() == updateIdx) {
+                            updateIdxs.remove(backupEntry.partition());
+
+                            if (updateIdxs.isEmpty())
+                                break;
+                        }
+                    }
+                }
+            }
+
             @Override public boolean oldValueRequired() {
                 return oldValRequired;
             }
@@ -298,7 +335,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert routineId != null;
         assert ctx != null;
 
-        GridCacheAdapter<K, V> cache = ctx.cache().<K, V>internalCache(cacheName);
+        GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
 
         if (cache != null)
             cache.context().continuousQueries().unregisterListener(internal, routineId);
@@ -378,6 +415,43 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         if (rmtFilterDep != null)
             rmtFilter = rmtFilterDep.unmarshal(nodeId, ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridContinuousBatch createBatch() {
+        return new GridContinuousQueryBatch();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx)
+        throws IgniteCheckedException {
+        GridContinuousQueryBatch qryBatch = (GridContinuousQueryBatch)batch;
+
+        GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+        Collection<ClusterNode> nodes = new HashSet<>();
+
+        cctx.topology().readLock();
+
+        try {
+            AffinityTopologyVersion topVer = cctx.topology().topologyVersion();
+
+            for (Integer part : qryBatch.updateIndexes().keySet()) {
+                for (ClusterNode node : cctx.dht().topology().nodes(part, topVer)) {
+                    if (!node.equals(cctx.localNode()))
+                        nodes.add(node);
+                }
+            }
+        }
+        finally {
+            cctx.topology().readUnlock();
+        }
+
+        CacheContinuousQueryBatchAck msg = new CacheContinuousQueryBatchAck(cctx.cacheId(), routineId,
+            qryBatch.updateIndexes());
+
+        for (ClusterNode node : nodes)
+            cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);
     }
 
     /** {@inheritDoc} */
