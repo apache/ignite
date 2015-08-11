@@ -212,10 +212,16 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
 
         Transaction tx = tc != null ? ignite.transactions().txStart(tc, REPEATABLE_READ) : null;
 
-        cache.put(key, key);
+        try {
+            cache.put(key, key);
 
-        if (tx != null)
-            tx.commit();
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override

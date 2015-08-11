@@ -165,6 +165,9 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         startGrids(GRID_CNT);
 
+        if (cacheMode == REPLICATED)
+            awaitPartitionMapExchange();
+
         ignites = new Ignite[GRID_CNT];
         ids = new UUID[GRID_CNT];
         caches = new IgniteCache[GRID_CNT];
