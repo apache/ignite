@@ -1060,7 +1060,7 @@ public class GridCacheUtils {
 
         byte[] bytes = new byte[28];
 
-        U.intToBytes(ver.topologyVersion(), bytes, 0);
+        U.intToBytes(ver.topologyOrder(), bytes, 0);
         U.longToBytes(ver.globalTime(), bytes, 4);
         U.longToBytes(ver.order(), bytes, 12);
         U.intToBytes(ver.nodeOrderAndDrIdRaw(), bytes, 20);

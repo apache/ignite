@@ -60,7 +60,7 @@ public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> implemen
 
     /** {@inheritDoc} */
     @Override public int topologyVersion() {
-        return ver.topologyVersion();
+        return ver.topologyOrder();
     }
 
     /** {@inheritDoc} */
@@ -94,7 +94,7 @@ public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> implemen
 
     /** {@inheritDoc} */
     public String toString() {
-        return "VersionedEntry [key=" + getKey() + ", val=" + getValue() + ", topVer=" + ver.topologyVersion() +
+        return "VersionedEntry [key=" + getKey() + ", val=" + getValue() + ", topVer=" + ver.topologyOrder() +
             ", nodeOrder=" + ver.nodeOrder() + ", order=" + ver.order() + ", creationTime=" + ver.globalTime() + ']';
     }
 }

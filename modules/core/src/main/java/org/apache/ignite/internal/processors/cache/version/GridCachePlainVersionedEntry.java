@@ -101,7 +101,7 @@ public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEnt
 
     /** {@inheritDoc} */
     @Override public int topologyVersion() {
-        return ver.topologyVersion();
+        return ver.topologyOrder();
     }
 
     /** {@inheritDoc} */

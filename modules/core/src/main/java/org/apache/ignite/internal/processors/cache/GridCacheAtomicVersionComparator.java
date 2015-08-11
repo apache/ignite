@@ -32,8 +32,8 @@ public class GridCacheAtomicVersionComparator {
      * @return Comparison value.
      */
     public int compare(GridCacheVersion one, GridCacheVersion other, boolean ignoreTime) {
-        int topVer = one.topologyVersion();
-        int otherTopVer = other.topologyVersion();
+        int topVer = one.topologyOrder();
+        int otherTopVer = other.topologyOrder();
 
         if (topVer == otherTopVer) {
             long globalTime = one.globalTime();

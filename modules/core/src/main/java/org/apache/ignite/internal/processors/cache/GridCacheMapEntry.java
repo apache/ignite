@@ -1927,7 +1927,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             // Incorporate conflict version into new version if needed.
             if (conflictVer != null && conflictVer != newVer)
-                newVer = new GridCacheVersionEx(newVer.topologyVersion(),
+                newVer = new GridCacheVersionEx(newVer.topologyOrder(),
                     newVer.globalTime(),
                     newVer.order(),
                     newVer.nodeOrder(),

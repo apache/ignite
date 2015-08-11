@@ -42,7 +42,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     private static final int DR_ID_MASK = 0x1F;
 
     /** Topology version. */
-    private int topVer;
+    private int topOrder;
 
     /** Node order (used as global order) and DR ID. */
     private int nodeOrderDrId;
@@ -76,7 +76,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
         if (nodeOrder > NODE_ORDER_MASK)
             throw new IllegalArgumentException("Node order overflow: " + nodeOrder);
 
-        this.topVer = topVer;
+        this.topOrder = topVer;
         this.globalTime = globalTime;
         this.order = order;
 
@@ -85,13 +85,13 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
 
     /**
-     * @param topVer Topology version.
+     * @param topVer Topology version plus number of seconds from the start time of the first grid node.
      * @param nodeOrderDrId Node order and DR ID.
      * @param globalTime Globally adjusted time.
      * @param order Version order.
      */
     public GridCacheVersion(int topVer, int nodeOrderDrId, long globalTime, long order) {
-        this.topVer = topVer;
+        this.topOrder = topVer;
         this.nodeOrderDrId = nodeOrderDrId;
         this.globalTime = globalTime;
         this.order = order;
@@ -100,8 +100,8 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     /**
      * @return Topology version plus number of seconds from the start time of the first grid node..
      */
-    public int topologyVersion() {
-        return topVer;
+    public int topologyOrder() {
+        return topOrder;
     }
 
     /**
@@ -184,12 +184,12 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
      * @return Version represented as {@code GridUuid}
      */
     public IgniteUuid asGridUuid() {
-        return new IgniteUuid(new UUID(((long)topVer << 32) | nodeOrderDrId, globalTime), order);
+        return new IgniteUuid(new UUID(((long)topOrder << 32) | nodeOrderDrId, globalTime), order);
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(topVer);
+        out.writeInt(topOrder);
         out.writeLong(globalTime);
         out.writeLong(order);
         out.writeInt(nodeOrderDrId);
@@ -197,7 +197,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
-        topVer = in.readInt();
+        topOrder = in.readInt();
         globalTime = in.readLong();
         order = in.readLong();
         nodeOrderDrId = in.readInt();
@@ -213,12 +213,12 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
         GridCacheVersion that = (GridCacheVersion)o;
 
-        return topVer == that.topVer && order == that.order && nodeOrder() == that.nodeOrder();
+        return topOrder == that.topOrder && order == that.order && nodeOrder() == that.nodeOrder();
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = topVer;
+        int res = topOrder;
 
         res = 31 * res + nodeOrder();
 
@@ -230,7 +230,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
     @Override public int compareTo(GridCacheVersion other) {
-        int res = Integer.compare(topologyVersion(), other.topologyVersion());
+        int res = Integer.compare(topologyOrder(), other.topologyOrder());
 
         if (res != 0)
             return res;
@@ -274,7 +274,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeInt("topVer", topVer))
+                if (!writer.writeInt("topVer", topOrder))
                     return false;
 
                 writer.incrementState();
@@ -317,7 +317,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
                 reader.incrementState();
 
             case 3:
-                topVer = reader.readInt("topVer");
+                topOrder = reader.readInt("topVer");
 
                 if (!reader.isLastRead())
                     return false;

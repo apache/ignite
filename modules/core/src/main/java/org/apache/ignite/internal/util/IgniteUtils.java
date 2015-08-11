@@ -8705,7 +8705,7 @@ public abstract class IgniteUtils {
 
             assert drVer != null;
 
-            UNSAFE.putInt(arr, off, drVer.topologyVersion());
+            UNSAFE.putInt(arr, off, drVer.topologyOrder());
 
             off += 4;
 
@@ -8722,7 +8722,7 @@ public abstract class IgniteUtils {
             off += 8;
         }
 
-        UNSAFE.putInt(arr, off, ver.topologyVersion());
+        UNSAFE.putInt(arr, off, ver.topologyOrder());
 
         off += 4;
 
