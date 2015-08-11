@@ -523,9 +523,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             @SuppressWarnings("unchecked")
             @Override public String apply(IgniteInternalFuture<?> f) {
                 if (isMini(f)) {
-                    return "[node=" + ((MiniFuture) f).node().id() +
-                        ", loc=" + ((MiniFuture) f).node().isLocal() +
-                        ", done=" + f.isDone() + "]";
+                    MiniFuture m = (MiniFuture)f;
+
+                    return "[node=" + m.node().id() + ", loc=" + m.node().isLocal() + ", done=" + f.isDone() + "]";
                 }
                 else
                     return "[loc=true, done=" + f.isDone() + "]";

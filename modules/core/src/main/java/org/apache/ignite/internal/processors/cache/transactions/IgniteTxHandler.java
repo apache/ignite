@@ -334,9 +334,6 @@ public class IgniteTxHandler {
                     req.taskNameHash()
                 );
 
-                if (req.near())
-                    tx.nearOnOriginatingNode(true);
-
                 tx = ctx.tm().onCreated(null, tx);
 
                 if (tx != null)
@@ -356,6 +353,9 @@ public class IgniteTxHandler {
                 tx.explicitLock(req.explicitLock());
 
             tx.transactionNodes(req.transactionNodes());
+
+            if (req.near())
+                tx.nearOnOriginatingNode(true);
 
             if (req.onePhaseCommit()) {
                 assert req.last();
