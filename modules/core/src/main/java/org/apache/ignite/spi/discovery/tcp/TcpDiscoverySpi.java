@@ -1579,6 +1579,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * @return Marshalled exchange data.
      */
     protected Map<Integer, byte[]> collectExchangeData(UUID nodeId) {
+        if (locNode.isDaemon())
+            return null;
+
         Map<Integer, Serializable> data = exchange.collect(nodeId);
 
         if (data == null)
@@ -1612,6 +1615,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         Map<Integer, byte[]> data,
         ClassLoader clsLdr)
     {
+        if (locNode.isDaemon())
+            return;
+
         Map<Integer, Serializable> data0 = U.newHashMap(data.size());
 
         for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {
