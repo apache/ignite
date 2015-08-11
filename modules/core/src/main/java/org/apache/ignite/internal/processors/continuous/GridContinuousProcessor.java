@@ -593,6 +593,30 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /**
      * @param nodeId ID of the node that started routine.
      * @param routineId Routine ID.
+     * @param objs Notification objects.
+     * @param orderedTopic Topic for ordered notifications. If {@code null}, non-ordered message will be sent.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void addBackupNotification(UUID nodeId,
+        final UUID routineId,
+        Collection<?> objs,
+        @Nullable Object orderedTopic)
+        throws IgniteCheckedException {
+        if (processorStopped)
+            return;
+
+        final RemoteRoutineInfo info = rmtInfos.get(routineId);
+
+        if (info != null) {
+            final GridContinuousBatch batch = info.addAll(objs);
+
+            sendNotification(nodeId, routineId, null, batch.collect(), orderedTopic, true, null);
+        }
+    }
+
+    /**
+     * @param nodeId ID of the node that started routine.
+     * @param routineId Routine ID.
      * @param obj Notification object.
      * @param orderedTopic Topic for ordered notifications. If {@code null}, non-ordered message will be sent.
      * @param sync If {@code true} then waits for event acknowledgment.
@@ -642,7 +666,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 final GridContinuousBatch batch = info.add(obj);
 
                 if (batch != null) {
-                    CI1<IgniteException> ackClosure = new CI1<IgniteException>() {
+                    CI1<IgniteException> ackC = new CI1<IgniteException>() {
                         @Override public void apply(IgniteException e) {
                             if (e == null) {
                                 try {
@@ -655,7 +679,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         }
                     };
 
-                    sendNotification(nodeId, routineId, null, batch.collect(), orderedTopic, msg, ackClosure);
+                    sendNotification(nodeId, routineId, null, batch.collect(), orderedTopic, msg, ackC);
                 }
             }
         }
@@ -904,7 +928,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                         }
                                     };
 
-                                    sendNotification(nodeId, routineId, null, toSnd, hnd.orderedTopic(), msg,
+                                    sendNotification(nodeId,
+                                        routineId,
+                                        null,
+                                        toSnd,
+                                        hnd.orderedTopic(),
+                                        msg,
                                         ackClosure);
                                 }
                                 catch (ClusterTopologyCheckedException ignored) {
@@ -1209,6 +1238,36 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
 
             return false;
+        }
+
+        /**
+         * @param objs Objects to add.
+         * @return Batch to send.
+         */
+        GridContinuousBatch addAll(Collection<?> objs) {
+            assert objs != null;
+            assert objs.size() > 0;
+
+            GridContinuousBatch toSnd = null;
+
+            lock.writeLock().lock();
+
+            try {
+                for (Object obj : objs)
+                    batch.add(obj);
+
+                toSnd = batch;
+
+                batch = hnd.createBatch();
+
+                if (interval > 0)
+                    lastSndTime = U.currentTimeMillis();
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
+
+            return toSnd;
         }
 
         /**

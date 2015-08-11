@@ -127,7 +127,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param key Key.
      * @param newVal New value.
      * @param oldVal Old value.
+     * @param primary {@code True} if called on primary node.
      * @param preload Whether update happened during preloading.
+     * @param topVer Topology version.
      * @throws IgniteCheckedException In case of error.
      */
     public void onEntryUpdated(GridCacheEntryEx e,
@@ -141,8 +143,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     {
         assert e != null;
         assert key != null;
-
-        assert Thread.holdsLock(e);
+        assert Thread.holdsLock(e) : e;
 
         boolean internal = e.isInternal() || !e.context().userCache();
 
@@ -175,7 +176,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         boolean initialized = false;
 
-        boolean recordIgniteEvt = !internal && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+        boolean recordIgniteEvt = primary && !internal && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
         for (CacheContinuousQueryListener lsnr : lsnrCol.values()) {
             if (preload && !lsnr.notifyExisting())
@@ -204,6 +205,12 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 e.partition(),
                 updateIdx);
 
+            log.info("Created entry [node=" + cctx.gridName() +
+                ", primary=" + primary +
+                ", preload=" + preload +
+                ", part=" + e.partition() +
+                ", idx=" + updateIdx + ']');
+
             CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(
                 cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
 
@@ -221,8 +228,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         throws IgniteCheckedException {
         assert e != null;
         assert key != null;
-
-        assert Thread.holdsLock(e);
+        assert Thread.holdsLock(e) : e;
 
         if (e.isInternal())
             return;
@@ -374,6 +380,17 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param topVer Topology version.
+     */
+    public void beforeExchange(AffinityTopologyVersion topVer) {
+        for (CacheContinuousQueryListener lsnr : lsnrs.values())
+            lsnr.flushBackupQueue(cctx.kernalContext());
+
+        for (CacheContinuousQueryListener lsnr : intLsnrs.values())
+            lsnr.flushBackupQueue(cctx.kernalContext());
+    }
+
+    /**
      * @param locLsnr Local listener.
      * @param rmtFilter Remote filter.
      * @param bufSize Buffer size.
@@ -493,7 +510,12 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                 GridCacheEntryEx e = it.next();
 
                                 CacheContinuousQueryEntry entry = new CacheContinuousQueryEntry(
-                                    cctx.cacheId(), CREATED, e.key(), e.rawGet(), null, 0, 0);
+                                    cctx.cacheId(),
+                                    CREATED,
+                                    e.key(),
+                                    e.rawGet(),
+                                    null,
+                                    0, 0);
 
                                 next = new CacheContinuousQueryEvent<>(
                                     cctx.kernalContext().cache().jcache(cctx.name()),

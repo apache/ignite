@@ -49,6 +49,7 @@ public class GridContinuousMessage implements Message {
     private Object data;
 
     /** */
+    @GridToStringInclude
     @GridDirectCollection(Message.class)
     private Collection<Message> msgs;
 

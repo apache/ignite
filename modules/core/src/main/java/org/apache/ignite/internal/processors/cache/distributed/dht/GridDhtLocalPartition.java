@@ -96,7 +96,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
 
     /** Continuous query update index. */
-    private final AtomicLong contQueryUpdIdx = new AtomicLong();
+    private final AtomicLong contQryUpdIdx = new AtomicLong();
 
     /**
      * @param cctx Context.
@@ -590,7 +590,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return Next update index.
      */
     public long nextContinuousQueryUpdateIndex() {
-        return contQueryUpdIdx.incrementAndGet();
+        return contQryUpdIdx.incrementAndGet();
     }
 
     /**

@@ -450,5 +450,4 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     @Override public String toString() {
         return S.toString(GridDhtAtomicUpdateFuture.class, this);
     }
-
 }

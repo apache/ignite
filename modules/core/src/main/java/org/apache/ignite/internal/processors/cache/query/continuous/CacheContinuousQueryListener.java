@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import org.apache.ignite.internal.*;
+
 import java.util.*;
 
 /**
@@ -48,6 +50,13 @@ interface CacheContinuousQueryListener<K, V> {
      * @param updateIdxs Update indexes map.
      */
     public void cleanupBackupQueue(Map<Integer, Long> updateIdxs);
+
+    /**
+     * Flushes backup queue.
+     *
+     * @param ctx Context.
+     */
+    public void flushBackupQueue(GridKernalContext ctx);
 
     /**
      * @return Whether old value is required.

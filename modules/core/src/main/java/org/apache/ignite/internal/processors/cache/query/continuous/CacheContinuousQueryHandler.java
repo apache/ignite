@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -85,7 +86,13 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     private transient boolean skipPrimaryCheck;
 
     /** Backup queue. */
-    private transient Queue<CacheContinuousQueryEntry> backupQueue;
+    private transient Collection<CacheContinuousQueryEntry> backupQueue;
+
+    /** */
+    private transient Map<Integer, Long> rcvCntrs;
+
+    /** */
+    private transient DuplicateEventFilter dupEvtFilter = new DuplicateEventFilter();
 
     /**
      * Required by {@link Externalizable}.
@@ -135,6 +142,8 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         this.ignoreExpired = ignoreExpired;
         this.taskHash = taskHash;
         this.skipPrimaryCheck = skipPrimaryCheck;
+
+        this.rcvCntrs = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -216,23 +225,14 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 }
 
                 if (notify) {
-                    if (loc)
+                    if (loc && dupEvtFilter.apply(evt.entry()))
                         locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
                     else {
                         try {
                             final CacheContinuousQueryEntry entry = evt.entry();
 
                             if (primary) {
-                                if (ctx.config().isPeerClassLoadingEnabled() && ctx.discovery().node(nodeId) != null) {
-                                    entry.prepareMarshal(cctx);
-
-                                    GridCacheDeploymentManager depMgr =
-                                        ctx.cache().internalCache(cacheName).context().deploy();
-
-                                    depMgr.prepare(entry);
-                                }
-                                else
-                                    entry.prepareMarshal(cctx);
+                                prepareEntry(cctx, nodeId, entry);
 
                                 ctx.continuous().addNotification(nodeId, routineId, entry, topic, sync, true);
                             }
@@ -304,6 +304,25 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 }
             }
 
+            @Override public void flushBackupQueue(GridKernalContext ctx) {
+                if (backupQueue.isEmpty())
+                    return;
+
+                try {
+                    GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                    for (CacheContinuousQueryEntry e : backupQueue)
+                        prepareEntry(cctx, nodeId, e);
+
+                    ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue, topic);
+
+                    backupQueue.clear();
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(ctx.log(getClass()), "Failed to send backup event notification to node: " + nodeId, e);
+                }
+            }
+
             @Override public boolean oldValueRequired() {
                 return oldValRequired;
             }
@@ -323,6 +342,23 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             return RegisterStatus.DELAYED;
 
         return mgr.registerListener(routineId, lsnr, internal);
+    }
+
+    /**
+     * @param cctx Context.
+     * @param nodeId ID of the node that started routine.
+     * @param entry Entry.
+     * @throws IgniteCheckedException In case of error.
+     */
+    private void prepareEntry(GridCacheContext cctx, UUID nodeId, CacheContinuousQueryEntry entry)
+        throws IgniteCheckedException {
+        if (cctx.kernalContext().config().isPeerClassLoadingEnabled() && cctx.discovery().node(nodeId) != null) {
+            entry.prepareMarshal(cctx);
+
+            cctx.deploy().prepare(entry);
+        }
+        else
+            entry.prepareMarshal(cctx);
     }
 
     /** {@inheritDoc} */
@@ -392,10 +428,38 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 @Override public CacheEntryEvent<? extends K, ? extends V> apply(CacheContinuousQueryEntry e) {
                     return new CacheContinuousQueryEvent<>(cache, cctx, e);
                 }
-            }
+            },
+            dupEvtFilter
         );
 
         locLsnr.onUpdated(evts);
+    }
+
+    /**
+     * @param e Entry.
+     * @return {@code True} if listener should be notified.
+     */
+    private boolean notifyListener(CacheContinuousQueryEntry e) {
+        Integer part = e.partition();
+
+        Long cntr = rcvCntrs.get(part);
+
+        if (cntr != null) {
+            long cntr0 = cntr;
+
+            if (e.updateIndex() > cntr0) {
+                // TODO IGNITE-426: remove assert.
+                assert e.updateIndex() == cntr0 + 1 : "Invalid entry [e=" + e + ", cntr=" + cntr + ']';
+
+                rcvCntrs.put(part, cntr0);
+            }
+            else
+                return false;
+        }
+        else
+            rcvCntrs.put(part, e.updateIndex());
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -527,6 +591,16 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
 
         return cache == null ? null : cache.context();
+    }
+
+    /**
+     *
+     */
+    private class DuplicateEventFilter implements IgnitePredicate<CacheContinuousQueryEntry> {
+        /** {@inheritDoc} */
+        @Override public boolean apply(CacheContinuousQueryEntry e) {
+            return notifyListener(e);
+        }
     }
 
     /**
