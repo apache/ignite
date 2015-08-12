@@ -96,6 +96,7 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode());
+        ccfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
         ccfg.setBackups(1);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
