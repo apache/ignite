@@ -110,10 +110,8 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
      * @param routineId Routine ID.
      * @param batch Acknowledged batch.
      * @param ctx Kernal context.
-     * @throws IgniteCheckedException In case of error.
      */
-    public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx)
-        throws IgniteCheckedException;
+    public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx);
 
     /**
      * @return Topic for ordered notifications. If {@code null}, notifications

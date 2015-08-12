@@ -33,7 +33,7 @@ public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNi
     protected boolean msgThread;
 
     /** */
-    protected IgniteInClosure<IgniteException> ackClosure;
+    protected IgniteInClosure<IgniteException> ackC;
 
     /** {@inheritDoc} */
     @Override public void messageThread(boolean msgThread) {
@@ -51,13 +51,13 @@ public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNi
     }
 
     /** {@inheritDoc} */
-    @Override public void ackClosure(IgniteInClosure<IgniteException> closure) {
-        ackClosure = closure;
+    @Override public void ackClosure(IgniteInClosure<IgniteException> c) {
+        ackC = c;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInClosure<IgniteException> ackClosure() {
-        return ackClosure;
+        return ackC;
     }
 
     /** {@inheritDoc} */

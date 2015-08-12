@@ -82,6 +82,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** Lock. */
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
+    /** Partition update counter. */
+    private Map<Integer, Long> cntrMap = new HashMap<>();
+
     /**
      * @param cctx Context.
      */
@@ -786,7 +789,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Nullable @Override public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionFullMap partMap) {
+        GridDhtPartitionFullMap partMap,
+        @Nullable Map<Integer, Long> cntrMap) {
         if (log.isDebugEnabled())
             log.debug("Updating full partition map [exchId=" + exchId + ", parts=" + fullMapString() + ']');
 
@@ -866,6 +870,22 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             part2node = p2n;
 
+            if (cntrMap != null) {
+                for (Map.Entry<Integer, Long> e : cntrMap.entrySet()) {
+                    Long cntr = this.cntrMap.get(e.getKey());
+
+                    if (cntr == null || cntr < e.getValue())
+                        this.cntrMap.put(e.getKey(), e.getValue());
+                }
+
+                for (GridDhtLocalPartition part : locParts.values()) {
+                    Long cntr = cntrMap.get(part.id());
+
+                    if (cntr != null)
+                        part.continuousQueryUpdateIndex(cntr);
+                }
+            }
+
             boolean changed = checkEvictions(updateSeq);
 
             consistencyCheck();
@@ -883,7 +903,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Nullable @Override public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionMap parts) {
+        GridDhtPartitionMap parts,
+        @Nullable Map<Integer, Long> cntrMap) {
         if (log.isDebugEnabled())
             log.debug("Updating single partition map [exchId=" + exchId + ", parts=" + mapString(parts) + ']');
 
@@ -958,6 +979,22 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     if (ids != null)
                         changed |= ids.remove(parts.nodeId());
+                }
+            }
+
+            if (cntrMap != null) {
+                for (Map.Entry<Integer, Long> e : cntrMap.entrySet()) {
+                    Long cntr = this.cntrMap.get(e.getKey());
+
+                    if (cntr == null || cntr < e.getValue())
+                        this.cntrMap.put(e.getKey(), e.getValue());
+                }
+
+                for (GridDhtLocalPartition part : locParts.values()) {
+                    Long cntr = cntrMap.get(part.id());
+
+                    if (cntr != null)
+                        part.continuousQueryUpdateIndex(cntr);
                 }
             }
 
@@ -1209,14 +1246,36 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public Map<Integer, Long> updateCounters() {
+        lock.readLock().lock();
+
+        try {
+            Map<Integer, Long> res = new HashMap<>(cntrMap);
+
+            for (GridDhtLocalPartition part : locParts.values()) {
+                Long cntr0 = res.get(part.id());
+                Long cntr1 = part.continuousQueryUpdateIndex();
+
+                if (cntr0 == null || cntr1 > cntr0)
+                    res.put(part.id(), cntr1);
+            }
+
+            return res;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void printMemoryStats(int threshold) {
-        X.println(">>>  Cache partition topology stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+        X.println(">>> Cache partition topology stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
 
         for (GridDhtLocalPartition part : locParts.values()) {
             int size = part.size();
 
             if (size >= threshold)
-                X.println(">>>   Local partition [part=" + part.id() + ", size=" + size + ']');
+                X.println(">>> Local partition [part=" + part.id() + ", size=" + size + ']');
         }
     }
 

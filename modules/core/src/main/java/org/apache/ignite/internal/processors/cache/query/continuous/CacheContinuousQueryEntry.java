@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -76,6 +77,11 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /** Update index. */
     private long updateIdx;
 
+    /** */
+    @GridToStringInclude
+    @GridDirectTransient
+    private AffinityTopologyVersion topVer;
+
     /**
      * Required by {@link org.apache.ignite.plugin.extensions.communication.Message}.
      */
@@ -91,6 +97,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @param oldVal Old value.
      * @param part Partition.
      * @param updateIdx Update index.
+     * @param topVer Topology version if applicable.
      */
     CacheContinuousQueryEntry(
         int cacheId,
@@ -99,7 +106,8 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         @Nullable CacheObject newVal,
         @Nullable CacheObject oldVal,
         int part,
-        long updateIdx) {
+        long updateIdx,
+        @Nullable AffinityTopologyVersion topVer) {
         this.cacheId = cacheId;
         this.evtType = evtType;
         this.key = key;
@@ -107,6 +115,14 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         this.oldVal = oldVal;
         this.part = part;
         this.updateIdx = updateIdx;
+        this.topVer = topVer;
+    }
+
+    /**
+     * @return Topology version if applicable.
+     */
+    @Nullable AffinityTopologyVersion topologyVersion() {
+        return topVer;
     }
 
     /**

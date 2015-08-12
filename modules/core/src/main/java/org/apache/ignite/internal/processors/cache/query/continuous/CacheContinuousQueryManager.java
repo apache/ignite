@@ -203,7 +203,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 newVal,
                 lsnr.oldValueRequired() ? oldVal : null,
                 e.partition(),
-                updateIdx);
+                updateIdx,
+                topVer);
 
             log.info("Created entry [node=" + cctx.gridName() +
                 ", primary=" + primary +
@@ -262,7 +263,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                    null,
                    lsnr.oldValueRequired() ? oldVal : null,
                    e.partition(),
-                   0);
+                   0,
+                   null);
 
                 CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent(
                     cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
@@ -384,11 +386,25 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      */
     public void beforeExchange(AffinityTopologyVersion topVer) {
         for (CacheContinuousQueryListener lsnr : lsnrs.values())
-            lsnr.flushBackupQueue(cctx.kernalContext());
+            lsnr.flushBackupQueue(cctx.kernalContext(), topVer);
 
         for (CacheContinuousQueryListener lsnr : intLsnrs.values())
-            lsnr.flushBackupQueue(cctx.kernalContext());
+            lsnr.flushBackupQueue(cctx.kernalContext(), topVer);
     }
+
+    /**
+     * Partition evicted callback.
+     *
+     * @param part Partition number.
+     */
+    public void onPartitionEvicted(int part) {
+        for (CacheContinuousQueryListener lsnr : lsnrs.values())
+            lsnr.onPartitionEvicted(part);
+
+        for (CacheContinuousQueryListener lsnr : intLsnrs.values())
+            lsnr.onPartitionEvicted(part);
+    }
+
 
     /**
      * @param locLsnr Local listener.
@@ -515,7 +531,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                     e.key(),
                                     e.rawGet(),
                                     null,
-                                    0, 0);
+                                    0,
+                                    0,
+                                    null);
 
                                 next = new CacheContinuousQueryEvent<>(
                                     cctx.kernalContext().cache().jcache(cctx.name()),

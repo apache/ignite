@@ -50,21 +50,29 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
+    private static volatile boolean err;
+
+    /** */
     private boolean client;
+
+    /** */
+    private int backups = 1;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
+        TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
-        cfg.setCommunicationSpi(new TestCommunicationSpi());
+        commSpi.setIdleConnectionTimeout(100);
+
+        cfg.setCommunicationSpi(commSpi);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(cacheMode());
         ccfg.setAtomicityMode(atomicityMode());
-        ccfg.setBackups(1);
+        ccfg.setBackups(backups);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
@@ -72,6 +80,20 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         cfg.setClientMode(client);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        err = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
     }
 
     /**
@@ -87,10 +109,27 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testBackupQueue() throws Exception {
+    public void testOneBackup() throws Exception {
+        checkBackupQueue(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testThreeBackups() throws Exception {
+        checkBackupQueue(3);
+    }
+
+    /**
+     * @param backups Number of backups.
+     * @throws Exception If failed.
+     */
+    private void checkBackupQueue(int backups) throws Exception {
+        this.backups = backups;
+
         final int SRV_NODES = 4;
 
-        startGridsMultiThreaded(SRV_NODES);
+        startGrids(SRV_NODES);
 
         client = true;
 
@@ -99,6 +138,10 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         client = false;
 
         IgniteCache<Object, Object> qryClientCache = qryClient.cache(null);
+
+        assertEquals(backups, qryClientCache.getConfiguration(CacheConfiguration.class).getBackups());
+
+        Affinity<Object> aff = qryClient.affinity(null);
 
         CacheEventListener lsnr = new CacheEventListener();
 
@@ -123,12 +166,14 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
             List<Integer> keys = testKeys(cache, PARTS);
 
-            lsnr.latch = new CountDownLatch(keys.size());
+            CountDownLatch latch = new CountDownLatch(keys.size());
+
+            lsnr.latch = latch;
 
             boolean first = true;
 
             for (Integer key : keys) {
-                log.info("Put [node=" + ignite.name() + ", key=" + key + ']');
+                log.info("Put [node=" + ignite.name() + ", key=" + key + ", part=" + aff.partition(key) + ']');
 
                 cache.put(key, key);
 
@@ -141,9 +186,8 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
             stopGrid(i);
 
-            assertTrue("Failed to wait for notifications", lsnr.latch.await(5, SECONDS));
-
-            lsnr.latch = null;
+            if (!latch.await(5, SECONDS))
+                fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + lsnr.latch.getCount() + ']');
 
             awaitPartitionMapExchange();
         }
@@ -159,21 +203,23 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
             List<Integer> keys = testKeys(cache, PARTS);
 
-            lsnr.latch = new CountDownLatch(keys.size());
+            CountDownLatch latch = new CountDownLatch(keys.size());
+
+            lsnr.latch = latch;
 
             for (Integer key : keys) {
-                log.info("Put [node=" + ignite.name() + ", key=" + key + ']');
+                log.info("Put [node=" + ignite.name() + ", key=" + key + ", part=" + aff.partition(key) + ']');
 
                 cache.put(key, key);
             }
 
-            if (!lsnr.latch.await(5, SECONDS))
+            if (!latch.await(5, SECONDS))
                 fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + lsnr.latch.getCount() + ']');
-
-            lsnr.latch = null;
         }
 
         cur.close();
+
+        assertFalse(err);
     }
 
     /**
@@ -192,7 +238,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         int[] nodeParts = aff.primaryPartitions(node);
 
-        final int KEYS_PER_PART = 1;
+        final int KEYS_PER_PART = 2;
 
         for (int i = 0; i < parts; i++) {
             int part = nodeParts[i];
@@ -217,6 +263,46 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testBackupQueueCleanup() throws Exception {
+        startGrids(2);
+
+        Ignite ignite0 = ignite(0);
+        Ignite ignite1 = ignite(1);
+
+        CacheEventListener lsnr = new CacheEventListener();
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+        qry.setAutoUnsubscribe(true);
+
+        qry.setLocalListener(lsnr);
+
+        QueryCursor<?> cur = ignite1.cache(null).query(qry);
+
+        IgniteCache<Object, Object> cache0 = ignite0.cache(null);
+
+        final int KEYS = 1;
+
+        List<Integer> keys = primaryKeys(cache0, KEYS);
+
+        CountDownLatch latch = new CountDownLatch(keys.size());
+
+        lsnr.latch = latch;
+
+        for (Integer key : keys)
+            cache0.put(key, key);
+
+        if (!latch.await(5, SECONDS))
+            fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + lsnr.latch.getCount() + ']');
+
+        Thread.sleep(10_000);
+
+        cur.close();
+    }
+
+    /**
      *
      */
     private static class CacheEventListener implements CacheEntryUpdatedListener<Object, Object> {
@@ -234,11 +320,28 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                 CountDownLatch latch = this.latch;
 
-                assertTrue(latch != null);
-                assertTrue(latch.getCount() > 0);
+                testAssert(evt, latch != null);
+                testAssert(evt, latch.getCount() > 0);
 
                 latch.countDown();
+
+                if (latch.getCount() == 0)
+                    this.latch = null;
             }
+        }
+
+        /**
+         * @param evt Event.
+         * @param cond Condition to check.
+         */
+        private void testAssert(CacheEntryEvent evt, boolean cond) {
+            if (!cond) {
+                ignite.log().info("Unexpected event: " + evt);
+
+                err = true;
+            }
+
+            assertTrue(cond);
         }
     }
 

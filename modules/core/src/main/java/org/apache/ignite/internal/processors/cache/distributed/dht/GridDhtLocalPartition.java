@@ -523,6 +523,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (cctx.isDrEnabled())
                 cctx.dr().partitionEvicted(id);
 
+            cctx.continuousQueries().onPartitionEvicted(id);
+
             cctx.dataStructures().onPartitionEvicted(id);
 
             rent.onDone();
@@ -590,7 +592,33 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return Next update index.
      */
     public long nextContinuousQueryUpdateIndex() {
-        return contQryUpdIdx.incrementAndGet();
+        long res = contQryUpdIdx.incrementAndGet();
+
+        log.info("Next update index [node=" + cctx.gridName() + ", part=" + id + ", idx=" + res + ']');
+
+        return res;
+    }
+
+    /**
+     * @return Current update index.
+     */
+    public long continuousQueryUpdateIndex() {
+        return contQryUpdIdx.get();
+    }
+
+    /**
+     * @param val Update index value.
+     */
+    public void continuousQueryUpdateIndex(long val) {
+        while (true) {
+            long val0 = contQryUpdIdx.get();
+
+            if (val0 >= val)
+                break;
+
+            if (contQryUpdIdx.compareAndSet(val0, val))
+                break;
+        }
     }
 
     /**

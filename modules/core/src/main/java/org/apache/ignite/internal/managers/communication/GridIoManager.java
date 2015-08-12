@@ -1066,7 +1066,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param ordered Ordered flag.
      * @param timeout Timeout.
      * @param skipOnTimeout Whether message can be skipped on timeout.
-     * @param ackClosure Ack closure.
+     * @param ackC Ack closure.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     private void send(
@@ -1079,7 +1079,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         boolean seq,
         long timeout,
         boolean skipOnTimeout,
-        IgniteInClosure<IgniteException> ackClosure
+        IgniteInClosure<IgniteException> ackC
     ) throws IgniteCheckedException {
         assert node != null;
         assert topic != null;
@@ -1102,8 +1102,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             else
                 processRegularMessage0(ioMsg, locNodeId);
 
-            if (ackClosure != null)
-                ackClosure.apply(null);
+            if (ackC != null)
+                ackC.apply(null);
         }
         else {
             if (topicOrd < 0)
@@ -1113,7 +1113,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 CommunicationSpi spi = getSpi();
 
                 if (spi instanceof TcpCommunicationSpi)
-                    ((TcpCommunicationSpi)spi).sendMessage(node, ioMsg, ackClosure);
+                    ((TcpCommunicationSpi)spi).sendMessage(node, ioMsg, ackC);
                 else
                     spi.sendMessage(node, ioMsg);
             }

@@ -182,8 +182,10 @@ public class GridNioRecoveryDescriptor {
 
             assert fut.isDone() : fut;
 
-            if (fut.ackClosure() != null)
-                fut.ackClosure().apply(null);
+            IgniteInClosure<IgniteException> c = fut.ackClosure();
+
+            if (c != null)
+                c.apply(null);
 
             acked++;
         }

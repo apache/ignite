@@ -668,14 +668,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 if (batch != null) {
                     CI1<IgniteException> ackC = new CI1<IgniteException>() {
                         @Override public void apply(IgniteException e) {
-                            if (e == null) {
-                                try {
-                                    info.hnd.onBatchAcknowledged(routineId, batch, ctx);
-                                }
-                                catch (IgniteCheckedException ex) {
-                                    U.error(log, "Failed to acknowledge batch: " + batch, ex);
-                                }
-                            }
+                            if (e == null)
+                                info.hnd.onBatchAcknowledged(routineId, batch, ctx);
                         }
                     };
 
@@ -705,7 +699,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param orderedTopic Topic for ordered notifications.
      *      If {@code null}, non-ordered message will be sent.
      * @param msg If {@code true} then sent data is collection of messages.
-     * @param ackClosure Ack closure.
+     * @param ackC Ack closure.
      * @throws IgniteCheckedException In case of error.
      */
     private void sendNotification(UUID nodeId,
@@ -714,7 +708,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         Collection<Object> toSnd,
         @Nullable Object orderedTopic,
         boolean msg,
-        IgniteInClosure<IgniteException> ackClosure) throws IgniteCheckedException {
+        IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
         assert toSnd != null;
@@ -723,7 +717,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         sendWithRetries(nodeId,
             new GridContinuousMessage(MSG_EVT_NOTIFICATION, routineId, futId, toSnd, msg),
             orderedTopic,
-            ackClosure);
+            ackC);
     }
 
     /**
@@ -915,16 +909,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                                     boolean msg = toSnd.iterator().next() instanceof Message;
 
-                                    CI1<IgniteException> ackClosure = new CI1<IgniteException>() {
+                                    CI1<IgniteException> ackC = new CI1<IgniteException>() {
                                         @Override public void apply(IgniteException e) {
-                                            if (e == null) {
-                                                try {
-                                                    info.hnd.onBatchAcknowledged(routineId, batch, ctx);
-                                                }
-                                                catch (IgniteCheckedException ex) {
-                                                    U.error(log, "Failed to acknowledge batch: " + batch, ex);
-                                                }
-                                            }
+                                            if (e == null)
+                                                info.hnd.onBatchAcknowledged(routineId, batch, ctx);
                                         }
                                     };
 
@@ -934,7 +922,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                         toSnd,
                                         hnd.orderedTopic(),
                                         msg,
-                                        ackClosure);
+                                        ackC);
                                 }
                                 catch (ClusterTopologyCheckedException ignored) {
                                     if (log.isDebugEnabled())
@@ -1012,11 +1000,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param msg Message.
      * @param orderedTopic Topic for ordered notifications.
      *      If {@code null}, non-ordered message will be sent.
-     * @param ackClosure Ack closure.
+     * @param ackC Ack closure.
      * @throws IgniteCheckedException In case of error.
      */
     private void sendWithRetries(UUID nodeId, GridContinuousMessage msg, @Nullable Object orderedTopic,
-        IgniteInClosure<IgniteException> ackClosure)
+        IgniteInClosure<IgniteException> ackC)
         throws IgniteCheckedException {
         assert nodeId != null;
         assert msg != null;
@@ -1024,7 +1012,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node != null)
-            sendWithRetries(node, msg, orderedTopic, ackClosure);
+            sendWithRetries(node, msg, orderedTopic, ackC);
         else
             throw new ClusterTopologyCheckedException("Node for provided ID doesn't exist (did it leave the grid?): " + nodeId);
     }
@@ -1034,15 +1022,15 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param msg Message.
      * @param orderedTopic Topic for ordered notifications.
      *      If {@code null}, non-ordered message will be sent.
-     * @param ackClosure Ack closure.
+     * @param ackC Ack closure.
      * @throws IgniteCheckedException In case of error.
      */
     private void sendWithRetries(ClusterNode node, GridContinuousMessage msg, @Nullable Object orderedTopic,
-        IgniteInClosure<IgniteException> ackClosure) throws IgniteCheckedException {
+        IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert node != null;
         assert msg != null;
 
-        sendWithRetries(F.asList(node), msg, orderedTopic, ackClosure);
+        sendWithRetries(F.asList(node), msg, orderedTopic, ackC);
     }
 
     /**
@@ -1050,11 +1038,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param msg Message.
      * @param orderedTopic Topic for ordered notifications.
      *      If {@code null}, non-ordered message will be sent.
-     * @param ackClosure Ack closure.
+     * @param ackC Ack closure.
      * @throws IgniteCheckedException In case of error.
      */
     private void sendWithRetries(Collection<? extends ClusterNode> nodes, GridContinuousMessage msg,
-        @Nullable Object orderedTopic, IgniteInClosure<IgniteException> ackClosure) throws IgniteCheckedException {
+        @Nullable Object orderedTopic, IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert !F.isEmpty(nodes);
         assert msg != null;
 
@@ -1077,10 +1065,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             msg,
                             SYSTEM_POOL,
                             0,
-                            true);
+                            true,
+                            ackC);
                     }
                     else
-                        ctx.io().send(node, TOPIC_CONTINUOUS, msg, SYSTEM_POOL, ackClosure);
+                        ctx.io().send(node, TOPIC_CONTINUOUS, msg, SYSTEM_POOL, ackC);
 
                     break;
                 }

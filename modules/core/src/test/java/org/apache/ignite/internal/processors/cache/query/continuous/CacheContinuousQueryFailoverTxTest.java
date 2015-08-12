@@ -17,31 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import org.apache.ignite.internal.processors.continuous.*;
-import org.jsr166.*;
+import org.apache.ignite.cache.*;
 
-import java.util.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Continuous query batch.
+ *
  */
-class GridContinuousQueryBatch extends GridContinuousBatchAdapter {
-    /** Update indexes. */
-    private final Map<Integer, Long> updateIdxs = new ConcurrentHashMap8<>();
-
-    /**
-     * @return Update indexes.
-     */
-    Map<Integer, Long> updateIndexes() {
-        return updateIdxs;
+public class CacheContinuousQueryFailoverTxTest extends CacheContinuousQueryFailoverAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return PARTITIONED;
     }
 
     /** {@inheritDoc} */
-    @Override public void add(Object obj) {
-        super.add(obj);
-
-        CacheContinuousQueryEntry entry = (CacheContinuousQueryEntry)obj;
-
-        updateIdxs.put(entry.partition(), entry.updateIndex());
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 }
