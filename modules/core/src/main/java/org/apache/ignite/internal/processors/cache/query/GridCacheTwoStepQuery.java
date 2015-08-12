@@ -48,14 +48,9 @@ public class GridCacheTwoStepQuery {
 
     /**
      * @param spaces All spaces accessed in query.
-     * @param rdc Reduce query.
      */
-    public GridCacheTwoStepQuery(Set<String> spaces, GridCacheSqlQuery rdc) {
-        assert rdc != null;
-
+    public GridCacheTwoStepQuery(Set<String> spaces) {
         this.spaces = spaces;
-
-        this.rdc = rdc;
     }
 
     /**
@@ -98,6 +93,13 @@ public class GridCacheTwoStepQuery {
      */
     public GridCacheSqlQuery reduceQuery() {
         return rdc;
+    }
+
+    /**
+     * @param rdc Reduce query.
+     */
+    public void reduceQuery(GridCacheSqlQuery rdc) {
+        this.rdc = rdc;
     }
 
     /**

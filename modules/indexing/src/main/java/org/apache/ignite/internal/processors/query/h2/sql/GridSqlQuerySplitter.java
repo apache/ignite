@@ -140,11 +140,31 @@ public class GridSqlQuerySplitter {
         // nullifying or updating things, have to make sure that we will not need them in the original form later.
         final GridSqlSelect mapQry = wrapUnion(collectAllSpaces(GridSqlQueryParser.parse(stmt), spaces));
 
+        // Build resulting two step query.
+        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(spaces);
+
+        GridCacheSqlQuery rdc = split(res, 0, mapQry, params, collocated);
+
+        res.reduceQuery(rdc);
+
+        return res;
+    }
+
+    /**
+     * @param res Resulting two step query.
+     * @param splitIdx Split index.
+     * @param mapQry Map query to be split.
+     * @param params Query parameters.
+     * @param collocated Whether the query is forced to be collocated.
+     * @return Reduce query for the given map query.
+     */
+    public static GridCacheSqlQuery split(GridCacheTwoStepQuery res, int splitIdx, final GridSqlSelect mapQry,
+        Object[] params, boolean collocated) {
         final boolean explain = mapQry.explain();
 
         mapQry.explain(false);
 
-        GridSqlSelect rdcQry = new GridSqlSelect().from(table(0));
+        GridSqlSelect rdcQry = new GridSqlSelect().from(table(splitIdx));
 
         // Split all select expressions into map-reduce parts.
         List<GridSqlElement> mapExps = F.addAll(new ArrayList<GridSqlElement>(mapQry.allColumns()),
@@ -214,17 +234,14 @@ public class GridSqlQuerySplitter {
             rdcQry.distinct(true);
         }
 
-        // Build resulting two step query.
-        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(spaces, new GridCacheSqlQuery(rdcQry.getSQL(),
-            findParams(rdcQry, params, new ArrayList<>()).toArray()));
-
         res.addMapQuery(new GridCacheSqlQuery(mapQry.getSQL(),
             findParams(mapQry, params, new ArrayList<>(params.length)).toArray())
             .columns(collectColumns(mapExps)));
 
         res.explain(explain);
 
-        return res;
+        return new GridCacheSqlQuery(rdcQry.getSQL(),
+            findParams(rdcQry, params, new ArrayList<>()).toArray());
     }
 
     /**
