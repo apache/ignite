@@ -388,12 +388,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         TcpDiscoveryNode node = ring.node(nodeId);
 
-        if (node == null || !node.visible())
+        if (node == null)
+            return false;
+
+        if (!nodeAlive(nodeId))
             return false;
 
         boolean res = pingNode(node);
 
-        if (!res && !node.isClient()) {
+        if (!res && !node.isClient() && nodeAlive(nodeId)) {
             LT.warn(log, null, "Failed to ping node (status check will be initiated): " + nodeId);
 
             msgWorker.addMessage(new TcpDiscoveryStatusCheckMessage(locNode, node.id()));
@@ -421,14 +424,18 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             node = ring.node(node.clientRouterNodeId());
 
-            if (node == null || !node.visible())
+            if (node == null || !nodeAlive(node.id()))
                 return false;
         }
 
         for (InetSocketAddress addr : spi.getNodeAddresses(node, U.sameMacs(locNode, node))) {
             try {
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
-                IgniteBiTuple<UUID, Boolean> t = pingNode(addr, clientNodeId);
+                IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), clientNodeId);
+
+                if (t == null)
+                    // Remote node left topology.
+                    return false;
 
                 boolean res = node.id().equals(t.get1()) && (clientNodeId == null || t.get2());
 
@@ -453,12 +460,14 @@ class ServerImpl extends TcpDiscoveryImpl {
      * Pings the node by its address to see if it's alive.
      *
      * @param addr Address of the node.
+     * @param nodeId Node ID to ping. In case when client node ID is not null this node ID is an ID of the router node.
      * @param clientNodeId Client node ID.
-     * @return ID of the remote node and "client exists" flag if node alive.
+     * @return ID of the remote node and "client exists" flag if node alive or {@code null} if the remote node has
+     *         left a topology during the ping process.
      * @throws IgniteCheckedException If an error occurs.
      */
-    private IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID clientNodeId)
-        throws IgniteCheckedException {
+    private @Nullable IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID nodeId,
+        @Nullable UUID clientNodeId) throws IgniteCheckedException {
         assert addr != null;
 
         UUID locNodeId = getLocalNodeId();
@@ -537,6 +546,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                         return t;
                     }
                     catch (IOException | IgniteCheckedException e) {
+                        if (nodeId != null && !nodeAlive(nodeId)) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to ping the node (has left or leaving topology): [nodeId=" + nodeId +
+                                    ']');
+
+                            fut.onDone((IgniteBiTuple<UUID, Boolean>)null);
+
+                            return null;
+                        }
+
                         if (errs == null)
                             errs = new ArrayList<>();
 
@@ -612,6 +631,28 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override protected void onDataReceived() {
         if (spi.failureDetectionTimeoutEnabled() && locNode != null)
             locNode.lastDataReceivedTime(U.currentTimeMillis());
+    }
+
+    /**
+     * Checks whether a node is alive or not.
+     *
+     * @param nodeId Node ID.
+     * @return {@code True} if node is in the ring and is not being removed from.
+     */
+    private boolean nodeAlive(UUID nodeId) {
+        // Is node alive or about to be removed from the ring?
+        TcpDiscoveryNode node = ring.node(nodeId);
+
+        boolean nodeAlive = node != null && node.visible();
+
+        if (nodeAlive) {
+            synchronized (mux) {
+                nodeAlive = !F.transform(failedNodes, F.node2id()).contains(nodeId) &&
+                    !F.transform(leavingNodes, F.node2id()).contains(nodeId);
+            }
+        }
+
+        return nodeAlive;
     }
 
     /**
@@ -1520,7 +1561,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (res == null) {
                             try {
-                                res = pingNode(addr, null).get1() != null;
+                                res = pingNode(addr, null, null).get1() != null;
                             }
                             catch (IgniteCheckedException e) {
                                 if (log.isDebugEnabled())
@@ -3775,9 +3816,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                             else {
                                 int aliveCheck = clientNode.decrementAliveCheck();
 
-                                if (aliveCheck <= 0 && isLocalNodeCoordinator() && !failedNodes.contains(clientNode))
-                                    processNodeFailedMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
-                                        clientNode.id(), clientNode.internalOrder()));
+                                if (aliveCheck <= 0 && isLocalNodeCoordinator()) {
+                                    boolean failedNode;
+
+                                    synchronized (mux) {
+                                        failedNode = failedNodes.contains(clientNode);
+                                    }
+
+                                    if (!failedNode)
+                                        processNodeFailedMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
+                                            clientNode.id(), clientNode.internalOrder()));
+                                }
                             }
                         }
                     }
@@ -4686,26 +4735,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 U.closeQuiet(sock);
             }
-        }
-
-        /**
-         * @param nodeId Node ID.
-         * @return {@code True} if node is in the ring and is not being removed from.
-         */
-        private boolean nodeAlive(UUID nodeId) {
-            // Is node alive or about to be removed from the ring?
-            TcpDiscoveryNode node = ring.node(nodeId);
-
-            boolean nodeAlive = node != null && node.visible();
-
-            if (nodeAlive) {
-                synchronized (mux) {
-                    nodeAlive = !F.transform(failedNodes, F.node2id()).contains(nodeId) &&
-                        !F.transform(leavingNodes, F.node2id()).contains(nodeId);
-                }
-            }
-
-            return nodeAlive;
         }
 
         /**
