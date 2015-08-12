@@ -156,8 +156,7 @@ public class GridCacheGateway<K, V> {
             GridCachePreloader preldr = cache != null ? cache.preloader() : null;
 
             if (preldr == null)
-                throw new IllegalStateException("Grid is in invalid state to perform this operation. " +
-                    "It either not started yet or has already being or have stopped [gridName=" + ctx.gridName() + ']');
+                throw new IllegalStateException("Cache has been closed: " + ctx.name());
 
             preldr.startFuture().get();
         }
@@ -177,7 +176,7 @@ public class GridCacheGateway<K, V> {
         try {
             return setOperationContextPerCall(opCtx);
         }
-        catch (RuntimeException e) {
+        catch (Throwable e) {
             rwLock.readUnlock();
 
             throw e;
