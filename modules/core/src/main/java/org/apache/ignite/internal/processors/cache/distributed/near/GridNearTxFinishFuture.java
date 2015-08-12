@@ -232,7 +232,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING)) {
                 finishOnePhase();
 
-                this.tx.tmCommit();
+                this.tx.tmFinish(err == null);
             }
 
             Throwable th = this.err.get();

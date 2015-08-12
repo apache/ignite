@@ -1028,14 +1028,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     /**
      * Commits transaction to transaction manager. Used for one-phase commit transactions only.
      */
-    public void tmCommit() {
+    public void tmFinish(boolean commit) {
         assert onePhaseCommit();
 
         if (doneFlag.compareAndSet(false, true)) {
             // Unlock all locks.
-            cctx.tm().commitTx(this);
+            if (commit)
+                cctx.tm().commitTx(this);
+            else
+                cctx.tm().rollbackTx(this);
 
-            state(COMMITTED);
+            state(commit ? COMMITTED : ROLLED_BACK);
         }
     }
 

@@ -209,7 +209,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
         if (initialized() || err != null) {
             if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
-                this.tx.tmCommit();
+                this.tx.tmFinish(err == null);
 
             Throwable e = this.err.get();
 
