@@ -67,35 +67,56 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPrimaryNodeFailureBackipCommitPessimistic() throws Exception {
-        checkPrimaryNodeFailureBackupCommit(PESSIMISTIC);
+    public void testPrimaryNodeFailureBackupCommitPessimistic() throws Exception {
+        checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrimaryNodeFailureBackupCommitOptimistic() throws Exception {
-        checkPrimaryNodeFailureBackupCommit(OPTIMISTIC);
+        checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void checkPrimaryNodeFailureBackupCommit(final TransactionConcurrency conc) throws Exception {
+    public void testPrimaryNodeFailureBackupCommitPessimisticOnBackup() throws Exception {
+        checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryNodeFailureBackupCommitOptimisticOnBackup() throws Exception {
+        checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkPrimaryNodeFailureBackupCommit(final TransactionConcurrency conc, boolean backup) throws Exception {
         startGrids(gridCount());
         awaitPartitionMapExchange();
+
+        for (int i = 0; i < gridCount(); i++)
+            info("Grid " + i + ": " + ignite(i).cluster().localNode().id());
 
         try {
             final Ignite ignite = ignite(0);
 
             final IgniteCache<Object, Object> cache = ignite.cache(null);
 
-            final int key = generateKey(ignite);
+            final int key = generateKey(ignite, backup);
 
             final CountDownLatch commitLatch = new CountDownLatch(1);
 
-            communication(2).bannedClasses(Collections.<Class>singletonList(GridDhtTxPrepareResponse.class));
-            communication(3).bannedClasses(Collections.<Class>singletonList(GridDhtTxPrepareResponse.class));
+            if (!backup) {
+                communication(2).bannedClasses(Collections.<Class>singletonList(GridDhtTxPrepareResponse.class));
+                communication(3).bannedClasses(Collections.<Class>singletonList(GridDhtTxPrepareResponse.class));
+            }
+            else
+                communication(0).bannedClasses(Collections.<Class>singletonList(GridDhtTxPrepareResponse.class));
 
             IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -140,12 +161,18 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
      * @return Generated key that is not primary nor backup for {@code ignite(0)} and primary for
      *      {@code ignite(1)}.
      */
-    private int generateKey(Ignite ignite) {
+    private int generateKey(Ignite ignite, boolean backup) {
         Affinity<Object> aff = ignite.affinity(null);
 
         for (int key = 0;;key++) {
-            if (aff.isPrimaryOrBackup(ignite(0).cluster().localNode(), key))
-                continue;
+            if (backup) {
+                if (!aff.isBackup(ignite(0).cluster().localNode(), key))
+                    continue;
+            }
+            else {
+                if (aff.isPrimaryOrBackup(ignite(0).cluster().localNode(), key))
+                    continue;
+            }
 
             if (aff.isPrimary(ignite(1).cluster().localNode(), key))
                 return key;

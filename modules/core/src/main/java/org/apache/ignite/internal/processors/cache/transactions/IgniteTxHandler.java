@@ -834,6 +834,12 @@ public class IgniteTxHandler {
         if (log.isDebugEnabled())
             log.debug("Processing dht tx finish request [nodeId=" + nodeId + ", req=" + req + ']');
 
+        if (req.checkCommitted()) {
+            sendReply(nodeId, req, checkDhtRemoteTxCommitted(req.version()));
+
+            return;
+        }
+
         GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
         GridNearTxRemote nearTx = ctx.tm().nearTx(req.version());
 
@@ -841,22 +847,7 @@ public class IgniteTxHandler {
         if (nearTx != null && nearTx.local())
             nearTx = null;
 
-        if (req.checkCommitted()) {
-            assert dhtTx == null || dhtTx.onePhaseCommit() : "Invalid transaction: " + dhtTx;
-
-            boolean committed = true;
-
-            if (dhtTx == null) {
-                if (ctx.tm().addRolledbackTx(req.version()))
-                    committed = false;
-            }
-
-            sendReply(nodeId, req, committed);
-
-            return;
-        }
-        else
-            finish(nodeId, dhtTx, req);
+        finish(nodeId, dhtTx, req);
 
         if (nearTx != null)
             finish(nodeId, nearTx, req);
@@ -884,15 +875,33 @@ public class IgniteTxHandler {
                 completeFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                     @Override
                     public void apply(IgniteInternalFuture<IgniteInternalTx> igniteTxIgniteFuture) {
-                        sendReply(nodeId, req, req.commit());
+                        sendReply(nodeId, req, true);
                     }
                 });
             }
             else
-                sendReply(nodeId, req, req.commit());
+                sendReply(nodeId, req, true);
         }
         else
-            sendReply(nodeId, req, req.commit());
+            sendReply(nodeId, req, true);
+    }
+
+    /**
+     * Checks whether DHT remote transaction with given version has been committed. If not, will add version
+     * to rollback version set so that late response will not falsely commit this transaction.
+     *
+     * @param writeVer Write version to check.
+     * @return {@code True} if transaction has been committed, {@code false} otherwise.
+     */
+    public boolean checkDhtRemoteTxCommitted(GridCacheVersion writeVer) {
+        assert writeVer != null;
+
+        boolean committed = true;
+
+        if (ctx.tm().addRolledbackTx(writeVer))
+            committed = false;
+
+        return committed;
     }
 
     /**

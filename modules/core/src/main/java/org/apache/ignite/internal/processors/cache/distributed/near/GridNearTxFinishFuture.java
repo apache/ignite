@@ -376,36 +376,45 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                 add(mini);
 
-                GridDhtTxFinishRequest finishReq = new GridDhtTxFinishRequest(
-                    cctx.localNodeId(),
-                    futureId(),
-                    mini.futureId(),
-                    tx.topologyVersion(),
-                    tx.xidVersion(),
-                    tx.commitVersion(),
-                    tx.threadId(),
-                    tx.isolation(),
-                    true,
-                    false,
-                    tx.system(),
-                    tx.ioPolicy(),
-                    false,
-                    true,
-                    true,
-                    0,
-                    null,
-                    0);
-
-                finishReq.checkCommitted(true);
-
-                try {
-                    cctx.io().send(backup, finishReq, tx.ioPolicy());
+                if (backup.isLocal()) {
+                    if (cctx.tm().txHandler().checkDhtRemoteTxCommitted(tx.xidVersion()))
+                        mini.onDone(tx);
+                    else
+                        mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
+                        "(transaction has been rolled back on backup node): " + tx.xidVersion()));
                 }
-                catch (ClusterTopologyCheckedException e) {
-                    mini.onResult(e);
-                }
-                catch (IgniteCheckedException e) {
-                    mini.onResult(e);
+                else {
+                    GridDhtTxFinishRequest finishReq = new GridDhtTxFinishRequest(
+                        cctx.localNodeId(),
+                        futureId(),
+                        mini.futureId(),
+                        tx.topologyVersion(),
+                        tx.xidVersion(),
+                        tx.commitVersion(),
+                        tx.threadId(),
+                        tx.isolation(),
+                        true,
+                        false,
+                        tx.system(),
+                        tx.ioPolicy(),
+                        false,
+                        true,
+                        true,
+                        0,
+                        null,
+                        0);
+
+                    finishReq.checkCommitted(true);
+
+                    try {
+                        cctx.io().send(backup, finishReq, tx.ioPolicy());
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        mini.onResult(e);
+                    }
+                    catch (IgniteCheckedException e) {
+                        mini.onResult(e);
+                    }
                 }
             }
         }
