@@ -194,7 +194,6 @@ public class IgniteConfiguration {
 
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
-//    public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
 
     /** Optional grid name. */

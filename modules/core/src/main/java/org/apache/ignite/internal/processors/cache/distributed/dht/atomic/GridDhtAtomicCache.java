@@ -1174,6 +1174,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             remap = true;
         }
+        catch (Exception e) {
+            // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
+            // an attempt to use cleaned resources.
+            U.error(log, "Unexpected exception during cache update", e);
+
+            res.addFailedKeys(keys, e);
+
+            completionCb.apply(req, res);
+
+            return;
+        }
 
         if (remap) {
             assert dhtFut == null;
@@ -2164,19 +2175,24 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         // Enqueue entries while holding locks.
         Collection<KeyCacheObject> skip = null;
 
-        for (GridCacheMapEntry entry : locked) {
-            if (entry != null && entry.deleted()) {
-                if (skip == null)
-                    skip = new HashSet<>(locked.size(), 1.0f);
+        try {
+            for (GridCacheMapEntry entry : locked) {
+                if (entry != null && entry.deleted()) {
+                    if (skip == null)
+                        skip = new HashSet<>(locked.size(), 1.0f);
 
-                skip.add(entry.key());
+                    skip.add(entry.key());
+                }
             }
         }
-
-        // Release locks.
-        for (GridCacheMapEntry entry : locked) {
-            if (entry != null)
-                UNSAFE.monitorExit(entry);
+        finally {
+            // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
+            // an attempt to use cleaned resources.
+            // That's why releasing locks in the finally block..
+            for (GridCacheMapEntry entry : locked) {
+                if (entry != null)
+                    UNSAFE.monitorExit(entry);
+            }
         }
 
         // Try evict partitions.
