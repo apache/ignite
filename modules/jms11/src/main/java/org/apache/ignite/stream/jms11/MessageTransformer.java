@@ -17,11 +17,10 @@
 
 package org.apache.ignite.stream.jms11;
 
-import java.util.Map;
+import org.jetbrains.annotations.*;
 
-import javax.jms.Message;
-
-import org.jetbrains.annotations.Nullable;
+import javax.jms.*;
+import java.util.*;
 
 /**
  * Implement this interface to transform from a {@link Message} to a set of cache entries in the form of a {@link Map}.
@@ -29,17 +28,16 @@ import org.jetbrains.annotations.Nullable;
  * @param <T> The type of JMS Message.
  * @param <K> The type of the cache key.
  * @param <V> The type of the cache value.
- *
  * @author Raul Kripalani
  */
 public interface MessageTransformer<T extends Message, K, V> {
 
     /**
      * Transformation function.
+     *
      * @param message The message received from the JMS broker.
      * @return Set of cache entries to add to the cache. It could be empty or null if the message should be skipped.
      */
-    @Nullable
-    Map<K, V> apply(T message);
+    @Nullable Map<K, V> apply(T message);
 
 }

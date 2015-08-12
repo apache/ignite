@@ -17,15 +17,9 @@
 
 package org.apache.ignite.stream.jms11;
 
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.jms.JMSException;
-import javax.jms.ObjectMessage;
-import javax.jms.TextMessage;
+import javax.jms.*;
+import java.io.*;
+import java.util.*;
 
 /**
  * Test transformers for JmsStreamer tests.
@@ -34,6 +28,12 @@ import javax.jms.TextMessage;
  */
 public class TestTransformers {
 
+    /**
+     * Returns a transformer for JMS {@link TextMessage}s, capable of extracting many tuples from a single message,
+     * if pipe characters are encountered.
+     *
+     * @return
+     */
     public static MessageTransformer<TextMessage, String, String> forTextMessage() {
         return new MessageTransformer<TextMessage, String, String>() {
             @Override
@@ -42,7 +42,8 @@ public class TestTransformers {
                 String text;
                 try {
                     text = message.getText();
-                } catch (JMSException e) {
+                }
+                catch (JMSException e) {
                     e.printStackTrace();
                     return Collections.emptyMap();
                 }
@@ -55,6 +56,12 @@ public class TestTransformers {
         };
     }
 
+    /**
+     * Returns a transformer for JMS {@link ObjectMessage}s, capable of extracting many tuples from a single message,
+     * if the payload is a {@link Collection}.
+     *
+     * @return
+     */
     public static MessageTransformer<ObjectMessage, String, String> forObjectMessage() {
         return new MessageTransformer<ObjectMessage, String, String>() {
             @Override @SuppressWarnings("unchecked")
@@ -62,18 +69,20 @@ public class TestTransformers {
                 Object object;
                 try {
                     object = message.getObject();
-                } catch (JMSException e) {
+                }
+                catch (JMSException e) {
                     e.printStackTrace();
                     return Collections.emptyMap();
                 }
 
                 final Map<String, String> answer = new HashMap<>();
                 if (object instanceof Collection) {
-                    for (TestObject to : (Collection<TestObject>) object) {
+                    for (TestObject to : (Collection<TestObject>)object) {
                         answer.put(to.getKey(), to.getValue());
                     }
-                } else if (object instanceof TestObject) {
-                    TestObject to = (TestObject) object;
+                }
+                else if (object instanceof TestObject) {
+                    TestObject to = (TestObject)object;
                     answer.put(to.getKey(), to.getValue());
                 }
                 return answer;
@@ -105,7 +114,9 @@ public class TestTransformers {
             return key;
         }
 
-        public String getValue() { return value; }
+        public String getValue() {
+            return value;
+        }
 
     }
 

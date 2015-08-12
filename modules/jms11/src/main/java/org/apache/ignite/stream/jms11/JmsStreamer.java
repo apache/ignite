@@ -17,43 +17,27 @@
 
 package org.apache.ignite.stream.jms11;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.stream.*;
 
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageListener;
+import javax.jms.*;
 import javax.jms.Queue;
-import javax.jms.Session;
-import javax.jms.Topic;
-
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.stream.StreamAdapter;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Streamer that consumes from a JMS destination and feeds key-value pairs into an {@link IgniteDataStreamer} instance.
  * <p>
- * This Streamer uses purely JMS semantics and it is not coupled with any JMS implementation. It uses
- * {@link MessageListener} to receive messages. You must provide your broker's {@link javax.jms.ConnectionFactory}
- * when creating a {@link JmsStreamer}.
+ * This Streamer uses purely JMS semantics and it is not coupled with any JMS implementation. It uses {@link
+ * MessageListener} to receive messages. You must provide your broker's {@link javax.jms.ConnectionFactory} when
+ * creating a {@link JmsStreamer}.
  * <p>
  * You must also provide a {@link MessageTransformer} to convert the incoming message into cache entries.
  * <p>
  * This Streamer has many features:
+ *
  * <ul>
  *     <li>Consumes from queues or topics.</li>
  *     <li>For topics, it supports durable subscriptions.</li>
@@ -76,115 +60,82 @@ import org.apache.ignite.stream.StreamAdapter;
  *     but not both.</li>
  *     <li>Can specify the destination with implementation-specific {@link Destination} objects or with names.</li>
  * </ul>
+
  *
  * @author Raul Kripalani
  */
 public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V> {
 
-    /**
-     * Logger.
-     */
+    /** Logger. */
     private IgniteLogger log;
 
     /**
-     * <i>Compulsory.</i> The message transformer that converts an incoming JMS {@link Message} (or subclass)
-     * into one or multiple cache entries.
+     * <i>Compulsory.</i> The message transformer that converts an incoming JMS {@link Message} (or subclass) into one
+     * or multiple cache entries.
      */
     private MessageTransformer<T, K, V> transformer;
 
-    /**
-     * The JMS {@link ConnectionFactory} to use.
-     */
+    /** The JMS {@link ConnectionFactory} to use. */
     private ConnectionFactory connectionFactory;
 
-    /**
-     * Whether to register or not as a durable subscription (for topic consumption).
-     */
+    /** Whether to register or not as a durable subscription (for topic consumption). */
     private boolean durableSubscription;
 
-    /**
-     * Name of the durable subscription, as required by the JMS specification.
-     */
+    /** Name of the durable subscription, as required by the JMS specification. */
     private String durableSubscriptionName;
 
-    /**
-     * Client ID in case we're using durable subscribers.
-     */
+    /** Client ID in case we're using durable subscribers. */
     private String clientId;
 
-    /**
-     * The JMS {@link Destination}; takes precedence over destinationName if both are set.
-     */
+    /** The JMS {@link Destination}; takes precedence over destinationName if both are set. */
     private Destination destination;
 
-    /**
-     * Name of the destination.
-     */
+    /** Name of the destination. */
     private String destinationName;
 
-    /**
-     * Whether to consume in a transacted manner.
-     */
+    /** Whether to consume in a transacted manner. */
     private boolean transacted;
 
-    /**
-     * Whether to consume messages in batches. May lead to duplicate consumption. Value <tt>true</tt> implies
-     * <tt>transacted = true</tt>.
-     */
+    /** Whether to consume messages in batches. May lead to duplicate consumption. Value <tt>true</tt> implies
+     * <tt>transacted = true</tt>. */
     private boolean batched;
 
-    /**
-     * When using batched consumers, the amount of messages after the batch (transaction) will be committed.
-     */
+    /** When using batched consumers, the amount of messages after the batch (transaction) will be committed. */
     private int batchClosureSize = 50;
 
     /**
-     * When using batched consumers, the amount of time to wait before the batch (transaction) will be committed.
-     * A value of 0 or -1 disables timed-based session commits.
+     * When using batched consumers, the amount of time to wait before the batch (transaction) will be committed. A
+     * value of 0 or -1 disables timed-based session commits.
      */
     private long batchClosureMillis = 1000;
 
-    /**
-     * Destination type.
-     */
+    /** Destination type. */
     private Class<? extends Destination> destinationType = Queue.class;
 
     /**
-     * Number of threads to concurrently consume JMS messages. When working with queues, we will start as many
-     * {@link javax.jms.Session} objects as indicated by this field, i.e. you will get native concurrency.
-     * On the other hand, when consuming from a topic, for obvious reason we will only start 1 message consumer
-     * but we will distribute the processing of received messages to as many concurrent threads as indicated.
+     * Number of threads to concurrently consume JMS messages. When working with queues, we will start as many {@link
+     * javax.jms.Session} objects as indicated by this field, i.e. you will get native concurrency. On the other hand,
+     * when consuming from a topic, for obvious reason we will only start 1 message consumer but we will distribute the
+     * processing of received messages to as many concurrent threads as indicated.
      */
     private int threads = 1;
 
-    /**
-     * Stopped.
-     */
+    /** Whether we are stopped or not. */
     private volatile boolean stopped = true;
 
-    /**
-     * JMS Connection
-     */
+    /** JMS Connection. */
     private Connection connection;
 
-    /**
-     * Stores the current JMS Sessions
-     */
+    /** Stores the current JMS Sessions. */
     private Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap<Session, Boolean>());
 
-    /**
-     * Message consumers
-     */
+    /** Message consumers. */
     private Set<MessageConsumer> consumers = Collections.newSetFromMap(new ConcurrentHashMap<MessageConsumer, Boolean>());
 
-    /**
-     * Message listeners.
-     */
+    /** Message listeners. */
     private Set<IgniteJmsMessageListener> listeners = Collections.newSetFromMap(new ConcurrentHashMap<IgniteJmsMessageListener, Boolean>());
 
-    /**
-     * Scheduler for handling {@link #batchClosureMillis}.
-     */
+    /** Scheduler for handling {@link #batchClosureMillis}. */
     private ScheduledExecutorService scheduler;
 
     /**
@@ -216,14 +167,14 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
             // handle batch completion criteria
             if (batched) {
                 A.ensure(batchClosureMillis > 0 || batchClosureSize > 0, "at least one of batch closure size or " +
-                        "batch closure frequency must be specified when using batch consumption");
+                    "batch closure frequency must be specified when using batch consumption");
             }
 
             // check the parameters needed for durable subscriptions, if enabled
             if (durableSubscription) {
                 A.notNullOrEmpty(clientId, "client id is compulsory when using durable subscriptions");
                 A.notNullOrEmpty(durableSubscriptionName, "durable subscription name is compulsory when using " +
-                        "durable subscriptions");
+                    "durable subscriptions");
             }
 
             // validate the destination; if we have an explicit destination, make sure it's of type Queue or Topic;
@@ -231,13 +182,16 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
             if (destination == null) {
                 A.notNull(destinationType, "destination type");
                 A.ensure(destinationType.isAssignableFrom(Queue.class) || destinationType.isAssignableFrom(Topic.class),
-                        "this streamer can only handle Queues or Topics.");
+                    "this streamer can only handle Queues or Topics.");
                 A.notNullOrEmpty(destinationName, "destination or destination name");
-            } else if (destination instanceof Queue) {
+            }
+            else if (destination instanceof Queue) {
                 destinationType = Queue.class;
-            } else if (destination instanceof Topic) {
+            }
+            else if (destination instanceof Topic) {
                 destinationType = Topic.class;
-            } else {
+            }
+            else {
                 throw new IllegalArgumentException("Invalid destination object. Can only handle Queues or Topics.");
             }
 
@@ -250,7 +204,8 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
             // build the JMS objects
             if (destinationType == Queue.class) {
                 initializeJmsObjectsForQueue();
-            } else {
+            }
+            else {
                 initializeJmsObjectsForTopic();
             }
 
@@ -269,11 +224,13 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
                             try {
                                 session.commit();
                                 if (log.isDebugEnabled()) {
-                                    log.debug("Committing session " + session + " from time-based batch completion.");
+                                    log.debug("Committing session from time-based batch completion [session=" +
+                                        session + "]");
                                 }
-                            } catch (JMSException e) {
-                                log.warning("Error while committing session: " + session.toString() + " from " +
-                                        "batch time-based completion.");
+                            }
+                            catch (JMSException e) {
+                                log.warning("Error while committing session: from batch time-based completion " +
+                                    "[session=" + session + "]");
                             }
                         }
                         for (IgniteJmsMessageListener ml : listeners) {
@@ -283,7 +240,8 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
                 }, batchClosureMillis, TimeUnit.MILLISECONDS);
             }
 
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             throw new IgniteException("Exception while initializing JmsStreamer", t);
         }
 
@@ -313,13 +271,15 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
             sessions.clear();
             consumers.clear();
             listeners.clear();
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             throw new IgniteException("Exception while stopping JmsStreamer", t);
         }
     }
 
     /**
      * Sets the JMS {@link ConnectionFactory}.
+     *
      * @param connectionFactory JMS {@link ConnectionFactory} for this streamer to use.
      */
     public void setConnectionFactory(ConnectionFactory connectionFactory) {
@@ -327,8 +287,9 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     }
 
     /**
-     * <i>Compulsory.</i> The {@link MessageTransformer} that converts an incoming JMS {@link Message}
-     * (or subclass) into one or multiple cache entries.
+     * <i>Compulsory.</i> The {@link MessageTransformer} that converts an incoming JMS {@link Message} (or subclass)
+     * into one or multiple cache entries.
+     *
      * @param transformer The implementation of the MessageTransformer to use.
      */
     public void setTransformer(MessageTransformer<T, K, V> transformer) {
@@ -354,11 +315,11 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     }
 
     /**
-     * Sets the type of the destination to create, when used in combination with {@link #setDestinationName(String)}.
-     * It can be an interface or the implementation class specific to the broker.
+     * Sets the type of the destination to create, when used in combination with {@link #setDestinationName(String)}. It
+     * can be an interface or the implementation class specific to the broker.
      *
-     * @param destinationType The class representing the destination type. Suggested values: {@link Queue} or
-     *                        {@link Topic}. <i>Compulsory</i> if using {@link #destinationName}.
+     * @param destinationType The class representing the destination type. Suggested values: {@link Queue} or {@link
+     * Topic}. <i>Compulsory</i> if using {@link #destinationName}.
      * @see Queue
      * @see Topic
      */
@@ -367,13 +328,10 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     }
 
     /**
-     * Sets the number of threads to concurrently consume JMS messages.
-     * <p>
-     * When working with queues, we will start as many {@link javax.jms.Session} objects as indicated by this field,
-     * i.e. you will get native concurrency.
-     * <p>
-     * On the other hand, when consuming from a topic, for obvious reason we will only start 1 message consumer
-     * but we will distribute the processing of received messages to as many concurrent threads as indicated.
+     * Sets the number of threads to concurrently consume JMS messages. <p> When working with queues, we will start as
+     * many {@link javax.jms.Session} objects as indicated by this field, i.e. you will get native concurrency. <p> On
+     * the other hand, when consuming from a topic, for obvious reason we will only start 1 message consumer but we will
+     * distribute the processing of received messages to as many concurrent threads as indicated.
      *
      * @param threads Number of threads to use. Default: <tt>1</tt>.
      */
@@ -383,6 +341,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
 
     /**
      * Sets the client ID of the JMS {@link Connection}.
+     *
      * @param clientId Client ID in case we're using durable subscribers. Default: none.
      */
     public void setClientId(String clientId) {
@@ -400,6 +359,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
 
     /**
      * Instructs the streamer whether to use local JMS transactions or not.
+     *
      * @param transacted Whether to consume or not in a transacted manner. Default: <tt>false</tt>.
      */
     public void setTransacted(boolean transacted) {
@@ -407,15 +367,13 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     }
 
     /**
-     * Batch consumption leverages JMS Transactions to minimise round trips to the broker.
-     * <p>
-     * Rather than ACKing every single message received, they will be received in the context of a JMS transaction
-     * which will be committed once the indicated batch closure size or batch closure time has elapsed.
-     * <p>
-     * Warning: May lead to duplicate consumption.
+     * Batch consumption leverages JMS Transactions to minimise round trips to the broker. <p> Rather than ACKing every
+     * single message received, they will be received in the context of a JMS transaction which will be committed once
+     * the indicated batch closure size or batch closure time has elapsed. <p> Warning: May lead to duplicate
+     * consumption.
      *
-     * @param batched Whether to consume messages in batches. Value <tt>true</tt> implies
-     *                <tt>transacted = true</tt>. Default: <tt>false</tt>.
+     * @param batched Whether to consume messages in batches. Value <tt>true</tt> implies <tt>transacted = true</tt>.
+     * Default: <tt>false</tt>.
      * @see #setBatchClosureMillis(long)
      * @see #setBatchClosureSize(int)
      */
@@ -452,12 +410,12 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
 
     private void initializeJmsObjectsForTopic() throws JMSException {
         Session session = connection.createSession(transacted, Session.AUTO_ACKNOWLEDGE);
-        Topic topic = (Topic) destination;
+        Topic topic = (Topic)destination;
         if (destination == null) {
             topic = session.createTopic(destinationName);
         }
         MessageConsumer consumer = durableSubscription ? session.createDurableSubscriber(topic, durableSubscriptionName) :
-                session.createConsumer(topic);
+            session.createConsumer(topic);
         IgniteJmsMessageListener messageListener = new IgniteJmsMessageListener(session, true);
         consumer.setMessageListener(messageListener);
         consumers.add(consumer);
@@ -519,23 +477,27 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
             executor.execute(new Runnable() {
                 @Override @SuppressWarnings("unchecked")
                 public void run() {
-                    processMessage((T) message);
+                    processMessage((T)message);
                     if (batched) {
                         // batch completion may be handled by timer only
                         if (batchClosureSize <= 0) {
                             return;
-                        } else if (counter.incrementAndGet() >= batchClosureSize) {
+                        }
+                        else if (counter.incrementAndGet() >= batchClosureSize) {
                             try {
                                 session.commit();
                                 counter.set(0);
-                            } catch (Exception e) {
+                            }
+                            catch (Exception e) {
                                 log.warning("Could not commit JMS session upon completion of batch.", e);
                             }
                         }
-                    } else if (transacted) {
+                    }
+                    else if (transacted) {
                         try {
                             session.commit();
-                        } catch (JMSException e) {
+                        }
+                        catch (JMSException e) {
                             log.warning("Could not commit JMS session (non-batched).", e);
                         }
                     }

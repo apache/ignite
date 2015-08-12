@@ -17,8 +17,8 @@
 
 package org.apache.ignite.stream.jms11;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.runner.*;
+import org.junit.runners.*;
 
 /**
  * JMS streamer tests.
@@ -27,7 +27,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        IgniteJmsStreamerTest.class
+    IgniteJmsStreamerTest.class
 })
 public class IgniteJmsStreamerTestSuite {
 
