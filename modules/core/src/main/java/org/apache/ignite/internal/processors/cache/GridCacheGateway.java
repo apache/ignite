@@ -156,7 +156,7 @@ public class GridCacheGateway<K, V> {
             GridCachePreloader preldr = cache != null ? cache.preloader() : null;
 
             if (preldr == null)
-                throw new IllegalStateException("Cache has been closed: " + ctx.name());
+                throw new IllegalStateException("Cache has been closed or destroyed: " + ctx.name());
 
             preldr.startFuture().get();
         }
