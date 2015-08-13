@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -38,7 +40,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  */
 public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest {
     /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private boolean client;
@@ -46,6 +48,8 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -58,6 +62,13 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
         cfg.setClientMode(client);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
     }
 
     /**
@@ -80,15 +91,27 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
 
         QueryCursor<?> cur = clientNode.cache(null).query(qry);
 
-        Ignite joined = startGrid(4);
+        Ignite joined1 = startGrid(4);
 
-        IgniteCache<Object, Object> joinedCache = joined.cache(null);
+        IgniteCache<Object, Object> joinedCache1 = joined1.cache(null);
 
-        joinedCache.put(primaryKey(joinedCache), 1);
+        joinedCache1.put(primaryKey(joinedCache1), 1);
 
         assertTrue("Failed to wait for event.", lsnr.latch.await(5, SECONDS));
 
         cur.close();
+
+        lsnr.latch = new CountDownLatch(1);
+
+        Ignite joined2 = startGrid(5);
+
+        IgniteCache<Object, Object> joinedCache2 = joined2.cache(null);
+
+        joinedCache2.put(primaryKey(joinedCache2), 2);
+
+        U.sleep(1000);
+
+        assertEquals("Unexpected event received.", 1, lsnr.latch.getCount());
     }
 
     /**
@@ -96,7 +119,7 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
      */
     private static class CacheEventListener implements CacheEntryUpdatedListener<Object, Object> {
         /** */
-        private final CountDownLatch latch = new CountDownLatch(1);
+        private volatile CountDownLatch latch = new CountDownLatch(1);
 
         /** */
         @LoggerResource
