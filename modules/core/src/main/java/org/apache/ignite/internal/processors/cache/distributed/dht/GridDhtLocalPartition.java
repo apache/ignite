@@ -592,11 +592,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return Next update index.
      */
     public long nextContinuousQueryUpdateIndex() {
-        long res = contQryUpdIdx.incrementAndGet();
-
-        log.info("Next update index [node=" + cctx.gridName() + ", part=" + id + ", idx=" + res + ']');
-
-        return res;
+        return contQryUpdIdx.incrementAndGet();
     }
 
     /**

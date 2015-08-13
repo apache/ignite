@@ -58,6 +58,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     /** */
     private static final byte EXPIRED_FLAG = 0b1000;
 
+    /** */
+    private static final long BACKUP_ACK_FREQ = 5000;
+
     /** Listeners. */
     private final ConcurrentMap<UUID, CacheContinuousQueryListener> lsnrs = new ConcurrentHashMap8<>();
 
@@ -94,6 +97,16 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         lsnr.cleanupBackupQueue(msg.updateIndexes());
                 }
             });
+
+        cctx.time().schedule(new Runnable() {
+            @Override public void run() {
+                for (CacheContinuousQueryListener lsnr : lsnrs.values())
+                    lsnr.acknowledgeBackupOnTimeout(cctx.kernalContext());
+
+                for (CacheContinuousQueryListener lsnr : intLsnrs.values())
+                    lsnr.acknowledgeBackupOnTimeout(cctx.kernalContext());
+            }
+        }, BACKUP_ACK_FREQ, BACKUP_ACK_FREQ);
     }
 
     /** {@inheritDoc} */
@@ -166,11 +179,17 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         if (!hasNewVal && !hasOldVal)
             return;
 
-        GridDhtLocalPartition locPart = cctx.topology().localPartition(e.partition(), topVer, false);
+        long updateIdx;
 
-        assert locPart != null;
+        if (!cctx.isLocal()) {
+            GridDhtLocalPartition locPart = cctx.topology().localPartition(e.partition(), topVer, false);
 
-        long updateIdx = locPart.nextContinuousQueryUpdateIndex();
+            assert locPart != null;
+
+            updateIdx = locPart.nextContinuousQueryUpdateIndex();
+        }
+        else
+            updateIdx = 0;
 
         EventType evtType = !hasNewVal ? REMOVED : !hasOldVal ? CREATED : UPDATED;
 
@@ -205,12 +224,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 e.partition(),
                 updateIdx,
                 topVer);
-
-            log.info("Created entry [node=" + cctx.gridName() +
-                ", primary=" + primary +
-                ", preload=" + preload +
-                ", part=" + e.partition() +
-                ", idx=" + updateIdx + ']');
 
             CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(
                 cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
@@ -405,7 +418,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             lsnr.onPartitionEvicted(part);
     }
 
-
     /**
      * @param locLsnr Local listener.
      * @param rmtFilter Remote filter.
@@ -480,7 +492,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             sync,
             ignoreExpired,
             taskNameHash,
-            skipPrimaryCheck);
+            skipPrimaryCheck,
+            cctx.isLocal());
 
         UUID id = cctx.kernalContext().continuous().startRoutine(hnd, bufSize, timeInterval,
             autoUnsubscribe, grp.predicate()).get();
@@ -702,6 +715,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         /**
          * @param impl Listener.
+         * @param log Logger.
          */
         JCacheQueryLocalListener(CacheEntryListener<K, V> impl, IgniteLogger log) {
             assert impl != null;
