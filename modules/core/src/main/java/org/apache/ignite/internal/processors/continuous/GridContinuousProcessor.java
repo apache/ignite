@@ -29,7 +29,6 @@ import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -72,7 +71,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private final ConcurrentMap<UUID, StopFuture> stopFuts = new ConcurrentHashMap8<>();
 
     /** Threads started by this processor. */
-    private final Collection<IgniteThread> threads = new GridConcurrentHashSet<>();
+    private final Map<UUID, IgniteThread> bufCheckThreads = new ConcurrentHashMap8<>();
 
     /** */
     private final ConcurrentMap<IgniteUuid, SyncMessageAckFuture> syncMsgFuts = new ConcurrentHashMap8<>();
@@ -311,8 +310,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.io().removeMessageListener(TOPIC_CONTINUOUS);
 
-        U.interrupt(threads);
-        U.joinThreads(threads, log);
+        for (IgniteThread thread : bufCheckThreads.values()) {
+            U.interrupt(thread);
+            U.join(thread);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Continuous processor stopped.");
@@ -915,7 +916,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     }
                 });
 
-                threads.add(checker);
+                bufCheckThreads.put(routineId, checker);
 
                 checker.start();
             }
@@ -947,6 +948,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             ctx.io().removeMessageListener(hnd.orderedTopic());
 
         hnd.unregister(routineId, ctx);
+
+        IgniteThread checker = bufCheckThreads.remove(routineId);
+
+        if (checker != null)
+            checker.interrupt();
     }
 
     /**
