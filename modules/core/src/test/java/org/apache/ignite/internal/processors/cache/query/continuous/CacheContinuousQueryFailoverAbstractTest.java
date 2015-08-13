@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.continuous.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -213,8 +214,15 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
             stopGrid(i);
 
-            if (!latch.await(5, SECONDS))
+            if (!latch.await(5, SECONDS)) {
+                Set<Integer> keys0 = new HashSet<>(keys);
+
+                keys0.removeAll(lsnr.keys);
+
+                log.info("Missed events for keys: " + keys0);
+
                 fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + lsnr.latch.getCount() + ']');
+            }
         }
 
         for (int i = 0; i < SRV_NODES - 1; i++) {
@@ -236,8 +244,15 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                 cache.put(key, key);
             }
 
-            if (!latch.await(5, SECONDS))
+            if (!latch.await(5, SECONDS)) {
+                Set<Integer> keys0 = new HashSet<>(keys);
+
+                keys0.removeAll(lsnr.keys);
+
+                log.info("Missed events for keys: " + keys0);
+
                 fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + lsnr.latch.getCount() + ']');
+            }
         }
 
         cur.close();
@@ -628,6 +643,9 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         private volatile CountDownLatch latch;
 
         /** */
+        private GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
+
+        /** */
         @LoggerResource
         private IgniteLogger log;
 
@@ -639,13 +657,18 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                     log.info("Received cache event: " + evt + " " + (latch != null ? latch.getCount() : null));
 
+                    keys.add((Integer) evt.getKey());
+
                     assertTrue(latch != null);
                     assertTrue(latch.getCount() > 0);
 
                     latch.countDown();
 
-                    if (latch.getCount() == 0)
+                    if (latch.getCount() == 0) {
                         this.latch = null;
+
+                        keys.clear();
+                    }
                 }
             }
             catch (Throwable e) {
