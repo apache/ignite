@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.version.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 
 import javax.cache.*;
@@ -82,8 +82,8 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V>, Externalizable {
         if(cls.isAssignableFrom(getClass()))
             return cls.cast(this);
 
-        if (ver != null && cls.isAssignableFrom(VersionedEntry.class))
-            return (T)new CacheVersionedEntryImpl<>(key, val, ver);
+        if (ver != null && cls.isAssignableFrom(CacheEntry.class))
+            return (T)new CacheEntryImplEx<>(key, val, ver);
 
         throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
     }

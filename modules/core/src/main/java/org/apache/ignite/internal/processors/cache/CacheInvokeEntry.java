@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.version.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -122,8 +122,8 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
-        if (cls.isAssignableFrom(VersionedEntry.class) && ver != null)
-            return (T)new CacheVersionedEntryImpl<>(getKey(), getValue(), ver);
+        if (cls.isAssignableFrom(CacheEntry.class) && ver != null)
+            return (T)new CacheEntryImplEx<>(getKey(), getValue(), ver);
 
         return super.unwrap(cls);
     }

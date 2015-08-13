@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.version;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.version.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 
 import java.io.*;
 
 /**
  *
  */
-public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> implements VersionedEntry<K, V> {
+public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements CacheEntry<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,7 +36,7 @@ public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> implemen
     /**
      * Required by {@link Externalizable}.
      */
-    public CacheVersionedEntryImpl() {
+    public CacheEntryImplEx() {
         // No-op.
     }
 
@@ -45,7 +45,7 @@ public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> implemen
      * @param val Value (always null).
      * @param ver Version.
      */
-    public CacheVersionedEntryImpl(K key, V val, GridCacheVersion ver) {
+    public CacheEntryImplEx(K key, V val, GridCacheVersion ver) {
         super(key, val);
 
         this.ver = ver;

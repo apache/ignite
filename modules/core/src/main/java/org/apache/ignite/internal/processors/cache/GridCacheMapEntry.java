@@ -3589,17 +3589,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized <K, V> CacheVersionedEntryImpl<K, V> wrapVersioned() {
-        return new CacheVersionedEntryImpl<>(key.<K>value(cctx.cacheObjectContext(), false), null, ver);
+    @Override public synchronized <K, V> CacheEntryImplEx<K, V> wrapVersioned() {
+        return new CacheEntryImplEx<>(key.<K>value(cctx.cacheObjectContext(), false), null, ver);
     }
 
     /**
      * @return Entry which holds key, value and version.
      */
-    private synchronized <K, V> CacheVersionedEntryImpl<K, V> wrapVersionedWithValue() {
+    private synchronized <K, V> CacheEntryImplEx<K, V> wrapVersionedWithValue() {
         V val = this.val == null ? null : this.val.<V>value(cctx.cacheObjectContext(), false);
 
-        return new CacheVersionedEntryImpl<>(key.<K>value(cctx.cacheObjectContext(), false), val, ver);
+        return new CacheEntryImplEx<>(key.<K>value(cctx.cacheObjectContext(), false), val, ver);
     }
 
     /** {@inheritDoc} */
@@ -4028,8 +4028,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (cls.isAssignableFrom(EvictableEntry.class))
                 return (T)wrapEviction();
 
-            if (cls.isAssignableFrom(CacheVersionedEntryImpl.class))
-                return cls == CacheVersionedEntryImpl.class ? (T)wrapVersioned() : (T)wrapVersionedWithValue();
+            if (cls.isAssignableFrom(CacheEntryImplEx.class))
+                return cls == CacheEntryImplEx.class ? (T)wrapVersioned() : (T)wrapVersionedWithValue();
 
             if (cls.isAssignableFrom(GridCacheVersion.class))
                 return (T)ver;

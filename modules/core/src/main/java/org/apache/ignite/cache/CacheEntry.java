@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.version;
+package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
 
@@ -24,50 +24,52 @@ import javax.cache.processor.*;
 import java.util.*;
 
 /**
- * Cache entry that stores entry's version related information along with its data.
+ * Cache entry that extends {@link javax.cache.Cache.Entry} by providing additional entry related information.
  *
- * To get a {@code VersionedEntry} of an {@link Cache.Entry} use {@link Cache.Entry#unwrap(Class)} by passing
- * {@code VersionedEntry} class to it as the argument.
+ * To get an instance of {@code CacheEntry} use {@link javax.cache.Cache.Entry#unwrap(Class)} method by passing
+ * {@code CacheEntry} class to it as the argument.
  * <p>
- * {@code VersionedEntry} is supported only for {@link Cache.Entry} returned by one of the following methods:
+ * {@code CacheEntry} is supported only for {@link javax.cache.Cache.Entry} returned by one of the following methods:
  * <ul>
- * <li>{@link Cache#invoke(Object, EntryProcessor, Object...)}</li>
- * <li>{@link Cache#invokeAll(Set, EntryProcessor, Object...)}</li>
+ * <li>{@link javax.cache.Cache#invoke(Object, EntryProcessor, Object...)}</li>
+ * <li>{@link javax.cache.Cache#invokeAll(Set, EntryProcessor, Object...)}</li>
  * <li>invoke and invokeAll methods of {@link IgniteCache}</li>
  * <li>{@link IgniteCache#randomEntry()}</li>
  * </ul>
  * <p>
- * {@code VersionedEntry} is not supported for {@link Cache#iterator()} because of performance reasons.
- * {@link Cache#iterator()} loads entries from all the cluster nodes and to speed up the load version information
- * is excluded from responses.
+ * {@code CacheEntry} is not supported for {@link javax.cache.Cache#iterator()} because of performance reasons.
+ * {@link javax.cache.Cache#iterator()} loads entries from all the cluster nodes and to speed up the load additional
+ * information, like entry's version, is ignored.
+ *
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
  * IgniteCache<Integer, String> cache = grid(0).cache(null);
  *
- * VersionedEntry<String, Integer> entry1 = cache.invoke(100,
- *     new EntryProcessor<Integer, String, VersionedEntry<String, Integer>>() {
- *          public VersionedEntry<String, Integer> process(MutableEntry<Integer, String> entry,
+ * CacheEntry<String, Integer> entry1 = cache.invoke(100,
+ *     new EntryProcessor<Integer, String, CacheEntry<String, Integer>>() {
+ *          public CacheEntry<String, Integer> process(MutableEntry<Integer, String> entry,
  *              Object... arguments) throws EntryProcessorException {
- *                  return entry.unwrap(VersionedEntry.class);
+ *                  return entry.unwrap(CacheEntry.class);
  *          }
  *     });
  *
  * // Cache entry for the given key may be updated at some point later.
  *
- * VersionedEntry<String, Integer> entry2 = cache.invoke(100,
- *     new EntryProcessor<Integer, String, VersionedEntry<String, Integer>>() {
- *          public VersionedEntry<String, Integer> process(MutableEntry<Integer, String> entry,
+ * CacheEntry<String, Integer> entry2 = cache.invoke(100,
+ *     new EntryProcessor<Integer, String, CacheEntry<String, Integer>>() {
+ *          public CacheEntry<String, Integer> process(MutableEntry<Integer, String> entry,
  *              Object... arguments) throws EntryProcessorException {
- *                  return entry.unwrap(VersionedEntry.class);
+ *                  return entry.unwrap(CacheEntry.class);
  *          }
  *     });
  *
+ * // Comparing entries' versions.
  * if (entry1.version().compareTo(entry2.version()) < 0) {
  *     // the entry has been updated
  * }
  * </pre>
  */
-public interface VersionedEntry<K, V> extends Cache.Entry<K, V> {
+public interface CacheEntry<K, V> extends Cache.Entry<K, V> {
     /**
      * Returns a comparable object representing the version of this cache entry.
      * <p>
