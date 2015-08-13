@@ -144,9 +144,8 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
      * @throws IgniteException If failed.
      */
     public void start() throws IgniteException {
-        if (!stopped) {
+        if (!stopped)
             throw new IgniteException("Attempted to start an already started JMS Streamer");
-        }
 
         try {
             A.notNull(getStreamer(), "streamer");
@@ -251,16 +250,18 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
      * Stops streamer.
      */
     public void stop() throws IgniteException {
-        if (stopped) {
+        if (stopped)
             throw new IgniteException("Attempted to stop an already stopped JMS Streamer");
-        }
+
 
         try {
             stopped = true;
+
             if (scheduler != null && !scheduler.isShutdown()) {
                 scheduler.shutdown();
                 scheduler = null;
             }
+
             connection.stop();
             connection.close();
 
@@ -411,13 +412,16 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     private void initializeJmsObjectsForTopic() throws JMSException {
         Session session = connection.createSession(transacted, Session.AUTO_ACKNOWLEDGE);
         Topic topic = (Topic)destination;
-        if (destination == null) {
+
+        if (destination == null)
             topic = session.createTopic(destinationName);
-        }
+
         MessageConsumer consumer = durableSubscription ? session.createDurableSubscriber(topic, durableSubscriptionName) :
             session.createConsumer(topic);
+
         IgniteJmsMessageListener messageListener = new IgniteJmsMessageListener(session, true);
         consumer.setMessageListener(messageListener);
+
         consumers.add(consumer);
         sessions.add(session);
         listeners.add(messageListener);
@@ -426,12 +430,15 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     private void initializeJmsObjectsForQueue() throws JMSException {
         for (int i = 0; i < threads; i++) {
             Session session = connection.createSession(transacted, Session.AUTO_ACKNOWLEDGE);
-            if (destination == null) {
+
+            if (destination == null)
                 destination = session.createQueue(destinationName);
-            }
+
             MessageConsumer consumer = session.createConsumer(destination);
+
             IgniteJmsMessageListener messageListener = new IgniteJmsMessageListener(session, false);
             consumer.setMessageListener(messageListener);
+
             consumers.add(consumer);
             sessions.add(session);
             listeners.add(messageListener);
@@ -440,10 +447,12 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
 
     private void processMessage(T message) {
         final IgniteDataStreamer<K, V> streamer = getStreamer();
+
         Map<K, V> entries = transformer.apply(message);
-        if (entries == null || entries.size() == 0) {
+
+        if (entries == null || entries.size() == 0)
             return;
-        }
+
         streamer.addData(entries);
     }
 
@@ -458,6 +467,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
 
         public IgniteJmsMessageListener(Session session, boolean createThreadPool) {
             this.session = session;
+
             // if we don't need a thread pool, create a dummy one that executes the task synchronously
             //noinspection NullableProblems
             this.executor = createThreadPool ? Executors.newFixedThreadPool(threads) : new Executor() {
@@ -480,9 +490,9 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
                     processMessage((T)message);
                     if (batched) {
                         // batch completion may be handled by timer only
-                        if (batchClosureSize <= 0) {
+                        if (batchClosureSize <= 0)
                             return;
-                        }
+
                         else if (counter.incrementAndGet() >= batchClosureSize) {
                             try {
                                 session.commit();

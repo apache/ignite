@@ -77,9 +77,9 @@ public class TestTransformers {
 
                 final Map<String, String> answer = new HashMap<>();
                 if (object instanceof Collection) {
-                    for (TestObject to : (Collection<TestObject>)object) {
+                    for (TestObject to : (Collection<TestObject>)object)
                         answer.put(to.getKey(), to.getValue());
-                    }
+
                 }
                 else if (object instanceof TestObject) {
                     TestObject to = (TestObject)object;

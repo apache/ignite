@@ -52,9 +52,8 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     private static final Map<String, String> TEST_DATA = new HashMap<>();
 
     static {
-        for (int i = 1; i <= CACHE_ENTRY_COUNT; i++) {
+        for (int i = 1; i <= CACHE_ENTRY_COUNT; i++)
             TEST_DATA.put(Integer.toString(i), "v" + i);
-        }
     }
 
     private BrokerService broker;
@@ -422,9 +421,8 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
             latch.await(10, TimeUnit.SECONDS);
 
             // assert that all consumers received messages - given that the prefetch is 1
-            for (Subscription subscription : broker.getBroker().getDestinationMap().get(destination).getConsumers()) {
+            for (Subscription subscription : broker.getBroker().getDestinationMap().get(destination).getConsumers())
                 assertTrue(subscription.getDequeueCounter() > 0);
-            }
 
             assertAllCacheEntriesLoaded();
 
@@ -436,23 +434,24 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     private void assertAllCacheEntriesLoaded() {
         // Get the cache and check that the entries are present
         IgniteCache<String, String> cache = grid().cache(null);
-        for (Map.Entry<String, String> entry : TEST_DATA.entrySet()) {
+        for (Map.Entry<String, String> entry : TEST_DATA.entrySet())
             assertEquals(entry.getValue(), cache.get(entry.getKey()));
-        }
     }
 
     @SuppressWarnings("unchecked")
     private <T extends Message> JmsStreamer<T, String, String> newJmsStreamer(Class<T> type,
         IgniteDataStreamer<String, String> dataStreamer) {
+
         JmsStreamer<T, String, String> jmsStreamer = new JmsStreamer<>();
         jmsStreamer.setIgnite(grid());
         jmsStreamer.setStreamer(dataStreamer);
         jmsStreamer.setConnectionFactory(connectionFactory);
+
         if (type == ObjectMessage.class) {
-            jmsStreamer.setTransformer((MessageTransformer<T, String, String>)TestTransformers.forObjectMessage());
+            jmsStreamer.setTransformer((MessageTransformer<T, String, String>) TestTransformers.forObjectMessage());
         }
         else {
-            jmsStreamer.setTransformer((MessageTransformer<T, String, String>)TestTransformers.forTextMessage());
+            jmsStreamer.setTransformer((MessageTransformer<T, String, String>) TestTransformers.forTextMessage());
         }
 
         dataStreamer.allowOverwrite(true);
@@ -471,6 +470,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
                 return true;
             }
         };
+
         ignite.events(ignite.cluster().forCacheNodes(null)).remoteListen(callback, null, EVT_CACHE_OBJECT_PUT);
         return latch;
     }
@@ -479,6 +479,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
         Session session = connectionFactory.createConnection().createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageProducer mp = session.createProducer(destination);
         HashSet<TestTransformers.TestObject> set = new HashSet<>();
+
         for (String key : TEST_DATA.keySet()) {
             TestTransformers.TestObject to = new TestTransformers.TestObject(key, TEST_DATA.get(key));
             set.add(to);
@@ -490,9 +491,9 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
             messagesSent = 1;
         }
         else {
-            for (TestTransformers.TestObject to : set) {
+            for (TestTransformers.TestObject to : set)
                 mp.send(session.createObjectMessage(to));
-            }
+
             messagesSent = set.size();
         }
 
@@ -512,16 +513,17 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
         Session session = connectionFactory.createConnection().createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageProducer mp = session.createProducer(destination);
         HashSet<String> set = new HashSet<>();
-        for (String key : TEST_DATA.keySet()) {
+
+        for (String key : TEST_DATA.keySet())
             set.add(key + "," + TEST_DATA.get(key));
-        }
 
         int messagesSent;
         if (singleMessage) {
             StringBuilder sb = new StringBuilder();
-            for (String s : set) {
+
+            for (String s : set)
                 sb.append(s).append("|");
-            }
+
             sb.deleteCharAt(sb.length() - 1);
             mp.send(session.createTextMessage(sb.toString()));
             messagesSent = 1;
