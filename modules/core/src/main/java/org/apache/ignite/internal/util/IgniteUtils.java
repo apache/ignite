@@ -3588,6 +3588,32 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Quietly closes given connection ignoring possible checked exception.
+     *
+     * @param conn Connection.
+     */
+    public static void closeQuiet(@Nullable URLConnection conn) {
+        if (conn != null) {
+            try {
+                closeQuiet(conn.getInputStream());
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+
+            try {
+                closeQuiet(conn.getOutputStream());
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+
+            if (conn instanceof HttpURLConnection)
+                ((HttpURLConnection)conn).disconnect();
+        }
+    }
+
+    /**
      * Closes given resource logging possible checked exceptions.
      *
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
