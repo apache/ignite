@@ -209,7 +209,9 @@ public class GridNioServer<T> {
         IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
-        A.notNull(addr, "addr");
+        if (port != -1)
+            A.notNull(addr, "addr");
+
         A.notNull(lsnr, "lsnr");
         A.notNull(log, "log");
         A.notNull(order, "order");
