@@ -732,6 +732,9 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      *
      */
     private class DuplicateEventFilter implements IgnitePredicate<CacheContinuousQueryEntry> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** {@inheritDoc} */
         @Override public boolean apply(CacheContinuousQueryEntry e) {
             return notifyListener(e);

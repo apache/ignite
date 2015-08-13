@@ -30,6 +30,9 @@ import java.util.*;
  * Batch acknowledgement.
  */
 public class CacheContinuousQueryBatchAck extends GridCacheMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Routine ID. */
     private UUID routineId;
 

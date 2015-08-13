@@ -180,7 +180,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         QueryCursor<?> cur = qryClientCache.query(qry);
 
-        int PARTS = 1;
+        int PARTS = 10;
 
         for (int i = 0; i < SRV_NODES - 1; i++) {
             log.info("Stop iteration: " + i);
@@ -261,7 +261,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         int[] nodeParts = aff.primaryPartitions(node);
 
-        final int KEYS_PER_PART = 2;
+        final int KEYS_PER_PART = 3;
 
         for (int i = 0; i < parts; i++) {
             int part = nodeParts[i];
@@ -395,7 +395,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
             @Override public boolean apply() {
                 return backupQueue.isEmpty();
             }
-        }, 2000);
+        }, 3000);
 
         assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.isEmpty());
 
