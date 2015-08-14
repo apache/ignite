@@ -321,7 +321,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersionedEntryImpl wrapVersioned() {
+    @Override public CacheEntryImplEx wrapVersioned() {
         assert false;
 
         return null;
