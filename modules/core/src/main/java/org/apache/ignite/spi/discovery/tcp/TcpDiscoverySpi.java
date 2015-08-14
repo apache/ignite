@@ -1371,8 +1371,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
             T res = marsh.unmarshal(in == null ? sock.getInputStream() : in, U.gridClassLoader());
 
-            impl.onDataReceived();
-
             return res;
         }
         catch (IOException | IgniteCheckedException e) {
@@ -1413,8 +1411,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
             if (res == -1)
                 throw new EOFException();
-
-            impl.onDataReceived();
 
             return res;
         }
