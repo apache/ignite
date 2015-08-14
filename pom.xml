@@ -74,6 +74,7 @@
         <module>modules/mesos</module>
         <module>modules/kafka</module>
         <module>modules/yarn</module>
+        <module>modules/jms11</module>
     </modules>
 
     <profiles>
