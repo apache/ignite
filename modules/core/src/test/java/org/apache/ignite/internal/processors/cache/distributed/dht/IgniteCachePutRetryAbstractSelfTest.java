@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -28,6 +29,9 @@ import org.apache.ignite.testframework.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  *
@@ -47,6 +51,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
+        cfg.setAtomicWriteOrderMode(writeOrderMode());
         cfg.setBackups(1);
 
         return cfg;
@@ -63,6 +68,13 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
         cfg.setAtomicConfiguration(acfg);
 
         return cfg;
+    }
+
+    /**
+     * @return Write order mode.
+     */
+    protected CacheAtomicWriteOrderMode writeOrderMode() {
+        return CLOCK;
     }
 
     /**
@@ -87,8 +99,13 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
 
         int keysCnt = keysCount();
 
+        IgniteCache<Object, Object> cache = ignite(0).cache(null);
+
+        if (atomicityMode() == ATOMIC)
+            assertEquals(writeOrderMode(), cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode());
+
         for (int i = 0; i < keysCnt; i++)
-            ignite(0).cache(null).put(i, i);
+            cache.put(i, i);
 
         finished.set(true);
         fut.get();

@@ -73,9 +73,12 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxNearDisabledFairAffinityPutGetRestartTest.class);
 
         suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
+        suite.addTestSuite(IgniteCachePutRetryAtomicPrimaryWriteOrderSelfTest.class);
         suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
 
         suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheSizeFailoverTest.class);
 
         return suite;
     }

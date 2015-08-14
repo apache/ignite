@@ -5597,9 +5597,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     jobCtx.holdcc();
 
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override
-                        public void apply(IgniteInternalFuture<?> t) {
-                            jobCtx.callcc();
+                        @Override public void apply(IgniteInternalFuture<?> t) {
+                            ((IgniteKernal)ignite).context().closure().runLocalSafe(new Runnable() {
+                                @Override public void run() {
+                                    jobCtx.callcc();
+                                }
+                            }, false);
                         }
                     });
 
