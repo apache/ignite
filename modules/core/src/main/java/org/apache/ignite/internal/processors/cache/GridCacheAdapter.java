@@ -2283,8 +2283,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param filter Filter.
      * @return Put future.
      */
-    public IgniteInternalFuture<Boolean> putAsync(K key, V val,
-                                                  @Nullable CacheEntryPredicate... filter) {
+    public IgniteInternalFuture<Boolean> putAsync(K key, V val, @Nullable CacheEntryPredicate... filter) {
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -3975,8 +3974,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         U.addLastCause(e, e1, log);
                     }
 
-                    if (X.hasCause(e, ClusterTopologyCheckedException.class) && i != retries - 1)
+                    if (X.hasCause(e, ClusterTopologyCheckedException.class) && i != retries - 1) {
+                        AffinityTopologyVersion topVer = tx.topologyVersion();
+
+                        assert topVer != null && topVer.topologyVersion() > 0 : tx;
+
+                        ctx.affinity().affinityReadyFuture(topVer.topologyVersion() + 1).get();
+
                         continue;
+                    }
 
                     throw e;
                 }
@@ -4014,18 +4020,36 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
 
-        if (tx == null || tx.implicit())
-            tx = ctx.tm().newTx(
-                true,
-                op.single(),
-                ctx.systemTx() ? ctx : null,
-                OPTIMISTIC,
-                READ_COMMITTED,
-                ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
-                !ctx.skipStore(),
-                0);
+        if (tx == null || tx.implicit()) {
+            boolean skipStore = ctx.skipStore(); // Save value of thread-local flag.
 
-        return asyncOp(tx, op);
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+            int retries = opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES;
+
+            if (retries == 1) {
+                tx = ctx.tm().newTx(
+                    true,
+                    op.single(),
+                    ctx.systemTx() ? ctx : null,
+                    OPTIMISTIC,
+                    READ_COMMITTED,
+                    ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
+                    !skipStore,
+                    0);
+
+                return asyncOp(tx, op);
+            }
+            else {
+                AsyncOpRetryFuture<T> fut = new AsyncOpRetryFuture<>(op, skipStore, retries);
+
+                fut.execute();
+
+                return fut;
+            }
+        }
+        else
+            return asyncOp(tx, op);
     }
 
     /**
@@ -4618,6 +4642,97 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             assert false;
 
             return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private class AsyncOpRetryFuture<T> extends GridFutureAdapter<T> {
+        /** */
+        private AsyncOp<T> op;
+
+        /** */
+        private boolean skipStore;
+
+        /** */
+        private int retries;
+
+        /** */
+        private IgniteTxLocalAdapter tx;
+
+        /**
+         * @param op Operation.
+         * @param skipStore Skip store flag.
+         * @param retries Number of retries.
+         */
+        public AsyncOpRetryFuture(AsyncOp<T> op,
+            boolean skipStore,
+            int retries) {
+            assert retries > 1 : retries;
+
+            this.op = op;
+            this.tx = null;
+            this.skipStore = skipStore;
+            this.retries = retries;
+        }
+
+        /**
+         * @param tx Transaction.
+         */
+        public void execute() {
+            tx = ctx.tm().newTx(
+                true,
+                op.single(),
+                ctx.systemTx() ? ctx : null,
+                OPTIMISTIC,
+                READ_COMMITTED,
+                ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
+                !skipStore,
+                0);
+
+            IgniteInternalFuture<T> fut = asyncOp(tx, op);
+
+            fut.listen(new IgniteInClosure<IgniteInternalFuture<T>>() {
+                @Override public void apply(IgniteInternalFuture<T> fut) {
+                    try {
+                        T res = fut.get();
+
+                        onDone(res);
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (X.hasCause(e, ClusterTopologyCheckedException.class) && --retries > 0) {
+                            IgniteTxLocalAdapter tx = AsyncOpRetryFuture.this.tx;
+
+                            assert tx != null;
+
+                            AffinityTopologyVersion topVer = tx.topologyVersion();
+
+                            assert topVer != null && topVer.topologyVersion() > 0 : tx;
+
+                            IgniteInternalFuture<?> topFut =
+                                ctx.affinity().affinityReadyFuture(topVer.topologyVersion() + 1);
+
+                            topFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                                @Override public void apply(IgniteInternalFuture<?> topFut) {
+                                    try {
+                                        topFut.get();
+
+                                        execute();
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        onDone(e);
+                                    }
+                                }
+                            });
+
+                            return;
+                        }
+
+                        onDone(e);
+                    }
+                }
+            });
         }
     }
 

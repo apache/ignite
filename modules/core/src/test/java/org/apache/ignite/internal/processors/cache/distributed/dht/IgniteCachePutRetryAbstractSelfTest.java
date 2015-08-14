@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -76,11 +77,25 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
     protected CacheAtomicWriteOrderMode writeOrderMode() {
         return CLOCK;
     }
-
     /**
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
+        checkPut(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAsync() throws Exception {
+        checkPut(true);
+    }
+
+    /**
+     * @param async If {@code true} tests asynchronous put.
+     * @throws Exception If failed.
+     */
+    private void checkPut(boolean async) throws Exception {
         final AtomicBoolean finished = new AtomicBoolean();
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
@@ -104,20 +119,67 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
         if (atomicityMode() == ATOMIC)
             assertEquals(writeOrderMode(), cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode());
 
-        for (int i = 0; i < keysCnt; i++)
-            cache.put(i, i);
+        int iter = 0;
+
+        long stopTime = System.currentTimeMillis() + 60_000;
+
+        if (async) {
+            IgniteCache<Object, Object> cache0 = cache.withAsync();
+
+            while (System.currentTimeMillis() < stopTime) {
+                Integer val = ++iter;
+
+                for (int i = 0; i < keysCnt; i++) {
+                    cache0.put(i, val);
+
+                    cache0.future().get();
+                }
+
+                for (int i = 0; i < keysCnt; i++) {
+                    cache0.get(i);
+
+                    assertEquals(val, cache0.future().get());
+                }
+            }
+        }
+        else {
+            while (System.currentTimeMillis() < stopTime) {
+                Integer val = ++iter;
+
+                for (int i = 0; i < keysCnt; i++)
+                    cache.put(i, val);
+
+                for (int i = 0; i < keysCnt; i++)
+                    assertEquals(val, cache.get(i));
+            }
+        }
 
         finished.set(true);
         fut.get();
 
         for (int i = 0; i < keysCnt; i++)
-            assertEquals(i, ignite(0).cache(null).get(i));
+            assertEquals(iter, cache.get(i));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testFailWithNoRetries() throws Exception {
+    public void testFailsWithNoRetries() throws Exception {
+        checkFailsWithNoRetries(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFailsWithNoRetriesAsync() throws Exception {
+        checkFailsWithNoRetries(true);
+    }
+
+    /**
+     * @param async If {@code true} tests asynchronous put.
+     * @throws Exception If failed.
+     */
+    private void checkFailsWithNoRetries(boolean async) throws Exception {
         final AtomicBoolean finished = new AtomicBoolean();
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
@@ -136,22 +198,34 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
 
         int keysCnt = keysCount();
 
-        boolean exceptionThrown = false;
+        boolean eThrown = false;
+
+        IgniteCache<Object, Object> cache = ignite(0).cache(null).withNoRetries();
+
+        if (async)
+            cache = cache.withAsync();
 
         for (int i = 0; i < keysCnt; i++) {
             try {
-                ignite(0).cache(null).withNoRetries().put(i, i);
+                if (async) {
+                    cache.put(i, i);
+
+                    cache.future().get();
+                }
+                else
+                    cache.put(i, i);
             }
             catch (Exception e) {
-                assertTrue("Invalid exception: " + e, X.hasCause(e, ClusterTopologyCheckedException.class) || X.hasCause(e, CachePartialUpdateException.class));
+                assertTrue("Invalid exception: " + e,
+                    X.hasCause(e, ClusterTopologyCheckedException.class, CachePartialUpdateException.class));
 
-                exceptionThrown = true;
+                eThrown = true;
 
                 break;
             }
         }
 
-        assertTrue(exceptionThrown);
+        assertTrue(eThrown);
 
         finished.set(true);
         fut.get();

@@ -409,8 +409,14 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
         GridFutureAdapter<Void> fut0;
 
+        long nextTopVer;
+
         synchronized (this) {
             mappings = new ConcurrentHashMap8<>(keys.size(), 1.0f);
+
+            assert topVer != null && topVer.topologyVersion() > 0 : this;
+
+            nextTopVer = topVer.topologyVersion() + 1;
 
             topVer = AffinityTopologyVersion.ZERO;
 
@@ -428,7 +434,24 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         updVer = null;
         topLocked = false;
 
-        map();
+        IgniteInternalFuture<?> fut = cctx.affinity().affinityReadyFuture(nextTopVer);
+
+        fut.listen(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(final IgniteInternalFuture<?> fut) {
+                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                    @Override public void run() {
+                        try {
+                            fut.get();
+
+                            map();
+                        }
+                        catch (IgniteCheckedException e) {
+                            onDone(e);
+                        }
+                    }
+                });
+            }
+        });
     }
 
     /** {@inheritDoc} */
