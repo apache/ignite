@@ -34,7 +34,7 @@ public class CachePartialUpdateCheckedException extends IgniteCheckedException {
     private final Collection<Object> failedKeys = new ArrayList<>();
 
     /** */
-    private AffinityTopologyVersion topVer;
+    private transient AffinityTopologyVersion topVer;
 
     /**
      * @param msg Error message.
