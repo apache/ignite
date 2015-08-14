@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -227,29 +228,46 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
+    @Override public boolean onDone(IgniteInternalTx tx0, Throwable err) {
         if ((initialized() || err != null)) {
-            if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING)) {
+            if (tx.needCheckBackup()) {
+                assert tx.onePhaseCommit();
+
+                if (err != null)
+                    err = new TransactionRollbackException("Failed to commit transaction.", err);
+
+                try {
+                    tx.finish(err == null);
+                }
+                catch (IgniteCheckedException e) {
+                    if (err != null)
+                        err.addSuppressed(e);
+                    else
+                        err = e;
+                }
+            }
+
+            if (tx.onePhaseCommit()) {
                 finishOnePhase();
 
-                this.tx.tmFinish(err == null);
+                tx.tmFinish(err == null);
             }
 
             Throwable th = this.err.get();
 
-            if (super.onDone(tx, th != null ? th : err)) {
+            if (super.onDone(tx0, th != null ? th : err)) {
                 if (error() instanceof IgniteTxHeuristicCheckedException) {
-                    AffinityTopologyVersion topVer = this.tx.topologyVersion();
+                    AffinityTopologyVersion topVer = tx.topologyVersion();
 
-                    for (IgniteTxEntry e : this.tx.writeMap().values()) {
+                    for (IgniteTxEntry e : tx.writeMap().values()) {
                         GridCacheContext cacheCtx = e.context();
 
                         try {
                             if (e.op() != NOOP && !cacheCtx.affinity().localNode(e.key(), topVer)) {
-                                GridCacheEntryEx Entry = cacheCtx.cache().peekEx(e.key());
+                                GridCacheEntryEx entry = cacheCtx.cache().peekEx(e.key());
 
-                                if (Entry != null)
-                                    Entry.invalidate(null, this.tx.xidVersion());
+                                if (entry != null)
+                                    entry.invalidate(null, tx.xidVersion());
                             }
                         }
                         catch (Throwable t) {
@@ -297,13 +315,24 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * Initializes future.
      */
     void finish() {
-        if (tx.onePhaseCommit()) {
-            if (commit) {
-                if (tx.needCheckBackup())
-                    checkBackup();
-                else if (needFinishOnePhase()) {
+        if (tx.needCheckBackup()) {
+            assert tx.onePhaseCommit();
+
+            checkBackup();
+
+            // If checkBackup is set, it means that primary node has crashed and we will not need to send
+            // finish request to it, so we can mark future as initialized.
+            markInitialized();
+        }
+
+        try {
+            if (tx.finish(commit) || (!commit && tx.state() == UNKNOWN)) {
+                if ((tx.onePhaseCommit() && needFinishOnePhase()) || (!tx.onePhaseCommit() && mappings != null))
                     finish(mappings.values());
 
+                markInitialized();
+
+                if (!isSync()) {
                     boolean complete = true;
 
                     for (IgniteInternalFuture<?> f : pending())
@@ -315,40 +344,16 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         onComplete();
                 }
             }
-
-            markInitialized();
-
-            return;
+            else
+                onError(new IgniteCheckedException("Failed to commit transaction: " + CU.txString(tx)));
         }
+        catch (Error | RuntimeException e) {
+            onError(e);
 
-        if (mappings != null) {
-            finish(mappings.values());
-
-            markInitialized();
-
-            if (!isSync()) {
-                boolean complete = true;
-
-                for (IgniteInternalFuture<?> f : pending())
-                    // Mini-future in non-sync mode gets done when message gets sent.
-                    if (isMini(f) && !f.isDone())
-                        complete = false;
-
-                if (complete)
-                    onComplete();
-            }
+            throw e;
         }
-        else {
-            assert !commit;
-
-            try {
-                tx.rollback();
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to rollback empty transaction: " + tx, e);
-            }
-
-            markInitialized();
+        catch (IgniteCheckedException e) {
+            onError(e);
         }
     }
 
@@ -641,8 +646,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         void onResult(GridDhtTxFinishResponse res) {
             assert backup != null;
 
-            if (res.checkCommittedError() != null)
+            if (res.checkCommittedError() != null) {
                 onDone(res.checkCommittedError());
+            }
             else
                 onDone(tx);
         }

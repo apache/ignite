@@ -118,8 +118,13 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
      */
     void onError(@Nullable UUID nodeId, @Nullable Iterable<GridDistributedTxMapping> mappings, Throwable e) {
         if (X.hasCause(e, ClusterTopologyCheckedException.class) || X.hasCause(e, ClusterTopologyException.class)) {
-            if (tx.onePhaseCommit())
+            if (tx.onePhaseCommit()) {
                 tx.markForBackupCheck();
+
+                onComplete();
+
+                return;
+            }
         }
 
         if (err.compareAndSet(null, e)) {
@@ -189,17 +194,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
 
         this.err.compareAndSet(null, err);
 
-        if (err == null)
-            tx.state(PREPARED);
-
-        if (super.onDone(tx, err)) {
-            // Don't forget to clean up.
-            cctx.mvcc().removeFuture(this);
-
-            return true;
-        }
-
-        return false;
+        return onComplete();
     }
 
     /**
@@ -213,10 +208,20 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
     /**
      * Completeness callback.
      */
-    private void onComplete() {
-        if (super.onDone(tx, err.get()))
+    private boolean onComplete() {
+        Throwable err0 = err.get();
+
+        if (err0 == null || tx.needCheckBackup())
+            tx.state(PREPARED);
+
+        if (super.onDone(tx, err0)) {
             // Don't forget to clean up.
             cctx.mvcc().removeFuture(this);
+
+            return true;
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */

@@ -712,7 +712,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
         cctx.mvcc().addFuture(fut);
 
-        IgniteInternalFuture<?> prepareFut = prepFut.get();
+        final IgniteInternalFuture<?> prepareFut = prepFut.get();
 
         prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> f) {
@@ -720,23 +720,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
                 try {
                     // Make sure that here are no exceptions.
-                    if (!needCheckBackup()) {
-                        f.get();
+                    prepareFut.get();
 
-                        if (finish(true))
-                            fut0.finish();
-                        else
-                            fut0.onError(new IgniteCheckedException("Failed to commit transaction: " +
-                                CU.txString(GridNearTxLocal.this)));
-                    }
-                    else {
-                        assert onePhaseCommit();
-
-                        fut0.finish();
-                    }
+                    fut0.finish();
                 }
                 catch (Error | RuntimeException e) {
                     commitErr.compareAndSet(null, e);
+
+                    fut0.onError(e);
 
                     throw e;
                 }
@@ -779,15 +770,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     log.debug("Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
             }
 
-            try {
-                if (finish(false) || state() == UNKNOWN)
-                    fut.finish();
-                else
-                    fut.onError(new IgniteCheckedException("Failed to gracefully rollback transaction: " + CU.txString(this)));
-            }
-            catch (IgniteCheckedException e) {
-                fut.onError(e);
-            }
+            fut.finish();
         }
         else {
             prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -803,19 +786,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
                     GridNearTxFinishFuture fut0 = rollbackFut.get();
 
-                    try {
-                        if (finish(false) || state() == UNKNOWN)
-                            fut0.finish();
-                        else
-                            fut0.onError(new IgniteCheckedException("Failed to gracefully rollback transaction: " +
-                                CU.txString(GridNearTxLocal.this)));
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to gracefully rollback transaction: " +
-                            CU.txString(GridNearTxLocal.this), e);
-
-                        fut0.onError(e);
-                    }
+                    fut0.finish();
                 }
             });
         }
