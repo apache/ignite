@@ -74,6 +74,7 @@
         <module>modules/mesos</module>
         <module>modules/kafka</module>
         <module>modules/yarn</module>
+        <module>modules/zookeeper</module>
     </modules>
 
     <profiles>
