@@ -15,51 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc;
+package org.apache.ignite.internal.jdbc2;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLWarning;
-import java.sql.Statement;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.*;
 
-import static java.sql.ResultSet.CONCUR_READ_ONLY;
-import static java.sql.ResultSet.FETCH_FORWARD;
-import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import java.sql.*;
+import java.util.*;
+
+import static java.sql.ResultSet.*;
 
 /**
  * JDBC statement implementation.
- *
- * @deprecated Using Ignite client node based JDBC driver is preferable.
- * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
-@Deprecated
 public class JdbcStatement implements Statement {
-    /** Task name. */
-    private static final String TASK_NAME =
-        "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask";
-
     /** Default fetch size. */
     private static final int DFLT_FETCH_SIZE = 1024;
 
     /** Connection. */
     private final JdbcConnection conn;
 
+    /** Uuid. */
+    private final UUID uuid = UUID.randomUUID();
+
     /** Closed flag. */
     private boolean closed;
 
     /** Rows limit. */
     private int maxRows;
-
-    /** Query timeout. */
-    private int timeout;
 
     /** Current result set. */
     private ResultSet rs;
@@ -90,35 +72,21 @@ public class JdbcStatement implements Statement {
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty");
 
+        Ignite ignite = conn.ignite();
+
+        UUID nodeId = conn.nodeId();
+
+        JdbcQueryTask qryTask = new JdbcQueryTask(nodeId == null ? ignite : null, conn.cacheName(),
+            sql, args, fetchSize, uuid);
+
         try {
-            byte[] packet = conn.client().compute().execute(TASK_NAME,
-                JdbcUtils.marshalArgument(JdbcUtils.taskArgument(conn.nodeId(), conn.cacheName(), sql,
-                    timeout, args, fetchSize, maxRows)));
+            JdbcQueryTask.QueryResult res =
+                nodeId == null ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
-            byte status = packet[0];
-            byte[] data = new byte[packet.length - 1];
-
-            U.arrayCopy(packet, 1, data, 0, data.length);
-
-            if (status == 1)
-                throw JdbcUtils.unmarshalError(data);
-            else {
-                List<?> msg = JdbcUtils.unmarshal(data);
-
-                assert msg.size() == 7;
-
-                UUID nodeId = (UUID)msg.get(0);
-                UUID futId = (UUID)msg.get(1);
-                List<String> tbls = (List<String>)msg.get(2);
-                List<String> cols = (List<String>)msg.get(3);
-                List<String> types = (List<String>)msg.get(4);
-                Collection<List<Object>> fields = (Collection<List<Object>>)msg.get(5);
-                boolean finished = (Boolean)msg.get(6);
-
-                return new JdbcResultSet(this, nodeId, futId, tbls, cols, types, fields, finished, fetchSize);
-            }
+            return new JdbcResultSet(this, res.getTbls(), res.getCols(), res.getTypes(),
+                res.getRows(), res.isFinished());
         }
-        catch (GridClientException e) {
+        catch (Exception e) {
             throw new SQLException("Failed to query Ignite.", e);
         }
     }
@@ -172,14 +140,14 @@ public class JdbcStatement implements Statement {
     @Override public int getQueryTimeout() throws SQLException {
         ensureNotClosed();
 
-        return timeout;
+        throw new SQLFeatureNotSupportedException("Query timeout is not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setQueryTimeout(int timeout) throws SQLException {
         ensureNotClosed();
 
-        this.timeout = timeout * 1000;
+        throw new SQLFeatureNotSupportedException("Query timeout is not supported.");
     }
 
     /** {@inheritDoc} */
@@ -261,8 +229,8 @@ public class JdbcStatement implements Statement {
     @Override public void setFetchSize(int fetchSize) throws SQLException {
         ensureNotClosed();
 
-        if (fetchSize <= 0)
-            throw new SQLException("Fetch size must be greater than zero.");
+        if (fetchSize < 0)
+            throw new SQLException("Fetch size must be greater or equal zero.");
 
         this.fetchSize = fetchSize;
     }
@@ -409,6 +377,7 @@ public class JdbcStatement implements Statement {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Statement is not a wrapper for " + iface.getName());
@@ -434,22 +403,6 @@ public class JdbcStatement implements Statement {
     }
 
     /**
-     * Sets timeout in milliseconds.
-     *
-     * @param timeout Timeout.
-     */
-    void timeout(int timeout) {
-        this.timeout = timeout;
-    }
-
-    /**
-     * @return Connection.
-     */
-    JdbcConnection connection() {
-        return conn;
-    }
-
-    /**
      * Ensures that statement is not closed.
      *
      * @throws SQLException If statement is closed.
@@ -457,5 +410,14 @@ public class JdbcStatement implements Statement {
     protected void ensureNotClosed() throws SQLException {
         if (closed)
             throw new SQLException("Statement is closed.");
+    }
+
+    /**
+     * Returns statement UUID.
+     *
+     * @return Statement UUID.
+     */
+    public UUID getUuid() {
+        return uuid;
     }
 }

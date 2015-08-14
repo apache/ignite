@@ -15,59 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc;
+package org.apache.ignite.internal.jdbc2;
 
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.CallableStatement;
-import java.sql.Clob;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.NClob;
-import java.sql.PreparedStatement;
-import java.sql.SQLClientInfoException;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLWarning;
-import java.sql.SQLXML;
-import java.sql.Savepoint;
-import java.sql.Statement;
-import java.sql.Struct;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
-import java.util.concurrent.Executor;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientDisconnectedException;
-import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.client.GridClientFutureTimeoutException;
+import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.resource.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 
-import static java.sql.ResultSet.CONCUR_READ_ONLY;
-import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_CACHE;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_HOST;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_PORT;
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
+
+import static java.sql.ResultSet.*;
+import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.IgniteJdbcDriver.*;
 
 /**
  * JDBC connection implementation.
- *
- * @deprecated Using Ignite client node based JDBC driver is preferable.
- * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
-@Deprecated
 public class JdbcConnection implements Connection {
-    /** Validation task name. */
-    private static final String VALID_TASK_NAME =
-        "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcValidationTask";
+    /**
+     * Ignite nodes cache.
+     *
+     * The key is result of concatenation of the following properties:
+     * <ol>
+     *     <li>{@link IgniteJdbcDriver#PROP_CFG}</li>
+     * </ol>
+     */
+    private static final ConcurrentMap<String, IgniteNodeFuture> NODES = new ConcurrentHashMap<>();
 
-    /** Ignite client. */
-    private final GridClient client;
+    /** Ignite ignite. */
+    private final Ignite ignite;
+
+    /** Node key. */
+    private final String nodeKey;
 
     /** Cache name. */
     private String cacheName;
@@ -81,47 +70,97 @@ public class JdbcConnection implements Connection {
     /** Node ID. */
     private UUID nodeId;
 
-    /** Timeout. */
-    private int timeout;
-
     /**
      * Creates new connection.
      *
      * @param url Connection URL.
      * @param props Additional properties.
-     * @throws SQLException In case Ignite client failed to start.
+     * @throws SQLException In case Ignite node failed to start.
      */
     public JdbcConnection(String url, Properties props) throws SQLException {
         assert url != null;
         assert props != null;
 
         this.url = url;
-        cacheName = props.getProperty(PROP_CACHE);
+
+        this.cacheName = props.getProperty(PROP_CACHE);
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
         if (nodeIdProp != null)
-            nodeId = UUID.fromString(nodeIdProp);
+            this.nodeId = UUID.fromString(nodeIdProp);
+
+        this.nodeKey = nodeKey(props);
 
         try {
-            GridClientConfiguration cfg = new GridClientConfiguration(props);
+            ignite = getIgnite(props.getProperty(PROP_CFG));
 
-            cfg.setServers(Collections.singleton(props.getProperty(PROP_HOST) + ":" + props.getProperty(PROP_PORT)));
-
-            // Disable all fetching and caching for metadata.
-            cfg.setEnableMetricsCache(false);
-            cfg.setEnableAttributesCache(false);
-            cfg.setAutoFetchMetrics(false);
-            cfg.setAutoFetchAttributes(false);
-
-            client = GridClientFactory.start(cfg);
+            if (!isValid(2))
+                throw new SQLException("Client is invalid. Probably cache name is wrong.");
         }
-        catch (GridClientException e) {
-            throw new SQLException("Failed to start Ignite client.", e);
-        }
+        catch (Exception e) {
+            close();
 
-        if (!isValid(2))
-            throw new SQLException("Client is invalid. Probably cache name is wrong.");
+            if (e instanceof SQLException)
+                throw (SQLException)e;
+            else
+                throw new SQLException("Failed to start Ignite node.", e);
+        }
+    }
+
+    /**
+     * @param cfgUrl Config url.
+     */
+    private Ignite getIgnite(String cfgUrl) throws IgniteCheckedException {
+        while (true) {
+            IgniteNodeFuture fut = NODES.get(nodeKey);
+
+            if (fut == null) {
+                fut = new IgniteNodeFuture();
+
+                IgniteNodeFuture old = NODES.putIfAbsent(nodeKey, fut);
+
+                if (old != null)
+                    fut = old;
+                else {
+                    try {
+                        Ignite ignite = Ignition.start(loadConfiguration(cfgUrl));
+
+                        fut.onDone(ignite);
+                    }
+                    catch (IgniteException e) {
+                        fut.onDone(e);
+                    }
+
+                    return fut.get();
+                }
+            }
+
+            if (fut.acquire())
+                return fut.get();
+            else
+                NODES.remove(nodeKey, fut);
+        }
+    }
+
+    /**
+     * @param cfgUrl Config URL.
+     */
+    private IgniteConfiguration loadConfiguration(String cfgUrl) {
+        try {
+            IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap =
+                IgnitionEx.loadConfigurations(cfgUrl);
+
+            IgniteConfiguration cfg = F.first(cfgMap.get1());
+
+            if (cfg.getGridName() == null)
+                cfg.setGridName("ignite-jdbc-driver-" + UUID.randomUUID().toString());
+
+            return cfg;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -186,7 +225,13 @@ public class JdbcConnection implements Connection {
 
         closed = true;
 
-        GridClientFactory.stop(client.id(), false);
+        IgniteNodeFuture fut = NODES.get(nodeKey);
+
+        if (fut != null && fut.release()) {
+                NODES.remove(nodeKey);
+
+                ignite.close();
+        }
     }
 
     /** {@inheritDoc} */
@@ -346,12 +391,7 @@ public class JdbcConnection implements Connection {
         if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
-        JdbcStatement stmt = new JdbcStatement(this);
-
-        if (timeout > 0)
-            stmt.timeout(timeout);
-
-        return stmt;
+        return new JdbcStatement(this);
     }
 
     /** {@inheritDoc} */
@@ -368,12 +408,7 @@ public class JdbcConnection implements Connection {
         if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
-        JdbcPreparedStatement stmt = new JdbcPreparedStatement(this, sql);
-
-        if (timeout > 0)
-            stmt.timeout(timeout);
-
-        return stmt;
+        return new JdbcPreparedStatement(this, sql);
     }
 
     /** {@inheritDoc} */
@@ -441,12 +476,20 @@ public class JdbcConnection implements Connection {
             throw new SQLException("Invalid timeout: " + timeout);
 
         try {
-            return client.compute().<Boolean>executeAsync(VALID_TASK_NAME, cacheName).get(timeout, SECONDS);
+            if (nodeId != null) {
+                IgniteCompute compute = ignite.compute().withAsync();
+
+                compute.call(new JdbcConnectionValidationTask(cacheName));
+
+                return compute.<Boolean>future().get(timeout, SECONDS);
+            }
+            else
+                return ignite.cache(cacheName) != null;
         }
-        catch (GridClientDisconnectedException | GridClientFutureTimeoutException e) {
+        catch (IgniteClientDisconnectedException | ComputeTaskTimeoutException e) {
             throw new SQLException("Failed to establish connection.", e);
         }
-        catch (GridClientException ignored) {
+        catch (IgniteException ignored) {
             return false;
         }
     }
@@ -490,6 +533,7 @@ public class JdbcConnection implements Connection {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Connection is not a wrapper for " + iface.getName());
@@ -519,22 +563,19 @@ public class JdbcConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void setNetworkTimeout(Executor executor, int ms) throws SQLException {
-        if (ms < 0)
-            throw new IllegalArgumentException("Timeout is below zero: " + ms);
-
-        timeout = ms;
+        throw new SQLFeatureNotSupportedException("Network timeout is not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public int getNetworkTimeout() throws SQLException {
-        return timeout;
+        throw new SQLFeatureNotSupportedException("Network timeout is not supported.");
     }
 
     /**
-     * @return Ignite client.
+     * @return Ignite node.
      */
-    GridClient client() {
-        return client;
+    Ignite ignite() {
+        return ignite;
     }
 
     /**
@@ -574,5 +615,84 @@ public class JdbcConnection implements Connection {
      */
     JdbcStatement createStatement0() throws SQLException {
         return (JdbcStatement)createStatement();
+    }
+
+    /**
+     * @param props Properties.
+     * @return Concatenated properties.
+     */
+    private static String nodeKey(Properties props) {
+        return props.getProperty(PROP_CFG);
+    }
+
+    /**
+     * JDBC connection validation task.
+     */
+    private static class JdbcConnectionValidationTask implements IgniteCallable<Boolean> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Cache name. */
+        private final String cacheName;
+
+        /** Ignite. */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /**
+         * @param cacheName Cache name.
+         */
+        public JdbcConnectionValidationTask(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean call() {
+            GridDiscoveryManager discoMgr = ((IgniteKernal)ignite).context().discovery();
+
+            for (ClusterNode n : ignite.cluster().nodes())
+                if (discoMgr.cacheNode(n, cacheName))
+                    return true;
+
+            return false;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class IgniteNodeFuture extends GridFutureAdapter<Ignite> {
+        /** Reference count. */
+        private final AtomicInteger refCnt = new AtomicInteger(1);
+
+        /**
+         *
+         */
+        public boolean acquire() {
+            while (true) {
+                int cur = refCnt.get();
+
+                if (cur == 0)
+                    return false;
+
+                if (refCnt.compareAndSet(cur, cur + 1))
+                    return true;
+            }
+        }
+
+        /**
+         *
+         */
+        public boolean release() {
+            while (true) {
+                int cur = refCnt.get();
+
+                assert cur > 0;
+
+                if (refCnt.compareAndSet(cur, cur - 1))
+                    // CASed to 0.
+                    return cur == 1;
+            }
+        }
     }
 }

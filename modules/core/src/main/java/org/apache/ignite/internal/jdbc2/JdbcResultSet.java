@@ -15,58 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc;
+package org.apache.ignite.internal.jdbc2;
 
-import java.io.InputStream;
-import java.io.Reader;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.Clob;
+import org.apache.ignite.*;
+
+import java.io.*;
+import java.math.*;
+import java.net.*;
+import java.sql.*;
 import java.sql.Date;
-import java.sql.NClob;
-import java.sql.Ref;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.RowId;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLWarning;
-import java.sql.SQLXML;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.internal.client.GridClientCompute;
-import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import java.util.*;
 
 /**
  * JDBC result set implementation.
- *
- * @deprecated Using Ignite client node based JDBC driver is preferable.
- * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
-@Deprecated
 public class JdbcResultSet implements ResultSet {
-    /** Task name. */
-    private static final String TASK_NAME =
-        "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask";
-
     /** Statement. */
     private final JdbcStatement stmt;
-
-    /** Node ID. */
-    private final UUID nodeId;
-
-    /** Future ID. */
-    private final UUID futId;
 
     /** Table names. */
     private final List<String> tbls;
@@ -77,8 +42,8 @@ public class JdbcResultSet implements ResultSet {
     /** Class names. */
     private final List<String> types;
 
-    /** Fields iterator. */
-    private Iterator<List<Object>> fields;
+    /** Rows cursor iterator. */
+    private Iterator<List<?>> it;
 
     /** Finished flag. */
     private boolean finished;
@@ -99,42 +64,6 @@ public class JdbcResultSet implements ResultSet {
     private int fetchSize;
 
     /**
-     * Creates new result set.
-     *
-     * @param stmt Statement.
-     * @param nodeId Node ID.
-     * @param futId Future ID.
-     * @param tbls Table names.
-     * @param cols Column names.
-     * @param types Types.
-     * @param fields Fields.
-     * @param finished Finished flag.
-     * @param fetchSize Fetch size.
-     */
-    JdbcResultSet(JdbcStatement stmt, UUID nodeId, UUID futId,
-        List<String> tbls, List<String> cols, List<String> types,
-        Collection<List<Object>> fields, boolean finished, int fetchSize) {
-        assert stmt != null;
-        assert nodeId != null;
-        assert futId != null;
-        assert tbls != null;
-        assert cols != null;
-        assert types != null;
-        assert fields != null;
-        assert fetchSize > 0;
-
-        this.stmt = stmt;
-        this.nodeId = nodeId;
-        this.futId = futId;
-        this.tbls = tbls;
-        this.cols = cols;
-        this.types = types;
-        this.fetchSize = fetchSize;
-        this.fields = fields.iterator();
-        this.finished = finished;
-    }
-
-    /**
      * Creates new result set with predefined fields.
      * Result set created with this constructor will
      * never execute remote tasks.
@@ -146,7 +75,7 @@ public class JdbcResultSet implements ResultSet {
      * @param fields Fields.
      */
     JdbcResultSet(JdbcStatement stmt, List<String> tbls, List<String> cols,
-        List<String> types, Collection<List<Object>> fields) {
+        List<String> types, Collection<List<?>> fields, boolean finished) {
         assert stmt != null;
         assert tbls != null;
         assert cols != null;
@@ -157,67 +86,64 @@ public class JdbcResultSet implements ResultSet {
         this.tbls = tbls;
         this.cols = cols;
         this.types = types;
-        this.fields = fields.iterator();
+        this.finished = finished;
 
-        nodeId = null;
-        futId = null;
-
-        // Prevent task execution.
-        finished = true;
+        this.it = fields.iterator();
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
 
-        if (fields == null && !finished) {
-            assert nodeId != null;
-            assert futId != null;
-
-            try {
-                GridClientCompute compute = stmt.connection().client().compute();
-
-                GridClientCompute prj = compute.projection(compute.node(nodeId));
-
-                byte[] packet = prj.execute(TASK_NAME, JdbcUtils.marshalArgument(
-                    JdbcUtils.taskArgument(nodeId, futId, fetchSize, stmt.getMaxRows())));
-
-                byte status = packet[0];
-                byte[] data = new byte[packet.length - 1];
-
-                U.arrayCopy(packet, 1, data, 0, data.length);
-
-                if (status == 1)
-                    throw JdbcUtils.unmarshalError(data);
-                else {
-                    List<?> msg = JdbcUtils.unmarshal(data);
-
-                    assert msg.size() == 2;
-
-                    fields = ((Collection<List<Object>>)msg.get(0)).iterator();
-                    finished = (Boolean)msg.get(1);
-                }
-            }
-            catch (GridClientException e) {
-                throw new SQLException("Failed to query Ignite.", e);
-            }
-        }
-
-        if (fields != null && fields.hasNext()) {
-            curr = fields.next();
-
-            if (!fields.hasNext())
-                fields = null;
-
-            pos++;
-
-            return true;
-        }
-        else {
+        if (it == null || (stmt.getMaxRows() > 0 && pos >= stmt.getMaxRows())) {
             curr = null;
 
             return false;
         }
+        else if (it.hasNext()) {
+            List<Object> row = (List<Object>)it.next();
+
+            curr = new ArrayList<>(row.size());
+
+            for (Object val : row)
+                curr.add(JdbcUtils.sqlType(val) ? val : val.toString());
+
+            pos++;
+
+            if (finished && !it.hasNext())
+                it = null;
+
+            return true;
+        }
+        else if (!finished) {
+            JdbcConnection conn = (JdbcConnection)stmt.getConnection();
+
+            Ignite ignite = conn.ignite();
+
+            UUID nodeId = conn.nodeId();
+
+            JdbcQueryTask qryTask = new JdbcQueryTask(nodeId == null ? ignite : null, conn.cacheName(),
+                null, null, fetchSize, stmt.getUuid());
+
+            try {
+                JdbcQueryTask.QueryResult res =
+                    nodeId == null ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+
+                finished = res.isFinished();
+
+                it = res.getRows().iterator();
+
+                return next();
+            }
+            catch (Exception e) {
+                throw new SQLException("Failed to query Ignite.", e);
+            }
+        }
+
+        it = null;
+
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -513,7 +439,7 @@ public class JdbcResultSet implements ResultSet {
     @Override public boolean isAfterLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fields == null && curr == null;
+        return finished && it == null && curr == null;
     }
 
     /** {@inheritDoc} */
@@ -527,7 +453,7 @@ public class JdbcResultSet implements ResultSet {
     @Override public boolean isLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fields == null && curr != null;
+        return finished && it == null && curr != null;
     }
 
     /** {@inheritDoc} */
@@ -1452,6 +1378,7 @@ public class JdbcResultSet implements ResultSet {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Result set is not a wrapper for " + iface.getName());
@@ -1502,6 +1429,7 @@ public class JdbcResultSet implements ResultSet {
      * @return Casted field value.
      * @throws SQLException In case of error.
      */
+    @SuppressWarnings("unchecked")
     private <T> T getTypedValue(int colIdx, Class<T> cls) throws SQLException {
         ensureNotClosed();
         ensureHasCurrentRow();

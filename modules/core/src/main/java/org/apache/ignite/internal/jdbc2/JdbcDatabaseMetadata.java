@@ -15,41 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc;
+package org.apache.ignite.internal.jdbc2;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.RowIdLifetime;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 
-import static java.sql.Connection.TRANSACTION_NONE;
-import static java.sql.ResultSet.CONCUR_READ_ONLY;
-import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
-import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
+import java.sql.*;
+import java.util.*;
+
+import static java.sql.Connection.*;
+import static java.sql.ResultSet.*;
+import static java.sql.RowIdLifetime.*;
 
 /**
  * JDBC database metadata implementation.
- *
- * @deprecated Using Ignite client node based JDBC driver is preferable.
- * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
-@SuppressWarnings("RedundantCast")
-@Deprecated
 public class JdbcDatabaseMetadata implements DatabaseMetaData {
-    /** Task name. */
-    private static final String TASK_NAME =
-        "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcMetadataTask";
-
     /** Connection. */
     private final JdbcConnection conn;
 
@@ -664,9 +650,9 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Arrays.asList("PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
                 "REMARKS", "PROCEDURE_TYPE", "SPECIFIC_NAME"),
-            Arrays.<String>asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), String.class.getName()),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(), true
         );
     }
 
@@ -681,13 +667,13 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 "LENGTH", "SCALE", "RADIX", "NULLABLE", "REMARKS", "COLUMN_DEF",
                 "SQL_DATA_TYPE", "SQL_DATETIME_SUB", "CHAR_OCTET_LENGTH",
                 "ORDINAL_POSITION", "IS_NULLABLE", "SPECIFIC_NAME"),
-            Arrays.<String>asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), Integer.class.getName(), String.class.getName(),
                 Integer.class.getName(), Integer.class.getName(), Short.class.getName(), Short.class.getName(),
                 Short.class.getName(), String.class.getName(), String.class.getName(), Integer.class.getName(),
                 Integer.class.getName(), Integer.class.getName(), Integer.class.getName(), String.class.getName(),
                 String.class.getName()),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(), true
         );
     }
 
@@ -696,7 +682,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         String[] tblTypes) throws SQLException {
         updateMetaData();
 
-        List<List<Object>> rows = new LinkedList<>();
+        List<List<?>> rows = new LinkedList<>();
 
         if (tblTypes == null || Arrays.asList(tblTypes).contains("TABLE"))
             for (Map.Entry<String, Map<String, Map<String, String>>> schema : meta.entrySet())
@@ -710,10 +696,10 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE", "REMARKS", "TYPE_CAT",
                 "TYPE_SCHEM", "TYPE_NAME", "SELF_REFERENCING_COL_NAME", "REF_GENERATION"),
-            Arrays.<String>asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), String.class.getName(), String.class.getName()),
-            rows
+            rows, true
         );
     }
 
@@ -725,16 +711,16 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     private List<Object> tableRow(String schema, String tbl) {
         List<Object> row = new ArrayList<>(10);
 
-        row.add((String)null);
+        row.add(null);
         row.add(schema);
         row.add(tbl.toUpperCase());
         row.add("TABLE");
-        row.add((String)null);
-        row.add((String)null);
-        row.add((String)null);
-        row.add((String)null);
-        row.add((String)null);
-        row.add((String)null);
+        row.add(null);
+        row.add(null);
+        row.add(null);
+        row.add(null);
+        row.add(null);
+        row.add(null);
 
         return row;
     }
@@ -749,9 +735,10 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("TABLE_CAT"),
-            Arrays.<String>asList(String.class.getName()),
-            Collections.<List<Object>>emptyList()
+            Collections.singletonList("TABLE_CAT"),
+            Collections.singletonList(String.class.getName()),
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -760,8 +747,9 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.singletonList("TABLE_TYPE"),
-            Collections.<String>singletonList(String.class.getName()),
-            Collections.singletonList(Collections.<Object>singletonList("TABLE")));
+            Collections.singletonList(String.class.getName()),
+            Collections.<List<?>>singletonList(Collections.singletonList("TABLE")),
+            true);
     }
 
     /** {@inheritDoc} */
@@ -769,7 +757,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         String colNamePtrn) throws SQLException {
         updateMetaData();
 
-        List<List<Object>> rows = new LinkedList<>();
+        List<List<?>> rows = new LinkedList<>();
 
         int cnt = 0;
 
@@ -789,13 +777,13 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 "TYPE_NAME", "COLUMN_SIZE", "DECIMAL_DIGITS", "NUM_PREC_RADIX", "NULLABLE",
                 "REMARKS", "COLUMN_DEF", "CHAR_OCTET_LENGTH", "ORDINAL_POSITION", "IS_NULLABLE",
                 "SCOPE_CATLOG", "SCOPE_SCHEMA", "SCOPE_TABLE", "SOURCE_DATA_TYPE", "IS_AUTOINCREMENT"),
-            Arrays.<String>asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Integer.class.getName(), String.class.getName(), Integer.class.getName(),
                 Integer.class.getName(), Integer.class.getName(), Integer.class.getName(), String.class.getName(),
                 String.class.getName(), Integer.class.getName(), Integer.class.getName(), String.class.getName(),
                 String.class.getName(), String.class.getName(), String.class.getName(), Short.class.getName(),
                 String.class.getName()),
-            rows
+            rows, true
         );
     }
 
@@ -813,25 +801,25 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         boolean nullable, int pos) {
         List<Object> row = new ArrayList<>(20);
 
-        row.add((String)null);
+        row.add(null);
         row.add(schema);
         row.add(tbl);
         row.add(col);
         row.add(type);
         row.add(typeName);
-        row.add((Integer)null);
-        row.add((Integer)null);
+        row.add(null);
+        row.add(null);
         row.add(10);
         row.add(nullable ? columnNullable : columnNoNulls);
-        row.add((String)null);
-        row.add((String)null);
+        row.add(null);
+        row.add(null);
         row.add(Integer.MAX_VALUE);
         row.add(pos);
         row.add("YES");
-        row.add((String)null);
-        row.add((String)null);
-        row.add((String)null);
-        row.add((Short)null);
+        row.add(null);
+        row.add(null);
+        row.add(null);
+        row.add(null);
         row.add("NO");
 
         return row;
@@ -845,7 +833,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -857,7 +846,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -869,7 +859,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -880,7 +871,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -888,13 +880,13 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     @Override public ResultSet getPrimaryKeys(String catalog, String schema, String tbl) throws SQLException {
         updateMetaData();
 
-        List<List<Object>> rows = new LinkedList<>();
+        List<List<?>> rows = new LinkedList<>();
 
         for (Map.Entry<String, Map<String, Map<String, String>>> s : meta.entrySet())
             if (schema == null || schema.toUpperCase().equals(s.getKey()))
                 for (Map.Entry<String, Map<String, String>> t : s.getValue().entrySet())
                     if (tbl == null || tbl.toUpperCase().equals(t.getKey()))
-                        rows.add(Arrays.<Object>asList((String)null, s.getKey().toUpperCase(),
+                        rows.add(Arrays.<Object>asList(null, s.getKey().toUpperCase(),
                             t.getKey().toUpperCase(), "_KEY", 1, "_KEY"));
 
         return new JdbcResultSet(
@@ -903,7 +895,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "KEY_SEQ", "PK_NAME"),
             Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), String.class.getName()),
-            rows
+            rows, true
         );
     }
 
@@ -914,7 +906,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -925,7 +918,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -937,7 +931,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -948,14 +943,15 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getIndexInfo(String catalog, String schema, String tbl, boolean unique,
         boolean approximate) throws SQLException {
-        Collection<List<Object>> rows = new ArrayList<>(indexes.size());
+        Collection<List<?>> rows = new ArrayList<>(indexes.size());
 
         for (List<Object> idx : indexes) {
             String idxSchema = (String)idx.get(0);
@@ -964,19 +960,19 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             if ((schema == null || schema.equals(idxSchema)) && (tbl == null || tbl.equals(idxTbl))) {
                 List<Object> row = new ArrayList<>(13);
 
-                row.add((String)null);
+                row.add(null);
                 row.add(idxSchema);
                 row.add(idxTbl);
-                row.add((Boolean)idx.get(2));
-                row.add((String)null);
-                row.add((String)idx.get(3));
+                row.add(idx.get(2));
+                row.add(null);
+                row.add(idx.get(3));
                 row.add((int)tableIndexOther);
-                row.add((Integer)idx.get(4));
-                row.add((String)idx.get(5));
+                row.add(idx.get(4));
+                row.add(idx.get(5));
                 row.add((Boolean)idx.get(6) ? "D" : "A");
                 row.add(0);
                 row.add(0);
-                row.add((String)null);
+                row.add(null);
 
                 rows.add(row);
             }
@@ -992,7 +988,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 Boolean.class.getName(), String.class.getName(), String.class.getName(), Short.class.getName(),
                 Short.class.getName(), String.class.getName(), String.class.getName(), Integer.class.getName(),
                 Integer.class.getName(), String.class.getName()),
-            rows
+            rows, true
         );
     }
 
@@ -1064,7 +1060,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -1101,7 +1098,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -1113,7 +1111,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -1125,7 +1124,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -1183,18 +1183,18 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     @Override public ResultSet getSchemas(String catalog, String schemaPtrn) throws SQLException {
         updateMetaData();
 
-        List<List<Object>> rows = new ArrayList<>(meta.size());
+        List<List<?>> rows = new ArrayList<>(meta.size());
 
         for (String schema : meta.keySet())
             if (matches(schema, schemaPtrn))
-                rows.add(Arrays.<Object>asList(schema, (String)null));
+                rows.add(Arrays.<Object>asList(schema, null));
 
         return new JdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("TABLE_SCHEM", "TABLE_CATALOG"),
-            Arrays.<String>asList(String.class.getName(), String.class.getName()),
-            rows
+            Arrays.asList(String.class.getName(), String.class.getName()),
+            rows, true
         );
     }
 
@@ -1215,7 +1215,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -1227,9 +1228,9 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Arrays.asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
                 "REMARKS", "FUNCTION_TYPE", "SPECIFIC_NAME"),
-            Arrays.<String>asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), String.class.getName()),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(), true
         );
     }
 
@@ -1243,16 +1244,17 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 "COLUMN_NAME", "COLUMN_TYPE", "DATA_TYPE", "TYPE_NAME", "PRECISION",
                 "LENGTH", "SCALE", "RADIX", "NULLABLE", "REMARKS", "CHAR_OCTET_LENGTH",
                 "ORDINAL_POSITION", "IS_NULLABLE", "SPECIFIC_NAME"),
-            Arrays.<String>asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), Integer.class.getName(), String.class.getName(),
                 Integer.class.getName(), Integer.class.getName(), Short.class.getName(), Short.class.getName(),
                 Short.class.getName(), String.class.getName(), Integer.class.getName(), Integer.class.getName(),
                 String.class.getName(), String.class.getName()),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(), true
         );
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Database meta data is not a wrapper for " + iface.getName());
@@ -1273,7 +1275,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
-            Collections.<List<Object>>emptyList()
+            Collections.<List<?>>emptyList(),
+            true
         );
     }
 
@@ -1287,28 +1290,53 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
      *
      * @throws SQLException In case of error.
      */
+    @SuppressWarnings("unchecked")
     private void updateMetaData() throws SQLException {
         if (conn.isClosed())
             throw new SQLException("Connection is closed.");
 
         try {
-            byte[] packet = conn.client().compute().execute(TASK_NAME, conn.cacheName());
+            Ignite ignite = conn.ignite();
 
-            byte status = packet[0];
-            byte[] data = new byte[packet.length - 1];
+            UUID nodeId = conn.nodeId();
 
-            U.arrayCopy(packet, 1, data, 0, data.length);
+            Collection<GridCacheSqlMetadata> metas;
 
-            if (status == 1)
-                throw JdbcUtils.unmarshalError(data);
-            else {
-                List<Object> res = JdbcUtils.unmarshal(data);
+            UpdateMetadataTask task = new UpdateMetadataTask(conn.cacheName(), nodeId == null ? ignite : null);
 
-                meta = (Map<String, Map<String, Map<String, String>>>)res.get(0);
-                indexes = (Collection<List<Object>>)res.get(1);
+            metas = nodeId == null ? task.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(task);
+
+            meta = U.newHashMap(metas.size());
+
+            indexes = new ArrayList<>();
+
+            for (GridCacheSqlMetadata m : metas) {
+                String name = m.cacheName();
+
+                if (name == null)
+                    name = "PUBLIC";
+
+                Collection<String> types = m.types();
+
+                Map<String, Map<String, String>> typesMap = U.newHashMap(types.size());
+
+                for (String type : types) {
+                    typesMap.put(type.toUpperCase(), m.fields(type));
+
+                    for (GridCacheSqlIndexMetadata idx : m.indexes(type)) {
+                        int cnt = 0;
+
+                        for (String field : idx.fields()) {
+                            indexes.add(F.<Object>asList(name, type.toUpperCase(), !idx.unique(),
+                                idx.name().toUpperCase(), ++cnt, field, idx.descending(field)));
+                        }
+                    }
+                }
+
+                meta.put(name, typesMap);
             }
         }
-        catch (GridClientException e) {
+        catch (Exception e) {
             throw new SQLException("Failed to get meta data from Ignite.", e);
         }
     }
@@ -1323,5 +1351,37 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     private boolean matches(String str, String ptrn) {
         return str != null && (ptrn == null ||
             str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
+    }
+
+    /**
+     *
+     */
+    private static class UpdateMetadataTask implements IgniteCallable<Collection<GridCacheSqlMetadata>> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Ignite. */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** Cache name. */
+        private final String cacheName;
+
+        /**
+         * @param cacheName Cache name.
+         * @param ignite Ignite.
+         */
+        public UpdateMetadataTask(String cacheName, Ignite ignite) {
+            this.cacheName = cacheName;
+            this.ignite = ignite;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public Collection<GridCacheSqlMetadata> call() throws Exception {
+            IgniteCache cache = ignite.cache(cacheName);
+
+            return ((IgniteCacheProxy)cache).context().queries().sqlMetadata();
+        }
     }
 }
