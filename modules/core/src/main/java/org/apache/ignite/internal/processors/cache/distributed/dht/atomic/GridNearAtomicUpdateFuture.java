@@ -275,6 +275,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             if (singleNodeId.equals(nodeId)) {
                 onDone(addFailedKeys(
                     singleReq.keys(),
+                    singleReq.topologyVersion(),
                     new ClusterTopologyCheckedException("Primary node left grid before response is received: " + nodeId)));
 
                 return true;
@@ -286,8 +287,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         GridNearAtomicUpdateRequest req = mappings.get(nodeId);
 
         if (req != null) {
-            addFailedKeys(req.keys(), new ClusterTopologyCheckedException("Primary node left grid before response is " +
-                "received: " + nodeId));
+            addFailedKeys(req.keys(),
+                req.topologyVersion(),
+                new ClusterTopologyCheckedException("Primary node left grid before response is received: " + nodeId));
 
             mappings.remove(nodeId);
 
@@ -356,8 +358,11 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /**
      * @param failed Keys to remap.
+     * @param errTopVer Topology version for failed update.
      */
-    private void remap(Collection<?> failed) {
+    private void remap(Collection<?> failed, AffinityTopologyVersion errTopVer) {
+        assert errTopVer != null;
+
         GridCacheVersion futVer0 = futVer;
 
         if (futVer0 == null || cctx.mvcc().removeAtomicFuture(futVer0) == null)
@@ -409,14 +414,10 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
         GridFutureAdapter<Void> fut0;
 
-        long nextTopVer;
-
         synchronized (this) {
             mappings = new ConcurrentHashMap8<>(keys.size(), 1.0f);
 
             assert topVer != null && topVer.topologyVersion() > 0 : this;
-
-            nextTopVer = topVer.topologyVersion() + 1;
 
             topVer = AffinityTopologyVersion.ZERO;
 
@@ -434,7 +435,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         updVer = null;
         topLocked = false;
 
-        IgniteInternalFuture<?> fut = cctx.affinity().affinityReadyFuture(nextTopVer);
+        IgniteInternalFuture<?> fut = cctx.affinity().affinityReadyFuture(errTopVer.topologyVersion() + 1);
 
         fut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(final IgniteInternalFuture<?> fut) {
@@ -471,15 +472,17 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             X.hasCause(err, ClusterTopologyCheckedException.class) &&
             storeFuture() &&
             remapCnt.decrementAndGet() > 0) {
+            ClusterTopologyCheckedException topErr = X.cause(err, ClusterTopologyCheckedException.class);
 
-            CachePartialUpdateCheckedException cause = X.cause(err, CachePartialUpdateCheckedException.class);
+            if (!(topErr instanceof  ClusterTopologyServerNotFoundException)) {
+                CachePartialUpdateCheckedException cause = X.cause(err, CachePartialUpdateCheckedException.class);
 
-            if (F.isEmpty(cause.failedKeys()))
-                cause.printStackTrace();
+                assert cause != null && cause.topologyVersion() != null : err;
 
-            remap(cause.failedKeys());
+                remap(cause.failedKeys(), cause.topologyVersion());
 
-            return false;
+                return false;
+            }
         }
 
         if (super.onDone(retval, err)) {
@@ -528,8 +531,10 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
             updateNear(singleReq, res);
 
-            if (res.error() != null)
-                onDone(res.failedKeys() != null ? addFailedKeys(res.failedKeys(), res.error()) : res.error());
+            if (res.error() != null) {
+                onDone(res.failedKeys() != null ?
+                    addFailedKeys(res.failedKeys(), singleReq.topologyVersion(), res.error()) : res.error());
+            }
             else {
                 if (op == TRANSFORM) {
                     if (ret != null)
@@ -551,7 +556,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 updateNear(req, res);
 
                 if (res.error() != null)
-                    addFailedKeys(req.keys(), res.error());
+                    addFailedKeys(req.keys(), req.topologyVersion(), res.error());
                 else {
                     if (op == TRANSFORM) {
                         assert !req.fastMap();
@@ -1048,7 +1053,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                     onDone(new GridCacheReturn(cctx, true, null, true));
             }
             catch (IgniteCheckedException e) {
-                onDone(addFailedKeys(req.keys(), e));
+                onDone(addFailedKeys(req.keys(), req.topologyVersion(), e));
             }
         }
     }
@@ -1079,7 +1084,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                     cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
                 }
                 catch (IgniteCheckedException e) {
-                    addFailedKeys(req.keys(), e);
+                    addFailedKeys(req.keys(), req.topologyVersion(), e);
 
                     removeMapping(req.nodeId());
                 }
@@ -1135,10 +1140,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /**
      * @param failedKeys Failed keys.
+     * @param topVer Topology version for failed update.
      * @param err Error cause.
      * @return Root {@link org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException}.
      */
-    private synchronized IgniteCheckedException addFailedKeys(Collection<KeyCacheObject> failedKeys, Throwable err) {
+    private synchronized IgniteCheckedException addFailedKeys(Collection<KeyCacheObject> failedKeys,
+        AffinityTopologyVersion topVer,
+        Throwable err) {
         CachePartialUpdateCheckedException err0 = this.err;
 
         if (err0 == null)
@@ -1149,7 +1157,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         for (KeyCacheObject key : failedKeys)
             keys.add(key.value(cctx.cacheObjectContext(), false));
 
-        err0.add(keys, err);
+        err0.add(keys, err, topVer);
 
         return err0;
     }

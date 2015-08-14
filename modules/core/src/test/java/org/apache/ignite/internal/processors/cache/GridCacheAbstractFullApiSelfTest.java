@@ -5010,7 +5010,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-
                 IgniteFuture fut = cache.future().chain(new IgniteClosure<IgniteFuture, Object>() {
                     @Override public Object apply(IgniteFuture o) {
                         return o.get();

@@ -3975,13 +3975,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     }
 
                     if (X.hasCause(e, ClusterTopologyCheckedException.class) && i != retries - 1) {
-                        AffinityTopologyVersion topVer = tx.topologyVersion();
+                        ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
 
-                        assert topVer != null && topVer.topologyVersion() > 0 : tx;
+                        if (!(topErr instanceof ClusterTopologyServerNotFoundException)) {
+                            AffinityTopologyVersion topVer = tx.topologyVersion();
 
-                        ctx.affinity().affinityReadyFuture(topVer.topologyVersion() + 1).get();
+                            assert topVer != null && topVer.topologyVersion() > 0 : tx;
 
-                        continue;
+                            ctx.affinity().affinityReadyFuture(topVer.topologyVersion() + 1).get();
+
+                            continue;
+                        }
                     }
 
                     throw e;
@@ -4702,31 +4706,35 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     }
                     catch (IgniteCheckedException e) {
                         if (X.hasCause(e, ClusterTopologyCheckedException.class) && --retries > 0) {
-                            IgniteTxLocalAdapter tx = AsyncOpRetryFuture.this.tx;
+                            ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
 
-                            assert tx != null;
+                            if (!(topErr instanceof ClusterTopologyServerNotFoundException)) {
+                                IgniteTxLocalAdapter tx = AsyncOpRetryFuture.this.tx;
 
-                            AffinityTopologyVersion topVer = tx.topologyVersion();
+                                assert tx != null;
 
-                            assert topVer != null && topVer.topologyVersion() > 0 : tx;
+                                AffinityTopologyVersion topVer = tx.topologyVersion();
 
-                            IgniteInternalFuture<?> topFut =
-                                ctx.affinity().affinityReadyFuture(topVer.topologyVersion() + 1);
+                                assert topVer != null && topVer.topologyVersion() > 0 : tx;
 
-                            topFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                                @Override public void apply(IgniteInternalFuture<?> topFut) {
-                                    try {
-                                        topFut.get();
+                                IgniteInternalFuture<?> topFut =
+                                    ctx.affinity().affinityReadyFuture(topVer.topologyVersion() + 1);
 
-                                        execute();
+                                topFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                                    @Override public void apply(IgniteInternalFuture<?> topFut) {
+                                        try {
+                                            topFut.get();
+
+                                            execute();
+                                        }
+                                        catch (IgniteCheckedException e) {
+                                            onDone(e);
+                                        }
                                     }
-                                    catch (IgniteCheckedException e) {
-                                        onDone(e);
-                                    }
-                                }
-                            });
+                                });
 
-                            return;
+                                return;
+                            }
                         }
 
                         onDone(e);
