@@ -85,7 +85,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
 
     /**
-     * @param topVer Topology version.
+     * @param topVer Topology version plus number of seconds from the start time of the first grid node.
      * @param nodeOrderDrId Node order and DR ID.
      * @param globalTime Globally adjusted time.
      * @param order Version order.

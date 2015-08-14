@@ -1513,35 +1513,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             @Override protected Map.Entry<K, V> onNext() {
                 final Map.Entry<byte[], byte[]> cur0 = it.next();
 
-                cur = new Map.Entry<K, V>() {
-                    @Override public K getKey() {
-                        try {
-                            KeyCacheObject key = cctx.toCacheKeyObject(cur0.getKey());
-
-                            return key.value(cctx.cacheObjectContext(), false);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-                    }
-
-                    @Override public V getValue() {
-                        try {
-                            GridCacheSwapEntry e = unmarshalSwapEntry(cur0.getValue());
-
-                            swapEntry(e);
-
-                            return e.value().value(cctx.cacheObjectContext(), false);
-                        }
-                        catch (IgniteCheckedException ex) {
-                            throw new IgniteException(ex);
-                        }
-                    }
-
-                    @Override public V setValue(V val) {
-                        throw new UnsupportedOperationException();
-                    }
-                };
+                cur = new GridVersionedMapEntry<K, V>(cur0);
 
                 return cur;
             }
@@ -2323,5 +2295,57 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
          * @throws IgniteCheckedException If failed.
          */
         abstract protected GridCloseableIterator<T1> partitionIterator(int part) throws IgniteCheckedException;
+    }
+
+    private class GridVersionedMapEntry<K,V> implements Map.Entry<K,V>, GridCacheVersionAware {
+        /** */
+        private Map.Entry<byte[], byte[]> entry;
+
+        /**
+         * Constructor.
+         *
+         * @param entry Entry.
+         */
+        public GridVersionedMapEntry(Map.Entry<byte[], byte[]> entry) {
+            this.entry = entry;
+        }
+
+        /** {@inheritDoc} */
+        @Override public K getKey() {
+            try {
+                KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
+
+                return key.value(cctx.cacheObjectContext(), false);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public V getValue() {
+            try {
+                GridCacheSwapEntry e = unmarshalSwapEntry(entry.getValue());
+
+                swapEntry(e);
+
+                return e.value().value(cctx.cacheObjectContext(), false);
+            }
+            catch (IgniteCheckedException ex) {
+                throw new IgniteException(ex);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheVersion version() {
+            GridCacheSwapEntry e = unmarshalSwapEntry(entry.getValue());
+
+            return e.version();
+        }
+
+        /** {@inheritDoc} */
+        @Override public V setValue(V val) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

@@ -2229,8 +2229,24 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     if (retval && !transform)
                                         ret.set(cacheCtx, old, true);
                                     else {
-                                        if (txEntry.op() == TRANSFORM)
-                                            addInvokeResult(txEntry, old, ret);
+                                        if (txEntry.op() == TRANSFORM) {
+                                            GridCacheVersion ver;
+
+                                            try {
+                                                ver = entry.version();
+                                            }
+                                            catch (GridCacheEntryRemovedException ex) {
+                                                assert optimistic() : txEntry;
+
+                                                if (log.isDebugEnabled())
+                                                    log.debug("Failed to get entry version " +
+                                                        "[err=" + ex.getMessage() + ']');
+
+                                                ver = null;
+                                            }
+
+                                            addInvokeResult(txEntry, old, ret, ver);
+                                        }
                                         else
                                             ret.success(true);
                                     }
@@ -2290,8 +2306,23 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                         enlisted.add(cacheKey);
 
-                        if (txEntry.op() == TRANSFORM)
-                            addInvokeResult(txEntry, txEntry.value(), ret);
+                        if (txEntry.op() == TRANSFORM) {
+                            GridCacheVersion ver;
+
+                            try {
+                                ver = entry.version();
+                            }
+                            catch (GridCacheEntryRemovedException e) {
+                                assert optimistic() : txEntry;
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to get entry version: [msg=" + e.getMessage() + ']');
+
+                                ver = null;
+                            }
+
+                            addInvokeResult(txEntry, txEntry.value(), ret, ver);
+                        }
                     }
 
                     if (!pessimistic()) {
@@ -2328,8 +2359,23 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                         CacheObject cacheVal = cacheCtx.toCacheObject(val);
 
-                        if (e.op() == TRANSFORM)
-                            addInvokeResult(e, cacheVal, ret);
+                        if (e.op() == TRANSFORM) {
+                            GridCacheVersion ver;
+
+                            try {
+                                ver = e.cached().version();
+                            }
+                            catch (GridCacheEntryRemovedException ex) {
+                                assert optimistic() : e;
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to get entry version: [msg=" + ex.getMessage() + ']');
+
+                                ver = null;
+                            }
+
+                            addInvokeResult(e, cacheVal, ret, ver);
+                        }
                         else
                             ret.set(cacheCtx, cacheVal, true);
                     }
@@ -2442,8 +2488,23 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         }
 
                         if (txEntry.op() == TRANSFORM) {
-                            if (computeInvoke)
-                                addInvokeResult(txEntry, v, ret);
+                            if (computeInvoke) {
+                                GridCacheVersion ver;
+
+                                try {
+                                    ver = cached.version();
+                                }
+                                catch (GridCacheEntryRemovedException e) {
+                                    assert optimistic() : txEntry;
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to get entry version: [msg=" + e.getMessage() + ']');
+
+                                    ver = null;
+                                }
+
+                                addInvokeResult(txEntry, v, ret, ver);
+                            }
                         }
                         else
                             ret.value(cacheCtx, v);
@@ -2510,8 +2571,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param txEntry Entry.
      * @param cacheVal Value.
      * @param ret Return value to update.
+     * @param ver Entry version.
      */
-    private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn ret) {
+    private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn ret,
+        GridCacheVersion ver) {
         GridCacheContext ctx = txEntry.context();
 
         Object key0 = null;
@@ -2522,7 +2585,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                 CacheInvokeEntry<Object, Object> invokeEntry =
-                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), key0, cacheVal, val0);
+                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), key0, cacheVal, val0, ver);
 
                 EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
 
