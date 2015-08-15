@@ -536,15 +536,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked"})
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon()) {
-            sharedCtx = createSharedContext(ctx, CU.startStoreSessionListeners(ctx, null));
-
-            for (GridCacheSharedManager mgr : sharedCtx.managers())
-                mgr.start(sharedCtx);
-
-            return;
-        }
-
         DeploymentMode depMode = ctx.config().getDeploymentMode();
 
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
@@ -574,6 +565,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             !ctx.config().getTransactionConfiguration().isTxSerializableEnabled());
 
         for (int i = 0; i < cfgs.length; i++) {
+            if (ctx.config().isDaemon() && !CU.isMarshallerCache(cfgs[i].getName()))
+                continue;
+
             checkSerializable(cfgs[i]);
 
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
@@ -691,49 +685,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
         try {
-            if (ctx.config().isDaemon()) {
-                for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()) {
-                    if (CU.isMarshallerCache(ccfg.getName())) {
-                        CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
-
-                        initialize(internalCachesNames().contains(maskNull(ccfg.getName())), ccfg, cacheObjCtx);
-
-                        GridCacheContext ctx = createCache(ccfg, null, CacheType.MARSHALLER, cacheObjCtx, true);
-
-                        ctx.dynamicDeploymentId(IgniteUuid.randomUuid());
-
-                        sharedCtx.addCacheContext(ctx);
-
-                        GridCacheAdapter cache = ctx.cache();
-
-                        String name = ccfg.getName();
-
-                        caches.put(maskNull(name), cache);
-
-                        startCache(cache);
-
-                        break;
-                    }
-                }
-
-                marshallerCache().context().preloader().syncFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
-                    @Override public void applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
-                        ctx.marshallerContext().onMarshallerCachePreloaded(ctx);
-                    }
-                });
-
-                for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
-                    mgr.onKernalStart(false);
-
-                for (GridCacheAdapter<?, ?> cache : caches.values())
-                    onKernalStart(cache);
-
-                return;
-            }
-
             ClusterNode locNode = ctx.discovery().localNode();
 
-            if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+            if (!ctx.config().isDaemon() && !getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
                 for (ClusterNode n : ctx.discovery().remoteNodes()) {
                     if (n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED))
                         continue;
@@ -765,6 +719,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             // Start dynamic caches received from collect discovery data.
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                if (ctx.config().isDaemon() && !CU.isMarshallerCache(desc.cacheConfiguration().getName()))
+                    continue;
+
                 boolean started = desc.onStart();
 
                 assert started : "Failed to change started flag for locally configured cache: " + desc;
@@ -805,7 +762,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheStartedLatch.countDown();
         }
 
-        ctx.marshallerContext().onMarshallerCacheStarted(ctx);
+        if (!ctx.config().isDaemon())
+            ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
         marshallerCache().context().preloader().syncFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
             @Override public void applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
@@ -863,7 +821,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         assert caches.containsKey(CU.MARSH_CACHE_NAME) : "Marshaller cache should be started";
-        assert caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
+        assert ctx.config().isDaemon() || caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
     }
 
     /** {@inheritDoc} */
@@ -3429,4 +3387,3 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 }
-

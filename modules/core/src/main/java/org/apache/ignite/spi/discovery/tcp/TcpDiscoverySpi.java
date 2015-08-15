@@ -1580,12 +1580,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      */
     protected Map<Integer, byte[]> collectExchangeData(UUID nodeId) {
         if (locNode.isDaemon())
-            return null;
+            return Collections.emptyMap();
 
         Map<Integer, Serializable> data = exchange.collect(nodeId);
 
-        if (data == null)
-            return null;
+        assert data != null;
 
         Map<Integer, byte[]> data0 = U.newHashMap(data.size());
 
