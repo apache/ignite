@@ -1637,13 +1637,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param ver Version.
+     * @param xidVer Version.
      * @return Future for flag indicating if transactions was committed.
      */
-    public IgniteInternalFuture<Boolean> txCommitted(GridCacheVersion ver) {
+    public IgniteInternalFuture<Boolean> txCommitted(GridCacheVersion xidVer) {
         final GridFutureAdapter<Boolean> resFut = new GridFutureAdapter<>();
 
-        final IgniteInternalTx tx = cctx.tm().tx(ver);
+        final IgniteInternalTx tx = cctx.tm().tx(xidVer);
 
         if (tx != null) {
             assert tx.near() && tx.local() : tx;
@@ -1665,7 +1665,22 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             return resFut;
         }
 
-        Boolean committed = completedVers.get(ver);
+        Boolean committed = null;
+
+        for (Map.Entry<GridCacheVersion, Boolean> entry : completedVers.entrySet()) {
+            if (entry.getValue() == null)
+                continue;
+
+            if (entry.getKey() instanceof CommittedVersion) {
+                CommittedVersion comm = (CommittedVersion)entry.getKey();
+
+                if (comm.nearVer.equals(xidVer)) {
+                    committed = entry.getValue();
+
+                    break;
+                }
+            }
+        }
 
         if (log.isDebugEnabled())
             log.debug("Near transaction committed: " + committed);
@@ -1806,29 +1821,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param nearVer Near version to check.
-     * @return Future.
-     */
-    public IgniteInternalFuture<Boolean> nearTxCommitted(GridCacheVersion nearVer) {
-        for (final IgniteInternalTx tx : txs()) {
-            if (tx.near() && tx.xidVersion().equals(nearVer)) {
-                return tx.done() ?
-                    new GridFinishedFuture<>(tx.state() == COMMITTED) :
-                    tx.finishFuture().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, Boolean>() {
-                        @Override public Boolean apply(IgniteInternalFuture<IgniteInternalTx> f) {
-                            return tx.state() == COMMITTED;
-                        }
-                    });
-            }
-        }
-
-        // Transaction was not found. Check committed versions buffer.
-        Boolean res = completedVers.get(nearVer);
-
-        return new GridFinishedFuture<>(res != null && res);
-    }
-
-    /**
      * Gets local transaction for pessimistic tx recovery.
      *
      * @param nearXidVer Near tx ID.
@@ -1931,9 +1923,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             try {
                 cctx.kernalContext().gateway().readLock();
             }
-            catch (IllegalStateException | IgniteClientDisconnectedException ignore) {
+            catch (IllegalStateException | IgniteClientDisconnectedException e) {
                 if (log.isDebugEnabled())
-                    log.debug("Failed to acquire kernal gateway [err=" + ignore + ']');
+                    log.debug("Failed to acquire kernal gateway [err=" + e + ']');
 
                 return;
             }
