@@ -296,7 +296,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         // each node will only register itself
         assertEquals(4, zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size());
 
-        // repat 5 times
+        // repeat 5 times
         for (int i = 0; i < 5; i++) {
             // stop last grid
             stopGrid(2);
@@ -341,6 +341,8 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         // start the cluster with the previous configuration
         zkCluster = new TestingCluster(instances);
         zkCluster.start();
+
+        // block the client until connected
         zkCurator.blockUntilConnected();
 
         // check that the nodes have registered again

@@ -34,7 +34,6 @@
     <version>1.4.1-SNAPSHOT</version>
 
     <properties>
-        <zookeeper.version>5.11.1</zookeeper.version>
         <curator.version>2.8.0</curator.version>
     </properties>
 

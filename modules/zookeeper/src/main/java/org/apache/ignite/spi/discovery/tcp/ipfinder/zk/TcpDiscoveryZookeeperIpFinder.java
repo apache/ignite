@@ -31,6 +31,7 @@ import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 
 import com.google.common.collect.*;
+import org.codehaus.jackson.map.annotate.*;
 
 import java.net.*;
 import java.util.*;
@@ -333,4 +334,17 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
     public void setAllowDuplicateRegistrations(boolean allowDuplicateRegistrations) {
         this.allowDuplicateRegistrations = allowDuplicateRegistrations;
     }
+
+    /**
+     * Empty DTO for storing service instances details. Currently acting as a placeholder because Curator requires
+     * a payload type when registering and discovering nodes. May be enhanced in the future with further information
+     * to assist discovery.
+     *
+     * @author Raul Kripalani
+     */
+    @JsonRootName("ignite_instance_details")
+    private class IgniteInstanceDetails {
+
+    }
+
 }
