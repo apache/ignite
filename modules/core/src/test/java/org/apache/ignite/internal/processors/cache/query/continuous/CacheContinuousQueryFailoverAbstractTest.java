@@ -25,9 +25,12 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.resources.*;
@@ -135,8 +138,91 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    public void testRebalanceVersion() throws Exception {
+        Ignite ignite0 = startGrid(0);
+        GridDhtPartitionTopology top0 = ((IgniteKernal)ignite0).context().cache().context().cacheContext(1).topology();
+
+        assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(1)));
+        assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(2)));
+
+        Ignite ignite1 = startGrid(1);
+        GridDhtPartitionTopology top1 = ((IgniteKernal)ignite1).context().cache().context().cacheContext(1).topology();
+
+        waitRebalanceFinished(ignite0, 2);
+        waitRebalanceFinished(ignite1, 2);
+
+        assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(3)));
+        assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(3)));
+
+        Ignite ignite2 = startGrid(2);
+        GridDhtPartitionTopology top2 = ((IgniteKernal)ignite2).context().cache().context().cacheContext(1).topology();
+
+        waitRebalanceFinished(ignite0, 3);
+        waitRebalanceFinished(ignite1, 3);
+        waitRebalanceFinished(ignite2, 3);
+
+        assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(4)));
+        assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(4)));
+        assertFalse(top2.rebalanceFinished(new AffinityTopologyVersion(4)));
+
+        client = true;
+
+        Ignite ignite3 = startGrid(3);
+        GridDhtPartitionTopology top3 = ((IgniteKernal)ignite3).context().cache().context().cacheContext(1).topology();
+
+        assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(4)));
+        assertTrue(top1.rebalanceFinished(new AffinityTopologyVersion(4)));
+        assertTrue(top2.rebalanceFinished(new AffinityTopologyVersion(4)));
+        assertTrue(top3.rebalanceFinished(new AffinityTopologyVersion(4)));
+
+        stopGrid(1);
+
+        waitRebalanceFinished(ignite0, 5);
+        waitRebalanceFinished(ignite2, 5);
+        waitRebalanceFinished(ignite3, 5);
+
+        stopGrid(3);
+
+        assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(6)));
+        assertTrue(top2.rebalanceFinished(new AffinityTopologyVersion(6)));
+
+        stopGrid(0);
+
+        waitRebalanceFinished(ignite2, 7);
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param topVer Topology version.
+     * @throws Exception If failed.
+     */
+    private void waitRebalanceFinished(Ignite ignite, long topVer) throws Exception {
+        final AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer);
+
+        final GridDhtPartitionTopology top =
+            ((IgniteKernal)ignite).context().cache().context().cacheContext(1).topology();
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return top.rebalanceFinished(topVer0);
+            }
+        }, 5000);
+
+        assertTrue(top.rebalanceFinished(topVer0));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testOneBackup() throws Exception {
-        checkBackupQueue(1);
+        checkBackupQueue(1, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOneBackupClientUpdate() throws Exception {
+        checkBackupQueue(1, true);
     }
 
     /**
@@ -146,14 +232,15 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         if (cacheMode() == REPLICATED)
             return;
 
-        checkBackupQueue(3);
+        checkBackupQueue(3, false);
     }
 
     /**
      * @param backups Number of backups.
+     * @param updateFromClient If {@code true} executes cache update from client node.
      * @throws Exception If failed.
      */
-    private void checkBackupQueue(int backups) throws Exception {
+    private void checkBackupQueue(int backups, boolean updateFromClient) throws Exception {
         this.backups = backups;
 
         final int SRV_NODES = 4;
@@ -183,6 +270,10 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         int PARTS = 10;
 
+        Map<Object, T2<Object, Object>> updates = new HashMap<>();
+
+        List<T3<Object, Object, Object>> expEvts = new ArrayList<>();
+
         for (int i = 0; i < SRV_NODES - 1; i++) {
             log.info("Stop iteration: " + i);
 
@@ -203,7 +294,23 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
             for (Integer key : keys) {
                 log.info("Put [node=" + ignite.name() + ", key=" + key + ", part=" + aff.partition(key) + ']');
 
-                cache.put(key, key);
+                T2<Object, Object> t = updates.get(key);
+
+                if (t == null) {
+                    updates.put(key, new T2<>((Object)key, null));
+
+                    expEvts.add(new T3<>((Object)key, (Object)key, null));
+                }
+                else {
+                    updates.put(key, new T2<>((Object)key, (Object)key));
+
+                    expEvts.add(new T3<>((Object)key, (Object)key, (Object)key));
+                }
+
+                if (updateFromClient)
+                    qryClientCache.put(key, key);
+                else
+                    cache.put(key, key);
 
                 if (first) {
                     spi.skipMsg = true;
@@ -223,6 +330,8 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                 fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + lsnr.latch.getCount() + ']');
             }
+
+            checkEvents(expEvts, lsnr);
         }
 
         for (int i = 0; i < SRV_NODES - 1; i++) {
@@ -241,7 +350,23 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
             for (Integer key : keys) {
                 log.info("Put [node=" + ignite.name() + ", key=" + key + ", part=" + aff.partition(key) + ']');
 
-                cache.put(key, key);
+                T2<Object, Object> t = updates.get(key);
+
+                if (t == null) {
+                    updates.put(key, new T2<>((Object)key, null));
+
+                    expEvts.add(new T3<>((Object)key, (Object)key, null));
+                }
+                else {
+                    updates.put(key, new T2<>((Object)key, (Object)key));
+
+                    expEvts.add(new T3<>((Object)key, (Object)key, (Object)key));
+                }
+
+                if (updateFromClient)
+                    qryClientCache.put(key, key);
+                else
+                    cache.put(key, key);
             }
 
             if (!latch.await(5, SECONDS)) {
@@ -253,11 +378,31 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                 fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + lsnr.latch.getCount() + ']');
             }
+
+            checkEvents(expEvts, lsnr);
         }
 
         cur.close();
 
         assertFalse("Unexpected error during test, see log for details.", err);
+    }
+
+    /**
+     * @param expEvts Expected events.
+     * @param lsnr Listener.
+     */
+    private void checkEvents(List<T3<Object, Object, Object>> expEvts, CacheEventListener1 lsnr) {
+        for (T3<Object, Object, Object> exp : expEvts) {
+            CacheEntryEvent<?, ?> e = lsnr.evts.get(exp.get1());
+
+            assertNotNull("No event for key: " + exp.get1(), e);
+            assertEquals("Unexpected value: " + e, exp.get2(), e.getValue());
+            assertEquals("Unexpected old value: " + e, exp.get3(), e.getOldValue());
+        }
+
+        expEvts.clear();
+
+        lsnr.evts.clear();
     }
 
     /**
@@ -449,7 +594,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void _testFailover() throws Exception {
+    public void testFailover() throws Exception {
         final int SRV_NODES = 4;
 
         startGridsMultiThreaded(SRV_NODES);
@@ -483,13 +628,11 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                     startGrid(idx);
 
-                    Thread.sleep(2000);
+                    Thread.sleep(3000);
 
                     log.info("Stop node: " + idx);
 
                     stopGrid(idx);
-
-                    Thread.sleep(1000);
 
                     CountDownLatch latch = new CountDownLatch(1);
 
@@ -508,6 +651,8 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         final Map<Integer, Integer> vals = new HashMap<>();
 
+        final Map<Integer, List<T2<Integer, Integer>>> expEvts = new HashMap<>();
+
         try {
             long stopTime = System.currentTimeMillis() + 3 * 60_000;
 
@@ -518,6 +663,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
             while (System.currentTimeMillis() < stopTime) {
                 Integer key = rnd.nextInt(PARTS);
 
+                Integer prevVal = vals.get(key);
                 Integer val = vals.get(key);
 
                 if (val == null)
@@ -528,6 +674,16 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                 qryClientCache.put(key, val);
 
                 vals.put(key, val);
+
+                List<T2<Integer, Integer>> keyEvts = expEvts.get(key);
+
+                if (keyEvts == null) {
+                    keyEvts = new ArrayList<>();
+
+                    expEvts.put(key, keyEvts);
+                }
+
+                keyEvts.add(new T2<>(val, prevVal));
 
                 CountDownLatch latch = checkLatch.get();
 
@@ -544,12 +700,12 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                         boolean check = GridTestUtils.waitForCondition(new GridAbsPredicate() {
                             @Override public boolean apply() {
-                                return checkEvents(false, vals, lsnr);
+                                return checkEvents(false, expEvts, lsnr);
                             }
                         }, 10_000);
 
                         if (!check)
-                            assertTrue(checkEvents(true, vals, lsnr));
+                            assertTrue(checkEvents(true, expEvts, lsnr));
 
                         success = true;
 
@@ -577,12 +733,12 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         boolean check = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return checkEvents(false, vals, lsnr);
+                return checkEvents(false, expEvts, lsnr);
             }
         }, 10_000);
 
         if (!check)
-            assertTrue(checkEvents(true, vals, lsnr));
+            assertTrue(checkEvents(true, expEvts, lsnr));
 
         cur.close();
 
@@ -591,45 +747,62 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
     /**
      * @param logAll If {@code true} logs all unexpected values.
-     * @param vals Expected values.
+     * @param expEvts Expected values.
      * @param lsnr Listener.
      * @return Check status.
      */
-    private boolean checkEvents(boolean logAll, Map<Integer, Integer> vals, CacheEventListener2 lsnr) {
-        assertTrue(!vals.isEmpty());
-
-        ConcurrentHashMap<Integer, Integer> lsnrVals = lsnr.vals;
-
-        ConcurrentHashMap<Integer, Integer> lsnrCntrs = lsnr.cntrs;
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    private boolean checkEvents(boolean logAll,
+        Map<Integer, List<T2<Integer, Integer>>> expEvts,
+        CacheEventListener2 lsnr) {
+        assertTrue(!expEvts.isEmpty());
 
         boolean pass = true;
 
-        for (Map.Entry<Integer, Integer> e : vals.entrySet()) {
+        for (Map.Entry<Integer, List<T2<Integer, Integer>>> e : expEvts.entrySet()) {
             Integer key = e.getKey();
+            List<T2<Integer, Integer>> exp = e.getValue();
 
-            Integer lsnrVal = lsnrVals.get(key);
-            Integer expVal = e.getValue();
+            List<CacheEntryEvent<?, ?>> rcvdEvts = lsnr.evts.get(key);
 
-            if (!expVal.equals(lsnrVal)) {
+            if (rcvdEvts == null) {
                 pass = false;
 
-                log.info("Unexpected value [key=" + key + ", val=" + lsnrVal + ", expVal=" + expVal + ']');
+                log.info("No events for key [key=" + key + ", exp=" + e.getValue() + ']');
 
                 if (!logAll)
                     return false;
             }
+            else {
+                synchronized (rcvdEvts) {
+                    if (rcvdEvts.size() != exp.size()) {
+                        pass = false;
 
-            Integer lsnrCntr = lsnrCntrs.get(key);
-            Integer expCntr = expVal + 1;
+                        log.info("Missed or extra events for key [key=" + key +
+                            ", exp=" + e.getValue() +
+                            ", rcvd=" + rcvdEvts + ']');
 
-            if (!expCntr.equals(lsnrCntr)) {
-                pass = false;
+                        if (!logAll)
+                            return false;
+                    }
 
-                log.info("Unexpected events count [key=" + key + ", val=" + lsnrCntr + ", expVal=" + expCntr + ']');
+                    int cnt = Math.min(rcvdEvts.size(), exp.size());
 
-                if (!logAll)
-                    return false;
+                    for (int i = 0; i < cnt; i++) {
+                        T2<Integer, Integer> expEvt = exp.get(i);
+                        CacheEntryEvent<?, ?> rcvdEvt = rcvdEvts.get(i);
+
+                        assertEquals(key, rcvdEvt.getKey());
+                        assertEquals(expEvt.get1(), rcvdEvt.getValue());
+                        assertEquals(expEvt.get2(), rcvdEvt.getOldValue());
+                    }
+                }
             }
+        }
+
+        if (pass) {
+            expEvts.clear();
+            lsnr.evts.clear();
         }
 
         return pass;
@@ -646,6 +819,9 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         private GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
 
         /** */
+        private ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
+
+        /** */
         @LoggerResource
         private IgniteLogger log;
 
@@ -656,6 +832,8 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                     CountDownLatch latch = this.latch;
 
                     log.info("Received cache event: " + evt + " " + (latch != null ? latch.getCount() : null));
+
+                    this.evts.put(evt.getKey(), evt);
 
                     keys.add((Integer) evt.getKey());
 
@@ -691,7 +869,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         private final ConcurrentHashMap<Integer, Integer> vals = new ConcurrentHashMap<>();
 
         /** */
-        private final ConcurrentHashMap<Integer, Integer> cntrs = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap<Integer, List<CacheEntryEvent<?, ?>>> evts = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
         @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts)
@@ -706,25 +884,34 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                     Integer prevVal = vals.get(key);
 
+                    boolean dup = false;
+
                     if (prevVal != null) {
-                        assertEquals("Unexpected event: " + evt, (Integer)(prevVal + 1), val);
-                        assertEquals("Unexpected event: " + evt, prevVal, evt.getOldValue());
+                        if (prevVal.equals(val)) // Can get this event with automatic put retry.
+                            dup = true;
+                        else {
+                            assertEquals("Unexpected event: " + evt, (Integer)(prevVal + 1), val);
+                            assertEquals("Unexpected event: " + evt, prevVal, evt.getOldValue());
+                        }
                     }
                     else {
                         assertEquals("Unexpected event: " + evt, (Object)0, val);
                         assertNull("Unexpected event: " + evt, evt.getOldValue());
                     }
 
-                    vals.put(key, val);
+                    if (!dup) {
+                        vals.put(key, val);
 
-                    Integer cntr = cntrs.get(key);
+                        List<CacheEntryEvent<?, ?>> keyEvts = this.evts.get(key);
 
-                    if (cntr == null)
-                        cntr = 1;
-                    else
-                        cntr = cntr + 1;
+                        if (keyEvts == null) {
+                            keyEvts = Collections.synchronizedList(new ArrayList<CacheEntryEvent<?, ?>>());
 
-                    cntrs.put(key, cntr);
+                            this.evts.put(key, keyEvts);
+                        }
+
+                        keyEvts.add(evt);
+                    }
                 }
             }
             catch (Throwable e) {

@@ -85,6 +85,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** Partition update counter. */
     private Map<Integer, Long> cntrMap = new HashMap<>();
 
+    /** */
+    private volatile AffinityTopologyVersion rebalancedTopVer = AffinityTopologyVersion.NONE;
+
     /**
      * @param cctx Context.
      */
@@ -114,6 +117,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             topReadyFut = null;
 
             topVer = AffinityTopologyVersion.NONE;
+
+            rebalancedTopVer = AffinityTopologyVersion.NONE;
         }
         finally {
             lock.writeLock().unlock();
@@ -203,6 +208,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             updateSeq.setIfGreater(updSeq);
 
             topReadyFut = exchFut;
+
+            rebalancedTopVer = AffinityTopologyVersion.NONE;;
         }
         finally {
             lock.writeLock().unlock();
@@ -508,6 +515,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
+            updateRebalanceVersion();
+
             consistencyCheck();
         }
         finally {
@@ -690,7 +699,10 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param states Additional partition states.
      * @return List of nodes for the partition.
      */
-    private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
+    private List<ClusterNode> nodes(int p,
+        AffinityTopologyVersion topVer,
+        GridDhtPartitionState state,
+        GridDhtPartitionState... states) {
         Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.affinityNodes(cctx, topVer)) : null;
 
         lock.readLock().lock();
@@ -888,6 +900,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             boolean changed = checkEvictions(updateSeq);
 
+            updateRebalanceVersion();
+
             consistencyCheck();
 
             if (log.isDebugEnabled())
@@ -999,6 +1013,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
 
             changed |= checkEvictions(updateSeq);
+
+            updateRebalanceVersion();
 
             consistencyCheck();
 
@@ -1196,6 +1212,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (part.own()) {
                 updateLocal(part.id(), loc.id(), part.state(), updateSeq.incrementAndGet());
 
+                updateRebalanceVersion();
+
                 consistencyCheck();
 
                 return true;
@@ -1268,6 +1286,11 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean rebalanceFinished(AffinityTopologyVersion topVer) {
+        return topVer.equals(rebalancedTopVer);
+    }
+
+    /** {@inheritDoc} */
     @Override public void printMemoryStats(int threshold) {
         X.println(">>> Cache partition topology stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
 
@@ -1276,6 +1299,26 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             if (size >= threshold)
                 X.println(">>> Local partition [part=" + part.id() + ", size=" + size + ']');
+        }
+    }
+
+    /**
+     *
+     */
+    private void updateRebalanceVersion() {
+        if (!rebalancedTopVer.equals(topVer)) {
+            for (int i = 0; i < cctx.affinity().partitions(); i++) {
+                List<ClusterNode> affNodes = cctx.affinity().nodes(i, topVer);
+                List<ClusterNode> owners = owners(i);
+
+                if (affNodes.size() != owners.size() || !owners.containsAll(affNodes))
+                    return;
+            }
+
+            rebalancedTopVer = topVer;
+
+            if (log.isDebugEnabled())
+                log.debug("Updated rebalanced version [cache=" + cctx.name() + ", ver=" + rebalancedTopVer + ']');
         }
     }
 

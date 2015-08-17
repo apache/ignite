@@ -1601,7 +1601,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean conflictResolve,
         boolean intercept,
         @Nullable UUID subjId,
-        String taskName
+        String taskName,
+        @Nullable CacheObject prevVal
     ) throws IgniteCheckedException, GridCacheEntryRemovedException, GridClosureException {
         assert cctx.atomic();
 
@@ -1781,6 +1782,32 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             if (log.isDebugEnabled())
                                 log.debug("Received entry update with smaller version than current (will ignore) " +
                                     "[entry=" + this + ", newVer=" + newVer + ']');
+                        }
+
+                        if (!cctx.isNear()) {
+                            CacheObject evtVal;
+
+                            if (op == GridCacheOperation.TRANSFORM) {
+                                EntryProcessor<Object, Object, ?> entryProcessor =
+                                    (EntryProcessor<Object, Object, ?>)writeObj;
+
+                                CacheInvokeEntry<Object, Object> entry =
+                                    new CacheInvokeEntry<>(cctx, key, prevVal, version());
+
+                                try {
+                                    entryProcessor.process(entry, invokeArgs);
+
+                                    evtVal = entry.modified() ?
+                                        cctx.toCacheObject(cctx.unwrapTemporary(entry.getValue())) : prevVal;
+                                }
+                                catch (Exception e) {
+                                    evtVal = prevVal;
+                                }
+                            }
+                            else
+                                evtVal = (CacheObject)writeObj;
+
+                            cctx.continuousQueries().onEntryUpdated(this, key, evtVal, prevVal, primary, false, topVer);
                         }
 
                         return new GridCacheUpdateAtomicResult(false,

@@ -228,4 +228,10 @@ public interface GridDhtPartitionTopology {
      * @param threshold Threshold for number of entries.
      */
     public void printMemoryStats(int threshold);
+
+    /**
+     * @param topVer Topology version.
+     * @return {@code True} if rebalance process finished.
+     */
+    public boolean rebalanceFinished(AffinityTopologyVersion topVer);
 }

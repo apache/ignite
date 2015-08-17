@@ -210,7 +210,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer) {
+        @Nullable GridCacheVersion conflictVer,
+        boolean addPrevVal,
+        @Nullable CacheObject prevVal) {
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
         int part = entry.partition();
@@ -254,7 +256,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     entryProcessor,
                     ttl,
                     conflictExpireTime,
-                    conflictVer);
+                    conflictVer,
+                    addPrevVal,
+                    prevVal);
             }
         }
     }

@@ -407,6 +407,7 @@ public interface GridCacheEntryEx {
      * @param primary If update is performed on primary node (the one which assigns version).
      * @param checkVer Whether update should check current version and ignore update if current version is
      *      greater than passed in.
+     * @param topVer Topology version.
      * @param filter Optional filter to check.
      * @param drType DR type.
      * @param conflictTtl Conflict TTL (if any).
@@ -416,6 +417,7 @@ public interface GridCacheEntryEx {
      * @param intercept If {@code true} then calls cache interceptor.
      * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
+     * @param prevVal Previous value.
      * @return Tuple where first value is flag showing whether operation succeeded,
      *      second value is old entry value if return value is requested, third is updated entry value,
      *      fourth is the version to enqueue for deferred delete the fifth is DR conflict context
@@ -448,7 +450,8 @@ public interface GridCacheEntryEx {
         boolean conflictResolve,
         boolean intercept,
         @Nullable UUID subjId,
-        String taskName
+        String taskName,
+        @Nullable CacheObject prevVal
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
