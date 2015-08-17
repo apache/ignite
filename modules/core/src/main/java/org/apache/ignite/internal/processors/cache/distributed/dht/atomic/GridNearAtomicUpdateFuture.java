@@ -291,17 +291,22 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         Collection<GridAtomicMappingKey> mappingKeys = new ArrayList<>(mappings.size());
         Collection<KeyCacheObject> failedKeys = new ArrayList<>();
 
+        AffinityTopologyVersion topVer = null;
+
         for (Map.Entry<GridAtomicMappingKey, GridNearAtomicUpdateRequest> e : mappings.entrySet()) {
             if (e.getKey().nodeId().equals(nodeId)) {
                 mappingKeys.add(e.getKey());
 
                 failedKeys.addAll(e.getValue().keys());
+
+                if (topVer == null || e.getValue().topologyVersion().compareTo(topVer) > 0)
+                    topVer = e.getValue().topologyVersion();
             }
         }
 
         if (!mappingKeys.isEmpty()) {
-            if (!failedKeys.isEmpty()) // TODO: top ver.
-                addFailedKeys(failedKeys, null, new ClusterTopologyCheckedException("Primary node left grid before " +
+            if (!failedKeys.isEmpty())
+                addFailedKeys(failedKeys, topVer, new ClusterTopologyCheckedException("Primary node left grid before " +
                     "response is received: " + nodeId));
 
             for (GridAtomicMappingKey key : mappingKeys)
