@@ -17,24 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 
 import java.io.*;
 
 /**
  *
  */
-public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> {
+public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements CacheEntry<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Version. */
-    private Object ver;
+    private GridCacheVersion ver;
 
     /**
      * Required by {@link Externalizable}.
      */
-    public CacheVersionedEntryImpl() {
+    public CacheEntryImplEx() {
         // No-op.
     }
 
@@ -43,21 +45,21 @@ public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> {
      * @param val Value (always null).
      * @param ver Version.
      */
-    public CacheVersionedEntryImpl(K key, V val, Object ver) {
+    public CacheEntryImplEx(K key, V val, GridCacheVersion ver) {
         super(key, val);
-
-        assert val == null;
 
         this.ver = ver;
     }
 
-    /**
-     * @return Version.
-     */
-    @Nullable public Object version() {
+    /** {@inheritDoc} */
+    public GridCacheVersion version() {
         return ver;
     }
 
+    /** {@inheritDoc} */
+    @Override public long updateTime() {
+        return ver.globalTime();
+    }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
@@ -70,11 +72,12 @@ public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        ver = in.readObject();
+        ver = (GridCacheVersion)in.readObject();
     }
 
     /** {@inheritDoc} */
     public String toString() {
-        return "VersionedEntry [key=" + getKey() + ", val=" + getValue() + ", ver=" + ver + ']';
+        return "VersionedEntry [key=" + getKey() + ", val=" + getValue() + ", topVer=" + ver.topologyVersion() +
+            ", nodeOrder=" + ver.nodeOrder() + ", order=" + ver.order() + ", updateTime=" + ver.globalTime() + ']';
     }
 }
