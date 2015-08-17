@@ -2278,8 +2278,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param filter Filter.
      * @return Put future.
      */
-    public IgniteInternalFuture<Boolean> putAsync(K key, V val,
-        @Nullable CacheEntryPredicate... filter) {
     public IgniteInternalFuture<Boolean> putAsync(K key, V val, @Nullable CacheEntryPredicate... filter) {
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
@@ -4695,7 +4693,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /**
-         * @param tx Transaction.
          */
         public void execute() {
             tx = ctx.tm().newTx(

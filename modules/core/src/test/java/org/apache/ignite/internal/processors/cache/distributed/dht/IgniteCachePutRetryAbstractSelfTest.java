@@ -158,12 +158,6 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
         finished.set(true);
         fut.get();
 
-            fut.get();
-        }
-        finally {
-            finished.set(true);
-        }
-
         for (int i = 0; i < keysCnt; i++)
             assertEquals(iter, cache.get(i));
     }
