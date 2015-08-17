@@ -1230,7 +1230,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (writeThrough)
             cctx.store().remove(tx, keyValue(false));
 
-        if (!cctx.deferredDelete()) {
+        if (cctx.deferredDelete() && !detached() && !isInternal())
+            cctx.onDeferredDelete(this, newVer);
+        else {
             boolean marked = false;
 
             synchronized (this) {
