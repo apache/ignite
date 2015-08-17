@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.cache.*;
 
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -28,5 +29,10 @@ public class CacheContinuousQueryFailoverAtomicReplicatedTest extends CacheConti
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return REPLICATED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicWriteOrderMode writeOrderMode() {
+        return PRIMARY;
     }
 }

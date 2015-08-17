@@ -129,7 +129,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     private final boolean rawRetval;
 
     /** Fast map flag. */
-    private boolean fastMap;
+    private final boolean fastMap;
 
     /** */
     private boolean fastMapRemap;
@@ -728,9 +728,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
             return;
         }
-
-        if (fastMap && futVer == null)
-            fastMap = cctx.topology().rebalanceFinished(topVer);
 
         if (futVer == null)
             // Assign future version in topology read lock before first exception may be thrown.
