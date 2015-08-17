@@ -114,7 +114,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     protected TcpDiscoverySpiState spiState = DISCONNECTED;
 
     /** Map with proceeding ping requests. */
-    private final ConcurrentMap<InetSocketAddress, IgniteInternalFuture<IgniteBiTuple<UUID, Boolean>>> pingMap =
+    private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap8<>();
 
     /**
@@ -497,9 +497,9 @@ class ServerImpl extends TcpDiscoveryImpl {
             return F.t(getLocalNodeId(), clientPingRes);
         }
 
-        GridFutureAdapter<IgniteBiTuple<UUID, Boolean>> fut = new GridFutureAdapter<>();
+        GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>> fut = new GridPingFutureAdapter<>();
 
-        IgniteInternalFuture<IgniteBiTuple<UUID, Boolean>> oldFut = pingMap.putIfAbsent(addr, fut);
+        GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>> oldFut = pingMap.putIfAbsent(addr, fut);
 
         if (oldFut != null)
             return oldFut.get();
@@ -520,7 +520,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         long tstamp = U.currentTimeMillis();
 
-                        sock = spi.openSocket(addr, timeoutHelper);
+                        sock = spi.createSocket();
+
+                        fut.sock = sock;
+
+                        sock = spi.openSocket(sock, addr, timeoutHelper);
 
                         openedSock = true;
 
@@ -594,6 +598,21 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             return fut.get();
+        }
+    }
+
+    /**
+     * Interrupts all existed 'ping' request for the given node.
+     *
+     * @param node Node that may be pinged.
+     */
+    private void interruptPing(TcpDiscoveryNode node) {
+        for (InetSocketAddress addr : spi.getNodeAddresses(node)) {
+            GridPingFutureAdapter fut = pingMap.get(addr);
+
+            if (fut != null && fut.sock != null)
+                // Reference to the socket is not set to null. No need to assign it to a local variable.
+                U.closeQuiet(fut.sock);
         }
     }
 
@@ -3366,6 +3385,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg.verified() && !locNodeId.equals(leavingNodeId)) {
                 TcpDiscoveryNode leftNode = ring.removeNode(leavingNodeId);
 
+                interruptPing(leavingNode);
+
                 assert leftNode != null;
 
                 if (log.isDebugEnabled())
@@ -3532,6 +3553,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (msg.verified()) {
                 node = ring.removeNode(nodeId);
+
+                interruptPing(node);
 
                 assert node != null;
 
@@ -5140,6 +5163,32 @@ class ServerImpl extends TcpDiscoveryImpl {
             bout.reset();
 
             spi.writeToSocket(sock, msg, bout, timeout);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GridPingFutureAdapter<R> extends GridFutureAdapter<R> {
+        /** Socket. */
+        private volatile Socket sock;
+
+        /**
+         * Returns socket associated with this ping future.
+         *
+         * @return Socket or {@code null} if no socket associated.
+         */
+        public Socket sock() {
+            return sock;
+        }
+
+        /**
+         * Associates socket with this ping future.
+         *
+         * @param sock Socket.
+         */
+        public void sock(Socket sock) {
+            this.sock = sock;
         }
     }
 }
