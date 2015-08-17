@@ -152,6 +152,29 @@ public class TcpDiscoveryNodesRing {
     }
 
     /**
+     * Checks whether the topology has remote server nodes in.
+     *
+     * @return {@code true} if the topology has remote server nodes in.
+     */
+    public boolean hasRemoteServerNodes() {
+        rwLock.readLock().lock();
+
+        try {
+            if (nodes.size() < 2)
+                return false;
+
+            for (TcpDiscoveryNode node : nodes)
+                if (!node.isClient() && !node.id().equals(locNode.id()))
+                    return true;
+
+            return false;
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    /**
      * Adds node to topology, also initializes node last update time with current
      * system time.
      *

@@ -132,9 +132,9 @@ abstract class TcpDiscoveryImpl {
     }
 
     /**
-     * Called when a chunk of data is received from a remote node.
+     * Called when a local node either received from or sent to a remote node a message.
      */
-    protected void onDataReceived() {
+    protected void onMessageExchanged() {
         // No-op
     }
 

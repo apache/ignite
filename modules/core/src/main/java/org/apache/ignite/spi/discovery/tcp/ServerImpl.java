@@ -647,9 +647,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override protected void onDataReceived() {
+    @Override protected void onMessageExchanged() {
         if (spi.failureDetectionTimeoutEnabled() && locNode != null)
-            locNode.lastDataReceivedTime(U.currentTimeMillis());
+            locNode.lastExchangeTime(U.currentTimeMillis());
     }
 
     /**
@@ -1935,9 +1935,13 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (spi.ensured(msg))
                 msgHist.add(msg);
 
-            if (msg.senderNodeId() != null && !msg.senderNodeId().equals(getLocalNodeId()))
-                // Reset the flag.
+            if (msg.senderNodeId() != null && !msg.senderNodeId().equals(getLocalNodeId())) {
+                // Received a message from remote node.
+                onMessageExchanged();
+
+                // Reset the failure flag.
                 failureThresholdReached = false;
+            }
 
             spi.stats.onMessageProcessingFinished(msg);
         }
@@ -2296,6 +2300,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
 
                                 int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+
+                                onMessageExchanged();
 
                                 if (log.isDebugEnabled())
                                     log.debug("Message has been sent to next node [msg=" + msg +
@@ -4127,9 +4133,12 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Check connection aliveness status.
          */
         private void checkConnection() {
+            Boolean hasRemoteSrvNodes = null;
+
             if (spi.failureDetectionTimeoutEnabled() && !failureThresholdReached &&
-                U.currentTimeMillis() - locNode.lastDataReceivedTime() >= connCheckThreshold &&
-                ring.hasRemoteNodes() && spiStateCopy() == CONNECTED) {
+                U.currentTimeMillis() - locNode.lastExchangeTime() >= connCheckThreshold &&
+                spiStateCopy() == CONNECTED &&
+                (hasRemoteSrvNodes = ring.hasRemoteServerNodes())) {
 
                 log.info("Local node seems to be disconnected from topology (failure detection timeout " +
                     "is reached): [failureDetectionTimeout=" + spi.failureDetectionTimeout() +
@@ -4146,7 +4155,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (elapsed > 0)
                 return;
 
-            if (ring.hasRemoteNodes()) {
+            if (hasRemoteSrvNodes == null)
+                hasRemoteSrvNodes = ring.hasRemoteServerNodes();
+
+            if (hasRemoteSrvNodes) {
                 sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
 
                 lastTimeConnCheckMsgSent = U.currentTimeMillis();
