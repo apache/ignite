@@ -225,6 +225,9 @@ public class GridSqlQuerySplitter {
         if (mapQry.offset() != null) {
             rdcQry.offset(mapQry.offset());
 
+            if (mapQry.limit() != null) // LIMIT off + lim
+                mapQry.limit(op(GridSqlOperationType.PLUS, mapQry.offset(), mapQry.limit()));
+
             mapQry.offset(null);
         }
 
