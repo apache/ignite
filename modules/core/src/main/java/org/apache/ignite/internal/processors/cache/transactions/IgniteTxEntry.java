@@ -571,9 +571,21 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         Object val = null;
         Object keyVal = null;
 
+        GridCacheVersion ver;
+
+        try {
+            ver = entry.version();
+        }
+        catch (GridCacheEntryRemovedException e) {
+            assert tx == null || tx.optimistic() : tx;
+
+            ver = null;
+        }
+
         for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
             try {
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(ctx, key, keyVal, cacheVal, val);
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(ctx, key, keyVal, cacheVal, val,
+                    ver);
 
                 EntryProcessor processor = t.get1();
 
@@ -914,7 +926,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                     return false;
 
                 reader.incrementState();
-                
+
             case 6:
                 flags = reader.readByte("flags");
 

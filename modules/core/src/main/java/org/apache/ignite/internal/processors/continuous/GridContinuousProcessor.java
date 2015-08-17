@@ -29,7 +29,6 @@ import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -72,7 +71,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private final ConcurrentMap<UUID, StopFuture> stopFuts = new ConcurrentHashMap8<>();
 
     /** Threads started by this processor. */
-    private final Collection<IgniteThread> threads = new GridConcurrentHashSet<>();
+    private final Map<UUID, IgniteThread> bufCheckThreads = new ConcurrentHashMap8<>();
 
     /** */
     private final ConcurrentMap<IgniteUuid, SyncMessageAckFuture> syncMsgFuts = new ConcurrentHashMap8<>();
@@ -193,10 +192,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         unregisterRemote(routineId);
 
                         if (snd.isClient()) {
-                            Map<UUID, LocalRoutineInfo> infoMap = clientInfos.get(snd.id());
+                            Map<UUID, LocalRoutineInfo> clientRoutineMap = clientInfos.get(snd.id());
 
-                            if (infoMap != null)
-                                infoMap.remove(msg.routineId());
+                            if (clientRoutineMap != null)
+                                clientRoutineMap.remove(msg.routineId());
                         }
                     }
                 }
@@ -311,8 +310,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.io().removeMessageListener(TOPIC_CONTINUOUS);
 
-        U.interrupt(threads);
-        U.joinThreads(threads, log);
+        for (IgniteThread thread : bufCheckThreads.values()) {
+            U.interrupt(thread);
+            U.join(thread);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Continuous processor stopped.");
@@ -370,6 +371,34 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
 
             for (Map.Entry<UUID, Map<UUID, LocalRoutineInfo>> entry : data.clientInfos.entrySet()) {
+                UUID clientNodeId = entry.getKey();
+
+                Map<UUID, LocalRoutineInfo> clientRoutineMap = entry.getValue();
+
+                for (Map.Entry<UUID, LocalRoutineInfo> e : clientRoutineMap.entrySet()) {
+                    UUID routineId = e.getKey();
+                    LocalRoutineInfo info = e.getValue();
+
+                    try {
+                        if (info.prjPred != null)
+                            ctx.resource().injectGeneric(info.prjPred);
+
+                        if (info.prjPred == null || info.prjPred.apply(ctx.discovery().localNode())) {
+                            if (registerHandler(clientNodeId,
+                                routineId,
+                                info.hnd,
+                                info.bufSize,
+                                info.interval,
+                                info.autoUnsubscribe,
+                                false))
+                                info.hnd.onListenerRegistered(routineId, ctx);
+                        }
+                    }
+                    catch (IgniteCheckedException err) {
+                        U.error(log, "Failed to register continuous handler.", err);
+                    }
+                }
+
                 Map<UUID, LocalRoutineInfo> map = clientInfos.get(entry.getKey());
 
                 if (map == null) {
@@ -723,17 +752,17 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         if (node.isClient()) {
-            Map<UUID, LocalRoutineInfo> clientRouteMap = clientInfos.get(node.id());
+            Map<UUID, LocalRoutineInfo> clientRoutineMap = clientInfos.get(node.id());
 
-            if (clientRouteMap == null) {
-                clientRouteMap = new HashMap<>();
+            if (clientRoutineMap == null) {
+                clientRoutineMap = new HashMap<>();
 
-                Map<UUID, LocalRoutineInfo> old = clientInfos.put(node.id(), clientRouteMap);
+                Map<UUID, LocalRoutineInfo> old = clientInfos.put(node.id(), clientRoutineMap);
 
                 assert old == null;
             }
 
-            clientRouteMap.put(routineId, new LocalRoutineInfo(data.projectionPredicate(),
+            clientRoutineMap.put(routineId, new LocalRoutineInfo(data.projectionPredicate(),
                 hnd,
                 data.bufferSize(),
                 data.interval(),
@@ -887,7 +916,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     }
                 });
 
-                threads.add(checker);
+                bufCheckThreads.put(routineId, checker);
 
                 checker.start();
             }
@@ -919,6 +948,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             ctx.io().removeMessageListener(hnd.orderedTopic());
 
         hnd.unregister(routineId, ctx);
+
+        IgniteThread checker = bufCheckThreads.remove(routineId);
+
+        if (checker != null)
+            checker.interrupt();
     }
 
     /**

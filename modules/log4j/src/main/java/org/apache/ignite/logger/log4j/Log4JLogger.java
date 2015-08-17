@@ -342,6 +342,10 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
                     impl.setLevel(logLevel);
             }
 
+            // If still don't have appenders, disable logging.
+            if (!isConfigured())
+                impl.setLevel(Level.OFF);
+
             quiet0 = quiet;
             inited = true;
         }

@@ -39,6 +39,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
+
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -170,7 +171,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     *  Leaves busy state.
+     * Leaves busy state.
      */
     private void leaveBusy() {
         busyLock.leaveBusy();
@@ -794,7 +795,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         // double check for owning state
                         if (locPart == null || locPart.state() != OWNING || !locPart.reserve() ||
                             locPart.state() != OWNING)
-                            throw new GridDhtInvalidPartitionException(part, "Partition can't be reserved");
+                            throw new GridDhtUnreservedPartitionException(part,
+                                cctx.affinity().affinityTopologyVersion(), "Partition can not be reserved");
 
                         iter = new Iterator<K>() {
                             private Iterator<KeyCacheObject> iter0 = locPart.keySet().iterator();
@@ -1083,6 +1085,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             boolean rmvRes = true;
 
+            FieldsResult res = null;
+
             final boolean statsEnabled = cctx.config().isStatisticsEnabled();
 
             final boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
@@ -1109,7 +1113,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
 
-                FieldsResult res = qryInfo.local() ?
+                res = qryInfo.local() ?
                     executeFieldsQuery(qry, qryInfo.arguments(), qryInfo.local(), qry.subjectId(), taskName,
                     recipient(qryInfo.senderId(), qryInfo.requestId())) :
                     fieldsQueryResult(qryInfo, taskName);
@@ -1232,7 +1236,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     throw (Error)e;
             }
             finally {
-                if (rmvRes)
+                if (qryInfo.local()) {
+                    // Don't we need to always remove local iterators?
+                    if (rmvRes && res != null) {
+                        try {
+                            res.closeIfNotShared(recipient(qryInfo.senderId(), qryInfo.requestId()));
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to close local iterator [qry=" + qryInfo + ", node=" +
+                                cctx.nodeId() + "]", e);
+                        }
+                    }
+                }
+                else if (rmvRes)
                     removeFieldsQueryResult(qryInfo.senderId(), qryInfo.requestId());
             }
         }
@@ -1260,6 +1276,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         try {
             boolean loc = qryInfo.local();
 
+            QueryResult<K, V> res = null;
+
             if (log.isDebugEnabled())
                 log.debug("Running query: " + qryInfo);
 
@@ -1285,8 +1303,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 IgniteSpiCloseableIterator<IgniteBiTuple<K, V>> iter;
                 GridCacheQueryType type;
-
-                QueryResult<K, V> res;
 
                 res = loc ?
                     executeQuery(qry, qryInfo.arguments(), loc, qry.subjectId(), taskName,
@@ -1350,7 +1366,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         log.debug("Record [key=" + key +
                             ", val=" + val +
                             ", incBackups=" + incBackups +
-                            ", priNode=" + (primaryNode != null ? U.id8(primaryNode.id())  : null) +
+                            ", priNode=" + (primaryNode != null ? U.id8(primaryNode.id()) : null) +
                             ", node=" + U.id8(cctx.localNode().id()) + ']');
                     }
 
@@ -1496,7 +1512,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     throw (Error)e;
             }
             finally {
-                if (rmvIter)
+                if (loc) {
+                    // Local iterators are always removed.
+                    if (res != null) {
+                        try {
+                            res.closeIfNotShared(recipient(qryInfo.senderId(), qryInfo.requestId()));
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to close local iterator [qry=" + qryInfo + ", node=" +
+                                cctx.nodeId() + "]", e);
+                        }
+                    }
+                }
+                else if (rmvIter)
                     removeQueryResult(qryInfo.senderId(), qryInfo.requestId());
             }
         }
@@ -1552,7 +1580,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Iterator.
      * @throws IgniteCheckedException In case of error.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter",
+    @SuppressWarnings({
+        "SynchronizationOnLocalVariableOrMethodParameter",
         "NonPrivateFieldAccessedInSynchronizedContext"})
     private QueryResult<K, V> queryResult(Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs,
         GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
@@ -1680,7 +1709,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Fields query result.
      * @throws IgniteCheckedException In case of error.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter",
+    @SuppressWarnings({
+        "SynchronizationOnLocalVariableOrMethodParameter",
         "NonPrivateFieldAccessedInSynchronizedContext"})
     private FieldsResult fieldsQueryResult(Map<Long, GridFutureAdapter<FieldsResult>> resMap,
         GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
@@ -1868,8 +1898,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * @param <K> Key type.
      * @param <V> Value type.
-     * @return Predicate.
      * @param includeBackups Include backups.
+     * @return Predicate.
      */
     @SuppressWarnings("unchecked")
     @Nullable public <K, V> IndexingQueryFilter backupsFilter(boolean includeBackups) {
@@ -1933,7 +1963,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override public Collection<CacheSqlMetadata> call() {
-            final GridKernalContext ctx = ((IgniteKernal) ignite).context();
+            final GridKernalContext ctx = ((IgniteKernal)ignite).context();
 
             Collection<String> cacheNames = F.viewReadOnly(ctx.cache().caches(),
                 new C1<IgniteInternalCache<?, ?>, String>() {
@@ -2507,7 +2537,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (!filter.apply(key, val))
                 return null;
 
-            return new IgniteBiTuple<>(e.key(), (V)cctx.unwrapTemporary(e.value())) ;
+            return new IgniteBiTuple<>(e.key(), (V)cctx.unwrapTemporary(e.value()));
         }
     }
 
@@ -2546,7 +2576,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             idx++;
 
-            while(idx < iters.size()) {
+            while (idx < iters.size()) {
                 iter = iters.get(idx);
 
                 if (iter.hasNextX())
@@ -2598,7 +2628,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override public <T> T unwrap(Class<T> clazz) {
-            if(clazz.isAssignableFrom(getClass()))
+            if (clazz.isAssignableFrom(getClass()))
                 return clazz.cast(this);
 
             throw new IllegalArgumentException();
@@ -2626,7 +2656,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             assert res;
         }
-
 
         /**
          * Close if this result does not have any other recipients.
@@ -2958,8 +2987,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Creates user's full text query, queried class, and query clause.
-     * For more information refer to {@link CacheQuery} documentation.
+     * Creates user's full text query, queried class, and query clause. For more information refer to {@link CacheQuery}
+     * documentation.
      *
      * @param clsName Query class name.
      * @param search Search clause.
@@ -2982,14 +3011,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Creates user's SQL fields query for given clause. For more information refer to
-     * {@link CacheQuery} documentation.
+     * Creates user's SQL fields query for given clause. For more information refer to {@link CacheQuery}
+     * documentation.
      *
      * @param qry Query.
      * @param keepPortable Keep portable flag.
      * @return Created query.
      */
-     public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean keepPortable) {
+    public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean keepPortable) {
         A.notNull(qry, "qry");
 
         return new GridCacheQueryAdapter<>(cctx,
