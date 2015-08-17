@@ -14,34 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.spi.communication.tcp;
+package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.testframework.*;
+
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 
 /**
  *
  */
-public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstractSelfTest {
+public class IgniteCachePutRetryAtomicPrimaryWriteOrderSelfTest extends IgniteCachePutRetryAtomicSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setSslContextFactory(GridTestUtils.sslFactory());
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int keysCount() {
-        return 60_000;
+    @Override protected CacheAtomicWriteOrderMode writeOrderMode() {
+        return PRIMARY;
     }
 }
