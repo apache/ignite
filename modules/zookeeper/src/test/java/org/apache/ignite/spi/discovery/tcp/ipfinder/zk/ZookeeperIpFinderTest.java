@@ -87,8 +87,10 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         if (zkCurator != null)
             zkCurator.close();
 
-        if (zkCluster != null)
+        if (zkCluster != null) {
             zkCluster.stop();
+            zkCluster.close();
+        }
 
         stopAllGrids();
 
