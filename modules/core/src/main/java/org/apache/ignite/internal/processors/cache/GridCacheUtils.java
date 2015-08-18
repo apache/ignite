@@ -1681,6 +1681,26 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param partsMap Cache ID to partition IDs collection map.
+     * @return Cache ID to partition ID array map.
+     */
+    public static Map<Integer, Integer[]> convertInvalidPartitions(Map<Integer, Set<Integer>> partsMap) {
+        Map<Integer, Integer[]> res = new HashMap<>(partsMap.size());
+
+        for (Map.Entry<Integer, Set<Integer>> entry : partsMap.entrySet()) {
+            Set<Integer> parts = entry.getValue();
+
+            Integer[] partsArray = new Integer[parts.size()];
+
+            partsArray = parts.toArray(partsArray);
+
+            res.put(entry.getKey(), partsArray);
+        }
+
+        return res;
+    }
+
+    /**
      * Stops store session listeners.
      *
      * @param ctx Kernal context.

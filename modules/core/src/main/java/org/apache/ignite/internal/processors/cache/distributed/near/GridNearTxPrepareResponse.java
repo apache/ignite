@@ -101,7 +101,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @param miniId Mini future ID.
      * @param dhtVer DHT version.
      * @param writeVer Write version.
-     * @param invalidParts Invalid partitions.
      * @param retVal Return value.
      * @param err Error.
      * @param clientRemapVer Not {@code null} if client node should remap transaction.
@@ -112,7 +111,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         IgniteUuid miniId,
         GridCacheVersion dhtVer,
         GridCacheVersion writeVer,
-        Collection<Integer> invalidParts,
         GridCacheReturn retVal,
         Throwable err,
         AffinityTopologyVersion clientRemapVer
@@ -127,7 +125,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         this.miniId = miniId;
         this.dhtVer = dhtVer;
         this.writeVer = writeVer;
-        this.invalidParts = invalidParts;
         this.retVal = retVal;
         this.clientRemapVer = clientRemapVer;
     }

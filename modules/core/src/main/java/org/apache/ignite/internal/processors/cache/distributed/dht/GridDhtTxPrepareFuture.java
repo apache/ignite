@@ -574,13 +574,14 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         // Send reply back to originating near node.
         Throwable prepErr = err.get();
 
+        assert F.isEmpty(tx.invalidPartitions());
+
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
             tx.nearXidVersion(),
             tx.colocated() ? tx.xid() : tx.nearFutureId(),
             nearMiniId == null ? tx.xid() : nearMiniId,
             tx.xidVersion(),
             tx.writeVersion(),
-            tx.invalidPartitions(),
             ret,
             prepErr,
             null);
@@ -1194,11 +1195,31 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 }
 
                 // Process invalid partitions (no need to remap).
+                // Keep this loop for backward compatibility.
                 if (!F.isEmpty(res.invalidPartitions())) {
                     for (Iterator<IgniteTxEntry> it = dhtMapping.entries().iterator(); it.hasNext();) {
                         IgniteTxEntry entry  = it.next();
 
                         if (res.invalidPartitions().contains(entry.cached().partition())) {
+                            it.remove();
+
+                            if (log.isDebugEnabled())
+                                log.debug("Removed mapping for entry from dht mapping [key=" + entry.key() +
+                                    ", tx=" + tx + ", dhtMapping=" + dhtMapping + ']');
+                        }
+                    }
+                }
+
+                // Process invalid partitions (no need to remap).
+                if (!F.isEmpty(res.invalidPartitionsByCacheId())) {
+                    Map<Integer, Integer[]> invalidPartsMap = res.invalidPartitionsByCacheId();
+
+                    for (Iterator<IgniteTxEntry> it = dhtMapping.entries().iterator(); it.hasNext();) {
+                        IgniteTxEntry entry  = it.next();
+
+                        Integer[] invalidParts = invalidPartsMap.get(entry.cacheId());
+
+                        if (F.contains(invalidParts, entry.cached().partition())) {
                             it.remove();
 
                             if (log.isDebugEnabled())

@@ -55,6 +55,9 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     @GridDirectCollection(int.class)
     private Collection<Integer> invalidParts;
 
+    /** Invalid partitions by cache ID. */
+    private Map<Integer, Integer[]> invalidPartsByCacheId;
+
     /** Preload entries. */
     @GridDirectCollection(GridCacheEntryInfo.class)
     private List<GridCacheEntryInfo> preloadEntries;
@@ -137,6 +140,20 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
      */
     public void invalidPartitions(Collection<Integer> invalidParts) {
         this.invalidParts = invalidParts;
+    }
+
+    /**
+     * @return Map from cacheId to an array of invalid partitions.
+     */
+    public Map<Integer, Integer[]> invalidPartitionsByCacheId() {
+        return invalidPartsByCacheId;
+    }
+
+    /**
+     * @param invalidPartsByCacheId Map from cache ID to an array of invalid partitions.
+     */
+    public void invalidPartitionsByCacheId(Map<Integer, Set<Integer>> invalidPartsByCacheId) {
+        this.invalidPartsByCacheId = CU.convertInvalidPartitions(invalidPartsByCacheId);
     }
 
     /**
