@@ -149,7 +149,6 @@ public class GridArgumentCheck {
             throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
     }
 
-
     /**
      * Checks that a String is not null or empty.
      *
@@ -163,6 +162,4 @@ public class GridArgumentCheck {
             throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_NULL_OR_EMPTY_SUFFIX);
         }
     }
-
-
 }

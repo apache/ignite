@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -35,34 +37,44 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     /** */
     private V oldVal;
 
+    /** Entry version. */
+    private GridCacheVersion ver;
+
     /**
      * @param cctx Cache context.
      * @param keyObj Key cache object.
      * @param valObj Cache object value.
+     * @param ver Entry version.
      */
     public CacheInvokeEntry(GridCacheContext cctx,
         KeyCacheObject keyObj,
-        @Nullable CacheObject valObj) {
+        @Nullable CacheObject valObj,
+        GridCacheVersion ver
+    ) {
         super(cctx, keyObj, valObj);
 
         this.hadVal = valObj != null;
+        this.ver = ver;
     }
 
-    /** 
+    /**
      * @param ctx Cache context.
      * @param keyObj Key cache object.
      * @param key Key value.
      * @param valObj Value cache object.
      * @param val Value.
+     * @param ver Entry version.
      */
     public CacheInvokeEntry(GridCacheContext<K, V> ctx,
         KeyCacheObject keyObj,
         @Nullable K key,
         @Nullable CacheObject valObj,
-        @Nullable V val) {
+        @Nullable V val,
+        GridCacheVersion ver) {
         super(ctx, keyObj, key, valObj, val);
 
         this.hadVal = valObj != null || val != null;
+        this.ver = ver;
     }
 
     /** {@inheritDoc} */
@@ -105,6 +117,15 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
      */
     public boolean modified() {
         return op != Operation.NONE;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <T> T unwrap(Class<T> cls) {
+        if (cls.isAssignableFrom(CacheEntry.class) && ver != null)
+            return (T)new CacheEntryImplEx<>(getKey(), getValue(), ver);
+
+        return super.unwrap(cls);
     }
 
     /** {@inheritDoc} */

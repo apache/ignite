@@ -60,8 +60,8 @@ import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
 import javax.management.*;
-import java.io.*;
 import javax.net.ssl.*;
+import java.io.*;
 import java.lang.management.*;
 import java.util.*;
 
@@ -970,6 +970,7 @@ public class IgniteConfiguration {
      *
      * @return Unique identifier for this node within grid.
      */
+    @Deprecated
     public UUID getNodeId() {
         return nodeId;
     }
@@ -980,7 +981,9 @@ public class IgniteConfiguration {
      * @param nodeId Unique identifier for local node.
      * @see IgniteConfiguration#getNodeId()
      * @return {@code this} for chaining.
+     * @deprecated Use {@link #setConsistentId(Serializable)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setNodeId(UUID nodeId) {
         this.nodeId = nodeId;
 

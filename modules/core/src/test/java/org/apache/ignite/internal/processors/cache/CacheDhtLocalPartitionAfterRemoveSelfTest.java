@@ -18,23 +18,26 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.testframework.junits.common.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Test for remove operation.
  */
 public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstractTest {
+    /** Grid count. */
+    private static final int GRID_CNT = 3;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setEvictSynchronized(false);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setNearConfiguration(null);
 
         cfg.setCacheConfiguration(ccfg);
@@ -44,7 +47,7 @@ public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(1);
+        startGrids(GRID_CNT);
     }
 
     /** {@inheritDoc} */
@@ -56,25 +59,27 @@ public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testMemoryUsage() throws Exception {
+        assertEquals(10_000, GridDhtLocalPartition.MAX_DELETE_QUEUE_SIZE);
+
         IgniteCache<TestKey, Integer> cache = grid(0).cache(null);
 
-        for (int i = 0; i < 1000; ++i)
-            cache.put(new TestKey("" + i), i);
+        for (int i = 0; i < 20_000; ++i)
+            cache.put(new TestKey(String.valueOf(i)), i);
 
-        for (int i = 0; i < 1000; ++i)
-            assert cache.getAndRemove(new TestKey("" + i)).equals(i);
+        for (int i = 0; i < 20_000; ++i)
+            assertEquals((Object)i, cache.getAndRemove(new TestKey(String.valueOf(i))));
 
         assertEquals(0, cache.size());
 
-        int size = 0;
+        for (int g = 0; g < GRID_CNT; g++) {
+            cache = grid(g).cache(null);
 
-        for (GridDhtLocalPartition p : dht(cache).topology().localPartitions()) {
-            int pSize = p.size();
+            for (GridDhtLocalPartition p : dht(cache).topology().localPartitions()) {
+                int size = p.size();
 
-            size += pSize;
+                assertTrue("Unexpected size: " + size, size <= 32);
+            }
         }
-
-        System.out.println("All size: " + size);
     }
 
     /**

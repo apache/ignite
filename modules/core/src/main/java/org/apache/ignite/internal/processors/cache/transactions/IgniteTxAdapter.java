@@ -1228,9 +1228,23 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
                 Object key = null;
 
+                GridCacheVersion ver;
+
+                try {
+                    ver = txEntry.cached().version();
+                }
+                catch (GridCacheEntryRemovedException e) {
+                    assert optimistic() : txEntry;
+
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to get entry version: [msg=" + e.getMessage() + ']');
+
+                    ver = null;
+                }
+
                 for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                     CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(txEntry.context(),
-                        txEntry.key(), key, cacheVal, val);
+                        txEntry.key(), key, cacheVal, val, ver);
 
                     try {
                         EntryProcessor<Object, Object, Object> processor = t.get1();
