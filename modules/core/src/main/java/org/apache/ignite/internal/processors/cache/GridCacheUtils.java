@@ -1684,15 +1684,18 @@ public class GridCacheUtils {
      * @param partsMap Cache ID to partition IDs collection map.
      * @return Cache ID to partition ID array map.
      */
-    public static Map<Integer, Integer[]> convertInvalidPartitions(Map<Integer, Set<Integer>> partsMap) {
-        Map<Integer, Integer[]> res = new HashMap<>(partsMap.size());
+    public static Map<Integer, int[]> convertInvalidPartitions(Map<Integer, Set<Integer>> partsMap) {
+        Map<Integer, int[]> res = new HashMap<>(partsMap.size());
 
         for (Map.Entry<Integer, Set<Integer>> entry : partsMap.entrySet()) {
             Set<Integer> parts = entry.getValue();
 
-            Integer[] partsArray = new Integer[parts.size()];
+            int[] partsArray = new int[parts.size()];
 
-            partsArray = parts.toArray(partsArray);
+            int idx = 0;
+
+            for (Integer part : parts)
+                partsArray[idx++] = part;
 
             res.put(entry.getKey(), partsArray);
         }

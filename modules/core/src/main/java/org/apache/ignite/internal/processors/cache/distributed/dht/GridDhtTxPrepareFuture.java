@@ -1212,14 +1212,14 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                 // Process invalid partitions (no need to remap).
                 if (!F.isEmpty(res.invalidPartitionsByCacheId())) {
-                    Map<Integer, Integer[]> invalidPartsMap = res.invalidPartitionsByCacheId();
+                    Map<Integer, int[]> invalidPartsMap = res.invalidPartitionsByCacheId();
 
                     for (Iterator<IgniteTxEntry> it = dhtMapping.entries().iterator(); it.hasNext();) {
                         IgniteTxEntry entry  = it.next();
 
-                        Integer[] invalidParts = invalidPartsMap.get(entry.cacheId());
+                        int[] invalidParts = invalidPartsMap.get(entry.cacheId());
 
-                        if (F.contains(invalidParts, entry.cached().partition())) {
+                        if (invalidParts != null && F.contains(invalidParts, entry.cached().partition())) {
                             it.remove();
 
                             if (log.isDebugEnabled())
