@@ -210,7 +210,7 @@ class GridPortableMetaDataCollector implements PortableWriter {
     /** {@inheritDoc} */
     @Override public PortableRawWriter rawWriter() {
         return (PortableRawWriter)Proxy.newProxyInstance(getClass().getClassLoader(),
-            new Class<?>[] { GridPortableRawWriter.class },
+            new Class<?>[] { GridPortableRawWriterEx.class },
             new InvocationHandler() {
                 @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                     return null;

@@ -79,7 +79,7 @@ class GridPortableLazyMap extends AbstractMap<Object, Object> implements GridPor
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(GridPortableWriterImpl writer, GridPortableBuilderSerializer ctx) {
+    @Override public void writeTo(GridPortableWriterExImpl writer, GridPortableBuilderSerializer ctx) {
         if (delegate == null) {
             int size = reader.readIntAbsolute(off + 1);
 

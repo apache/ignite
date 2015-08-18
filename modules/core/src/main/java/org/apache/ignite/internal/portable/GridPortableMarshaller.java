@@ -224,7 +224,7 @@ public class GridPortableMarshaller {
         if (obj == null)
             return new byte[] { NULL };
 
-        try (GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx, off)) {
+        try (GridPortableWriterExImpl writer = new GridPortableWriterExImpl(ctx, off)) {
             writer.marshal(obj, false);
 
             return writer.array();
@@ -240,7 +240,7 @@ public class GridPortableMarshaller {
     @Nullable public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws PortableException {
         assert bytes != null;
 
-        GridGridPortableReaderImpl reader = new GridGridPortableReaderImpl(ctx, bytes, 0, clsLdr);
+        GridGridPortableReaderExImpl reader = new GridGridPortableReaderExImpl(ctx, bytes, 0, clsLdr);
 
         return (T)reader.unmarshal();
     }
@@ -269,7 +269,7 @@ public class GridPortableMarshaller {
         if (arr[0] == NULL)
             return null;
 
-        GridGridPortableReaderImpl reader = new GridGridPortableReaderImpl(ctx, arr, 0, ldr);
+        GridGridPortableReaderExImpl reader = new GridGridPortableReaderExImpl(ctx, arr, 0, ldr);
 
         return (T)reader.deserialize();
     }
@@ -280,8 +280,8 @@ public class GridPortableMarshaller {
      * @param out Output stream.
      * @return Writer.
      */
-    public GridPortableWriterImpl writer(GridPortableOutputStream out) {
-        return new GridPortableWriterImpl(ctx, out, 0);
+    public GridPortableWriterExImpl writer(GridPortableOutputStream out) {
+        return new GridPortableWriterExImpl(ctx, out, 0);
     }
 
     /**
@@ -290,9 +290,9 @@ public class GridPortableMarshaller {
      * @param in Input stream.
      * @return Reader.
      */
-    public GridGridPortableReaderImpl reader(GridPortableInputStream in) {
+    public GridGridPortableReaderExImpl reader(GridPortableInputStream in) {
         // TODO: GG-10396 - Is class loader needed here?
-        return new GridGridPortableReaderImpl(ctx, in, in.position(), null);
+        return new GridGridPortableReaderExImpl(ctx, in, in.position(), null);
     }
 
     /**

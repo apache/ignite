@@ -80,7 +80,7 @@ public class GridPortableBuilderEnum implements GridPortableBuilderSerialization
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(GridPortableWriterImpl writer, GridPortableBuilderSerializer ctx) {
+    @Override public void writeTo(GridPortableWriterExImpl writer, GridPortableBuilderSerializer ctx) {
         writer.writeByte(GridPortableMarshaller.ENUM);
 
         if (typeId == GridPortableMarshaller.UNREGISTERED_TYPE_ID) {

@@ -41,7 +41,7 @@ class GridPortablePlainLazyValue extends GridPortableAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(GridPortableWriterImpl writer, GridPortableBuilderSerializer ctx) {
+    @Override public void writeTo(GridPortableWriterExImpl writer, GridPortableBuilderSerializer ctx) {
         writer.write(reader.array(), valOff, len);
     }
 }

@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.*;
  * Portable reader implementation.
  */
 @SuppressWarnings("unchecked")
-public class GridGridPortableReaderImpl implements PortableReader, GridPortableRawReader, ObjectInput {
+public class GridGridPortableReaderExImpl implements PortableReader, GridPortableRawReaderEx, ObjectInput {
     /** */
     private final GridPortableContext ctx;
 
@@ -86,7 +86,7 @@ public class GridGridPortableReaderImpl implements PortableReader, GridPortableR
      * @param start Start.
      * @param ldr Class loader.
      */
-    GridGridPortableReaderImpl(GridPortableContext ctx, byte[] arr, int start, ClassLoader ldr) {
+    GridGridPortableReaderExImpl(GridPortableContext ctx, byte[] arr, int start, ClassLoader ldr) {
         this(ctx, new GridPortableHeapInputStream(arr), start, ldr, new GridPortableReaderContext());
     }
 
@@ -95,7 +95,7 @@ public class GridGridPortableReaderImpl implements PortableReader, GridPortableR
      * @param in Input stream.
      * @param start Start.
      */
-    GridGridPortableReaderImpl(GridPortableContext ctx, GridPortableInputStream in, int start, ClassLoader ldr) {
+    GridGridPortableReaderExImpl(GridPortableContext ctx, GridPortableInputStream in, int start, ClassLoader ldr) {
         this(ctx, in, start, ldr, new GridPortableReaderContext());
     }
 
@@ -105,7 +105,7 @@ public class GridGridPortableReaderImpl implements PortableReader, GridPortableR
      * @param start Start.
      * @param rCtx Context.
      */
-    GridGridPortableReaderImpl(GridPortableContext ctx, GridPortableInputStream in, int start, ClassLoader ldr,
+    GridGridPortableReaderExImpl(GridPortableContext ctx, GridPortableInputStream in, int start, ClassLoader ldr,
         GridPortableReaderContext rCtx) {
         this.ctx = ctx;
         this.in = in;
@@ -1975,7 +1975,7 @@ public class GridGridPortableReaderImpl implements PortableReader, GridPortableR
      * @throws PortableException In case of error.
      */
     @Nullable private Object doReadObject(boolean raw) throws PortableException {
-        GridGridPortableReaderImpl reader = new GridGridPortableReaderImpl(ctx, in, raw ? rawOff : off, ldr, rCtx);
+        GridGridPortableReaderExImpl reader = new GridGridPortableReaderExImpl(ctx, in, raw ? rawOff : off, ldr, rCtx);
 
         Object obj = reader.deserialize();
 

@@ -40,7 +40,7 @@ class GridPortableValueWithType implements GridPortableLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(GridPortableWriterImpl writer, GridPortableBuilderSerializer ctx) {
+    @Override public void writeTo(GridPortableWriterExImpl writer, GridPortableBuilderSerializer ctx) {
         if (val instanceof GridPortableBuilderSerializationAware)
             ((GridPortableBuilderSerializationAware)val).writeTo(writer, ctx);
         else

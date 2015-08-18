@@ -17,17 +17,12 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
-
 /**
- * Extended reader interface.
+ * Portable builder test.
  */
-public interface GridPortableRawReader extends PortableRawReader {
-    /**
-     * @return Object.
-     * @throws PortableException In case of error.
-     */
-    @Nullable public Object readObjectDetached() throws PortableException;
+public class GridPortableBuilderStringAsCharsSelfTest extends GridPortableBuilderSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean useUtf8() {
+        return false;
+    }
 }

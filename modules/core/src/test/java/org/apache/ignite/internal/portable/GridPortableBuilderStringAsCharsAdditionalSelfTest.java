@@ -17,34 +17,12 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.portable.*;
-
 /**
  *
  */
-public class GridPortablePlainPortableObject implements GridPortableLazyValue {
-    /** */
-    private final PortableObject portableObj;
-
-    /**
-     * @param portableObj Portable object.
-     */
-    public GridPortablePlainPortableObject(PortableObject portableObj) {
-        this.portableObj = portableObj;
-    }
-
+public class GridPortableBuilderStringAsCharsAdditionalSelfTest extends GridPortableBuilderAdditionalSelfTest {
     /** {@inheritDoc} */
-    @Override public Object value() {
-        return portableObj;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeTo(GridPortableWriterExImpl writer, GridPortableBuilderSerializer ctx) {
-        PortableObject val = portableObj;
-
-        if (val instanceof GridPortableObjectOffheapImpl)
-            val = ((GridPortableObjectOffheapImpl)val).heapCopy();
-
-        writer.doWritePortableObject((GridPortableObjectImpl)val);
+    @Override protected boolean useUtf8() {
+        return false;
     }
 }

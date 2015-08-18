@@ -17,34 +17,28 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.portable.*;
 
+import org.jetbrains.annotations.*;
+
 /**
- *
+ * Extended writer interface.
  */
-public class GridPortablePlainPortableObject implements GridPortableLazyValue {
-    /** */
-    private final PortableObject portableObj;
+public interface GridPortableRawWriterEx extends PortableRawWriter, AutoCloseable {
+    /**
+     * @param obj Object to write.
+     * @throws PortableException In case of error.
+     */
+    public void writeObjectDetached(@Nullable Object obj) throws PortableException;
 
     /**
-     * @param portableObj Portable object.
+     * @return Output stream.
      */
-    public GridPortablePlainPortableObject(PortableObject portableObj) {
-        this.portableObj = portableObj;
-    }
+    public GridPortableOutputStream out();
 
-    /** {@inheritDoc} */
-    @Override public Object value() {
-        return portableObj;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeTo(GridPortableWriterExImpl writer, GridPortableBuilderSerializer ctx) {
-        PortableObject val = portableObj;
-
-        if (val instanceof GridPortableObjectOffheapImpl)
-            val = ((GridPortableObjectOffheapImpl)val).heapCopy();
-
-        writer.doWritePortableObject((GridPortableObjectImpl)val);
-    }
+    /**
+     * Cleans resources.
+     */
+    @Override public void close();
 }

@@ -15,30 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
-
-import org.apache.ignite.internal.processors.portable.*;
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
-
 /**
- * Extended writer interface.
+ * <!-- Package description. -->
+ * Contains internal tests or test related classes and interfaces.
  */
-public interface GridPortableRawWriter extends PortableRawWriter, AutoCloseable {
-    /**
-     * @param obj Object to write.
-     * @throws PortableException In case of error.
-     */
-    public void writeObjectDetached(@Nullable Object obj) throws PortableException;
-
-    /**
-     * @return Output stream.
-     */
-    public GridPortableOutputStream out();
-
-    /**
-     * Cleans resources.
-     */
-    @Override public void close();
-}
+package org.apache.ignite.internal.portable;

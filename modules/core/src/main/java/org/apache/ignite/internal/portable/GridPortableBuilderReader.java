@@ -40,7 +40,7 @@ class GridPortableBuilderReader {
     private final GridPortableContext ctx;
 
     /** */
-    private final GridGridPortableReaderImpl reader;
+    private final GridGridPortableReaderExImpl reader;
 
     /** */
     private byte[] arr;
@@ -57,7 +57,7 @@ class GridPortableBuilderReader {
         pos = objImpl.start();
 
         // TODO: GG-10396 - Is class loader needed here?
-        reader = new GridGridPortableReaderImpl(portableContext(), arr, pos, null);
+        reader = new GridGridPortableReaderExImpl(portableContext(), arr, pos, null);
     }
 
     /**
@@ -728,7 +728,7 @@ class GridPortableBuilderReader {
     /**
      * @return Reader.
      */
-    GridGridPortableReaderImpl reader() {
+    GridGridPortableReaderExImpl reader() {
         return reader;
     }
 
@@ -763,7 +763,7 @@ class GridPortableBuilderReader {
         }
 
         /** {@inheritDoc} */
-        @Override public void writeTo(GridPortableWriterImpl writer, GridPortableBuilderSerializer ctx) {
+        @Override public void writeTo(GridPortableWriterExImpl writer, GridPortableBuilderSerializer ctx) {
             ctx.writeValue(writer, wrappedCollection());
         }
 

@@ -19,32 +19,15 @@ package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.portable.*;
 
+import org.jetbrains.annotations.*;
+
 /**
- *
+ * Extended reader interface.
  */
-public class GridPortablePlainPortableObject implements GridPortableLazyValue {
-    /** */
-    private final PortableObject portableObj;
-
+public interface GridPortableRawReaderEx extends PortableRawReader {
     /**
-     * @param portableObj Portable object.
+     * @return Object.
+     * @throws PortableException In case of error.
      */
-    public GridPortablePlainPortableObject(PortableObject portableObj) {
-        this.portableObj = portableObj;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object value() {
-        return portableObj;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeTo(GridPortableWriterExImpl writer, GridPortableBuilderSerializer ctx) {
-        PortableObject val = portableObj;
-
-        if (val instanceof GridPortableObjectOffheapImpl)
-            val = ((GridPortableObjectOffheapImpl)val).heapCopy();
-
-        writer.doWritePortableObject((GridPortableObjectImpl)val);
-    }
+    @Nullable public Object readObjectDetached() throws PortableException;
 }

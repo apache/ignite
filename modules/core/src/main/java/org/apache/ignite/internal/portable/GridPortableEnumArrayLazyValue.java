@@ -96,7 +96,7 @@ class GridPortableEnumArrayLazyValue extends GridPortableAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(GridPortableWriterImpl writer, GridPortableBuilderSerializer ctx) {
+    @Override public void writeTo(GridPortableWriterExImpl writer, GridPortableBuilderSerializer ctx) {
         if (val != null) {
             if (clsName != null)
                 ctx.writeArray(writer, GridPortableMarshaller.ENUM_ARR, (Object[])val, clsName);

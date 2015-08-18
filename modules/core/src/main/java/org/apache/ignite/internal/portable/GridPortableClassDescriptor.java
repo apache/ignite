@@ -334,7 +334,7 @@ class GridPortableClassDescriptor {
      * @param writer Writer.
      * @throws PortableException In case of error.
      */
-    void write(Object obj, GridPortableWriterImpl writer) throws PortableException {
+    void write(Object obj, GridPortableWriterExImpl writer) throws PortableException {
         assert obj != null;
         assert writer != null;
 
@@ -570,7 +570,7 @@ class GridPortableClassDescriptor {
      * @return Object.
      * @throws PortableException If failed.
      */
-    Object read(GridGridPortableReaderImpl reader) throws PortableException {
+    Object read(GridGridPortableReaderExImpl reader) throws PortableException {
         assert reader != null;
 
         Object res;
@@ -644,7 +644,7 @@ class GridPortableClassDescriptor {
      * @param writer Writer.
      * @return Whether further write is needed.
      */
-    private boolean writeHeader(Object obj, GridPortableWriterImpl writer) {
+    private boolean writeHeader(Object obj, GridPortableWriterExImpl writer) {
         int handle = writer.handle(obj);
 
         if (handle >= 0) {
@@ -833,7 +833,7 @@ class GridPortableClassDescriptor {
          * @param writer Writer.
          * @throws PortableException In case of error.
          */
-        public void write(Object obj, GridPortableWriterImpl writer) throws PortableException {
+        public void write(Object obj, GridPortableWriterExImpl writer) throws PortableException {
             assert obj != null;
             assert writer != null;
 
@@ -1029,7 +1029,7 @@ class GridPortableClassDescriptor {
          * @param reader Reader.
          * @throws PortableException In case of error.
          */
-        public void read(Object obj, GridGridPortableReaderImpl reader) throws PortableException {
+        public void read(Object obj, GridGridPortableReaderExImpl reader) throws PortableException {
             Object val = null;
 
             switch (mode) {

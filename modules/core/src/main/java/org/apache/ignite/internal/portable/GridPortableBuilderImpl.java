@@ -157,7 +157,7 @@ public class GridPortableBuilderImpl implements PortableBuilder {
 
     /** {@inheritDoc} */
     @Override public PortableObject build() {
-        try (GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx, 0, typeId, false)) {
+        try (GridPortableWriterExImpl writer = new GridPortableWriterExImpl(ctx, 0, typeId, false)) {
 
             GridPortableBuilderSerializer serializationCtx = new GridPortableBuilderSerializer();
 
@@ -175,7 +175,7 @@ public class GridPortableBuilderImpl implements PortableBuilder {
      * @param writer Writer.
      * @param serializer Serializer.
      */
-    void serializeTo(GridPortableWriterImpl writer, GridPortableBuilderSerializer serializer) {
+    void serializeTo(GridPortableWriterExImpl writer, GridPortableBuilderSerializer serializer) {
         writer.doWriteByte(GridPortableMarshaller.OBJ);
         writer.doWriteBoolean(true);
         writer.doWriteInt(registeredType ? typeId : UNREGISTERED_TYPE_ID);

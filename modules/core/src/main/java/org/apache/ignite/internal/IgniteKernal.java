@@ -2667,6 +2667,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public IgnitePortables portables() {
+        return ((CacheObjectPortableProcessor)ctx.cacheObjects()).portables();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
         return VER;
     }

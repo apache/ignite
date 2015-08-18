@@ -126,7 +126,7 @@ public class GridPortableObjectOffheapImpl extends GridPortableObjectEx implemen
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(String fieldName) throws PortableException {
-        GridGridPortableReaderImpl reader = new GridGridPortableReaderImpl(ctx,
+        GridGridPortableReaderExImpl reader = new GridGridPortableReaderExImpl(ctx,
             new GridPortableOffheapInputStream(ptr, size, false),
             start,
             null);
@@ -137,7 +137,7 @@ public class GridPortableObjectOffheapImpl extends GridPortableObjectEx implemen
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override protected <F> F field(GridPortableReaderContext rCtx, String fieldName) {
-        GridGridPortableReaderImpl reader = new GridGridPortableReaderImpl(ctx,
+        GridGridPortableReaderExImpl reader = new GridGridPortableReaderExImpl(ctx,
             new GridPortableOffheapInputStream(ptr, size, false),
             start,
             null,
@@ -148,7 +148,7 @@ public class GridPortableObjectOffheapImpl extends GridPortableObjectEx implemen
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        GridGridPortableReaderImpl reader = new GridGridPortableReaderImpl(ctx,
+        GridGridPortableReaderExImpl reader = new GridGridPortableReaderExImpl(ctx,
             new GridPortableOffheapInputStream(ptr, size, false),
             start,
             null);
@@ -160,7 +160,7 @@ public class GridPortableObjectOffheapImpl extends GridPortableObjectEx implemen
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T deserialize() throws PortableException {
         // TODO: GG-10396 - Deserialize with proper class loader.
-        GridGridPortableReaderImpl reader = new GridGridPortableReaderImpl(
+        GridGridPortableReaderExImpl reader = new GridGridPortableReaderExImpl(
             ctx,
             new GridPortableOffheapInputStream(ptr, size, false),
             start,

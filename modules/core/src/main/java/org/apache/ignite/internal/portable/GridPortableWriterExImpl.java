@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.*;
  /**
  * Portable writer implementation.
  */
-public class GridPortableWriterImpl implements PortableWriter, GridPortableRawWriter, ObjectOutput {
+public class GridPortableWriterExImpl implements PortableWriter, GridPortableRawWriterEx, ObjectOutput {
     /** Length: integer. */
     private static final int LEN_INT = 4;
 
@@ -80,7 +80,7 @@ public class GridPortableWriterImpl implements PortableWriter, GridPortableRawWr
      * @param ctx Context.
      * @param off Start offset.
      */
-    GridPortableWriterImpl(GridPortableContext ctx, int off) {
+    GridPortableWriterExImpl(GridPortableContext ctx, int off) {
         this.ctx = ctx;
 
         GridPortableOutputStream out = new GridPortableHeapOutputStream(off + INIT_CAP);
@@ -97,7 +97,7 @@ public class GridPortableWriterImpl implements PortableWriter, GridPortableRawWr
      * @param out Output stream.
      * @param off Start offset.
      */
-    GridPortableWriterImpl(GridPortableContext ctx, GridPortableOutputStream out, int off) {
+    GridPortableWriterExImpl(GridPortableContext ctx, GridPortableOutputStream out, int off) {
         this.ctx = ctx;
 
         wCtx = new WriterContext(out, null);
@@ -110,7 +110,7 @@ public class GridPortableWriterImpl implements PortableWriter, GridPortableRawWr
      * @param off Start offset.
      * @param typeId Type ID.
      */
-    GridPortableWriterImpl(GridPortableContext ctx, int off, int typeId, boolean metaEnabled) {
+    GridPortableWriterExImpl(GridPortableContext ctx, int off, int typeId, boolean metaEnabled) {
         this(ctx, off);
 
         this.typeId = typeId;
@@ -122,7 +122,7 @@ public class GridPortableWriterImpl implements PortableWriter, GridPortableRawWr
      * @param ctx Context.
      * @param wCtx Writer context.
      */
-    private GridPortableWriterImpl(GridPortableContext ctx, WriterContext wCtx) {
+    private GridPortableWriterExImpl(GridPortableContext ctx, WriterContext wCtx) {
         this.ctx = ctx;
         this.wCtx = wCtx;
 
@@ -529,7 +529,7 @@ public class GridPortableWriterImpl implements PortableWriter, GridPortableRawWr
         else {
             WriterContext wCtx = detached ? new WriterContext(this.wCtx.out, this.wCtx.handles) : this.wCtx;
 
-            GridPortableWriterImpl writer = new GridPortableWriterImpl(ctx, wCtx);
+            GridPortableWriterExImpl writer = new GridPortableWriterExImpl(ctx, wCtx);
 
             writer.marshal(obj, detached);
 
@@ -1708,8 +1708,8 @@ public class GridPortableWriterImpl implements PortableWriter, GridPortableRawWr
      * @param typeId type
      * @return New writer.
      */
-    GridPortableWriterImpl newWriter(int typeId) {
-        GridPortableWriterImpl res = new GridPortableWriterImpl(ctx, wCtx);
+    GridPortableWriterExImpl newWriter(int typeId) {
+        GridPortableWriterExImpl res = new GridPortableWriterExImpl(ctx, wCtx);
 
         res.typeId = typeId;
 

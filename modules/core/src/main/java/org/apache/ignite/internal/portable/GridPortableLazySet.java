@@ -44,7 +44,7 @@ class GridPortableLazySet extends GridPortableAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(GridPortableWriterImpl writer, GridPortableBuilderSerializer ctx) {
+    @Override public void writeTo(GridPortableWriterExImpl writer, GridPortableBuilderSerializer ctx) {
         if (val == null) {
             int size = reader.readIntAbsolute(off + 1);
 

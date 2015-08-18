@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.test;
 
 /**
- *
  */
-interface GridPortableBuilderSerializationAware {
+public class GridPortableTestClass1 {
     /**
-     * @param writer Writer.
-     * @param ctx Context.
      */
-    public void writeTo(GridPortableWriterExImpl writer, GridPortableBuilderSerializer ctx);
+    private static class InnerClass {
+        // No-op.
+    }
 }

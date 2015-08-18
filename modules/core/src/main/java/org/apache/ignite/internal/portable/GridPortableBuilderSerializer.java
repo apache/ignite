@@ -44,7 +44,7 @@ class GridPortableBuilderSerializer {
      * @param writer Writer.
      * @param val Value.
      */
-    public void writeValue(GridPortableWriterImpl writer, Object val) {
+    public void writeValue(GridPortableWriterExImpl writer, Object val) {
         if (val == null) {
             writer.writeByte(GridPortableMarshaller.NULL);
 
@@ -182,7 +182,7 @@ class GridPortableBuilderSerializer {
      * @param arr The array.
      * @param compTypeId Component type ID.
      */
-    public void writeArray(GridPortableWriterImpl writer, byte elementType, Object[] arr, int compTypeId) {
+    public void writeArray(GridPortableWriterExImpl writer, byte elementType, Object[] arr, int compTypeId) {
         writer.writeByte(elementType);
         writer.writeInt(compTypeId);
         writer.writeInt(arr.length);
@@ -197,7 +197,7 @@ class GridPortableBuilderSerializer {
      * @param arr The array.
      * @param clsName Component class name.
      */
-    public void writeArray(GridPortableWriterImpl writer, byte elementType, Object[] arr, String clsName) {
+    public void writeArray(GridPortableWriterExImpl writer, byte elementType, Object[] arr, String clsName) {
         writer.writeByte(elementType);
         writer.writeInt(GridPortableMarshaller.UNREGISTERED_TYPE_ID);
         writer.writeString(clsName);

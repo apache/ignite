@@ -185,7 +185,7 @@ public final class GridPortableObjectImpl extends GridPortableObjectEx implement
     /**
      * @param ctx Context.
      */
-    void context(GridPortableContext ctx) {
+    public void context(GridPortableContext ctx) {
         this.ctx = ctx;
     }
 
@@ -225,7 +225,7 @@ public final class GridPortableObjectImpl extends GridPortableObjectEx implement
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(String fieldName) throws PortableException {
-        GridGridPortableReaderImpl reader = new GridGridPortableReaderImpl(ctx, arr, start, null);
+        GridGridPortableReaderExImpl reader = new GridGridPortableReaderExImpl(ctx, arr, start, null);
 
         return (F)reader.unmarshal(fieldName);
     }
@@ -233,7 +233,7 @@ public final class GridPortableObjectImpl extends GridPortableObjectEx implement
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override protected <F> F field(GridPortableReaderContext rCtx, String fieldName) {
-        GridGridPortableReaderImpl reader = new GridGridPortableReaderImpl(ctx,
+        GridGridPortableReaderExImpl reader = new GridGridPortableReaderExImpl(ctx,
             new GridPortableHeapInputStream(arr),
             start,
             null,
@@ -244,7 +244,7 @@ public final class GridPortableObjectImpl extends GridPortableObjectEx implement
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        GridGridPortableReaderImpl reader = new GridGridPortableReaderImpl(ctx, arr, start, null);
+        GridGridPortableReaderExImpl reader = new GridGridPortableReaderExImpl(ctx, arr, start, null);
 
         return reader.hasField(fieldName);
     }
@@ -256,7 +256,7 @@ public final class GridPortableObjectImpl extends GridPortableObjectEx implement
 
         if (obj0 == null) {
             // TODO: GG-10396 - Deserialize with proper class loader.
-            GridGridPortableReaderImpl reader = new GridGridPortableReaderImpl(ctx, arr, start, null);
+            GridGridPortableReaderExImpl reader = new GridGridPortableReaderExImpl(ctx, arr, start, null);
 
             obj0 = reader.deserialize();
 

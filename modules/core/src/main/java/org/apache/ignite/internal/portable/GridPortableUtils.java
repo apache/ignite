@@ -135,7 +135,7 @@ public class GridPortableUtils {
      * @param writer W
      * @param val Value.
      */
-    public static void writePlainObject(GridPortableWriterImpl writer, Object val) {
+    public static void writePlainObject(GridPortableWriterExImpl writer, Object val) {
         Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
 
         if (flag == null)
