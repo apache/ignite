@@ -32,6 +32,7 @@ import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.portable.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
@@ -803,7 +804,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             return res;
 
         if (cls.equals(IgniteCacheObjectProcessor.class))
-            return (T)new IgniteCacheObjectProcessorImpl(this);
+            return (T)new CacheObjectPortableProcessorImpl(this);
 
         if (cls.equals(CacheConflictResolutionManager.class))
             return null;
