@@ -201,11 +201,11 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         }
         catch (NoSuchBeanDefinitionException e) {
             throw new IgniteCheckedException("Spring bean with provided name doesn't exist " +
-                    ", beanName=" + beanName + ']');
+                ", beanName=" + beanName + ']');
         }
         catch (BeansException e) {
             throw new IgniteCheckedException("Failed to load Spring bean with provided name " +
-                    ", beanName=" + beanName + ']', e);
+                ", beanName=" + beanName + ']', e);
         }
     }
 
