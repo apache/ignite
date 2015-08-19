@@ -283,7 +283,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = portableMarshaller();
 
         marsh.setClassNames(Arrays.asList(
-            "org.gridgain.grid.util.portable.testjar.*",
+            "org.apache.ignite.portable.testjar.*",
             "unknown.*"
         ));
 
@@ -322,7 +322,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
         });
 
         marsh.setClassNames(Arrays.asList(
-            "org.gridgain.grid.util.portable.testjar.*",
+            "org.apache.ignite.portable.testjar.*",
             "unknown.*"
         ));
 
@@ -345,7 +345,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = portableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration("org.gridgain.grid.util.portable.testjar.*"),
+            new PortableTypeConfiguration("org.apache.ignite.portable.testjar.*"),
             new PortableTypeConfiguration("unknown.*")
         ));
 
@@ -384,7 +384,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
         });
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration("org.gridgain.grid.util.portable.testjar.*"),
+            new PortableTypeConfiguration("org.apache.ignite.portable.testjar.*"),
             new PortableTypeConfiguration("unknown.*")
         ));
 
@@ -423,7 +423,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
         });
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new PortableTypeConfiguration("org.gridgain.grid.util.portable.testjar.*"),
+            new PortableTypeConfiguration("org.apache.ignite.portable.testjar.*"),
             new PortableTypeConfiguration("unknown.*")
         ));
 
@@ -446,11 +446,11 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
         PortableMarshaller marsh = portableMarshaller();
 
         marsh.setClassNames(Arrays.asList(
-            "org.gridgain.grid.util.portable.testjar.*"
+            "org.apache.ignite.portable.testjar.*"
         ));
 
         PortableTypeConfiguration typeCfg = new PortableTypeConfiguration(
-            "org.gridgain.grid.util.portable.testjar.GridPortableTestClass2");
+            "org.apache.ignite.portable.testjar.GridPortableTestClass2");
 
         typeCfg.setIdMapper(new PortableIdMapper() {
             @Override public int typeId(String clsName) {
