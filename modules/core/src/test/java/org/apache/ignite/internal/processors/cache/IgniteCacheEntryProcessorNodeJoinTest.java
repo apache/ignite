@@ -122,37 +122,43 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final int started = 6;
 
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    for (int i = 0; i < started; i++) {
-                        U.sleep(1_000);
+        try {
+            IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        for (int i = 0; i < started; i++) {
+                            U.sleep(1_000);
 
-                        startGrid(GRID_CNT + i);
+                            startGrid(GRID_CNT + i);
+                        }
+                    }
+                    catch (Exception e) {
+                        error.compareAndSet(null, e);
                     }
                 }
-                catch (Exception e) {
-                    error.compareAndSet(null, e);
+            }, 1, "starter");
+
+            try {
+                checkIncrement(invokeAll);
+            }
+            finally {
+                stop.set(true);
+
+                fut.get(getTestTimeout());
+            }
+
+            for (int i = 0; i < NUM_SETS; i++) {
+                for (int g = 0; g < GRID_CNT + started; g++) {
+                    Set<String> vals = ignite(g).<String, Set<String>>cache(null).get("set-" + i);
+
+                    assertNotNull(vals);
+                    assertEquals(100, vals.size());
                 }
             }
-        }, 1, "starter");
-
-        try {
-            checkIncrement(invokeAll);
         }
         finally {
-            stop.set(true);
-
-            fut.get(getTestTimeout());
-        }
-
-        for (int i = 0; i < NUM_SETS; i++) {
-            for (int g = 0; g < GRID_CNT + started; g++) {
-                Set<String> vals = ignite(g).<String, Set<String>>cache(null).get("set-" + i);
-
-                assertNotNull(vals);
-                assertEquals(100, vals.size());
-            }
+            for (int i = 0; i < started; i++)
+                stopGrid(GRID_CNT + i);
         }
     }
 

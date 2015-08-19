@@ -135,6 +135,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /** Keys that should be locked. */
     private GridConcurrentHashSet<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
 
+    /** Force keys future for correct transforms. */
+    private IgniteInternalFuture<?> forceKeysFut;
+
     /** Locks ready flag. */
     private volatile boolean locksReady;
 
@@ -291,7 +294,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 
-                if (hasFilters || retVal || txEntry.op() == GridCacheOperation.DELETE) {
+                if (hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM) {
                     cached.unswap(retVal);
 
                     boolean readThrough = (retVal || hasFilters) &&
@@ -312,7 +315,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         null,
                         null);
 
-                    if (retVal) {
+                    if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
                             invoke = true;
 
@@ -339,6 +342,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 }
                             }
 
+                            txEntry.entryProcessorCalculatedValue(val);
+
                             if (err != null || procRes != null)
                                 ret.addEntryProcessResult(txEntry.context(), key, null, procRes, err);
                             else
@@ -362,7 +367,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         ret.success(false);
                     }
                     else
-                        ret.success(txEntry.op() != GridCacheOperation.DELETE || cached.hasValue());
+                        ret.success(txEntry.op() != DELETE || cached.hasValue());
                 }
             }
             catch (IgniteCheckedException e) {
@@ -466,7 +471,25 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      */
     private boolean mapIfLocked() {
         if (checkLocks()) {
-            prepare0();
+            if (!mapped.compareAndSet(false, true))
+                return false;
+
+            if (forceKeysFut == null || (forceKeysFut.isDone() && forceKeysFut.error() == null))
+                prepare0();
+            else {
+                forceKeysFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> f) {
+                        try {
+                            f.get();
+
+                            prepare0();
+                        }
+                        catch (IgniteCheckedException e) {
+                            onError(e);
+                        }
+                    }
+                });
+            }
 
             return true;
         }
@@ -709,7 +732,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @param writes Write entries.
      * @param txNodes Transaction nodes mapping.
      */
-    public void prepare(Iterable<IgniteTxEntry> reads, Iterable<IgniteTxEntry> writes,
+    @SuppressWarnings("TypeMayBeWeakened")
+    public void prepare(Collection<IgniteTxEntry> reads, Collection<IgniteTxEntry> writes,
         Map<UUID, Collection<UUID>> txNodes) {
         if (tx.empty()) {
             tx.setRollbackOnly();
@@ -720,6 +744,15 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         this.reads = reads;
         this.writes = writes;
         this.txNodes = txNodes;
+
+        if (!F.isEmpty(writes)) {
+            Map<Integer, Collection<KeyCacheObject>> forceKeys = null;
+
+            for (IgniteTxEntry entry : writes)
+                forceKeys = checkNeedRebalanceKeys(entry, forceKeys);
+
+            forceKeysFut = forceRebalanceKeys(forceKeys);
+        }
 
         readyLocks();
 
@@ -735,12 +768,75 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     }
 
     /**
+     * Checks if this transaction needs previous value for the given tx entry. Will use passed in map to store
+     * required key or will create new map if passed in map is {@code null}.
+     *
+     * @param e TX entry.
+     * @param map Map with needed preload keys.
+     * @return Map if it was created.
+     */
+    private Map<Integer, Collection<KeyCacheObject>> checkNeedRebalanceKeys(
+        IgniteTxEntry e,
+        Map<Integer, Collection<KeyCacheObject>> map
+    ) {
+        if (retVal || !F.isEmpty(e.entryProcessors())) {
+            if (map == null)
+                map = new HashMap<>();
+
+            Collection<KeyCacheObject> keys = map.get(e.cacheId());
+
+            if (keys == null) {
+                keys = new ArrayList<>();
+
+                map.put(e.cacheId(), keys);
+            }
+
+            keys.add(e.key());
+        }
+
+        return map;
+    }
+
+    private IgniteInternalFuture<Object> forceRebalanceKeys(Map<Integer, Collection<KeyCacheObject>> keysMap) {
+        if (F.isEmpty(keysMap))
+            return null;
+
+        GridCompoundFuture<Object, Object> compFut = null;
+        IgniteInternalFuture<Object> lastForceFut = null;
+
+        for (Map.Entry<Integer, Collection<KeyCacheObject>> entry : keysMap.entrySet()) {
+            if (lastForceFut != null && compFut == null) {
+                compFut = new GridCompoundFuture();
+
+                compFut.add(lastForceFut);
+            }
+
+            int cacheId = entry.getKey();
+
+            Collection<KeyCacheObject> keys = entry.getValue();
+
+            lastForceFut = cctx.cacheContext(cacheId).preloader().request(keys, tx.topologyVersion());
+
+            if (compFut != null)
+                compFut.add(lastForceFut);
+        }
+
+        if (compFut != null) {
+            compFut.markInitialized();
+
+            return compFut;
+        }
+        else {
+            assert lastForceFut != null;
+
+            return lastForceFut;
+        }
+    }
+
+    /**
      *
      */
     private void prepare0() {
-        if (!mapped.compareAndSet(false, true))
-            return;
-
         try {
             // We are holding transaction-level locks for entries here, so we can get next write version.
             onEntriesLocked();
@@ -957,7 +1053,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     private boolean map(
         IgniteTxEntry entry,
         Map<UUID, GridDistributedTxMapping> futDhtMap,
-        Map<UUID, GridDistributedTxMapping> futNearMap) {
+        Map<UUID, GridDistributedTxMapping> futNearMap
+    ) {
         if (entry.cached().isLocal())
             return false;
 
@@ -1024,13 +1121,30 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @param locMap Exclude map.
      * @return {@code True} if mapped.
      */
-    private boolean map(IgniteTxEntry entry, Iterable<ClusterNode> nodes,
-        Map<UUID, GridDistributedTxMapping> globalMap, Map<UUID, GridDistributedTxMapping> locMap) {
+    private boolean map(
+        IgniteTxEntry entry,
+        Iterable<ClusterNode> nodes,
+        Map<UUID, GridDistributedTxMapping> globalMap,
+        Map<UUID, GridDistributedTxMapping> locMap
+    ) {
         boolean ret = false;
 
         if (nodes != null) {
             for (ClusterNode n : nodes) {
                 GridDistributedTxMapping global = globalMap.get(n.id());
+
+                if (!F.isEmpty(entry.entryProcessors())) {
+                    GridDhtPartitionState state = entry.context().topology().partitionState(n.id(),
+                        entry.cached().partition());
+
+                    if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.EVICTED) {
+                        CacheObject procVal = entry.entryProcessorCalculatedValue();
+
+                        entry.op(procVal == null ? DELETE : UPDATE);
+                        entry.value(procVal, true, false);
+                        entry.entryProcessors(null);
+                    }
+                }
 
                 if (global == null)
                     globalMap.put(n.id(), global = new GridDistributedTxMapping(n));
