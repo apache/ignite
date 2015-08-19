@@ -295,25 +295,31 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 
                 if (hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM) {
-                    cached.unswap(retVal);
+                    CacheObject val;
 
-                    boolean readThrough = (retVal || hasFilters) &&
-                        cacheCtx.config().isLoadPreviousValue() &&
-                        !txEntry.skipStore();
+                    if (!txEntry.hasValue()) {
+                        cached.unswap(retVal);
 
-                    CacheObject val = cached.innerGet(
-                        tx,
-                        /*swap*/true,
-                        readThrough,
-                        /*fail fast*/false,
-                        /*unmarshal*/true,
-                        /*metrics*/retVal,
-                        /*event*/retVal,
-                        /*tmp*/false,
-                        null,
-                        null,
-                        null,
-                        null);
+                        boolean readThrough = (retVal || hasFilters) &&
+                            cacheCtx.config().isLoadPreviousValue() &&
+                            !txEntry.skipStore();
+
+                        val = cached.innerGet(
+                            tx,
+                            /*swap*/true,
+                            readThrough,
+                            /*fail fast*/false,
+                            /*unmarshal*/true,
+                            /*metrics*/retVal,
+                            /*event*/retVal,
+                            /*tmp*/false,
+                            null,
+                            null,
+                            null,
+                            null);
+                    }
+                    else
+                        val = txEntry.value();
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
@@ -344,12 +350,14 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                             txEntry.entryProcessorCalculatedValue(val);
 
-                            if (err != null || procRes != null)
-                                ret.addEntryProcessResult(txEntry.context(), key, null, procRes, err);
-                            else
-                                ret.invokeResult(true);
+                            if (retVal) {
+                                if (err != null || procRes != null)
+                                    ret.addEntryProcessResult(txEntry.context(), key, null, procRes, err);
+                                else
+                                    ret.invokeResult(true);
+                            }
                         }
-                        else
+                        else if (retVal)
                             ret.value(cacheCtx, val);
                     }
 

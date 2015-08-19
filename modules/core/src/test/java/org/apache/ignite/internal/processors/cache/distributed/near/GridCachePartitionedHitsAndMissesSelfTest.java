@@ -32,6 +32,8 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Test for issue GG-3997 Total Hits and Misses display wrong value for in-memory database.
@@ -50,18 +52,18 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        // DiscoverySpi
+        // DiscoverySpi.
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
         disco.setIpFinder(IP_FINDER);
         cfg.setDiscoverySpi(disco);
 
         // Cache.
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration());
 
         TransactionConfiguration tCfg = new TransactionConfiguration();
 
-        tCfg.setDefaultTxConcurrency(TransactionConcurrency.PESSIMISTIC);
-        tCfg.setDefaultTxIsolation(TransactionIsolation.REPEATABLE_READ);
+        tCfg.setDefaultTxConcurrency(PESSIMISTIC);
+        tCfg.setDefaultTxIsolation(REPEATABLE_READ);
 
         cfg.setTransactionConfiguration(tCfg);
 
@@ -71,20 +73,18 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     /**
      * Cache configuration.
      *
-     * @param gridName Grid name.
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+    protected CacheConfiguration cacheConfiguration() throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
+
         cfg.setCacheMode(PARTITIONED);
         cfg.setStartSize(700000);
         cfg.setWriteSynchronizationMode(FULL_ASYNC);
         cfg.setEvictionPolicy(null);
         cfg.setBackups(1);
         cfg.setNearConfiguration(null);
-        cfg.setRebalanceDelay(-1);
-        cfg.setBackups(1);
         cfg.setStatisticsEnabled(true);
 
         return cfg;
@@ -96,9 +96,9 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testHitsAndMisses() throws Exception {
-        assert(GRID_CNT > 0);
-
         startGrids(GRID_CNT);
+
+        awaitPartitionMapExchange();
 
         try {
             final Ignite g = grid(0);
