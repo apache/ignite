@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -51,9 +52,6 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     /** Number of increment iterations. */
     private static final int NUM_SETS = 50;
 
-    /** Helper for excluding stopped node from iteration logic. */
-    private AtomicReferenceArray<Ignite> grids;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -61,7 +59,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
         CacheConfiguration cache = new CacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
-        cache.setAtomicityMode(TRANSACTIONAL);
+        cache.setAtomicityMode(atomicityMode());
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setBackups(1);
         cache.setRebalanceMode(SYNC);
@@ -83,21 +81,21 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
         return cfg;
     }
 
+    /**
+     * @return Atomicity mode.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrids(GRID_CNT);
-
-        grids = new AtomicReferenceArray<>(GRID_CNT);
-
-        for (int i = 0; i < GRID_CNT; i++)
-            grids.set(i, grid(i));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        grids = null;
     }
 
     /**
@@ -115,6 +113,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     }
 
     /**
+     * @param invokeAll If {@code true} tests invokeAll operation.
      * @throws Exception If failed.
      */
     private void checkEntryProcessorNodeJoin(boolean invokeAll) throws Exception {
@@ -163,6 +162,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     }
 
     /**
+     * @param invokeAll If {@code true} tests invokeAll operation.
      * @throws Exception If failed.
      */
     private void checkIncrement(boolean invokeAll) throws Exception {
@@ -201,6 +201,9 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
         /** */
         private String val;
 
+        /**
+         * @param val Value.
+         */
         private Processor(String val) {
             this.val = val;
         }
