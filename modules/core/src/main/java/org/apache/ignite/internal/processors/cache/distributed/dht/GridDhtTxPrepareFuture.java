@@ -297,33 +297,32 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 if (hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM) {
                     CacheObject val;
 
-                    if (!txEntry.hasValue()) {
-                        cached.unswap(retVal);
+                    cached.unswap(retVal);
 
-                        boolean readThrough = (retVal || hasFilters) &&
-                            cacheCtx.config().isLoadPreviousValue() &&
-                            !txEntry.skipStore();
+                    boolean readThrough = (retVal || hasFilters) &&
+                        cacheCtx.config().isLoadPreviousValue() &&
+                        !txEntry.skipStore();
 
-                        val = cached.innerGet(
-                            tx,
-                            /*swap*/true,
-                            readThrough,
-                            /*fail fast*/false,
-                            /*unmarshal*/true,
-                            /*metrics*/retVal,
-                            /*event*/retVal,
-                            /*tmp*/false,
-                            null,
-                            null,
-                            null,
-                            null);
-                    }
-                    else
-                        val = txEntry.value();
+                    val = cached.innerGet(
+                        tx,
+                        /*swap*/true,
+                        readThrough,
+                        /*fail fast*/false,
+                        /*unmarshal*/true,
+                        /*metrics*/retVal,
+                        /*event*/retVal,
+                        /*tmp*/false,
+                        null,
+                        null,
+                        null,
+                        null);
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
                             invoke = true;
+
+                            if (txEntry.hasValue())
+                                val = txEntry.value();
 
                             KeyCacheObject key = txEntry.key();
 
