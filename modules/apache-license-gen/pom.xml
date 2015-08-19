@@ -31,5 +31,5 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-apache-license-gen</artifactId>
-    <version>1.3.3-p2-SNAPSHOT</version>
+    <version>1.3.3-p3-SNAPSHOT</version>
 </project>
