@@ -15,19 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.marshaller.portable.*;
+import org.apache.ignite.testframework.config.*;
 
-import static org.apache.ignite.cache.CacheMemoryMode.*;
+import junit.framework.*;
 
 /**
- * Atomic cache with portables.
+ * Cache full API suite with portable marshaller.
  */
-public class GridCacheOffHeapTieredAtomicPortableEnabledFullApiSelfTest extends
-    GridCacheAtomicPortableEnabledFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMemoryMode memoryMode() {
-        return OFFHEAP_TIERED;
+public class IgnitePortableCacheFullApiTestSuite extends TestSuite {
+    /**
+     * @return Suite.
+     * @throws Exception In case of error.
+     */
+    public static TestSuite suite() throws Exception {
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, PortableMarshaller.class.getName());
+
+        return IgniteCacheFullApiSelfTestSuite.suite();
     }
 }

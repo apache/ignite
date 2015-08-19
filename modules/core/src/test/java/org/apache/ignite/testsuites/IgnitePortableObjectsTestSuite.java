@@ -62,51 +62,6 @@ public class IgnitePortableObjectsTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePortableObjectsPartitionedOffheapTieredSelfTest.class);
         suite.addTestSuite(GridCachePortableObjectsPartitionedNearDisabledOffheapTieredSelfTest.class);
 
-        /** Full API on-heap tests. */
-        suite.addTestSuite(GridCacheLocalPortableEnabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicLocalPortableEnabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedPortableEnabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedPortableEnabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNearDisabledPortableEnabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPortableEnabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicNearEnabledPortableEnabledFullApiSelfTest.class);
-
-        /** Full API off-heap tiered mode tests. */
-        suite.addTestSuite(GridCacheOffHeapTieredLocalPortableEnabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredAtomicLocalPortableEnabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredReplicatedPortableEnabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredPartitionedPortableEnabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredPartitionedNearDisabledPortableEnabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredAtomicPortableEnabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredAtomicNearEnabledPortableEnabledFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCachePartitionedPortableEnabledFullApiMultiNodeSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPortableEnabledFullApiMultiNodeSelfTest.class);
-
-        suite.addTestSuite(GridCacheOffHeapTieredPartitionedPortableEnabledFullApiMultiNodeSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredAtomicPortableEnabledFullApiMultiNodeSelfTest.class);
-
-        suite.addTestSuite(GridCacheAtomicPartitionedOnlyPortableMultiNodeSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPartitionedOnlyPortableMultithreadedSelfTest.class);
-
-        suite.addTestSuite(GridCacheAtomicPartitionedOnlyPortableDataStreamerMultiNodeSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPartitionedOnlyPortableDataStreamerMultithreadedSelfTest.class);
-
-        suite.addTestSuite(GridCachePortableDuplicateIndexObjectPartitionedAtomicSelfTest.class);
-        suite.addTestSuite(GridCachePortableDuplicateIndexObjectPartitionedTransactionalSelfTest.class);
-
-        suite.addTestSuite(GridCacheMemoryModePortableSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapAtomicPortableMultiThreadedUpdateSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredEvictionAtomicPortableSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredEvictionPortableSelfTest.class);
-        suite.addTestSuite(GridCachePortablesPartitionedOnlyByteArrayValuesSelfTest.class);
-        suite.addTestSuite(GridCachePortablesNearPartitionedByteArrayValuesSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredPortableSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredAtomicPortableSelfTest.class);
-
-        suite.addTestSuite(GridDataStreamerImplSelfTest.class);
-        suite.addTestSuite(DataStreamProcessorPortableSelfTest.class);
-
         suite.addTestSuite(GridCachePortableStoreObjectsSelfTest.class);
         suite.addTestSuite(GridCachePortableStorePortablesSelfTest.class);
 

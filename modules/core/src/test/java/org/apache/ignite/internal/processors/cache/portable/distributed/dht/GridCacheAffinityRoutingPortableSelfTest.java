@@ -20,17 +20,28 @@ package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.marshaller.portable.*;
+import org.apache.ignite.portable.*;
+
+import java.util.*;
 
 /**
  *
  */
-public class GridCacheOffHeapAtomicPortableMultiThreadedUpdateSelfTest
-    extends GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest {
+public class GridCacheAffinityRoutingPortableSelfTest extends GridCacheAffinityRoutingSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMarshaller(new PortableMarshaller());
+        PortableTypeConfiguration typeCfg = new PortableTypeConfiguration();
+
+        typeCfg.setClassName(AffinityTestKey.class.getName());
+        typeCfg.setAffinityKeyFieldName("affKey");
+
+        PortableMarshaller marsh = new PortableMarshaller();
+
+        marsh.setTypeConfigurations(Collections.singleton(typeCfg));
+
+        cfg.setMarshaller(marsh);
 
         return cfg;
     }
