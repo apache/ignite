@@ -4141,7 +4141,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 (hasRemoteSrvNodes = ring.hasRemoteServerNodes())) {
 
                 log.info("Local node seems to be disconnected from topology (failure detection timeout " +
-                    "is reached): [failureDetectionTimeout=" + spi.failureDetectionTimeout() +
+                    "is reached) [failureDetectionTimeout=" + spi.failureDetectionTimeout() +
                     ", connCheckFreq=" + connCheckFreq + ']');
 
                 failureThresholdReached = true;
