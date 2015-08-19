@@ -137,13 +137,14 @@ public interface GridQueryIndexing {
     /**
      * Registers cache.
      *
+     * @param cctx Cache context.
      * @param ccfg Cache configuration.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException;
+    public void registerCache(GridCacheContext<?,?> cctx, CacheConfiguration<?,?> ccfg) throws IgniteCheckedException;
 
     /**
-     * Deregisters cache.
+     * Unregisters cache.
      *
      * @param ccfg Cache configuration.
      * @throws IgniteCheckedException If failed to drop cache schema.

@@ -114,11 +114,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param ccfg Cache configuration.
+     * @param cctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void initializeCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
-        idx.registerCache(ccfg);
+    public void initializeCache(GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
+        CacheConfiguration<?,?> ccfg = cctx.config();
+
+        idx.registerCache(cctx, cctx.config());
 
         try {
             if (!F.isEmpty(ccfg.getTypeMetadata())) {
@@ -252,7 +254,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            initializeCache(cctx.config());
+            initializeCache(cctx);
         }
         finally {
             busyLock.leaveBusy();

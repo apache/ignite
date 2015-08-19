@@ -531,6 +531,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             U.closeQuiet(tbl.luceneIdx);
 
         tbl.schema.tbls.remove(tbl.name());
+        tbl.schema.h2Tbls.remove(tbl.tbl.getName());
     }
 
     /** {@inheritDoc} */
@@ -679,7 +680,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             long time = U.currentTimeMillis() - start;
 
-            long longQryExecTimeout = schemas.get(schema(space)).ccfg.getLongQueryWarningTimeout();
+            long longQryExecTimeout = schemas.get(schema(space)).cctx.config().getLongQueryWarningTimeout();
 
             if (time > longQryExecTimeout) {
                 String msg = "Query execution is too long (" + time + " ms): " + sql;
@@ -855,21 +856,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new CacheException("Failed to parse query: " + sqlQry, e);
         }
 
-        try {
-            bindParameters(stmt, F.asList(qry.getArgs()));
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException("Failed to bind parameters: [qry=" + sqlQry + ", params=" +
-                Arrays.deepToString(qry.getArgs()) + "]", e);
-        }
-
         GridCacheTwoStepQuery twoStepQry;
         List<GridQueryFieldMetadata> meta;
 
         try {
-            twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), qry.isCollocated());
+            bindParameters(stmt, F.asList(qry.getArgs()));
+
+            twoStepQry = GridSqlQuerySplitter.split(this, (JdbcPreparedStatement)stmt, qry.getArgs(), qry.isCollocated());
 
             meta = meta(stmt.getMetaData());
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException("Failed to bind parameters: [qry=" + sqlQry + ", params=" +
+                Arrays.deepToString(qry.getArgs()) + "]", e);
         }
         catch (SQLException e) {
             throw new CacheException(e);
@@ -1318,7 +1317,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
-//        unregisterMBean(); TODO
+//        unregisterMBean(); TODO  https://issues.apache.org/jira/browse/IGNITE-751
 
         for (Schema schema : schemas.values()) {
             for (TableDescriptor desc : schema.tbls.values()) {
@@ -1348,12 +1347,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException {
+    @Override public void registerCache(GridCacheContext<?,?> cctx, CacheConfiguration<?,?> ccfg)
+        throws IgniteCheckedException {
         String schema = schema(ccfg.getName());
 
-        if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(),
-            ccfg.getOffHeapMaxMemory() >= 0 || ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED ?
-            new GridUnsafeMemory(0) : null, ccfg)) != null)
+        if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(), cctx, ccfg)) != null)
             throw new IgniteCheckedException("Cache already registered: " + U.maskName(ccfg.getName()));
 
         createSchema(schema);
@@ -1456,6 +1454,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         rdcQryExec.onDisconnected(reconnectFut);
+    }
+
+    /**
+     * @param schema Schema name.
+     * @param tblName Table name.
+     * @return Table.
+     */
+    public GridH2Table table(String schema, String tblName) {
+        Schema s = schemas.get(schema);
+
+        if (s == null)
+            throw new CacheException("Failed to find schema: \"" + schema + "\"");
+
+        GridH2Table tbl = s.h2Tbls.get(tblName);
+
+        if (tbl == null)
+            throw new CacheException("Failed to find table: [schema=" + schema + ", tblName=" + tblName +"]");
+
+        return tbl;
     }
 
     /**
@@ -1950,9 +1967,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private static class Schema {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final String spaceName;
 
         /** */
@@ -1961,24 +1975,29 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** */
         private final ConcurrentMap<String, TableDescriptor> tbls = new ConcurrentHashMap8<>();
 
+        /** */
+        private final ConcurrentMap<String, GridH2Table> h2Tbls = new ConcurrentHashMap8<>();
+
         /** Cache for deserialized offheap rows. */
         private final CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache;
 
         /** */
-        private final CacheConfiguration<?,?> ccfg;
+        private final GridCacheContext<?,?> cctx;
 
         /**
          * @param spaceName Space name.
-         * @param offheap Offheap memory.
+         * @param cctx Cache context.
          * @param ccfg Cache configuration.
          */
-        private Schema(@Nullable String spaceName, GridUnsafeMemory offheap, CacheConfiguration<?,?> ccfg) {
+        private Schema(@Nullable String spaceName, GridCacheContext<?,?> cctx, CacheConfiguration<?,?> ccfg) {
             this.spaceName = spaceName;
-            this.offheap = offheap;
-            this.ccfg = ccfg;
+            this.cctx = cctx;
+
+            offheap = ccfg.getOffHeapMaxMemory() >= 0 || ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED ?
+                new GridUnsafeMemory(0) : null;
 
             if (offheap != null)
-                rowCache = new CacheLongKeyLIRS<>(ccfg.getSqlOnheapRowCacheSize(), 1, 128, 256);
+                rowCache = new CacheLongKeyLIRS<>(cctx.config().getSqlOnheapRowCacheSize(), 1, 128, 256);
             else
                 rowCache = null;
         }
@@ -1989,13 +2008,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         public void add(TableDescriptor tbl) {
             if (tbls.putIfAbsent(tbl.name(), tbl) != null)
                 throw new IllegalStateException("Table already registered: " + tbl.name());
+
+            h2Tbls.put(tbl.tbl.getName(), tbl.tbl);
         }
 
         /**
          * @return Escape all.
          */
         public boolean escapeAll() {
-            return ccfg.isSqlEscapeAll();
+            return cctx.config().isSqlEscapeAll();
         }
     }
 
@@ -2055,6 +2076,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
+        @Override public GridCacheContext<?,?> context() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public GridUnsafeGuard guard() {
             return guard;
         }
@@ -2076,11 +2102,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @Override public GridUnsafeMemory memory() {
             return schema.offheap;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteH2Indexing owner() {
-            return IgniteH2Indexing.this;
         }
 
         /** {@inheritDoc} */

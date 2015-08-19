@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.query.h2.*;
 import org.h2.command.*;
 import org.h2.command.dml.*;
 import org.h2.engine.*;
@@ -30,7 +31,6 @@ import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
 import java.util.*;
-import java.util.Set;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.*;
 
@@ -165,11 +165,22 @@ public class GridSqlQueryParser {
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
+    /** */
+    private final IgniteH2Indexing h2;
+
     /**
+     * @param h2 Indexing.
+     */
+    public GridSqlQueryParser(@Nullable IgniteH2Indexing h2) {
+        this.h2 = h2;
+    }
+
+    /**
+     * @param h2 Indexing.
      * @param stmt Prepared statement.
      * @return Parsed select.
      */
-    public static GridSqlQuery parse(JdbcPreparedStatement stmt) {
+    public static GridSqlQuery parse(IgniteH2Indexing h2, JdbcPreparedStatement stmt) {
         Command cmd = COMMAND.get(stmt);
 
         Getter<Command,Prepared> p = prepared;
@@ -184,7 +195,7 @@ public class GridSqlQueryParser {
 
         Prepared statement = p.get(cmd);
 
-        return new GridSqlQueryParser().parse(statement);
+        return new GridSqlQueryParser(h2).parse(statement);
     }
 
     /**
@@ -196,8 +207,14 @@ public class GridSqlQueryParser {
         if (res == null) {
             Table tbl = filter.getTable();
 
-            if (tbl instanceof TableBase)
-                res = new GridSqlTable(tbl.getSchema().getName(), tbl.getName());
+            if (tbl instanceof TableBase) {
+                String schema = tbl.getSchema().getName();
+
+                res = new GridSqlTable(schema, tbl.getName());
+
+                if (h2 != null) // Set referenced table.
+                    ((GridSqlTable)res).table(h2.table(schema, tbl.getName()));
+            }
             else if (tbl instanceof TableView) {
                 Query qry = VIEW_QUERY.get((TableView)tbl);
 
@@ -243,8 +260,6 @@ public class GridSqlQueryParser {
         Expression where = CONDITION.get(select);
         res.where(parseExpression(where, false));
 
-        Set<TableFilter> allFilters = new HashSet<>(select.getTopFilters());
-
         GridSqlElement from = null;
 
         TableFilter filter = select.getTopTableFilter();
@@ -258,15 +273,11 @@ public class GridSqlQueryParser {
             from = from == null ? gridFilter : new GridSqlJoin(from, gridFilter, filter.isJoinOuter(),
                 parseExpression(filter.getJoinCondition(), false));
 
-            allFilters.remove(filter);
-
             filter = filter.getJoin();
         }
         while (filter != null);
 
         res.from(from);
-
-        assert allFilters.isEmpty();
 
         ArrayList<Expression> expressions = select.getExpressions();
 

@@ -221,20 +221,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testExample1() throws Exception {
-        Query select = parse("select p.name n, max(p.old) maxOld, min(p.old) minOld from Person p group by p.name having maxOld > 10 and min(p.old) < 1");
-
-        GridSqlQueryParser ses = new GridSqlQueryParser();
-
-        GridSqlQuery gridSelect = ses.parse(select);
-
-        //System.out.println(select.getPlanSQL());
-        System.out.println(gridSelect.getSQL());
-    }
-
-    /**
-     *
-     */
     private JdbcConnection connection() throws Exception {
         GridKernalContext ctx = ((IgniteEx)ignite).context();
 
@@ -281,12 +267,12 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void checkQuery(String qry) throws Exception {
         Prepared prepared = parse(qry);
 
-        GridSqlQueryParser ses = new GridSqlQueryParser();
+        GridSqlQueryParser ses = new GridSqlQueryParser(null);
 
         String res;
 
         if (prepared instanceof Query)
-            res = ses.parse((Query) prepared).getSQL();
+            res = ses.parse(prepared).getSQL();
         else
             throw new UnsupportedOperationException();
 

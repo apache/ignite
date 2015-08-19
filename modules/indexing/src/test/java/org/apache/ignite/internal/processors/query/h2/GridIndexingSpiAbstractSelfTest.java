@@ -90,8 +90,8 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     protected void startIndexing(IgniteH2Indexing spi) throws Exception {
         spi.start(null, null);
 
-        spi.registerCache(cacheCfg("A"));
-        spi.registerCache(cacheCfg("B"));
+        spi.registerCache(null, cacheCfg("A"));
+        spi.registerCache(null, cacheCfg("B"));
     }
 
     private CacheConfiguration cacheCfg(String name) {

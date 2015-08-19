@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.h2.value.*;
 import org.jetbrains.annotations.*;
@@ -29,9 +28,11 @@ import org.jetbrains.annotations.*;
  */
 public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<GridH2KeyValueRowOffheap> {
     /**
-     * @return Owner.
+     * Gets cache context for this row descriptor.
+     *
+     * @return Cache context.
      */
-    public IgniteH2Indexing owner();
+    public GridCacheContext<?,?> context();
 
     /**
      * Creates new row.

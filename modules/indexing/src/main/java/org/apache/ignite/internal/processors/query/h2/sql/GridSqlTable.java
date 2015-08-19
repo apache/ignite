@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import org.apache.ignite.internal.processors.query.h2.opt.*;
 import org.h2.command.*;
 import org.jetbrains.annotations.*;
 
@@ -31,6 +32,9 @@ public class GridSqlTable extends GridSqlElement {
 
     /** */
     private final String tblName;
+
+    /** */
+    private GridH2Table tbl;
 
     /**
      * @param schema Schema.
@@ -63,5 +67,22 @@ public class GridSqlTable extends GridSqlElement {
      */
     public String tableName() {
         return tblName;
+    }
+
+    /**
+     * @return Referenced table.
+     */
+    public GridH2Table table() {
+        return tbl;
+    }
+
+    /**
+     * @param tbl Referenced table.
+     * @return {@code this} For chaining.
+     */
+    public GridSqlTable table(GridH2Table tbl) {
+        this.tbl = tbl;
+
+        return this;
     }
 }
