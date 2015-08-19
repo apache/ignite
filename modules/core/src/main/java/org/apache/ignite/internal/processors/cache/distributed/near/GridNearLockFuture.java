@@ -307,6 +307,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             dhtNodeId,
             threadId,
             lockVer,
+            topVer,
             timeout,
             !inTx(),
             inTx(),
@@ -318,9 +319,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
             txEntry.cached(entry);
         }
-
-        if (c != null)
-            c.topologyVersion(topVer);
 
         synchronized (mux) {
             entries.add(entry);
