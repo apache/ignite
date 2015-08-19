@@ -41,7 +41,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  * Tests cache in-place modification logic with iterative value increment.
  */
-public class IgniteCacheEntryProcessorRestartTest extends GridCommonAbstractTest {
+public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -103,7 +103,21 @@ public class IgniteCacheEntryProcessorRestartTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    public void testEntryProcessorRestart() throws Exception {
+    public void testSingleEntryProcessorNodeJoin() throws Exception {
+        checkEntryProcessorNodeJoin(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAllEntryProcessorNodeJoin() throws Exception {
+        checkEntryProcessorNodeJoin(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkEntryProcessorNodeJoin(boolean invokeAll) throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final int started = 6;
@@ -124,7 +138,7 @@ public class IgniteCacheEntryProcessorRestartTest extends GridCommonAbstractTest
         }, 1, "starter");
 
         try {
-            checkIncrement();
+            checkIncrement(invokeAll);
         }
         finally {
             stop.set(true);
@@ -145,16 +159,33 @@ public class IgniteCacheEntryProcessorRestartTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    private void checkIncrement() throws Exception {
+    private void checkIncrement(boolean invokeAll) throws Exception {
         for (int k = 0; k < 100; k++) {
-            for (int i = 0; i < NUM_SETS; i++) {
-                String key = "set-" + i;
-
-                String val = "value-" + k;
-
+            if (invokeAll) {
                 IgniteCache<String, Set<String>> cache = ignite(0).cache(null);
 
-                cache.invoke(key, new Processor(val));
+                Map<String, Processor> procs = new LinkedHashMap<>();
+
+                for (int i = 0; i < NUM_SETS; i++) {
+                    String key = "set-" + i;
+
+                    String val = "value-" + k;
+
+                    cache.invoke(key, new Processor(val));
+                }
+
+                cache.invokeAll(procs);
+            }
+            else {
+                for (int i = 0; i < NUM_SETS; i++) {
+                    String key = "set-" + i;
+
+                    String val = "value-" + k;
+
+                    IgniteCache<String, Set<String>> cache = ignite(0).cache(null);
+
+                    cache.invoke(key, new Processor(val));
+                }
             }
         }
     }
