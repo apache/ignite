@@ -78,9 +78,6 @@ public class IgnitePortableCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicPartitionedOnlyPortableMultiNodeSelfTest.class);
         suite.addTestSuite(GridCacheAtomicPartitionedOnlyPortableMultithreadedSelfTest.class);
 
-        suite.addTestSuite(GridCachePortableDuplicateIndexObjectPartitionedAtomicSelfTest.class);
-        suite.addTestSuite(GridCachePortableDuplicateIndexObjectPartitionedTransactionalSelfTest.class);
-
         suite.addTestSuite(GridCacheAffinityRoutingPortableSelfTest.class);
         suite.addTestSuite(GridPortableCacheEntryMemorySizeSelfTest.class);
 
