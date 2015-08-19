@@ -797,6 +797,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         return map;
     }
 
+    /**
+     * @param keysMap Keys to request.
+     * @return Keys request future.
+     */
     private IgniteInternalFuture<Object> forceRebalanceKeys(Map<Integer, Collection<KeyCacheObject>> keysMap) {
         if (F.isEmpty(keysMap))
             return null;
@@ -978,7 +982,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         fut.onResult(e);
                     }
                     catch (IgniteCheckedException e) {
-                        fut.onResult(e);
+                        if (!cctx.kernalContext().isStopping())
+                            fut.onResult(e);
                     }
                 }
 

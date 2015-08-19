@@ -198,7 +198,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             }
 
             // Test optimistic transaction.
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     try (Transaction tx = igniteNearOnly.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                         nearOnly.put("key", "val");
@@ -208,7 +208,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, ClusterTopologyException.class, null);
+            }, ClusterTopologyCheckedException.class);
 
             // Test pessimistic transaction.
             GridTestUtils.assertThrowsWithCause(new Callable<Object>() {

@@ -433,6 +433,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     @Override public GridCacheMvccCandidate addLocal(
         long threadId,
         GridCacheVersion ver,
+        AffinityTopologyVersion topVer,
         long timeout,
         boolean reenter,
         boolean tx,
@@ -441,6 +442,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             null,
             threadId,
             ver,
+            topVer,
             timeout,
             reenter,
             tx,
@@ -454,6 +456,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @param dhtNodeId DHT node ID.
      * @param threadId Owning thread ID.
      * @param ver Lock version.
+     * @param topVer Topology version.
      * @param timeout Timeout to acquire lock.
      * @param reenter Reentry flag.
      * @param tx Transaction flag.
@@ -465,6 +468,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         @Nullable UUID dhtNodeId,
         long threadId,
         GridCacheVersion ver,
+        AffinityTopologyVersion topVer,
         long timeout,
         boolean reenter,
         boolean tx,
@@ -512,6 +516,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 timeout,
                 tx,
                 implicitSingle);
+
+            cand.topologyVersion(topVer);
 
             owner = mvcc.anyOwner();
 
