@@ -246,7 +246,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         PortableTypeConfiguration typeCfg = new PortableTypeConfiguration();
 
-        typeCfg.setClassName("org.gridgain.grid.internal.util.portable.test.GridPortableTestClass2");
+        typeCfg.setClassName("org.apache.ignite.internal.portable.test.GridPortableTestClass2");
         typeCfg.setIdMapper(new PortableIdMapper() {
             @Override public int typeId(String clsName) {
                 return 100;

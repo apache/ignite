@@ -19,6 +19,7 @@ package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.portable.mutabletest.*;
 import org.apache.ignite.internal.processors.cache.portable.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.marshaller.portable.*;
@@ -35,7 +36,7 @@ import java.util.*;
 import java.util.Date;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.internal.portable.GridPortableTestClasses.*;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.*;
 
 /**
  *
@@ -53,7 +54,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         PortableMarshaller marsh = new PortableMarshaller();
 
-        marsh.setClassNames(Arrays.asList("org.gridgain.grid.internal.util.portable.mutabletest.*"));
+        marsh.setClassNames(Arrays.asList("org.apache.ignite.internal.portable.mutabletest.*"));
 
         marsh.setConvertStringToBytes(useUtf8());
 

@@ -27,7 +27,7 @@ import org.apache.ignite.portable.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import org.apache.ignite.internal.portable.GridPortableTestClasses.*;
+import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.*;
 import sun.misc.*;
 
 import java.math.*;

@@ -15,45 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.store;
+package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.marshaller.portable.*;
 
+import java.util.*;
+
 /**
- * Default store manager implementation.
+ *
  */
-public class CacheOsStoreManager extends GridCacheStoreManagerAdapter {
-    /** Ignite context. */
-    private final GridKernalContext ctx;
-
-    /** Cache configuration. */
-    private final CacheConfiguration cfg;
-
-    /**
-     * Constructor.
-     *
-     * @param ctx Ignite context.
-     * @param cfg Cache configuration.
-     */
-    public CacheOsStoreManager(GridKernalContext ctx, CacheConfiguration cfg) {
-        this.ctx = ctx;
-        this.cfg = cfg;
+public class GridCacheOffHeapTieredPortableSelfTest extends GridCacheOffHeapTieredSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean portableEnabled() {
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridKernalContext igniteContext() {
-        return ctx;
-    }
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        // Enable portables.
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() {
+        PortableMarshaller marsh = new PortableMarshaller();
+
+        marsh.setClassNames(Arrays.asList(TestValue.class.getName()));
+
+        cfg.setMarshaller(marsh);
+
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean convertPortable() {
-        return !(cfg.isKeepPortableInStore() && ctx.config().getMarshaller() instanceof PortableMarshaller);
     }
 }

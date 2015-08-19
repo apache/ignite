@@ -373,7 +373,7 @@ public final class GridPortableObjectImpl extends GridPortableObjectEx implement
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 123;
+        return 113;
     }
 
     /** {@inheritDoc} */

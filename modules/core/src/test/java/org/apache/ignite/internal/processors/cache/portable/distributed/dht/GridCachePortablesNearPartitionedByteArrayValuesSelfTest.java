@@ -14,46 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.processors.cache.store;
+package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.marshaller.portable.*;
 
 /**
- * Default store manager implementation.
+ *
  */
-public class CacheOsStoreManager extends GridCacheStoreManagerAdapter {
-    /** Ignite context. */
-    private final GridKernalContext ctx;
-
-    /** Cache configuration. */
-    private final CacheConfiguration cfg;
-
-    /**
-     * Constructor.
-     *
-     * @param ctx Ignite context.
-     * @param cfg Cache configuration.
-     */
-    public CacheOsStoreManager(GridKernalContext ctx, CacheConfiguration cfg) {
-        this.ctx = ctx;
-        this.cfg = cfg;
+public class GridCachePortablesNearPartitionedByteArrayValuesSelfTest
+    extends GridCacheAbstractNearPartitionedByteArrayValuesSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean peerClassLoading() {
+        return false;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridKernalContext igniteContext() {
-        return ctx;
-    }
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() {
+        cfg.setMarshaller(new PortableMarshaller());
+
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean convertPortable() {
-        return !(cfg.isKeepPortableInStore() && ctx.config().getMarshaller() instanceof PortableMarshaller);
     }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.mutabletest;
 
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.portable.*;

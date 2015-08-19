@@ -205,6 +205,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private Factory storeFactory;
 
     /** */
+    private boolean keepPortableInStore = true;
+
+    /** */
     private boolean loadPrevVal = DFLT_LOAD_PREV_VAL;
 
     /** Node group resolver. */
@@ -366,6 +369,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
         isWriteThrough = cc.isWriteThrough();
+        keepPortableInStore = cc.isKeepPortableInStore();
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
@@ -803,6 +807,38 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.storeFactory = storeFactory;
 
         return this;
+    }
+
+    /**
+     * Flag indicating that {@link CacheStore} implementation
+     * is working with portable objects instead of Java objects.
+     * Default value of this flag is {@code true},
+     * because this is recommended behavior from performance standpoint.
+     * <p>
+     * If set to {@code false}, Ignite will deserialize keys and
+     * values stored in portable format before they are passed
+     * to cache store.
+     * <p>
+     * Note that setting this flag to {@code false} can simplify
+     * store implementation in some cases, but it can cause performance
+     * degradation due to additional serializations and deserializations
+     * of portable objects. You will also need to have key and value
+     * classes on all nodes since portables will be deserialized when
+     * store is called.
+     *
+     * @return Keep portables in store flag.
+     */
+    public boolean isKeepPortableInStore() {
+        return keepPortableInStore;
+    }
+
+    /**
+     * Sets keep portables in store flag.
+     *
+     * @param keepPortableInStore Keep portables in store flag.
+     */
+    public void setKeepPortableInStore(boolean keepPortableInStore) {
+        this.keepPortableInStore = keepPortableInStore;
     }
 
     /**
