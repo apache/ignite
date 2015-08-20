@@ -526,7 +526,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*subj id*/null,
             /*task name*/null,
             /*deserialize portable*/false,
-            /*skip values*/true
+            /*skip values*/true,
+            /*can remap*/true
         ).chain(new CX1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
             @Override public Boolean applyx(IgniteInternalFuture<Map<K, V>> fut) throws IgniteCheckedException {
                 Map<K, V> map = fut.get();
@@ -560,7 +561,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*subj id*/null,
             /*task name*/null,
             /*deserialize portable*/false,
-            /*skip values*/true
+            /*skip values*/true,
+            /*can remap*/true
         ).chain(new CX1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
             @Override public Boolean applyx(IgniteInternalFuture<Map<K, V>> fut) throws IgniteCheckedException {
                 Map<K, V> kvMap = fut.get();
@@ -894,7 +896,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySet() {
-        return entrySet((CacheEntryPredicate[]) null);
+        return entrySet((CacheEntryPredicate[])null);
     }
 
     /** {@inheritDoc} */
@@ -919,12 +921,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet() {
-        return primaryKeySet((CacheEntryPredicate[]) null);
+        return primaryKeySet((CacheEntryPredicate[])null);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<V> values() {
-        return values((CacheEntryPredicate[]) null);
+        return values((CacheEntryPredicate[])null);
     }
 
     /**
@@ -1210,20 +1212,55 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public V getForcePrimary(K key) throws IgniteCheckedException {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-        return getAllAsync(F.asList(key), /*force primary*/true, /*skip tx*/false, null, null, taskName, true, false)
-            .get().get(key);
+        return getAllAsync(
+            F.asList(key),
+            /*force primary*/true,
+            /*skip tx*/false,
+            /*cached entry*/null,
+            /*subject id*/null,
+            taskName,
+            /*deserialize cache objects*/true,
+            /*skip values*/false,
+            /*can remap*/true
+        ).get().get(key);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getForcePrimaryAsync(final K key) {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-        return getAllAsync(Collections.singletonList(key), /*force primary*/true, /*skip tx*/false, null, null,
-            taskName, true, false).chain(new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
-            @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
+        return getAllAsync(
+            Collections.singletonList(key),
+            /*force primary*/true,
+            /*skip tx*/false,
+            null,
+            null,
+            taskName,
+            true,
+            false,
+            /*can remap*/true
+        ).chain(new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
+            @Override
+            public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
                 return e.get().get(key);
             }
         });
+    }
+
+    public V getTopologySafe(K key) throws IgniteCheckedException {
+        String taskName = ctx.kernalContext().job().currentTaskName();
+
+        return getAllAsync(
+            F.asList(key),
+            /*force primary*/false,
+            /*skip tx*/false,
+            /*cached entry*/null,
+            /*subject id*/null,
+            taskName,
+            /*deserialize cache objects*/true,
+            /*skip values*/false,
+            /*can remap*/false
+        ).get().get(key);
     }
 
     /** {@inheritDoc} */
@@ -1242,7 +1279,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             taskName,
             !ctx.keepPortable(),
-            false);
+            /*skip values*/false,
+            /*can remap*/true);
     }
 
     /**
@@ -1582,7 +1620,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        boolean skipVals
+        boolean skipVals,
+        boolean canRemap
     ) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -1597,7 +1636,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             deserializePortable,
             forcePrimary,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
-            skipVals);
+            skipVals,
+            canRemap);
     }
 
     /**
@@ -1623,7 +1663,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean deserializePortable,
         final boolean forcePrimary,
         @Nullable IgniteCacheExpiryPolicy expiry,
-        final boolean skipVals
+        final boolean skipVals,
+        boolean canRemap
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
@@ -1638,7 +1679,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             deserializePortable,
             expiry,
             skipVals,
-            false);
+            false,
+            canRemap);
     }
 
     /**
@@ -1661,7 +1703,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean deserializePortable,
         @Nullable IgniteCacheExpiryPolicy expiry,
         final boolean skipVals,
-        final boolean keepCacheObjects
+        final boolean keepCacheObjects,
+        boolean canRemap
         ) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K1, V1>emptyMap());
@@ -1684,7 +1727,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 assert keys != null;
 
                 final AffinityTopologyVersion topVer = tx == null
-                    ? ctx.affinity().affinityTopologyVersion()
+                    ? (canRemap ? ctx.affinity().affinityTopologyVersion(): ctx.shared().exchange().readyAffinityVersion())
                     : tx.topologyVersion();
 
                 final Map<K1, V1> map = new GridLeanMap<>(keys.size());
@@ -4461,7 +4504,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             taskName,
             deserializePortable,
-            false);
+            false,
+            /*can remap*/true);
     }
 
     /**
@@ -4682,7 +4726,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /**
-         * @param tx Transaction.
+         *
          */
         public void execute() {
             tx = ctx.tm().newTx(

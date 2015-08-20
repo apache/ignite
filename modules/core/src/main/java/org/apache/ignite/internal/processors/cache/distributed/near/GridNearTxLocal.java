@@ -313,7 +313,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             });
         }
         else if (cacheCtx.isColocated()) {
-            return cacheCtx.colocated().loadAsync(keys,
+            return cacheCtx.colocated().loadAsync(
+                keys,
                 readThrough,
                 /*reload*/false,
                 /*force primary*/false,
@@ -322,7 +323,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 resolveTaskName(),
                 deserializePortable,
                 accessPolicy(cacheCtx, keys),
-                skipVals).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Boolean>() {
+                skipVals,
+                /*can remap*/true
+            ).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Boolean>() {
                     @Override public Boolean apply(IgniteInternalFuture<Map<Object, Object>> f) {
                         try {
                             Map<Object, Object> map = f.get();

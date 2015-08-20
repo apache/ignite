@@ -527,7 +527,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        boolean skipVals
+        boolean skipVals,
+        boolean canRemap
     ) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -540,7 +541,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             deserializePortable,
             forcePrimary,
             null,
-            skipVals);
+            skipVals,
+            canRemap);
     }
 
     /**
@@ -558,7 +560,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiry,
-        boolean skipVals
+        boolean skipVals,
+        boolean canRemap
         ) {
         return getAllAsync0(keys,
             readThrough,
@@ -568,7 +571,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             false,
             expiry,
             skipVals,
-            /*keep cache objects*/true);
+            /*keep cache objects*/true,
+            canRemap);
     }
 
     /**

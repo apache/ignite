@@ -120,6 +120,8 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
 
             stopGrid(stopIdx);
 
+            U.sleep(500);
+
             startGrid(stopIdx);
         }
 
