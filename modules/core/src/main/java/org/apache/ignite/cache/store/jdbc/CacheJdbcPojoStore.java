@@ -167,15 +167,25 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             Object obj = mc.ctor.newInstance();
 
             for (CacheTypeFieldMetadata field : fields) {
-                Method setter = mc.setters.get(field.getJavaName());
+                String fldJavaName = field.getJavaName();
+
+                Method setter = mc.setters.get(fldJavaName);
 
                 if (setter == null)
-                    throw new CacheLoaderException("Failed to find setter in POJO class [class name=" + typeName +
-                        ", property=" + field.getJavaName() + "]");
+                    throw new IllegalStateException("Failed to find setter in POJO class [class name=" + typeName +
+                        ", property=" + fldJavaName + "]");
 
-                Integer colIdx = loadColIdxs.get(field.getDatabaseName());
+                String fldDbName = field.getDatabaseName();
 
-                setter.invoke(obj, getColumnValue(rs, colIdx, field.getJavaType()));
+                Integer colIdx = loadColIdxs.get(fldDbName);
+
+                try {
+                    setter.invoke(obj, getColumnValue(rs, colIdx, field.getJavaType()));
+                }
+                catch (Exception e) {
+                    throw new IllegalStateException("Failed to set property in POJO class [class name=" + typeName +
+                        ", property=" + fldJavaName + ", column=" + colIdx + ", db name=" + fldDbName + "]", e);
+                }
             }
 
             return (R)obj;

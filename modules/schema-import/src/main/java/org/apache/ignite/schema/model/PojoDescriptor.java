@@ -504,7 +504,11 @@ public class PojoDescriptor {
             case TIMESTAMP:
                 return java.sql.Timestamp.class;
 
-            // BINARY, VARBINARY, LONGVARBINARY, ARRAY, BLOB, CLOB, NCLOB, NULL, DATALINK
+            case CLOB:
+            case NCLOB:
+                return String.class;
+
+            // BINARY, VARBINARY, LONGVARBINARY, ARRAY, BLOB, NULL, DATALINK
             // OTHER, JAVA_OBJECT, DISTINCT, STRUCT, REF, ROWID, SQLXML
             default:
                 return Object.class;

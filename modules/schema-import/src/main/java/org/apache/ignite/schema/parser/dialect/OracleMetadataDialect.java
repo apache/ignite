@@ -87,73 +87,76 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
      * @throws SQLException If failed to decode type.
      */
     private int decodeType(ResultSet rs) throws SQLException {
-        switch (rs.getString(DATA_TYPE_IDX)) {
-            case "CHAR":
-            case "NCHAR":
-                return CHAR;
+        String type = rs.getString(DATA_TYPE_IDX);
 
-            case "VARCHAR2":
-            case "NVARCHAR2":
-                return VARCHAR;
+        if (type.startsWith("TIMESTAMP"))
+            return TIMESTAMP;
+        else {
+            switch (type) {
+                case "CHAR":
+                case "NCHAR":
+                    return CHAR;
 
-            case "LONG":
-                return LONGVARCHAR;
+                case "VARCHAR2":
+                case "NVARCHAR2":
+                    return VARCHAR;
 
-            case "LONG RAW":
-                return LONGVARBINARY;
+                case "LONG":
+                    return LONGVARCHAR;
 
-            case "FLOAT":
-                return FLOAT;
+                case "LONG RAW":
+                    return LONGVARBINARY;
 
-            case "NUMBER":
-                int precision = rs.getInt(DATA_PRECISION_IDX);
-                int scale = rs.getInt(DATA_SCALE_IDX);
+                case "FLOAT":
+                    return FLOAT;
 
-                if (scale > 0) {
-                    if (scale < 4 && precision < 19)
-                        return FLOAT;
+                case "NUMBER":
+                    int precision = rs.getInt(DATA_PRECISION_IDX);
+                    int scale = rs.getInt(DATA_SCALE_IDX);
 
-                    if (scale > 4 || precision > 19)
-                        return DOUBLE;
+                    if (scale > 0) {
+                        if (scale < 4 && precision < 19)
+                            return FLOAT;
 
-                    return NUMERIC;
-                }
-                else {
-                    if (precision < 1)
-                        return INTEGER;
+                        if (scale > 4 || precision > 19)
+                            return DOUBLE;
 
-                    if (precision < 2)
-                        return BOOLEAN;
+                        return NUMERIC;
+                    }
+                    else {
+                        if (precision < 1)
+                            return INTEGER;
 
-                    if (precision < 4)
-                        return TINYINT;
+                        if (precision < 2)
+                            return BOOLEAN;
 
-                    if (precision < 6)
-                        return SMALLINT;
+                        if (precision < 4)
+                            return TINYINT;
 
-                    if (precision < 11)
-                        return INTEGER;
+                        if (precision < 6)
+                            return SMALLINT;
 
-                    if (precision < 20)
-                        return BIGINT;
+                        if (precision < 11)
+                            return INTEGER;
 
-                    return NUMERIC;
-                }
+                        if (precision < 20)
+                            return BIGINT;
 
-            case "DATE":
-                return DATE;
+                        return NUMERIC;
+                    }
 
-            case "TIMESTAMP":
-                return TIMESTAMP;
+                case "DATE":
+                    return DATE;
 
-            case "BFILE":
-            case "BLOB":
-                return BLOB;
+                case "BFILE":
+                case "BLOB":
+                    return BLOB;
 
-            case "CLOB":
-            case "NCLOB":
-            case "XMLTYPE":
-                return CLOB;
+                case "CLOB":
+                case "NCLOB":
+                case "XMLTYPE":
+                    return CLOB;
+            }
         }
 
         return OTHER;

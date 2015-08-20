@@ -57,17 +57,14 @@ public class CacheJdbcPojoStoreFactorySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSerializable() throws Exception {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                try (Ignite ignite = Ignition.start("modules/spring/src/test/config/node.xml")) {
-                    try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheConfigurationH2Dialect())) {
-                        checkStore(cache, JdbcDataSource.class);
-                    }
-                }
-
-                return null;
+        try (Ignite ignite = Ignition.start("modules/spring/src/test/config/node.xml")) {
+            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheConfigurationH2Dialect())) {
+                checkStore(cache, JdbcDataSource.class);
             }
-        }, CacheException.class, "Failed to validate cache configuration. Cache store factory is not serializable.");
+        }
+        catch (Exception e) {
+            fail("Failed to validate cache configuration. Cache store factory is not serializable.");
+        }
     }
 
     /**
