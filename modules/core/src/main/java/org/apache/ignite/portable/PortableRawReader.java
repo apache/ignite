@@ -230,20 +230,4 @@ public interface PortableRawReader {
      * @throws PortableException In case of error.
      */
     @Nullable public <T extends Enum<?>> T[] readEnumArray() throws PortableException;
-
-    /**
-     * @param enumCls Enum class.
-     * @return Value.
-     * @throws PortableException In case of error.
-     */
-    @Deprecated
-    @Nullable public <T extends Enum<?>> T readEnum(Class<T> enumCls) throws PortableException;
-
-    /**
-     * @param enumCls Enum class.
-     * @return Value.
-     * @throws PortableException In case of error.
-     */
-    @Deprecated
-    @Nullable public <T extends Enum<?>> T[] readEnumArray(Class<T> enumCls) throws PortableException;
 }

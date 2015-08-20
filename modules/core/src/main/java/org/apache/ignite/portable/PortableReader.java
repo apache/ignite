@@ -273,25 +273,6 @@ public interface PortableReader {
     @Nullable public <T extends Enum<?>> T[] readEnumArray(String fieldName) throws PortableException;
 
     /**
-     * @param fieldName Field name.
-     * @param enumCls Enum class.
-     * @return Value.
-     * @throws PortableException In case of error.
-     */
-    @Deprecated
-    @Nullable public <T extends Enum<?>> T readEnum(String fieldName, Class<T> enumCls) throws PortableException;
-
-    /**
-     * @param fieldName Field name.
-     * @param enumCls Enum class.
-     * @return Value.
-     * @throws PortableException In case of error.
-     */
-    @Deprecated
-    @Nullable public <T extends Enum<?>> T[] readEnumArray(String fieldName, Class<T> enumCls)
-        throws PortableException;
-
-    /**
      * Gets raw reader. Raw reader does not use field name hash codes, therefore,
      * making the format even more compact. However, if the raw reader is used,
      * dynamic structure changes to the portable objects are not supported.

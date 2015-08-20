@@ -981,28 +981,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public <T extends Enum<?>> T readEnum(Class<T> enumCls) throws PortableException {
-        return readEnum();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <T extends Enum<?>> T[] readEnumArray(Class<T> enumCls) throws PortableException {
-        return readEnumArray();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <T extends Enum<?>> T readEnum(String fieldName, Class<T> enumCls)
-        throws PortableException {
-        return readEnum(fieldName);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <T extends Enum<?>> T[] readEnumArray(String fieldName, Class<T> enumCls)
-        throws PortableException {
-        return readEnumArray(fieldName);
-    }
-
     /**
      * @param obj Object.
      */
