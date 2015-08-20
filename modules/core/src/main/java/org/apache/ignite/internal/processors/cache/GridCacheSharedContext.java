@@ -455,7 +455,9 @@ public class GridCacheSharedContext<K, V> {
 
         AffinityTopologyVersion nextVer = new AffinityTopologyVersion(curVer.topologyVersion() + 1);
 
-        return exchMgr.affinityReadyFuture(nextVer);
+        IgniteInternalFuture<?> fut = exchMgr.affinityReadyFuture(nextVer);
+
+        return fut == null ? new GridFinishedFuture<>() : fut;
     }
 
     /**
