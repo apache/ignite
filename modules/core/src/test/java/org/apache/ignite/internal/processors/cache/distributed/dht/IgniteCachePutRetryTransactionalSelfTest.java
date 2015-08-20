@@ -61,8 +61,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
         IgniteAtomicLong atomic = ignite(0).atomicLong("TestAtomic", 0, true);
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 while (!finished.get()) {
                     stopGrid(3);
 
@@ -157,7 +156,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
      * @param ignite Ignite instance.
      * @param clo Closure.
      * @return Result of closure execution.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     private <T> T doInTransaction(Ignite ignite, Callable<T> clo) throws Exception {
         while (true) {
@@ -213,10 +212,16 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public Void call() throws Exception {
-            ((IgniteCache<String, String>)cache).put("key-" + base + "-" + i, "value-" + i);
+            String key1 = "key-" + base + "-" + i;
+            String key2 = "key-" + base;
 
-            ((IgniteCache<String, Set<String>>)cache).invoke("key-" + base, new AddEntryProcessor("value-" + i));
+            assert key1.compareTo(key2) > 0;
+
+            ((IgniteCache<String, String>)cache).put(key1, "value-" + i);
+
+            ((IgniteCache<String, Set<String>>)cache).invoke(key2, new AddEntryProcessor("value-" + i));
 
             return null;
         }
