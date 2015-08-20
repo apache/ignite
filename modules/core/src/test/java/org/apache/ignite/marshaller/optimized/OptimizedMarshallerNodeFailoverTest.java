@@ -33,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
@@ -65,8 +66,8 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
             CacheConfiguration ccfg = new CacheConfiguration();
 
             ccfg.setCacheMode(PARTITIONED);
-
             ccfg.setBackups(1);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
             cfg.setCacheConfiguration(ccfg);
         }
@@ -79,16 +80,31 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testClassCacheUpdateFailover() throws Exception {
+    public void testClassCacheUpdateFailover1() throws Exception {
+        classCacheUpdateFailover(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClassCacheUpdateFailover2() throws Exception {
+        classCacheUpdateFailover(true);
+    }
+
+    /**
+     * @param stopSrv If {@code true} restarts server node, otherwise client node.
+     * @throws Exception If failed.
+     */
+    private void classCacheUpdateFailover(boolean stopSrv) throws Exception {
         cache = true;
 
         startGridsMultiThreaded(2);
 
-        cache = false;
+        cache = stopSrv;
 
         IgniteCache<Integer, Object> cache0 = ignite(0).cache(null);
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             log.info("Iteration: " + i);
 
             Map<Integer, Object> map = new HashMap<>();
@@ -106,7 +122,7 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
                 }
             });
 
-            cache0.putAll(map); // Do not stop cache node, so put should not fail.
+            cache0.putAll(map);
 
             fut.get();
         }
@@ -210,6 +226,26 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
             case 9: return new TestClass9();
 
             case 10: return new TestClass10();
+
+            case 11: return new TestClass11();
+
+            case 12: return new TestClass12();
+
+            case 13: return new TestClass13();
+
+            case 14: return new TestClass14();
+
+            case 15: return new TestClass15();
+
+            case 16: return new TestClass16();
+
+            case 17: return new TestClass17();
+
+            case 18: return new TestClass18();
+
+            case 19: return new TestClass19();
+
+            case 20: return new TestClass20();
         }
 
         fail();
@@ -221,6 +257,7 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
      *
      */
     static class TestClass1 implements Serializable {
+        /** */
         int val;
     }
 
@@ -268,4 +305,54 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
      *
      */
     static class TestClass10 implements Serializable {}
+
+    /**
+     *
+     */
+    static class TestClass11 implements Serializable {}
+
+    /**
+     *
+     */
+    static class TestClass12 implements Serializable {}
+
+    /**
+     *
+     */
+    static class TestClass13 implements Serializable {}
+
+    /**
+     *
+     */
+    static class TestClass14 implements Serializable {}
+
+    /**
+     *
+     */
+    static class TestClass15 implements Serializable {}
+
+    /**
+     *
+     */
+    static class TestClass16 implements Serializable {}
+
+    /**
+     *
+     */
+    static class TestClass17 implements Serializable {}
+
+    /**
+     *
+     */
+    static class TestClass18 implements Serializable {}
+
+    /**
+     *
+     */
+    static class TestClass19 implements Serializable {}
+
+    /**
+     *
+     */
+    static class TestClass20 implements Serializable {}
 }
