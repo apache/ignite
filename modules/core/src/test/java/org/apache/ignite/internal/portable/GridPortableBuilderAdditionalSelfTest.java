@@ -233,7 +233,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
      *
      */
     public void testModifyObjectArray() {
-        fail("http://atlassian.gridgain.com/jira/browse/GG-10170");
+        fail("https://issues.apache.org/jira/browse/IGNITE-1273");
 
         TestObjectContainer obj = new TestObjectContainer();
         obj.foo = new Object[]{"a"};
@@ -930,7 +930,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
      *
      */
     public void testCyclicArrays() {
-        fail("http://atlassian.gridgain.com/jira/browse/GG-10170");
+        fail("https://issues.apache.org/jira/browse/IGNITE-1273");
 
         TestObjectContainer obj = new TestObjectContainer();
 
@@ -953,7 +953,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings("TypeMayBeWeakened")
     public void testCyclicArrayList() {
-        fail("http://atlassian.gridgain.com/jira/browse/GG-10170");
+        fail("https://issues.apache.org/jira/browse/IGNITE-1273");
         TestObjectContainer obj = new TestObjectContainer();
 
         List<Object> arr1 = new ArrayList<>();

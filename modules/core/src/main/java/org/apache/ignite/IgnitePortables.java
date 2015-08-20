@@ -50,28 +50,26 @@ import java.util.Date;
  * (assuming that class definitions are present in the classpath).
  * <p>
  * To work with the portable format directly, user should create a special cache projection
- * using {@link IgniteInternalCache#keepPortable()} method and then retrieve individual fields as needed:
+ * using {@link IgniteCache#withKeepPortable()} method and then retrieve individual fields as needed:
  * <pre name=code class=java>
- * CacheProjection&lt;GridPortableObject.class, GridPortableObject.class&gt; prj = cache.keepPortable();
+ * IgniteCache&lt;PortableObject, PortableObject&gt; prj = cache.withKeepPortable();
  *
  * // Convert instance of MyKey to portable format.
- * // We could also use GridPortableBuilder to create
- * // the key in portable format directly.
- * GridPortableObject key = grid.portables().toPortable(new MyKey());
+ * // We could also use PortableBuilder to create the key in portable format directly.
+ * PortableObject key = grid.portables().toPortable(new MyKey());
  *
- * GridPortableObject val = prj.get(key);
+ * PortableObject val = prj.get(key);
  *
  * String field = val.field("myFieldName");
  * </pre>
  * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
- * typed objects at all times. In this case we do incur the deserialization cost, however,
- * Ignite will only deserialize on the first access and will cache the deserialized object,
- * so it does not have to be deserialized again:
+ * typed objects at all times. In this case we do incur the deserialization cost. However, if
+ * {@link PortableMarshaller#isKeepDeserialized()} is {@code true} then Ignite will only deserialize on the first access
+ * and will cache the deserialized object, so it does not have to be deserialized again:
  * <pre name=code class=java>
- * CacheProjection&lt;MyKey.class, MyValue.class&gt; prj =
- *     cache.projection(MyKey.class, MyValue.class);
+ * IgniteCache&lt;MyKey.class, MyValue.class&gt; cache = grid.cache(null);
  *
- * MyValue val = prj.get(new MyKey());
+ * MyValue val = cache.get(new MyKey());
  *
  * // Normal java getter.
  * String fieldVal = val.getMyFieldName();
@@ -80,7 +78,7 @@ import java.util.Date;
  * and still wanted to work with binary portable format for values, then we would declare cache projection
  * as follows:
  * <pre name=code class=java>
- * CacheProjection&lt;Integer.class, GridPortableObject.class&gt; prj = cache.keepPortable();
+ * IgniteCache&lt;Integer.class, PortableObject&gt; prj = cache.withKeepPortable();
  * </pre>
  * <h1 class="header">Automatic Portable Types</h1>
  * Note that only portable classes are converted to {@link PortableObject} format. Following
@@ -109,14 +107,14 @@ import java.util.Date;
  * <h1 class="header">Building Portable Objects</h1>
  * Ignite comes with {@link PortableBuilder} which allows to build portable objects dynamically:
  * <pre name=code class=java>
- * GridPortableBuilder builder = Ignition.ignite().portables().builder();
+ * PortableBuilder builder = Ignition.ignite().portables().builder();
  *
  * builder.typeId("MyObject");
  *
  * builder.stringField("fieldA", "A");
  * build.intField("fieldB", "B");
  *
- * GridPortableObject portableObj = builder.build();
+ * PortableObject portableObj = builder.build();
  * </pre>
  * For the cases when class definition is present
  * in the class path, it is also possible to populate a standard POJO and then
@@ -127,15 +125,15 @@ import java.util.Date;
  * obj.setFieldA("A");
  * obj.setFieldB(123);
  *
- * GridPortableObject portableObj = Ignition.ignite().portables().toPortable(obj);
+ * PortableObject portableObj = Ignition.ignite().portables().toPortable(obj);
  * </pre>
  * NOTE: you don't need to convert typed objects to portable format before storing
  * them in cache, Ignite will do that automatically.
  * <h1 class="header">Portable Metadata</h1>
  * Even though Ignite portable protocol only works with hash codes for type and field names
  * to achieve better performance, Ignite provides metadata for all portable types which
- * can be queried ar runtime via any of the {@link IgnitePortables#metadata(Class) GridPortables.metadata(...)}
- * methods. Having metadata also allows for proper formatting of {@code GridPortableObject.toString()} method,
+ * can be queried ar runtime via any of the {@link IgnitePortables#metadata(Class)}
+ * methods. Having metadata also allows for proper formatting of {@link PortableObject#toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  * <h1 class="header">Dynamic Structure Changes</h1>
  * Since objects are always cached in the portable binary format, server does not need to
@@ -161,7 +159,7 @@ import java.util.Date;
  * ...
  * &lt;!-- Explicit portable objects configuration. --&gt;
  * &lt;property name="marshaller"&gt;
- *     &lt;bean class="org.gridgain.grid.marshaller.portable.PortableMarshaller"&gt;
+ *     &lt;bean class="org.apache.ignite.marshaller.portable.PortableMarshaller"&gt;
  *         &lt;property name="classNames"&gt;
  *             &lt;list&gt;
  *                 &lt;value&gt;my.package.for.portable.objects.*&lt;/value&gt;
@@ -200,7 +198,7 @@ import java.util.Date;
  *         ...
  *         &lt;property name="typeConfigurations"&gt;
  *             &lt;list&gt;
- *                 &lt;bean class="org.apache.ignite.portables.PortableTypeConfiguration"&gt;
+ *                 &lt;bean class="org.apache.ignite.portable.PortableTypeConfiguration"&gt;
  *                     &lt;property name="className" value="org.apache.ignite.examples.client.portable.EmployeeKey"/&gt;
  *                     &lt;property name="affinityKeyFieldName" value="organizationId"/&gt;
  *                 &lt;/bean&gt;
@@ -214,19 +212,19 @@ import java.util.Date;
  * Serialization and deserialization works out-of-the-box in Ignite. However, you can provide your own custom
  * serialization logic by optionally implementing {@link PortableMarshalAware} interface, like so:
  * <pre name=code class=java>
- * public class Address implements GridPortableMarshalAware {
+ * public class Address implements PortableMarshalAware {
  *     private String street;
  *     private int zip;
  *
  *     // Empty constructor required for portable deserialization.
  *     public Address() {}
  *
- *     &#64;Override public void writePortable(GridPortableWriter writer) throws GridPortableException {
+ *     &#64;Override public void writePortable(PortableWriter writer) throws PortableException {
  *         writer.writeString("street", street);
  *         writer.writeInt("zip", zip);
  *     }
  *
- *     &#64;Override public void readPortable(GridPortableReader reader) throws GridPortableException {
+ *     &#64;Override public void readPortable(PortableReader reader) throws PortableException {
  *         street = reader.readString("street");
  *         zip = reader.readInt("zip");
  *     }

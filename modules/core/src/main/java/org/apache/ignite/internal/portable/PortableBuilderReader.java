@@ -56,7 +56,7 @@ class PortableBuilderReader {
         arr = objImpl.array();
         pos = objImpl.start();
 
-        // TODO: GG-10396 - Is class loader needed here?
+        // TODO: IGNITE-1272 - Is class loader needed here?
         reader = new PortableReaderExImpl(portableContext(), arr, pos, null);
     }
 

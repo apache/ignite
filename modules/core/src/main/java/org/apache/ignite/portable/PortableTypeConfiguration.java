@@ -1,15 +1,24 @@
 /*
- *  Copyright (C) GridGain Systems. All Rights Reserved.
- *  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.portable;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.portable.*;
 
 import java.sql.*;
 import java.util.*;
@@ -17,12 +26,11 @@ import java.util.*;
 /**
  * Defines configuration properties for a specific portable type. Providing per-type
  * configuration is optional, as it is generally enough, and also optional, to provide global portable
- * configuration using {@link org.gridgain.grid.marshaller.portable.PortableMarshaller#setClassNames(Collection)}.
+ * configuration using {@link PortableMarshaller#setClassNames(Collection)}.
  * However, this class allows you to change configuration properties for a specific
  * portable type without affecting configuration for other portable types.
  * <p>
- * Per-type portable configuration can be specified in
- * {@link org.gridgain.grid.marshaller.portable.PortableMarshaller#getTypeConfigurations()} method.
+ * Per-type portable configuration can be specified in {@link PortableMarshaller#getTypeConfigurations()} method.
  */
 public class PortableTypeConfiguration {
     /** Class name. */
@@ -131,7 +139,7 @@ public class PortableTypeConfiguration {
 
     /**
      * Defines whether meta data is collected for this type. If provided, this value will override
-     * {@link org.gridgain.grid.marshaller.portable.PortableMarshaller#isMetaDataEnabled()} property.
+     * {@link PortableMarshaller#isMetaDataEnabled()} property.
      *
      * @return Whether meta data is collected.
      */
@@ -148,7 +156,7 @@ public class PortableTypeConfiguration {
 
     /**
      * Defines whether {@link PortableObject} should cache deserialized instance. If provided,
-     * this value will override {@link org.gridgain.grid.marshaller.portable.PortableMarshaller#isKeepDeserialized()}
+     * this value will override {@link PortableMarshaller#isKeepDeserialized()}
      * property.
      *
      * @return Whether deserialized value is kept.

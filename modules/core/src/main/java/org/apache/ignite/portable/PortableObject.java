@@ -1,13 +1,24 @@
 /*
- *  Copyright (C) GridGain Systems. All Rights Reserved.
- *  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.portable;
+
+import org.apache.ignite.*;
+import org.apache.ignite.marshaller.portable.*;
 
 import org.jetbrains.annotations.*;
 
@@ -23,17 +34,15 @@ import java.util.*;
  * <b>NOTE:</b> user does not need to (and should not) implement this interface directly.
  * <p>
  * To work with the portable format directly, user should create a cache projection
- * over {@code GridPortableObject} class and then retrieve individual fields as needed:
+ * over {@code PortableObject} class and then retrieve individual fields as needed:
  * <pre name=code class=java>
- * CacheProjection&lt;GridPortableObject.class, GridPortableObject.class&gt; prj =
- *     cache.projection(GridPortableObject.class, GridPortableObject.class);
+ * IgniteCache&lt;PortableObject, PortableObject&gt; prj = cache.withKeepPortable();
  *
  * // Convert instance of MyKey to portable format.
- * // We could also use GridPortableBuilder to create
- * // the key in portable format directly.
- * GridPortableObject key = grid.portables().toPortable(new MyKey());
+ * // We could also use GridPortableBuilder to create the key in portable format directly.
+ * PortableObject key = grid.portables().toPortable(new MyKey());
  *
- * GridPortableObject val = prj.get(key);
+ * PortableObject val = prj.get(key);
  *
  * String field = val.field("myFieldName");
  * </pre>
@@ -41,10 +50,9 @@ import java.util.*;
  * the keys are concrete deserialized objects and the values are returned in portable
  * format, like so:
  * <pre name=code class=java>
- * CacheProjection&lt;MyKey.class, GridPortableObject.class&gt; prj =
- *     cache.projection(MyKey.class, GridPortableObject.class);
+ * IgniteCache&lt;MyKey, PortableObject&gt; prj = cache.withKeepPortable();
  *
- * GridPortableObject val = prj.get(new MyKey());
+ * PortableObject val = prj.get(new MyKey());
  *
  * String field = val.field("myFieldName");
  * </pre>
@@ -53,14 +61,13 @@ import java.util.*;
  * it may be very cheap to deserialize the keys, but not the values.
  * <p>
  * And finally, if we have class definitions in the classpath, we may choose to work with deserialized
- * typed objects at all times. In this case we do incur the deserialization cost, however,
- * Ignite will only deserialize on the first access and will cache the deserialized object,
- * so it does not have to be deserialized again:
+ * typed objects at all times. In this case we do incur the deserialization cost. However, if
+ * {@link PortableMarshaller#isKeepDeserialized()} is {@code true} then Ignite will only deserialize on the first access
+ * and will cache the deserialized object, so it does not have to be deserialized again:
  * <pre name=code class=java>
- * CacheProjection&lt;MyKey.class, MyValue.class&gt; prj =
- *     cache.projection(MyKey.class, MyValue.class);
+ * IgniteCache&lt;MyKey.class, MyValue.class&gt; cache = grid.cache(null);
  *
- * MyValue val = prj.get(new MyKey());
+ * MyValue val = cache.get(new MyKey());
  *
  * // Normal java getter.
  * String fieldVal = val.getMyFieldName();
@@ -84,12 +91,12 @@ import java.util.*;
  * <h1 class="header">Building Portable Objects</h1>
  * Ignite comes with {@link PortableBuilder} which allows to build portable objects dynamically:
  * <pre name=code class=java>
- * GridPortableBuilder builder = Ignition.ignite().portables().builder("org.project.MyObject");
+ * PortableBuilder builder = Ignition.ignite().portables().builder("org.project.MyObject");
  *
  * builder.setField("fieldA", "A");
  * builder.setField("fieldB", "B");
  *
- * GridPortableObject portableObj = builder.build();
+ * PortableObject portableObj = builder.build();
  * </pre>
  * For the cases when class definition is present
  * in the class path, it is also possible to populate a standard POJO and then
@@ -100,13 +107,13 @@ import java.util.*;
  * obj.setFieldA("A");
  * obj.setFieldB(123);
  *
- * GridPortableObject portableObj = Ignition.ignite().portables().toPortable(obj);
+ * PortableObject portableObj = Ignition.ignite().portables().toPortable(obj);
  * </pre>
  * <h1 class="header">Portable Metadata</h1>
  * Even though Ignite portable protocol only works with hash codes for type and field names
  * to achieve better performance, Ignite provides metadata for all portable types which
- * can be queried ar runtime via any of the {@link GridPortables#metadata(Class) GridPortables.metadata(...)}
- * methods. Having metadata also allows for proper formatting of {@code GridPortableObject.toString()} method,
+ * can be queried ar runtime via any of the {@link IgnitePortables#metadata(Class)}
+ * methods. Having metadata also allows for proper formatting of {@code PortableObject.toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  */
 public interface PortableObject extends Serializable, Cloneable {

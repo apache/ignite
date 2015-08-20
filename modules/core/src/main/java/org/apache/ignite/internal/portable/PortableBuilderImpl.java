@@ -134,7 +134,7 @@ public class PortableBuilderImpl implements PortableBuilder {
             Class cls;
 
             try {
-                // TODO: GG-10396 - Is class loader needed here?
+                // TODO: IGNITE-1272 - Is class loader needed here?
                 cls = U.forName(clsNameToWrite, null);
             }
             catch (ClassNotFoundException e) {

@@ -32,8 +32,7 @@ import java.util.*;
  * Implementation of {@link org.apache.ignite.marshaller.Marshaller} that lets to serialize and deserialize all objects
  * in the portable format.
  * <p>
- * {@code PortableMarshaller} is tested only on Java HotSpot VM on other VMs
- * it could yield unexpected results.
+ * {@code PortableMarshaller} is tested only on Java HotSpot VM on other VMs it could yield unexpected results.
  * <p>
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
@@ -56,7 +55,7 @@ import java.util.*;
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.gridgain.grid.marshaller.portable.PortableMarshaller"&gt;
+ *         &lt;bean class="org.apache.ignite.marshaller.portable.PortableMarshaller"&gt;
  *            ...
  *         &lt;/bean&gt;
  *     &lt;/property&gt;

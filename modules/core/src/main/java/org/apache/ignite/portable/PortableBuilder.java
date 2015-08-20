@@ -17,27 +17,28 @@
 
 package org.apache.ignite.portable;
 
+import org.apache.ignite.*;
+
 import org.jetbrains.annotations.*;
 
 /**
- * Portable object builder. Provides ability to build portable objects dynamically
- * without having class definitions.
+ * Portable object builder. Provides ability to build portable objects dynamically without having class definitions.
  * <p>
  * Here is an example of how a portable object can be built dynamically:
  * <pre name=code class=java>
- * GridPortableBuilder builder = Ignition.ignite().portables().builder("org.project.MyObject");
+ * PortableBuilder builder = Ignition.ignite().portables().builder("org.project.MyObject");
  *
  * builder.setField("fieldA", "A");
  * builder.setField("fieldB", "B");
  *
- * GridPortableObject portableObj = builder.build();
+ * PortableObject portableObj = builder.build();
  * </pre>
  *
  * <p>
  * Also builder can be initialized by existing portable object. This allows changing some fields without affecting
  * other fields.
  * <pre name=code class=java>
- * GridPortableBuilder builder = Ignition.ignite().portables().builder(person);
+ * PortableBuilder builder = Ignition.ignite().portables().builder(person);
  *
  * builder.setField("name", "John");
  *
@@ -50,8 +51,8 @@ import org.jetbrains.annotations.*;
  * for example:
  *
  * <pre name=code class=java>
- * GridPortableBuilder personBuilder = grid.portables().createBuilder(personPortableObj);
- * GridPortableBuilder addressBuilder = personBuilder.setField("address");
+ * PortableBuilder personBuilder = grid.portables().createBuilder(personPortableObj);
+ * PortableBuilder addressBuilder = personBuilder.setField("address");
  *
  * addressBuilder.setField("city", "New York");
  *
@@ -61,9 +62,9 @@ import org.jetbrains.annotations.*;
  * String city = personPortableObj.getField("address").getField("city");
  * </pre>
  *
- * @see GridPortables#builder(int)
- * @see GridPortables#builder(String)
- * @see GridPortables#builder(PortableObject)
+ * @see IgnitePortables#builder(int)
+ * @see IgnitePortables#builder(String)
+ * @see IgnitePortables#builder(PortableObject)
  */
 public interface PortableBuilder {
     /**

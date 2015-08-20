@@ -47,7 +47,7 @@ class PortableEnumArrayLazyValue extends PortableAbstractLazyValue {
             Class cls;
 
             try {
-                // TODO: GG-10396 - Is class loader needed here?
+                // TODO: IGNITE-1272 - Is class loader needed here?
                 cls = U.forName(reader.readString(), null);
             }
             catch (ClassNotFoundException e) {

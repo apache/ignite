@@ -255,7 +255,7 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
         Object obj0 = obj;
 
         if (obj0 == null) {
-            // TODO: GG-10396 - Deserialize with proper class loader.
+            // TODO: IGNITE-1272 - Deserialize with proper class loader.
             PortableReaderExImpl reader = new PortableReaderExImpl(ctx, arr, start, null);
 
             obj0 = reader.deserialize();

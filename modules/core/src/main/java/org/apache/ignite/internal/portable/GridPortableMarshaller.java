@@ -291,7 +291,7 @@ public class GridPortableMarshaller {
      * @return Reader.
      */
     public PortableReaderExImpl reader(PortableInputStream in) {
-        // TODO: GG-10396 - Is class loader needed here?
+        // TODO: IGNITE-1272 - Is class loader needed here?
         return new PortableReaderExImpl(ctx, in, in.position(), null);
     }
 
