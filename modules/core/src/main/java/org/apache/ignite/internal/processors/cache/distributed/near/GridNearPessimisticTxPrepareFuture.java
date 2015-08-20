@@ -229,6 +229,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     cctx.io().send(node, req, tx.ioPolicy());
                 }
                 catch (ClusterTopologyCheckedException e) {
+                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(topVer));
+
                     fut.onNodeLeft(e);
                 }
                 catch (IgniteCheckedException e) {
