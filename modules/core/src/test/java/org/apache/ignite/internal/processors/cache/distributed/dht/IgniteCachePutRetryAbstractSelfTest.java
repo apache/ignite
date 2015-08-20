@@ -54,6 +54,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
 
         cfg.setAtomicWriteOrderMode(writeOrderMode());
         cfg.setBackups(1);
+        cfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         return cfg;
     }
