@@ -350,14 +350,37 @@ public class Controls {
      *
      * @param title Title.
      * @param node Node.
+     * @param collapsible Collapsible flag.
      * @return New {@code TitledPane} instance.
      */
-    public static TitledPane titledPane(String title, Node node) {
+    public static TitledPane titledPane(String title, Node node, boolean collapsible) {
         TitledPane tp = new TitledPane(title, node);
 
+        tp.setCollapsible(collapsible);
         tp.setExpanded(false);
 
         return tp;
+    }
+
+    /**
+     * Create list view.
+     *
+     * @param tip Tooltip text.
+     * @param cb Callback function for list view cell data binding.
+     * @param <T> Type of showed by viewer element.
+     * @return New {@code ListView} instance.
+     */
+    public static <T> ListView<T> list(String tip, Callback<T, ObservableValue<Boolean>> cb) {
+        ListView lst = new ListView<>();
+
+        lst.setCellFactory(CheckBoxListCell.forListView(cb));
+
+        lst.setMinHeight(70);
+        lst.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+        tooltip(lst, tip);
+
+        return lst;
     }
 
     /**
