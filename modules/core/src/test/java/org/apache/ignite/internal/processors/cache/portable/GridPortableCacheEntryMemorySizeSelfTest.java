@@ -28,7 +28,7 @@ public class GridPortableCacheEntryMemorySizeSelfTest extends GridCacheEntryMemo
         marsh.setContext(new MarshallerContextTestImpl(null));
 
         PortableContext pCtx = new PortableContext(new PortableMetaDataHandler() {
-            @Override public void addMeta(int typeId, PortableMetaDataImpl meta) throws PortableException {
+            @Override public void addMeta(int typeId, PortableMetadata meta) throws PortableException {
                 // No-op
             }
 

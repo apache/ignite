@@ -30,7 +30,7 @@ public interface PortableMetaDataHandler {
      * @param meta Meta data.
      * @throws PortableException In case of error.
      */
-    public void addMeta(int typeId, PortableMetaDataImpl meta) throws PortableException;
+    public void addMeta(int typeId, PortableMetadata meta) throws PortableException;
 
     /**
      * Gets meta data for provided type ID.

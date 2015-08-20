@@ -54,7 +54,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
     /** */
     protected static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, PortableMetaDataImpl meta) {
+        @Override public void addMeta(int typeId, PortableMetadata meta) {
             // No-op.
         }
 

@@ -31,7 +31,7 @@ import java.util.*;
 public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, PortableMetaDataImpl meta) {
+        @Override public void addMeta(int typeId, PortableMetadata meta) {
             // No-op.
         }
 

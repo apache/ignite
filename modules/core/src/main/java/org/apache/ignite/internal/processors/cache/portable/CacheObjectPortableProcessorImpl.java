@@ -98,7 +98,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
     private IgnitePortables portables;
 
     /** Metadata updates collected before metadata cache is initialized. */
-    private final Map<Integer, PortableMetaDataImpl> metaBuf = new ConcurrentHashMap<>();
+    private final Map<Integer, PortableMetadata> metaBuf = new ConcurrentHashMap<>();
 
     /** */
     private UUID metaCacheQryId;
@@ -148,7 +148,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
      */
     @SuppressWarnings("StringEquality")
     public static int fieldTypeId(String typeName) {
-        for (int i = 0; i < FIELD_TYPE_NAMES.length ; i++) {
+        for (int i = 0; i < FIELD_TYPE_NAMES.length; i++) {
             String typeName0 = FIELD_TYPE_NAMES[i];
 
             if (typeName.equals(typeName0))
@@ -202,10 +202,10 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
     @Override public void start() throws IgniteCheckedException {
         if (marsh instanceof PortableMarshaller) {
             PortableMetaDataHandler metaHnd = new PortableMetaDataHandler() {
-                @Override public void addMeta(int typeId, PortableMetaDataImpl newMeta)
+                @Override public void addMeta(int typeId, PortableMetadata newMeta)
                     throws PortableException {
                     if (metaDataCache == null) {
-                        PortableMetaDataImpl oldMeta = metaBuf.get(typeId);
+                        PortableMetadata oldMeta = metaBuf.get(typeId);
 
                         if (oldMeta == null || checkMeta(typeId, oldMeta, newMeta, null)) {
                             synchronized (this) {
@@ -213,11 +213,12 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
 
                                 if (checkMeta(typeId, oldMeta, newMeta, fields)) {
                                     newMeta = new PortableMetaDataImpl(newMeta.typeName(),
-                                                                           fields,
-                                                                           newMeta.affinityKeyFieldName());
+                                        fields,
+                                        newMeta.affinityKeyFieldName());
 
                                     metaBuf.put(typeId, newMeta);
-                                } else
+                                }
+                                else
                                     return;
                             }
 
@@ -225,7 +226,8 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
                                 return;
                             else
                                 metaBuf.remove(typeId);
-                        } else
+                        }
+                        else
                             return;
                     }
 
@@ -307,7 +309,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
 
         startLatch.countDown();
 
-        for (Map.Entry<Integer, PortableMetaDataImpl> e : metaBuf.entrySet())
+        for (Map.Entry<Integer, PortableMetadata> e : metaBuf.entrySet())
             addMeta(e.getKey(), e.getValue());
 
         metaBuf.clear();
@@ -649,8 +651,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
 
     /** {@inheritDoc} */
     @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         if (!((CacheObjectPortableContext)ctx).portableEnabled() || portableMarsh == null)
             return super.unmarshal(ctx, bytes, clsLdr);
 
@@ -676,7 +677,8 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj) {
+    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj,
+        boolean userObj) {
         if (!((CacheObjectPortableContext)ctx).portableEnabled())
             return super.toCacheObject(ctx, obj, userObj);
 
@@ -760,20 +762,20 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
             if (!oldMeta.typeName().equals(newMeta.typeName())) {
                 throw new PortableException(
                     "Two portable types have duplicate type ID [" +
-                    "typeId=" + typeId +
-                    ", typeName1=" + oldMeta.typeName() +
-                    ", typeName2=" + newMeta.typeName() +
-                    ']'
+                        "typeId=" + typeId +
+                        ", typeName1=" + oldMeta.typeName() +
+                        ", typeName2=" + newMeta.typeName() +
+                        ']'
                 );
             }
 
             if (!F.eq(oldMeta.affinityKeyFieldName(), newMeta.affinityKeyFieldName())) {
                 throw new PortableException(
                     "Portable type has different affinity key fields on different clients [" +
-                    "typeName=" + newMeta.typeName() +
-                    ", affKeyFieldName1=" + oldMeta.affinityKeyFieldName() +
-                    ", affKeyFieldName2=" + newMeta.affinityKeyFieldName() +
-                    ']'
+                        "typeName=" + newMeta.typeName() +
+                        ", affKeyFieldName1=" + oldMeta.affinityKeyFieldName() +
+                        ", affKeyFieldName2=" + newMeta.affinityKeyFieldName() +
+                        ']'
                 );
             }
 
@@ -790,11 +792,11 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
                 if (!typeName.equals(e.getValue())) {
                     throw new PortableException(
                         "Portable field has different types on different clients [" +
-                        "typeName=" + newMeta.typeName() +
-                        ", fieldName=" + e.getKey() +
-                        ", fieldTypeName1=" + typeName +
-                        ", fieldTypeName2=" + e.getValue() +
-                        ']'
+                            "typeName=" + newMeta.typeName() +
+                            ", fieldName=" + e.getKey() +
+                            ", fieldTypeName1=" + typeName +
+                            ", fieldTypeName2=" + e.getValue() +
+                            ']'
                     );
                 }
             }
@@ -889,7 +891,8 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
      */
     class MetaDataEntryListener implements CacheEntryUpdatedListener<PortableMetaDataKey, PortableMetadata> {
         /** {@inheritDoc} */
-        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends PortableMetaDataKey, ? extends PortableMetadata>> evts)
+        @Override public void onUpdated(
+            Iterable<CacheEntryEvent<? extends PortableMetaDataKey, ? extends PortableMetadata>> evts)
             throws CacheEntryListenerException {
             for (CacheEntryEvent<? extends PortableMetaDataKey, ? extends PortableMetadata> evt : evts) {
                 assert evt.getEventType() == EventType.CREATED || evt.getEventType() == EventType.UPDATED : evt;
