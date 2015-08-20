@@ -728,12 +728,13 @@ public class SchemaImportApp extends Application {
      * Go to &quot;Generate XML And POJOs&quot; panel or generate XML and POJOs.
      */
     private void next() {
-        if (rootPane.getCenter() == connLayerPnl)
+        if (rootPane.getCenter() == connLayerPnl) {
             if (checkInput(jdbcDrvJarTf, true, "Path to JDBC driver is not specified!") &&
                 checkInput(jdbcDrvClsTf, true, "JDBC driver class name is not specified!") &&
                 checkInput(jdbcUrlTf, true, "JDBC URL connection string is not specified!") &&
                 checkInput(userTf, true, "User name is not specified!"))
                 fill();
+        }
         else
             generate();
     }
