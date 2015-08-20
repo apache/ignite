@@ -46,21 +46,7 @@ import java.util.*;
  *
  * String field = val.field("myFieldName");
  * </pre>
- * Alternatively, we could also choose a hybrid approach, where, for example,
- * the keys are concrete deserialized objects and the values are returned in portable
- * format, like so:
- * <pre name=code class=java>
- * IgniteCache&lt;MyKey, PortableObject&gt; prj = cache.withKeepPortable();
- *
- * PortableObject val = prj.get(new MyKey());
- *
- * String field = val.field("myFieldName");
- * </pre>
- * We could also have the values as concrete deserialized objects and the keys in portable format,
- * but such use case is a lot less common because cache keys are usually a lot smaller than values, and
- * it may be very cheap to deserialize the keys, but not the values.
- * <p>
- * And finally, if we have class definitions in the classpath, we may choose to work with deserialized
+ * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
  * typed objects at all times. In this case we do incur the deserialization cost. However, if
  * {@link PortableMarshaller#isKeepDeserialized()} is {@code true} then Ignite will only deserialize on the first access
  * and will cache the deserialized object, so it does not have to be deserialized again:
