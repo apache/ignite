@@ -61,7 +61,7 @@ public class CacheObjectPortableContext extends CacheObjectContext {
         if (o == null)
             return null;
 
-        if (keepPortable || !portableEnabled() || !GridPortableUtils.isPortableOrCollectionType(o.getClass()))
+        if (keepPortable || !portableEnabled() || !PortableUtils.isPortableOrCollectionType(o.getClass()))
             return o;
 
         return unwrapPortable(o);

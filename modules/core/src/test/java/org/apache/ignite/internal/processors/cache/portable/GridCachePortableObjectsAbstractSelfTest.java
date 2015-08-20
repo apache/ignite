@@ -119,10 +119,10 @@ public abstract class GridCachePortableObjectsAbstractSelfTest extends GridCommo
                 Object val = CU.value(e.rawGet(), c.context(), false);
 
                 if (key instanceof PortableObject)
-                    assert ((GridPortableObjectImpl)key).detached() : val;
+                    assert ((PortableObjectImpl)key).detached() : val;
 
                 if (val instanceof PortableObject)
-                    assert ((GridPortableObjectImpl)val).detached() : val;
+                    assert ((PortableObjectImpl)val).detached() : val;
             }
         }
 

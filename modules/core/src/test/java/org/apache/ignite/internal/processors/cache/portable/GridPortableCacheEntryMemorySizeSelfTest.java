@@ -15,10 +15,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.plugin.*;
 import org.apache.ignite.portable.*;
-
-import java.util.*;
 
 /**
  *
@@ -30,8 +27,8 @@ public class GridPortableCacheEntryMemorySizeSelfTest extends GridCacheEntryMemo
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        GridPortableContext pCtx = new GridPortableContext(new GridPortableMetaDataHandler() {
-            @Override public void addMeta(int typeId, GridPortableMetaDataImpl meta) throws PortableException {
+        PortableContext pCtx = new PortableContext(new PortableMetaDataHandler() {
+            @Override public void addMeta(int typeId, PortableMetaDataImpl meta) throws PortableException {
                 // No-op
             }
 

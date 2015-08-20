@@ -20,7 +20,6 @@ package org.apache.ignite.internal.portable;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.plugin.*;
 import org.apache.ignite.portable.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -31,8 +30,8 @@ import java.util.*;
  */
 public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final GridPortableMetaDataHandler META_HND = new GridPortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, GridPortableMetaDataImpl meta) {
+    private static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
+        @Override public void addMeta(int typeId, PortableMetaDataImpl meta) {
             // No-op.
         }
 
@@ -44,8 +43,8 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
     /**
      * @return Portable context.
      */
-    private GridPortableContext portableContext() {
-        return new GridPortableContext(META_HND, null);
+    private PortableContext portableContext() {
+        return new PortableContext(META_HND, null);
     }
 
     /**
@@ -62,7 +61,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNames() throws Exception {
-        GridPortableContext ctx = portableContext();
+        PortableContext ctx = portableContext();
 
         PortableMarshaller marsh = portableMarshaller();
 
@@ -86,7 +85,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesWithMapper() throws Exception {
-        GridPortableContext ctx = portableContext();
+        PortableContext ctx = portableContext();
 
         PortableMarshaller marsh = portableMarshaller();
 
@@ -128,7 +127,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurations() throws Exception {
-        GridPortableContext ctx = portableContext();
+        PortableContext ctx = portableContext();
 
         PortableMarshaller marsh = portableMarshaller();
 
@@ -152,7 +151,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsWithGlobalMapper() throws Exception {
-        GridPortableContext ctx = portableContext();
+        PortableContext ctx = portableContext();
 
         PortableMarshaller marsh = portableMarshaller();
 
@@ -194,7 +193,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsWithNonGlobalMapper() throws Exception {
-        GridPortableContext ctx = portableContext();
+        PortableContext ctx = portableContext();
 
         PortableMarshaller marsh = portableMarshaller();
 
@@ -236,7 +235,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOverride() throws Exception {
-        GridPortableContext ctx = portableContext();
+        PortableContext ctx = portableContext();
 
         PortableMarshaller marsh = portableMarshaller();
 
@@ -278,7 +277,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesJar() throws Exception {
-        GridPortableContext ctx = portableContext();
+        PortableContext ctx = portableContext();
 
         PortableMarshaller marsh = portableMarshaller();
 
@@ -301,7 +300,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesWithMapperJar() throws Exception {
-        GridPortableContext ctx = portableContext();
+        PortableContext ctx = portableContext();
 
         PortableMarshaller marsh = portableMarshaller();
 
@@ -340,7 +339,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsJar() throws Exception {
-        GridPortableContext ctx = portableContext();
+        PortableContext ctx = portableContext();
 
         PortableMarshaller marsh = portableMarshaller();
 
@@ -363,7 +362,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsWithGlobalMapperJar() throws Exception {
-        GridPortableContext ctx = portableContext();
+        PortableContext ctx = portableContext();
 
         PortableMarshaller marsh = portableMarshaller();
 
@@ -402,7 +401,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsWithNonGlobalMapperJar() throws Exception {
-        GridPortableContext ctx = portableContext();
+        PortableContext ctx = portableContext();
 
         PortableMarshaller marsh = portableMarshaller();
 
@@ -441,7 +440,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOverrideJar() throws Exception {
-        GridPortableContext ctx = portableContext();
+        PortableContext ctx = portableContext();
 
         PortableMarshaller marsh = portableMarshaller();
 

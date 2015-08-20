@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
-import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -86,7 +85,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
     };
 
     /** */
-    private GridPortableContext portableCtx;
+    private PortableContext portableCtx;
 
     /** */
     private Marshaller marsh;
@@ -99,7 +98,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
     private IgnitePortables portables;
 
     /** Metadata updates collected before metadata cache is initialized. */
-    private final Map<Integer, GridPortableMetaDataImpl> metaBuf = new ConcurrentHashMap<>();
+    private final Map<Integer, PortableMetaDataImpl> metaBuf = new ConcurrentHashMap<>();
 
     /** */
     private UUID metaCacheQryId;
@@ -202,18 +201,18 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (marsh instanceof PortableMarshaller) {
-            GridPortableMetaDataHandler metaHnd = new GridPortableMetaDataHandler() {
-                @Override public void addMeta(int typeId, GridPortableMetaDataImpl newMeta)
+            PortableMetaDataHandler metaHnd = new PortableMetaDataHandler() {
+                @Override public void addMeta(int typeId, PortableMetaDataImpl newMeta)
                     throws PortableException {
                     if (metaDataCache == null) {
-                        GridPortableMetaDataImpl oldMeta = metaBuf.get(typeId);
+                        PortableMetaDataImpl oldMeta = metaBuf.get(typeId);
 
                         if (oldMeta == null || checkMeta(typeId, oldMeta, newMeta, null)) {
                             synchronized (this) {
                                 Map<String, String> fields = new HashMap<>();
 
                                 if (checkMeta(typeId, oldMeta, newMeta, fields)) {
-                                    newMeta = new GridPortableMetaDataImpl(newMeta.typeName(),
+                                    newMeta = new PortableMetaDataImpl(newMeta.typeName(),
                                                                            fields,
                                                                            newMeta.affinityKeyFieldName());
 
@@ -243,7 +242,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
 
             PortableMarshaller pMarh0 = (PortableMarshaller)marsh;
 
-            portableCtx = new GridPortableContext(metaHnd, ctx.gridName());
+            portableCtx = new PortableContext(metaHnd, ctx.gridName());
 
             IgniteUtils.invoke(PortableMarshaller.class, pMarh0, "setPortableContext", portableCtx);
 
@@ -308,7 +307,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
 
         startLatch.countDown();
 
-        for (Map.Entry<Integer, GridPortableMetaDataImpl> e : metaBuf.entrySet())
+        for (Map.Entry<Integer, PortableMetaDataImpl> e : metaBuf.entrySet())
             addMeta(e.getKey(), e.getValue());
 
         metaBuf.clear();
@@ -381,7 +380,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
         if (type != CacheObject.TYPE_BYTE_ARR) {
             assert size > 0 : size;
 
-            GridPortableInputStream in = new GridPortableOffheapInputStream(ptr, size, forceHeap);
+            PortableInputStream in = new PortableOffheapInputStream(ptr, size, forceHeap);
 
             return portableMarsh.unmarshal(in);
         }
@@ -394,7 +393,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
         if (obj == null)
             return null;
 
-        if (GridPortableUtils.isPortableType(obj.getClass()))
+        if (PortableUtils.isPortableType(obj.getClass()))
             return obj;
 
         if (obj instanceof Object[]) {
@@ -444,7 +443,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
 
         assert obj0 instanceof PortableObject;
 
-        ((GridPortableObjectImpl)obj0).detachAllowed(true);
+        ((PortableObjectImpl)obj0).detachAllowed(true);
 
         return obj0;
     }
@@ -458,24 +457,24 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
 
     /** {@inheritDoc} */
     @Override public PortableBuilder builder(int typeId) {
-        return new GridPortableBuilderImpl(portableCtx, typeId);
+        return new PortableBuilderImpl(portableCtx, typeId);
     }
 
     /** {@inheritDoc} */
     @Override public PortableBuilder builder(String clsName) {
-        return new GridPortableBuilderImpl(portableCtx, clsName);
+        return new PortableBuilderImpl(portableCtx, clsName);
     }
 
     /** {@inheritDoc} */
     @Override public PortableBuilder builder(PortableObject portableObj) {
-        return GridPortableBuilderImpl.wrap(portableObj);
+        return PortableBuilderImpl.wrap(portableObj);
     }
 
     /** {@inheritDoc} */
     @Override public void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
         Map<String, Integer> fieldTypeIds) throws PortableException {
         portableCtx.updateMetaData(typeId,
-            new GridPortableMetaDataImpl(typeName, fieldTypeNames(fieldTypeIds), affKeyFieldName));
+            new PortableMetaDataImpl(typeName, fieldTypeNames(fieldTypeIds), affKeyFieldName));
     }
 
     /** {@inheritDoc} */
@@ -613,7 +612,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
     /**
      * @return Portable context.
      */
-    public GridPortableContext portableContext() {
+    public PortableContext portableContext() {
         return portableCtx;
     }
 
@@ -670,7 +669,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
             obj = toPortable(obj);
 
             if (obj instanceof PortableObject)
-                return (GridPortableObjectImpl)obj;
+                return (PortableObjectImpl)obj;
         }
 
         return toCacheKeyObject0(obj, userObj);
@@ -687,15 +686,15 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
         obj = toPortable(obj);
 
         if (obj instanceof PortableObject)
-            return (GridPortableObjectImpl)obj;
+            return (PortableObjectImpl)obj;
 
         return toCacheObject0(obj, userObj);
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
-        if (type == GridPortableObjectImpl.TYPE_PORTABLE)
-            return new GridPortableObjectImpl(portableContext(), bytes, 0);
+        if (type == PortableObjectImpl.TYPE_PORTABLE)
+            return new PortableObjectImpl(portableContext(), bytes, 0);
 
         return super.toCacheObject(ctx, type, bytes);
     }
@@ -708,8 +707,8 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
 
         Object val = unmarshal(valPtr, !tmp);
 
-        if (val instanceof GridPortableObjectOffheapImpl)
-            return (GridPortableObjectOffheapImpl)val;
+        if (val instanceof PortableObjectOffheapImpl)
+            return (PortableObjectOffheapImpl)val;
 
         return new CacheObjectImpl(val, null);
     }
@@ -719,8 +718,8 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
         if (!((CacheObjectPortableContext)ctx.cacheObjectContext()).portableEnabled())
             return obj;
 
-        if (obj instanceof GridPortableObjectOffheapImpl)
-            return ((GridPortableObjectOffheapImpl)obj).heapCopy();
+        if (obj instanceof PortableObjectOffheapImpl)
+            return ((PortableObjectOffheapImpl)obj).heapCopy();
 
         return obj;
     }
@@ -752,8 +751,8 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
         PortableMetadata newMeta, @Nullable Map<String, String> fields) throws PortableException {
         assert newMeta != null;
 
-        Map<String, String> oldFields = oldMeta != null ? ((GridPortableMetaDataImpl)oldMeta).fieldsMeta() : null;
-        Map<String, String> newFields = ((GridPortableMetaDataImpl)newMeta).fieldsMeta();
+        Map<String, String> oldFields = oldMeta != null ? ((PortableMetaDataImpl)oldMeta).fieldsMeta() : null;
+        Map<String, String> newFields = ((PortableMetaDataImpl)newMeta).fieldsMeta();
 
         boolean changed = false;
 
@@ -851,7 +850,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
                 Map<String, String> fields = new HashMap<>();
 
                 if (checkMeta(typeId, oldMeta, newMeta, fields)) {
-                    PortableMetadata res = new GridPortableMetaDataImpl(newMeta.typeName(),
+                    PortableMetadata res = new PortableMetaDataImpl(newMeta.typeName(),
                         fields,
                         newMeta.affinityKeyFieldName());
 

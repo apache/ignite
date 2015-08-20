@@ -108,11 +108,11 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
             switch (field.getName()) {
                 case "anEnum":
-                    assertEquals(((GridPortableBuilderEnum)actVal).getOrdinal(), ((Enum)expVal).ordinal());
+                    assertEquals(((PortableBuilderEnum)actVal).getOrdinal(), ((Enum)expVal).ordinal());
                     break;
 
                 case "enumArr": {
-                    GridPortableBuilderEnum[] actArr = (GridPortableBuilderEnum[])actVal;
+                    PortableBuilderEnum[] actArr = (PortableBuilderEnum[])actVal;
                     Enum[] expArr = (Enum[])expVal;
 
                     assertEquals(expArr.length, actArr.length);
@@ -143,7 +143,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         exp.setDefaultData();
 
-        GridPortableBuilderImpl mutPo = wrap(exp);
+        PortableBuilderImpl mutPo = wrap(exp);
 
         TestObjectAllTypes res = mutPo.build().deserialize();
 
@@ -158,7 +158,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         exp.setDefaultData();
 
-        GridPortableBuilderImpl mutPo = wrap(new TestObjectAllTypes());
+        PortableBuilderImpl mutPo = wrap(new TestObjectAllTypes());
 
         for (Field field : TestObjectAllTypes.class.getDeclaredFields())
             mutPo.setField(field.getName(), field.get(exp));
@@ -176,7 +176,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         exp.setDefaultData();
 
-        GridPortableBuilderImpl mutPo = wrap(exp);
+        PortableBuilderImpl mutPo = wrap(exp);
 
         for (Field field : TestObjectAllTypes.class.getDeclaredFields()) {
             if (!field.getType().isPrimitive())
@@ -198,9 +198,9 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectOuter outer = new TestObjectOuter();
         outer.inner = new TestObjectInner();
 
-        GridPortableBuilderImpl mutOuter = wrap(outer);
+        PortableBuilderImpl mutOuter = wrap(outer);
 
-        GridPortableBuilderImpl mutInner = mutOuter.getField("inner");
+        PortableBuilderImpl mutInner = mutOuter.getField("inner");
 
         mutInner.setField("outer", mutOuter);
         mutInner.setField("foo", mutInner);
@@ -219,7 +219,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         obj.strArr = new String[]{"a", "a", "a"};
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         String[] arr = mutObj.getField("strArr");
         arr[0] = "b";
@@ -238,7 +238,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectContainer obj = new TestObjectContainer();
         obj.foo = new Object[]{"a"};
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         Object[] arr = mutObj.getField("foo");
 
@@ -255,7 +255,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
      *
      */
     public void testOverrideObjectArrayField() {
-        GridPortableBuilderImpl mutObj = wrap(new TestObjectContainer());
+        PortableBuilderImpl mutObj = wrap(new TestObjectContainer());
 
         Object[] createdArr = {mutObj, "a", 1, new String[] {"s", "s"}, new byte[]{1, 2}, new UUID(3, 0)};
 
@@ -275,7 +275,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectContainer obj = new TestObjectContainer();
         obj.foo = new Object[]{new Object[]{"a", obj}};
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         Object[] arr = (Object[])mutObj.<Object[]>getField("foo")[0];
 
@@ -299,7 +299,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectContainer obj = new TestObjectContainer();
         obj.foo = Lists.newArrayList(obj, "a");
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         List<Object> list = mutObj.getField("foo");
 
@@ -312,7 +312,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testArrayListOverride() {
         TestObjectContainer obj = new TestObjectContainer();
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         ArrayList<Object> list = Lists.newArrayList(mutObj, "a", Lists.newArrayList(1, 2));
 
@@ -333,7 +333,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectContainer obj = new TestObjectContainer();
         obj.foo = Lists.newArrayList("a", "b", "c");
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         List<String> list = mutObj.getField("foo");
 
@@ -360,7 +360,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectContainer obj = new TestObjectContainer();
         obj.foo = Lists.newArrayList("a", "b", "c");
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         List<String> list = mutObj.getField("foo");
 
@@ -379,7 +379,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         obj.foo = src;
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         TestObjectContainer deserialized = mutObj.build().deserialize();
 
@@ -397,7 +397,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectContainer obj = new TestObjectContainer();
         obj.foo = Lists.newLinkedList(Arrays.asList(obj, "a"));
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         List<Object> list = mutObj.getField("foo");
 
@@ -410,7 +410,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testLinkedListOverride() {
         TestObjectContainer obj = new TestObjectContainer();
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         List<Object> list = Lists.newLinkedList(Arrays.asList(mutObj, "a", Lists.newLinkedList(Arrays.asList(1, 2))));
 
@@ -432,7 +432,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         obj.foo = Lists.newLinkedList(Arrays.asList("a", "b", "c"));
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         List<String> list = mutObj.getField("foo");
 
@@ -462,7 +462,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         obj.foo = src;
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         TestObjectContainer deserialized = mutObj.build().deserialize();
 
@@ -480,7 +480,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectContainer obj = new TestObjectContainer();
         obj.foo = Sets.newHashSet(obj, "a");
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         Set<Object> set = mutObj.getField("foo");
 
@@ -493,7 +493,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testHashSetOverride() {
         TestObjectContainer obj = new TestObjectContainer();
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         Set<Object> c = Sets.newHashSet(mutObj, "a", Sets.newHashSet(1, 2));
 
@@ -515,7 +515,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectContainer obj = new TestObjectContainer();
         obj.foo = Sets.newHashSet("a", "b", "c");
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         Set<String> set = mutObj.getField("foo");
 
@@ -559,7 +559,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectContainer obj = new TestObjectContainer();
         obj.foo = Maps.newHashMap(ImmutableMap.of(obj, "a", "b", obj));
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         Map<Object, Object> map = mutObj.getField("foo");
 
@@ -572,7 +572,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testMapOverride() {
         TestObjectContainer obj = new TestObjectContainer();
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         Map<Object, Object> map = Maps.newHashMap(ImmutableMap.of(mutObj, "a", "b", mutObj));
 
@@ -590,7 +590,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectContainer obj = new TestObjectContainer();
         obj.foo = Maps.newHashMap(ImmutableMap.of(1, "a", 2, "b"));
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
         Map<Object, Object> map = mutObj.getField("foo");
 
@@ -612,10 +612,10 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         obj.enumArr = new TestObjectEnum[]{TestObjectEnum.A, TestObjectEnum.B};
 
-        GridPortableBuilderImpl mutObj = wrap(obj);
+        PortableBuilderImpl mutObj = wrap(obj);
 
-        GridPortableBuilderEnum[] arr = mutObj.getField("enumArr");
-        arr[0] = new GridPortableBuilderEnum(mutObj.typeId(), TestObjectEnum.B);
+        PortableBuilderEnum[] arr = mutObj.getField("enumArr");
+        arr[0] = new PortableBuilderEnum(mutObj.typeId(), TestObjectEnum.B);
 
         TestObjectAllTypes res = mutObj.build().deserialize();
 
@@ -631,7 +631,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         obj.s = "a";
         obj.sRaw = "aa";
 
-        GridPortableBuilderImpl mutableObj = wrap(obj);
+        PortableBuilderImpl mutableObj = wrap(obj);
 
         mutableObj.setField("s", "z");
 
@@ -646,7 +646,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testHashCode() {
         TestObjectContainer obj = new TestObjectContainer();
 
-        GridPortableBuilderImpl mutableObj = wrap(obj);
+        PortableBuilderImpl mutableObj = wrap(obj);
 
         assertEquals(obj.hashCode(), mutableObj.build().hashCode());
 
@@ -679,7 +679,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectContainer obj = new TestObjectContainer();
         obj.foo = ImmutableMap.of(1, "a").entrySet().iterator().next();
 
-        GridPortableBuilderImpl mutableObj = wrap(obj);
+        PortableBuilderImpl mutableObj = wrap(obj);
 
         Map.Entry<Object, Object> entry = mutableObj.getField("foo");
 
@@ -699,7 +699,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testMapEntryOverride() {
         TestObjectContainer obj = new TestObjectContainer();
 
-        GridPortableBuilderImpl mutableObj = wrap(obj);
+        PortableBuilderImpl mutableObj = wrap(obj);
 
         mutableObj.setField("foo", new GridMapEntry<>(1, "a"));
 
@@ -712,7 +712,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
      *
      */
     public void testMetadataChangingDoublePut() {
-        GridPortableBuilderImpl mutableObj = wrap(new TestObjectContainer());
+        PortableBuilderImpl mutableObj = wrap(new TestObjectContainer());
 
         mutableObj.setField("xx567", "a");
         mutableObj.setField("xx567", "b");
@@ -728,7 +728,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
      *
      */
     public void testMetadataChangingDoublePut2() {
-        GridPortableBuilderImpl mutableObj = wrap(new TestObjectContainer());
+        PortableBuilderImpl mutableObj = wrap(new TestObjectContainer());
 
         mutableObj.setField("xx567", "a");
         mutableObj.setField("xx567", "b");
@@ -746,7 +746,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testMetadataChanging() {
         TestObjectContainer c = new TestObjectContainer();
 
-        GridPortableBuilderImpl mutableObj = wrap(c);
+        PortableBuilderImpl mutableObj = wrap(c);
 
         mutableObj.setField("intField", 1);
         mutableObj.setField("intArrField", new int[] {1});
@@ -782,7 +782,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         obj.foo = new Date();
 
-        GridPortableBuilderImpl mutableObj = wrap(obj);
+        PortableBuilderImpl mutableObj = wrap(obj);
 
         assertEquals(Timestamp.class, mutableObj.getField("foo").getClass());
     }
@@ -795,7 +795,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         obj.foo = Lists.newArrayList(new Date());
 
-        GridPortableBuilderImpl mutableObj = wrap(obj);
+        PortableBuilderImpl mutableObj = wrap(obj);
 
         assertEquals(Timestamp.class, ((List<?>)mutableObj.getField("foo")).get(0).getClass());
     }
@@ -807,7 +807,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testDateArrayOverride() {
         TestObjectContainer obj = new TestObjectContainer();
 
-        GridPortableBuilderImpl mutableObj = wrap(obj);
+        PortableBuilderImpl mutableObj = wrap(obj);
 
         Date[] arr = {new Date()};
 
@@ -830,13 +830,13 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         addrBook.addCompany(new Company(3, "Microsoft", 100, new Address("Saint-Petersburg", "Torzhkovskya", 1, 55), "occupation"));
         addrBook.addCompany(new Company(4, "Oracle", 100, new Address("Saint-Petersburg", "Nevskiy", 1, 1), "occupation"));
 
-        GridPortableBuilderImpl mutableObj = wrap(addrBook);
+        PortableBuilderImpl mutableObj = wrap(addrBook);
 
-        Map<String, List<GridPortableBuilderImpl>> map = mutableObj.getField("companyByStreet");
+        Map<String, List<PortableBuilderImpl>> map = mutableObj.getField("companyByStreet");
 
-        List<GridPortableBuilderImpl> list = map.get("Torzhkovskya");
+        List<PortableBuilderImpl> list = map.get("Torzhkovskya");
 
-        GridPortableBuilderImpl company = list.get(0);
+        PortableBuilderImpl company = list.get(0);
 
         assert "Google inc".equals(company.<String>getField("name"));
 
@@ -862,9 +862,9 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         out.inner = inner;
         inner.outer = out;
 
-        GridPortableBuilderImpl builder = wrap(out);
+        PortableBuilderImpl builder = wrap(out);
 
-        GridPortableBuilderImpl innerBuilder = builder.getField("inner");
+        PortableBuilderImpl innerBuilder = builder.getField("inner");
 
         TestObjectInner res = innerBuilder.build().deserialize();
 
@@ -877,7 +877,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testPortableObjectField() {
         TestObjectContainer container = new TestObjectContainer(toPortable(new TestObjectArrayList()));
 
-        GridPortableBuilderImpl wrapper = wrap(container);
+        PortableBuilderImpl wrapper = wrap(container);
 
         assertTrue(wrapper.getField("foo") instanceof PortableObject);
 
@@ -891,7 +891,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testAssignPortableObject() {
         TestObjectContainer container = new TestObjectContainer();
 
-        GridPortableBuilderImpl wrapper = wrap(container);
+        PortableBuilderImpl wrapper = wrap(container);
 
         wrapper.setField("foo", toPortable(new TestObjectArrayList()));
 
@@ -903,7 +903,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
      *
      */
     public void testRemoveFromNewObject() {
-        GridPortableBuilderImpl wrapper = newWrapper(TestObjectAllTypes.class);
+        PortableBuilderImpl wrapper = newWrapper(TestObjectAllTypes.class);
 
         wrapper.setField("str", "a");
 
@@ -919,7 +919,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectAllTypes obj = new TestObjectAllTypes();
         obj.setDefaultData();
 
-        GridPortableBuilderImpl wrapper = wrap(toPortable(obj));
+        PortableBuilderImpl wrapper = wrap(toPortable(obj));
 
         wrapper.removeField("str");
 
@@ -983,19 +983,19 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
      * @param obj Object.
      * @return GridMutablePortableObject.
      */
-    private GridPortableBuilderImpl wrap(Object obj) {
-        return GridPortableBuilderImpl.wrap(toPortable(obj));
+    private PortableBuilderImpl wrap(Object obj) {
+        return PortableBuilderImpl.wrap(toPortable(obj));
     }
 
     /**
      * @param aCls Class.
      * @return Wrapper.
      */
-    private GridPortableBuilderImpl newWrapper(Class<?> aCls) {
+    private PortableBuilderImpl newWrapper(Class<?> aCls) {
         CacheObjectPortableProcessorImpl processor = (CacheObjectPortableProcessorImpl)(
             (IgnitePortablesImpl)portables()).processor();
 
-        return new GridPortableBuilderImpl(processor.portableContext(), processor.typeId(aCls.getName()),
+        return new PortableBuilderImpl(processor.portableContext(), processor.typeId(aCls.getName()),
             aCls.getSimpleName());
     }
 }

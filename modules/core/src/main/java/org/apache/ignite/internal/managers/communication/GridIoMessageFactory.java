@@ -602,7 +602,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 113:
-                msg = new GridPortableObjectImpl();
+                msg = new PortableObjectImpl();
 
                 break;
 

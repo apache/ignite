@@ -38,7 +38,7 @@ import java.util.*;
 import java.util.Date;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.internal.portable.GridPortableThreadLocalMemoryAllocator.*;
+import static org.apache.ignite.internal.portable.PortableThreadLocalMemoryAllocator.*;
 import static org.junit.Assert.*;
 
 /**
@@ -53,8 +53,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     protected static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** */
-    protected static final GridPortableMetaDataHandler META_HND = new GridPortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, GridPortableMetaDataImpl meta) {
+    protected static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
+        @Override public void addMeta(int typeId, PortableMetaDataImpl meta) {
             // No-op.
         }
 
@@ -702,7 +702,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         U.intToBytes(Integer.reverseBytes(11111), arr, 2);
 
-        final PortableObject po = new GridPortableObjectImpl(initPortableContext(new PortableMarshaller()), arr, 0);
+        final PortableObject po = new PortableObjectImpl(initPortableContext(new PortableMarshaller()), arr, 0);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                                        @Override public Object call() throws Exception {
@@ -995,7 +995,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         assert obj.inner1 == obj.inner4;
 
-        GridPortableObjectImpl innerPo = (GridPortableObjectImpl)obj.inner2;
+        PortableObjectImpl innerPo = (PortableObjectImpl)obj.inner2;
 
         assert innerPo.detached();
 
@@ -1003,7 +1003,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(id, inner.id);
 
-        GridPortableObjectImpl detachedPo = (GridPortableObjectImpl)innerPo.detach();
+        PortableObjectImpl detachedPo = (PortableObjectImpl)innerPo.detach();
 
         assert detachedPo.detached();
 
@@ -1011,7 +1011,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(id, inner.id);
 
-        innerPo = (GridPortableObjectImpl)obj.inner3;
+        innerPo = (PortableObjectImpl)obj.inner3;
 
         assert innerPo.detached();
 
@@ -1020,7 +1020,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(id, inner.id);
         assertNotNull(inner.inner);
 
-        detachedPo = (GridPortableObjectImpl)innerPo.detach();
+        detachedPo = (PortableObjectImpl)innerPo.detach();
 
         assert detachedPo.detached();
 
@@ -1086,7 +1086,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
                 String typeName;
 
                 try {
-                    Method mtd = GridPortableContext.class.getDeclaredMethod("typeName", String.class);
+                    Method mtd = PortableContext.class.getDeclaredMethod("typeName", String.class);
 
                     mtd.setAccessible(true);
 
@@ -1111,7 +1111,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         TestPortableObject obj = portableObject();
 
-        GridPortableObjectImpl po = marshal(obj, marsh1);
+        PortableObjectImpl po = marshal(obj, marsh1);
 
         PortableMarshaller marsh2 = new PortableMarshaller();
 
@@ -1120,7 +1120,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             new PortableTypeConfiguration(TestPortableObject.class.getName())
         ));
 
-        GridPortableContext ctx = initPortableContext(marsh2);
+        PortableContext ctx = initPortableContext(marsh2);
 
         po.context(ctx);
 
@@ -1191,7 +1191,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             customType4
         ));
 
-        GridPortableContext ctx = initPortableContext(marsh);
+        PortableContext ctx = initPortableContext(marsh);
 
         assertEquals("notconfiguredclass".hashCode(), ctx.typeId("NotConfiguredClass"));
         assertEquals("key".hashCode(), ctx.typeId("Key"));
@@ -1256,7 +1256,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
                                                   customType1,
                                                   customType2));
 
-        GridPortableContext ctx = initPortableContext(marsh);
+        PortableContext ctx = initPortableContext(marsh);
 
         assertEquals("val".hashCode(), ctx.fieldId("key".hashCode(), "val"));
         assertEquals("val".hashCode(), ctx.fieldId("nonexistentclass2".hashCode(), "val"));
@@ -1514,7 +1514,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @return Copy.
      */
     private PortableObject copy(PortableObject po, Map<String, Object> fields) {
-        PortableBuilder builder = GridPortableBuilderImpl.wrap(po);
+        PortableBuilder builder = PortableBuilderImpl.wrap(po);
 
         if (fields != null) {
             for (Map.Entry<String, Object> e : fields.entrySet())
@@ -1878,11 +1878,11 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         marsh.setTypeConfigurations(Arrays.asList(new PortableTypeConfiguration(SimpleObject.class.getName())));
 
-        GridPortableContext ctx = initPortableContext(marsh);
+        PortableContext ctx = initPortableContext(marsh);
 
         SimpleObject simpleObj = simpleObject();
 
-        GridPortableObjectImpl obj = marshal(simpleObj, marsh);
+        PortableObjectImpl obj = marshal(simpleObj, marsh);
 
         long ptr = 0;
 
@@ -1893,7 +1893,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         try {
             ptr = copyOffheap(obj);
 
-            GridPortableObjectOffheapImpl offheapObj = new GridPortableObjectOffheapImpl(ctx,
+            PortableObjectOffheapImpl offheapObj = new PortableObjectOffheapImpl(ctx,
                 ptr,
                 0,
                 obj.array().length);
@@ -1906,7 +1906,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
             ptr1 = copyOffheap(obj);
 
-            GridPortableObjectOffheapImpl offheapObj1 = new GridPortableObjectOffheapImpl(ctx,
+            PortableObjectOffheapImpl offheapObj1 = new PortableObjectOffheapImpl(ctx,
                 ptr1,
                 0,
                 obj.array().length);
@@ -1919,20 +1919,20 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
             checkSimpleObjectData(simpleObj, offheapObj);
 
-            GridPortableObjectOffheapImpl innerOffheapObj = offheapObj.field("inner");
+            PortableObjectOffheapImpl innerOffheapObj = offheapObj.field("inner");
 
             assertNotNull(innerOffheapObj);
 
             checkSimpleObjectData(simpleObj.inner, innerOffheapObj);
 
-            obj = (GridPortableObjectImpl)offheapObj.heapCopy();
+            obj = (PortableObjectImpl)offheapObj.heapCopy();
 
             assertEquals(obj.typeId(), offheapObj.typeId());
             assertEquals(obj.hashCode(), offheapObj.hashCode());
 
             checkSimpleObjectData(simpleObj, obj);
 
-            GridPortableObjectImpl innerObj = obj.field("inner");
+            PortableObjectImpl innerObj = obj.field("inner");
 
             assertNotNull(innerObj);
 
@@ -1947,7 +1947,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
             ptr2 = copyOffheap(obj);
 
-            GridPortableObjectOffheapImpl offheapObj2 = new GridPortableObjectOffheapImpl(ctx,
+            PortableObjectOffheapImpl offheapObj2 = new PortableObjectOffheapImpl(ctx,
                 ptr2,
                 0,
                 obj.array().length);
@@ -1975,7 +1975,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         marsh.setClassNames(
             Arrays.asList(MySingleton.class.getName(), SingletonMarker.class.getName()));
 
-        GridPortableObjectImpl portableObj = marshal(MySingleton.INSTANCE, marsh);
+        PortableObjectImpl portableObj = marshal(MySingleton.INSTANCE, marsh);
 
         assertTrue(portableObj.array().length <= 1024); // Check that big string was not serialized.
 
@@ -1992,7 +1992,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         marsh.setClassNames(Collections.singletonList(MyTestClass.class.getName()));
 
-        GridPortableObjectImpl portableObj = marshal(new MyTestClass(), marsh);
+        PortableObjectImpl portableObj = marshal(new MyTestClass(), marsh);
 
         MyTestClass obj = portableObj.deserialize();
 
@@ -2007,7 +2007,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         marsh.setClassNames(Arrays.asList(ChildPortable.class.getName()));
 
-        GridPortableObjectImpl portableObj = marshal(new ChildPortable(), marsh);
+        PortableObjectImpl portableObj = marshal(new ChildPortable(), marsh);
 
         ChildPortable singleton = portableObj.deserialize();
 
@@ -2033,7 +2033,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         obj1.val = BigDecimal.ZERO;
         obj1.valArr = new BigDecimal[] { BigDecimal.ONE, BigDecimal.TEN };
 
-        GridPortableObjectImpl portObj = marshal(obj1, marsh);
+        PortableObjectImpl portObj = marshal(obj1, marsh);
 
         assertEquals(obj1.val, portObj.field("val"));
         assertArrayEquals(obj1.valArr, portObj.<BigDecimal[]>field("valArr"));
@@ -2080,7 +2080,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         // Checking the writer directly.
         assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
-        try (GridPortableWriterExImpl writer = new GridPortableWriterExImpl(initPortableContext(new PortableMarshaller()), 0)) {
+        try (PortableWriterExImpl writer = new PortableWriterExImpl(initPortableContext(new PortableMarshaller()), 0)) {
             assertEquals(true, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
             writer.writeString("Thread local test");
@@ -2102,7 +2102,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
         // Checking the builder.
-        PortableBuilder builder = new GridPortableBuilderImpl(initPortableContext(new PortableMarshaller()),
+        PortableBuilder builder = new PortableBuilderImpl(initPortableContext(new PortableMarshaller()),
             "org.gridgain.foo.bar.TestClass");
 
         builder.setField("a", "1");
@@ -2243,7 +2243,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @param obj Object.
      * @return Offheap address.
      */
-    private long copyOffheap(GridPortableObjectImpl obj) {
+    private long copyOffheap(PortableObjectImpl obj) {
         byte[] arr = obj.array();
 
         long ptr = UNSAFE.allocateMemory(arr.length);
@@ -2303,20 +2303,20 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @param marsh Marshaller.
      * @return Portable object.
      */
-    private <T> GridPortableObjectImpl marshal(T obj, PortableMarshaller marsh) throws IgniteCheckedException {
+    private <T> PortableObjectImpl marshal(T obj, PortableMarshaller marsh) throws IgniteCheckedException {
         initPortableContext(marsh);
 
         byte[] bytes = marsh.marshal(obj);
 
-        return new GridPortableObjectImpl(U.<GridPortableMarshaller>field(marsh, "impl").context(),
+        return new PortableObjectImpl(U.<GridPortableMarshaller>field(marsh, "impl").context(),
             bytes, 0);
     }
 
     /**
      * @return Portable context.
      */
-    protected GridPortableContext initPortableContext(PortableMarshaller marsh) throws IgniteCheckedException {
-        GridPortableContext ctx = new GridPortableContext(META_HND, null);
+    protected PortableContext initPortableContext(PortableMarshaller marsh) throws IgniteCheckedException {
+        PortableContext ctx = new PortableContext(META_HND, null);
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
@@ -3321,7 +3321,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void writePortable(PortableWriter writer) throws PortableException {
-            GridPortableRawWriterEx raw = (GridPortableRawWriterEx)writer.rawWriter();
+            PortableRawWriterEx raw = (PortableRawWriterEx)writer.rawWriter();
 
             raw.writeObject(inner1);
             raw.writeObjectDetached(inner2);
@@ -3331,7 +3331,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void readPortable(PortableReader reader) throws PortableException {
-            GridPortableRawReaderEx raw = (GridPortableRawReaderEx)reader.rawReader();
+            PortableRawReaderEx raw = (PortableRawReaderEx)reader.rawReader();
 
             inner1 = (DetachedInnerTestObject)raw.readObject();
             inner2 = raw.readObjectDetached();

@@ -291,11 +291,11 @@ public class PortableMarshaller extends AbstractMarshaller {
     }
 
     /**
-     * Sets {@link GridPortableContext}.
+     * Sets {@link PortableContext}.
      * <p/>
      * @param ctx Portable context.
      */
-    private void setPortableContext(GridPortableContext ctx) {
+    private void setPortableContext(PortableContext ctx) {
         ctx.configure(this);
 
         impl = new GridPortableMarshaller(ctx);

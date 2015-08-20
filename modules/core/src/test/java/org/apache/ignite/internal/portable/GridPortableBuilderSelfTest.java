@@ -57,11 +57,11 @@ public class GridPortableBuilderSelfTest extends GridCommonAbstractTest {
         customIdMapper.setClassName(CustomIdMapper.class.getName());
         customIdMapper.setIdMapper(new PortableIdMapper() {
             @Override public int typeId(String clsName) {
-                return ~GridPortableContext.DFLT_ID_MAPPER.typeId(clsName);
+                return ~PortableContext.DFLT_ID_MAPPER.typeId(clsName);
             }
 
             @Override public int fieldId(int typeId, String fieldName) {
-                return typeId + ~GridPortableContext.DFLT_ID_MAPPER.fieldId(typeId, fieldName);
+                return typeId + ~PortableContext.DFLT_ID_MAPPER.fieldId(typeId, fieldName);
             }
         });
 
@@ -660,7 +660,7 @@ public class GridPortableBuilderSelfTest extends GridCommonAbstractTest {
             PortableObject offheapObj = (PortableObject)
                 ((CacheObjectPortableProcessorImpl)(grid(0)).context().cacheObjects()).unmarshal(ptr, false);
 
-            assertEquals(GridPortableObjectOffheapImpl.class, offheapObj.getClass());
+            assertEquals(PortableObjectOffheapImpl.class, offheapObj.getClass());
 
             assertEquals("class".hashCode(), offheapObj.typeId());
             assertEquals(100, offheapObj.hashCode());
@@ -778,7 +778,7 @@ public class GridPortableBuilderSelfTest extends GridCommonAbstractTest {
     public void testGetFromCopiedObj() {
         PortableObject objStr = builder(TestObjectAllTypes.class.getName()).setField("str", "aaa").build();
 
-        GridPortableBuilderImpl builder = builder(objStr);
+        PortableBuilderImpl builder = builder(objStr);
         assertEquals("aaa", builder.getField("str"));
 
         builder.setField("str", "bbb");
@@ -798,7 +798,7 @@ public class GridPortableBuilderSelfTest extends GridCommonAbstractTest {
 
         TestObjectContainer c = new TestObjectContainer(list);
 
-        GridPortableBuilderImpl builder = builder(toPortable(c));
+        PortableBuilderImpl builder = builder(toPortable(c));
         builder.<List>getField("foo").add("!!!");
 
         PortableObject res = builder.build();
@@ -829,7 +829,7 @@ public class GridPortableBuilderSelfTest extends GridCommonAbstractTest {
     public void testPlainPortableObjectCopyFrom() {
         TestObjectPlainPortable obj = new TestObjectPlainPortable(toPortable(new TestObjectAllTypes()));
 
-        GridPortableBuilderImpl builder = builder(toPortable(obj));
+        PortableBuilderImpl builder = builder(toPortable(obj));
         assertTrue(builder.getField("plainPortable") instanceof PortableObject);
 
         TestObjectPlainPortable deserialized = builder.build().deserialize();
@@ -872,7 +872,7 @@ public class GridPortableBuilderSelfTest extends GridCommonAbstractTest {
         obj.setDefaultData();
         obj.enumArr = null;
 
-        GridPortableBuilderImpl builder = builder(toPortable(obj));
+        PortableBuilderImpl builder = builder(toPortable(obj));
 
         builder.getField("i_");
 
@@ -932,8 +932,8 @@ public class GridPortableBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @return Builder.
      */
-    private <T> GridPortableBuilderImpl builder(PortableObject obj) {
-        return (GridPortableBuilderImpl)portables().builder(obj);
+    private <T> PortableBuilderImpl builder(PortableObject obj) {
+        return (PortableBuilderImpl)portables().builder(obj);
     }
 
     /**

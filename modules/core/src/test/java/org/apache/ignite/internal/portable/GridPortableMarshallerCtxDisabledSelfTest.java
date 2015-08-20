@@ -29,8 +29,8 @@ import org.apache.ignite.testframework.junits.common.*;
  */
 public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstractTest {
     /** */
-    protected static final GridPortableMetaDataHandler META_HND = new GridPortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, GridPortableMetaDataImpl meta) {
+    protected static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
+        @Override public void addMeta(int typeId, PortableMetaDataImpl meta) {
             // No-op.
         }
 
@@ -46,7 +46,7 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
         PortableMarshaller marsh = new PortableMarshaller();
         marsh.setContext(new MarshallerContextWithNoStorage());
 
-        GridPortableContext context = new GridPortableContext(META_HND, null);
+        PortableContext context = new PortableContext(META_HND, null);
 
         IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", context);
 

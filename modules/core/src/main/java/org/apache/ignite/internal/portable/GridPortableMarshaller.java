@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.processors.portable.*;
+import org.apache.ignite.internal.portable.streams.*;
 import org.apache.ignite.portable.*;
 
 import org.jetbrains.annotations.*;
@@ -205,12 +205,12 @@ public class GridPortableMarshaller {
     static final byte DFLT_HDR_LEN = 18;
 
     /** */
-    private final GridPortableContext ctx;
+    private final PortableContext ctx;
 
     /**
      * @param ctx Context.
      */
-    public GridPortableMarshaller(GridPortableContext ctx) {
+    public GridPortableMarshaller(PortableContext ctx) {
         this.ctx = ctx;
     }
 
@@ -224,7 +224,7 @@ public class GridPortableMarshaller {
         if (obj == null)
             return new byte[] { NULL };
 
-        try (GridPortableWriterExImpl writer = new GridPortableWriterExImpl(ctx, off)) {
+        try (PortableWriterExImpl writer = new PortableWriterExImpl(ctx, off)) {
             writer.marshal(obj, false);
 
             return writer.array();
@@ -240,7 +240,7 @@ public class GridPortableMarshaller {
     @Nullable public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws PortableException {
         assert bytes != null;
 
-        GridGridPortableReaderExImpl reader = new GridGridPortableReaderExImpl(ctx, bytes, 0, clsLdr);
+        PortableReaderExImpl reader = new PortableReaderExImpl(ctx, bytes, 0, clsLdr);
 
         return (T)reader.unmarshal();
     }
@@ -251,7 +251,7 @@ public class GridPortableMarshaller {
      * @throws PortableException In case of error.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public <T> T unmarshal(GridPortableInputStream in) throws PortableException {
+    @Nullable public <T> T unmarshal(PortableInputStream in) throws PortableException {
         return (T)reader(in).unmarshal();
     }
 
@@ -269,7 +269,7 @@ public class GridPortableMarshaller {
         if (arr[0] == NULL)
             return null;
 
-        GridGridPortableReaderExImpl reader = new GridGridPortableReaderExImpl(ctx, arr, 0, ldr);
+        PortableReaderExImpl reader = new PortableReaderExImpl(ctx, arr, 0, ldr);
 
         return (T)reader.deserialize();
     }
@@ -280,8 +280,8 @@ public class GridPortableMarshaller {
      * @param out Output stream.
      * @return Writer.
      */
-    public GridPortableWriterExImpl writer(GridPortableOutputStream out) {
-        return new GridPortableWriterExImpl(ctx, out, 0);
+    public PortableWriterExImpl writer(PortableOutputStream out) {
+        return new PortableWriterExImpl(ctx, out, 0);
     }
 
     /**
@@ -290,15 +290,15 @@ public class GridPortableMarshaller {
      * @param in Input stream.
      * @return Reader.
      */
-    public GridGridPortableReaderExImpl reader(GridPortableInputStream in) {
+    public PortableReaderExImpl reader(PortableInputStream in) {
         // TODO: GG-10396 - Is class loader needed here?
-        return new GridGridPortableReaderExImpl(ctx, in, in.position(), null);
+        return new PortableReaderExImpl(ctx, in, in.position(), null);
     }
 
     /**
      * @return Context.
      */
-    public GridPortableContext context() {
+    public PortableContext context() {
         return ctx;
     }
 }
