@@ -17,15 +17,41 @@
 
 package org.apache.ignite.schema.parser.dialect;
 
+import java.sql.*;
 import java.util.*;
 
 /**
- * DB2 specific metadata dialect.
+ * MySQL specific metadata dialect.
  */
-public class DB2MetadataDialect extends JdbcMetadataDialect {
+public class MySQLMetadataDialect extends JdbcMetadataDialect {
     /** {@inheritDoc} */
-    @Override public Set<String> systemSchemas() {
-        return new HashSet<>(Arrays.asList("SYSIBM", "SYSCAT", "SYSSTAT", "SYSTOOLS", "SYSFUN", "SYSIBMADM",
-            "SYSIBMINTERNAL", "SYSIBMTS", "SYSPROC", "SYSPUBLIC"));
+    @Override public List<String> schemas(Connection conn) throws SQLException {
+        List<String> schemas = new ArrayList<>();
+
+        ResultSet rs = conn.getMetaData().getCatalogs();
+
+        Set<String> sys = systemSchemas();
+
+        while(rs.next()) {
+            String schema = rs.getString(1);
+
+            // Skip system schemas.
+            if (sys.contains(schema))
+                continue;
+
+            schemas.add(schema);
+        }
+
+        return schemas;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean useCatalog() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean useSchema() {
+        return false;
     }
 }

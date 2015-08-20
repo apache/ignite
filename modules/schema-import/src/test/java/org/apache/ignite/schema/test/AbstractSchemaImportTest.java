@@ -19,13 +19,13 @@ package org.apache.ignite.schema.test;
 
 import junit.framework.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.schema.model.PojoDescriptor;
-import org.apache.ignite.schema.parser.DatabaseMetadataParser;
+import org.apache.ignite.schema.model.*;
+import org.apache.ignite.schema.parser.*;
 import org.apache.ignite.schema.ui.*;
 
 import java.io.*;
 import java.sql.*;
-import java.util.List;
+import java.util.*;
 
 import static org.apache.ignite.schema.ui.MessageBox.Result.*;
 
@@ -93,7 +93,9 @@ public abstract class AbstractSchemaImportTest extends TestCase {
 
         U.closeQuiet(stmt);
 
-        pojos = DatabaseMetadataParser.parse(conn, false);
+        List<String> schemas = new ArrayList<>();
+
+        pojos = DatabaseMetadataParser.parse(conn, schemas, false);
 
         U.closeQuiet(conn);
     }

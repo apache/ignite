@@ -99,8 +99,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                         getters.put(field.getJavaName(), cls.getMethod("is" + prop));
                     }
                     catch (NoSuchMethodException e) {
-                        throw new CacheException("Failed to find getter in POJO class [class name=" + clsName +
-                            ", property=" + field.getJavaName() + "]", e);
+                        throw new CacheException("Failed to find getter in POJO class [clsName=" + clsName +
+                            ", prop=" + field.getJavaName() + "]", e);
                     }
                 }
 
@@ -108,8 +108,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                     setters.put(field.getJavaName(), cls.getMethod("set" + prop, field.getJavaType()));
                 }
                 catch (NoSuchMethodException e) {
-                    throw new CacheException("Failed to find setter in POJO class [class name=" + clsName +
-                        ", property=" + field.getJavaName() + "]", e);
+                    throw new CacheException("Failed to find setter in POJO class [clsName=" + clsName +
+                        ", prop=" + field.getJavaName() + "]", e);
                 }
             }
         }
@@ -172,8 +172,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                 Method setter = mc.setters.get(fldJavaName);
 
                 if (setter == null)
-                    throw new IllegalStateException("Failed to find setter in POJO class [class name=" + typeName +
-                        ", property=" + fldJavaName + "]");
+                    throw new IllegalStateException("Failed to find setter in POJO class [clsName=" + typeName +
+                        ", prop=" + fldJavaName + "]");
 
                 String fldDbName = field.getDatabaseName();
 
@@ -183,8 +183,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                     setter.invoke(obj, getColumnValue(rs, colIdx, field.getJavaType()));
                 }
                 catch (Exception e) {
-                    throw new IllegalStateException("Failed to set property in POJO class [class name=" + typeName +
-                        ", property=" + fldJavaName + ", column=" + colIdx + ", db name=" + fldDbName + "]", e);
+                    throw new IllegalStateException("Failed to set property in POJO class [clsName=" + typeName +
+                        ", prop=" + fldJavaName + ", col=" + colIdx + ", dbName=" + fldDbName + "]", e);
                 }
             }
 
@@ -214,8 +214,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             Method getter = mc.getters.get(fieldName);
 
             if (getter == null)
-                throw new CacheLoaderException("Failed to find getter in POJO class [class name=" + typeName +
-                    ", property=" + fieldName + "]");
+                throw new CacheLoaderException("Failed to find getter in POJO class [clsName=" + typeName +
+                    ", prop=" + fieldName + "]");
 
             return getter.invoke(obj);
         }

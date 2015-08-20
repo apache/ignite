@@ -62,9 +62,6 @@ public class CacheJdbcPojoStoreFactorySelfTest extends GridCommonAbstractTest {
                 checkStore(cache, JdbcDataSource.class);
             }
         }
-        catch (Exception e) {
-            fail("Failed to validate cache configuration. Cache store factory is not serializable.");
-        }
     }
 
     /**
