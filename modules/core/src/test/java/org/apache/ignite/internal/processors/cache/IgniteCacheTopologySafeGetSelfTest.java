@@ -160,10 +160,13 @@ public class IgniteCacheTopologySafeGetSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @return Future.
+     * @throws Exception If failed.
+     */
     private IgniteInternalFuture<?> startNodeAsync() throws Exception {
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 startGrid(GRID_CNT);
 
                 return null;

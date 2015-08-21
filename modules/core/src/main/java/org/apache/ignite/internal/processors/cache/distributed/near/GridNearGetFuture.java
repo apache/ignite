@@ -787,7 +787,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 map(keys.keySet(), F.t(node, keys), topVer);
 
                 onDone(Collections.<K, V>emptyMap());
-            } else {
+            }
+            else {
                 final AffinityTopologyVersion updTopVer =
                     new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 

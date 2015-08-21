@@ -1240,13 +1240,19 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             false,
             /*can remap*/true
         ).chain(new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
-            @Override
-            public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
+            @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
                 return e.get().get(key);
             }
         });
     }
 
+    /**
+     * Gets value without waiting for toplogy changes.
+     *
+     * @param key Key.
+     * @return Value.
+     * @throws IgniteCheckedException If failed.
+     */
     public V getTopologySafe(K key) throws IgniteCheckedException {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
