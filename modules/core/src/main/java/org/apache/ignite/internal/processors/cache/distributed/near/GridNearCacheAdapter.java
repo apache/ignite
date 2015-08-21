@@ -195,13 +195,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         return (IgniteInternalFuture)loadAsync(tx,
             keys,
             reload,
-            false,
+            /*force primary*/false,
             subjId,
             taskName,
-            true,
-            null,
+            /*deserialize portable*/true,
+            /*expiry policy*/null,
             skipVals,
-            /*skip store*/false);
+            /*skip store*/false,
+            /*can remap*/true);
     }
 
     /**
@@ -226,7 +227,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         boolean deserializePortable,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVal,
-        boolean skipStore
+        boolean skipStore,
+        boolean canRemap
     ) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -245,7 +247,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             taskName,
             deserializePortable,
             expiry,
-            skipVal);
+            skipVal,
+            canRemap);
 
         // init() will register future for responses if future has remote mappings.
         fut.init();

@@ -458,7 +458,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable UUID subjId,
         final String taskName,
         final boolean deserializePortable,
-        final boolean skipVals
+        final boolean skipVals,
+        boolean canRemap
     ) {
         A.notNull(keys, "keys");
 
@@ -570,8 +571,18 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (success || !storeEnabled)
             return vals;
 
-        return getAllAsync(keys, opCtx == null || !opCtx.skipStore(), null, false, subjId, taskName, deserializePortable,
-            false, expiry, skipVals).get();
+        return getAllAsync(
+            keys,
+            opCtx == null || !opCtx.skipStore(),
+            null,
+            false,
+            subjId,
+            taskName,
+            deserializePortable,
+            /*force primary*/false,
+            expiry,
+            skipVals,
+            /*can remap*/true).get();
     }
 
     /** {@inheritDoc} */

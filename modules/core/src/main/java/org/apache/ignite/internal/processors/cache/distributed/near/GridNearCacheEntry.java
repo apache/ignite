@@ -333,7 +333,9 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             true,
             null,
             false,
-            /*skip store*/false).get().get(keyValue(false));
+            /*skip store*/false,
+            /*can remap*/true
+        ).get().get(keyValue(false));
     }
 
     /**
