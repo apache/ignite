@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Portable type meta data. Metadata for portable types can be accessed from any of the
  * {@link IgnitePortables#metadata(String)} methods.
- * Having metadata also allows for proper formatting of {@link PortableObject#toString()} method,
+ * Having metadata also allows for proper formatting of {@code PortableObject#toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  */
 public interface PortableMetadata {

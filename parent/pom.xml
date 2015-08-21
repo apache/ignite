@@ -318,6 +318,10 @@
                                 <packages>org.apache.ignite.marshaller*</packages>
                             </group>
                             <group>
+                                <title>Portable Objects API</title>
+                                <packages>org.apache.ignite.portable*</packages>
+                            </group>
+                            <group>
                                 <title>Visor Plugins</title>
                                 <packages>org.apache.ignite.visor.plugin</packages>
                             </group>

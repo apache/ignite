@@ -133,7 +133,7 @@ import java.util.Date;
  * Even though Ignite portable protocol only works with hash codes for type and field names
  * to achieve better performance, Ignite provides metadata for all portable types which
  * can be queried ar runtime via any of the {@link IgnitePortables#metadata(Class)}
- * methods. Having metadata also allows for proper formatting of {@link PortableObject#toString()} method,
+ * methods. Having metadata also allows for proper formatting of {@code PortableObject#toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  * <h1 class="header">Dynamic Structure Changes</h1>
  * Since objects are always cached in the portable binary format, server does not need to
