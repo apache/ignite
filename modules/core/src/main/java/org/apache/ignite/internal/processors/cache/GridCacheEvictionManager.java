@@ -134,7 +134,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         memoryMode = cctx.config().getMemoryMode();
 
-        plcEnabled = plc != null && memoryMode != OFFHEAP_TIERED;
+        plcEnabled = plc != null && (cctx.isNear() || memoryMode != OFFHEAP_TIERED);
 
         filter = cfg.getEvictionFilter();
 
