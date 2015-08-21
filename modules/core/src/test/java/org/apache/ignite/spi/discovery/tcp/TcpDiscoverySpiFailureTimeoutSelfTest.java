@@ -305,7 +305,8 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
 
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(InetSocketAddress sockAddr, IgniteSpiOperationTimeoutHelper timeoutHelper)
+        @Override protected Socket openSocket(Socket sock, InetSocketAddress sockAddr,
+            IgniteSpiOperationTimeoutHelper timeoutHelper)
             throws IOException, IgniteSpiOperationTimeoutException {
 
             if (openSocketTimeout) {
@@ -330,11 +331,12 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 }
             }
 
-            Socket sock = super.openSocket(sockAddr, timeoutHelper);
+            super.openSocket(sock, sockAddr, timeoutHelper);
 
             try {
                 Thread.sleep(1500);
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 // Ignore
             }
 

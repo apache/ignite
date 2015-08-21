@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.reducefields.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.spi.communication.tcp.*;
 
@@ -43,6 +44,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridQueryParsingTest.class);
 
         // Queries tests.
+        suite.addTestSuite(IgniteSqlSplitterSelfTest.class);
         suite.addTestSuite(GridCacheQueryIndexDisabledSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryLoadSelfTest.class);
         suite.addTestSuite(IgniteCacheLocalQuerySelfTest.class);

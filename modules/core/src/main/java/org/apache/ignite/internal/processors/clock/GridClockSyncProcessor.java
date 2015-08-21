@@ -264,7 +264,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
         long now = clockSrc.currentTimeMillis();
 
         if (snap == null)
-            return System.currentTimeMillis();
+            return now;
 
         Long delta = snap.deltas().get(ctx.localNodeId());
 

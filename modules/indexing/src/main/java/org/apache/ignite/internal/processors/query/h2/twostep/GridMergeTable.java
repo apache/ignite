@@ -35,9 +35,6 @@ public class GridMergeTable extends TableBase {
     private final GridKernalContext ctx;
 
     /** */
-    private final ArrayList<Index> idxs = new ArrayList<>(1);
-
-    /** */
     private final GridMergeIndex idx;
 
     /**
@@ -49,8 +46,6 @@ public class GridMergeTable extends TableBase {
 
         this.ctx = ctx;
         idx = new GridMergeIndexUnsorted(this, "merge_scan");
-
-        idxs.add(idx);
     }
 
     /**
@@ -124,7 +119,7 @@ public class GridMergeTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public ArrayList<Index> getIndexes() {
-        return idxs;
+        return null;
     }
 
     /** {@inheritDoc} */

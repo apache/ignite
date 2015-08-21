@@ -163,7 +163,7 @@ public interface GridCacheEntryEx {
      * @return Entry which holds key and version (no value, since entry
      *      is intended to be used in sync evictions checks).
      */
-    public <K, V> CacheVersionedEntryImpl<K, V> wrapVersioned();
+    public <K, V> CacheEntryImplEx<K, V> wrapVersioned();
 
     /**
      * @return Not-null version if entry is obsolete.
