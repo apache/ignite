@@ -49,7 +49,7 @@ public class CachePartialUpdateCheckedException extends IgniteCheckedException {
      */
     @SuppressWarnings("unchecked")
     public synchronized <K> Collection<K> failedKeys() {
-        return new HashSet<>((Collection<K>)failedKeys);
+        return new LinkedHashSet<>((Collection<K>)failedKeys);
     }
 
     /**
