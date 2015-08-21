@@ -46,7 +46,7 @@ public class TcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstractTe
     public DiscoverySpiDataExchange getDataExchange() {
         return new DiscoverySpiDataExchange() {
             @Override public Map<Integer, Serializable> collect(UUID nodeId) {
-                return null;
+                return Collections.emptyMap();
             }
 
             @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data) {
