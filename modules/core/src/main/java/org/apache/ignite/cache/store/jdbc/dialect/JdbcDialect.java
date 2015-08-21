@@ -17,12 +17,13 @@
 
 package org.apache.ignite.cache.store.jdbc.dialect;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Represents a dialect of SQL implemented by a particular RDBMS.
  */
-public interface JdbcDialect {
+public interface JdbcDialect extends Serializable {
     /**
      * Construct select count query.
      *

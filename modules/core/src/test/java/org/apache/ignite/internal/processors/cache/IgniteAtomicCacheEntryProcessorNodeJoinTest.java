@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.parser.dialect;
+package org.apache.ignite.internal.processors.cache;
 
-import java.util.*;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
- * DB2 specific metadata dialect.
+ *
  */
-public class DB2MetadataDialect extends JdbcMetadataDialect {
+public class IgniteAtomicCacheEntryProcessorNodeJoinTest extends IgniteCacheEntryProcessorNodeJoinTest {
     /** {@inheritDoc} */
-    @Override public Set<String> systemSchemas() {
-        return new HashSet<>(Arrays.asList("SYSIBM", "SYSCAT", "SYSSTAT", "SYSTOOLS", "SYSFUN", "SYSIBMADM",
-            "SYSIBMINTERNAL", "SYSIBMTS", "SYSPROC", "SYSPUBLIC"));
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 }

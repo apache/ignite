@@ -531,6 +531,23 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * Gets ready future for the next affinity topology version (used in cases when a node leaves grid).
+     *
+     * @param curVer Current topology version (before a node left grid).
+     * @return Ready future.
+     */
+    public IgniteInternalFuture<?> nextAffinityReadyFuture(AffinityTopologyVersion curVer) {
+        if (curVer == null)
+            return null;
+
+        AffinityTopologyVersion nextVer = new AffinityTopologyVersion(curVer.topologyVersion() + 1);
+
+        IgniteInternalFuture<?> fut = exchMgr.affinityReadyFuture(nextVer);
+
+        return fut == null ? new GridFinishedFuture<>() : fut;
+    }
+
+    /**
      * @param tx Transaction to check.
      * @param activeCacheIds Active cache IDs.
      * @param cacheCtx Cache context.

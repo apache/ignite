@@ -18,6 +18,7 @@
 package org.apache.ignite.cluster;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -26,6 +27,9 @@ import org.jetbrains.annotations.*;
 public class ClusterTopologyException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Retry ready future. */
+    private transient IgniteFuture<?> readyFut;
 
     /**
      * Creates new topology exception with given error message.
@@ -45,5 +49,19 @@ public class ClusterTopologyException extends IgniteException {
      */
     public ClusterTopologyException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
+    }
+
+    /**
+     * @return Retry ready future.
+     */
+    public IgniteFuture<?> retryReadyFuture() {
+        return readyFut;
+    }
+
+    /**
+     * @param readyFut Retry ready future.
+     */
+    public void retryReadyFuture(IgniteFuture<?> readyFut) {
+        this.readyFut = readyFut;
     }
 }

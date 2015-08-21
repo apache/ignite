@@ -349,12 +349,14 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             }
             else {
                 if (tx == null) {
-                    fut = cache().getDhtAllAsync(keys.keySet(),
+                    fut = cache().getDhtAllAsync(
+                        keys.keySet(),
                         readThrough,
                         subjId,
                         taskName,
                         expiryPlc,
-                        skipVals);
+                        skipVals,
+                        /*can remap*/true);
                 }
                 else {
                     fut = tx.getAllAsync(cctx,
@@ -387,12 +389,14 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         }
                         else {
                             if (tx == null) {
-                                return cache().getDhtAllAsync(keys.keySet(),
+                                return cache().getDhtAllAsync(
+                                    keys.keySet(),
                                     readThrough,
                                     subjId,
                                     taskName,
                                     expiryPlc,
-                                    skipVals);
+                                    skipVals,
+                                    /*can remap*/true);
                             }
                             else {
                                 return tx.getAllAsync(cctx,

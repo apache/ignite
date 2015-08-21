@@ -231,6 +231,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
         nearEnabled = CU.isNearEnabled(cctx);
 
+        if (!waitTopFut)
+            remapCnt = 1;
+
         this.remapCnt = new AtomicInteger(remapCnt);
     }
 

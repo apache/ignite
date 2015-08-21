@@ -31,8 +31,8 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
     /** SQL to get columns metadata. */
     private static final String SQL_COLUMNS = "SELECT a.owner, a.table_name, a.column_name, a.nullable," +
         " a.data_type, a.data_precision, a.data_scale " +
-        "FROM all_tab_columns a %s" +
-        " WHERE a.owner = '%s'" +
+        "FROM all_tab_columns a %s " +
+        " %s " +
         " ORDER BY a.owner, a.table_name, a.column_id";
 
     /** SQL to get list of PRIMARY KEYS columns. */
@@ -80,6 +80,36 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
     /** Index column sort order index. */
     private static final int IDX_COL_DESCEND_IDX = 4;
+
+    /** {@inheritDoc} */
+    @Override public Set<String> systemSchemas() {
+        return new HashSet<>(Arrays.asList("ANONYMOUS", "CTXSYS", "DBSNMP", "EXFSYS", "LBACSYS", "MDSYS", "MGMT_VIEW",
+            "OLAPSYS", "OWBSYS", "ORDPLUGINS", "ORDSYS", "OUTLN", "SI_INFORMTN_SCHEMA", "SYS", "SYSMAN", "SYSTEM",
+            "TSMSYS", "WK_TEST", "WKSYS", "WKPROXY", "WMSYS", "XDB",
+
+            "APEX_040000", "APEX_PUBLIC_USER", "DIP", "FLOWS_30000", "FLOWS_FILES", "MDDATA", "ORACLE_OCM",
+            "SPATIAL_CSW_ADMIN_USR", "SPATIAL_WFS_ADMIN_USR", "XS$NULL",
+
+            "BI", "HR", "OE", "PM", "IX", "SH"));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<String> schemas(Connection conn) throws SQLException {
+        List<String> schemas = new ArrayList<>();
+
+        ResultSet rs = conn.getMetaData().getSchemas();
+
+        Set<String> sysSchemas = systemSchemas();
+
+        while(rs.next()) {
+            String schema = rs.getString(1);
+
+            if (!sysSchemas.contains(schema) && !schema.startsWith("FLOWS_"))
+                schemas.add(schema);
+        }
+
+        return schemas;
+    }
 
     /**
      * @param rs Result set with column type metadata from Oracle database.
@@ -225,57 +255,70 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<DbTable> tables(Connection conn, boolean tblsOnly) throws SQLException {
+    @Override public Collection<DbTable> tables(Connection conn, List<String> schemas, boolean tblsOnly)
+        throws SQLException {
         Collection<DbTable> tbls = new ArrayList<>();
 
         PreparedStatement pkStmt = conn.prepareStatement(SQL_PRIMARY_KEYS);
 
         PreparedStatement idxStmt = conn.prepareStatement(SQL_INDEXES);
 
+        if (schemas.size() == 0)
+            schemas.add(null);
+
+        Set<String> sysSchemas = systemSchemas();
+
         try (Statement colsStmt = conn.createStatement()) {
-            Collection<DbColumn> cols = new ArrayList<>();
+            for (String schema: schemas) {
+                if (systemSchemas().contains(schema) || (schema != null && schema.startsWith("FLOWS_")))
+                    continue;
 
-            Set<String> pkCols = Collections.emptySet();
-            Map<String, Map<String, Boolean>> idxs = Collections.emptyMap();
+                Collection<DbColumn> cols = new ArrayList<>();
 
-            String user = conn.getMetaData().getUserName().toUpperCase();
+                Set<String> pkCols = Collections.emptySet();
+                Map<String, Map<String, Boolean>> idxs = Collections.emptyMap();
 
-            String sql = String.format(SQL_COLUMNS,
-                tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name and a.owner = b.owner" : "", user);
+                String sql = String.format(SQL_COLUMNS,
+                        tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name and a.owner = b.owner" : "",
+                        schema != null ? String.format(" WHERE a.owner = '%s' ", schema) : "");
 
-            try (ResultSet colsRs = colsStmt.executeQuery(sql)) {
-                String prevSchema = "";
-                String prevTbl = "";
+                try (ResultSet colsRs = colsStmt.executeQuery(sql)) {
+                    String prevSchema = "";
+                    String prevTbl = "";
 
-                boolean first = true;
+                    boolean first = true;
 
-                while (colsRs.next()) {
-                    String owner = colsRs.getString(OWNER_IDX);
-                    String tbl = colsRs.getString(TBL_NAME_IDX);
+                    while (colsRs.next()) {
+                        String owner = colsRs.getString(OWNER_IDX);
+                        String tbl = colsRs.getString(TBL_NAME_IDX);
 
-                    boolean changed = !owner.equals(prevSchema) || !tbl.equals(prevTbl);
+                        if (sysSchemas.contains(owner) || (schema != null && schema.startsWith("FLOWS_")))
+                            continue;
 
-                    if (changed) {
-                        if (first)
-                            first = false;
-                        else
-                            tbls.add(table(prevSchema, prevTbl, cols, idxs));
+                        boolean changed = !owner.equals(prevSchema) || !tbl.equals(prevTbl);
 
-                        prevSchema = owner;
-                        prevTbl = tbl;
-                        cols = new ArrayList<>();
-                        pkCols = primaryKeys(pkStmt, owner, tbl);
-                        idxs = indexes(idxStmt, owner, tbl);
+                        if (changed) {
+                            if (first)
+                                first = false;
+                            else
+                                tbls.add(table(prevSchema, prevTbl, cols, idxs));
+
+                            prevSchema = owner;
+                            prevTbl = tbl;
+                            cols = new ArrayList<>();
+                            pkCols = primaryKeys(pkStmt, owner, tbl);
+                            idxs = indexes(idxStmt, owner, tbl);
+                        }
+
+                        String colName = colsRs.getString(COL_NAME_IDX);
+
+                        cols.add(new DbColumn(colName, decodeType(colsRs), pkCols.contains(colName),
+                                !"N".equals(colsRs.getString(NULLABLE_IDX))));
                     }
 
-                    String colName = colsRs.getString(COL_NAME_IDX);
-
-                    cols.add(new DbColumn(colName, decodeType(colsRs), pkCols.contains(colName),
-                        !"N".equals(colsRs.getString(NULLABLE_IDX))));
+                    if (!cols.isEmpty())
+                        tbls.add(table(prevSchema, prevTbl, cols, idxs));
                 }
-
-                if (!cols.isEmpty())
-                    tbls.add(table(prevSchema, prevTbl, cols, idxs));
             }
         }
 
