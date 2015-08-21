@@ -17,18 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -36,7 +33,6 @@ import org.jetbrains.annotations.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -79,7 +75,9 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(GRID_CNT);
+        startGridsMultiThreaded(GRID_CNT - 1);
+
+        startGrid(GRID_CNT - 1);
     }
 
     /** {@inheritDoc} */
@@ -204,6 +202,14 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
 
         assertEquals(client, (boolean)ignite.configuration().isClientMode());
 
+        final List<IgniteCache<TestKey, TestValue>> caches1 = new ArrayList<>();
+        final List<IgniteCache<TestKey, TestValue>> caches2 = new ArrayList<>();
+
+        for (int i = 0; i < GRID_CNT; i++) {
+            caches1.add(ignite(i).<TestKey, TestValue>cache(CACHE1));
+            caches2.add(ignite(i).<TestKey, TestValue>cache(CACHE2));
+        }
+
         IgniteCache<TestKey, TestValue> cache1 = ignite.cache(CACHE1);
         IgniteCache<TestKey, TestValue> cache2 = ignite.cache(CACHE2);
 
@@ -212,9 +218,11 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
         assertNotSame(cache1, cache2);
 
         try {
-            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+            Random rnd = new Random();
 
             long seed = System.currentTimeMillis();
+
+            rnd.setSeed(seed);
 
             log.info("Test tx operations [concurrency=" + concurrency +
                 ", isolation=" + isolation +
@@ -228,6 +236,13 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
             for (int i = 0; i < KEY_RANGE; i++)
                 keys.add(new TestKey(i));
 
+            CacheConfiguration ccfg = cache1.getConfiguration(CacheConfiguration.class);
+
+            boolean fullSync = ccfg.getWriteSynchronizationMode() == FULL_SYNC;
+            boolean optimistic = concurrency == OPTIMISTIC;
+
+            boolean checkData = fullSync && !optimistic;
+
             for (int i = 0; i < 10_000; i++) {
                 if (i % 100 == 0)
                     log.info("Iteration: " + i);
@@ -235,10 +250,10 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
                 boolean rollback = i % 10 == 0;
 
                 try (Transaction tx = txs.txStart(concurrency, isolation)) {
-                    cacheOperation(expData1, rnd, cache1, concurrency == OPTIMISTIC, rollback);
+                    cacheOperation(expData1, rnd, cache1, checkData, rollback);
 
                     if (crossCacheTx)
-                        cacheOperation(expData2, rnd, cache2, concurrency == OPTIMISTIC, rollback);
+                        cacheOperation(expData2, rnd, cache2, checkData, rollback);
 
                     if (rollback)
                         tx.rollback();
@@ -247,39 +262,15 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
                 }
             }
 
-            final List<IgniteCache<TestKey, TestValue>> caches1 = new ArrayList<>();
-            final List<IgniteCache<TestKey, TestValue>> caches2 = new ArrayList<>();
-
-            for (int i = 0; i < GRID_CNT; i++) {
-                caches1.add(ignite(i).<TestKey, TestValue>cache(CACHE1));
-                caches2.add(ignite(i).<TestKey, TestValue>cache(CACHE2));
-            }
-
-            CacheConfiguration ccfg = cache1.getConfiguration(CacheConfiguration.class);
-
-            if (ccfg.getWriteSynchronizationMode() == FULL_SYNC) {
+            if (fullSync) {
                 checkData(caches1, keys, expData1);
                 checkData(caches2, keys, expData2);
-            }
-            else {
-                boolean pass = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                    @Override public boolean apply() {
-                        try {
-                            checkData(caches1, keys, expData1);
-                            checkData(caches2, keys, expData2);
-                        }
-                        catch (AssertionFailedError e) {
-                            log.info("Data check failed, will retry.");
-                        }
 
-                        return true;
-                    }
-                }, 5000);
+                cache1.removeAll();
+                cache2.removeAll();
 
-                if (!pass) {
-                    checkData(caches1, keys, expData1);
-                    checkData(caches2, keys, expData2);
-                }
+                checkData(caches1, keys, new HashMap<TestKey, TestValue>());
+                checkData(caches2, keys, new HashMap<TestKey, TestValue>());
             }
         }
         finally {
@@ -309,14 +300,14 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
      * @param expData Expected cache data.
      * @param rnd Random.
      * @param cache Cache.
-     * @param optimistic {@code True} if test uses optimistic transaction.
+     * @param checkData If {@code true} checks data.
      * @param willRollback {@code True} if will rollback transaction.
      */
     private void cacheOperation(
         Map<TestKey, TestValue> expData,
-        ThreadLocalRandom rnd,
+        Random rnd,
         IgniteCache<TestKey, TestValue> cache,
-        boolean optimistic,
+        boolean checkData,
         boolean willRollback) {
         TestKey key = key(rnd);
         TestValue val = new TestValue(rnd.nextLong());
@@ -336,7 +327,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
 
                 TestValue expOld = expData.get(key);
 
-                if (!optimistic)
+                if (checkData)
                     assertEquals(expOld, oldVal);
 
                 if (!willRollback)
@@ -348,7 +339,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
             case 2: {
                 boolean rmv = cache.remove(key);
 
-                if (!optimistic)
+                if (checkData)
                     assertEquals(expData.containsKey(key), rmv);
 
                 if (!willRollback)
@@ -362,7 +353,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
 
                 TestValue expOld = expData.get(key);
 
-                if (!optimistic)
+                if (checkData)
                     assertEquals(expOld, oldVal);
 
                 if (!willRollback)
@@ -376,7 +367,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
 
                 boolean expPut = !expData.containsKey(key);
 
-                if (!optimistic)
+                if (checkData)
                     assertEquals(expPut, put);
 
                 if (expPut && !willRollback)
@@ -389,7 +380,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
                 TestValue oldVal = cache.invoke(key, new TestEntryProcessor(val.value()));
                 TestValue expOld = expData.get(key);
 
-                if (!optimistic)
+                if (checkData)
                     assertEquals(expOld, oldVal);
 
                 if (!willRollback)
@@ -402,7 +393,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
                 TestValue oldVal = cache.invoke(key, new TestEntryProcessor(null));
                 TestValue expOld = expData.get(key);
 
-                if (!optimistic)
+                if (checkData)
                     assertEquals(expOld, oldVal);
 
                 break;
@@ -412,7 +403,8 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
                 TestValue oldVal = cache.get(key);
                 TestValue expOld = expData.get(key);
 
-                assertEquals(expOld, oldVal);
+                if (checkData)
+                    assertEquals(expOld, oldVal);
 
                 break;
             }
@@ -426,7 +418,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
      * @param rnd Random.
      * @return Key.
      */
-    private TestKey key(ThreadLocalRandom rnd) {
+    private TestKey key(Random rnd) {
         return new TestKey(rnd.nextInt(KEY_RANGE));
     }
 
