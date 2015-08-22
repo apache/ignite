@@ -824,6 +824,15 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testConfigInClassPath() throws Exception {
+        try (Ignite ignite = Ignition.start("config/ignite-test-config.xml")) {
+            assert "config-in-classpath".equals(ignite.name());
+        }
+    }
+
+    /**
      * Test task.
      */
     private static class TestTask extends ComputeTaskSplitAdapter<Void, Void> {

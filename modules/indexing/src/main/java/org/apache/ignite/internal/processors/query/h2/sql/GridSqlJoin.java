@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import org.h2.util.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Join of two tables or subqueries.
  */
@@ -34,6 +36,8 @@ public class GridSqlJoin extends GridSqlElement {
      * @param on Join condition.
      */
     public GridSqlJoin(GridSqlElement leftTbl, GridSqlElement rightTbl, boolean leftOuter, @Nullable GridSqlElement on) {
+        super(new ArrayList<GridSqlElement>(on == null ? 2 : 3));
+
         addChild(leftTbl);
         addChild(rightTbl);
 

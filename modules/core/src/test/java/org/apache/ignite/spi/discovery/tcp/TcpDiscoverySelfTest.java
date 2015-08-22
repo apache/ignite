@@ -70,7 +70,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+        TcpDiscoverySpi spi = gridName.contains("testPingInterruptedOnNodeFailedFailingNode") ?
+            new TestTcpDiscoverySpi() : new TcpDiscoverySpi();
 
         discoMap.put(gridName, spi);
 
@@ -128,6 +129,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             if (U.isMacOs())
                 spi.setLocalAddress(F.first(U.allLocalIps()));
         }
+        else if (gridName.contains("testPingInterruptedOnNodeFailedPingingNode"))
+            cfg.setFailureDetectionTimeout(30_000);
 
         return cfg;
     }
@@ -334,6 +337,153 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         // Heartbeat interval is 40 seconds, but we should detect node failure faster.
         assert cnt.await(7, SECONDS);
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void testPingInterruptedOnNodeFailed() throws Exception {
+        try {
+            final Ignite pingingNode = startGrid("testPingInterruptedOnNodeFailedPingingNode");
+            final Ignite failedNode = startGrid("testPingInterruptedOnNodeFailedFailingNode");
+            startGrid("testPingInterruptedOnNodeFailedSimpleNode");
+
+            ((TestTcpDiscoverySpi)failedNode.configuration().getDiscoverySpi()).ignorePingResponse = true;
+
+            final CountDownLatch pingLatch = new CountDownLatch(1);
+
+            final CountDownLatch eventLatch = new CountDownLatch(1);
+
+            final AtomicBoolean pingRes = new AtomicBoolean(true);
+
+            final AtomicBoolean failRes = new AtomicBoolean(false);
+
+            long startTs = System.currentTimeMillis();
+
+            pingingNode.events().localListen(
+                new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event event) {
+                        if (((DiscoveryEvent)event).eventNode().id().equals(failedNode.cluster().localNode().id())) {
+                            failRes.set(true);
+                            eventLatch.countDown();
+                        }
+
+                        return true;
+                    }
+                },
+                EventType.EVT_NODE_FAILED);
+
+            IgniteInternalFuture<?> pingFut = multithreadedAsync(
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        pingLatch.countDown();
+
+                        pingRes.set(pingingNode.configuration().getDiscoverySpi().pingNode(
+                            failedNode.cluster().localNode().id()));
+
+                        return null;
+                    }
+                }, 1);
+
+            IgniteInternalFuture<?> failingFut = multithreadedAsync(
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        pingLatch.await();
+
+                        Thread.sleep(3000);
+
+                        ((TestTcpDiscoverySpi)failedNode.configuration().getDiscoverySpi()).simulateNodeFailure();
+
+                        return null;
+                    }
+                }, 1);
+
+            failingFut.get();
+            pingFut.get();
+
+            assertFalse(pingRes.get());
+
+            assertTrue(System.currentTimeMillis() - startTs <
+                pingingNode.configuration().getFailureDetectionTimeout() / 2);
+
+            assertTrue(eventLatch.await(7, TimeUnit.SECONDS));
+            assertTrue(failRes.get());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void testPingInterruptedOnNodeLeft() throws Exception {
+        try {
+            final Ignite pingingNode = startGrid("testPingInterruptedOnNodeFailedPingingNode");
+            final Ignite leftNode = startGrid("testPingInterruptedOnNodeFailedFailingNode");
+            startGrid("testPingInterruptedOnNodeFailedSimpleNode");
+
+            ((TestTcpDiscoverySpi)leftNode.configuration().getDiscoverySpi()).ignorePingResponse = true;
+
+            final CountDownLatch pingLatch = new CountDownLatch(1);
+
+            final AtomicBoolean pingRes = new AtomicBoolean(true);
+
+            long startTs = System.currentTimeMillis();
+
+            IgniteInternalFuture<?> pingFut = multithreadedAsync(
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        pingLatch.countDown();
+
+                        pingRes.set(pingingNode.configuration().getDiscoverySpi().pingNode(
+                            leftNode.cluster().localNode().id()));
+
+                        return null;
+                    }
+                }, 1);
+
+            IgniteInternalFuture<?> stoppingFut = multithreadedAsync(
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        pingLatch.await();
+
+                        Thread.sleep(3000);
+
+                        stopGrid("testPingInterruptedOnNodeFailedFailingNode");
+
+                        return null;
+                    }
+                }, 1);
+
+            stoppingFut.get();
+            pingFut.get();
+
+            assertFalse(pingRes.get());
+
+            assertTrue(System.currentTimeMillis() - startTs <
+                pingingNode.configuration().getFailureDetectionTimeout() / 2);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
+        /** */
+        private boolean ignorePingResponse;
+
+        /** {@inheritDoc} */
+        protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
+            IgniteCheckedException {
+            if (msg instanceof TcpDiscoveryPingResponse && ignorePingResponse)
+                return;
+            else
+                super.writeToSocket(sock, msg, timeout);
+        }
     }
 
     /**

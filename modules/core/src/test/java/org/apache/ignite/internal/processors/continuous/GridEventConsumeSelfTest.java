@@ -26,7 +26,6 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -125,6 +124,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 assertEquals(0, U.<Map>field(proc, "rmtInfos").size());
                 assertEquals(0, U.<Map>field(proc, "startFuts").size());
                 assertEquals(0, U.<Map>field(proc, "stopFuts").size());
+                assertEquals(0, U.<Map>field(proc, "bufCheckThreads").size());
             }
         }
         finally {
@@ -754,7 +754,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      */
     public void testNodeJoinWithP2P() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-585");
-        
+
         final Collection<UUID> nodeIds = new HashSet<>();
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT + 1);

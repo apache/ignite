@@ -31,7 +31,7 @@ import java.util.*;
 public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscoveryIpFinder>
     extends GridCommonAbstractTest {
     /** */
-    private T finder;
+    protected T finder;
 
     /**
      * Constructor.

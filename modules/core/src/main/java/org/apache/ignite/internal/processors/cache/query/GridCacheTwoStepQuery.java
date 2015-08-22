@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
@@ -34,11 +31,11 @@ public class GridCacheTwoStepQuery {
 
     /** */
     @GridToStringInclude
-    private Map<String, GridCacheSqlQuery> mapQrys;
+    private List<GridCacheSqlQuery> mapQrys = new ArrayList<>();
 
     /** */
     @GridToStringInclude
-    private GridCacheSqlQuery reduce;
+    private GridCacheSqlQuery rdc;
 
     /** */
     private int pageSize = DFLT_PAGE_SIZE;
@@ -51,13 +48,14 @@ public class GridCacheTwoStepQuery {
 
     /**
      * @param spaces All spaces accessed in query.
-     * @param qry Reduce query.
-     * @param params Reduce query parameters.
+     * @param rdc Reduce query.
      */
-    public GridCacheTwoStepQuery(Set<String> spaces, String qry, Object ... params) {
+    public GridCacheTwoStepQuery(Set<String> spaces, GridCacheSqlQuery rdc) {
+        assert rdc != null;
+
         this.spaces = spaces;
 
-        reduce = new GridCacheSqlQuery(null, qry, params);
+        this.rdc = rdc;
     }
 
     /**
@@ -89,32 +87,24 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param alias Alias.
      * @param qry SQL Query.
-     * @param params Query parameters.
      */
-    public void addMapQuery(String alias, String qry, Object ... params) {
-        A.ensure(!F.isEmpty(alias), "alias must not be empty");
-
-        if (mapQrys == null)
-            mapQrys = new GridLeanMap<>();
-
-        if (mapQrys.put(alias, new GridCacheSqlQuery(alias, qry, params)) != null)
-            throw new IgniteException("Failed to add query, alias already exists: " + alias + ".");
+    public void addMapQuery(GridCacheSqlQuery qry) {
+        mapQrys.add(qry);
     }
 
     /**
      * @return Reduce query.
      */
     public GridCacheSqlQuery reduceQuery() {
-        return reduce;
+        return rdc;
     }
 
     /**
      * @return Map queries.
      */
-    public Collection<GridCacheSqlQuery> mapQueries() {
-        return mapQrys.values();
+    public List<GridCacheSqlQuery> mapQueries() {
+        return mapQrys;
     }
 
     /**

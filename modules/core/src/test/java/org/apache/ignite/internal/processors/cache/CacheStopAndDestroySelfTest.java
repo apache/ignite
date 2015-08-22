@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -121,8 +120,9 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         public static UUID nodeFilter;
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
-            super.sendMessage(node, msg);
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+            throws IgniteSpiException {
+            super.sendMessage(node, msg, ackClosure);
 
             if (nodeFilter != null &&
                 node.id().equals(nodeFilter) &&
@@ -707,93 +707,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
                 assert cache0.get(KEY_VAL).equals(curVal + 1);
                 assert cache1.get(KEY_VAL).equals(curVal + 2);
                 assert cache2.get(KEY_VAL).equals(curVal + 3);
-            }
-        }
-    }
-
-    /**
-     * Tests concurrent close.
-     *
-     * @throws Exception If failed.
-     */
-    public void testConcurrentCloseSetWithTry() throws Exception {
-        final AtomicInteger a1 = new AtomicInteger();
-        final AtomicInteger a2 = new AtomicInteger();
-        final AtomicInteger a3 = new AtomicInteger();
-        final AtomicInteger a4 = new AtomicInteger();
-
-        Thread t1 = new Thread(new Runnable() {
-            @Override public void run() {
-                Thread.currentThread().setName("test-thread-1");
-
-                closeWithTry(a1, 0);
-            }
-        });
-        Thread t2 = new Thread(new Runnable() {
-            @Override public void run() {
-                Thread.currentThread().setName("test-thread-2");
-
-                closeWithTry(a2, 0);
-            }
-        });
-        Thread t3 = new Thread(new Runnable() {
-            @Override public void run() {
-                Thread.currentThread().setName("test-thread-3");
-
-                closeWithTry(a3, 2);
-            }
-        });
-        Thread t4 = new Thread(new Runnable() {
-            @Override public void run() {
-                Thread.currentThread().setName("test-thread-4");
-
-                closeWithTry(a4, 2);
-            }
-        });
-
-        IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(getDhtConfig());
-
-        cache.close();
-
-        t1.start();
-        t2.start();
-        t3.start();
-        t4.start();
-
-        try {
-            U.sleep(1000);
-        }
-        finally {
-            stop = true;
-        }
-
-        t1.join();
-        t2.join();
-        t3.join();
-        t4.join();
-
-        assert a1.get() > 1;
-        assert a2.get() > 1;
-        assert a3.get() > 1;
-        assert a4.get() > 1;
-
-        checkUsageFails(cache);
-    }
-
-    /**
-     * @param a AtomicInteger.
-     * @param node Node.
-     */
-    public void closeWithTry(AtomicInteger a, int node) {
-        while (!stop) {
-            try (IgniteCache<String, String> cache = grid(node).getOrCreateCache(getDhtConfig())) {
-                a.incrementAndGet();
-
-                assert cache.get(KEY_VAL) == null || cache.get(KEY_VAL).equals(KEY_VAL);
-
-                cache.put(KEY_VAL, KEY_VAL);
-
-                assert cache.get(KEY_VAL).equals(KEY_VAL);
             }
         }
     }

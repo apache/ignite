@@ -98,6 +98,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCacheDhtPreloadPutGetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadDisabledSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadMultiThreadedSelfTest.class));
+        suite.addTest(new TestSuite(CacheDhtLocalPartitionAfterRemoveSelfTest.class));
         suite.addTest(new TestSuite(GridCacheColocatedPreloadRestartSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearPreloadRestartSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadStartStopSelfTest.class));
@@ -123,6 +124,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCacheColocatedOptimisticTransactionSelfTest.class));
         suite.addTestSuite(GridCacheAtomicMessageCountSelfTest.class);
         suite.addTest(new TestSuite(GridCacheNearPartitionedClearSelfTest.class));
+        suite.addTest(new TestSuite(IgniteCacheNearOffheapGetSelfTest.class));
 
         suite.addTest(new TestSuite(GridCacheDhtExpiredEntriesPreloadSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearExpiredEntriesPreloadSelfTest.class));
@@ -137,6 +139,11 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(IgniteCacheClientNodePartitionsExchangeTest.class));
         suite.addTest(new TestSuite(IgniteCacheClientNodeChangingTopologyTest.class));
         suite.addTest(new TestSuite(IgniteCacheServerNodeConcurrentStart.class));
+
+        suite.addTest(new TestSuite(IgniteCacheEntryProcessorNodeJoinTest.class));
+        suite.addTest(new TestSuite(IgniteAtomicCacheEntryProcessorNodeJoinTest.class));
+        suite.addTest(new TestSuite(GridCacheNearTxForceKeyTest.class));
+        suite.addTest(new TestSuite(CrossCacheTxRandomOperationsTest.class));
 
         return suite;
     }

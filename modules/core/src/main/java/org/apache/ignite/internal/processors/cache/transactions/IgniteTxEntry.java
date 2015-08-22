@@ -79,6 +79,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     @GridDirectTransient
     private Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessorsCol;
 
+    /** Transient field for calculated entry processor value. */
+    @GridDirectTransient
+    private CacheObject entryProcessorCalcVal;
+
     /** Transform closure bytes. */
     @GridToStringExclude
     private byte[] transformClosBytes;
@@ -571,9 +575,21 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         Object val = null;
         Object keyVal = null;
 
+        GridCacheVersion ver;
+
+        try {
+            ver = entry.version();
+        }
+        catch (GridCacheEntryRemovedException e) {
+            assert tx == null || tx.optimistic() : tx;
+
+            ver = null;
+        }
+
         for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
             try {
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(ctx, key, keyVal, cacheVal, val);
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(ctx, key, keyVal, cacheVal, val,
+                    ver);
 
                 EntryProcessor processor = t.get1();
 
@@ -775,6 +791,20 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         return expiryPlc;
     }
 
+    /**
+     * @return Entry processor calculated value.
+     */
+    public CacheObject entryProcessorCalculatedValue() {
+        return entryProcessorCalcVal;
+    }
+
+    /**
+     * @param entryProcessorCalcVal Entry processor calculated value.
+     */
+    public void entryProcessorCalculatedValue(CacheObject entryProcessorCalcVal) {
+        this.entryProcessorCalcVal = entryProcessorCalcVal;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -914,7 +944,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                     return false;
 
                 reader.incrementState();
-                
+
             case 6:
                 flags = reader.readByte("flags");
 

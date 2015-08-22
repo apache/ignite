@@ -180,6 +180,14 @@
                     <property name="javaName" value="name"/>
                     <property name="javaType" value="java.lang.String"/>
                 </bean>
+                <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
+                    <property name="databaseName" value="salary"/>
+                    <property name="databaseType">
+                        <util:constant static-field="java.sql.Types.INTEGER"/>
+                    </property>
+                    <property name="javaName" value="salary"/>
+                    <property name="javaType" value="java.lang.Integer"/>
+                </bean>
             </list>
         </property>
     </bean>

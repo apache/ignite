@@ -26,6 +26,7 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.net.*;
 import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -128,6 +129,13 @@ abstract class TcpDiscoveryImpl {
      */
     protected void onException(String msg, Exception e){
         spi.getExceptionRegistry().onException(msg, e);
+    }
+
+    /**
+     * Called when a local node either received from or sent to a remote node a message.
+     */
+    protected void onMessageExchanged() {
+        // No-op
     }
 
     /**
@@ -273,14 +281,28 @@ abstract class TcpDiscoveryImpl {
      * maximum acknowledgement timeout, {@code false} otherwise.
      */
     protected boolean checkAckTimeout(long ackTimeout) {
-        if (ackTimeout > spi.maxAckTimeout) {
+        if (ackTimeout > spi.getMaxAckTimeout()) {
             LT.warn(log, null, "Acknowledgement timeout is greater than maximum acknowledgement timeout " +
                 "(consider increasing 'maxAckTimeout' configuration property) " +
-                "[ackTimeout=" + ackTimeout + ", maxAckTimeout=" + spi.maxAckTimeout + ']');
+                "[ackTimeout=" + ackTimeout + ", maxAckTimeout=" + spi.getMaxAckTimeout() + ']');
 
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * @param addrs Addresses.
+     */
+    protected static List<String> toOrderedList(Collection<InetSocketAddress> addrs) {
+        List<String> res = new ArrayList<>(addrs.size());
+
+        for (InetSocketAddress addr : addrs)
+            res.add(addr.toString());
+
+        Collections.sort(res);
+
+        return res;
     }
 }

@@ -162,7 +162,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     private AtomicBoolean preparing = new AtomicBoolean();
 
     /** */
-    private Set<Integer> invalidParts = new GridLeanSet<>();
+    private Map<Integer, Set<Integer>> invalidParts = new HashMap<>(3);
 
     /**
      * Transaction state. Note that state is not protected, as we want to
@@ -671,16 +671,25 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Integer> invalidPartitions() {
+    @Override public Map<Integer, Set<Integer>> invalidPartitions() {
         return invalidParts;
     }
 
     /** {@inheritDoc} */
     @Override public void addInvalidPartition(GridCacheContext<?, ?> cacheCtx, int part) {
-        invalidParts.add(part);
+        Set<Integer> parts = invalidParts.get(cacheCtx.cacheId());
+
+        if (parts == null) {
+            parts = new GridLeanSet<>();
+
+            invalidParts.put(cacheCtx.cacheId(), parts);
+        }
+
+        parts.add(part);
 
         if (log.isDebugEnabled())
-            log.debug("Added invalid partition for transaction [part=" + part + ", tx=" + this + ']');
+            log.debug("Added invalid partition for transaction [cache=" + cacheCtx.name() + ", part=" + part +
+                ", tx=" + this + ']');
     }
 
     /** {@inheritDoc} */
@@ -1228,9 +1237,23 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
                 Object key = null;
 
+                GridCacheVersion ver;
+
+                try {
+                    ver = txEntry.cached().version();
+                }
+                catch (GridCacheEntryRemovedException e) {
+                    assert optimistic() : txEntry;
+
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to get entry version: [msg=" + e.getMessage() + ']');
+
+                    ver = null;
+                }
+
                 for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                     CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(txEntry.context(),
-                        txEntry.key(), key, cacheVal, val);
+                        txEntry.key(), key, cacheVal, val, ver);
 
                     try {
                         EntryProcessor<Object, Object, Object> processor = t.get1();
@@ -1681,17 +1704,17 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object addMeta(UUID name, Object val) {
+        @Nullable @Override public Object addMeta(int key, Object val) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object removeMeta(UUID name) {
+        @Nullable @Override public Object removeMeta(int key) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object meta(UUID name) {
+        @Nullable @Override public Object meta(int key) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
@@ -1765,7 +1788,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public Set<Integer> invalidPartitions() {
+        @Override public Map<Integer, Set<Integer>> invalidPartitions() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

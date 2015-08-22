@@ -99,13 +99,6 @@ public class GridCacheUtils {
     /** Skip store flag bit mask. */
     public static final int SKIP_STORE_FLAG_MASK = 0x1;
 
-    /** Per-thread generated UID store. */
-    private static final ThreadLocal<UUID> UUIDS = new ThreadLocal<UUID>() {
-        @Override protected UUID initialValue() {
-            return UUID.randomUUID();
-        }
-    };
-
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
 
@@ -245,15 +238,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets per-thread-unique ID for this thread.
-     *
-     * @return ID for this thread.
-     */
-    public static UUID uuid() {
-        return UUIDS.get();
-    }
-
-    /**
      * @param msg Message to check.
      * @return {@code True} if preloader message.
      */
@@ -306,7 +290,7 @@ public class GridCacheUtils {
      * @param meta Meta name.
      * @return Filter for entries with meta.
      */
-    public static IgnitePredicate<KeyCacheObject> keyHasMeta(final GridCacheContext ctx, final UUID meta) {
+    public static IgnitePredicate<KeyCacheObject> keyHasMeta(final GridCacheContext ctx, final int meta) {
         return new P1<KeyCacheObject>() {
             @Override public boolean apply(KeyCacheObject k) {
                 GridCacheEntryEx e = ctx.cache().peekEx(k);
@@ -1678,6 +1662,29 @@ public class GridCacheUtils {
                     ((LifecycleAware)lsnr).start();
             }
         }
+    }
+
+    /**
+     * @param partsMap Cache ID to partition IDs collection map.
+     * @return Cache ID to partition ID array map.
+     */
+    public static Map<Integer, int[]> convertInvalidPartitions(Map<Integer, Set<Integer>> partsMap) {
+        Map<Integer, int[]> res = new HashMap<>(partsMap.size());
+
+        for (Map.Entry<Integer, Set<Integer>> entry : partsMap.entrySet()) {
+            Set<Integer> parts = entry.getValue();
+
+            int[] partsArray = new int[parts.size()];
+
+            int idx = 0;
+
+            for (Integer part : parts)
+                partsArray[idx++] = part;
+
+            res.put(entry.getKey(), partsArray);
+        }
+
+        return res;
     }
 
     /**

@@ -21,6 +21,9 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -39,6 +42,9 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
     /** */
     private static final int TEST_TIMEOUT = 2 * 60 * 1000;
 
+    /** */
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return GRID_CNT;
@@ -50,8 +56,21 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+        disco.setIpFinder(ipFinder);
+
+        cfg.setDiscoverySpi(disco);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+        CacheConfiguration<?,?> cfg = super.cacheConfiguration(gridName);
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);

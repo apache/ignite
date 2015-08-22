@@ -65,6 +65,7 @@
         <module>modules/jta</module>
         <module>modules/aws</module>
         <module>modules/log4j</module>
+        <module>modules/log4j2</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/codegen</module>
@@ -73,6 +74,8 @@
         <module>modules/mesos</module>
         <module>modules/kafka</module>
         <module>modules/yarn</module>
+        <module>modules/jms11</module>
+        <module>modules/zookeeper</module>
     </modules>
 
     <profiles>

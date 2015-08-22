@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -365,7 +366,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
      */
     private static class DelayCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
             throws IgniteSpiException {
             try {
                 if (delayMessage((GridIoMessage)msg))
@@ -375,7 +376,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                 throw new IgniteSpiException(e);
             }
 
-            super.sendMessage(node, msg);
+            super.sendMessage(node, msg, ackClosure);
         }
 
         /**

@@ -380,4 +380,22 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
 
         return new InetSocketAddress(res[0], port);
     }
+
+    /**
+     * Used by TEST SUITES only. Called through reflection.
+     *
+     * @param bucketName Bucket to delete.
+     */
+    private void removeBucket(String bucketName) {
+        init();
+
+        try {
+            Storage.Buckets.Delete deleteBucket = storage.buckets().delete(bucketName);
+
+            deleteBucket.execute();
+        }
+        catch (Exception e) {
+            throw new IgniteSpiException("Failed to remove the bucket: " + bucketName, e);
+        }
+    }
 }

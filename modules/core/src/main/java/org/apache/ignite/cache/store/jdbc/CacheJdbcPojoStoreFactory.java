@@ -98,7 +98,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheJdbcPojoSto
             }
             catch (Exception e) {
                 throw new IgniteException("Failed to load bean in application context [beanName=" + dataSrcBean +
-                    ", igniteConfig=" + appContext + ']');
+                    ", igniteConfig=" + appContext + ']', e);
             }
         }
 

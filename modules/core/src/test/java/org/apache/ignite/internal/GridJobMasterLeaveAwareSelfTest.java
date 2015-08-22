@@ -730,9 +730,9 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         private CountDownLatch waitLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
             throws IgniteSpiException {
-            sendMessage0(node, msg);
+            sendMessage0(node, msg, ackClosure);
         }
 
         /**
@@ -741,9 +741,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
          *
          * @param node Destination node.
          * @param msg Message to be sent.
+         * @param ackClosure Ack closure.
          * @throws org.apache.ignite.spi.IgniteSpiException If failed.
          */
-        private void sendMessage0(ClusterNode node, Message msg) throws IgniteSpiException {
+        private void sendMessage0(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+            throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {
                 GridIoMessage msg0 = (GridIoMessage)msg;
 
@@ -762,7 +764,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
             }
 
             if (!block)
-                super.sendMessage(node, msg);
+                super.sendMessage(node, msg, ackClosure);
         }
 
         /**

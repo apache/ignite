@@ -112,7 +112,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws IgniteCheckedException {
-        tasksMetaCache = ctx.security().enabled() ? ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
+        tasksMetaCache = ctx.security().enabled() && !ctx.isDaemon() ?
+            ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
 
         startLatch.countDown();
     }

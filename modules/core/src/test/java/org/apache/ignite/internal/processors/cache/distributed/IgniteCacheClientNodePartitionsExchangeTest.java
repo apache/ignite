@@ -609,8 +609,8 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg) {
-            super.sendMessage(node, msg);
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure) {
+            super.sendMessage(node, msg, ackClosure);
 
             Object msg0 = ((GridIoMessage)msg).message();
 

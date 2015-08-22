@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.util.*;
+
 /**
  * Column.
  */
@@ -36,6 +38,8 @@ public class GridSqlColumn extends GridSqlElement implements GridSqlValue {
      * @param sqlText Text.
      */
     public GridSqlColumn(GridSqlElement from, String name, String sqlText) {
+        super(Collections.<GridSqlElement>emptyList());
+
         assert sqlText != null;
 
         expressionInFrom = from;

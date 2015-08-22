@@ -31,8 +31,8 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
     /** SQL to get columns metadata. */
     private static final String SQL_COLUMNS = "SELECT a.owner, a.table_name, a.column_name, a.nullable," +
         " a.data_type, a.data_precision, a.data_scale " +
-        "FROM all_tab_columns a %s" +
-        " WHERE a.owner = '%s'" +
+        "FROM all_tab_columns a %s " +
+        " %s " +
         " ORDER BY a.owner, a.table_name, a.column_id";
 
     /** SQL to get list of PRIMARY KEYS columns. */
@@ -42,7 +42,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
         " WHERE a.owner = ? and a.table_name = ? AND a.constraint_type = 'P'";
 
     /** SQL to get indexes metadata. */
-    private static final String SQL_INDEXES = "select i.index_name, u.column_expression, i.column_name, i.descend" +
+    private static final String SQL_INDEXES = "SELECT i.index_name, u.column_expression, i.column_name, i.descend" +
         " FROM all_ind_columns i" +
         " LEFT JOIN user_ind_expressions u on u.index_name = i.index_name and i.table_name = u.table_name" +
         " WHERE i.index_owner = ? and i.table_name = ?" +
@@ -81,79 +81,112 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
     /** Index column sort order index. */
     private static final int IDX_COL_DESCEND_IDX = 4;
 
+    /** {@inheritDoc} */
+    @Override public Set<String> systemSchemas() {
+        return new HashSet<>(Arrays.asList("ANONYMOUS", "CTXSYS", "DBSNMP", "EXFSYS", "LBACSYS", "MDSYS", "MGMT_VIEW",
+            "OLAPSYS", "OWBSYS", "ORDPLUGINS", "ORDSYS", "OUTLN", "SI_INFORMTN_SCHEMA", "SYS", "SYSMAN", "SYSTEM",
+            "TSMSYS", "WK_TEST", "WKSYS", "WKPROXY", "WMSYS", "XDB",
+
+            "APEX_040000", "APEX_PUBLIC_USER", "DIP", "FLOWS_30000", "FLOWS_FILES", "MDDATA", "ORACLE_OCM",
+            "SPATIAL_CSW_ADMIN_USR", "SPATIAL_WFS_ADMIN_USR", "XS$NULL",
+
+            "BI", "HR", "OE", "PM", "IX", "SH"));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<String> schemas(Connection conn) throws SQLException {
+        List<String> schemas = new ArrayList<>();
+
+        ResultSet rs = conn.getMetaData().getSchemas();
+
+        Set<String> sysSchemas = systemSchemas();
+
+        while(rs.next()) {
+            String schema = rs.getString(1);
+
+            if (!sysSchemas.contains(schema) && !schema.startsWith("FLOWS_"))
+                schemas.add(schema);
+        }
+
+        return schemas;
+    }
+
     /**
      * @param rs Result set with column type metadata from Oracle database.
      * @return JDBC type.
      * @throws SQLException If failed to decode type.
      */
     private int decodeType(ResultSet rs) throws SQLException {
-        switch (rs.getString(DATA_TYPE_IDX)) {
-            case "CHAR":
-            case "NCHAR":
-                return CHAR;
+        String type = rs.getString(DATA_TYPE_IDX);
 
-            case "VARCHAR2":
-            case "NVARCHAR2":
-                return VARCHAR;
+        if (type.startsWith("TIMESTAMP"))
+            return TIMESTAMP;
+        else {
+            switch (type) {
+                case "CHAR":
+                case "NCHAR":
+                    return CHAR;
 
-            case "LONG":
-                return LONGVARCHAR;
+                case "VARCHAR2":
+                case "NVARCHAR2":
+                    return VARCHAR;
 
-            case "LONG RAW":
-                return LONGVARBINARY;
+                case "LONG":
+                    return LONGVARCHAR;
 
-            case "FLOAT":
-                return FLOAT;
+                case "LONG RAW":
+                    return LONGVARBINARY;
 
-            case "NUMBER":
-                int precision = rs.getInt(DATA_PRECISION_IDX);
-                int scale = rs.getInt(DATA_SCALE_IDX);
+                case "FLOAT":
+                    return FLOAT;
 
-                if (scale > 0) {
-                    if (scale < 4 && precision < 19)
-                        return FLOAT;
+                case "NUMBER":
+                    int precision = rs.getInt(DATA_PRECISION_IDX);
+                    int scale = rs.getInt(DATA_SCALE_IDX);
 
-                    if (scale > 4 || precision > 19)
-                        return DOUBLE;
+                    if (scale > 0) {
+                        if (scale < 4 && precision < 19)
+                            return FLOAT;
 
-                    return NUMERIC;
-                }
-                else {
-                    if (precision < 1)
-                        return INTEGER;
+                        if (scale > 4 || precision > 19)
+                            return DOUBLE;
 
-                    if (precision < 2)
-                        return BOOLEAN;
+                        return NUMERIC;
+                    }
+                    else {
+                        if (precision < 1)
+                            return INTEGER;
 
-                    if (precision < 4)
-                        return TINYINT;
+                        if (precision < 2)
+                            return BOOLEAN;
 
-                    if (precision < 6)
-                        return SMALLINT;
+                        if (precision < 4)
+                            return TINYINT;
 
-                    if (precision < 11)
-                        return INTEGER;
+                        if (precision < 6)
+                            return SMALLINT;
 
-                    if (precision < 20)
-                        return BIGINT;
+                        if (precision < 11)
+                            return INTEGER;
 
-                    return NUMERIC;
-                }
+                        if (precision < 20)
+                            return BIGINT;
 
-            case "DATE":
-                return DATE;
+                        return NUMERIC;
+                    }
 
-            case "TIMESTAMP":
-                return TIMESTAMP;
+                case "DATE":
+                    return DATE;
 
-            case "BFILE":
-            case "BLOB":
-                return BLOB;
+                case "BFILE":
+                case "BLOB":
+                    return BLOB;
 
-            case "CLOB":
-            case "NCLOB":
-            case "XMLTYPE":
-                return CLOB;
+                case "CLOB":
+                case "NCLOB":
+                case "XMLTYPE":
+                    return CLOB;
+            }
         }
 
         return OTHER;
@@ -222,57 +255,70 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<DbTable> tables(Connection conn, boolean tblsOnly) throws SQLException {
+    @Override public Collection<DbTable> tables(Connection conn, List<String> schemas, boolean tblsOnly)
+        throws SQLException {
         Collection<DbTable> tbls = new ArrayList<>();
 
         PreparedStatement pkStmt = conn.prepareStatement(SQL_PRIMARY_KEYS);
 
         PreparedStatement idxStmt = conn.prepareStatement(SQL_INDEXES);
 
+        if (schemas.size() == 0)
+            schemas.add(null);
+
+        Set<String> sysSchemas = systemSchemas();
+
         try (Statement colsStmt = conn.createStatement()) {
-            Collection<DbColumn> cols = new ArrayList<>();
+            for (String schema: schemas) {
+                if (systemSchemas().contains(schema) || (schema != null && schema.startsWith("FLOWS_")))
+                    continue;
 
-            Set<String> pkCols = Collections.emptySet();
-            Map<String, Map<String, Boolean>> idxs = Collections.emptyMap();
+                Collection<DbColumn> cols = new ArrayList<>();
 
-            String user = conn.getMetaData().getUserName().toUpperCase();
+                Set<String> pkCols = Collections.emptySet();
+                Map<String, Map<String, Boolean>> idxs = Collections.emptyMap();
 
-            String sql = String.format(SQL_COLUMNS,
-                tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name" : "", user);
+                String sql = String.format(SQL_COLUMNS,
+                        tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name and a.owner = b.owner" : "",
+                        schema != null ? String.format(" WHERE a.owner = '%s' ", schema) : "");
 
-            try (ResultSet colsRs = colsStmt.executeQuery(sql)) {
-                String prevSchema = "";
-                String prevTbl = "";
+                try (ResultSet colsRs = colsStmt.executeQuery(sql)) {
+                    String prevSchema = "";
+                    String prevTbl = "";
 
-                boolean first = true;
+                    boolean first = true;
 
-                while (colsRs.next()) {
-                    String owner = colsRs.getString(OWNER_IDX);
-                    String tbl = colsRs.getString(TBL_NAME_IDX);
+                    while (colsRs.next()) {
+                        String owner = colsRs.getString(OWNER_IDX);
+                        String tbl = colsRs.getString(TBL_NAME_IDX);
 
-                    boolean changed = !owner.equals(prevSchema) || !tbl.equals(prevTbl);
+                        if (sysSchemas.contains(owner) || (schema != null && schema.startsWith("FLOWS_")))
+                            continue;
 
-                    if (changed) {
-                        if (first)
-                            first = false;
-                        else
-                            tbls.add(table(prevSchema, prevTbl, cols, idxs));
+                        boolean changed = !owner.equals(prevSchema) || !tbl.equals(prevTbl);
 
-                        prevSchema = owner;
-                        prevTbl = tbl;
-                        cols = new ArrayList<>();
-                        pkCols = primaryKeys(pkStmt, owner, tbl);
-                        idxs = indexes(idxStmt, owner, tbl);
+                        if (changed) {
+                            if (first)
+                                first = false;
+                            else
+                                tbls.add(table(prevSchema, prevTbl, cols, idxs));
+
+                            prevSchema = owner;
+                            prevTbl = tbl;
+                            cols = new ArrayList<>();
+                            pkCols = primaryKeys(pkStmt, owner, tbl);
+                            idxs = indexes(idxStmt, owner, tbl);
+                        }
+
+                        String colName = colsRs.getString(COL_NAME_IDX);
+
+                        cols.add(new DbColumn(colName, decodeType(colsRs), pkCols.contains(colName),
+                                !"N".equals(colsRs.getString(NULLABLE_IDX))));
                     }
 
-                    String colName = colsRs.getString(COL_NAME_IDX);
-
-                    cols.add(new DbColumn(colName, decodeType(colsRs), pkCols.contains(colName),
-                        !"N".equals(colsRs.getString(NULLABLE_IDX))));
+                    if (!cols.isEmpty())
+                        tbls.add(table(prevSchema, prevTbl, cols, idxs));
                 }
-
-                if (!cols.isEmpty())
-                    tbls.add(table(prevSchema, prevTbl, cols, idxs));
             }
         }
 

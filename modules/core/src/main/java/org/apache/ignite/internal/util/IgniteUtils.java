@@ -31,6 +31,7 @@ import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -580,7 +581,14 @@ public abstract class IgniteUtils {
 
         m.put(ClusterTopologyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
-                return new ClusterTopologyException(e.getMessage(), e);
+                ClusterTopologyException topEx = new ClusterTopologyException(e.getMessage(), e);
+
+                ClusterTopologyCheckedException checked = (ClusterTopologyCheckedException)e;
+
+                if (checked.retryReadyFuture() != null)
+                    topEx.retryReadyFuture(new IgniteFutureImpl<>(checked.retryReadyFuture()));
+
+                return topEx;
             }
         });
 
@@ -3132,7 +3140,7 @@ public abstract class IgniteUtils {
                 return ggHome0;
         }
 
-        URI uri;
+        URI classesUri;
 
         Class<IgniteUtils> cls = IgniteUtils.class;
 
@@ -3147,11 +3155,11 @@ public abstract class IgniteUtils {
             }
 
             // Resolve path to class-file.
-            uri = domain.getCodeSource().getLocation().toURI();
+            classesUri = domain.getCodeSource().getLocation().toURI();
 
             // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
-            if (isWindows() && uri.getAuthority() != null)
-                uri = new URI(uri.toString().replace("file://", "file:/"));
+            if (isWindows() && classesUri.getAuthority() != null)
+                classesUri = new URI(classesUri.toString().replace("file://", "file:/"));
         }
         catch (URISyntaxException | SecurityException e) {
             logResolveFailed(cls, e);
@@ -3159,7 +3167,18 @@ public abstract class IgniteUtils {
             return null;
         }
 
-        return findProjectHome(new File(uri));
+        File classesFile;
+
+        try {
+            classesFile = new File(classesUri);
+        }
+        catch (IllegalArgumentException e) {
+            logResolveFailed(cls, e);
+
+            return null;
+        }
+
+        return findProjectHome(classesFile);
     }
 
     /**
@@ -3334,12 +3353,28 @@ public abstract class IgniteUtils {
             url = U.resolveIgniteUrl(springCfgPath);
 
             if (url == null)
+                url = resolveInClasspath(springCfgPath);
+
+            if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
                     "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
         }
 
         return url;
+    }
+
+    /**
+     * @param path Resource path.
+     * @return Resource URL inside classpath or {@code null}.
+     */
+    @Nullable private static URL resolveInClasspath(String path) {
+        ClassLoader clsLdr = Thread.currentThread().getContextClassLoader();
+
+        if (clsLdr == null)
+            return null;
+
+        return clsLdr.getResource(path.replaceAll("\\\\", "/"));
     }
 
     /**
@@ -4023,9 +4058,11 @@ public abstract class IgniteUtils {
      * @param sb Sb.
      */
     private static void appendClassLoaderHash(SB sb) {
-        String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
+        if (getBoolean(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, true)) {
+            String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
 
-        sb.a("clsLdr=").a(clsLdrHash).a(',');
+            sb.a("clsLdr=").a(clsLdrHash).a(',');
+        }
     }
 
     /**

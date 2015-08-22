@@ -41,7 +41,7 @@ public class GridSqlUnion extends GridSqlQuery {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridSqlElement expression(int col) {
+    @Override protected GridSqlElement column(int col) {
         throw new IllegalStateException();
     }
 
@@ -77,17 +77,6 @@ public class GridSqlUnion extends GridSqlQuery {
         getSortLimitSQL(buff);
 
         return buff.toString();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"CloneCallsConstructors", "CloneDoesntDeclareCloneNotSupportedException"})
-    @Override public GridSqlUnion clone() {
-        GridSqlUnion res = (GridSqlUnion)super.clone();
-
-        res.right = right.clone();
-        res.left = left.clone();
-
-        return res;
     }
 
     /**

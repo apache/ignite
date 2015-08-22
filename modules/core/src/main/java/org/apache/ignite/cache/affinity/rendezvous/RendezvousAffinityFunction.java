@@ -20,6 +20,7 @@ package org.apache.ignite.cache.affinity.rendezvous;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -88,7 +89,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
     /** Hash ID resolver. */
-    private AffinityNodeHashResolver hashIdRslvr = new AffinityNodeAddressHashResolver();
+    private AffinityNodeHashResolver hashIdRslvr = null;
 
     /** Ignite instance. */
     @IgniteInstanceResource
@@ -204,6 +205,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      *
      * @return Hash ID resolver.
      */
+    @Deprecated
     public AffinityNodeHashResolver getHashIdResolver() {
         return hashIdRslvr;
     }
@@ -219,7 +221,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * repartitioning.
      *
      * @param hashIdRslvr Hash ID resolver.
+     *
+     * @deprecated Use {@link IgniteConfiguration#setConsistentId(Serializable)} instead.
      */
+    @Deprecated
     public void setHashIdResolver(AffinityNodeHashResolver hashIdRslvr) {
         this.hashIdRslvr = hashIdRslvr;
     }
@@ -273,6 +278,19 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
+     * Resolves node hash.
+     *
+     * @param node Cluster node;
+     * @return Node hash.
+     */
+    public Object resolveNodeHash(ClusterNode node) {
+        if (hashIdRslvr != null)
+            return hashIdRslvr.resolve(node);
+        else
+            return node.consistentId();
+    }
+
+    /**
      * Returns collection of nodes (primary first) for specified partition.
      */
     public List<ClusterNode> assignPartition(int part, List<ClusterNode> nodes, int backups,
@@ -285,7 +303,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         MessageDigest d = digest.get();
 
         for (ClusterNode node : nodes) {
-            Object nodeHash = hashIdRslvr.resolve(node);
+            Object nodeHash = resolveNodeHash(node);
 
             try {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();

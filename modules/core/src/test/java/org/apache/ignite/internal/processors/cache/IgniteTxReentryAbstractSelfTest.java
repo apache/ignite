@@ -25,6 +25,7 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -136,11 +137,11 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
         private AtomicInteger dhtLocks = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
             throws IgniteSpiException {
             countMsg((GridIoMessage)msg);
 
-            super.sendMessage(node, msg);
+            super.sendMessage(node, msg, ackClosure);
         }
 
         /**

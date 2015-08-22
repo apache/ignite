@@ -50,6 +50,7 @@ import static org.apache.ignite.transactions.TransactionState.*;
 public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAdapter
     implements GridCacheMvccFuture<IgniteInternalTx> {
     /** */
+    @GridToStringInclude
     private Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
 
     /**
@@ -100,7 +101,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
                 MiniFuture f = (MiniFuture) fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId));
+                    ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Remote node left grid: " +
+                        nodeId);
+
+                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+
+                    f.onResult(e);
 
                     found = true;
                 }
@@ -416,7 +422,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
                 GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
                 if (CU.affinityNodes(cacheCtx, topVer).isEmpty()) {
-                    onDone(new ClusterTopologyCheckedException("Failed to map keys for cache (all " +
+                    onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all " +
                         "partition nodes left the grid): " + cacheCtx.name()));
 
                     return;
@@ -562,8 +568,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
             }
+            catch (ClusterTopologyCheckedException e) {
+                e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+
+                fut.onResult(e);
+            }
             catch (IgniteCheckedException e) {
-                // Fail the whole thing.
                 fut.onResult(e);
             }
         }
@@ -662,7 +672,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
         });
 
         return S.toString(GridNearOptimisticTxPrepareFuture.class, this,
-            "futs", futs,
+            "innerFuts", futs,
+            "tx", tx,
             "super", super.toString());
     }
 

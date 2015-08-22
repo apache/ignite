@@ -52,9 +52,12 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected GridNioServer<?> startServer(int port, GridNioParser parser, GridNioServerListener lsnr)
-        throws Exception {
-        GridNioServer<?> srvr = GridNioServer.builder()
+    @Override protected GridNioServer.Builder<?> serverBuilder(int port,
+        GridNioParser parser,
+        GridNioServerListener lsnr)
+        throws Exception
+    {
+        return GridNioServer.builder()
             .address(U.getLocalHost())
             .port(port)
             .listener(lsnr)
@@ -69,12 +72,7 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
             .sendQueueLimit(0)
             .filters(
                 new GridNioCodecFilter(parser, log, false),
-                new GridNioSslFilter(sslCtx, log))
-            .build();
-
-        srvr.start();
-
-        return srvr;
+                new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), log));
     }
 
     /** {@inheritDoc} */

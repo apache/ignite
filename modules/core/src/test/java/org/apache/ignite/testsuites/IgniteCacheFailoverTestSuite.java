@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
@@ -73,7 +73,14 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxNearDisabledFairAffinityPutGetRestartTest.class);
 
         suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
+        suite.addTestSuite(IgniteCachePutRetryAtomicPrimaryWriteOrderSelfTest.class);
         suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheSizeFailoverTest.class);
+
+        suite.addTestSuite(IgniteCacheTopologySafeGetSelfTest.class);
 
         return suite;
     }

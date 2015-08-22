@@ -1138,7 +1138,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         private Map<Class<?>, Set<UUID>> blockCls = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+            throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {
                 Object msg0 = ((GridIoMessage)msg).message();
 
@@ -1156,7 +1157,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                 }
             }
 
-            super.sendMessage(node, msg);
+            super.sendMessage(node, msg, ackClosure);
         }
 
         /**

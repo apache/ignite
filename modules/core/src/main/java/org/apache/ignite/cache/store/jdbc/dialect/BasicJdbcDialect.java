@@ -26,6 +26,9 @@ import java.util.*;
  * Basic implementation of dialect based on JDBC specification.
  */
 public class BasicJdbcDialect implements JdbcDialect {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default max query parameters count. */
     protected static final int DFLT_MAX_PARAMS_CNT = 2000;
 

@@ -143,10 +143,6 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
                 e.getMessage().contains("Failed to execute task, client node disconnected."));
         }
 
-        startGrid(0);
-
-        U.sleep(3000);
-
         stopAllGrids();
     }
 

@@ -281,7 +281,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         volatile CountDownLatch writeLatch;
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg)
+        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout)
             throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                 CountDownLatch writeLatch0 = writeLatch;
@@ -293,7 +293,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
                 }
             }
 
-            super.writeToSocket(sock, msg);
+            super.writeToSocket(sock, msg, timeout);
         }
     }
 
@@ -315,7 +315,8 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+            throws IgniteSpiException {
             Class msgCls0 = msgCls;
 
             if (collectStart.get() && msg instanceof GridIoMessage)
@@ -328,7 +329,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
                 return;
             }
 
-            super.sendMessage(node, msg);
+            super.sendMessage(node, msg, ackClosure);
         }
 
         /**
