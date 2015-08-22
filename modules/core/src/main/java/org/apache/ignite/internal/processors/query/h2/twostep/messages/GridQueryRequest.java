@@ -222,6 +222,7 @@ public class GridQueryRequest implements Message {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -290,9 +291,10 @@ public class GridQueryRequest implements Message {
                     return false;
 
                 reader.incrementState();
+
         }
 
-        return true;
+        return reader.afterMessageRead();
     }
 
     /** {@inheritDoc} */

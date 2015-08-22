@@ -165,7 +165,7 @@ public class GridClockDeltaVersion implements Message, Comparable<GridClockDelta
 
         }
 
-        return true;
+        return reader.afterMessageRead();
     }
 
     /** {@inheritDoc} */

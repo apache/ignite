@@ -508,7 +508,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
         }
 
-        return true;
+        return reader.afterMessageRead();
     }
 
     /** {@inheritDoc} */

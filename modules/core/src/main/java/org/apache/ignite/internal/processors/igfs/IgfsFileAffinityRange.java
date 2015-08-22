@@ -344,7 +344,7 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
 
         }
 
-        return true;
+        return reader.afterMessageRead();
     }
 
     /** {@inheritDoc} */

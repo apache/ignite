@@ -738,7 +738,7 @@ public class GridJobExecuteRequest implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead();
     }
 
     /** {@inheritDoc} */

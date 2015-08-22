@@ -213,14 +213,19 @@ public class MessageCodeGenerator {
         Collection<Class<? extends Message>> classes = classes();
 
         for (Class<? extends Message> cls : classes) {
-            boolean isAbstract = Modifier.isAbstract(cls.getModifiers());
+            try {
+                boolean isAbstract = Modifier.isAbstract(cls.getModifiers());
 
-            System.out.println("Processing class: " + cls.getName() + (isAbstract ? " (abstract)" : ""));
+                System.out.println("Processing class: " + cls.getName() + (isAbstract ? " (abstract)" : ""));
 
-            if (write)
-                generateAndWrite(cls);
-            else
-                generate(cls);
+                if (write)
+                    generateAndWrite(cls);
+                else
+                    generate(cls);
+            }
+            catch (IllegalStateException e) {
+                System.out.println("Will skip class generation [cls=" + cls + ", err=" + e.getMessage() + ']');
+            }
         }
     }
 
@@ -370,8 +375,8 @@ public class MessageCodeGenerator {
 
         indent--;
 
-        finish(write);
-        finish(read);
+        finish(write, false);
+        finish(read, true);
     }
 
     /**
@@ -460,7 +465,7 @@ public class MessageCodeGenerator {
     /**
      * @param code Code lines.
      */
-    private void finish(Collection<String> code) {
+    private void finish(Collection<String> code, boolean read) {
         assert code != null;
 
         if (!fields.isEmpty()) {
@@ -468,7 +473,7 @@ public class MessageCodeGenerator {
             code.add(EMPTY);
         }
 
-        code.add(builder().a("return true;").toString());
+        code.add(builder().a(read ? "return reader.afterMessageRead();" : "return true;").toString());
     }
 
     /**

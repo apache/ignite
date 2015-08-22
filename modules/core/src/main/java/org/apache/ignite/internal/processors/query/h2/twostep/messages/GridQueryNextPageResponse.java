@@ -268,7 +268,7 @@ public class GridQueryNextPageResponse implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead();
     }
 
     /** {@inheritDoc} */
