@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
+
+import java.util.*;
+
 /**
  * Continuous query listener.
  */
@@ -33,12 +38,39 @@ interface CacheContinuousQueryListener<K, V> {
      * @param primary Primary flag.
      * @param recordIgniteEvt Whether to record event.
      */
-    public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt, boolean primary, boolean recordIgniteEvt);
+    public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt,
+        boolean primary,
+        boolean recordIgniteEvt);
 
     /**
      * Listener unregistered callback.
      */
     public void onUnregister();
+
+    /**
+     * Cleans backup queue.
+     *
+     * @param updateIdxs Update indexes map.
+     */
+    public void cleanupBackupQueue(Map<Integer, Long> updateIdxs);
+
+    /**
+     * Flushes backup queue.
+     *
+     * @param ctx Context.
+     * @param topVer Topology version.
+     */
+    public void flushBackupQueue(GridKernalContext ctx, AffinityTopologyVersion topVer);
+
+    /**
+     * @param ctx Context.
+     */
+    public void acknowledgeBackupOnTimeout(GridKernalContext ctx);
+
+    /**
+     * @param part Partition.
+     */
+    public void onPartitionEvicted(int part);
 
     /**
      * @return Whether old value is required.

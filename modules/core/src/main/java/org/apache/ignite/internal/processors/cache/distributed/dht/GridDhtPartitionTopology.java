@@ -46,6 +46,8 @@ public interface GridDhtPartitionTopology {
      *
      * @param exchId Exchange ID.
      * @param exchFut Exchange future.
+     * @param updateSeq Update sequence.
+     * @param stopping Stopping flag.
      */
     public void updateTopologyVersion(
         GridDhtPartitionExchangeId exchId,
@@ -187,17 +189,27 @@ public interface GridDhtPartitionTopology {
     /**
      * @param exchId Exchange ID.
      * @param partMap Update partition map.
+     * @param cntrMap Partition update counters.
      * @return Local partition map if there were evictions or {@code null} otherwise.
      */
-    public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId, GridDhtPartitionFullMap partMap);
+    public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionFullMap partMap,
+        @Nullable Map<Integer, Long> cntrMap);
 
     /**
      * @param exchId Exchange ID.
      * @param parts Partitions.
+     * @param cntrMap Partition update counters.
      * @return Local partition map if there were evictions or {@code null} otherwise.
      */
     @Nullable public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionMap parts);
+        GridDhtPartitionMap parts,
+        @Nullable Map<Integer, Long> cntrMap);
+
+    /**
+     * @return Partition update counters.
+     */
+    public Map<Integer, Long> updateCounters();
 
     /**
      * @param part Partition to own.
@@ -207,6 +219,7 @@ public interface GridDhtPartitionTopology {
 
     /**
      * @param part Evicted partition.
+     * @param updateSeq Update sequence increment flag.
      */
     public void onEvicted(GridDhtLocalPartition part, boolean updateSeq);
 
@@ -222,4 +235,10 @@ public interface GridDhtPartitionTopology {
      * @param threshold Threshold for number of entries.
      */
     public void printMemoryStats(int threshold);
+
+    /**
+     * @param topVer Topology version.
+     * @return {@code True} if rebalance process finished.
+     */
+    public boolean rebalanceFinished(AffinityTopologyVersion topVer);
 }

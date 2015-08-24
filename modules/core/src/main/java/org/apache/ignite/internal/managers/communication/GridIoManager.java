@@ -104,6 +104,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final ConcurrentMap<Object, ConcurrentMap<UUID, GridCommunicationMessageSet>> msgSetMap =
         new ConcurrentHashMap8<>();
 
+    /** */
+    private final ConcurrentMap<Object, SequentialMessageSet> seqMsgs = new ConcurrentHashMap8<>();
+
     /** Local node ID. */
     private final UUID locNodeId;
 
@@ -580,6 +583,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
+                    else if (msg.isSequential())
+                        processSequentialMessage(nodeId, msg, plc, msgC);
                     else
                         processRegularMessage(nodeId, msg, plc, msgC);
 
@@ -595,6 +600,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
+                    else if (msg.isSequential())
+                        processSequentialMessage(nodeId, msg, plc, msgC);
                     else
                         processRegularMessage(nodeId, msg, plc, msgC);
             }
@@ -967,6 +974,90 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
+     * @param nodeId Node ID.
+     * @param msg Message.
+     * @param plc Execution policy.
+     * @param msgC Closure to call when message processing finished.
+     */
+    private void processSequentialMessage(
+        UUID nodeId,
+        GridIoMessage msg,
+        byte plc,
+        IgniteRunnable msgC
+    ) throws IgniteCheckedException {
+        final GridMessageListener lsnr = lsnrMap.get(msg.topic());
+
+        if (lsnr == null) {
+            if (log.isDebugEnabled())
+                log.debug("Ignoring message because listener is not found: " + msg);
+
+            if (msgC != null)
+                msgC.run();
+
+            return;
+        }
+
+        SequentialMessageSet msgSet = seqMsgs.get(msg.topic());
+
+        if (msgSet == null) {
+            if (closedTopics.contains(msg.topic())) {
+                if (log.isDebugEnabled())
+                    log.debug("Ignoring message because the topic is already closed: " + msg);
+
+                if (msgC != null)
+                    msgC.run();
+
+                return;
+            }
+
+            SequentialMessageSet old = seqMsgs.putIfAbsent(msg.topic(), msgSet = new SequentialMessageSet());
+
+            if (old != null)
+                msgSet = old;
+        }
+
+        msgSet.add(nodeId, msg, msgC);
+
+        if (!msgSet.reserved()) {
+            if (msgC == null) {
+                assert locNodeId.equals(nodeId);
+
+                msgSet.unwind(lsnr);
+            }
+            else {
+                assert !locNodeId.equals(nodeId);
+
+                final SequentialMessageSet msgSet0 = msgSet;
+
+                Runnable c = new Runnable() {
+                    @Override public void run() {
+                        try {
+                            threadProcessingMessage(true);
+
+                            msgSet0.unwind(lsnr);
+                        }
+                        finally {
+                            threadProcessingMessage(false);
+                        }
+                    }
+                };
+
+                try {
+                    pool(plc).execute(c);
+                }
+                catch (RejectedExecutionException e) {
+                    U.error(log, "Failed to process sequential message due to execution rejection. " +
+                        "Increase the upper bound on executor service provided by corresponding " +
+                        "configuration property. Will attempt to process message in the listener " +
+                        "thread instead [msgPlc=" + plc + ']', e);
+
+                    c.run();
+                }
+            }
+        }
+    }
+
+    /**
      * @param node Destination node.
      * @param topic Topic to send the message to.
      * @param topicOrd GridTopic enumeration ordinal.
@@ -975,7 +1066,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param ordered Ordered flag.
      * @param timeout Timeout.
      * @param skipOnTimeout Whether message can be skipped on timeout.
-     * @param ackClosure Ack closure.
+     * @param ackC Ack closure.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     private void send(
@@ -985,15 +1076,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Message msg,
         byte plc,
         boolean ordered,
+        boolean seq,
         long timeout,
         boolean skipOnTimeout,
-        IgniteInClosure<IgniteException> ackClosure
+        IgniteInClosure<IgniteException> ackC
     ) throws IgniteCheckedException {
         assert node != null;
         assert topic != null;
         assert msg != null;
 
-        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, seq, timeout, skipOnTimeout);
 
         if (locNodeId.equals(node.id())) {
             assert plc != P2P_POOL;
@@ -1005,21 +1097,25 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             if (ordered)
                 processOrderedMessage(locNodeId, ioMsg, plc, null);
+            else if (seq)
+                processSequentialMessage(locNodeId, ioMsg, plc, null);
             else
                 processRegularMessage0(ioMsg, locNodeId);
 
-            if (ackClosure != null)
-                ackClosure.apply(null);
+            if (ackC != null)
+                ackC.apply(null);
         }
         else {
             if (topicOrd < 0)
                 ioMsg.topicBytes(marsh.marshal(topic));
 
             try {
-                if ((CommunicationSpi)getSpi() instanceof TcpCommunicationSpi)
-                    ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).sendMessage(node, ioMsg, ackClosure);
+                CommunicationSpi spi = getSpi();
+
+                if (spi instanceof TcpCommunicationSpi)
+                    ((TcpCommunicationSpi)spi).sendMessage(node, ioMsg, ackC);
                 else
-                    getSpi().sendMessage(node, ioMsg);
+                    spi.sendMessage(node, ioMsg);
             }
             catch (IgniteSpiException e) {
                 throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
@@ -1039,7 +1135,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * <p>
      * How to use it:
      * <ol>
-     *     <li>Replace {@link #send(ClusterNode, Object, int, Message, byte, boolean, long, boolean, IgniteInClosure)}
+     *     <li>Replace {@link #send(ClusterNode, Object, int, Message, byte, boolean, boolean, long, boolean, IgniteInClosure)}
      *          with this method.</li>
      *     <li>Start all grids for your test, then set {@link #TURBO_DEBUG_MODE} to {@code true}.</li>
      *     <li>Perform test operations on the topology. No network will be there.</li>
@@ -1063,6 +1159,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Message msg,
         byte plc,
         boolean ordered,
+        boolean seq,
         long timeout,
         boolean skipOnTimeout
     ) throws IgniteCheckedException {
@@ -1070,7 +1167,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert topic != null;
         assert msg != null;
 
-        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, seq, timeout, skipOnTimeout);
 
         IgniteKernal rmt;
 
@@ -1141,7 +1238,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (node == null)
             throw new IgniteCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
 
-        send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null);
+        send(node, topic, topic.ordinal(), msg, plc, false, false, 0, false, null);
     }
 
     /**
@@ -1153,7 +1250,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      */
     public void send(ClusterNode node, Object topic, Message msg, byte plc)
         throws IgniteCheckedException {
-        send(node, topic, -1, msg, plc, false, 0, false, null);
+        send(node, topic, -1, msg, plc, false, false, 0, false, null);
     }
 
     /**
@@ -1165,7 +1262,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      */
     public void send(ClusterNode node, GridTopic topic, Message msg, byte plc)
         throws IgniteCheckedException {
-        send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null);
+        send(node, topic, topic.ordinal(), msg, plc, false, false, 0, false, null);
     }
 
     /**
@@ -1187,7 +1284,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     ) throws IgniteCheckedException {
         assert timeout > 0 || skipOnTimeout;
 
-        send(node, topic, (byte)-1, msg, plc, true, timeout, skipOnTimeout, null);
+        send(node, topic, (byte)-1, msg, plc, true, false, timeout, skipOnTimeout, null);
     }
 
     /**
@@ -1214,7 +1311,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (node == null)
             throw new IgniteCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
 
-        send(node, topic, (byte)-1, msg, plc, true, timeout, skipOnTimeout, null);
+        send(node, topic, (byte)-1, msg, plc, true, false, timeout, skipOnTimeout, null);
     }
 
     /**
@@ -1227,7 +1324,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      */
     public void send(ClusterNode node, GridTopic topic, Message msg, byte plc,
         IgniteInClosure<IgniteException> ackClosure) throws IgniteCheckedException {
-        send(node, topic, topic.ordinal(), msg, plc, false, 0, false, ackClosure);
+        send(node, topic, topic.ordinal(), msg, plc, false, false, 0, false, ackClosure);
     }
 
     /**
@@ -1250,7 +1347,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         throws IgniteCheckedException {
         assert timeout > 0 || skipOnTimeout;
 
-        send(nodes, topic, -1, msg, plc, true, timeout, skipOnTimeout);
+        send(nodes, topic, -1, msg, plc, true, false, timeout, skipOnTimeout, null);
     }
 
     /**
@@ -1263,7 +1360,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      */
     public void send(ClusterNode node, Object topic, Message msg, byte plc, IgniteInClosure<IgniteException> ackClosure)
         throws IgniteCheckedException {
-        send(node, topic, -1, msg, plc, false, 0, false, ackClosure);
+        send(node, topic, -1, msg, plc, false, false, 0, false, ackClosure);
     }
 
     /**
@@ -1279,7 +1376,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Message msg,
         byte plc
     ) throws IgniteCheckedException {
-        send(nodes, topic, -1, msg, plc, false, 0, false);
+        send(nodes, topic, -1, msg, plc, false, false, 0, false, null);
     }
 
     /**
@@ -1295,7 +1392,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Message msg,
         byte plc
     ) throws IgniteCheckedException {
-        send(nodes, topic, topic.ordinal(), msg, plc, false, 0, false);
+        send(nodes, topic, topic.ordinal(), msg, plc, false, false, 0, false, null);
     }
 
     /**
@@ -1319,10 +1416,51 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     ) throws IgniteCheckedException {
         assert timeout > 0 || skipOnTimeout;
 
-        send(node, topic, (byte)-1, msg, plc, true, timeout, skipOnTimeout, ackClosure);
+        send(node, topic, (byte)-1, msg, plc, true, false, timeout, skipOnTimeout, ackClosure);
     }
 
      /**
+     * Sends sequential message.
+     *
+     * @param nodeId Destination node ID.
+     * @param topic Topic.
+     * @param msg Message.
+     * @param plc Policy.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void sendSequentialMessage(
+        UUID nodeId,
+        Object topic,
+        Message msg,
+        byte plc
+    ) throws IgniteCheckedException {
+        ClusterNode node = ctx.discovery().node(nodeId);
+
+        if (node == null)
+            throw new IgniteCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
+
+        sendSequentialMessage(node, topic, msg, plc);
+    }
+
+    /**
+     * Sends sequential message.
+     *
+     * @param node Destination node.
+     * @param topic Topic.
+     * @param msg Message.
+     * @param plc Policy.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void sendSequentialMessage(
+        ClusterNode node,
+        Object topic,
+        Message msg,
+        byte plc
+    ) throws IgniteCheckedException {
+        send(node, topic, -1, msg, plc, false, true, 0, false, null);
+    }
+
+    /**
      * Sends a peer deployable user message.
      *
      * @param nodes Destination nodes.
@@ -1467,7 +1605,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (node == null)
             throw new IgniteCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
 
-        send(node, topic, (byte)-1, msg, plc, true, timeout, skipOnTimeout, ackClosure);
+        send(node, topic, (byte)-1, msg, plc, true, false, timeout, skipOnTimeout, ackClosure);
     }
 
     /**
@@ -1477,6 +1615,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param msg Message to send.
      * @param plc Type of processing.
      * @param ordered Ordered flag.
+     * @param seq Sequential message flag.
      * @param timeout Message timeout.
      * @param skipOnTimeout Whether message can be skipped in timeout.
      * @throws IgniteCheckedException Thrown in case of any errors.
@@ -1488,8 +1627,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Message msg,
         byte plc,
         boolean ordered,
+        boolean seq,
         long timeout,
-        boolean skipOnTimeout
+        boolean skipOnTimeout,
+        IgniteInClosure<IgniteException> ackClosure
     ) throws IgniteCheckedException {
         assert nodes != null;
         assert topic != null;
@@ -1504,7 +1645,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             // messages to one node vs. many.
             if (!nodes.isEmpty()) {
                 for (ClusterNode node : nodes)
-                    send(node, topic, topicOrd, msg, plc, ordered, timeout, skipOnTimeout, null);
+                    send(node, topic, topicOrd, msg, plc, ordered, seq, timeout, skipOnTimeout, ackClosure);
             }
             else if (log.isDebugEnabled())
                 log.debug("Failed to send message to empty nodes collection [topic=" + topic + ", msg=" +
@@ -1666,6 +1807,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             if (map != null)
                 msgSets = map.values();
+
+            seqMsgs.remove(topic);
         }
         else {
             for (;;) {
@@ -1732,8 +1875,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (rmv && log.isDebugEnabled())
             log.debug("Removed message listener [topic=" + topic + ", lsnr=" + lsnr + ']');
 
-        if (lsnr instanceof ArrayListener)
-        {
+        if (lsnr instanceof ArrayListener) {
             for (GridMessageListener childLsnr : ((ArrayListener)lsnr).arr)
                 closeListener(childLsnr);
         }
@@ -2384,6 +2526,67 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DelayedMessage.class, this, super.toString());
+        }
+    }
+
+    /**
+     */
+    private static class SequentialMessageSet {
+        /** */
+        private final Queue<GridTuple3<UUID, GridIoMessage, IgniteRunnable>> queue = new ConcurrentLinkedDeque8<>();
+
+        /** */
+        private final AtomicBoolean reserve = new AtomicBoolean();
+
+        /**
+         * @return {@code True} if currently reserved.
+         */
+        boolean reserved() {
+            return reserve.get();
+        }
+
+        /**
+         * @param nodeId Node ID.
+         * @param msg Message.
+         * @param msgC Closure to call when message processing finished.
+         */
+        void add(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) {
+            queue.add(F.t(nodeId, msg, msgC));
+        }
+
+        /**
+         * @param lsnr Message listener.
+         */
+        void unwind(GridMessageListener lsnr) {
+            assert lsnr != null;
+
+            while (true) {
+                if (reserve.compareAndSet(false, true)) {
+                    try {
+                        GridTuple3<UUID, GridIoMessage, IgniteRunnable> t;
+
+                        while ((t = queue.poll()) != null) {
+                            try {
+                                lsnr.onMessage(t.get1(), t.get2().message());
+                            }
+                            finally {
+                                IgniteRunnable msgC = t.get3();
+
+                                if (msgC != null)
+                                    msgC.run();
+                            }
+                        }
+                    }
+                    finally {
+                        reserve.set(false);
+                    }
+
+                    if (queue.isEmpty())
+                        return;
+                }
+                else
+                    return;
+            }
         }
     }
 }

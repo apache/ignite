@@ -100,6 +100,11 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheContinuousQueryAtomicSelfTest.class);
         suite.addTestSuite(GridCacheContinuousQueryAtomicNearEnabledSelfTest.class);
         suite.addTestSuite(GridCacheContinuousQueryAtomicP2PDisabledSelfTest.class);
+        suite.addTestSuite(CacheContinuousQueryFailoverAtomicTest.class);
+        suite.addTestSuite(CacheContinuousQueryFailoverAtomicPrimaryWriteOrderTest.class);
+        suite.addTestSuite(CacheContinuousQueryFailoverAtomicReplicatedTest.class);
+        suite.addTestSuite(CacheContinuousQueryFailoverTxTest.class);
+        suite.addTestSuite(CacheContinuousQueryFailoverTxReplicatedTest.class);
         suite.addTestSuite(IgniteCacheContinuousQueryClientTest.class);
 
         // Reduce fields queries.

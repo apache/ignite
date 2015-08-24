@@ -394,12 +394,12 @@ public class GridNioServer<T> {
         assert ses != null;
         assert fut != null;
 
+        IgniteInClosure<IgniteException> ackC;
+
+        if (!sys && (ackC = ses.removeMeta(ACK_CLOSURE.ordinal())) != null)
+            fut.ackClosure(ackC);
+
         int msgCnt = sys ? ses.offerSystemFuture(fut) : ses.offerFuture(fut);
-
-        IgniteInClosure<IgniteException> ackClosure;
-
-        if (!sys && (ackClosure = ses.removeMeta(ACK_CLOSURE.ordinal())) != null)
-            fut.ackClosure(ackClosure);
 
         if (ses.closed()) {
             if (ses.removeFuture(fut))

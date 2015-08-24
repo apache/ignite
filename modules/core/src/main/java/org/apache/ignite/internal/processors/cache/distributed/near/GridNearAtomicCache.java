@@ -71,7 +71,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         int size = CU.isSystemCache(ctx.name()) ? 100 :
             Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, 1_000_000);
 
-        rmvQueue = new GridCircularBuffer<>(U.ceilPow2(size / 10));
+        if (ctx.deferredDelete(this))
+            rmvQueue = new GridCircularBuffer<>(U.ceilPow2(size / 10));
     }
 
     /** {@inheritDoc} */
@@ -224,7 +225,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         /*write-through*/false,
                         /*read-through*/false,
                         /*retval*/false,
-                        /**expiry policy*/null,
+                        /*expiry policy*/null,
                         /*event*/true,
                         /*metrics*/true,
                         /*primary*/false,
@@ -238,10 +239,17 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         false,
                         false,
                         subjId,
-                        taskName);
+                        taskName,
+                        null);
 
-                    if (updRes.removeVersion() != null)
-                        ctx.onDeferredDelete(entry, updRes.removeVersion());
+                    if (updRes.removeVersion() != null) {
+                        if (ctx.deferredDelete())
+                            ctx.onDeferredDelete(entry, updRes.removeVersion());
+                        else {
+                            if (entry.markObsoleteVersion(updRes.removeVersion()))
+                                removeEntry(entry);
+                        }
+                    }
 
                     break; // While.
                 }
@@ -277,8 +285,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         assert ver != null;
 
         Collection<KeyCacheObject> backupKeys = req.keys();
-
-        boolean intercept = req.forceTransformBackups() && ctx.config().getInterceptor() != null;
 
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
@@ -326,7 +332,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
-                            /*check version*/!req.forceTransformBackups(),
+                            /*check version*/op != TRANSFORM || !req.forceTransformBackups(),
                             req.topologyVersion(),
                             CU.empty0(),
                             DR_NONE,
@@ -334,12 +340,19 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             expireTime,
                             null,
                             false,
-                            intercept,
+                            /*intercept*/false,
                             req.subjectId(),
-                            taskName);
+                            taskName,
+                            null);
 
-                        if (updRes.removeVersion() != null)
-                            ctx.onDeferredDelete(entry, updRes.removeVersion());
+                        if (updRes.removeVersion() != null) {
+                            if (ctx.deferredDelete())
+                                ctx.onDeferredDelete(entry, updRes.removeVersion());
+                            else {
+                                if (entry.markObsoleteVersion(updRes.removeVersion()))
+                                    removeEntry(entry);
+                            }
+                        }
 
                         break;
                     }
@@ -644,6 +657,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
+        assert ctx.deferredDelete();
         assert entry.isNear();
 
         try {

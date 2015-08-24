@@ -62,8 +62,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     private ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>>
         clsHandlers = new ConcurrentHashMap8<>();
 
-    /** Ordered handler registry. */
-    private ConcurrentMap<Object, IgniteBiInClosure<UUID, ? extends GridCacheMessage>> orderedHandlers =
+    /** Per topic handler registry. */
+    private ConcurrentMap<Object, IgniteBiInClosure<UUID, ? extends GridCacheMessage>> perTopicHandlers =
         new ConcurrentHashMap8<>();
 
     /** Stopping flag. */
@@ -173,7 +173,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     @Override protected void onKernalStop0(boolean cancel) {
         cctx.gridIO().removeMessageListener(TOPIC_CACHE);
 
-        for (Object ordTopic : orderedHandlers.keySet())
+        for (Object ordTopic : perTopicHandlers.keySet())
             cctx.gridIO().removeMessageListener(ordTopic);
 
         boolean interrupted = false;
@@ -292,6 +292,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             if (e instanceof Error)
                 throw (Error)e;
+            else if (e instanceof RuntimeException)
+                throw (RuntimeException)e;
         }
         finally {
             if (depEnabled)
@@ -378,7 +380,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                     ctx.cacheId(),
-                    req.futureVersion());
+                    req.futureVersion(),
+                    req.partition());
 
                 res.onError(req.classError());
 
@@ -393,7 +396,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
                     ctx.cacheId(),
                     nodeId,
-                    req.futureVersion());
+                    req.futureVersion(),
+                    req.partition());
 
                 res.error(req.classError());
 
@@ -538,7 +542,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         catch (Throwable e) {
             U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=" + msg + ']', e);
 
-            if (e instanceof Error)
+            if (e instanceof Error || e instanceof RuntimeException)
                 throw e;
         }
         finally {
@@ -744,10 +748,29 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         ClusterNode n = cctx.discovery().node(nodeId);
 
         if (n == null)
-            throw new ClusterTopologyCheckedException("Failed to send message because node left grid [nodeId=" + nodeId +
-                ", msg=" + msg + ']');
+            throw new ClusterTopologyCheckedException("Failed to send message because node left grid [nodeId=" +
+                nodeId + ", msg=" + msg + ']');
 
         send(n, msg, plc);
+    }
+
+    /**
+     * @param nodeId Destination node ID.
+     * @param topic Topic to send the message to.
+     * @param msg Message to send.
+     * @param plc IO policy.
+     * @param timeout Timeout to keep a message on receiving queue.
+     * @throws IgniteCheckedException Thrown in case of any errors.
+     */
+    public void sendOrderedMessage(UUID nodeId, Object topic, GridCacheMessage msg, byte plc, long timeout)
+        throws IgniteCheckedException {
+        ClusterNode n = cctx.discovery().node(nodeId);
+
+        if (n == null)
+            throw new ClusterTopologyCheckedException("Failed to send message because node left grid [nodeId=" +
+                nodeId + ", msg=" + msg + ']');
+
+        sendOrderedMessage(n, topic, msg, plc, timeout);
     }
 
     /**
@@ -778,7 +801,66 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
             catch (IgniteCheckedException e) {
                 if (cctx.discovery().node(node.id()) == null)
-                    throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " + node.id(), e);
+                    throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " +
+                        node.id(), e);
+
+                if (cnt == retryCnt)
+                    throw e;
+                else if (log.isDebugEnabled())
+                    log.debug("Failed to send message to node (will retry): " + node.id());
+            }
+
+            U.sleep(retryDelay);
+        }
+    }
+
+    /**
+     * @param nodeId Destination node ID.
+     * @param topic Topic to send the message to.
+     * @param msg Message to send.
+     * @param plc IO policy.
+     * @throws IgniteCheckedException Thrown in case of any errors.
+     */
+    public void sendSequentialMessage(UUID nodeId, Object topic, GridCacheMessage msg, byte plc)
+        throws IgniteCheckedException {
+        ClusterNode n = cctx.discovery().node(nodeId);
+
+        if (n == null)
+            throw new ClusterTopologyCheckedException("Failed to send message because node left grid [nodeId=" +
+                nodeId + ", msg=" + msg + ']');
+
+        sendSequentialMessage(n, topic, msg, plc);
+    }
+
+    /**
+     * @param node Destination node.
+     * @param topic Topic to send the message to.
+     * @param msg Message to send.
+     * @param plc IO policy.
+     * @throws IgniteCheckedException Thrown in case of any errors.
+     */
+    public void sendSequentialMessage(ClusterNode node, Object topic, GridCacheMessage msg, byte plc)
+        throws IgniteCheckedException {
+        onSend(msg, node.id());
+
+        int cnt = 0;
+
+        while (cnt <= retryCnt) {
+            try {
+                cnt++;
+
+                cctx.gridIO().sendSequentialMessage(node, topic, msg, plc);
+
+                if (log.isDebugEnabled())
+                    log.debug("Sent sequential cache message [topic=" + topic + ", msg=" + msg +
+                        ", nodeId=" + node.id() + ']');
+
+                return;
+            }
+            catch (IgniteCheckedException e) {
+                if (cctx.discovery().node(node.id()) == null)
+                    throw new ClusterTopologyCheckedException("Node left grid while sending sequential message [" +
+                        "nodeId=" + node.id() + ", msg=" + msg + ']', e);
 
                 if (cnt == retryCnt)
                     throw e;
@@ -918,39 +1000,39 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Adds ordered message handler.
+     * Adds per topic message handler.
      *
      * @param topic Topic.
      * @param c Handler.
      */
     @SuppressWarnings({"unchecked"})
-    public void addOrderedHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
-        if (orderedHandlers.putIfAbsent(topic, c) == null) {
-            cctx.gridIO().addMessageListener(topic, new OrderedMessageListener(
+    public void addPerTopicHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+        if (perTopicHandlers.putIfAbsent(topic, c) == null) {
+            cctx.gridIO().addMessageListener(topic, new PerTopicMessageListener(
                 (IgniteBiInClosure<UUID, GridCacheMessage>)c));
 
             if (log != null && log.isDebugEnabled())
-                log.debug("Registered ordered cache communication handler [topic=" + topic + ", handler=" + c + ']');
+                log.debug("Registered per topic cache communication handler [topic=" + topic + ", handler=" + c + ']');
         }
         else if (log != null)
-            U.warn(log, "Failed to register ordered cache communication handler because it is already " +
+            U.warn(log, "Failed to register per topic cache communication handler because it is already " +
                 "registered for this topic [topic=" + topic + ", handler=" + c + ']');
     }
 
     /**
-     * Removed ordered message handler.
+     * Removed per topic message handler.
      *
      * @param topic Topic.
      */
-    public void removeOrderedHandler(Object topic) {
-        if (orderedHandlers.remove(topic) != null) {
+    public void removePerTopicHandler(Object topic) {
+        if (perTopicHandlers.remove(topic) != null) {
             cctx.gridIO().removeMessageListener(topic);
 
             if (log != null && log.isDebugEnabled())
-                log.debug("Unregistered ordered cache communication handler for topic:" + topic);
+                log.debug("Unregistered per topic cache communication handler for topic:" + topic);
         }
         else if (log != null)
-            U.warn(log, "Failed to unregister ordered cache communication handler because it was not found " +
+            U.warn(log, "Failed to unregister per topic cache communication handler because it was not found " +
                 "for topic: " + topic);
     }
 
@@ -997,20 +1079,20 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         X.println(">>> ");
         X.println(">>> Cache IO manager memory stats [grid=" + cctx.gridName() + ']');
         X.println(">>>   clsHandlersSize: " + clsHandlers.size());
-        X.println(">>>   orderedHandlersSize: " + orderedHandlers.size());
+        X.println(">>>   perTopicHandlersSize: " + perTopicHandlers.size());
     }
 
     /**
-     * Ordered message listener.
+     * Per topic message listener.
      */
-    private class OrderedMessageListener implements GridMessageListener {
+    private class PerTopicMessageListener implements GridMessageListener {
         /** */
         private final IgniteBiInClosure<UUID, GridCacheMessage> c;
 
         /**
          * @param c Handler closure.
          */
-        OrderedMessageListener(IgniteBiInClosure<UUID, GridCacheMessage> c) {
+        PerTopicMessageListener(IgniteBiInClosure<UUID, GridCacheMessage> c) {
             this.c = c;
         }
 
@@ -1018,7 +1100,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         @SuppressWarnings({"CatchGenericClass", "unchecked"})
         @Override public void onMessage(final UUID nodeId, Object msg) {
             if (log.isDebugEnabled())
-                log.debug("Received cache ordered message [nodeId=" + nodeId + ", msg=" + msg + ']');
+                log.debug("Received per topic cache message [nodeId=" + nodeId + ", msg=" + msg + ']');
 
             final GridCacheMessage cacheMsg = (GridCacheMessage)msg;
 

@@ -115,7 +115,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     private void testStoreSession(IgniteCache<Object, Object> cache) throws Exception {
-        Set<Integer> keys = new HashSet<>(primaryKeys(cache, 3, 100_000));
+        Set<Integer> keys = new HashSet<>(primaryKeys(cache, 3, 100_000, true));
 
         Integer key = keys.iterator().next();
 

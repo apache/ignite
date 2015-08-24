@@ -15,75 +15,62 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
+package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
-import java.io.*;
 import java.nio.*;
 import java.util.*;
 
 /**
- * Deferred dht atomic update response.
+ * Batch acknowledgement.
  */
-public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implements GridCacheDeployable {
+public class CacheContinuousQueryBatchAck extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Message index. */
-    public static final int CACHE_MSG_IDX = nextIndexId();
+    /** Routine ID. */
+    private UUID routineId;
 
-    /** ACK future versions. */
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> futVers;
-
-    /** Partitions. */
-    @GridDirectCollection(int.class)
-    private Collection<Integer> parts;
-
-    /** {@inheritDoc} */
-    @Override public int lookupIndex() {
-        return CACHE_MSG_IDX;
-    }
+    /** Update indexes. */
+    @GridToStringInclude
+    @GridDirectMap(keyType = Integer.class, valueType = Long.class)
+    private Map<Integer, Long> updateIdxs;
 
     /**
-     * Empty constructor required by {@link Externalizable}
+     * Default constructor.
      */
-    public GridDhtAtomicDeferredUpdateResponse() {
+    public CacheContinuousQueryBatchAck() {
         // No-op.
     }
 
     /**
-     * Constructor.
-     *
-     * @param futVers Future versions.
-     * @param parts Partitions.
+     * @param cacheId Cache ID.
+     * @param routineId Routine ID.
+     * @param updateIdxs Update indexes.
      */
-    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<GridCacheVersion> futVers,
-        Collection<Integer> parts) {
-        assert !F.isEmpty(futVers);
-
+    CacheContinuousQueryBatchAck(int cacheId, UUID routineId, Map<Integer, Long> updateIdxs) {
         this.cacheId = cacheId;
-        this.futVers = futVers;
-        this.parts = parts;
+        this.routineId = routineId;
+        this.updateIdxs = updateIdxs;
     }
 
     /**
-     * @return List of ACKed future versions.
+     * @return Routine ID.
      */
-    public Collection<GridCacheVersion> futureVersions() {
-        return futVers;
+    UUID routineId() {
+        return routineId;
     }
 
     /**
-     * @return Partitions.
+     * @return Update indexes.
      */
-    public Collection<Integer> partitions() {
-        return parts;
+    Map<Integer, Long> updateIndexes() {
+        return updateIdxs;
     }
 
     /** {@inheritDoc} */
@@ -102,13 +89,13 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("futVers", futVers, MessageCollectionItemType.MSG))
+                if (!writer.writeUuid("routineId", routineId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("parts", parts, MessageCollectionItemType.INT))
+                if (!writer.writeMap("updateIdxs", updateIdxs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
@@ -130,7 +117,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
         switch (reader.state()) {
             case 3:
-                futVers = reader.readCollection("futVers", MessageCollectionItemType.MSG);
+                routineId = reader.readUuid("routineId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -138,7 +125,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
                 reader.incrementState();
 
             case 4:
-                parts = reader.readCollection("parts", MessageCollectionItemType.INT);
+                updateIdxs = reader.readMap("updateIdxs", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -152,11 +139,16 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 37;
+        return 113;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 5;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheContinuousQueryBatchAck.class, this);
     }
 }

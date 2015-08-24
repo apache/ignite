@@ -740,11 +740,20 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      * @param topVer Topology version.
      */
     public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
+        touch(e, topVer, null);
+    }
+
+    /**
+     * @param e Entry for eviction policy notification.
+     * @param topVer Topology version.
+     * @param ver Write version.
+     */
+    public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer, @Nullable GridCacheVersion ver) {
         if (e.detached() || e.isInternal())
             return;
 
         try {
-            if (e.markObsoleteIfEmpty(null) || e.obsolete())
+            if (e.markObsoleteIfEmpty(ver) || e.obsolete())
                 e.context().cache().removeEntry(e);
         }
         catch (IgniteCheckedException ex) {

@@ -184,7 +184,7 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
 
         IgniteCache<Object, Object> cache = jcache(0);
 
-        for (Object key : primaryKeys(cache, 100, 0))
+        for (Object key : primaryKeys(cache, 100, 0, true))
             vals.put(key, key);
 
         assertTrue(cache.getAll(vals.keySet()).isEmpty());
