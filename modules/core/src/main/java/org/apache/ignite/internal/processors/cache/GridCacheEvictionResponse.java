@@ -198,7 +198,7 @@ public class GridCacheEvictionResponse extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridCacheEvictionResponse.class);
     }
 
     /** {@inheritDoc} */

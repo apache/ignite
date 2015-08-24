@@ -343,8 +343,6 @@ public class MessageCodeGenerator {
         if (cls.isAnnotationPresent(IgniteCodeGeneratingFail.class))
             throw new IllegalStateException("@IgniteCodeGeneratingFail is provided for class: " + cls.getName());
 
-        boolean abs = Modifier.isAbstract(cls.getModifiers());
-
         write.clear();
         read.clear();
 
@@ -379,8 +377,8 @@ public class MessageCodeGenerator {
 
         indent--;
 
-        finish(write, false);
-        finish(read, !abs);
+        finish(write, null);
+        finish(read, cls.getSimpleName());
     }
 
     /**
@@ -469,7 +467,7 @@ public class MessageCodeGenerator {
     /**
      * @param code Code lines.
      */
-    private void finish(Collection<String> code, boolean read) {
+    private void finish(Collection<String> code, String readClsName) {
         assert code != null;
 
         if (!fields.isEmpty()) {
@@ -477,7 +475,10 @@ public class MessageCodeGenerator {
             code.add(EMPTY);
         }
 
-        code.add(builder().a(read ? "return reader.afterMessageRead();" : "return true;").toString());
+        if (readClsName == null)
+            code.add(builder().a("return true;").toString());
+        else
+            code.add(builder().a("return reader.afterMessageRead(").a(readClsName).a(".class);").toString());
     }
 
     /**

@@ -252,7 +252,7 @@ public class GridDeploymentRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridDeploymentRequest.class);
     }
 
     /** {@inheritDoc} */

@@ -329,7 +329,7 @@ public class GridJobExecuteResponse implements Message {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridJobExecuteResponse.class);
     }
 
     /** {@inheritDoc} */

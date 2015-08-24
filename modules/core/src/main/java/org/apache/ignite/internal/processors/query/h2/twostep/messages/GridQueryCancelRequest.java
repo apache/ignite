@@ -99,7 +99,7 @@ public class GridQueryCancelRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridQueryCancelRequest.class);
     }
 
     /** {@inheritDoc} */

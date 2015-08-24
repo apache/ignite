@@ -152,7 +152,7 @@ public class GridCheckpointRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridCheckpointRequest.class);
     }
 
     /** {@inheritDoc} */

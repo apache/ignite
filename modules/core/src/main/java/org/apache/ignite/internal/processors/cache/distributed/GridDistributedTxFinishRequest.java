@@ -408,7 +408,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridDistributedTxFinishRequest.class);
     }
 
     /** {@inheritDoc} */

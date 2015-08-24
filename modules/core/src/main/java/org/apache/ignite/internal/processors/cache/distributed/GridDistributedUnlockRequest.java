@@ -138,7 +138,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridDistributedUnlockRequest.class);
     }
 
     /** {@inheritDoc} */

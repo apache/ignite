@@ -466,7 +466,7 @@ public class DataStreamerRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(DataStreamerRequest.class);
     }
 
     /** {@inheritDoc} */

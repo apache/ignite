@@ -101,7 +101,7 @@ public class IgfsFragmentizerResponse extends IgfsCommunicationMessage {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(IgfsFragmentizerResponse.class);
     }
 
     /** {@inheritDoc} */

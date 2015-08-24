@@ -152,7 +152,7 @@ public class GridQueryNextPageRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridQueryNextPageRequest.class);
     }
 
     /** {@inheritDoc} */

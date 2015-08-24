@@ -461,7 +461,7 @@ public class GridByteArrayList implements Message, Externalizable {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridByteArrayList.class);
     }
 
     /** {@inheritDoc} */

@@ -288,7 +288,7 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridDhtForceKeysResponse.class);
     }
 
     /** {@inheritDoc} */

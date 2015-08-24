@@ -275,7 +275,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDistributedBaseMessage.class);
     }
 
     /** {@inheritDoc} */

@@ -199,7 +199,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridDhtAffinityAssignmentResponse.class);
     }
 
     /** {@inheritDoc} */

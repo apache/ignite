@@ -199,7 +199,7 @@ public class GridTaskResultResponse implements Message {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridTaskResultResponse.class);
     }
 
     /** {@inheritDoc} */

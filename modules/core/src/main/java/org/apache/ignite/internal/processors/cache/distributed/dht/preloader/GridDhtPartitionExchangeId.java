@@ -217,7 +217,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridDhtPartitionExchangeId.class);
     }
 
     /** {@inheritDoc} */

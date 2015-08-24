@@ -137,7 +137,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridCacheVersionEx.class);
     }
 
     /** {@inheritDoc} */

@@ -172,7 +172,7 @@ public class CacheEvictionEntry implements Message {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(CacheEvictionEntry.class);
     }
 
     /** {@inheritDoc} */

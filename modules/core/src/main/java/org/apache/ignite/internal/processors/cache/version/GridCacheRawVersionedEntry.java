@@ -307,7 +307,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         assert key != null;
         assert !(val != null && valBytes != null);
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridCacheRawVersionedEntry.class);
     }
 
     /** {@inheritDoc} */

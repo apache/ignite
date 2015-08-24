@@ -308,7 +308,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridDhtPartitionDemandMessage.class);
     }
 
     /** {@inheritDoc} */

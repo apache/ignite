@@ -331,7 +331,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridNearGetResponse.class);
     }
 
     /** {@inheritDoc} */

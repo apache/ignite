@@ -119,7 +119,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridDhtAtomicDeferredUpdateResponse.class);
     }
 
     /** {@inheritDoc} */

@@ -138,7 +138,7 @@ public class GridJobSiblingsRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridJobSiblingsRequest.class);
     }
 
     /** {@inheritDoc} */

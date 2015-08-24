@@ -577,7 +577,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridNearLockRequest.class);
     }
 
     /** {@inheritDoc} */

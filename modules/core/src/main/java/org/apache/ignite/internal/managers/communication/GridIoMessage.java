@@ -302,7 +302,7 @@ public class GridIoMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridIoMessage.class);
     }
 
     /** {@inheritDoc} */

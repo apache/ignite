@@ -180,7 +180,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridDhtPartitionsFullMessage.class);
     }
 
     /** {@inheritDoc} */

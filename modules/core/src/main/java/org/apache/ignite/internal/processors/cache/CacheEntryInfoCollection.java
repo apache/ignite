@@ -96,7 +96,7 @@ public class CacheEntryInfoCollection implements Message {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(CacheEntryInfoCollection.class);
     }
 
     /** {@inheritDoc} */

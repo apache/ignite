@@ -470,7 +470,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridNearTxPrepareRequest.class);
     }
 
     /** {@inheritDoc} */

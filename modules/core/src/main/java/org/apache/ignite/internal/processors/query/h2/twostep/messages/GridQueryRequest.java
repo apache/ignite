@@ -31,6 +31,7 @@ import java.util.*;
 /**
  * Query request.
  */
+@IgniteCodeGeneratingFail
 public class GridQueryRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
@@ -294,7 +295,7 @@ public class GridQueryRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridQueryRequest.class);
     }
 
     /** {@inheritDoc} */

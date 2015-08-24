@@ -162,7 +162,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridCacheTxRecoveryResponse.class);
     }
 
     /** {@inheritDoc} */

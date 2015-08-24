@@ -167,7 +167,7 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(IgfsDeleteMessage.class);
     }
 
     /** {@inheritDoc} */

@@ -170,7 +170,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridDhtPartitionsSingleMessage.class);
     }
 
     /** {@inheritDoc} */

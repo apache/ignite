@@ -242,7 +242,7 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
 
         }
 
-        return reader.afterMessageRead(null);
+        return reader.afterMessageRead(GridDhtForceKeysRequest.class);
     }
 
     /** {@inheritDoc} */
