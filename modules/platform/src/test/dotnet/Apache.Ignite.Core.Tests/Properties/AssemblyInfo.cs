@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.interop;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
-import org.apache.ignite.configuration.*;
+[assembly: AssemblyTitle("Apache.Ignite.Core.Tests")]
+[assembly: AssemblyDescription("Apache Ignite .NET Core Tests")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Apache Software Foundation")]
+[assembly: AssemblyProduct("Apache.Ignite.Core.Tests")]
+[assembly: AssemblyCopyright("Copyright ©  2015")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
 
-/**
- * Interop bootstrap. Responsible for starting Ignite node in interop mode.
- */
-public interface InteropBootstrap {
-    /**
-     * Start Ignite node.
-     *
-     * @param cfg Configuration.
-     * @param envPtr Environment pointer.
-     * @param dataPtr Optional pointer to additional data required for startup.
-     * @return Ignite node.
-     */
-    public InteropProcessor start(IgniteConfiguration cfg, long envPtr, long dataPtr);
-}
+[assembly: ComVisible(false)]
+
+[assembly: Guid("de8dd5cc-7c7f-4a09-80d5-7086d9416a7b")]
+
+[assembly: AssemblyVersion("1.4.1.0")]
+[assembly: AssemblyFileVersion("1.4.1.0")]

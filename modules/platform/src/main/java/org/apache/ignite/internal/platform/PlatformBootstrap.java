@@ -15,14 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.interop;
+package org.apache.ignite.internal.platform;
+
+import org.apache.ignite.configuration.*;
 
 /**
- * Special version of listener for events with close callbacks.
+ * Platform bootstrap. Responsible for starting Ignite node with non-Java platform.
  */
-public interface InteropLocalEventListener {
+public interface PlatformBootstrap {
     /**
-     * Closes the listener.
+     * Start Ignite node.
+     *
+     * @param cfg Configuration.
+     * @param envPtr Environment pointer.
+     * @param dataPtr Optional pointer to additional data required for startup.
+     * @return Ignite node.
      */
-    public void close();
+    public Platform start(IgniteConfiguration cfg, long envPtr, long dataPtr);
 }
