@@ -15,25 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.interop;
-
-import org.apache.ignite.*;
+package org.apache.ignite.configuration;
 
 /**
- * Interop processor.
+ * Platform configuration marker interface.
  */
-public interface InteropProcessor {
-    /**
-     * Get owning Ignite instance.
-     *
-     * @return Ignite instance.
-     */
-    public Ignite ignite();
-
-    /**
-     * Get environment pointer associated with this processor.
-     *
-     * @return Environment pointer.
-     */
-    public long environmentPointer();
+public class PlatformConfiguration {
+    // No-op.
 }

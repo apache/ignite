@@ -15,21 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.interop;
+package org.apache.ignite.internal.platform;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.*;
 
 /**
- * Interop bootstrap. Responsible for starting Ignite node in interop mode.
+ * Platform entry point.
  */
-public interface InteropBootstrap {
+public interface Platform {
     /**
-     * Start Ignite node.
+     * Get owning Ignite instance.
      *
-     * @param cfg Configuration.
-     * @param envPtr Environment pointer.
-     * @param dataPtr Optional pointer to additional data required for startup.
-     * @return Ignite node.
+     * @return Ignite instance.
      */
-    public InteropProcessor start(IgniteConfiguration cfg, long envPtr, long dataPtr);
+    public Ignite ignite();
+
+    /**
+     * Get environment pointer associated with this processor.
+     *
+     * @return Environment pointer.
+     */
+    public long environmentPointer();
 }

@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.interop;
-
-import java.io.*;
+package org.apache.ignite.internal.platform;
 
 /**
- * Interop bootstrap factory.
+ * Platform bootstrap factory.
  */
-public interface InteropBootstrapFactory extends Serializable {
+public interface PlatformBootstrapFactory {
     /**
      * Get bootstrap factory ID.
      *
@@ -35,5 +33,5 @@ public interface InteropBootstrapFactory extends Serializable {
      *
      * @return Bootstrap instance.
      */
-    public InteropBootstrap create();
+    public PlatformBootstrap create();
 }
