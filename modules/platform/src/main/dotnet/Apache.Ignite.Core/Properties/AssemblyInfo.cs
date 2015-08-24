@@ -19,7 +19,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Apache.Ignite.Core")]
-[assembly: AssemblyDescription("Apache Ignite .NET Client Core")]
+[assembly: AssemblyDescription("Apache Ignite .NET Core")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
 [assembly: AssemblyProduct("Apache Ignite")]
