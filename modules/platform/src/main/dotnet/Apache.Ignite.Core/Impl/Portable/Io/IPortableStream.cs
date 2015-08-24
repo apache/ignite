@@ -16,7 +16,7 @@
  */
 
 
-namespace Apache.Ignite.Core.Impl.Portable.Io
+namespace Apache.Ignite.Core.Impl.Portable.IO
 {
     using System;
     using System.IO;
