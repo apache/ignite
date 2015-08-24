@@ -99,6 +99,9 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     /** Local address */
     private String locAddr;
 
+    /** Time to live. */
+    private Integer ttl;
+
     /** */
     @GridToStringExclude
     private Collection<AddressSender> addrSnds;
@@ -223,6 +226,32 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         return locAddr;
     }
 
+    /**
+     * Set the default time-to-live for multicast packets sent out on this
+     * IP finder in order to control the scope of the multicast.
+     * <p>
+     * The TTL has to be in the range {@code  0 <= TTL <= 255}.
+     * <p>
+     * If TTL is {@code 0}, packets are not transmitted on the network,
+     * but may be delivered locally.
+     *
+     * @param ttl Time to live.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setTimeToLive(int ttl) {
+        this.ttl = ttl;
+    }
+
+    /**
+     * Set the default time-to-live for multicast packets sent out on this
+     * IP finder.
+     *
+     * @return Time to live.
+     */
+    public int getTimeToLive() {
+        return ttl;
+    }
+
     /** {@inheritDoc} */
     @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         // If IGNITE_OVERRIDE_MCAST_GRP system property is set, use its value to override multicast group from
@@ -244,6 +273,9 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         if (addrReqAttempts <= 0)
             throw new IgniteSpiException("Invalid number of address request attempts, " +
                 "value greater than zero is expected: " + addrReqAttempts);
+
+        if (ttl != null && (ttl < 0 || ttl > 255))
+            throw new IgniteSpiException("Time-to-live value is out of 0 <= TTL <= 255 range: " + ttl);
 
         if (F.isEmpty(getRegisteredAddresses()))
             U.warn(log, "TcpDiscoveryMulticastIpFinder has no pre-configured addresses " +
@@ -452,6 +484,9 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                         sock.setInterface(sockItf);
 
                     sock.setSoTimeout(resWaitTime);
+
+                    if (ttl != null)
+                        sock.setTimeToLive(ttl);
 
                     reqPckt.setData(MSG_ADDR_REQ_DATA);
 
@@ -721,6 +756,9 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                     "each other.");
 
             sock.joinGroup(mcastGrp);
+
+            if (ttl != null)
+                sock.setTimeToLive(ttl);
 
             return sock;
         }

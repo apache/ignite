@@ -27,14 +27,25 @@ import java.util.*;
  */
 public abstract class DatabaseMetadataDialect {
     /**
+     * Gets schemas from database.
+     *
+     * @param conn Database connection.
+     * @return Collection of schema descriptors.
+     * @throws SQLException If failed to get schemas.
+     */
+    public abstract List<String> schemas(Connection conn) throws SQLException;
+
+    /**
      * Gets tables from database.
      *
      * @param conn Database connection.
+     * @param schemas Collention of schema names to load.
      * @param tblsOnly If {@code true} then gets only tables otherwise gets tables and views.
      * @return Collection of table descriptors.
      * @throws SQLException If failed to get tables.
      */
-    public abstract Collection<DbTable> tables(Connection conn, boolean tblsOnly) throws SQLException;
+    public abstract Collection<DbTable> tables(Connection conn, List<String> schemas, boolean tblsOnly)
+        throws SQLException;
 
     /**
      * @return Collection of database system schemas.

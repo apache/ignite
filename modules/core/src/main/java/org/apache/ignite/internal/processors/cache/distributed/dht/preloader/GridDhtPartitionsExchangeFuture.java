@@ -54,6 +54,10 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityTopologyVersion>
     implements Comparable<GridDhtPartitionsExchangeFuture>, GridDhtTopologyFuture {
     /** */
+    private static final int DUMP_PENDING_OBJECTS_THRESHOLD =
+        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD, 10);
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Dummy flag. */
@@ -711,6 +715,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (log.isDebugEnabled())
                     log.debug("Before waiting for partition release future: " + this);
 
+                int dumpedObjects = 0;
+
                 while (true) {
                     try {
                         partReleaseFut.get(2 * cctx.gridConfig().getNetworkTimeout(), TimeUnit.MILLISECONDS);
@@ -719,7 +725,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     }
                     catch (IgniteFutureTimeoutCheckedException ignored) {
                         // Print pending transactions and locks that might have led to hang.
-                        dumpPendingObjects();
+                        if (dumpedObjects < DUMP_PENDING_OBJECTS_THRESHOLD) {
+                            dumpPendingObjects();
+
+                            dumpedObjects++;
+                        }
                     }
                 }
 
@@ -731,6 +741,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 IgniteInternalFuture<?> locksFut = cctx.mvcc().finishLocks(exchId.topologyVersion());
 
+                dumpedObjects = 0;
+
                 while (true) {
                     try {
                         locksFut.get(2 * cctx.gridConfig().getNetworkTimeout(), TimeUnit.MILLISECONDS);
@@ -738,22 +750,26 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         break;
                     }
                     catch (IgniteFutureTimeoutCheckedException ignored) {
-                        U.warn(log, "Failed to wait for locks release future. " +
-                            "Dumping pending objects that might be the cause: " + cctx.localNodeId());
+                        if (dumpedObjects < DUMP_PENDING_OBJECTS_THRESHOLD) {
+                            U.warn(log, "Failed to wait for locks release future. " +
+                                "Dumping pending objects that might be the cause: " + cctx.localNodeId());
 
-                        U.warn(log, "Locked keys:");
+                            U.warn(log, "Locked keys:");
 
-                        for (IgniteTxKey key : cctx.mvcc().lockedKeys())
-                            U.warn(log, "Locked key: " + key);
+                            for (IgniteTxKey key : cctx.mvcc().lockedKeys())
+                                U.warn(log, "Locked key: " + key);
 
-                        for (IgniteTxKey key : cctx.mvcc().nearLockedKeys())
-                            U.warn(log, "Locked near key: " + key);
+                            for (IgniteTxKey key : cctx.mvcc().nearLockedKeys())
+                                U.warn(log, "Locked near key: " + key);
 
-                        Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> locks =
-                            cctx.mvcc().unfinishedLocks(exchId.topologyVersion());
+                            Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> locks =
+                                cctx.mvcc().unfinishedLocks(exchId.topologyVersion());
 
-                        for (Map.Entry<IgniteTxKey, Collection<GridCacheMvccCandidate>> e : locks.entrySet())
-                            U.warn(log, "Awaited locked entry [key=" + e.getKey() + ", mvcc=" + e.getValue() + ']');
+                            for (Map.Entry<IgniteTxKey, Collection<GridCacheMvccCandidate>> e : locks.entrySet())
+                                U.warn(log, "Awaited locked entry [key=" + e.getKey() + ", mvcc=" + e.getValue() + ']');
+                            
+                            dumpedObjects++;
+                        }
                     }
                 }
 

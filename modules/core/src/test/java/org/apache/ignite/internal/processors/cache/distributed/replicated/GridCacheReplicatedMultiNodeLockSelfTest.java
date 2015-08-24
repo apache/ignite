@@ -32,15 +32,11 @@ public class GridCacheReplicatedMultiNodeLockSelfTest extends GridCacheMultiNode
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
-
+    @Override protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
 
-        cfg.setCacheConfiguration(cacheCfg);
-
-        return cfg;
+        return cacheCfg;
     }
 }

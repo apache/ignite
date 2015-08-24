@@ -2216,8 +2216,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         missedForLoad.add(cacheKey);
                                     }
                                     else {
-                                        assert !transform;
-                                        assert txEntry.op() != TRANSFORM;
+                                        assert !implicit() || !transform : this;
+                                        assert txEntry.op() != TRANSFORM : txEntry;
 
                                         if (retval)
                                             ret.set(cacheCtx, null, true);

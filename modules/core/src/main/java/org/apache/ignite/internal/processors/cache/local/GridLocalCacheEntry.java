@@ -261,7 +261,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
                 // Allow next lock in the thread to proceed.
                 if (!cand.used()) {
-                    GridLocalCacheEntry e = (GridLocalCacheEntry)cctx.cache().peekEx(cand.key());
+                    GridCacheContext cctx0 = cand.parent().context();
+
+                    GridLocalCacheEntry e = (GridLocalCacheEntry)cctx0.cache().peekEx(cand.key());
 
                     // At this point candidate may have been removed and entry destroyed,
                     // so we check for null.

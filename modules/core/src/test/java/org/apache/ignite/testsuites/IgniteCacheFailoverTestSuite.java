@@ -80,6 +80,8 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheSizeFailoverTest.class);
 
+        suite.addTestSuite(IgniteCacheTopologySafeGetSelfTest.class);
+
         return suite;
     }
 }
