@@ -54,7 +54,7 @@ class GridUpdateNotifier {
     private final String url;
 
     /** Asynchronous checked. */
-    private GridWorker checker;
+    private volatile UpdateChecker checker;
 
     /** Latest version. */
     private volatile String latestVer;
@@ -77,6 +77,7 @@ class GridUpdateNotifier {
     /** System properties */
     private final String vmProps;
 
+    /** */
     private final Map<String, String> pluginVers;
 
     /** Kernal gateway */
@@ -84,6 +85,9 @@ class GridUpdateNotifier {
 
     /** */
     private long lastLog = -1;
+
+    /** */
+    private final ExecutorService execSrvc = Executors.newSingleThreadExecutor();
 
     /**
      * Creates new notifier with default values.
@@ -179,16 +183,15 @@ class GridUpdateNotifier {
     /**
      * Starts asynchronous process for retrieving latest version data.
      *
-     * @param exec Executor service.
      * @param log Logger.
      */
-    void checkForNewVersion(Executor exec, IgniteLogger log) {
+    void checkForNewVersion(IgniteLogger log) {
         assert log != null;
 
         log = log.getLogger(getClass());
 
         try {
-            exec.execute(checker = new UpdateChecker(log));
+            execSrvc.execute(checker = new UpdateChecker(log));
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to schedule a thread due to execution rejection (safely ignoring): " +
@@ -208,7 +211,7 @@ class GridUpdateNotifier {
 
         // Don't join it to avoid any delays on update checker.
         // Checker thread will eventually exit.
-        U.cancel(checker);
+        checker.cancelConnection();
 
         String latestVer = this.latestVer;
         String downloadUrl = this.downloadUrl;
@@ -254,6 +257,16 @@ class GridUpdateNotifier {
     }
 
     /**
+     * Stops version checking.
+     */
+    public void stop() {
+        if (checker != null)
+            checker.cancelConnection();
+
+        execSrvc.shutdownNow();
+    }
+
+    /**
      * Asynchronous checker of the latest version available.
      */
     private class UpdateChecker extends GridWorker {
@@ -262,6 +275,9 @@ class GridUpdateNotifier {
 
         /** Logger. */
         private final IgniteLogger log;
+
+        /** Connection. */
+        private volatile URLConnection conn;
 
         /**
          * Creates checked with given logger.
@@ -305,6 +321,8 @@ class GridUpdateNotifier {
                     Document dom = null;
 
                     try {
+                        this.conn = conn;
+
                         try (OutputStream os = conn.getOutputStream()) {
                             os.write(postParams.getBytes(CHARSET));
                         }
@@ -399,6 +417,13 @@ class GridUpdateNotifier {
          */
         @Nullable private String obtainDownloadUrlFrom(Node node) {
             return obtainMeta("downloadUrl", node);
+        }
+
+        /**
+         * Cancels connection.
+         */
+        void cancelConnection() {
+            U.closeQuiet(conn);
         }
     }
 }

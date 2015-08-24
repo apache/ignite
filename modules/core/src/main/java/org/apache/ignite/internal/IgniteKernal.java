@@ -610,8 +610,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(gridName, execSvc, log);
 
-        boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true);
-
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
             log.info("3-rd party licenses can be found at: " + cfg.getIgniteHome() + File.separatorChar + "libs" +
@@ -686,6 +684,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             verChecker = null;
 
+            boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true);
+
             if (notifyEnabled) {
                 try {
                     verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, ctx.plugins().allProviders(), false);
@@ -700,7 +700,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             if (!first)
                                 verChecker.topologySize(cluster().nodes().size());
 
-                            verChecker.checkForNewVersion(execSvc, log);
+                            verChecker.checkForNewVersion(log);
 
                             // Just wait for 10 secs.
                             Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
@@ -1733,6 +1733,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (updateNtfTimer != null)
                 updateNtfTimer.cancel();
 
+            if (verChecker != null)
+                verChecker.stop();
+
             if (starveTask != null)
                 starveTask.close();
 
@@ -1792,6 +1795,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     unregisterMBean(restExecSvcMBean)
             ))
                 errOnStop = false;
+
+            boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true);
+
+//            if (notifyEnabled)...
 
             // Stop components in reverse order.
             for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious();) {
