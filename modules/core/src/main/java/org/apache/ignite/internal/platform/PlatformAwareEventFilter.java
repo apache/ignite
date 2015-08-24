@@ -15,36 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.interop;
+package org.apache.ignite.internal.platform;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.lang.*;
 
 /**
- * Exception raised when interop callback is not set in native platform.
+ * Special version of predicate for events with initialize/close callbacks.
  */
-@SuppressWarnings("UnusedDeclaration")
-public class InteropNoCallbackException extends InteropException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public interface PlatformAwareEventFilter<E extends Event> extends IgnitePredicate<E> {
+    /**
+     * Initializes the filter.
+     */
+    public void initialize(GridKernalContext ctx);
 
     /**
-     * Constructor.
+     * Closes the filter.
      */
-    public InteropNoCallbackException() {
-        // No-op.
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param msg Message.
-     */
-    public InteropNoCallbackException(String msg) {
-        super(msg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(InteropNoCallbackException.class, this);
-    }
+    public void close();
 }

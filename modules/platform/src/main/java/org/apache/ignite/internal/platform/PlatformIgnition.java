@@ -1,3 +1,5 @@
+package org.apache.ignite.internal.platform;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,8 +17,6 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.interop;
-
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -30,15 +30,15 @@ import java.security.*;
 import java.util.*;
 
 /**
- * Entry point for interop nodes.
+ * Entry point for platform nodes.
  */
 @SuppressWarnings("UnusedDeclaration")
-public class InteropIgnition {
+public class PlatformIgnition {
     /** Map with active instances. */
-    private static final HashMap<String, InteropProcessor> instances = new HashMap<>();
+    private static final HashMap<String, Platform> instances = new HashMap<>();
 
     /**
-     * Start Ignite node in interop mode.
+     * Start Ignite node in platform mode.
      *
      * @param springCfgPath Spring configuration path.
      * @param gridName Grid name.
@@ -47,14 +47,14 @@ public class InteropIgnition {
      * @param dataPtr Optional pointer to additional data required for startup.
      * @return Ignite instance.
      */
-    public static synchronized InteropProcessor start(@Nullable String springCfgPath, @Nullable String gridName,
+    public static synchronized Platform start(@Nullable String springCfgPath, @Nullable String gridName,
         int factoryId, long envPtr, long dataPtr) {
         if (envPtr <= 0)
             throw new IgniteException("Environment pointer must be positive.");
 
         ClassLoader oldClsLdr = Thread.currentThread().getContextClassLoader();
 
-        Thread.currentThread().setContextClassLoader(InteropIgnition.class.getClassLoader());
+        Thread.currentThread().setContextClassLoader(Platform.class.getClassLoader());
 
         try {
             IgniteConfiguration cfg = configuration(springCfgPath);
@@ -64,11 +64,11 @@ public class InteropIgnition {
             else
                 gridName = cfg.getGridName();
 
-            InteropBootstrap bootstrap = bootstrap(factoryId);
+            PlatformBootstrap bootstrap = bootstrap(factoryId);
 
-            InteropProcessor proc = bootstrap.start(cfg, envPtr, dataPtr);
+            Platform proc = bootstrap.start(cfg, envPtr, dataPtr);
 
-            InteropProcessor old = instances.put(gridName, proc);
+            Platform old = instances.put(gridName, proc);
 
             assert old == null;
 
@@ -85,7 +85,7 @@ public class InteropIgnition {
      * @param gridName Grid name.
      * @return Instance or {@code null} if it doesn't exist (never started or stopped).
      */
-    @Nullable public static synchronized InteropProcessor instance(@Nullable String gridName) {
+    @Nullable public static synchronized Platform instance(@Nullable String gridName) {
         return instances.get(gridName);
     }
 
@@ -96,7 +96,7 @@ public class InteropIgnition {
      * @return Environment pointer or {@code 0} in case grid with such name doesn't exist.
      */
     public static synchronized long environmentPointer(@Nullable String gridName) {
-        InteropProcessor proc = instance(gridName);
+        Platform proc = instance(gridName);
 
         return proc != null ? proc.environmentPointer() : 0;
     }
@@ -110,7 +110,7 @@ public class InteropIgnition {
      */
     public static synchronized boolean stop(@Nullable String gridName, boolean cancel) {
         if (Ignition.stop(gridName, cancel)) {
-            InteropProcessor old = instances.remove(gridName);
+            Platform old = instances.remove(gridName);
 
             assert old != null;
 
@@ -126,7 +126,7 @@ public class InteropIgnition {
      * @param cancel Cancel flag.
      */
     public static synchronized void stopAll(boolean cancel) {
-        for (InteropProcessor proc : instances.values())
+        for (Platform proc : instances.values())
             Ignition.stop(proc.ignite().name(), cancel);
 
         instances.clear();
@@ -158,18 +158,18 @@ public class InteropIgnition {
      * @param factoryId Factory ID.
      * @return Bootstrap.
      */
-    private static InteropBootstrap bootstrap(final int factoryId) {
-        InteropBootstrapFactory factory = AccessController.doPrivileged(
-            new PrivilegedAction<InteropBootstrapFactory>() {
-            @Override public InteropBootstrapFactory run() {
-                for (InteropBootstrapFactory factory : ServiceLoader.load(InteropBootstrapFactory.class)) {
-                    if (factory.id() == factoryId)
-                        return factory;
-                }
+    private static PlatformBootstrap bootstrap(final int factoryId) {
+        PlatformBootstrapFactory factory = AccessController.doPrivileged(
+            new PrivilegedAction<PlatformBootstrapFactory>() {
+                @Override public PlatformBootstrapFactory run() {
+                    for (PlatformBootstrapFactory factory : ServiceLoader.load(PlatformBootstrapFactory.class)) {
+                        if (factory.id() == factoryId)
+                            return factory;
+                    }
 
-                return null;
-            }
-        });
+                    return null;
+                }
+            });
 
         if (factory == null)
             throw new IgniteException("Interop factory is not found (did you put into the classpath?): " + factoryId);
@@ -180,7 +180,7 @@ public class InteropIgnition {
     /**
      * Private constructor.
      */
-    private InteropIgnition() {
+    private PlatformIgnition() {
         // No-op.
     }
 }
