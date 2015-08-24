@@ -55,8 +55,9 @@ public class DirectMessageReader implements MessageReader {
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean afterMessageRead() {
+    /** {@inheritDoc}
+     * @param msgCls*/
+    @Override public boolean afterMessageRead(Class<? extends Message> msgCls) {
         return true;
     }
 

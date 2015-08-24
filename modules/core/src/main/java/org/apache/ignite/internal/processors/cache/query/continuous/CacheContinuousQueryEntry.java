@@ -279,7 +279,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

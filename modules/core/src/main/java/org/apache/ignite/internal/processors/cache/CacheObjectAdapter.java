@@ -80,7 +80,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
         }
 
-        return reader.afterMessageRead();
+        return true;
     }
 
     /** {@inheritDoc} */

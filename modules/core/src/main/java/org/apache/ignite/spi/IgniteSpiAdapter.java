@@ -684,7 +684,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
                         throw new IgniteException("Failed to write message, node is not started.");
                     }
 
-                    @Override public MessageReader reader(MessageFactory factory) {
+                    @Override public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls) {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
                 };

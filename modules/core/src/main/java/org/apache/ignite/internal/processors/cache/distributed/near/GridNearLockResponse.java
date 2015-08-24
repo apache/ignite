@@ -307,7 +307,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

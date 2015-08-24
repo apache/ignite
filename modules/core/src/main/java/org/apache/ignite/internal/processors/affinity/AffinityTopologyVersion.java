@@ -177,7 +177,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

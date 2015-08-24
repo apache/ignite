@@ -205,7 +205,7 @@ public class GridCacheSqlQuery implements Message {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

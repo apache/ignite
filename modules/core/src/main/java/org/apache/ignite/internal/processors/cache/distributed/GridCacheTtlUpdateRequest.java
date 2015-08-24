@@ -304,7 +304,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

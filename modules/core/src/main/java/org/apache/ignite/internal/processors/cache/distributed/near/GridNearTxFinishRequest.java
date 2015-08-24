@@ -271,7 +271,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

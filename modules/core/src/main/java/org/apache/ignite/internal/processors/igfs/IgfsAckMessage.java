@@ -177,7 +177,7 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

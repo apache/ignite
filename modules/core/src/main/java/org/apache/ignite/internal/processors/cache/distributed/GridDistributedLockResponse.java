@@ -303,7 +303,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

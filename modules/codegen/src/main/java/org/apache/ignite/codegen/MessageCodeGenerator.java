@@ -142,6 +142,8 @@ public class MessageCodeGenerator {
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
 
+        gen.generateAll(true);
+
 //        gen.generateAndWrite(DataStreamerEntry.class);
 
 //        gen.generateAndWrite(GridDistributedLockRequest.class);
@@ -341,6 +343,8 @@ public class MessageCodeGenerator {
         if (cls.isAnnotationPresent(IgniteCodeGeneratingFail.class))
             throw new IllegalStateException("@IgniteCodeGeneratingFail is provided for class: " + cls.getName());
 
+        boolean abs = Modifier.isAbstract(cls.getModifiers());
+
         write.clear();
         read.clear();
 
@@ -376,7 +380,7 @@ public class MessageCodeGenerator {
         indent--;
 
         finish(write, false);
-        finish(read, true);
+        finish(read, !abs);
     }
 
     /**

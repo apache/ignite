@@ -126,7 +126,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

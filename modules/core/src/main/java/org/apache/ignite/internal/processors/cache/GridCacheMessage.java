@@ -635,7 +635,7 @@ public abstract class GridCacheMessage implements Message {
 
         }
 
-        return reader.afterMessageRead();
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -167,7 +167,7 @@ public class IgniteTxKey implements Message {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

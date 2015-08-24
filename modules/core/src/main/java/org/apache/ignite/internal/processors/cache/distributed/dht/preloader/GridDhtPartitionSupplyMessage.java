@@ -374,7 +374,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

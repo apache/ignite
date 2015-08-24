@@ -45,9 +45,10 @@ public interface MessageReader {
     /**
      * Callback that must be invoked by a message implementation after message body finished decoding.
      *
+     * @param msgCls Message class finishing read stage.
      * @return {@code True} if reading can proceed, {@code false} otherwise.
      */
-    public boolean afterMessageRead();
+    public boolean afterMessageRead(Class<? extends Message> msgCls);
 
     /**
      * Reads {@code byte} value.

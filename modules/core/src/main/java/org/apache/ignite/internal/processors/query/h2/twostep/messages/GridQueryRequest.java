@@ -294,7 +294,7 @@ public class GridQueryRequest implements Message {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

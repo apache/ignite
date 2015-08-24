@@ -345,7 +345,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

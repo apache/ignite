@@ -268,7 +268,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

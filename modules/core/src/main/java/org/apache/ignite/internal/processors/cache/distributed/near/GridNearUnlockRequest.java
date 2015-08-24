@@ -73,7 +73,7 @@ public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
         if (!super.readFrom(buf, reader))
             return false;
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

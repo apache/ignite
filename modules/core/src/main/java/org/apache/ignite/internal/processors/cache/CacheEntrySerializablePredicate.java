@@ -137,7 +137,7 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

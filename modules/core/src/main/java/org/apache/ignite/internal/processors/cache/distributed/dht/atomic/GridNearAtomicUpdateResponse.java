@@ -602,7 +602,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

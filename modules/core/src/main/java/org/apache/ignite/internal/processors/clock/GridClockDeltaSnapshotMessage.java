@@ -126,7 +126,7 @@ public class GridClockDeltaSnapshotMessage implements Message {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

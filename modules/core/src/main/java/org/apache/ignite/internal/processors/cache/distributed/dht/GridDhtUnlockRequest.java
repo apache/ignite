@@ -142,7 +142,7 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */

@@ -134,7 +134,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead();
+        return reader.afterMessageRead(null);
     }
 
     /** {@inheritDoc} */
