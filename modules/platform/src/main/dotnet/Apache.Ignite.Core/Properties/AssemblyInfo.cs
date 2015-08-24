@@ -38,4 +38,4 @@ using System.Runtime.InteropServices;
 
 [assembly: CLSCompliant(true)]
 
-[assembly: InternalsVisibleTo("Apache.Ignite.Core.Tests")]
+[assembly: InternalsVisibleTo("Apache.Ignite.Core.Tests, PublicKey=002400000480000094000000060200000024000052534131000400000100010073061d8dae9320374b253cfcab5c1bfa1462759aee4d10bda73fdbe2e414102fd527c5918bd39ec2d1703e0eb9ac48303c7258205c42c1f3f4b89e7a42e924309d05f1f639055daf8f3c0ca1bc5c463fd71d5b086188474cd609bdbdbcc9dea4fdc61c9a5334a4edcc22b318a326474772ae1ff872299571f28cfee34180d2af")]
