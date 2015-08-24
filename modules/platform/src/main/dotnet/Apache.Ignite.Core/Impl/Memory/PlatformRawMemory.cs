@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Non-resizeable raw memory chunk without metadata header.
     /// </summary>
-    internal class PlatformRawMemory : IPlatformMemory
+    public class PlatformRawMemory : IPlatformMemory
     {
         /** */
         private readonly long _memPtr;
@@ -37,8 +37,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="size">Size.</param>
         public unsafe PlatformRawMemory(void* memPtr, int size)
         {
-            this._memPtr = (long) memPtr;
-            this._size = size;
+            _memPtr = (long) memPtr;
+            _size = size;
         }
 
         /** <inheritdoc /> */
