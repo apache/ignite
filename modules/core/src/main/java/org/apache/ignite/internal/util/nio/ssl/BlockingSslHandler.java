@@ -461,7 +461,7 @@ public class BlockingSslHandler {
             int read = ch.read(inNetBuf);
 
             if (read == -1)
-                throw new IgniteCheckedException("Failed to read remote node ID (connection closed).");
+                throw new IgniteCheckedException("Failed to read remote node response (connection closed).");
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to write byte to socket.", e);

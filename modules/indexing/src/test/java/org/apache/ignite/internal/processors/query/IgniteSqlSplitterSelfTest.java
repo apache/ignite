@@ -20,13 +20,16 @@ package org.apache.ignite.internal.processors.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -101,35 +104,16 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             String qry = "select _val from Integer order by _val ";
 
-            assertEqualsCollections(res,
-                column(0, c.query(new SqlFieldsQuery(qry)).getAll()));
-
-            assertEqualsCollections(res.subList(0, 0),
-                column(0, c.query(new SqlFieldsQuery(qry + "limit ?").setArgs(0)).getAll()));
-
-            assertEqualsCollections(res.subList(0, 3),
-                column(0, c.query(new SqlFieldsQuery(qry + "limit ?").setArgs(3)).getAll()));
-
-            assertEqualsCollections(res.subList(0, 9),
-                column(0, c.query(new SqlFieldsQuery(qry + "limit ? offset ?").setArgs(9, 0)).getAll()));
-
-            assertEqualsCollections(res.subList(3, 7),
-                column(0, c.query(new SqlFieldsQuery(qry + "limit ? offset ?").setArgs(4, 3)).getAll()));
-
-            assertEqualsCollections(res.subList(7, 9),
-                column(0, c.query(new SqlFieldsQuery(qry + "limit ? offset ?").setArgs(2, 7)).getAll()));
-
-            assertEqualsCollections(res.subList(8, 10),
-                column(0, c.query(new SqlFieldsQuery(qry + "limit ? offset ?").setArgs(2, 8)).getAll()));
-
-            assertEqualsCollections(res.subList(9, 10),
-                column(0, c.query(new SqlFieldsQuery(qry + "limit ? offset ?").setArgs(1, 9)).getAll()));
-
-            assertEqualsCollections(res.subList(10, 10),
-                column(0, c.query(new SqlFieldsQuery(qry + "limit ? offset ?").setArgs(1, 10)).getAll()));
-
-            assertEqualsCollections(res.subList(9, 10),
-                column(0, c.query(new SqlFieldsQuery(qry + "limit ? offset abs(-(4 + ?))").setArgs(1, 5)).getAll()));
+            assertEqualsCollections(res, columnQuery(c, qry));
+            assertEqualsCollections(res.subList(0, 0), columnQuery(c, qry + "limit ?", 0));
+            assertEqualsCollections(res.subList(0, 3), columnQuery(c, qry + "limit ?", 3));
+            assertEqualsCollections(res.subList(0, 9), columnQuery(c, qry + "limit ? offset ?", 9, 0));
+            assertEqualsCollections(res.subList(3, 7), columnQuery(c, qry + "limit ? offset ?", 4, 3));
+            assertEqualsCollections(res.subList(7, 9), columnQuery(c, qry + "limit ? offset ?", 2, 7));
+            assertEqualsCollections(res.subList(8, 10), columnQuery(c, qry + "limit ? offset ?", 2, 8));
+            assertEqualsCollections(res.subList(9, 10), columnQuery(c, qry + "limit ? offset ?", 1, 9));
+            assertEqualsCollections(res.subList(10, 10), columnQuery(c, qry + "limit ? offset ?", 1, 10));
+            assertEqualsCollections(res.subList(9, 10), columnQuery(c, qry + "limit ? offset abs(-(4 + ?))", 1, 5));
         }
         finally {
             c.destroy();
@@ -137,16 +121,95 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testGroupIndexOperations() throws Exception {
+        IgniteCache<Integer, GroupIndexTestValue> c = ignite(0).getOrCreateCache(cacheConfig("grp", false,
+            Integer.class, GroupIndexTestValue.class));
+
+        try {
+            // Check group index usage.
+            String qry = "select 1 from GroupIndexTestValue ";
+
+            String plan = columnQuery(c, "explain " + qry + "where a = 1 and b > 0")
+                .get(0).toString();
+
+            info("Plan: " + plan);
+
+            assertTrue(plan.contains("grpIdx"));
+
+            // Sorted list
+            List<GroupIndexTestValue> list = F.asList(
+                new GroupIndexTestValue(0, 0),
+                new GroupIndexTestValue(0, 5),
+                new GroupIndexTestValue(1, 1),
+                new GroupIndexTestValue(1, 3),
+                new GroupIndexTestValue(2, -1),
+                new GroupIndexTestValue(2, 2)
+            );
+
+            // Fill cache.
+            for (int i = 0; i < list.size(); i++)
+                c.put(i, list.get(i));
+
+            // Check results.
+            assertEquals(1, columnQuery(c, qry + "where a = 1 and b = 1").size());
+            assertEquals(2, columnQuery(c, qry + "where a = 1 and b < 4").size());
+            assertEquals(2, columnQuery(c, qry + "where a = 1 and b <= 3").size());
+            assertEquals(1, columnQuery(c, qry + "where a = 1 and b < 3").size());
+            assertEquals(2, columnQuery(c, qry + "where a = 1 and b > 0").size());
+            assertEquals(1, columnQuery(c, qry + "where a = 1 and b > 1").size());
+            assertEquals(2, columnQuery(c, qry + "where a = 1 and b >= 1").size());
+            assertEquals(4, columnQuery(c, qry + "where a > 0 and b > 0").size());
+            assertEquals(4, columnQuery(c, qry + "where a > 0 and b >= 1").size());
+            assertEquals(3, columnQuery(c, qry + "where a > 0 and b > 1").size());
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
+     * @param c Cache.
+     * @param qry Query.
+     * @param args Arguments.
+     * @return Column as list.
+     */
+    private static <X> List<X> columnQuery(IgniteCache<?,?> c, String qry, Object... args) {
+        return column(0, c.query(new SqlFieldsQuery(qry).setArgs(args)).getAll());
+    }
+
+    /**
      * @param idx Column index.
      * @param rows Rows.
      * @return Column as list.
      */
-    private static List<?> column(int idx, List<List<?>> rows) {
-        List res = new ArrayList<>(rows.size());
+    private static <X> List<X> column(int idx, List<List<?>> rows) {
+        List<X> res = new ArrayList<>(rows.size());
 
         for (List<?> row : rows)
-            res.add(row.get(idx));
+            res.add((X)row.get(idx));
 
         return res;
+    }
+
+    /**
+     * Test value.
+     */
+    private static class GroupIndexTestValue implements Serializable {
+        @QuerySqlField(orderedGroups = @QuerySqlField.Group(name = "grpIdx", order = 0))
+        private int a;
+
+        @QuerySqlField(orderedGroups = @QuerySqlField.Group(name = "grpIdx", order = 1))
+        private int b;
+
+        /**
+         * @param a A.
+         * @param b B.
+         */
+        private GroupIndexTestValue(int a, int b) {
+            this.a = a;
+            this.b = b;
+        }
     }
 }

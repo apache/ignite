@@ -25,6 +25,9 @@ import java.util.*;
  * A dialect compatible with the IBM DB2 database.
  */
 public class DB2Dialect extends BasicJdbcDialect {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public boolean hasMerge() {
         return true;

@@ -15,23 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.interop;
-
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
+package org.apache.ignite.configuration;
 
 /**
- * Special version of predicate for events with initialize/close callbacks.
+ * Platform configuration marker interface.
  */
-public interface InteropAwareEventFilter<E extends Event> extends IgnitePredicate<E> {
-    /**
-     * Initializes the filter.
-     */
-    public void initialize(GridKernalContext ctx);
-
-    /**
-     * Closes the filter.
-     */
-    public void close();
+public class PlatformConfiguration {
+    // No-op.
 }

@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.interop;
+package org.apache.ignite.internal.platform;
 
 import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
 
 /**
- * Interop processor.
+ * Platform entry point.
  */
-public interface InteropProcessor {
+public interface Platform {
     /**
      * Get owning Ignite instance.
      *
@@ -37,15 +36,4 @@ public interface InteropProcessor {
      * @return Environment pointer.
      */
     public long environmentPointer();
-
-    /**
-     * Get stop runnable to perform cleanup when interop is not longer used.
-     * <p/>
-     * <b>NOTE!</b> This runnable is called when current instance of interop processor is eligible for garbage
-     * collection. Therefore you should <b>never</b> store any references to Ignite internal inside it. Otherwise
-     * this runnable will never be called.
-     *
-     * @return Stop runnable. If {@code null} is returned, then no cleanup is expected.
-     */
-    @Nullable public Runnable cleanupCallback();
 }

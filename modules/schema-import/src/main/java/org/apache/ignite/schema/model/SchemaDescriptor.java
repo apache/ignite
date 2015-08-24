@@ -15,36 +15,47 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.interop;
+package org.apache.ignite.schema.model;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
+import javafx.beans.property.*;
 
 /**
- * Exception raised when interop callback is not set in native platform.
+ * Descriptor for schema.
  */
-@SuppressWarnings("UnusedDeclaration")
-public class InteropNoCallbackException extends InteropException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class SchemaDescriptor {
+    /** Schema name */
+    private final String schema;
+
+    /** State of schema selection. */
+    private final BooleanProperty selected;
 
     /**
-     * Constructor.
-     */
-    public InteropNoCallbackException() {
-        // No-op.
-    }
-
-    /**
-     * Constructor.
+     * Constructor of schema descriptor.
      *
-     * @param msg Message.
+     * @param schema Schema.
+     * @param selected Selection state.
      */
-    public InteropNoCallbackException(String msg) {
-        super(msg);
+    public SchemaDescriptor(String schema, boolean selected) {
+        this.schema = schema;
+        this.selected = new SimpleBooleanProperty(selected);
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(InteropNoCallbackException.class, this);
+    /**
+     * @return Schema name.
+     */
+    public String schema() {
+        return schema;
+    }
+
+    /**
+     * @return Boolean property support for {@code selected} property.
+     */
+    public BooleanProperty selected() {
+        return selected;
+    }
+
+    @Override
+    public String toString() {
+        return schema;
     }
 }

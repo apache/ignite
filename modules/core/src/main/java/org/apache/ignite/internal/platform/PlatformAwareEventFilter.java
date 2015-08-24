@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.interop;
+package org.apache.ignite.internal.platform;
 
-import java.io.*;
+import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.lang.*;
 
 /**
- * Interop bootstrap factory.
+ * Special version of predicate for events with initialize/close callbacks.
  */
-public interface InteropBootstrapFactory extends Serializable {
+public interface PlatformAwareEventFilter<E extends Event> extends IgnitePredicate<E> {
     /**
-     * Get bootstrap factory ID.
-     *
-     * @return ID.
+     * Initializes the filter.
      */
-    public int id();
+    public void initialize(GridKernalContext ctx);
 
     /**
-     * Create bootstrap instance.
-     *
-     * @return Bootstrap instance.
+     * Closes the filter.
      */
-    public InteropBootstrap create();
+    public void close();
 }

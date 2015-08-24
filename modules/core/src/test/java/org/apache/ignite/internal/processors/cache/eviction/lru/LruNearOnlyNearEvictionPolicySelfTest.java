@@ -27,6 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -53,6 +54,9 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     /** Cache atomicity mode specified by test. */
     private CacheAtomicityMode atomicityMode;
 
+    /** Memory mode. */
+    private CacheMemoryMode memMode;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -69,8 +73,9 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
         else {
             CacheConfiguration cc = new CacheConfiguration();
 
-            cc.setAtomicityMode(atomicityMode);
             cc.setCacheMode(cacheMode);
+            cc.setAtomicityMode(atomicityMode);
+            cc.setMemoryMode(memMode);
             cc.setWriteSynchronizationMode(PRIMARY_SYNC);
             cc.setRebalanceMode(SYNC);
             cc.setStartSize(100);
@@ -92,6 +97,18 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     public void testPartitionedAtomicNearEvictionMaxSize() throws Exception {
         atomicityMode = ATOMIC;
         cacheMode = PARTITIONED;
+        memMode = ONHEAP_TIERED;
+
+        checkNearEvictionMaxSize();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPartitionedAtomicOffHeapNearEvictionMaxSize() throws Exception {
+        atomicityMode = ATOMIC;
+        cacheMode = PARTITIONED;
+        memMode = OFFHEAP_TIERED;
 
         checkNearEvictionMaxSize();
     }
@@ -102,6 +119,18 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     public void testPartitionedTransactionalNearEvictionMaxSize() throws Exception {
         atomicityMode = TRANSACTIONAL;
         cacheMode = PARTITIONED;
+        memMode = ONHEAP_TIERED;
+
+        checkNearEvictionMaxSize();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPartitionedTransactionalOffHeapNearEvictionMaxSize() throws Exception {
+        atomicityMode = TRANSACTIONAL;
+        cacheMode = PARTITIONED;
+        memMode = OFFHEAP_TIERED;
 
         checkNearEvictionMaxSize();
     }
@@ -112,6 +141,18 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     public void testReplicatedAtomicNearEvictionMaxSize() throws Exception {
         atomicityMode = ATOMIC;
         cacheMode = REPLICATED;
+        memMode = ONHEAP_TIERED;
+
+        checkNearEvictionMaxSize();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReplicatedAtomicOffHeapNearEvictionMaxSize() throws Exception {
+        atomicityMode = ATOMIC;
+        cacheMode = REPLICATED;
+        memMode = OFFHEAP_TIERED;
 
         checkNearEvictionMaxSize();
     }
@@ -122,6 +163,18 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     public void testReplicatedTransactionalNearEvictionMaxSize() throws Exception {
         atomicityMode = TRANSACTIONAL;
         cacheMode = REPLICATED;
+        memMode = ONHEAP_TIERED;
+
+        checkNearEvictionMaxSize();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReplicatedTransactionalOffHeapNearEvictionMaxSize() throws Exception {
+        atomicityMode = TRANSACTIONAL;
+        cacheMode = REPLICATED;
+        memMode = OFFHEAP_TIERED;
 
         checkNearEvictionMaxSize();
     }

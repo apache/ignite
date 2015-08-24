@@ -355,6 +355,11 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @throws SQLException If a database access error occurs or this method is called.
      */
     protected Object getColumnValue(ResultSet rs, int colIdx, Class<?> type) throws SQLException {
+        Object val = rs.getObject(colIdx);
+
+        if (val == null)
+            return null;
+
         if (type == int.class)
             return rs.getInt(colIdx);
 
@@ -364,7 +369,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         if (type == double.class)
             return rs.getDouble(colIdx);
 
-        if (type == boolean.class)
+        if (type == boolean.class || type == Boolean.class)
             return rs.getBoolean(colIdx);
 
         if (type == byte.class)
@@ -378,31 +383,23 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
         if (type == Integer.class || type == Long.class || type == Double.class ||
             type == Byte.class || type == Short.class ||  type == Float.class) {
-            Object val = rs.getObject(colIdx);
+            Number num = (Number)val;
 
-            if (val != null) {
-                Number num = (Number)val;
-
-                if (type == Integer.class)
-                    return num.intValue();
-                else if (type == Long.class)
-                    return num.longValue();
-                else if (type == Double.class)
-                    return num.doubleValue();
-                else if (type == Byte.class)
-                    return num.byteValue();
-                else if (type == Short.class)
-                    return num.shortValue();
-                else if (type == Float.class)
-                    return num.floatValue();
-            }
-            else
-                return EMPTY_COLUMN_VALUE;
+            if (type == Integer.class)
+                return num.intValue();
+            else if (type == Long.class)
+                return num.longValue();
+            else if (type == Double.class)
+                return num.doubleValue();
+            else if (type == Byte.class)
+                return num.byteValue();
+            else if (type == Short.class)
+                return num.shortValue();
+            else if (type == Float.class)
+                return num.floatValue();
         }
 
-        Object val = rs.getObject(colIdx);
-
-        if (type == UUID.class && val != null) {
+        if (type == UUID.class) {
             if (val instanceof UUID)
                 return val;
 
