@@ -1028,7 +1028,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheConfiguration cfg = cacheCtx.config();
 
-        if (cfg.isKeepPortableInStore() && !(ctx.config().getMarshaller() instanceof PortableMarshaller))
+        // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
+        if (cfg.isKeepPortableInStore() && cfg.isKeepPortableInStore() != CacheConfiguration.DFLT_KEEP_PORTABLE_IN_STORE
+            && !(ctx.config().getMarshaller() instanceof PortableMarshaller))
             U.warn(log, "CacheConfiguration.isKeepPortableInStore() configuration property will be ignored because " +
                 "PortableMarshaller is not used");
 

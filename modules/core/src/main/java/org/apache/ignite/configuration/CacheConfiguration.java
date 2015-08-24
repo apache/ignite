@@ -153,6 +153,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default size for onheap SQL row cache size. */
     public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
 
+    /** Default value for keep portable in store behavior .*/
+    @SuppressWarnings({"UnnecessaryBoxing", "BooleanConstructorCall"})
+    public static final Boolean DFLT_KEEP_PORTABLE_IN_STORE  = new Boolean(true);
+
     /** Cache name. */
     private String name;
 
@@ -205,7 +209,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private Factory storeFactory;
 
     /** */
-    private boolean keepPortableInStore = true;
+    private Boolean keepPortableInStore = DFLT_KEEP_PORTABLE_IN_STORE;
 
     /** */
     private boolean loadPrevVal = DFLT_LOAD_PREV_VAL;
@@ -812,7 +816,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Flag indicating that {@link CacheStore} implementation
      * is working with portable objects instead of Java objects.
-     * Default value of this flag is {@code true},
+     * Default value of this flag is {@link #DFLT_KEEP_PORTABLE_IN_STORE},
      * because this is recommended behavior from performance standpoint.
      * <p>
      * If set to {@code false}, Ignite will deserialize keys and
@@ -828,7 +832,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Keep portables in store flag.
      */
-    public boolean isKeepPortableInStore() {
+    public Boolean isKeepPortableInStore() {
         return keepPortableInStore;
     }
 
