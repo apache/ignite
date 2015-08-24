@@ -26,19 +26,19 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = "This class instance usually lives as long as the app runs.")]
-    internal class InteropMemoryManager
+    internal class PlatformMemoryManager
     {
         /** Default capacity. */
         private readonly int _dfltCap;
 
         /** Thread-local pool. */
-        private readonly ThreadLocal<InteropMemoryPool> _threadLocPool = new ThreadLocal<InteropMemoryPool>();
+        private readonly ThreadLocal<PlatformMemoryPool> _threadLocPool = new ThreadLocal<PlatformMemoryPool>();
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="dfltCap">Default capacity.</param>
-        public InteropMemoryManager(int dfltCap)
+        public PlatformMemoryManager(int dfltCap)
         {
             _dfltCap = dfltCap;
         }
@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Allocate memory.
         /// </summary>
         /// <returns>Memory.</returns>
-        public IInteropMemory Allocate()
+        public IPlatformMemory Allocate()
         {
             return Allocate(_dfltCap);
         }
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="cap">Minimum capacity.</param>
         /// <returns>Memory.</returns>
-        public IInteropMemory Allocate(int cap)
+        public IPlatformMemory Allocate(int cap)
         {
             return Pool().Allocate(cap);
         }
@@ -67,25 +67,25 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Cross-platform memory pointer.</param>
         /// <returns>Memory.</returns>
-        public IInteropMemory Get(long memPtr)
+        public IPlatformMemory Get(long memPtr)
         {
-            int flags = InteropMemoryUtils.Flags(memPtr);
+            int flags = PlatformMemoryUtils.Flags(memPtr);
 
-            return InteropMemoryUtils.IsExternal(flags) ? GetExternalMemory(memPtr)
-                : InteropMemoryUtils.IsPooled(flags) ? Pool().Get(memPtr) : new InteropUnpooledMemory(memPtr);
+            return PlatformMemoryUtils.IsExternal(flags) ? GetExternalMemory(memPtr)
+                : PlatformMemoryUtils.IsPooled(flags) ? Pool().Get(memPtr) : new PlatformUnpooledMemory(memPtr);
         }
 
         /// <summary>
         /// Gets or creates thread-local memory pool.
         /// </summary>
         /// <returns>Memory pool.</returns>
-        public InteropMemoryPool Pool()
+        public PlatformMemoryPool Pool()
         {
-            InteropMemoryPool pool = _threadLocPool.Value;
+            PlatformMemoryPool pool = _threadLocPool.Value;
 
             if (pool == null)
             {
-                pool = new InteropMemoryPool();
+                pool = new PlatformMemoryPool();
 
                 _threadLocPool.Value = pool;
             }
@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Cross-platform memory pointer.</param>
         /// <returns>Memory.</returns>
-        protected IInteropMemory GetExternalMemory(long memPtr)
+        protected IPlatformMemory GetExternalMemory(long memPtr)
         {
             throw new NotSupportedException("Not supported in Ignite yet");
         }

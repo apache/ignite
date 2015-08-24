@@ -18,15 +18,15 @@
 namespace Apache.Ignite.Core.Impl.Memory
 {
     /// <summary>
-    /// Interop memory stream for big endian platforms.
+    /// Platform memory stream for big endian platforms.
     /// </summary>
-    internal class InteropBigEndianMemoryStream : InteropMemoryStream
+    internal class PlatformBigEndianMemoryStream : PlatformMemoryStream
     {
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="mem"></param>
-        public InteropBigEndianMemoryStream(IInteropMemory mem) : base(mem)
+        public PlatformBigEndianMemoryStream(IPlatformMemory mem) : base(mem)
         {
             // No-op.
         }

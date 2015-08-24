@@ -18,15 +18,15 @@
 namespace Apache.Ignite.Core.Impl.Memory
 {
     /// <summary>
-    /// Interop memory chunk.
+    /// Platform memory chunk.
     /// </summary>
-    internal interface IInteropMemory
+    internal interface IPlatformMemory
     {
         /// <summary>
         /// Gets stream for read/write operations on the given memory chunk.
         /// </summary>
         /// <returns></returns>
-        InteropMemoryStream Stream();
+        PlatformMemoryStream Stream();
 
         /// <summary>
         /// Cross-platform pointer.

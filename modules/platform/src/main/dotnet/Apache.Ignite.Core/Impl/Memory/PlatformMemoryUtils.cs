@@ -23,9 +23,9 @@ namespace Apache.Ignite.Core.Impl.Memory
     using System.Runtime.InteropServices;
     
     /// <summary>
-    /// Utility methods for interop memory management.
+    /// Utility methods for platform memory management.
     /// </summary>
-    internal static unsafe class InteropMemoryUtils
+    internal static unsafe class PlatformMemoryUtils
     {
         #region CONSTANTS
 
@@ -406,7 +406,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Static initializer.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
-        static InteropMemoryUtils()
+        static PlatformMemoryUtils()
         {
             Type type = typeof(Buffer);
 

@@ -18,53 +18,35 @@
 namespace Apache.Ignite.Core.Impl.Memory
 {
     /// <summary>
-    /// Interop pooled memory chunk.
+    /// Platform unpooled memory chunk.
     /// </summary>
-    internal class InteropPooledMemory : InteropMemory
+    internal class PlatformUnpooledMemory : PlatformMemory
     {
-        /** Pool. */
-        private readonly InteropMemoryPool _pool;
-
-        /** Cached stream. */
-        private InteropMemoryStream _stream;
-
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="pool">Pool.</param>
         /// <param name="memPtr">Memory pointer.</param>
-        public InteropPooledMemory(InteropMemoryPool pool, long memPtr) : base(memPtr)
+        public PlatformUnpooledMemory(long memPtr) : base(memPtr)
         {
-            this._pool = pool;
-        }
-
-        /** <inheritdoc /> */
-        public override InteropMemoryStream Stream()
-        {
-            if (_stream == null)
-                _stream = base.Stream();
-            else
-                _stream.Reuse();
-
-            return _stream;
+            // No-op.
         }
 
         /** <inheritdoc /> */
         public override void Reallocate(int cap)
         {
             // Try doubling capacity to avoid excessive allocations.
-            int doubledCap = InteropMemoryUtils.Capacity(MemPtr) << 1;
+            int doubledCap = ((PlatformMemoryUtils.Capacity(MemPtr) + 16) << 1) - 16;
 
             if (doubledCap > cap)
                 cap = doubledCap;
 
-            _pool.Reallocate(MemPtr, cap);
+            PlatformMemoryUtils.ReallocateUnpooled(MemPtr, cap);
         }
 
         /** <inheritdoc /> */
         public override void Release()
         {
-            _pool.Release(MemPtr); // Return to the pool.
+            PlatformMemoryUtils.ReleaseUnpooled(MemPtr);
         }
     }
 }

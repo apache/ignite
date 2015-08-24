@@ -21,25 +21,25 @@ namespace Apache.Ignite.Core.Impl.Memory
     using Microsoft.Win32.SafeHandles;
 
     /// <summary>
-    /// Interop memory pool.
+    /// Platform memory pool.
     /// </summary>
-    internal class InteropMemoryPool : SafeHandleMinusOneIsInvalid
+    internal class PlatformMemoryPool : SafeHandleMinusOneIsInvalid
     {
         /** First pooled memory chunk. */
-        private InteropPooledMemory _mem1;
+        private PlatformPooledMemory _mem1;
 
         /** Second pooled memory chunk. */
-        private InteropPooledMemory _mem2;
+        private PlatformPooledMemory _mem2;
 
         /** Third pooled memory chunk. */
-        private InteropPooledMemory _mem3;
+        private PlatformPooledMemory _mem3;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        public InteropMemoryPool() : base(true)
+        public PlatformMemoryPool() : base(true)
         {
-            handle = (IntPtr)InteropMemoryUtils.AllocatePool();
+            handle = (IntPtr)PlatformMemoryUtils.AllocatePool();
         }
 
         /// <summary>
@@ -47,12 +47,12 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="cap">Minimum capacity.</param>
         /// <returns>Memory chunk</returns>
-        public InteropMemory Allocate(int cap)
+        public PlatformMemory Allocate(int cap)
         {
-            var memPtr = InteropMemoryUtils.AllocatePooled(handle.ToInt64(), cap);
+            var memPtr = PlatformMemoryUtils.AllocatePooled(handle.ToInt64(), cap);
 
             // memPtr == 0 means that we failed to acquire thread-local memory chunk, so fallback to unpooled memory.
-            return memPtr != 0 ? Get(memPtr) : new InteropUnpooledMemory(InteropMemoryUtils.AllocateUnpooled(cap));
+            return memPtr != 0 ? Get(memPtr) : new PlatformUnpooledMemory(PlatformMemoryUtils.AllocateUnpooled(cap));
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="cap">Minimum capacity.</param>
         public void Reallocate(long memPtr, int cap)
         {
-            InteropMemoryUtils.ReallocatePooled(memPtr, cap);
+            PlatformMemoryUtils.ReallocatePooled(memPtr, cap);
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="memPtr">Memory pointer.</param>
         public void Release(long memPtr)
         {
-            InteropMemoryUtils.ReleasePooled(memPtr);
+            PlatformMemoryUtils.ReleasePooled(memPtr);
         }
 
         /// <summary>
@@ -79,23 +79,23 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>Memory chunk.</returns>
-        public InteropMemory Get(long memPtr) 
+        public PlatformMemory Get(long memPtr) 
         {
             long delta = memPtr - handle.ToInt64();
 
-            if (delta == InteropMemoryUtils.PoolHdrOffMem1) 
-                return _mem1 ?? (_mem1 = new InteropPooledMemory(this, memPtr));
+            if (delta == PlatformMemoryUtils.PoolHdrOffMem1) 
+                return _mem1 ?? (_mem1 = new PlatformPooledMemory(this, memPtr));
             
-            if (delta == InteropMemoryUtils.PoolHdrOffMem2) 
-                return _mem2 ?? (_mem2 = new InteropPooledMemory(this, memPtr));
+            if (delta == PlatformMemoryUtils.PoolHdrOffMem2) 
+                return _mem2 ?? (_mem2 = new PlatformPooledMemory(this, memPtr));
 
-            return _mem3 ?? (_mem3 = new InteropPooledMemory(this, memPtr));
+            return _mem3 ?? (_mem3 = new PlatformPooledMemory(this, memPtr));
         }
 
         /** <inheritdoc /> */
         protected override bool ReleaseHandle()
         {
-            InteropMemoryUtils.ReleasePool(handle.ToInt64());
+            PlatformMemoryUtils.ReleasePool(handle.ToInt64());
 
             handle = new IntPtr(-1);
 

@@ -20,58 +20,69 @@ namespace Apache.Ignite.Core.Impl.Memory
     using System;
 
     /// <summary>
-    /// Abstract memory chunk.
+    /// Non-resizeable raw memory chunk without metadata header.
     /// </summary>
-    internal abstract class InteropMemory : IInteropMemory
+    internal class PlatformRawMemory : IPlatformMemory
     {
-        /** Memory pointer. */
-        protected readonly long MemPtr;
+        /** */
+        private readonly long _memPtr;
+
+        /** */
+        private readonly int _size;
 
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of the <see cref="PlatformRawMemory"/> class.
         /// </summary>
-        /// <param name="memPtr">Memory pointer.</param>
-        protected InteropMemory(long memPtr)
+        /// <param name="memPtr">Heap pointer.</param>
+        /// <param name="size">Size.</param>
+        public unsafe PlatformRawMemory(void* memPtr, int size)
         {
-            MemPtr = memPtr;
+            this._memPtr = (long) memPtr;
+            this._size = size;
         }
 
         /** <inheritdoc /> */
-        public virtual InteropMemoryStream Stream()
+        public PlatformMemoryStream Stream()
         {
-            return BitConverter.IsLittleEndian ? new InteropMemoryStream(this) : 
-                new InteropBigEndianMemoryStream(this);
+            return BitConverter.IsLittleEndian ? new PlatformMemoryStream(this) :
+                new PlatformBigEndianMemoryStream(this);
         }
 
         /** <inheritdoc /> */
         public long Pointer
         {
-            get { return MemPtr; }
+            get { throw new NotSupportedException(); }
         }
 
         /** <inheritdoc /> */
         public long Data
         {
-            get { return InteropMemoryUtils.Data(MemPtr); }
+            get { return _memPtr; }
         }
 
         /** <inheritdoc /> */
         public int Capacity
         {
-            get { return InteropMemoryUtils.Capacity(MemPtr); }
+            get { return _size; }
         }
 
         /** <inheritdoc /> */
         public int Length
         {
-            get { return InteropMemoryUtils.Length(MemPtr); }
-            set { InteropMemoryUtils.Length(MemPtr, value); }
+            get { return _size; }
+            set { throw new NotSupportedException(); }
         }
 
         /** <inheritdoc /> */
-        public abstract void Reallocate(int cap);
+        public void Reallocate(int cap)
+        {
+            throw new NotSupportedException();
+        }
 
         /** <inheritdoc /> */
-        public abstract void Release();
+        public void Release()
+        {
+            throw new NotSupportedException();
+        }
     }
 }

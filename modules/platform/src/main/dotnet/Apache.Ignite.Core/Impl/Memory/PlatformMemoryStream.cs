@@ -24,9 +24,9 @@ namespace Apache.Ignite.Core.Impl.Memory
     using System.Text;
 
     /// <summary>
-    /// Interop memory stream.
+    /// Platform memory stream.
     /// </summary>
-    internal unsafe class InteropMemoryStream : IPortableStream
+    internal unsafe class PlatformMemoryStream : IPortableStream
     {
         /** Length: 1 byte. */
         protected const int Len1 = 1;
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         protected const int Shift8 = 3;
         
         /** Underlying memory. */
-        private readonly IInteropMemory _mem;
+        private readonly IPlatformMemory _mem;
 
         /** Actual data. */
         protected byte* Data;
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Constructor.
         /// </summary>
         /// <param name="mem">Memory.</param>
-        public InteropMemoryStream(IInteropMemory mem)
+        public PlatformMemoryStream(IPlatformMemory mem)
         {
             _mem = mem;
 
@@ -266,7 +266,7 @@ namespace Apache.Ignite.Core.Impl.Memory
 
             fixed (byte* res0 = res)
             {
-                InteropMemoryUtils.CopyMemory(Data + curPos, res0, cnt);
+                PlatformMemoryUtils.CopyMemory(Data + curPos, res0, cnt);
             }
 
             return res;
@@ -584,7 +584,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureReadCapacityAndShift(cnt);
 
-            InteropMemoryUtils.CopyMemory(Data + curPos, dest, cnt);
+            PlatformMemoryUtils.CopyMemory(Data + curPos, dest, cnt);
         }
 
         /// <summary>
@@ -596,7 +596,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureWriteCapacityAndShift(cnt);
 
-            InteropMemoryUtils.CopyMemory(src, Data + curPos, cnt);
+            PlatformMemoryUtils.CopyMemory(src, Data + curPos, cnt);
         }
 
         /// <summary>
@@ -659,7 +659,7 @@ namespace Apache.Ignite.Core.Impl.Memory
 
             fixed (byte* res0 = res)
             {
-                InteropMemoryUtils.CopyMemory(Data, res0, res.Length);
+                PlatformMemoryUtils.CopyMemory(Data, res0, res.Length);
             }
 
             return res;

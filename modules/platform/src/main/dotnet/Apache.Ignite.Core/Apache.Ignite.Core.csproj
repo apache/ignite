@@ -38,16 +38,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Ignition.cs" />
-    <Compile Include="Impl\Memory\IInteropMemory.cs" />
-    <Compile Include="Impl\Memory\InteropBigEndianMemoryStream.cs" />
-    <Compile Include="Impl\Memory\InteropMemory.cs" />
-    <Compile Include="Impl\Memory\InteropMemoryManager.cs" />
-    <Compile Include="Impl\Memory\InteropMemoryPool.cs" />
-    <Compile Include="Impl\Memory\InteropMemoryStream.cs" />
-    <Compile Include="Impl\Memory\InteropMemoryUtils.cs" />
-    <Compile Include="Impl\Memory\InteropPooledMemory.cs" />
-    <Compile Include="Impl\Memory\InteropRawMemory.cs" />
-    <Compile Include="Impl\Memory\InteropUnpooledMemory.cs" />
+    <Compile Include="Impl\Memory\IPlatformMemory.cs" />
+    <Compile Include="Impl\Memory\PlatformBigEndianMemoryStream.cs" />
+    <Compile Include="Impl\Memory\PlatformMemory.cs" />
+    <Compile Include="Impl\Memory\PlatformMemoryManager.cs" />
+    <Compile Include="Impl\Memory\PlatformMemoryPool.cs" />
+    <Compile Include="Impl\Memory\PlatformMemoryStream.cs" />
+    <Compile Include="Impl\Memory\PlatformMemoryUtils.cs" />
+    <Compile Include="Impl\Memory\PlatformPooledMemory.cs" />
+    <Compile Include="Impl\Memory\PlatformRawMemory.cs" />
+    <Compile Include="Impl\Memory\PlatformUnpooledMemory.cs" />
     <Compile Include="Impl\Portable\Io\IPortableStream.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
