@@ -24,7 +24,10 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.portable.*;
 
+import org.jsr166.*;
+
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  *
@@ -75,6 +78,9 @@ public class CacheObjectPortableContext extends CacheObjectContext {
         if (col instanceof ArrayList)
             return unwrapPortables((ArrayList<Object>)col);
 
+        if (col instanceof Set)
+            return unwrapPortables((Set<Object>)col);
+
         Collection<Object> col0 = new ArrayList<>(col.size());
 
         for (Object obj : col)
@@ -94,7 +100,7 @@ public class CacheObjectPortableContext extends CacheObjectContext {
         if (keepPortable || !portableEnabled())
             return map;
 
-        Map<Object, Object> map0 = U.newHashMap(map.size());
+        Map<Object, Object> map0 = PortableUtils.newMap(map);
 
         for (Map.Entry<Object, Object> e : map.entrySet())
             map0.put(unwrapPortable(e.getKey()), unwrapPortable(e.getValue()));
@@ -121,6 +127,23 @@ public class CacheObjectPortableContext extends CacheObjectContext {
         }
 
         return col;
+    }
+
+    /**
+     * Unwraps set with portables.
+     *
+     * @param set Set to unwrap.
+     * @return Unwrapped set.
+     */
+    private Set<Object> unwrapPortables(Set<Object> set) {
+        Set<Object> set0 = PortableUtils.newSet(set);
+
+        Iterator<Object> iter = set.iterator();
+
+        while (iter.hasNext())
+            set0.add(unwrapPortable(iter.next()));
+
+        return set0;
     }
 
     /**

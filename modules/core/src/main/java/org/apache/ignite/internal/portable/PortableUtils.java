@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.portable.*;
 
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.math.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.*;
 
@@ -376,5 +379,41 @@ public class PortableUtils {
             PORTABLE_CLS.contains(cls) ||
             cls.isEnum() ||
             (cls.isArray() && cls.getComponentType().isEnum());
+    }
+
+    /**
+     * Attempts to create a new map of the same type as {@code map} has. Otherwise returns new {@code HashMap} instance.
+     *
+     * @param map Original map.
+     * @return New map.
+     */
+    public static <K, V> Map<K, V> newMap(Map<K, V> map) {
+        if (map instanceof LinkedHashMap)
+            return U.newLinkedHashMap(map.size());
+        else if (map instanceof TreeMap)
+            return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
+        else if (map instanceof ConcurrentHashMap8)
+            return new ConcurrentHashMap8<>(U.capacity(map.size()));
+        else if (map instanceof ConcurrentHashMap)
+            return new ConcurrentHashMap<>(U.capacity(map.size()));
+
+        return U.newHashMap(map.size());
+    }
+
+    /**
+     * Attempts to create a new set of the same type as {@code set} has. Otherwise returns new {@code HashSet} instance.
+     *
+     * @param set Original set.
+     * @return New set.
+     */
+    public static <V> Set<V> newSet(Set<V> set) {
+        if (set instanceof LinkedHashSet)
+            return U.newLinkedHashSet(set.size());
+        else if (set instanceof TreeSet)
+            return new TreeSet<>(((TreeSet<Object>)set).comparator());
+        else if (set instanceof ConcurrentSkipListSet)
+            return new ConcurrentSkipListSet<>(((ConcurrentSkipListSet<Object>)set).comparator());
+
+        return U.newHashSet(set.size());
     }
 }

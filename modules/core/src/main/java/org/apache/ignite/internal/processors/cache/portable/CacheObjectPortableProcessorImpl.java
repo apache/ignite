@@ -410,9 +410,14 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
         }
 
         if (obj instanceof Collection) {
-            Collection<?> col = (Collection<?>)obj;
+            Collection<Object> col = (Collection<Object>)obj;
 
-            Collection<Object> pCol = new ArrayList<>(col.size());
+            Collection<Object> pCol;
+
+            if (col instanceof Set)
+                pCol = (Collection<Object>)PortableUtils.newSet((Set<?>)col);
+            else
+                pCol = new ArrayList<>(col.size());
 
             for (Object item : col)
                 pCol.add(marshalToPortable(item));
@@ -423,7 +428,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
         if (obj instanceof Map) {
             Map<?, ?> map = (Map<?, ?>)obj;
 
-            Map<Object, Object> pMap = new HashMap<>(map.size(), 1.0f);
+            Map<Object, Object> pMap = PortableUtils.newMap((Map<Object, Object>)obj);
 
             for (Map.Entry<?, ?> e : map.entrySet())
                 pMap.put(marshalToPortable(e.getKey()), marshalToPortable(e.getValue()));
