@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Abstract memory chunk.
     /// </summary>
-    internal abstract class PlatformMemory : IPlatformMemory
+    public abstract class PlatformMemory : IPlatformMemory
     {
         /** Memory pointer. */
         protected readonly long MemPtr;

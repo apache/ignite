@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Platform memory pool.
     /// </summary>
-    internal class PlatformMemoryPool : SafeHandleMinusOneIsInvalid
+    public class PlatformMemoryPool : SafeHandleMinusOneIsInvalid
     {
         /** First pooled memory chunk. */
         private PlatformPooledMemory _mem1;

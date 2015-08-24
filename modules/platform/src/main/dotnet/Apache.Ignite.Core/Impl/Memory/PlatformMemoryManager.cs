@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = "This class instance usually lives as long as the app runs.")]
-    internal class PlatformMemoryManager
+    public class PlatformMemoryManager
     {
         /** Default capacity. */
         private readonly int _dfltCap;
@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Cross-platform memory pointer.</param>
         /// <returns>Memory.</returns>
-        protected IPlatformMemory GetExternalMemory(long memPtr)
+        protected virtual IPlatformMemory GetExternalMemory(long memPtr)
         {
             throw new NotSupportedException("Not supported in Ignite yet");
         }

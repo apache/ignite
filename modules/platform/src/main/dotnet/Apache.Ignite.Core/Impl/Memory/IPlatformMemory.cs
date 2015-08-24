@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Platform memory chunk.
     /// </summary>
-    internal interface IPlatformMemory
+    public interface IPlatformMemory
     {
         /// <summary>
         /// Gets stream for read/write operations on the given memory chunk.

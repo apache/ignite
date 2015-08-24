@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Platform memory stream.
     /// </summary>
-    internal unsafe class PlatformMemoryStream : IPortableStream
+    public unsafe class PlatformMemoryStream : IPortableStream
     {
         /** Length: 1 byte. */
         protected const int Len1 = 1;
