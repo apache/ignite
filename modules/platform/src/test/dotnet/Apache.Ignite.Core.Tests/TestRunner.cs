@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests
 
             //TestOne(typeof(ContinuousQueryAtomiclBackupTest), "TestInitialQuery");
 
-            TestAll(typeof(GridFactoryTest));
+            TestAll(typeof(IgnitionTest));
 
             //TestAllInAssembly();
         }
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Tests
 
         private static void TestAllInAssembly()
         {
-            string[] args = { Assembly.GetAssembly(typeof(GridFactoryTest)).Location };
+            string[] args = { Assembly.GetAssembly(typeof(IgnitionTest)).Location };
 
             int returnCode = NUnit.ConsoleRunner.Runner.Main(args);
 
