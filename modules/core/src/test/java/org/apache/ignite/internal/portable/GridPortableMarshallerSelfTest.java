@@ -28,6 +28,9 @@ import org.apache.ignite.portable.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import com.sun.tools.jdi.*;
+import com.sun.tools.jdi.LinkedHashMap;
+import org.jsr166.*;
 import sun.misc.*;
 
 import java.lang.reflect.*;
@@ -310,8 +313,17 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCollection() throws Exception {
-        Collection<Integer> col = new ArrayList<>(3);
+        testCollection(new ArrayList<Integer>(3));
+        testCollection(new LinkedHashSet<Integer>());
+        testCollection(new HashSet<Integer>());
+        testCollection(new TreeSet<Integer>());
+        testCollection(new ConcurrentSkipListSet<Integer>());
+    }
 
+    /**
+     * @throws Exception If failed.
+     */
+    private void testCollection(Collection<Integer> col) throws Exception {
         col.add(1);
         col.add(2);
         col.add(3);
@@ -323,8 +335,17 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMap() throws Exception {
-        Map<Integer, String> map = new HashMap<>(3);
+        testMap(new HashMap<Integer, String>());
+        testMap(new LinkedHashMap());
+        testMap(new TreeMap<Integer, String>());
+        testMap(new ConcurrentHashMap8<Integer, String>());
+        testMap(new ConcurrentHashMap<Integer, String>());
+    }
 
+    /**
+     * @throws Exception If failed.
+     */
+    private void testMap(Map<Integer, String> map) throws Exception {
         map.put(1, "str1");
         map.put(2, "str2");
         map.put(3, "str3");
