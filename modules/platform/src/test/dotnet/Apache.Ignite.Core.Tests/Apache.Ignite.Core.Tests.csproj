@@ -31,6 +31,13 @@
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>bin\x86\Release\</OutputPath>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="nunit-console-runner">
       <HintPath>..\libs\nunit-console-runner.dll</HintPath>
@@ -44,6 +51,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IgnitionTest.cs" />
+    <Compile Include="Memory\InteropMemoryTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestRunner.cs" />
   </ItemGroup>
