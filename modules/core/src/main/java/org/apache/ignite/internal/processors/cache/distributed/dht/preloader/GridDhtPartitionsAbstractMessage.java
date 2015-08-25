@@ -140,7 +140,7 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDhtPartitionsAbstractMessage.class);
     }
 
     /** {@inheritDoc} */

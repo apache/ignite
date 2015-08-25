@@ -502,14 +502,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 13:
-                byte plcOrd;
-
-                plcOrd = reader.readByte("plc");
+                plc = reader.readByte("plc");
 
                 if (!reader.isLastRead())
                     return false;
-
-                plc = plcOrd;
 
                 reader.incrementState();
 
@@ -579,7 +575,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDistributedTxPrepareRequest.class);
     }
 
     /** {@inheritDoc} */

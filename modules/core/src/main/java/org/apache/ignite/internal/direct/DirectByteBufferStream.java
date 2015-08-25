@@ -945,7 +945,7 @@ public class DirectByteBufferStream {
             msg = type == Byte.MIN_VALUE ? null : msgFactory.create(type);
 
             if (msg != null)
-                reader = msgFormatter.reader(msgFactory);
+                reader = msgFormatter.reader(msgFactory, msg.getClass());
 
             msgTypeDone = true;
         }

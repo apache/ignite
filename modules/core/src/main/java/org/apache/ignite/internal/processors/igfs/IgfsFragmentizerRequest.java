@@ -139,7 +139,7 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(IgfsFragmentizerRequest.class);
     }
 
     /** {@inheritDoc} */

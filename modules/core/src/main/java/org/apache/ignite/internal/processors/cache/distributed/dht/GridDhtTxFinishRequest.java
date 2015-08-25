@@ -385,7 +385,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDhtTxFinishRequest.class);
     }
 
     /** {@inheritDoc} */

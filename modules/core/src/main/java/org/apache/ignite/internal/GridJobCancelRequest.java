@@ -178,7 +178,7 @@ public class GridJobCancelRequest implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridJobCancelRequest.class);
     }
 
     /** {@inheritDoc} */

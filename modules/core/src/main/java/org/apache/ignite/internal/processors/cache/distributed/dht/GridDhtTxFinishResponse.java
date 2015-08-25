@@ -115,7 +115,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDhtTxFinishResponse.class);
     }
 
     /** {@inheritDoc} */

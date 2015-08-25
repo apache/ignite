@@ -64,7 +64,7 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
         if (!reader.beforeMessageRead())
             return false;
 
-        return true;
+        return reader.afterMessageRead(CacheEntryPredicateAdapter.class);
     }
 
     /** {@inheritDoc} */

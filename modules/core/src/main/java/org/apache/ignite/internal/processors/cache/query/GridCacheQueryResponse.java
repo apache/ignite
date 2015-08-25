@@ -318,7 +318,7 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridCacheQueryResponse.class);
     }
 
     /** {@inheritDoc} */

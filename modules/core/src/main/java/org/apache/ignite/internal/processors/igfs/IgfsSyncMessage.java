@@ -132,7 +132,7 @@ public class IgfsSyncMessage extends IgfsCommunicationMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(IgfsSyncMessage.class);
     }
 
     /** {@inheritDoc} */

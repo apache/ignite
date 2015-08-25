@@ -118,7 +118,7 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
 
         }
 
-        return true;
+        return reader.afterMessageRead(CacheEntryPredicateContainsValue.class);
     }
 
     /** {@inheritDoc} */

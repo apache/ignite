@@ -69,7 +69,7 @@ public abstract class IgfsCommunicationMessage implements Message {
         if (!reader.beforeMessageRead())
             return false;
 
-        return true;
+        return reader.afterMessageRead(IgfsCommunicationMessage.class);
     }
 
     /** {@inheritDoc} */
