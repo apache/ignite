@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
+using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Apache.Ignite.Core")]
@@ -33,3 +35,7 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyVersion("1.4.1.0")]
 [assembly: AssemblyFileVersion("1.4.1.0")]
+
+[assembly: CLSCompliant(true)]
+
+[assembly: InternalsVisibleTo("Apache.Ignite.Core.Tests")]

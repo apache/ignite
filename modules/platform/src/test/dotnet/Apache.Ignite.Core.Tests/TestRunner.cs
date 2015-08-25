@@ -31,9 +31,9 @@ namespace Apache.Ignite.Core.Tests
 
             //TestOne(typeof(ContinuousQueryAtomiclBackupTest), "TestInitialQuery");
 
-            TestAll(typeof(IgnitionTest));
+            //TestAll(typeof(IgnitionTest));
 
-            //TestAllInAssembly();
+            TestAllInAssembly();
         }
 
         private static void TestOne(Type testClass, string method)
