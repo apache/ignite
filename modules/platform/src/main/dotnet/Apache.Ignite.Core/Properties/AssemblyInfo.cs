@@ -38,4 +38,8 @@ using System.Runtime.InteropServices;
 
 [assembly: CLSCompliant(true)]
 
+#if !EXCLUDE_TESTS
+
 [assembly: InternalsVisibleTo("Apache.Ignite.Core.Tests")]
+
+#endif
