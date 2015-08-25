@@ -247,6 +247,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         }
         catch (final RuntimeException | Error e) {
             if (e instanceof StackOverflowError) {
+                // TODO: this is investigation code, remove it.
+                // Start a separate thread to avoid another SOE while printing:
                 new Thread(new Runnable() {
                     @Override public void run() {
                         StackTraceElement[] els = e.getStackTrace();
@@ -257,16 +259,12 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
                             sb.append(i).append(":  ").append(els[i]).append('\n');
 
                         System.out.println(sb);
-
-                        System.exit(1);
-                        Runtime.getRuntime().halt(1);
                     }
                 }).start();
-            } else {
+            } else
                 U.error(null, "Failed to notify listener: " + lsnr, e);
 
-                throw e;
-            }
+            throw e;
         }
     }
 
