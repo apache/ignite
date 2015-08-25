@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform;
+package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.*;
 
 /**
- * Platform entry point.
+ * Platform processor.
  */
-public interface Platform {
+public interface PlatformProcessor extends GridProcessor {
     /**
      * Get owning Ignite instance.
      *

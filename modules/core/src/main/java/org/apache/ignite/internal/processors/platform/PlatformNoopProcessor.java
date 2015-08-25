@@ -15,22 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform;
+package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.platform.*;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.*;
 
 /**
- * Platform bootstrap. Responsible for starting Ignite node with non-Java platform.
+ * No-op processor.
  */
-public interface PlatformBootstrap {
-    /**
-     * Start Ignite node.
-     *
-     * @param cfg Configuration.
-     * @param envPtr Environment pointer.
-     * @param dataPtr Optional pointer to additional data required for startup.
-     * @return Platform processor.
-     */
-    public PlatformProcessor start(IgniteConfiguration cfg, long envPtr, long dataPtr);
+public class PlatformNoopProcessor extends GridProcessorAdapter implements PlatformProcessor {
+    public PlatformNoopProcessor(GridKernalContext ctx) {
+        super(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Ignite ignite() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long environmentPointer() {
+        return 0;
+    }
 }

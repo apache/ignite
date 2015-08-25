@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.offheap.*;
+import org.apache.ignite.internal.processors.platform.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.internal.processors.query.*;
@@ -562,4 +563,9 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return {@code True} if local node in disconnected state.
      */
     public boolean clientDisconnected();
+
+    /**
+     * @return Platform processor.
+     */
+    public PlatformProcessor platform();
 }
