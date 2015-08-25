@@ -79,6 +79,9 @@ public class IgfsMapReduceExample {
                     System.out.println("No lines were found.");
                 }
                 else {
+                    System.out.println();
+                    System.out.println("Found lines:");
+
                     for (Line line : lines)
                         print(line.fileLine());
                 }

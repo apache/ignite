@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.platform;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.platform.*;
 
 /**
  * Platform bootstrap. Responsible for starting Ignite node with non-Java platform.
@@ -29,7 +30,7 @@ public interface PlatformBootstrap {
      * @param cfg Configuration.
      * @param envPtr Environment pointer.
      * @param dataPtr Optional pointer to additional data required for startup.
-     * @return Ignite node.
+     * @return Platform processor.
      */
-    public Platform start(IgniteConfiguration cfg, long envPtr, long dataPtr);
+    public PlatformProcessor start(IgniteConfiguration cfg, long envPtr, long dataPtr);
 }

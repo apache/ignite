@@ -22,6 +22,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -597,6 +598,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 112:
                 msg = new GridCacheSqlQuery();
+
+                break;
+
+            case 113:
+                msg = new PortableObjectImpl();
 
                 break;
 

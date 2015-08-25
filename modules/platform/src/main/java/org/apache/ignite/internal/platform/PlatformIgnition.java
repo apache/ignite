@@ -20,6 +20,7 @@ package org.apache.ignite.internal.platform;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.platform.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -35,7 +36,7 @@ import java.util.*;
 @SuppressWarnings("UnusedDeclaration")
 public class PlatformIgnition {
     /** Map with active instances. */
-    private static final HashMap<String, Platform> instances = new HashMap<>();
+    private static final HashMap<String, PlatformProcessor> instances = new HashMap<>();
 
     /**
      * Start Ignite node in platform mode.
@@ -47,14 +48,14 @@ public class PlatformIgnition {
      * @param dataPtr Optional pointer to additional data required for startup.
      * @return Ignite instance.
      */
-    public static synchronized Platform start(@Nullable String springCfgPath, @Nullable String gridName,
+    public static synchronized PlatformProcessor start(@Nullable String springCfgPath, @Nullable String gridName,
         int factoryId, long envPtr, long dataPtr) {
         if (envPtr <= 0)
             throw new IgniteException("Environment pointer must be positive.");
 
         ClassLoader oldClsLdr = Thread.currentThread().getContextClassLoader();
 
-        Thread.currentThread().setContextClassLoader(Platform.class.getClassLoader());
+        Thread.currentThread().setContextClassLoader(PlatformProcessor.class.getClassLoader());
 
         try {
             IgniteConfiguration cfg = configuration(springCfgPath);
@@ -66,9 +67,9 @@ public class PlatformIgnition {
 
             PlatformBootstrap bootstrap = bootstrap(factoryId);
 
-            Platform proc = bootstrap.start(cfg, envPtr, dataPtr);
+            PlatformProcessor proc = bootstrap.start(cfg, envPtr, dataPtr);
 
-            Platform old = instances.put(gridName, proc);
+            PlatformProcessor old = instances.put(gridName, proc);
 
             assert old == null;
 
@@ -85,7 +86,7 @@ public class PlatformIgnition {
      * @param gridName Grid name.
      * @return Instance or {@code null} if it doesn't exist (never started or stopped).
      */
-    @Nullable public static synchronized Platform instance(@Nullable String gridName) {
+    @Nullable public static synchronized PlatformProcessor instance(@Nullable String gridName) {
         return instances.get(gridName);
     }
 
@@ -96,7 +97,7 @@ public class PlatformIgnition {
      * @return Environment pointer or {@code 0} in case grid with such name doesn't exist.
      */
     public static synchronized long environmentPointer(@Nullable String gridName) {
-        Platform proc = instance(gridName);
+        PlatformProcessor proc = instance(gridName);
 
         return proc != null ? proc.environmentPointer() : 0;
     }
@@ -110,7 +111,7 @@ public class PlatformIgnition {
      */
     public static synchronized boolean stop(@Nullable String gridName, boolean cancel) {
         if (Ignition.stop(gridName, cancel)) {
-            Platform old = instances.remove(gridName);
+            PlatformProcessor old = instances.remove(gridName);
 
             assert old != null;
 
@@ -126,7 +127,7 @@ public class PlatformIgnition {
      * @param cancel Cancel flag.
      */
     public static synchronized void stopAll(boolean cancel) {
-        for (Platform proc : instances.values())
+        for (PlatformProcessor proc : instances.values())
             Ignition.stop(proc.ignite().name(), cancel);
 
         instances.clear();
