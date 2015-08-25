@@ -58,6 +58,9 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
     /** Number of backup copies of data (aka replication). */
     protected int numBackups = numIgfsNodes - 1;
 
+    /** */
+    protected final boolean fragmentizerEnabled = false;
+
     /** File block size. */
     protected int igfsBlockSize = 31; // Use Very small blocks.
 
@@ -154,6 +157,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setBlockSize(igfsBlockSize);
         igfsCfg.setDefaultMode(mode);
         igfsCfg.setIpcEndpointConfiguration(restCfg);
+        igfsCfg.setFragmentizerEnabled(fragmentizerEnabled);
         igfsCfg.setSecondaryFileSystem(secondaryFs);
         igfsCfg.setPrefetchBlocks(DFLT_PREFETCH_BLOCKS);
         igfsCfg.setSequentialReadsBeforePrefetch(DFLT_SEQ_READS_BEFORE_PREFETCH);
