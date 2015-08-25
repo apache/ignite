@@ -26,7 +26,7 @@ import static java.nio.ByteOrder.*;
 /**
  * Primitives writer.
  */
-abstract class PortablePrimitives {
+public abstract class PortablePrimitives {
     /** */
     private static final PortablePrimitives INSTANCE =
         nativeOrder() == LITTLE_ENDIAN ? new UnsafePrimitives() : new BytePrimitives();
@@ -34,7 +34,7 @@ abstract class PortablePrimitives {
     /**
      * @return Primitives writer.
      */
-    static PortablePrimitives get() {
+    public static PortablePrimitives get() {
         return INSTANCE;
     }
 
@@ -43,224 +43,224 @@ abstract class PortablePrimitives {
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeByte(byte[] arr, int off, byte val);
+    public abstract void writeByte(byte[] arr, int off, byte val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract byte readByte(byte[] arr, int off);
+    public abstract byte readByte(byte[] arr, int off);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeShort(byte[] arr, int off, short val);
+    public abstract void writeShort(byte[] arr, int off, short val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract short readShort(byte[] arr, int off);
+    public abstract short readShort(byte[] arr, int off);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeInt(byte[] arr, int off, int val);
+    public abstract void writeInt(byte[] arr, int off, int val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract int readInt(byte[] arr, int off);
+    public abstract int readInt(byte[] arr, int off);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeLong(byte[] arr, int off, long val);
+    public abstract void writeLong(byte[] arr, int off, long val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract long readLong(byte[] arr, int off);
+    public abstract long readLong(byte[] arr, int off);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeFloat(byte[] arr, int off, float val);
+    public abstract void writeFloat(byte[] arr, int off, float val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract float readFloat(byte[] arr, int off);
+    public abstract float readFloat(byte[] arr, int off);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeDouble(byte[] arr, int off, double val);
+    public abstract void writeDouble(byte[] arr, int off, double val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract double readDouble(byte[] arr, int off);
+    public abstract double readDouble(byte[] arr, int off);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeChar(byte[] arr, int off, char val);
+    public abstract void writeChar(byte[] arr, int off, char val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract char readChar(byte[] arr, int off);
+    public abstract char readChar(byte[] arr, int off);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeBoolean(byte[] arr, int off, boolean val);
+    public abstract void writeBoolean(byte[] arr, int off, boolean val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract boolean readBoolean(byte[] arr, int off);
+    public abstract boolean readBoolean(byte[] arr, int off);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeByteArray(byte[] arr, int off, byte[] val);
+    public abstract void writeByteArray(byte[] arr, int off, byte[] val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract byte[] readByteArray(byte[] arr, int off, int len);
+    public abstract byte[] readByteArray(byte[] arr, int off, int len);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeShortArray(byte[] arr, int off, short[] val);
+    public abstract void writeShortArray(byte[] arr, int off, short[] val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract short[] readShortArray(byte[] arr, int off, int len);
+    public abstract short[] readShortArray(byte[] arr, int off, int len);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeIntArray(byte[] arr, int off, int[] val);
+    public abstract void writeIntArray(byte[] arr, int off, int[] val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract int[] readIntArray(byte[] arr, int off, int len);
+    public abstract int[] readIntArray(byte[] arr, int off, int len);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeLongArray(byte[] arr, int off, long[] val);
+    public abstract void writeLongArray(byte[] arr, int off, long[] val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract long[] readLongArray(byte[] arr, int off, int len);
+    public abstract long[] readLongArray(byte[] arr, int off, int len);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeFloatArray(byte[] arr, int off, float[] val);
+    public abstract void writeFloatArray(byte[] arr, int off, float[] val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract float[] readFloatArray(byte[] arr, int off, int len);
+    public abstract float[] readFloatArray(byte[] arr, int off, int len);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeDoubleArray(byte[] arr, int off, double[] val);
+    public abstract void writeDoubleArray(byte[] arr, int off, double[] val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract double[] readDoubleArray(byte[] arr, int off, int len);
+    public abstract double[] readDoubleArray(byte[] arr, int off, int len);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeCharArray(byte[] arr, int off, char[] val);
+    public abstract void writeCharArray(byte[] arr, int off, char[] val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract char[] readCharArray(byte[] arr, int off, int len);
+    public abstract char[] readCharArray(byte[] arr, int off, int len);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @param val Value.
      */
-    abstract void writeBooleanArray(byte[] arr, int off, boolean[] val);
+    public abstract void writeBooleanArray(byte[] arr, int off, boolean[] val);
 
     /**
      * @param arr Array.
      * @param off Offset.
      * @return Value.
      */
-    abstract boolean[] readBooleanArray(byte[] arr, int off, int len);
+    public abstract boolean[] readBooleanArray(byte[] arr, int off, int len);
 
     /** */
     private static class UnsafePrimitives extends PortablePrimitives {
@@ -292,92 +292,92 @@ abstract class PortablePrimitives {
         private static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
 
         /** {@inheritDoc} */
-        @Override void writeByte(byte[] arr, int off, byte val) {
+        @Override public void writeByte(byte[] arr, int off, byte val) {
             UNSAFE.putByte(arr, BYTE_ARR_OFF + off, val);
         }
 
         /** {@inheritDoc} */
-        @Override byte readByte(byte[] arr, int off) {
+        @Override public byte readByte(byte[] arr, int off) {
             return UNSAFE.getByte(arr, BYTE_ARR_OFF + off);
         }
 
         /** {@inheritDoc} */
-        @Override void writeShort(byte[] arr, int off, short val) {
+        @Override public void writeShort(byte[] arr, int off, short val) {
             UNSAFE.putShort(arr, BYTE_ARR_OFF + off, val);
         }
 
         /** {@inheritDoc} */
-        @Override short readShort(byte[] arr, int off) {
+        @Override public short readShort(byte[] arr, int off) {
             return UNSAFE.getShort(arr, BYTE_ARR_OFF + off);
         }
 
         /** {@inheritDoc} */
-        @Override void writeInt(byte[] arr, int off, int val) {
+        @Override public void writeInt(byte[] arr, int off, int val) {
             UNSAFE.putInt(arr, BYTE_ARR_OFF + off, val);
         }
 
         /** {@inheritDoc} */
-        @Override int readInt(byte[] arr, int off) {
+        @Override public int readInt(byte[] arr, int off) {
             return UNSAFE.getInt(arr, BYTE_ARR_OFF + off);
         }
 
         /** {@inheritDoc} */
-        @Override void writeLong(byte[] arr, int off, long val) {
+        @Override public void writeLong(byte[] arr, int off, long val) {
             UNSAFE.putLong(arr, BYTE_ARR_OFF + off, val);
         }
 
         /** {@inheritDoc} */
-        @Override long readLong(byte[] arr, int off) {
+        @Override public long readLong(byte[] arr, int off) {
             return UNSAFE.getLong(arr, BYTE_ARR_OFF + off);
         }
 
         /** {@inheritDoc} */
-        @Override void writeFloat(byte[] arr, int off, float val) {
+        @Override public void writeFloat(byte[] arr, int off, float val) {
             UNSAFE.putFloat(arr, BYTE_ARR_OFF + off, val);
         }
 
         /** {@inheritDoc} */
-        @Override float readFloat(byte[] arr, int off) {
+        @Override public float readFloat(byte[] arr, int off) {
             return UNSAFE.getFloat(arr, BYTE_ARR_OFF + off);
         }
 
         /** {@inheritDoc} */
-        @Override void writeDouble(byte[] arr, int off, double val) {
+        @Override public void writeDouble(byte[] arr, int off, double val) {
             UNSAFE.putDouble(arr, BYTE_ARR_OFF + off, val);
         }
 
         /** {@inheritDoc} */
-        @Override double readDouble(byte[] arr, int off) {
+        @Override public double readDouble(byte[] arr, int off) {
             return UNSAFE.getDouble(arr, BYTE_ARR_OFF + off);
         }
 
         /** {@inheritDoc} */
-        @Override void writeChar(byte[] arr, int off, char val) {
+        @Override public void writeChar(byte[] arr, int off, char val) {
             UNSAFE.putChar(arr, BYTE_ARR_OFF + off, val);
         }
 
         /** {@inheritDoc} */
-        @Override char readChar(byte[] arr, int off) {
+        @Override public char readChar(byte[] arr, int off) {
             return UNSAFE.getChar(arr, BYTE_ARR_OFF + off);
         }
 
         /** {@inheritDoc} */
-        @Override void writeBoolean(byte[] arr, int off, boolean val) {
+        @Override public void writeBoolean(byte[] arr, int off, boolean val) {
             UNSAFE.putBoolean(arr, BYTE_ARR_OFF + off, val);
         }
 
         /** {@inheritDoc} */
-        @Override boolean readBoolean(byte[] arr, int off) {
+        @Override public boolean readBoolean(byte[] arr, int off) {
             return UNSAFE.getBoolean(arr, BYTE_ARR_OFF + off);
         }
 
         /** {@inheritDoc} */
-        @Override void writeByteArray(byte[] arr, int off, byte[] val) {
+        @Override public void writeByteArray(byte[] arr, int off, byte[] val) {
             UNSAFE.copyMemory(val, BYTE_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length);
         }
 
         /** {@inheritDoc} */
-        @Override byte[] readByteArray(byte[] arr, int off, int len) {
+        @Override public byte[] readByteArray(byte[] arr, int off, int len) {
             byte[] arr0 = new byte[len];
 
             UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, BYTE_ARR_OFF, len);
@@ -386,12 +386,12 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeShortArray(byte[] arr, int off, short[] val) {
+        @Override public void writeShortArray(byte[] arr, int off, short[] val) {
             UNSAFE.copyMemory(val, SHORT_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length << 1);
         }
 
         /** {@inheritDoc} */
-        @Override short[] readShortArray(byte[] arr, int off, int len) {
+        @Override public short[] readShortArray(byte[] arr, int off, int len) {
             short[] arr0 = new short[len];
 
             UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, SHORT_ARR_OFF, len << 1);
@@ -400,12 +400,12 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeIntArray(byte[] arr, int off, int[] val) {
+        @Override public void writeIntArray(byte[] arr, int off, int[] val) {
             UNSAFE.copyMemory(val, INT_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length << 2);
         }
 
         /** {@inheritDoc} */
-        @Override int[] readIntArray(byte[] arr, int off, int len) {
+        @Override public int[] readIntArray(byte[] arr, int off, int len) {
             int[] arr0 = new int[len];
 
             UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, INT_ARR_OFF, len << 2);
@@ -414,12 +414,12 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeLongArray(byte[] arr, int off, long[] val) {
+        @Override public void writeLongArray(byte[] arr, int off, long[] val) {
             UNSAFE.copyMemory(val, LONG_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length << 3);
         }
 
         /** {@inheritDoc} */
-        @Override long[] readLongArray(byte[] arr, int off, int len) {
+        @Override public long[] readLongArray(byte[] arr, int off, int len) {
             long[] arr0 = new long[len];
 
             UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, LONG_ARR_OFF, len << 3);
@@ -428,12 +428,12 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeFloatArray(byte[] arr, int off, float[] val) {
+        @Override public void writeFloatArray(byte[] arr, int off, float[] val) {
             UNSAFE.copyMemory(val, FLOAT_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length << 2);
         }
 
         /** {@inheritDoc} */
-        @Override float[] readFloatArray(byte[] arr, int off, int len) {
+        @Override public float[] readFloatArray(byte[] arr, int off, int len) {
             float[] arr0 = new float[len];
 
             UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, FLOAT_ARR_OFF, len << 2);
@@ -442,12 +442,12 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeDoubleArray(byte[] arr, int off, double[] val) {
+        @Override public void writeDoubleArray(byte[] arr, int off, double[] val) {
             UNSAFE.copyMemory(val, DOUBLE_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length << 3);
         }
 
         /** {@inheritDoc} */
-        @Override double[] readDoubleArray(byte[] arr, int off, int len) {
+        @Override public double[] readDoubleArray(byte[] arr, int off, int len) {
             double[] arr0 = new double[len];
 
             UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, DOUBLE_ARR_OFF, len << 3);
@@ -456,12 +456,12 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeCharArray(byte[] arr, int off, char[] val) {
+        @Override public void writeCharArray(byte[] arr, int off, char[] val) {
             UNSAFE.copyMemory(val, CHAR_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length << 1);
         }
 
         /** {@inheritDoc} */
-        @Override char[] readCharArray(byte[] arr, int off, int len) {
+        @Override public char[] readCharArray(byte[] arr, int off, int len) {
             char[] arr0 = new char[len];
 
             UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, CHAR_ARR_OFF, len << 1);
@@ -470,12 +470,12 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeBooleanArray(byte[] arr, int off, boolean[] val) {
+        @Override public void writeBooleanArray(byte[] arr, int off, boolean[] val) {
             UNSAFE.copyMemory(val, BOOLEAN_ARR_OFF, arr, BYTE_ARR_OFF + off, val.length);
         }
 
         /** {@inheritDoc} */
-        @Override boolean[] readBooleanArray(byte[] arr, int off, int len) {
+        @Override public boolean[] readBooleanArray(byte[] arr, int off, int len) {
             boolean[] arr0 = new boolean[len];
 
             UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, BOOLEAN_ARR_OFF, len);
@@ -487,23 +487,23 @@ abstract class PortablePrimitives {
     /** */
     private static class BytePrimitives extends PortablePrimitives {
         /** {@inheritDoc} */
-        @Override void writeByte(byte[] arr, int off, byte val) {
+        @Override public void writeByte(byte[] arr, int off, byte val) {
             arr[off] = val;
         }
 
         /** {@inheritDoc} */
-        @Override byte readByte(byte[] arr, int off) {
+        @Override public byte readByte(byte[] arr, int off) {
             return arr[off];
         }
 
         /** {@inheritDoc} */
-        @Override void writeShort(byte[] arr, int off, short val) {
+        @Override public void writeShort(byte[] arr, int off, short val) {
             arr[off++] = (byte)(val & 0xff);
             arr[off] = (byte)((val >>> 8) & 0xff);
         }
 
         /** {@inheritDoc} */
-        @Override short readShort(byte[] arr, int off) {
+        @Override public short readShort(byte[] arr, int off) {
             short val = 0;
 
             val |= (arr[off++] & 0xff);
@@ -513,7 +513,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeInt(byte[] arr, int off, int val) {
+        @Override public void writeInt(byte[] arr, int off, int val) {
             arr[off++] = (byte)(val & 0xff);
             arr[off++] = (byte)((val >>> 8) & 0xff);
             arr[off++] = (byte)((val >>> 16) & 0xff);
@@ -521,7 +521,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override int readInt(byte[] arr, int off) {
+        @Override public int readInt(byte[] arr, int off) {
             int val = 0;
 
             val |= (arr[off++] & 0xff);
@@ -533,7 +533,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeLong(byte[] arr, int off, long val) {
+        @Override public void writeLong(byte[] arr, int off, long val) {
             arr[off++] = (byte)(val & 0xffL);
             arr[off++] = (byte)((val >>> 8) & 0xffL);
             arr[off++] = (byte)((val >>> 16) & 0xffL);
@@ -545,7 +545,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override long readLong(byte[] arr, int off) {
+        @Override public long readLong(byte[] arr, int off) {
             long val = 0;
 
             val |= (arr[off++] & 0xffL);
@@ -561,33 +561,33 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeFloat(byte[] arr, int off, float val) {
+        @Override public void writeFloat(byte[] arr, int off, float val) {
             writeInt(arr, off, Float.floatToIntBits(val));
         }
 
         /** {@inheritDoc} */
-        @Override float readFloat(byte[] arr, int off) {
+        @Override public float readFloat(byte[] arr, int off) {
             return Float.intBitsToFloat(readInt(arr, off));
         }
 
         /** {@inheritDoc} */
-        @Override void writeDouble(byte[] arr, int off, double val) {
+        @Override public void writeDouble(byte[] arr, int off, double val) {
             writeLong(arr, off, Double.doubleToLongBits(val));
         }
 
         /** {@inheritDoc} */
-        @Override double readDouble(byte[] arr, int off) {
+        @Override public double readDouble(byte[] arr, int off) {
             return Double.longBitsToDouble(readLong(arr, off));
         }
 
         /** {@inheritDoc} */
-        @Override void writeChar(byte[] arr, int off, char val) {
+        @Override public void writeChar(byte[] arr, int off, char val) {
             arr[off++] = (byte)(val & 0xff);
             arr[off] = (byte)((val >>> 8) & 0xff);
         }
 
         /** {@inheritDoc} */
-        @Override char readChar(byte[] arr, int off) {
+        @Override public char readChar(byte[] arr, int off) {
             char val = 0;
 
             val |= (arr[off++] & 0xff);
@@ -597,23 +597,23 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeBoolean(byte[] arr, int off, boolean val) {
+        @Override public void writeBoolean(byte[] arr, int off, boolean val) {
             arr[off] = (byte)(val ? 1 : 0);
         }
 
         /** {@inheritDoc} */
-        @Override boolean readBoolean(byte[] arr, int off) {
+        @Override public boolean readBoolean(byte[] arr, int off) {
             return arr[off] != 0;
         }
 
         /** {@inheritDoc} */
-        @Override void writeByteArray(byte[] arr, int off, byte[] val) {
+        @Override public void writeByteArray(byte[] arr, int off, byte[] val) {
             for (byte b : val)
                 arr[off++] = b;
         }
 
         /** {@inheritDoc} */
-        @Override byte[] readByteArray(byte[] arr, int off, int len) {
+        @Override public byte[] readByteArray(byte[] arr, int off, int len) {
             byte[] val = new byte[len];
 
             for (int i = 0; i < len; i++)
@@ -623,7 +623,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeShortArray(byte[] arr, int off, short[] val) {
+        @Override public void writeShortArray(byte[] arr, int off, short[] val) {
             for (short s : val) {
                 writeShort(arr, off, s);
 
@@ -632,7 +632,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override short[] readShortArray(byte[] arr, int off, int len) {
+        @Override public short[] readShortArray(byte[] arr, int off, int len) {
             short[] val = new short[len];
 
             for (int i = 0; i < len; i++) {
@@ -645,7 +645,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeIntArray(byte[] arr, int off, int[] val) {
+        @Override public void writeIntArray(byte[] arr, int off, int[] val) {
             for (int i : val) {
                 writeInt(arr, off, i);
 
@@ -654,7 +654,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override int[] readIntArray(byte[] arr, int off, int len) {
+        @Override public int[] readIntArray(byte[] arr, int off, int len) {
             int[] val = new int[len];
 
             for (int i = 0; i < len; i++) {
@@ -667,7 +667,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeLongArray(byte[] arr, int off, long[] val) {
+        @Override public void writeLongArray(byte[] arr, int off, long[] val) {
             for (long l : val) {
                 writeLong(arr, off, l);
 
@@ -676,7 +676,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override long[] readLongArray(byte[] arr, int off, int len) {
+        @Override public long[] readLongArray(byte[] arr, int off, int len) {
             long[] val = new long[len];
 
             for (int i = 0; i < len; i++) {
@@ -689,7 +689,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeFloatArray(byte[] arr, int off, float[] val) {
+        @Override public void writeFloatArray(byte[] arr, int off, float[] val) {
             for (float f : val) {
                 writeFloat(arr, off, f);
 
@@ -698,7 +698,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override float[] readFloatArray(byte[] arr, int off, int len) {
+        @Override public float[] readFloatArray(byte[] arr, int off, int len) {
             float[] val = new float[len];
 
             for (int i = 0; i < len; i++) {
@@ -711,7 +711,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeDoubleArray(byte[] arr, int off, double[] val) {
+        @Override public void writeDoubleArray(byte[] arr, int off, double[] val) {
             for (double d : val) {
                 writeDouble(arr, off, d);
 
@@ -720,7 +720,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override double[] readDoubleArray(byte[] arr, int off, int len) {
+        @Override public double[] readDoubleArray(byte[] arr, int off, int len) {
             double[] val = new double[len];
 
             for (int i = 0; i < len; i++) {
@@ -733,7 +733,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeCharArray(byte[] arr, int off, char[] val) {
+        @Override public void writeCharArray(byte[] arr, int off, char[] val) {
             for (char c : val) {
                 writeChar(arr, off, c);
 
@@ -742,7 +742,7 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override char[] readCharArray(byte[] arr, int off, int len) {
+        @Override public char[] readCharArray(byte[] arr, int off, int len) {
             char[] val = new char[len];
 
             for (int i = 0; i < len; i++) {
@@ -755,13 +755,13 @@ abstract class PortablePrimitives {
         }
 
         /** {@inheritDoc} */
-        @Override void writeBooleanArray(byte[] arr, int off, boolean[] val) {
+        @Override public void writeBooleanArray(byte[] arr, int off, boolean[] val) {
             for (boolean b : val)
                 writeBoolean(arr, off++, b);
         }
 
         /** {@inheritDoc} */
-        @Override boolean[] readBooleanArray(byte[] arr, int off, int len) {
+        @Override public boolean[] readBooleanArray(byte[] arr, int off, int len) {
             boolean[] val = new boolean[len];
 
             for (int i = 0; i < len; i++)
