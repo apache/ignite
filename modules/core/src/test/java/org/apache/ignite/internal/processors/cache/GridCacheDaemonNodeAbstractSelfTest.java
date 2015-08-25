@@ -169,16 +169,11 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
             Ignite g2 = startGrid(4);
 
             for (long i = 0; i < Integer.MAX_VALUE; i = (i << 1) + 1) {
-                ClusterNode n;
-
                 // Call mapKeyToNode for normal node.
-                assertNotNull(n = g1.cluster().mapKeyToNode(null, i));
+                assertNotNull(g1.cluster().mapKeyToNode(null, i));
 
                 // Call mapKeyToNode for daemon node.
-                if (cacheMode() == PARTITIONED)
-                    assertEquals(n, g2.cluster().mapKeyToNode(null, i));
-                else
-                    assertNotNull(g2.cluster().mapKeyToNode(null, i));
+                assertNull(g2.cluster().mapKeyToNode(null, i));
             }
         }
         finally {
