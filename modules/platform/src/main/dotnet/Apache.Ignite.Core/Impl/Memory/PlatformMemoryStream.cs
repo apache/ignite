@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-using Apache.Ignite.Core.Impl.Portable.Io;
+using Apache.Ignite.Core.Impl.Portable.IO;
 
 namespace Apache.Ignite.Core.Impl.Memory
 {
