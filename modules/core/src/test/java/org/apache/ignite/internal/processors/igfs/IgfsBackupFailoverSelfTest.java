@@ -37,10 +37,11 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.*;
 
 /**
- *
+ * Tests IGFS behavioral guarantees if some nodes on the cluster are synchronously or asynchronously stopped.
+ * The operations to check are read, write or both.
  */
 public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
-    /** */
+    /** Directory. */
     protected static final IgfsPath DIR = new IgfsPath("/dir");
 
     /** Sub-directory. */
@@ -52,28 +53,34 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
     /** Amount of sequential block reads before prefetch is triggered. */
     protected static final int DFLT_SEQ_READS_BEFORE_PREFETCH = 2;
 
-    /** Number of Ignite nodes. */
-    protected int numIgfsNodes = 2;
+    /** Number of Ignite nodes used in failover tests. */
+    protected final int numIgfsNodes = 5;
 
     /** Number of backup copies of data (aka replication). */
-    protected int numBackups = numIgfsNodes - 1;
+    protected final int numBackups = numIgfsNodes - 1;
 
     /** */
+    private final int fileSize = 16 * 1024;
+
+    /** */
+    private final int files = 500;
+
+    /** If the fragmentizer is enabled in IGFS configuration. */
     protected final boolean fragmentizerEnabled = false;
 
-    /** File block size. */
-    protected int igfsBlockSize = 31; // Use Very small blocks.
+    /** File block size. Use Very small blocks to ensure uniform data distribution among the nodes.. */
+    protected int igfsBlockSize = 31;
 
-    /**  */
+    /** Affinity group size (see IgfsGroupDataBlocksKeyMapper). */
     protected int affGrpSize = 1;
 
-    /**  */
+    /** IGFS mode. */
     protected IgfsMode igfsMode = IgfsMode.PRIMARY;
 
     /** Memory mode. */
     protected final CacheMemoryMode memoryMode;
 
-    /**  */
+    /** Node data structures. */
     protected NodeFsData[] nodeDatas;
 
     /**
@@ -94,7 +101,6 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
      * Constructor.
      */
     public IgfsBackupFailoverSelfTest() {
-
         memoryMode = CacheMemoryMode.ONHEAP_TIERED;
     }
 
@@ -118,14 +124,15 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
             nodeDatas[i] = data;
         }
 
-        // Ensure all the nodes are started and discovered each other.
+        // Ensure all the nodes are started and discovered each other:
         checkTopology(numIgfsNodes);
     }
 
     /**
+     * Creates IPC configuration.
      *
-     * @param port
-     * @return
+     * @param port The port to use.
+     * @return The endpoint configuration.
      */
     protected IgfsIpcEndpointConfiguration createIgfsRestConfig(int port) {
         IgfsIpcEndpointConfiguration cfg = new IgfsIpcEndpointConfiguration();
@@ -162,7 +169,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setPrefetchBlocks(DFLT_PREFETCH_BLOCKS);
         igfsCfg.setSequentialReadsBeforePrefetch(DFLT_SEQ_READS_BEFORE_PREFETCH);
 
-        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?,?> dataCacheCfg = defaultCacheConfiguration();
 
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
@@ -203,40 +210,41 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * Creates a chunk of data.
      *
-     * @param length
-     * @return
+     * @param len The chunk length
+     * @param j index to scramble into the data.
+     * @return The chunk.
      */
-    static byte[] createChunk(int length, int j) {
-        byte[] chunk = new byte[length];
+    static byte[] createChunk(int len, int j) {
+        byte[] bb = new byte[len];
 
-        for (int i = 0; i < chunk.length; i++)
-            chunk[i] = (byte)(i ^ j);
+        for (int i = 0; i < bb.length; i++)
+            bb[i] = (byte)(i ^ j);
 
-        return chunk;
+        return bb;
     }
 
-    /** */
+    /**
+     * Composes the path of the file.
+     */
     private IgfsPath filePath(int j) {
         return new IgfsPath(SUBDIR, "file" + j);
     }
 
     /**
+     * Checks correct data read *after* N-1 nodes are stopped.
      *
-     * @throws Exception
+     * @throws Exception On error.
      */
-    public void testFailoverMultipleNodes() throws Exception {
+    public void testReadFailoverAfterStopMultipleNodes() throws Exception {
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
 
         clear(igfs0);
 
         IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
 
-        final int files = 500;
-
-        final int fileSize = 16 * 1024;
-
-        // Create files:
+        // Create files through the 0th node:
         for (int f=0; f<files; f++) {
             final byte[] data = createChunk(fileSize, f);
 
@@ -248,13 +256,15 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
             IgfsPath path = filePath(f);
             byte[] data = createChunk(fileSize, f);
 
-            // Check through 1st node:
+            // Check through 0th node:
             checkExist(igfs0, path);
+
             checkFileContent(igfs0, path, data);
 
             // Check the same file through other nodes:
             for (int n=1; n<numIgfsNodes; n++) {
                 checkExist(nodeDatas[n].igfsImpl, path);
+
                 checkFileContent(nodeDatas[n].igfsImpl, path, data);
             }
         }
@@ -269,26 +279,24 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
             byte[] data = createChunk(fileSize, f);
 
-            // Check through 1st node:
+            // Check through 0th node:
             checkExist(igfs0, path);
+
             checkFileContent(igfs0, path, data);
         }
     }
 
     /**
+     * Checks correct data read *while* N-1 nodes are being concurrently stopped.
      *
-     * @throws Exception
+     * @throws Exception On error.
      */
-    public void testFailoverMultipleNodesReadWhileShuttingDown() throws Exception {
+    public void testReadFailoverWhileStoppingMultipleNodes() throws Exception {
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
 
         clear(igfs0);
 
         IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
-
-        final int files = 500;
-
-        final int fileSize = 16 * 1024;
 
         // Create files:
         for (int f = 0; f < files; f++) {
@@ -304,18 +312,20 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
             // Check through 1st node:
             checkExist(igfs0, path);
+
             checkFileContent(igfs0, path, data);
 
             // Check the same file through other nodes:
             for (int n = 1; n < numIgfsNodes; n++) {
                 checkExist(nodeDatas[n].igfsImpl, path);
+
                 checkFileContent(nodeDatas[n].igfsImpl, path, data);
             }
         }
 
         GridWorker gw = new GridWorker("grid-name", "shutdown-worker", log(), null) {
             @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-                Thread.sleep(5_000);
+                Thread.sleep(5_000); // Some delay to ensure read is in progress.
 
                 // Now stop all the nodes but the 1st:
                 for (int n = 1; n < numIgfsNodes; n++) {
@@ -327,7 +337,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
         };
         new Thread(gw).start();
 
-        // Read files repeatedly, while the nodes are being stopped:
+        // Read the files repeatedly, while the nodes are being stopped:
         int readCnt = 0;
 
         while (readCnt < 40) {
@@ -341,6 +351,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
                 // Check through 1st node:
                 checkExist(igfs0, path);
+
                 checkFileContent(igfs0, path, data);
             }
 
@@ -350,20 +361,19 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
         gw.join();
     }
 
-    // files = 30, size = 2 * 1024 -- passes.
-    // files = 30, size = 4 * 1024 -- corrupted file?.
-
-    /** */
-    private final int fileSize = 16 * 1024; // 16 * 1024
-
-    /** */
-    private final int files = 100; //500;
-
     /**
+     * Checks possibility to append the data to files *after* N-1 nodes are stopped.
+     * First, some data written to files.
+     * After that N-1 nodes are stopped.
+     * Then data are attempted to append to the streams opened before the nodes stop.
+     * If failed, the streams are attempted to reopen and the files are attempted to append.
+     * After that the read operation is performed to check data correctness.
      *
-     * @throws Exception
+     * The test is temporarily disabled due to issues .... .
+     *
+     * @throws Exception On error.
      */
-    public void testFailoverMultipleNodesWriteReadWhileShuttingDown() throws Exception {
+    public void testWriteFailoverAfterStopMultipleNodes() throws Exception {
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
 
         clear(igfs0);
@@ -386,7 +396,8 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
                 writeFileChunks(os, data);
             }
             finally {
-                os.flush();
+                if (os != null)
+                    os.flush();
             }
 
             outStreams[f] = os;
@@ -417,17 +428,13 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
                         writeChunks0(igfs0, ios, f);
                     }
                     catch (IOException ioe) {
-//                        try {
-                            //ios = igfs0.create(filePath(f), 256, true, null, 0, -1, null);
-                            ios = igfs0.append(filePath(f), false);
+                        log().warning("Attempt to append the data to existing stream failed: ", ioe);
 
-                            assert ios != null;
+                        ios = igfs0.append(filePath(f), false);
 
-                            writeChunks0(igfs0, ios, f);
-//                        }
-//                        finally {
-//                            ios.flush();
-//                        }
+                        assert ios != null;
+
+                        writeChunks0(igfs0, ios, f);
                     }
 
                     return null;
@@ -446,15 +453,25 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
             // Check through 1st node:
             checkExist(igfs0, path);
 
+            assertEquals("File length mismatch.", data.length * 2, igfs0.size(path));
+
             checkFileContent(igfs0, path, data, data);
 
             X.println("Read test completed: " + f);
         }
     }
 
-    void writeChunks0(IgfsEx igfs0, IgfsOutputStream ios, int fileIndex) throws IOException {
+    /**
+     * Writes data to the file of the specified index and closes the output stream.
+     *
+     * @param igfs0 IGFS.
+     * @param ios The output stream
+     * @param fileIdx Th eindex of the file.
+     * @throws IOException On error.
+     */
+    void writeChunks0(IgfsEx igfs0, IgfsOutputStream ios, int fileIdx) throws IOException {
         try {
-            byte[] data = createChunk(fileSize, fileIndex);
+            byte[] data = createChunk(fileSize, fileIdx);
 
             writeFileChunks(ios, data);
         }
@@ -463,66 +480,18 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
             U.closeQuiet(ios);
 
-            //X.println("waiting for file to close: " + filePath(f));
-
-            awaitFileClose(igfs0.asSecondary(), filePath(fileIndex));
+            awaitFileClose(igfs0.asSecondary(), filePath(fileIdx));
         }
     }
 
-//    protected void checkFileContentWithRetries(IgfsImpl igfs, IgfsPath file, int retries, @Nullable byte[]... chunks)
-//        throws IOException , IgniteCheckedException {
-//        int failureCnt = 0;
-//
-//        while (true) {
-//            try {
-//                checkFileContent(igfs, file, chunks);
-//
-//                break;
-//            }
-//            catch (IOException | IgniteCheckedException ie) {
-//                failureCnt++;
-//
-//                if (failureCnt >= retries)
-//                    throw ie;
-//                else
-//                    log().info("Failed to check file [" + file + "] content. Failure count = " + failureCnt);
-//            }
-//        }
-//    }
-
-//    /**
-//     * Create the file in the given IGFS and write provided data chunks to it.
-//     *
-//     * @param igfs IGFS.
-//     * @param file File.
-//     * @param chunks Data chunks.
-//     * @throws Exception If failed.
-//     */
-//    protected static void rewriteFile(IgfsImpl igfs, IgfsPath file,
-//        @Nullable byte[]... chunks) throws Exception {
-//        IgfsOutputStream os = null;
-//
-//        try {
-//            os = igfs.append(file, true); //open(file, 256);
-//
-//            writeFileChunks(os, chunks);
-//
-//            assert igfs.size(file) == chunks[0].length;
-//        }
-//        finally {
-//            U.closeQuiet(os);
-//
-//            awaitFileClose(igfs.asSecondary(), file);
-//        }
-//    }
-
     /**
+     * Performs an operation with retries.
      *
-     * @param attempts
-     * @param clo
-     * @throws Exception
+     * @param attempts The maximum number of attempts.
+     * @param clo The closure to execute.
+     * @throws Exception On error.
      */
-    protected int doWithRetries(int attempts, Callable<Void> clo) throws Exception {
+    protected static int doWithRetries(int attempts, Callable<Void> clo) throws Exception {
         int attemptCnt = 0;
 
         while (true) {
