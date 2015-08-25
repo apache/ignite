@@ -195,15 +195,6 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
                         lsnr = (IgniteInClosure)new ArrayListener<IgniteInternalFuture>(lsnr, lsnr0);
                     }
 
-                    int depth = new Throwable().getStackTrace().length;
-
-                    if (depth >= 1000) {
-                        X.println(" -------------- ");
-                        X.println("depth: " + depth);
-                        X.println("this : " + this);
-                        X.println("lsnr : " + lsnr);
-                    }
-
                     return;
                 }
             }
