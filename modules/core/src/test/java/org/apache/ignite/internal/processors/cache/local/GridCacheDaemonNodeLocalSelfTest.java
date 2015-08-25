@@ -31,34 +31,4 @@ public class GridCacheDaemonNodeLocalSelfTest extends GridCacheDaemonNodeAbstrac
     @Override protected CacheMode cacheMode() {
         return LOCAL;
     }
-
-    /** {@inheritDoc} */
-    @Override public void testMapKeyToNode() throws Exception {
-        try {
-            // Start normal nodes.
-            Ignite g1 = startGridsMultiThreaded(3);
-
-            // Start daemon node.
-            daemon = true;
-
-            Ignite g2 = startGrid(4);
-
-            for (long i = 0; i < Integer.MAX_VALUE; i = (i << 1) + 1) {
-                // Call mapKeyToNode for normal node.
-                g1.cluster().mapKeyToNode(null, i);
-
-                try {
-                    g2.cluster().mapKeyToNode(null, i);
-
-                    assert false;
-                }
-                catch (IgniteException e) {
-                    info("Caught expected exception: " + e);
-                }
-            }
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
 }

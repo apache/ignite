@@ -36,6 +36,7 @@ import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.portable.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
@@ -2666,6 +2667,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public IgnitePortables portables() {
+        return ((CacheObjectPortableProcessor)ctx.cacheObjects()).portables();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
         return VER;
     }
@@ -2960,7 +2966,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return comp;
 
         if (cls.equals(IgniteCacheObjectProcessor.class))
-            return (T)new IgniteCacheObjectProcessorImpl(ctx);
+            return (T)new CacheObjectPortableProcessorImpl(ctx);
 
         if (cls.equals(DiscoveryNodeValidationProcessor.class))
             return (T)new OsDiscoveryNodeValidationProcessor(ctx);

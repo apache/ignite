@@ -15,39 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.portable;
-
 /**
- * Portable stream.
+ * <!-- Package description. -->
+ * Contains portable objects API classes.
  */
-public interface GridPortableStream {
-    /**
-     * @return Position.
-     */
-    public int position();
-
-    /**
-     * @param pos Position.
-     */
-    public void position(int pos);
-
-    /**
-     * @return Underlying array.
-     */
-    public byte[] array();
-
-    /**
-     * @return Copy of data in the stream.
-     */
-    public byte[] arrayCopy();
-
-    /**
-     * @return Offheap pointer if stream is offheap based, otherwise {@code 0}.
-     */
-    public long offheapPointer();
-
-    /**
-     * @return {@code True} is stream is array based.
-     */
-    public boolean hasArray();
-}
+package org.apache.ignite.portable;

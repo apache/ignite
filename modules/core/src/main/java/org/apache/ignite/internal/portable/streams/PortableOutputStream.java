@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.portable;
+package org.apache.ignite.internal.portable.streams;
 
 /**
  * Portable output stream.
  */
-public interface GridPortableOutputStream extends GridPortableStream, AutoCloseable {
+public interface PortableOutputStream extends PortableStream, AutoCloseable {
     /**
      * Write byte value.
      *
