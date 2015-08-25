@@ -55,6 +55,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
+import org.apache.ignite.marshaller.portable.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
@@ -984,6 +985,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.continuous().onCacheStart(cacheCtx);
 
         CacheConfiguration cfg = cacheCtx.config();
+
+        // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
+        if (cfg.isKeepPortableInStore() && cfg.isKeepPortableInStore() != CacheConfiguration.DFLT_KEEP_PORTABLE_IN_STORE
+            && !(ctx.config().getMarshaller() instanceof PortableMarshaller))
+            U.warn(log, "CacheConfiguration.isKeepPortableInStore() configuration property will be ignored because " +
+                "PortableMarshaller is not used");
 
         // Start managers.
         for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
