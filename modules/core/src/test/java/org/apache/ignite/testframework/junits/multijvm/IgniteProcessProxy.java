@@ -509,6 +509,11 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public IgnitePortables portables() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
 

@@ -15,8 +15,22 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
+
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.marshaller.portable.*;
+
 /**
- * <!-- Package description. -->
- * Portable processor.
+ * Memory models test.
  */
-package org.apache.ignite.internal.processors.portable;
+public class GridCacheMemoryModePortableSelfTest extends GridCacheMemoryModeSelfTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setMarshaller(new PortableMarshaller());
+
+        return cfg;
+    }
+}

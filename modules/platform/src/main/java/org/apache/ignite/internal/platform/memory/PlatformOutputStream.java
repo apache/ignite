@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.platform.memory;
 
-import org.apache.ignite.internal.processors.portable.*;
+import org.apache.ignite.internal.portable.streams.*;
 
 /**
  * Interop output stream.
  */
-public interface PlatformOutputStream extends GridPortableOutputStream {
+public interface PlatformOutputStream extends PortableOutputStream {
     /**
      * Synchronize output stream with underlying memory
      */
