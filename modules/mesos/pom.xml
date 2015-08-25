@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-mesos</artifactId>
-    <version>1.3.3-p4-SNAPSHOT</version>
+    <version>1.3.3-p5-SNAPSHOT</version>
 
     <properties>
         <mesos.version>0.22.0</mesos.version>
