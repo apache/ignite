@@ -1663,23 +1663,13 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         // No-op.
     }
 
-    /**
-     * Reserve a room for an integer.
-     *
-     * @return Position in the stream where value is to be written.
-     */
-    public int reserveInt() {
+    /** {@inheritDoc} */
+    @Override public int reserveInt() {
         return reserve(LEN_INT);
     }
 
-    /**
-     * Write int value at the specific position.
-     *
-     * @param pos Position.
-     * @param val Value.
-     * @throws PortableException If failed.
-     */
-    public void writeInt(int pos, int val) throws PortableException {
+     /** {@inheritDoc} */
+    @Override public void writeInt(int pos, int val) throws PortableException {
         wCtx.out.writeInt(pos, val);
     }
 
