@@ -41,4 +41,20 @@ public interface PortableRawWriterEx extends PortableRawWriter, AutoCloseable {
      * Cleans resources.
      */
     @Override public void close();
+
+    /**
+     * Reserve a room for an integer.
+     *
+     * @return Position in the stream where value is to be written.
+     */
+    public int reserveInt();
+
+    /**
+     * Write int value at the specific position.
+     *
+     * @param pos Position.
+     * @param val Value.
+     * @throws PortableException If failed.
+     */
+    public void writeInt(int pos, int val) throws PortableException;
 }
