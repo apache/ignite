@@ -523,6 +523,60 @@ public class PlatformUtils {
     }
 
     /**
+     * Writer error data.
+     *
+     * @param err Error.
+     * @param writer Writer.
+     */
+    public static void writeErrorData(Throwable err, PortableRawWriterEx writer) {
+        writeErrorData(err, writer, null);
+    }
+
+    /**
+     * Write error data.
+     * @param err Error.
+     * @param writer Writer.
+     * @param log Optional logger.
+     */
+    public static void writeErrorData(Throwable err, PortableRawWriterEx writer, @Nullable IgniteLogger log) {
+        // Write additional data if needed.
+        if (err instanceof PlatformExtendedException) {
+            PlatformExtendedException err0 = (PlatformExtendedException)err;
+
+            writer.writeBoolean(true); // Data exists.
+
+            int pos = writer.out().position();
+
+            try {
+                writer.writeBoolean(true); // Optimistically assume that we will be able to write it.
+                err0.writeData(writer);
+            }
+            catch (Exception e) {
+                if (log != null)
+                    U.warn(log, "Failed to write interop exception data: " + e.getMessage(), e);
+
+                writer.out().position(pos);
+
+                writer.writeBoolean(false); // Error occurred.
+                writer.writeString(e.getClass().getName());
+
+                String innerMsg;
+
+                try {
+                    innerMsg = e.getMessage();
+                }
+                catch (Exception innerErr) {
+                    innerMsg = "Exception message is not available.";
+                }
+
+                writer.writeString(innerMsg);
+            }
+        }
+        else
+            writer.writeBoolean(false);
+    }
+
+    /**
      * Private constructor.
      */
     private PlatformUtils() {
