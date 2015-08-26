@@ -626,6 +626,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (prepErr == null) {
             addDhtValues(res);
 
+            GridCacheVersion min = tx.minVersion();
+
+            res.completedVersions(cctx.tm().committedVersions(min), cctx.tm().rolledbackVersions(min));
+
+            res.pending(localDhtPendingVersions(tx.writeEntries(), min));
+
             tx.implicitSingleResult(ret);
         }
 
@@ -879,16 +885,20 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 Map<UUID, GridDistributedTxMapping> futDhtMap = new HashMap<>();
                 Map<UUID, GridDistributedTxMapping> futNearMap = new HashMap<>();
 
+                boolean hasRemoteNodes = false;
+
                 // Assign keys to primary nodes.
                 if (!F.isEmpty(writes)) {
                     for (IgniteTxEntry write : writes)
-                        map(tx.entry(write.txKey()), futDhtMap, futNearMap);
+                        hasRemoteNodes |= map(tx.entry(write.txKey()), futDhtMap, futNearMap);
                 }
 
                 if (!F.isEmpty(reads)) {
                     for (IgniteTxEntry read : reads)
-                        map(tx.entry(read.txKey()), futDhtMap, futNearMap);
+                        hasRemoteNodes |= map(tx.entry(read.txKey()), futDhtMap, futNearMap);
                 }
+
+                tx.needsCompletedVersions(hasRemoteNodes);
             }
 
             // We are holding transaction-level locks for entries here, so we can get next write version.
@@ -1200,6 +1210,32 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         }
 
         return ret;
+    }
+
+    /**
+     * Collects versions of pending candidates versions less than base.
+     *
+     * @param entries Tx entries to process.
+     * @param baseVer Base version.
+     * @return Collection of pending candidates versions.
+     */
+    private Collection<GridCacheVersion> localDhtPendingVersions(Iterable<IgniteTxEntry> entries,
+        GridCacheVersion baseVer) {
+        Collection<GridCacheVersion> lessPending = new GridLeanSet<>(5);
+
+        for (IgniteTxEntry entry : entries) {
+            try {
+                for (GridCacheMvccCandidate cand : entry.cached().localCandidates()) {
+                    if (cand.version().isLess(baseVer))
+                        lessPending.add(cand.version());
+                }
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                // No-op, no candidates.
+            }
+        }
+
+        return lessPending;
     }
 
     /** {@inheritDoc} */

@@ -233,7 +233,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             req.version(),
                             req.timeout(),
                             tx != null,
-                            tx != null && tx.implicitSingle()
+                            tx != null && tx.implicitSingle(),
+                            null
                         );
 
                         // Invalidate key in near cache, if any.
@@ -1060,6 +1061,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 null);
 
             if (err == null) {
+                res.pending(localDhtPendingVersions(entries, mappedVer));
+
+                // We have to add completed versions for cases when nearLocal and remote transactions
+                // execute concurrently.
+                res.completedVersions(ctx.tm().committedVersions(req.version()),
+                    ctx.tm().rolledbackVersions(req.version()));
+
                 int i = 0;
 
                 for (ListIterator<GridCacheEntryEx> it = entries.listIterator(); it.hasNext();) {
@@ -1208,6 +1216,40 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     }
 
     /**
+     * Collects versions of pending candidates versions less then base.
+     *
+     * @param entries Tx entries to process.
+     * @param baseVer Base version.
+     * @return Collection of pending candidates versions.
+     */
+    private Collection<GridCacheVersion> localDhtPendingVersions(Iterable<GridCacheEntryEx> entries,
+        GridCacheVersion baseVer) {
+        Collection<GridCacheVersion> lessPending = new GridLeanSet<>(5);
+
+        for (GridCacheEntryEx entry : entries) {
+            // Since entries were collected before locks are added, some of them may become obsolete.
+            while (true) {
+                try {
+                    for (GridCacheMvccCandidate cand : entry.localCandidates()) {
+                        if (cand.version().isLess(baseVer))
+                            lessPending.add(cand.version());
+                    }
+
+                    break; // While.
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    if (log.isDebugEnabled())
+                        log.debug("Got removed entry is localDhtPendingVersions (will retry): " + entry);
+
+                    entry = entryExx(entry.key());
+                }
+            }
+        }
+
+        return lessPending;
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param req Request.
      */
@@ -1230,6 +1272,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         entry.doneRemote(
                             req.version(),
                             req.version(),
+                            null,
+                            null,
+                            null,
                             /*system invalidate*/false);
 
                         // Note that we don't reorder completed versions here,
@@ -1446,6 +1491,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
         }
 
+        Collection<GridCacheVersion> committed = ctx.tm().committedVersions(ver);
+        Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
+
         // Backups.
         for (Map.Entry<ClusterNode, List<KeyCacheObject>> entry : dhtMap.entrySet()) {
             ClusterNode n = entry.getKey();
@@ -1465,6 +1513,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 if (keyBytes != null)
                     for (KeyCacheObject key : keyBytes)
                         req.addNearKey(key, ctx.shared());
+
+                req.completedVersions(committed, rolledback);
 
                 ctx.io().send(n, req, ctx.ioPolicy());
             }
@@ -1491,6 +1541,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 try {
                     for (KeyCacheObject key : keyBytes)
                         req.addNearKey(key, ctx.shared());
+
+                    req.completedVersions(committed, rolledback);
 
                     ctx.io().send(n, req, ctx.ioPolicy());
                 }

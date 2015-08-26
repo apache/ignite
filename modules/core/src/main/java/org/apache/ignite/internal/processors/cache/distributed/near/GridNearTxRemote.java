@@ -207,8 +207,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    public GridCacheVersion ownedVersion(IgniteTxKey key) {
-        // TODO ignite-264 do we need this method?
+    @Override public GridCacheVersion ownedVersion(IgniteTxKey key) {
         return owned == null ? null : owned.get(key);
     }
 

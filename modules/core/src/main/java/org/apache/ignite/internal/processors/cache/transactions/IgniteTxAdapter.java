@@ -696,6 +696,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public GridCacheVersion ownedVersion(IgniteTxKey key) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public long startTime() {
         return startTime;
     }
@@ -857,6 +862,17 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
             rollback();
 
         awaitCompletion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean needsCompletedVersions() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void completedVersions(GridCacheVersion base, Collection<GridCacheVersion> committed,
+        Collection<GridCacheVersion> txs) {
+        /* No-op. */
     }
 
     /**
@@ -1780,6 +1796,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
+        @Nullable @Override public GridCacheVersion ownedVersion(IgniteTxKey key) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
         @Nullable @Override public UUID otherNodeId() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
@@ -2080,6 +2101,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         /** {@inheritDoc} */
         @Override public Collection<GridCacheVersion> alternateVersions() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean needsCompletedVersions() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void completedVersions(GridCacheVersion base, Collection committed, Collection rolledback) {
+            // No-op.
         }
 
         /** {@inheritDoc} */

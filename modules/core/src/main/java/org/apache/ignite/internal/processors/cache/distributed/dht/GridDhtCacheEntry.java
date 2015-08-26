@@ -261,7 +261,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 tx.xidVersion(),
                 tx.timeout(),
                 /*tx*/true,
-                tx.implicit());
+                tx.implicit(),
+                null);
 
             return true;
         }

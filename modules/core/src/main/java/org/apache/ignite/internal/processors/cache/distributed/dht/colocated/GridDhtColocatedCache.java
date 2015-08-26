@@ -579,12 +579,17 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             if (map == null || map.isEmpty())
                 return;
 
+            Collection<GridCacheVersion> committed = ctx.tm().committedVersions(ver);
+            Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
+
             for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
 
                 GridDistributedUnlockRequest req = mapping.getValue();
 
                 if (!F.isEmpty(req.keys())) {
+                    req.completedVersions(committed, rolledback);
+
                     try {
                         // We don't wait for reply to this message.
                         ctx.io().send(n, req, ctx.ioPolicy());

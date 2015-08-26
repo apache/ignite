@@ -207,6 +207,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             entry.doneRemote(
                                 req.version(),
                                 req.version(),
+                                null,
+                                req.committedVersions(),
+                                req.rolledbackVersions(),
                                 /*system invalidate*/false);
 
                             // Note that we don't reorder completed versions here,
@@ -329,7 +332,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 req.version(),
                                 req.timeout(),
                                 tx != null,
-                                tx != null && tx.implicitSingle()
+                                tx != null && tx.implicitSingle(),
+                                req.owned(entry.key())
                             );
 
                             assert cands.isEmpty() : "Received non-empty candidates in dht lock request: " + cands;
@@ -686,12 +690,17 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (map == null || map.isEmpty())
                 return;
 
+            Collection<GridCacheVersion> committed = ctx.tm().committedVersions(ver);
+            Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
+
             for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
 
                 GridDistributedUnlockRequest req = mapping.getValue();
 
                 if (!F.isEmpty(req.keys())) {
+                    req.completedVersions(committed, rolledback);
+
                     // We don't wait for reply to this message.
                     ctx.io().send(n, req, ctx.ioPolicy());
                 }

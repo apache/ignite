@@ -324,6 +324,103 @@ public final class GridCacheMvcc {
     }
 
     /**
+     * Moves completed candidates right before the base one. Note that
+     * if base is not found, then nothing happens and {@code false} is
+     * returned.
+     *
+     * @param baseVer Base version.
+     * @param committedVers Committed versions relative to base.
+     * @param rolledbackVers Rolled back versions relative to base.
+     * @return Lock owner.
+     */
+    @Nullable public GridCacheMvccCandidate orderCompleted(GridCacheVersion baseVer,
+        Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers) {
+        assert baseVer != null;
+
+        if (rmts != null && !F.isEmpty(committedVers)) {
+            Deque<GridCacheMvccCandidate> mvAfter = null;
+
+            int maxIdx = -1;
+
+            for (ListIterator<GridCacheMvccCandidate> it = rmts.listIterator(rmts.size()); it.hasPrevious(); ) {
+                GridCacheMvccCandidate cur = it.previous();
+
+                if (!cur.version().equals(baseVer) && committedVers.contains(cur.version())) {
+                    cur.setOwner();
+
+                    assert localOwner() == null || localOwner().nearLocal(): "Cannot not have local owner and " +
+                        "remote completed transactions at the same time [baseVer=" + baseVer +
+                        ", committedVers=" + committedVers + ", rolledbackVers=" + rolledbackVers +
+                        ", localOwner=" + localOwner() + ", locs=" + locs + ", rmts=" + rmts + ']';
+
+                    if (maxIdx < 0)
+                        maxIdx = it.nextIndex();
+                }
+                else if (maxIdx >= 0 && cur.version().isGreaterEqual(baseVer)) {
+                    if (--maxIdx >= 0) {
+                        if (mvAfter == null)
+                            mvAfter = new LinkedList<>();
+
+                        it.remove();
+
+                        mvAfter.addFirst(cur);
+                    }
+                }
+
+                // If base is completed, then set it to owner too.
+                if (!cur.owner() && cur.version().equals(baseVer) && committedVers.contains(cur.version()))
+                    cur.setOwner();
+            }
+
+            if (maxIdx >= 0 && mvAfter != null) {
+                ListIterator<GridCacheMvccCandidate> it = rmts.listIterator(maxIdx + 1);
+
+                for (GridCacheMvccCandidate cand : mvAfter)
+                    it.add(cand);
+            }
+
+            // Remove rolled back versions.
+            if (!F.isEmpty(rolledbackVers)) {
+                for (Iterator<GridCacheMvccCandidate> it = rmts.iterator(); it.hasNext(); ) {
+                    GridCacheMvccCandidate cand = it.next();
+
+                    if (rolledbackVers.contains(cand.version())) {
+                        cand.setUsed(); // Mark as used to be consistent, even though we are about to remove it.
+
+                        it.remove();
+                    }
+                }
+
+                if (rmts.isEmpty())
+                    rmts = null;
+            }
+        }
+
+        return anyOwner();
+    }
+
+    /**
+     * Puts owned versions in front of base.
+     *
+     * @param baseVer Base version.
+     * @param owned Owned list.
+     * @return Current owner.
+     */
+    @Nullable public GridCacheMvccCandidate markOwned(GridCacheVersion baseVer, GridCacheVersion owned) {
+        if (owned == null)
+            return anyOwner();
+
+        if (rmts != null) {
+            GridCacheMvccCandidate baseCand = candidate(rmts, baseVer);
+
+            if (baseCand != null)
+                baseCand.ownerVersion(owned);
+        }
+
+        return anyOwner();
+    }
+
+    /**
      * @param parent Parent entry.
      * @param threadId Thread ID.
      * @param ver Lock version.
@@ -554,9 +651,14 @@ public final class GridCacheMvcc {
      *
      * @param ver Version to mark as ready.
      * @param mappedVer Mapped dht version.
+     * @param committedVers Committed versions.
+     * @param rolledBackVers Rolled back versions.
+     * @param pending Pending dht versions that are not owned and which version is less then mapped.
      * @return Lock owner after reassignment.
      */
-    @Nullable public GridCacheMvccCandidate readyNearLocal(GridCacheVersion ver, GridCacheVersion mappedVer) {
+    @Nullable public GridCacheMvccCandidate readyNearLocal(GridCacheVersion ver, GridCacheVersion mappedVer,
+        Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledBackVers,
+        Collection<GridCacheVersion> pending) {
         GridCacheMvccCandidate cand = candidate(locs, ver);
 
         if (cand != null) {
@@ -601,6 +703,24 @@ public final class GridCacheMvcc {
                 }
             }
 
+            // Mark all remote candidates with less version as owner unless it is pending.
+            if (rmts != null) {
+                for (GridCacheMvccCandidate rmt : rmts) {
+                    GridCacheVersion rmtVer = rmt.version();
+
+                    if (rmtVer.isLess(mappedVer)) {
+                        if (!pending.contains(rmtVer) &&
+                            !mappedVer.equals(rmt.ownerVersion()))
+                            rmt.setOwner();
+                    }
+                    else {
+                        // Remote version is greater, so need to check if it was committed or rolled back.
+                        if (committedVers.contains(rmtVer) || rolledBackVers.contains(rmtVer))
+                            rmt.setOwner();
+                    }
+                }
+            }
+
             reassign();
         }
 
@@ -611,10 +731,16 @@ public final class GridCacheMvcc {
      * Sets remote candidate to done.
      *
      * @param ver Version.
+     * @param pending Pending versions.
+     * @param committed Committed versions.
+     * @param rolledback Rolledback versions.
      * @return Lock owner.
      */
     @Nullable public GridCacheMvccCandidate doneRemote(
-        GridCacheVersion ver) {
+        GridCacheVersion ver,
+        Collection<GridCacheVersion> pending,
+        Collection<GridCacheVersion> committed,
+        Collection<GridCacheVersion> rolledback) {
         assert ver != null;
 
         if (log.isDebugEnabled())
@@ -645,6 +771,15 @@ public final class GridCacheMvcc {
                             it.add(mv);
 
                     break;
+                }
+                else if (!committed.contains(c.version()) && !rolledback.contains(c.version()) &&
+                    pending.contains(c.version())) {
+                    it.remove();
+
+                    if (mvAfter == null)
+                        mvAfter = new LinkedList<>();
+
+                    mvAfter.add(c);
                 }
             }
         }
@@ -708,10 +843,6 @@ public final class GridCacheMvcc {
                     return;
             }
         }
-
-        // No assignment can happen in near local cache when remote candidate is present.
-        if (cctx.isNear() && firstRmt != null)
-            return;
 
         if (locs != null) {
             for (ListIterator<GridCacheMvccCandidate> it = locs.listIterator(); it.hasNext(); ) {

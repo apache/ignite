@@ -65,6 +65,12 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** */
     protected boolean explicitLock;
 
+    /** */
+    private boolean needsCompletedVers;
+
+    /** Versions of pending locks for entries of this tx. */
+    private Collection<GridCacheVersion> pendingVers;
+
     /** Flag indicating that originating node has near cache. */
     private boolean nearOnOriginatingNode;
 
@@ -210,6 +216,32 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param err Error, if any.
      */
     protected abstract void sendFinishReply(boolean commit, @Nullable Throwable err);
+
+    /**
+     * @param needsCompletedVers {@code True} if needs completed versions.
+     */
+    public void needsCompletedVersions(boolean needsCompletedVers) {
+        this.needsCompletedVers |= needsCompletedVers;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean needsCompletedVersions() {
+        return needsCompletedVers;
+    }
+
+    /**
+     * @return Versions for all pending locks that were in queue before tx locks were released.
+     */
+    public Collection<GridCacheVersion> pendingVersions() {
+        return pendingVers == null ? Collections.<GridCacheVersion>emptyList() : pendingVers;
+    }
+
+    /**
+     * @param pendingVers Versions for all pending locks that were in queue before tx locsk were released.
+     */
+    public void pendingVersions(Collection<GridCacheVersion> pendingVers) {
+        this.pendingVers = pendingVers;
+    }
 
     /**
      * @return DHT thread ID.

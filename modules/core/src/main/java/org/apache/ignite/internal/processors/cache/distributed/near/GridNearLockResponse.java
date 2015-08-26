@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -30,6 +31,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
+import java.util.*;
 
 /**
  * Near cache lock response.
@@ -37,6 +39,11 @@ import java.nio.*;
 public class GridNearLockResponse extends GridDistributedLockResponse {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Collection of versions that are pending and less than lock version. */
+    @GridToStringInclude
+    @GridDirectCollection(GridCacheVersion.class)
+    private Collection<GridCacheVersion> pending;
 
     /** */
     private IgniteUuid miniId;
@@ -101,6 +108,24 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      */
     @Nullable public AffinityTopologyVersion clientRemapVersion() {
         return clientRemapVer;
+    }
+
+    /**
+     * Gets pending versions that are less than {@link #version()}.
+     *
+     * @return Pending versions.
+     */
+    public Collection<GridCacheVersion> pending() {
+        return pending;
+    }
+
+    /**
+     * Sets pending versions that are less than {@link #version()}.
+     *
+     * @param pending Pending versions.
+     */
+    public void pending(Collection<GridCacheVersion> pending) {
+        this.pending = pending;
     }
 
     /**

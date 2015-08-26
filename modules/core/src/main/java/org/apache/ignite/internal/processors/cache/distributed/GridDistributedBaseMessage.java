@@ -54,6 +54,16 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
     @GridToStringExclude
     private byte[] candsByIdxBytes;
 
+    /** Committed versions with order higher than one for this message (needed for commit ordering). */
+    @GridToStringInclude
+    @GridDirectCollection(GridCacheVersion.class)
+    private Collection<GridCacheVersion> committedVers;
+
+    /** Rolled back versions with order higher than one for this message (needed for commit ordering). */
+    @GridToStringInclude
+    @GridDirectCollection(GridCacheVersion.class)
+    private Collection<GridCacheVersion> rolledbackVers;
+
     /** Count of keys referenced in candidates array (needed only locally for optimization). */
     @GridToStringInclude
     @GridDirectTransient
@@ -116,6 +126,30 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
      */
     public void version(GridCacheVersion ver) {
         this.ver = ver;
+    }
+
+    /**
+     * @param committedVers Committed versions.
+     * @param rolledbackVers Rolled back versions.
+     */
+    public void completedVersions(Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers) {
+        this.committedVers = committedVers;
+        this.rolledbackVers = rolledbackVers;
+    }
+
+    /**
+     * @return Committed versions.
+     */
+    public Collection<GridCacheVersion> committedVersions() {
+        return committedVers == null ? Collections.<GridCacheVersion>emptyList() : committedVers;
+    }
+
+    /**
+     * @return Rolled back versions.
+     */
+    public Collection<GridCacheVersion> rolledbackVersions() {
+        return rolledbackVers == null ? Collections.<GridCacheVersion>emptyList() : rolledbackVers;
     }
 
     /**

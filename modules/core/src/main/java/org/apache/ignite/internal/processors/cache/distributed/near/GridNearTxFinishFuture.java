@@ -323,6 +323,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             // If checkBackup is set, it means that primary node has crashed and we will not need to send
             // finish request to it, so we can mark future as initialized.
             markInitialized();
+
+            return;
         }
 
         try {
@@ -405,6 +407,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         false,
                         true,
                         true,
+                        null,
+                        null,
+                        null,
+                        null,
                         0,
                         null,
                         0);
@@ -486,6 +492,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             m.explicitLock(),
             tx.storeEnabled(),
             tx.topologyVersion(),
+            null,
+            null,
+            null,
             tx.size(),
             tx.subjectId(),
             tx.taskNameHash()

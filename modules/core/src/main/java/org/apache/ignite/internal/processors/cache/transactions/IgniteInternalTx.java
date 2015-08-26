@@ -305,6 +305,14 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public Map<Integer, Set<Integer>> invalidPartitions();
 
     /**
+     * Gets owned version for near remote transaction.
+     *
+     * @param key Key to get version for.
+     * @return Owned version, if any.
+     */
+    @Nullable public GridCacheVersion ownedVersion(IgniteTxKey key);
+
+    /**
      * Gets ID of additional node involved. For example, in DHT case, other node is
      * near node ID.
      *
@@ -663,6 +671,19 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @return Alternate transaction versions.
      */
     public Collection<GridCacheVersion> alternateVersions();
+
+    /**
+     * @return {@code True} if transaction needs completed versions for processing.
+     */
+    public boolean needsCompletedVersions();
+
+    /**
+     * @param base Base for committed versions.
+     * @param committed Committed transactions relative to base.
+     * @param rolledback Rolled back transactions relative to base.
+     */
+    public void completedVersions(GridCacheVersion base, Collection<GridCacheVersion> committed,
+        Collection<GridCacheVersion> rolledback);
 
     /**
      * @return {@code True} if transaction has at least one internal entry.

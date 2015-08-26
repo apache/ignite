@@ -27,6 +27,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
+import java.util.*;
 
 /**
  * Transaction completion message.
@@ -56,6 +57,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     /** Sync commit flag. */
     private boolean syncRollback;
 
+    /** Min version used as base for completed versions. */
+    private GridCacheVersion baseVer;
+
     /** Expected txSize. */
     private int txSize;
 
@@ -79,8 +83,11 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
      * @param commitVer Commit version.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
-     * @param sys System flag.
+     * @param sys System transaction flag.
      * @param plc IO policy.
+     * @param baseVer Base version.
+     * @param committedVers Committed versions.
+     * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
      */
     public GridDistributedTxFinishRequest(
@@ -94,6 +101,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
         byte plc,
         boolean syncCommit,
         boolean syncRollback,
+        GridCacheVersion baseVer,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers,
         int txSize
     ) {
         super(xidVer, 0);
@@ -108,7 +118,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
         this.plc = plc;
         this.syncCommit = syncCommit;
         this.syncRollback = syncRollback;
+        this.baseVer = baseVer;
         this.txSize = txSize;
+
+        completedVersions(committedVers, rolledbackVers);
     }
 
     /**
@@ -173,6 +186,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
      */
     public boolean syncRollback() {
         return syncRollback;
+    }
+
+    /**
+     * @return Base version.
+     */
+    public GridCacheVersion baseVersion() {
+        return baseVer;
     }
 
     /**

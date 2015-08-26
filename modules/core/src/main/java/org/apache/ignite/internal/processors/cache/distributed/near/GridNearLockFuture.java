@@ -1074,7 +1074,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                         // returned value if any.
                                         entry.resetFromPrimary(newVal, lockVer, dhtVer, node.id(), topVer.get());
 
-                                        entry.readyNearLock(lockVer, mappedVer);
+                                        entry.readyNearLock(lockVer, mappedVer, res.committedVersions(),
+                                            res.rolledbackVersions(), res.pending());
 
                                         if (inTx() && implicitTx() && tx.onePhaseCommit()) {
                                             boolean pass = res.filterResult(i);
@@ -1456,7 +1457,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                     }
                                 }
                                 
-                                entry.readyNearLock(lockVer, mappedVer);
+                                entry.readyNearLock(lockVer, mappedVer, res.committedVersions(), res.rolledbackVersions(), res.pending());
 
                                 if (retval) {
                                     if (readRecordable)

@@ -749,12 +749,14 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             if (log.isDebugEnabled())
                 log.debug("Mapping entry for DHT lock future: " + this);
 
+            boolean hasRmtNodes = false;
+
             // Assign keys to primary nodes.
             for (GridDhtCacheEntry entry : entries) {
                 try {
                     while (true) {
                         try {
-                            cctx.dhtMap(
+                            hasRmtNodes = cctx.dhtMap(
                                 nearNodeId,
                                 topVer,
                                 entry,
@@ -787,6 +789,9 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                     assert false : "DHT lock should never get invalid partition [err=" + e + ", fut=" + this + ']';
                 }
             }
+
+            if (tx != null)
+                tx.needsCompletedVersions(hasRmtNodes);
 
             if (isDone()) {
                 if (log.isDebugEnabled())
@@ -879,6 +884,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                                         txEntry.op(GridCacheOperation.NOOP);
                                 }
                             }
+
+                            it.set(addOwned(req, e));
                         }
 
                         if (!F.isEmpty(req.keys())) {
@@ -906,6 +913,35 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         finally {
             markInitialized();
         }
+    }
+
+    /**
+     * @param req Request.
+     * @param e Entry.
+     * @return Entry.
+     */
+    private GridDhtCacheEntry addOwned(GridDhtLockRequest req, GridDhtCacheEntry e) {
+        while (true) {
+            try {
+                GridCacheMvccCandidate added = e.candidate(lockVer);
+
+                assert added != null;
+                assert added.dhtLocal();
+
+                if (added.ownerVersion() != null)
+                    req.owned(e.key(), added.ownerVersion());
+
+                break;
+            }
+            catch (GridCacheEntryRemovedException ignore) {
+                if (log.isDebugEnabled())
+                    log.debug("Got removed entry when creating DHT lock request (will retry): " + e);
+
+                e = cctx.dht().entryExx(e.key(), topVer);
+            }
+        }
+
+        return e;
     }
 
     /** {@inheritDoc} */

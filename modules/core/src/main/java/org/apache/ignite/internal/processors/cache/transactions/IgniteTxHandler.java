@@ -919,9 +919,9 @@ public class IgniteTxHandler {
         if (tx == null) {
             if (req.commit())
                 // Must be some long time duplicate, but we add it anyway.
-                ctx.tm().addCommittedTx(req.writeVersion(), null);
+                ctx.tm().addCommittedTx(req.version(), null);
             else
-                ctx.tm().addRolledbackTx(req.writeVersion());
+                ctx.tm().addRolledbackTx(req.version());
 
             if (log.isDebugEnabled())
                 log.debug("Received finish request for non-existing transaction (added to completed set) " +
@@ -940,12 +940,12 @@ public class IgniteTxHandler {
                 tx.systemInvalidate(req.isSystemInvalidate());
 
                 // Complete remote candidates.
-                tx.doneRemote(req.version());
+                tx.doneRemote(req.baseVersion(), null, null, null);
 
                 tx.commit();
             }
             else {
-                tx.doneRemote(req.version());
+                tx.doneRemote(req.baseVersion(), null, null, null);
 
                 tx.rollback();
             }
@@ -985,7 +985,7 @@ public class IgniteTxHandler {
             tx.invalidate(req.isInvalidate());
 
             // Complete remote candidates.
-            tx.doneRemote(req.version());
+            tx.doneRemote(req.version(), null, null, null);
 
             tx.commit();
         }

@@ -71,6 +71,9 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param explicitLock Explicit lock flag.
      * @param storeEnabled Store enabled flag.
      * @param topVer Topology version.
+     * @param baseVer Base version.
+     * @param committedVers Committed versions.
+     * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
      */
     public GridNearTxFinishRequest(
@@ -85,21 +88,27 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean syncRollback,
         boolean explicitLock,
         boolean storeEnabled,
-        AffinityTopologyVersion topVer,
+        @NotNull AffinityTopologyVersion topVer,
+        GridCacheVersion baseVer,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash) {
         super(
-            xidVer, 
-            futId, 
-            null, 
-            threadId, 
-            commit, 
-            invalidate, 
+            xidVer,
+            futId,
+            null,
+            threadId,
+            commit,
+            invalidate,
             sys,
             plc,
-            syncCommit, 
-            syncRollback, 
+            syncCommit,
+            syncRollback,
+            baseVer,
+            committedVers,
+            rolledbackVers,
             txSize
         );
 

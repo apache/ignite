@@ -163,6 +163,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @param timeout Lock acquire timeout.
      * @param tx Transaction flag.
      * @param implicitSingle Implicit flag.
+     * @param owned Owned candidate version.
      * @throws GridDistributedLockCancelledException If lock has been canceled.
      * @throws GridCacheEntryRemovedException If this entry is obsolete.
      */
@@ -173,9 +174,9 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         GridCacheVersion ver,
         long timeout,
         boolean tx,
-        boolean implicitSingle
-    ) throws GridDistributedLockCancelledException,
-        GridCacheEntryRemovedException {
+        boolean implicitSingle,
+        @Nullable GridCacheVersion owned
+    ) throws GridDistributedLockCancelledException, GridCacheEntryRemovedException {
         GridCacheMvccCandidate prev;
         GridCacheMvccCandidate owner;
 
@@ -210,6 +211,9 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 implicitSingle,
                 /*near-local*/false
             );
+
+            if (owned != null)
+                mvcc.markOwned(ver, owned);
 
             owner = mvcc.anyOwner();
 
@@ -508,12 +512,17 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      *
      * @param ver Lock version.
      * @param mapped Mapped dht lock version.
+     * @param committed Committed versions.
+     * @param rolledBack Rolled back versions.
+     * @param pending Pending locks on dht node with version less then mapped.
      * @return Current lock owner.
      *
      * @throws GridCacheEntryRemovedException If entry is removed.
      */
-    @Nullable public GridCacheMvccCandidate readyNearLock(GridCacheVersion ver, GridCacheVersion mapped)
-        throws GridCacheEntryRemovedException {
+    @Nullable public GridCacheMvccCandidate readyNearLock(GridCacheVersion ver, GridCacheVersion mapped,
+        Collection<GridCacheVersion> committed,
+        Collection<GridCacheVersion> rolledBack,
+        Collection<GridCacheVersion> pending) throws GridCacheEntryRemovedException {
         GridCacheMvccCandidate prev = null;
         GridCacheMvccCandidate owner = null;
 
@@ -529,7 +538,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
                 boolean emptyBefore = mvcc.isEmpty();
 
-                owner = mvcc.readyNearLocal(ver, mapped);
+                owner = mvcc.readyNearLocal(ver, mapped, committed, rolledBack, pending);
 
                 assert owner == null || owner.owner() : "Owner flag is not set for owner: " + owner;
 
@@ -551,9 +560,56 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     }
 
     /**
+     * Reorders completed versions.
+     *
+     * @param baseVer Base version for reordering.
+     * @param committedVers Completed versions.
+     * @param rolledbackVers Rolled back versions.
+     * @throws GridCacheEntryRemovedException If entry has been removed.
+     */
+    public void orderCompleted(GridCacheVersion baseVer, Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers)
+        throws GridCacheEntryRemovedException {
+        if (!F.isEmpty(committedVers) || !F.isEmpty(rolledbackVers)) {
+            GridCacheMvccCandidate prev = null;
+            GridCacheMvccCandidate owner = null;
+
+            CacheObject val;
+
+            synchronized (this) {
+                checkObsolete();
+
+                GridCacheMvcc mvcc = mvccExtras();
+
+                if (mvcc != null) {
+                    prev = mvcc.anyOwner();
+
+                    boolean emptyBefore = mvcc.isEmpty();
+
+                    owner = mvcc.orderCompleted(baseVer, committedVers, rolledbackVers);
+
+                    boolean emptyAfter = mvcc.isEmpty();
+
+                    checkCallbacks(emptyBefore, emptyAfter);
+
+                    if (emptyAfter)
+                        mvccExtras(null);
+                }
+
+                val = this.val;
+            }
+
+            // This call must be made outside of synchronization.
+            checkOwnerChanged(prev, owner, val);
+        }
+    }
+
+    /**
      *
      * @param lockVer Done version.
      * @param baseVer Base version.
+     * @param committedVers Completed versions for reordering.
+     * @param rolledbackVers Rolled back versions for reordering.
      * @param sysInvalidate Flag indicating if this entry is done from invalidated transaction (in case of tx
      *      salvage). In this case all locks before salvaged lock will marked as used and corresponding
      *      transactions will be invalidated.
@@ -563,6 +619,32 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     @Nullable public GridCacheMvccCandidate doneRemote(
         GridCacheVersion lockVer,
         GridCacheVersion baseVer,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers,
+        boolean sysInvalidate) throws GridCacheEntryRemovedException {
+        return doneRemote(lockVer, baseVer, Collections.<GridCacheVersion>emptySet(), committedVers,
+            rolledbackVers, sysInvalidate);
+    }
+
+    /**
+     *
+     * @param lockVer Done version.
+     * @param baseVer Base version.
+     * @param pendingVers Pending versions that are less than lock version.
+     * @param committedVers Completed versions for reordering.
+     * @param rolledbackVers Rolled back versions for reordering.
+     * @param sysInvalidate Flag indicating if this entry is done from invalidated transaction (in case of tx
+     *      salvage). In this case all locks before salvaged lock will marked as used and corresponding
+     *      transactions will be invalidated.
+     * @throws GridCacheEntryRemovedException If entry has been removed.
+     * @return Owner.
+     */
+    @Nullable public GridCacheMvccCandidate doneRemote(
+        GridCacheVersion lockVer,
+        GridCacheVersion baseVer,
+        @Nullable Collection<GridCacheVersion> pendingVers,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers,
         boolean sysInvalidate) throws GridCacheEntryRemovedException {
         GridCacheMvccCandidate prev = null;
         GridCacheMvccCandidate owner = null;
@@ -579,10 +661,19 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
                 boolean emptyBefore = mvcc.isEmpty();
 
+                // Order completed versions.
+                if (!F.isEmpty(committedVers) || !F.isEmpty(rolledbackVers)) {
+                    mvcc.orderCompleted(lockVer, committedVers, rolledbackVers);
+
+                    if (!baseVer.equals(lockVer))
+                        mvcc.orderCompleted(baseVer, committedVers, rolledbackVers);
+                }
+
                 if (sysInvalidate && baseVer != null)
                     mvcc.salvageRemote(baseVer);
 
-                owner = mvcc.doneRemote(lockVer);
+                owner = mvcc.doneRemote(lockVer, maskNull(pendingVers), maskNull(committedVers),
+                    maskNull(rolledbackVers));
 
                 boolean emptyAfter = mvcc.isEmpty();
 
@@ -661,7 +752,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 tx.xidVersion(),
                 tx.timeout(),
                 true,
-                tx.implicitSingle()
+                tx.implicitSingle(),
+                tx.ownedVersion(txKey())
             );
 
             return true;

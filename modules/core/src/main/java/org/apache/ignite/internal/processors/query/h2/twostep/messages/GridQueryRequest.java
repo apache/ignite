@@ -183,43 +183,43 @@ public class GridQueryRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("extraSpaces", extraSpaces, MessageCollectionItemType.STRING))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeInt("pageSize", pageSize))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
-                if (!writer.writeIntArray("parts", parts))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
+            case 1:
                 if (!writer.writeCollection("qrys", qrys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 2:
                 if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 3:
                 if (!writer.writeString("space", space))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 4:
                 if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeCollection("extraSpaces", extraSpaces, MessageCollectionItemType.STRING))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeIntArray("parts", parts))
                     return false;
 
                 writer.incrementState();
@@ -238,14 +238,6 @@ public class GridQueryRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                extraSpaces = reader.readCollection("extraSpaces", MessageCollectionItemType.STRING);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 pageSize = reader.readInt("pageSize");
 
                 if (!reader.isLastRead())
@@ -253,15 +245,7 @@ public class GridQueryRequest implements Message {
 
                 reader.incrementState();
 
-            case 2:
-                parts = reader.readIntArray("parts");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
+            case 1:
                 qrys = reader.readCollection("qrys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -269,7 +253,7 @@ public class GridQueryRequest implements Message {
 
                 reader.incrementState();
 
-            case 4:
+            case 2:
                 reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
@@ -277,7 +261,7 @@ public class GridQueryRequest implements Message {
 
                 reader.incrementState();
 
-            case 5:
+            case 3:
                 space = reader.readString("space");
 
                 if (!reader.isLastRead())
@@ -285,8 +269,24 @@ public class GridQueryRequest implements Message {
 
                 reader.incrementState();
 
-            case 6:
+            case 4:
                 topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                extraSpaces = reader.readCollection("extraSpaces", MessageCollectionItemType.STRING);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                parts = reader.readIntArray("parts");
 
                 if (!reader.isLastRead())
                     return false;

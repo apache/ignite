@@ -77,6 +77,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     /** Flag indicating with TM commit happened. */
     protected AtomicBoolean doneFlag = new AtomicBoolean(false);
 
+    /** Committed versions, relative to base. */
+    private Collection<GridCacheVersion> committedVers = Collections.emptyList();
+
+    /** Rolled back versions, relative to base. */
+    private Collection<GridCacheVersion> rolledbackVers = Collections.emptyList();
+
+    /** Base for completed versions. */
+    private GridCacheVersion completedBase;
+
     /** Flag indicating that transformed values should be sent to remote nodes. */
     private boolean sndTransformedVals;
 
@@ -1021,6 +1030,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             if (doneFlag.compareAndSet(false, true)) {
                 // Unlock all locks.
                 cctx.tm().commitTx(this);
+
+                boolean needsCompletedVersions = needsCompletedVersions();
+
+                assert !needsCompletedVersions || completedBase != null;
+                assert !needsCompletedVersions || committedVers != null;
+                assert !needsCompletedVersions || rolledbackVers != null;
             }
         }
     }
@@ -1039,7 +1054,44 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 cctx.tm().rollbackTx(this);
 
             state(commit ? COMMITTED : ROLLED_BACK);
+
+            boolean needsCompletedVersions = needsCompletedVersions();
+
+            assert !needsCompletedVersions || completedBase != null;
+            assert !needsCompletedVersions || committedVers != null;
+            assert !needsCompletedVersions || rolledbackVers != null;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void completedVersions(
+        GridCacheVersion completedBase,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers) {
+        this.completedBase = completedBase;
+        this.committedVers = committedVers;
+        this.rolledbackVers = rolledbackVers;
+    }
+
+    /**
+     * @return Completed base for ordering.
+     */
+    public GridCacheVersion completedBase() {
+        return completedBase;
+    }
+
+    /**
+     * @return Committed versions.
+     */
+    public Collection<GridCacheVersion> committedVersions() {
+        return committedVers;
+    }
+
+    /**
+     * @return Rolledback versions.
+     */
+    public Collection<GridCacheVersion> rolledbackVersions() {
+        return rolledbackVers;
     }
 
     /** {@inheritDoc} */

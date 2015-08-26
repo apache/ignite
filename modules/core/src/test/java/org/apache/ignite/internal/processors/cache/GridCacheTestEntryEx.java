@@ -197,10 +197,34 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /**
+     * Moves completed candidates right before the base one. Note that
+     * if base is not found, then nothing happens and {@code false} is
+     * returned.
+     *
+     * @param baseVer Base version.
+     * @param committedVers Committed versions relative to base.
+     * @param rolledbackVers Rolled back versions relative to base.
+     * @return Lock owner.
+     */
+    @Nullable public GridCacheMvccCandidate orderCompleted(GridCacheVersion baseVer,
+        Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers) {
+        return mvcc.orderCompleted(baseVer, committedVers, rolledbackVers);
+    }
+
+    /**
      * @param ver Version.
      */
     public void doneRemote(GridCacheVersion ver) {
-        mvcc.doneRemote(ver);
+        mvcc.doneRemote(ver, Collections.<GridCacheVersion>emptyList(),
+            Collections.<GridCacheVersion>emptyList(), Collections.<GridCacheVersion>emptyList());
+    }
+
+    /**
+     * @param baseVer Base version.
+     * @param owned Owned.
+     */
+    public void orderOwned(GridCacheVersion baseVer, GridCacheVersion owned) {
+        mvcc.markOwned(baseVer, owned);
     }
 
     /**
@@ -214,10 +238,15 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /**
      * @param ver Ready near lock version.
      * @param mapped Mapped version.
+     * @param committedVers Committed versions.
+     * @param rolledbackVers Rolled back versions.
+     * @param pending Pending versions.
      * @return Lock owner.
      */
-    @Nullable public GridCacheMvccCandidate readyNearLocal(GridCacheVersion ver, GridCacheVersion mapped) {
-        return mvcc.readyNearLocal(ver, mapped);
+    @Nullable public GridCacheMvccCandidate readyNearLocal(GridCacheVersion ver, GridCacheVersion mapped,
+        Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers,
+        Collection<GridCacheVersion> pending) {
+        return mvcc.readyNearLocal(ver, mapped, committedVers, rolledbackVers, pending);
     }
 
     /**

@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -51,6 +52,19 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
     /** Mini future ID. */
     private IgniteUuid miniId;
+
+    /** Owner mapped version, if any. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private Map<KeyCacheObject, GridCacheVersion> owned;
+
+    /** Array of keys from {@link #owned}. Used during marshalling and unmarshalling. */
+    @GridToStringExclude
+    private KeyCacheObject[] ownedKeys;
+
+    /** Array of values from {@link #owned}. Used during marshalling and unmarshalling. */
+    @GridToStringExclude
+    private GridCacheVersion[] ownedValues;
 
     /** Topology version. */
     private AffinityTopologyVersion topVer;
@@ -237,6 +251,27 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /**
+     * Sets owner and its mapped version.
+     *
+     * @param key Key.
+     * @param ownerMapped Owner mapped version.
+     */
+    public void owned(KeyCacheObject key, GridCacheVersion ownerMapped) {
+        if (owned == null)
+            owned = new GridLeanMap<>(3);
+
+        owned.put(key, ownerMapped);
+    }
+
+    /**
+     * @param key Key.
+     * @return Owner and its mapped versions.
+     */
+    @Nullable public GridCacheVersion owned(KeyCacheObject key) {
+        return owned == null ? null : owned.get(key);
+    }
+
+    /**
      * @param idx Entry index to check.
      * @return {@code True} if near entry should be invalidated.
      */
@@ -264,6 +299,19 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         super.prepareMarshal(ctx);
 
         prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
+
+        if (owned != null) {
+            ownedKeys = new KeyCacheObject[owned.size()];
+            ownedValues = new GridCacheVersion[ownedKeys.length];
+
+            int i = 0;
+
+            for (Map.Entry<KeyCacheObject, GridCacheVersion> entry : owned.entrySet()) {
+                ownedKeys[i] = entry.getKey();
+                ownedValues[i] = entry.getValue();
+                i++;
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -271,6 +319,18 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId), ldr);
+
+        if (ownedKeys != null) {
+            owned = new GridLeanMap<>(ownedKeys.length);
+
+            for (int i = 0; i < ownedKeys.length; i++) {
+                ownedKeys[i].finishUnmarshal(ctx.cacheContext(cacheId).cacheObjectContext(), ldr);
+                owned.put(ownedKeys[i], ownedValues[i]);
+            }
+
+            ownedKeys = null;
+            ownedValues = null;
+        }
     }
 
     /** {@inheritDoc} */

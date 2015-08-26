@@ -559,8 +559,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /**
      * @param mapping Mapping to order.
+     * @param pendingVers Pending versions.
+     * @param committedVers Committed versions.
+     * @param rolledbackVers Rolled back versions.
      */
-    void readyNearLocks(GridDistributedTxMapping mapping) {
+    void readyNearLocks(GridDistributedTxMapping mapping,
+        Collection<GridCacheVersion> pendingVers,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers)
+    {
         Collection<IgniteTxEntry> entries = F.concat(false, mapping.reads(), mapping.writes());
 
         for (IgniteTxEntry txEntry : entries) {
@@ -576,7 +583,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     GridCacheVersion explicit = txEntry.explicitVersion();
 
                     if (explicit == null)
-                        entry.readyNearLock(xidVer, mapping.dhtVersion());
+                        entry.readyNearLock(xidVer, mapping.dhtVersion(), committedVers, rolledbackVers, pendingVers);
 
                     break;
                 }
