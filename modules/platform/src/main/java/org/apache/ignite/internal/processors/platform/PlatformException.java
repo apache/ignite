@@ -15,36 +15,57 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform;
+package org.apache.ignite.internal.processors.platform;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Exception raised when interop callback is not set in native platform.
+ * Interop checked exception.
  */
-@SuppressWarnings("UnusedDeclaration")
-public class PlatformNoCallbackException extends PlatformException {
+public class PlatformException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Constructor.
+     * Create empty exception.
      */
-    public PlatformNoCallbackException() {
+    public PlatformException() {
         // No-op.
     }
 
     /**
-     * Constructor.
+     * Creates new exception with given error message.
      *
-     * @param msg Message.
+     * @param msg Error message.
      */
-    public PlatformNoCallbackException(String msg) {
+    public PlatformException(String msg) {
         super(msg);
+    }
+
+    /**
+     * Creates new grid exception with given throwable as a cause and
+     * source of error message.
+     *
+     * @param cause Non-null throwable cause.
+     */
+    public PlatformException(Throwable cause) {
+        this(cause.getMessage(), cause);
+    }
+
+    /**
+     * Creates new exception with given error message and optional nested exception.
+     *
+     * @param msg Error message.
+     * @param cause Optional nested exception (can be {@code null}).
+     */
+    public PlatformException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PlatformNoCallbackException.class, this);
+        return S.toString(PlatformException.class, this);
     }
 }

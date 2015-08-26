@@ -15,41 +15,49 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform.memory;
+package org.apache.ignite.internal.processors.platform.memory;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.platform.callback.*;
-import org.jetbrains.annotations.*;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.*;
 
 /**
- * Interop external memory chunk.
+ * Interop pooled memory chunk.
  */
-public class PlatformExternalMemory extends PlatformAbstractMemory {
-    /** Native gateway. */
-    private final PlatformCallbackGateway gate;
+public class PlatformPooledMemory extends PlatformAbstractMemory {
+    /** Owning memory pool. */
+    private final PlatformMemoryPool pool;
 
     /**
      * Constructor.
      *
-     * @param gate Native gateway.
-     * @param memPtr Memory pointer.
+     * @param pool Owning memory pool.
+     * @param memPtr Cross-platform memory pointer.
      */
-    public PlatformExternalMemory(@Nullable PlatformCallbackGateway gate, long memPtr) {
+    public PlatformPooledMemory(PlatformMemoryPool pool, long memPtr) {
         super(memPtr);
 
-        this.gate = gate;
+        assert isPooled(memPtr);
+        assert isAcquired(memPtr);
+
+        this.pool = pool;
     }
 
     /** {@inheritDoc} */
     @Override public void reallocate(int cap) {
-        if (gate == null)
-            throw new IgniteException("Failed to re-allocate external memory chunk because it is read-only.");
+        assert isAcquired(memPtr);
 
-        gate.memoryReallocate(memPtr, cap);
+        // Try doubling capacity to avoid excessive allocations.
+        int doubledCap = PlatformMemoryUtils.capacity(memPtr) << 1;
+
+        if (doubledCap > cap)
+            cap = doubledCap;
+
+        pool.reallocate(memPtr, cap);
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // Do nothing, memory must be released by native platform.
+        assert isAcquired(memPtr);
+
+        pool.release(memPtr); // Return to the pool.
     }
 }

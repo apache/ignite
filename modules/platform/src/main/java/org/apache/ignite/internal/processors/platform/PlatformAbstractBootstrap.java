@@ -14,23 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.platform;
 
-package org.apache.ignite.internal.platform;
-
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.platform.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.platform.memory.*;
+import org.apache.ignite.lang.*;
 
 /**
- * Platform bootstrap. Responsible for starting Ignite node with non-Java platform.
+ * Base interop bootstrap implementation.
  */
-public interface PlatformBootstrap {
+public abstract class PlatformAbstractBootstrap implements PlatformBootstrap {
+    /** {@inheritDoc} */
+    @Override public PlatformProcessor start(IgniteConfiguration cfg, long envPtr, long dataPtr) {
+        Ignition.setClientMode(new PlatformExternalMemory(null, dataPtr).input().readBoolean());
+
+        IgniteConfiguration cfg0 = closure(envPtr).apply(cfg);
+
+        IgniteEx node = (IgniteEx) Ignition.start(cfg0);
+
+        return node.context().platform();
+    }
+
     /**
-     * Start Ignite node.
+     * Get configuration transformer closure.
      *
-     * @param cfg Configuration.
      * @param envPtr Environment pointer.
-     * @param dataPtr Optional pointer to additional data required for startup.
-     * @return Platform processor.
+     * @return Closure.
      */
-    public PlatformProcessor start(IgniteConfiguration cfg, long envPtr, long dataPtr);
+    protected abstract IgniteClosure<IgniteConfiguration, IgniteConfiguration> closure(long envPtr);
 }

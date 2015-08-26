@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform.callback;
+package org.apache.ignite.internal.processors.platform.callback;
 
 /**
  * Platform callback utility methods. Implemented in target platform. All methods in this class must be

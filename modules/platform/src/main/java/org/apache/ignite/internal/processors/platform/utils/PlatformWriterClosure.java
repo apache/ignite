@@ -15,23 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform;
+package org.apache.ignite.internal.processors.platform.utils;
+
+import org.apache.ignite.internal.portable.*;
 
 /**
- * Platform bootstrap factory.
+ * Interop writer closure.
  */
-public interface PlatformBootstrapFactory {
+public interface PlatformWriterClosure<T> {
     /**
-     * Get bootstrap factory ID.
+     * Write value.
      *
-     * @return ID.
+     * @param writer Writer.
+     * @param val Value.
      */
-    public int id();
-
-    /**
-     * Create bootstrap instance.
-     *
-     * @return Bootstrap instance.
-     */
-    public PlatformBootstrap create();
+    public void write(PortableRawWriterEx writer, T val);
 }

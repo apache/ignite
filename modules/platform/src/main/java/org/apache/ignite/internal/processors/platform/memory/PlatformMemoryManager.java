@@ -15,20 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform.utils;
-
-import org.apache.ignite.internal.portable.*;
+package org.apache.ignite.internal.processors.platform.memory;
 
 /**
- * Interop writer bi-closure.
+ * Interop memory manager interface.
  */
-public interface PlatformWriterBiClosure<T1, T2> {
+public interface PlatformMemoryManager {
     /**
-     * Write values.
+     * Allocates memory.
      *
-     * @param writer Writer.
-     * @param val1 Value 1.
-     * @param val2 Value 2.
+     * @return Memory.
      */
-    public void write(PortableRawWriterEx writer, T1 val1, T2 val2);
+    public PlatformMemory allocate();
+
+    /**
+     * Allocates memory having at least the given capacity.
+     *
+     * @param cap Minimum capacity.
+     * @return Memory.
+     */
+    public PlatformMemory allocate(int cap);
+
+    /**
+     * Gets memory from existing pointer.
+     *
+     * @param memPtr Cross-platform memory pointer.
+     * @return Memory.
+     */
+    public PlatformMemory get(long memPtr);
 }

@@ -15,16 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform.memory;
+package org.apache.ignite.internal.processors.platform.utils;
 
-import org.apache.ignite.internal.portable.streams.*;
+import org.apache.ignite.internal.portable.*;
 
 /**
- * Interop output stream,
+ * Interop writer bi-closure.
  */
-public interface PlatformInputStream extends PortableInputStream {
+public interface PlatformWriterBiClosure<T1, T2> {
     /**
-     * Synchronize input. Must be called before start reading data from a memory changed by another platform.
+     * Write values.
+     *
+     * @param writer Writer.
+     * @param val1 Value 1.
+     * @param val2 Value 2.
      */
-    public void synchronize();
+    public void write(PortableRawWriterEx writer, T1 val1, T2 val2);
 }

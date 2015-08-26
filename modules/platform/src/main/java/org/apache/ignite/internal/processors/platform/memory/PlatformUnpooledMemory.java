@@ -15,32 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform.memory;
+package org.apache.ignite.internal.processors.platform.memory;
+
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.*;
 
 /**
- * Interop memory manager interface.
+ * Interop un-pooled memory chunk.
  */
-public interface PlatformMemoryManager {
+public class PlatformUnpooledMemory extends PlatformAbstractMemory {
     /**
-     * Allocates memory.
-     *
-     * @return Memory.
-     */
-    public PlatformMemory allocate();
-
-    /**
-     * Allocates memory having at least the given capacity.
-     *
-     * @param cap Minimum capacity.
-     * @return Memory.
-     */
-    public PlatformMemory allocate(int cap);
-
-    /**
-     * Gets memory from existing pointer.
+     * Constructor.
      *
      * @param memPtr Cross-platform memory pointer.
-     * @return Memory.
      */
-    public PlatformMemory get(long memPtr);
+    public PlatformUnpooledMemory(long memPtr) {
+        super(memPtr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reallocate(int cap) {
+        // Try doubling capacity to avoid excessive allocations.
+        int doubledCap = PlatformMemoryUtils.capacity(memPtr) << 1;
+
+        if (doubledCap > cap)
+            cap = doubledCap;
+
+        reallocateUnpooled(memPtr, cap);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        releaseUnpooled(memPtr);
+    }
 }
+
