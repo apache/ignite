@@ -76,7 +76,7 @@ public class IgniteCacheManyAsyncOperationsTest extends IgniteCacheAbstractTest 
 
             Map<Integer, byte[]> map = new HashMap<>();
 
-            for (int i = 0; i < 500; i++)
+            for (int i = 0; i < 100; i++)
                 map.put(i, new byte[128]);
 
             for (int iter = 0; iter < 3; iter++) {
