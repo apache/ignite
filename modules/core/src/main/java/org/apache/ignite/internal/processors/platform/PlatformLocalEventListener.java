@@ -15,23 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform;
-
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
+package org.apache.ignite.internal.processors.platform;
 
 /**
- * Special version of predicate for events with initialize/close callbacks.
+ * Special version of listener for events with close callbacks.
  */
-public interface PlatformAwareEventFilter<E extends Event> extends IgnitePredicate<E> {
+public interface PlatformLocalEventListener {
     /**
-     * Initializes the filter.
-     */
-    public void initialize(GridKernalContext ctx);
-
-    /**
-     * Closes the filter.
+     * Closes the listener.
      */
     public void close();
 }
