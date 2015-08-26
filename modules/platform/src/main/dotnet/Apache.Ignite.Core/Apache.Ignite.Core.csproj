@@ -48,6 +48,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Ignition.cs" />
+    <Compile Include="Impl\Handle\Handle.cs" />
+    <Compile Include="Impl\Handle\HandleRegistry.cs" />
+    <Compile Include="Impl\Handle\IHandle.cs" />
     <Compile Include="Impl\Memory\IPlatformMemory.cs" />
     <Compile Include="Impl\Memory\PlatformBigEndianMemoryStream.cs" />
     <Compile Include="Impl\Memory\PlatformMemory.cs" />
@@ -61,6 +64,7 @@
     <Compile Include="Impl\Portable\IO\IPortableStream.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
