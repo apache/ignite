@@ -1021,7 +1021,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return If transaction was not already present in committed set.
      */
     public boolean addCommittedTx(IgniteInternalTx tx) {
-        return addCommittedTx(tx.xidVersion(), tx.nearXidVersion());
+        boolean res = addCommittedTx(tx.xidVersion(), tx.nearXidVersion());
+
+        if (!tx.local() && tx.onePhaseCommit())
+            addCommittedTx(tx.nearXidVersion(), null);
+
+        return res;
     }
 
     /**
