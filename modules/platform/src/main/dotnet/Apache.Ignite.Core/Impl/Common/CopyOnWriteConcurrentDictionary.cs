@@ -24,10 +24,10 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Concurrent dictionary with CopyOnWrite mechanism inside. 
     /// Good for frequent reads / infrequent writes scenarios.
     /// </summary>
-    internal class CopyOnWriteConcurrentDictionary<K, V>
+    internal class CopyOnWriteConcurrentDictionary<TK, TV>
     {
         /** */
-        private volatile Dictionary<K,V> dict = new Dictionary<K, V>();
+        private volatile Dictionary<TK, TV> _dict = new Dictionary<TK, TV>();
 
         /// <summary>
         /// Gets the value associated with the specified key.
@@ -35,9 +35,9 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="key">The key.</param>
         /// <param name="val">The value.</param>
         /// <returns>true if the dictionary contains an element with the specified key; otherwise, false.</returns>
-        public bool TryGetValue(K key, out V val)
+        public bool TryGetValue(TK key, out TV val)
         {
-            return dict.TryGetValue(key, out val);
+            return _dict.TryGetValue(key, out val);
         }
 
         /// <summary>
@@ -46,22 +46,22 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="key">The key.</param>
         /// <param name="valueFactory">The function used to generate a value for the key.</param>
         /// <returns>The value for the key.</returns>
-        public V GetOrAdd(K key, Func<K, V> valueFactory)
+        public TV GetOrAdd(TK key, Func<TK, TV> valueFactory)
         {
             lock (this)
             {
-                V res;
+                TV res;
 
-                if (dict.TryGetValue(key, out res))
+                if (_dict.TryGetValue(key, out res))
                     return res;
 
-                var dict0 = new Dictionary<K, V>(dict);
+                var dict0 = new Dictionary<TK, TV>(_dict);
 
                 res = valueFactory(key);
 
                 dict0[key] = res;
 
-                dict = dict0;
+                _dict = dict0;
 
                 return res;
             }

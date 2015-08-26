@@ -23,30 +23,30 @@ namespace Apache.Ignite.Core.Impl.Common
     internal enum FutureType
     {
         /** Future type: byte. */
-        TYP_BYTE = 1,
+        Byte =  1,
 
         /** Future type: boolean. */
-        TYP_BOOL = 2,
+        Bool =  2,
 
         /** Future type: short. */
-        TYP_SHORT = 3,
+        Short =  3,
 
         /** Future type: char. */
-        TYP_CHAR = 4,
+        Char =  4,
 
         /** Future type: int. */
-        TYP_INT = 5,
+        Int =  5,
 
         /** Future type: float. */
-        TYP_FLOAT = 6,
+        Float =  6,
 
         /** Future type: long. */
-        TYP_LONG = 7,
+        Long =  7,
 
         /** Future type: double. */
-        TYP_DOUBLE = 8,
+        Double =  8,
 
         /** Future type: object. */
-        TYP_OBJ = 9
+        Object =  9
     }
 }

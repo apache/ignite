@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Common
     internal static class DelegateConverter
     {
         /** */
-        private const string DEFAULT_METHOD_NAME = "Invoke";
+        private const string DefaultMethodName = "Invoke";
         
         /// <summary>
         /// Compiles a function without arguments.
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Compiled function that calls specified method on specified target.</returns>
         public static Func<object, object> CompileFunc(Type targetType)
         {
-            var method = targetType.GetMethod(DEFAULT_METHOD_NAME);
+            var method = targetType.GetMethod(DefaultMethodName);
 
             var targetParam = Expression.Parameter(typeof(object));
             var targetParamConverted = Expression.Convert(targetParam, targetType);
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Common
             string methodName = null)
             where T : class
         {
-            var method = targetType.GetMethod(methodName ?? DEFAULT_METHOD_NAME, argTypes);
+            var method = targetType.GetMethod(methodName ?? DefaultMethodName, argTypes);
 
             return CompileFunc<T>(targetType, method, argTypes, convertToObject);
         }

@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Should be used when casting compile-time incompatible value types instead of "(T)(object)x".
     /// </summary>
     /// <typeparam name="T">Target type</typeparam>
-    internal static class TypeCaster<T>
+    public static class TypeCaster<T>
     {
         /// <summary>
         /// Efficiently casts an object from TFrom to T.

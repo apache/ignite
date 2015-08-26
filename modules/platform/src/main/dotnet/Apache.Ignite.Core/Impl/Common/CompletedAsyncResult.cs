@@ -30,10 +30,10 @@ namespace Apache.Ignite.Core.Impl.Common
     internal class CompletedAsyncResult : IAsyncResult
     {
         /** Singleton instance. */
-        public static readonly IAsyncResult INSTANCE = new CompletedAsyncResult();
+        public static readonly IAsyncResult Instance = new CompletedAsyncResult();
 
         /** */
-        private readonly WaitHandle asyncWaitHandle = new ManualResetEvent(true);
+        private readonly WaitHandle _asyncWaitHandle = new ManualResetEvent(true);
 
         /// <summary>
         /// Prevents a default instance of the <see cref="CompletedAsyncResult"/> class from being created.
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc /> */
         public WaitHandle AsyncWaitHandle
         {
-            get { return asyncWaitHandle; }
+            get { return _asyncWaitHandle; }
         }
 
         /** <inheritdoc /> */

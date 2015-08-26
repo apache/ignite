@@ -25,13 +25,13 @@ namespace Apache.Ignite.Core.Impl.Common
     /// <summary>
     /// Resolves loaded assemblies by name.
     /// </summary>
-    internal class LoadedAssembliesResolver
+    public class LoadedAssembliesResolver
     {
         // The lazy singleton instance.
-        private static readonly Lazy<LoadedAssembliesResolver> LAZY_INSTANCE = new Lazy<LoadedAssembliesResolver>();
+        private static readonly Lazy<LoadedAssembliesResolver> LazyInstance = new Lazy<LoadedAssembliesResolver>();
 
         // Assemblies map.
-        private volatile Dictionary<string, Assembly> map;
+        private volatile Dictionary<string, Assembly> _map;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LoadedAssembliesResolver"/> class.
@@ -66,10 +66,10 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
-            map = new Dictionary<string, Assembly>(assemblies.Length);
+            _map = new Dictionary<string, Assembly>(assemblies.Length);
 
             foreach (var assembly in assemblies)
-                map[assembly.FullName] = assembly;
+                _map[assembly.FullName] = assembly;
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public static LoadedAssembliesResolver Instance
         {
-            get { return LAZY_INSTANCE.Value; }
+            get { return LazyInstance.Value; }
         }
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             Assembly asm;
 
-            return map.TryGetValue(assemblyName, out asm) ? asm : null;
+            return _map.TryGetValue(assemblyName, out asm) ? asm : null;
         }
     }
 }

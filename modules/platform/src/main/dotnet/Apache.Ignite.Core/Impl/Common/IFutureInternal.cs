@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// <summary>
     /// Internal future interface.
     /// </summary>
-    internal interface IFutureInternal
+    public interface IFutureInternal
     {
         /// <summary>
         /// Set result from stream.

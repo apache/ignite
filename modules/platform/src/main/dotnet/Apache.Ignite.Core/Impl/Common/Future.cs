@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc/> */
         public IAsyncResult ToAsyncResult()
         {
-            return _done ? CompletedAsyncResult.INSTANCE : new AsyncResult(this);
+            return _done ? CompletedAsyncResult.Instance : new AsyncResult(this);
         }
 
         /** <inheritdoc/> */
