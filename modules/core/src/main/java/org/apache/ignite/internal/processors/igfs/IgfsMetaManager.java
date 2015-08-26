@@ -34,8 +34,10 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
@@ -478,54 +480,40 @@ public class IgfsMetaManager extends IgfsManager {
      * @param modificationTime Modification time to write to file info.
      * @throws IgniteCheckedException If failed.
      */
-    public void unlock(IgfsFileInfo info, long modificationTime) throws IgniteCheckedException {
+    public void unlock(final IgfsFileInfo info, final long modificationTime) throws IgniteCheckedException {
         assert validTxState(false);
         assert info != null;
 
         if (busyLock.enterBusy()) {
             try {
-                IgniteUuid lockId = info.lockId();
+                final IgniteUuid lockId = info.lockId();
 
                 if (lockId == null)
                     return;
 
-                // Temporary clear interrupted state for unlocking.
-                boolean interrupted = Thread.interrupted();
+                doInTransactionWithRetries(metaCache, new IgniteOutClosureX<Void>() {
+                    @Override public Void applyx() throws IgniteCheckedException {
+                        IgniteUuid fileId = info.id();
 
-                IgniteUuid fileId = info.id();
+                        // Lock file ID for this transaction.
+                        IgfsFileInfo oldInfo = info(fileId);
 
-                IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+                        if (oldInfo == null)
+                            throw fsException(new IgfsPathNotFoundException("Failed to unlock file (file not found): " + fileId));
 
-                try {
-                    // Lock file ID for this transaction.
-                    IgfsFileInfo oldInfo = info(fileId);
+                        if (!info.lockId().equals(oldInfo.lockId()))
+                            throw new IgniteCheckedException("Failed to unlock file (inconsistent file lock ID) [fileId=" + fileId +
+                                ", lockId=" + info.lockId() + ", actualLockId=" + oldInfo.lockId() + ']');
 
-                    if (oldInfo == null)
-                        throw fsException(new IgfsPathNotFoundException("Failed to unlock file (file not found): " + fileId));
+                        IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, null, modificationTime);
 
-                    if (!info.lockId().equals(oldInfo.lockId()))
-                        throw new IgniteCheckedException("Failed to unlock file (inconsistent file lock ID) [fileId=" + fileId +
-                            ", lockId=" + info.lockId() + ", actualLockId=" + oldInfo.lockId() + ']');
+                        boolean put = metaCache.put(fileId, newInfo);
 
-                    IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, null, modificationTime);
+                        assert put : "Value was not stored in cache [fileId=" + fileId + ", newInfo=" + newInfo + ']';
 
-                    boolean put = metaCache.put(fileId, newInfo);
-
-                    assert put : "Value was not stored in cache [fileId=" + fileId + ", newInfo=" + newInfo + ']';
-
-                    tx.commit();
-                }
-                catch (GridClosureException e) {
-                    throw U.cast(e);
-                }
-                finally {
-                    tx.close();
-
-                    assert validTxState(false);
-
-                    if (interrupted)
-                        Thread.currentThread().interrupt();
-                }
+                        return null;
+                    }
+                }, IgfsUtils.MAX_UNLOCK_TRANSACTION_ATTEMPTS);
             }
             finally {
                 busyLock.leaveBusy();
@@ -534,6 +522,65 @@ public class IgfsMetaManager extends IgfsManager {
         else
             throw new IllegalStateException("Failed to unlock file system entry because Grid is stopping: " + info);
     }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param clo Closure.
+     * @return Result of closure execution.
+     * @throws Exception If failed.
+     */
+    private <T> T doInTransactionWithRetries(IgniteInternalCache cache, IgniteOutClosureX<T> clo, int maxAttempts)
+            throws IgniteCheckedException {
+        assert cache != null;
+
+        int attempts = 0;
+
+        while (attempts < maxAttempts) {
+            attempts++;
+
+            // Temporary clear interrupted state for unlocking.
+            final boolean interrupted = Thread.interrupted();
+
+            try (Transaction tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                T res = clo.applyx();
+
+                tx.commit();
+
+                return res;
+            }
+            catch (CacheException e) {
+                if (e.getCause() instanceof ClusterTopologyException) {
+                    ClusterTopologyException topEx = (ClusterTopologyException)e.getCause();
+
+                    topEx.retryReadyFuture().get();
+                }
+                else
+                    throw e;
+            }
+            catch (ClusterTopologyException e) {
+                IgniteFuture<?> fut = e.retryReadyFuture();
+
+                fut.get();
+            }
+            catch (TransactionRollbackException ignore) {
+                // Safe to retry right away.
+            }
+            catch (GridClosureException e) {
+                throw U.cast(e);
+            }
+            finally {
+                // Since we're in "try (res) {}", the transaction is close()-ed at this point:
+                assert validTxState(false);
+
+                if (interrupted)
+                    Thread.currentThread().interrupt();
+            }
+        }
+
+        throw new IgniteCheckedException("Failed to perform operation since max number of attempts " +
+            "exceeded. [maxattempts=" + maxAttempts + ']');
+    }
+
 
     /**
      * Lock file IDs participating in the transaction.<br/>

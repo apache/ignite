@@ -30,6 +30,10 @@ import java.lang.reflect.*;
  * Common IGFS utility methods.
  */
 public class IgfsUtils {
+    /** Max attempts to repeat IGFS file unlock transaction. */
+    public static final int MAX_UNLOCK_TRANSACTION_ATTEMPTS = Integer.valueOf(
+        System.getProperty("igfs.max-unlock-transaction-attempts", "100"));
+
     /**
      * Converts any passed exception to IGFS exception.
      *
