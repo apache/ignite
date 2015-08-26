@@ -434,7 +434,7 @@ public class PlatformUtils {
     /**
      * Apply continuous query events to listener.
      *
-     * @param ctx Interop context.
+     * @param ctx Context.
      * @param lsnrPtr Listener pointer.
      * @param evts Events.
      * @throws javax.cache.event.CacheEntryListenerException In case of failure.
@@ -473,7 +473,7 @@ public class PlatformUtils {
     /**
      * Evaluate the filter.
      *
-     * @param ctx Interop context.
+     * @param ctx Context.
      * @param filterPtr Native filter pointer.
      * @param evt Event.
      * @return Result.

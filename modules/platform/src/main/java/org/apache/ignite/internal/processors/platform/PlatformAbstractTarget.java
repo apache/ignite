@@ -37,8 +37,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** */
     private static final int OP_META = -1;
 
-    /** Interop context. */
-    protected final PlatformContext interopCtx;
+    /** Context. */
+    protected final PlatformContext platformCtx;
 
     /** Logger. */
     protected final IgniteLogger log;
@@ -46,21 +46,21 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /**
      * Constructor.
      *
-     * @param interopCtx Interop context.
+     * @param platformCtx Context.
      */
-    protected PlatformAbstractTarget(PlatformContext interopCtx) {
-        this.interopCtx = interopCtx;
+    protected PlatformAbstractTarget(PlatformContext platformCtx) {
+        this.platformCtx = platformCtx;
 
-        log = interopCtx.kernalContext().log(PlatformAbstractTarget.class);
+        log = platformCtx.kernalContext().log(PlatformAbstractTarget.class);
     }
 
     /** {@inheritDoc} */
     @Override public int inOp(int type, long memPtr) throws Exception {
-        try (PlatformMemory mem = interopCtx.memory().get(memPtr)) {
-            PortableRawReaderEx reader = interopCtx.reader(mem);
+        try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
+            PortableRawReaderEx reader = platformCtx.reader(mem);
 
             if (type == OP_META) {
-                interopCtx.processMetadata(reader);
+                platformCtx.processMetadata(reader);
 
                 return TRUE;
             }
@@ -74,8 +74,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
     /** {@inheritDoc} */
     @Override public Object inOpObject(int type, long memPtr) throws Exception {
-        try (PlatformMemory mem = interopCtx.memory().get(memPtr)) {
-            PortableRawReaderEx reader = interopCtx.reader(mem);
+        try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
+            PortableRawReaderEx reader = platformCtx.reader(mem);
 
             return processInOpObject(type, reader);
         }
@@ -86,10 +86,10 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
     /** {@inheritDoc} */
     @Override public void outOp(int type, long memPtr) throws Exception {
-        try (PlatformMemory mem = interopCtx.memory().get(memPtr)) {
+        try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = interopCtx.writer(out);
+            PortableRawWriterEx writer = platformCtx.writer(out);
 
             processOutOp(type, writer);
 
@@ -107,13 +107,13 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
     /** {@inheritDoc} */
     @Override public void inOutOp(int type, long inMemPtr, long outMemPtr, Object arg) throws Exception {
-        try (PlatformMemory inMem = interopCtx.memory().get(inMemPtr)) {
-            PortableRawReaderEx reader = interopCtx.reader(inMem);
+        try (PlatformMemory inMem = platformCtx.memory().get(inMemPtr)) {
+            PortableRawReaderEx reader = platformCtx.reader(inMem);
 
-            try (PlatformMemory outMem = interopCtx.memory().get(outMemPtr)) {
+            try (PlatformMemory outMem = platformCtx.memory().get(outMemPtr)) {
                 PlatformOutputStream out = outMem.output();
 
-                PortableRawWriterEx writer = interopCtx.writer(out);
+                PortableRawWriterEx writer = platformCtx.writer(out);
 
                 processInOutOp(type, reader, writer, arg);
 
@@ -136,10 +136,10 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     }
 
     /**
-     * @return Interop context.
+     * @return Context.
      */
-    public PlatformContext interopContext() {
-        return interopCtx;
+    public PlatformContext platformContext() {
+        return platformCtx;
     }
 
     /**
@@ -150,7 +150,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void listenFuture(final long futId, int typ) throws IgniteCheckedException {
-        PlatformFutureUtils.listen(interopCtx, currentFutureWrapped(), futId, typ, null);
+        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, null);
     }
 
     /**
@@ -162,7 +162,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void listenFuture(final long futId, int typ, int opId) throws IgniteCheckedException {
-        PlatformFutureUtils.listen(interopCtx, currentFutureWrapped(), futId, typ, futureWriter(opId));
+        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, futureWriter(opId));
     }
 
     /**

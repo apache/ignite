@@ -30,12 +30,12 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
     /**
      * Constructor.
      *
-     * @param interopCtx Interop context.
+     * @param platformCtx Platform context.
      * @param cursor Backing cursor.
      * @param batchSize Batch size.
      */
-    public PlatformFieldsQueryCursor(PlatformContext interopCtx, QueryCursorEx<List<?>> cursor, int batchSize) {
-        super(interopCtx, cursor, batchSize);
+    public PlatformFieldsQueryCursor(PlatformContext platformCtx, QueryCursorEx<List<?>> cursor, int batchSize) {
+        super(platformCtx, cursor, batchSize);
     }
 
     /** {@inheritDoc} */

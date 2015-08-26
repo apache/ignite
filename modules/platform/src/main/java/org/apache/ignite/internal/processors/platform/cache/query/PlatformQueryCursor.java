@@ -30,12 +30,12 @@ public class PlatformQueryCursor extends PlatformAbstractQueryCursor<Cache.Entry
     /**
      * Constructor.
      *
-     * @param interopCtx Interop context.
+     * @param platformCtx Context.
      * @param cursor Backing cursor.
      * @param batchSize Batch size.
      */
-    public PlatformQueryCursor(PlatformContext interopCtx, QueryCursorEx<Cache.Entry> cursor, int batchSize) {
-        super(interopCtx, cursor, batchSize);
+    public PlatformQueryCursor(PlatformContext platformCtx, QueryCursorEx<Cache.Entry> cursor, int batchSize) {
+        super(platformCtx, cursor, batchSize);
     }
 
     /** {@inheritDoc} */

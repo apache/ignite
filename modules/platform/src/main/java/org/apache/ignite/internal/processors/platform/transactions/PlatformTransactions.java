@@ -54,12 +54,12 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     /**
      * Constructor.
      *
-     * @param interopCtx Interop context.
+     * @param platformCtx Context.
      */
-    public PlatformTransactions(PlatformContext interopCtx) {
-        super(interopCtx);
+    public PlatformTransactions(PlatformContext platformCtx) {
+        super(platformCtx);
 
-        txs = interopCtx.kernalContext().grid().transactions();
+        txs = platformCtx.kernalContext().grid().transactions();
     }
 
     /**
@@ -175,7 +175,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
             }
         });
 
-        PlatformFutureUtils.listen(interopCtx, fut, futId, PlatformFutureUtils.TYP_OBJ);
+        PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ);
     }
 
     /**
@@ -230,7 +230,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     @Override protected void processOutOp(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_CACHE_CONFIG_PARAMETERS:
-                TransactionConfiguration txCfg = interopCtx.kernalContext().config().getTransactionConfiguration();
+                TransactionConfiguration txCfg = platformCtx.kernalContext().config().getTransactionConfiguration();
 
                 writer.writeEnum(txCfg.getDefaultTxConcurrency());
                 writer.writeEnum(txCfg.getDefaultTxIsolation());

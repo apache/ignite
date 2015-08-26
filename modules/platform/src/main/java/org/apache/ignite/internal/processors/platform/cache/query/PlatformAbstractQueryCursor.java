@@ -50,12 +50,12 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
     /**
      * Constructor.
      *
-     * @param interopCtx Interop context.
+     * @param platformCtx Context.
      * @param cursor Underlying cursor.
      * @param batchSize Batch size.
      */
-    public PlatformAbstractQueryCursor(PlatformContext interopCtx, QueryCursorEx<T> cursor, int batchSize) {
-        super(interopCtx);
+    public PlatformAbstractQueryCursor(PlatformContext platformCtx, QueryCursorEx<T> cursor, int batchSize) {
+        super(platformCtx);
 
         this.cursor = cursor;
         this.batchSize = batchSize;
