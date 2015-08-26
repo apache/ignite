@@ -15,16 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform.memory;
+package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.internal.portable.streams.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * Interop output stream.
+ * Exception raised when interop callback is not set in native platform.
  */
-public interface PlatformOutputStream extends PortableOutputStream {
+@SuppressWarnings("UnusedDeclaration")
+public class PlatformNoCallbackException extends PlatformException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * Synchronize output stream with underlying memory
+     * Constructor.
      */
-    public void synchronize();
+    public PlatformNoCallbackException() {
+        // No-op.
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param msg Message.
+     */
+    public PlatformNoCallbackException(String msg) {
+        super(msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PlatformNoCallbackException.class, this);
+    }
 }

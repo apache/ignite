@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform.memory;
+package org.apache.ignite.internal.processors.platform.memory;
 
 import org.apache.ignite.internal.util.*;
 import sun.misc.*;

@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform.utils;
+package org.apache.ignite.internal.processors.platform.utils;
 
 import org.apache.ignite.internal.portable.*;
 
 /**
- * Interop writer closure.
+ * Reader closure.
  */
-public interface PlatformWriterClosure<T> {
+public interface PlatformReaderClosure<T> {
+
     /**
-     * Write value.
+     * Read object from reader.
      *
-     * @param writer Writer.
-     * @param val Value.
+     * @param reader Reader.
+     * @return Object.
      */
-    public void write(PortableRawWriterEx writer, T val);
+    T read(PortableRawReaderEx reader);
 }

@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform.memory;
+package org.apache.ignite.internal.processors.platform.memory;
 
-import org.apache.ignite.internal.platform.callback.*;
+import org.apache.ignite.internal.processors.platform.callback.*;
 import org.jetbrains.annotations.*;
 
-import static org.apache.ignite.internal.platform.memory.PlatformMemoryUtils.*;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.*;
 
 /**
  * Interop memory manager implementation.

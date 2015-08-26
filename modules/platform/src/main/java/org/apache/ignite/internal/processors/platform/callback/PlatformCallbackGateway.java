@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform.callback;
+package org.apache.ignite.internal.processors.platform.callback;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;

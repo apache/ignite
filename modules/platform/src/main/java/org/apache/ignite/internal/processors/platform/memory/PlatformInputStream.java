@@ -15,20 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform.utils;
+package org.apache.ignite.internal.processors.platform.memory;
 
-import org.apache.ignite.internal.portable.*;
+import org.apache.ignite.internal.portable.streams.*;
 
 /**
- * Reader closure.
+ * Interop output stream,
  */
-public interface PlatformReaderClosure<T> {
-
+public interface PlatformInputStream extends PortableInputStream {
     /**
-     * Read object from reader.
-     *
-     * @param reader Reader.
-     * @return Object.
+     * Synchronize input. Must be called before start reading data from a memory changed by another platform.
      */
-    T read(PortableRawReaderEx reader);
+    public void synchronize();
 }

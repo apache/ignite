@@ -15,22 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform;
+package org.apache.ignite.internal.processors.platform.memory;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.platform.*;
+import org.apache.ignite.internal.portable.streams.*;
 
 /**
- * Platform bootstrap. Responsible for starting Ignite node with non-Java platform.
+ * Interop output stream.
  */
-public interface PlatformBootstrap {
+public interface PlatformOutputStream extends PortableOutputStream {
     /**
-     * Start Ignite node.
-     *
-     * @param cfg Configuration.
-     * @param envPtr Environment pointer.
-     * @param dataPtr Optional pointer to additional data required for startup.
-     * @return Platform processor.
+     * Synchronize output stream with underlying memory
      */
-    public PlatformProcessor start(IgniteConfiguration cfg, long envPtr, long dataPtr);
+    public void synchronize();
 }

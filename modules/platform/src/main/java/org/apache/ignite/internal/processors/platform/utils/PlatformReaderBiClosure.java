@@ -15,37 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform.memory;
+package org.apache.ignite.internal.processors.platform.utils;
 
-import static org.apache.ignite.internal.platform.memory.PlatformMemoryUtils.*;
+import org.apache.ignite.internal.portable.*;
+import org.apache.ignite.lang.*;
 
 /**
- * Interop un-pooled memory chunk.
+ * Reader bi-closure.
  */
-public class PlatformUnpooledMemory extends PlatformAbstractMemory {
+public interface PlatformReaderBiClosure<T1, T2> {
     /**
-     * Constructor.
+     * Read object from reader.
      *
-     * @param memPtr Cross-platform memory pointer.
+     * @param reader Reader.
+     * @return Object.
      */
-    public PlatformUnpooledMemory(long memPtr) {
-        super(memPtr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void reallocate(int cap) {
-        // Try doubling capacity to avoid excessive allocations.
-        int doubledCap = PlatformMemoryUtils.capacity(memPtr) << 1;
-
-        if (doubledCap > cap)
-            cap = doubledCap;
-
-        reallocateUnpooled(memPtr, cap);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        releaseUnpooled(memPtr);
-    }
+    IgniteBiTuple<T1, T2> read(PortableRawReaderEx reader);
 }
-

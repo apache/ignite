@@ -15,49 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.platform.memory;
+package org.apache.ignite.internal.processors.platform.memory;
 
-import static org.apache.ignite.internal.platform.memory.PlatformMemoryUtils.*;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.platform.callback.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Interop pooled memory chunk.
+ * Interop external memory chunk.
  */
-public class PlatformPooledMemory extends PlatformAbstractMemory {
-    /** Owning memory pool. */
-    private final PlatformMemoryPool pool;
+public class PlatformExternalMemory extends PlatformAbstractMemory {
+    /** Native gateway. */
+    private final PlatformCallbackGateway gate;
 
     /**
      * Constructor.
      *
-     * @param pool Owning memory pool.
-     * @param memPtr Cross-platform memory pointer.
+     * @param gate Native gateway.
+     * @param memPtr Memory pointer.
      */
-    public PlatformPooledMemory(PlatformMemoryPool pool, long memPtr) {
+    public PlatformExternalMemory(@Nullable PlatformCallbackGateway gate, long memPtr) {
         super(memPtr);
 
-        assert isPooled(memPtr);
-        assert isAcquired(memPtr);
-
-        this.pool = pool;
+        this.gate = gate;
     }
 
     /** {@inheritDoc} */
     @Override public void reallocate(int cap) {
-        assert isAcquired(memPtr);
+        if (gate == null)
+            throw new IgniteException("Failed to re-allocate external memory chunk because it is read-only.");
 
-        // Try doubling capacity to avoid excessive allocations.
-        int doubledCap = PlatformMemoryUtils.capacity(memPtr) << 1;
-
-        if (doubledCap > cap)
-            cap = doubledCap;
-
-        pool.reallocate(memPtr, cap);
+        gate.memoryReallocate(memPtr, cap);
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        assert isAcquired(memPtr);
-
-        pool.release(memPtr); // Return to the pool.
+        // Do nothing, memory must be released by native platform.
     }
 }
