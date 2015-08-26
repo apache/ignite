@@ -146,6 +146,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         this(mode, ONHEAP_TIERED);
     }
 
+    /**
+     * Constructor.
+     *
+     * @param mode
+     * @param memoryMode
+     */
     protected IgfsAbstractSelfTest(IgfsMode mode, CacheMemoryMode memoryMode) {
         assert mode != null && mode != PROXY;
 
@@ -155,7 +161,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         dual = mode != PRIMARY;
     }
 
-    private static byte[] createChunk(int length) {
+    /**
+     *
+     * @param length
+     * @return
+     */
+    static byte[] createChunk(int length) {
         byte[] chunk = new byte[length];
 
         for (int i = 0; i < chunk.length; i++)
@@ -246,6 +257,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
+        prepareCacheConfigurations(dataCacheCfg, metaCacheCfg);
+
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
@@ -254,6 +267,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         cfg.setConnectorConfiguration(null);
 
         return G.start(cfg);
+    }
+
+    /**
+     *
+     * @param dataCacheCfg
+     * @param metaCacheCfg
+     */
+    protected void prepareCacheConfigurations(CacheConfiguration dataCacheCfg, CacheConfiguration metaCacheCfg) {
+        // Noop
     }
 
     /**
@@ -2263,7 +2285,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param chunks Data chunks.
      * @throws Exception If failed.
      */
-    protected void createFile(IgfsImpl igfs, IgfsPath file, boolean overwrite, long blockSize,
+    protected static void createFile(IgfsImpl igfs, IgfsPath file, boolean overwrite, long blockSize,
         @Nullable byte[]... chunks) throws Exception {
         IgfsOutputStream os = null;
 
@@ -2287,7 +2309,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param chunks Data chunks.
      * @throws Exception If failed.
      */
-    protected void appendFile(IgfsImpl igfs, IgfsPath file, @Nullable byte[]... chunks)
+    protected static void appendFile(IgfsImpl igfs, IgfsPath file, @Nullable byte[]... chunks)
         throws Exception {
         IgfsOutputStream os = null;
 
@@ -2354,7 +2376,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths.
      * @throws IgniteCheckedException If failed.
      */
-    protected void checkExist(IgfsImpl igfs, IgfsPath... paths) throws IgniteCheckedException {
+    protected static void checkExist(IgfsImpl igfs, IgfsPath... paths) throws IgniteCheckedException {
         for (IgfsPath path : paths) {
             assert igfs.context().meta().fileId(path) != null : "Path doesn't exist [igfs=" + igfs.name() +
                 ", path=" + path + ']';
@@ -2463,7 +2485,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws IOException In case of IO exception.
      * @throws IgniteCheckedException In case of Grid exception.
      */
-    protected void checkFileContent(IgfsImpl igfs, IgfsPath file, @Nullable byte[]... chunks)
+    protected static void checkFileContent(IgfsImpl igfs, IgfsPath file, @Nullable byte[]... chunks)
         throws IOException, IgniteCheckedException {
         if (chunks != null && chunks.length > 0) {
             IgfsInputStream is = null;
@@ -2562,7 +2584,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param paths Paths to group.
      * @return Paths as array.
      */
-    protected IgfsPath[] paths(IgfsPath... paths) {
+    protected static IgfsPath[] paths(IgfsPath... paths) {
         return paths;
     }
 
