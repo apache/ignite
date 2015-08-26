@@ -316,4 +316,9 @@ public class IgniteMock implements Ignite {
     public void setStaticCfg(IgniteConfiguration staticCfg) {
         this.staticCfg = staticCfg;
     }
+
+    @Override
+    public List<String> cacheNames(Boolean includeSystemCache) {
+        return null;
+    }
 }

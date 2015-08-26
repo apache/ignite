@@ -480,4 +480,11 @@ public interface Ignite extends AutoCloseable {
      * @return Affinity.
      */
     public <K> Affinity<K> affinity(String cacheName);
+
+    /**
+     *Gets names of currently available caches
+     * @param includeSystemCache show system cache name or not
+     * @return Cache name list
+     */
+    public List<String> cacheNames(Boolean includeSystemCache);
 }

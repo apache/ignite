@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.cache.VisorCacheMetrics;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.marshaller.*;
@@ -3065,5 +3066,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteKernal.class, this);
+    }
+
+    @Override
+    public List<String> cacheNames(Boolean includeSystemCache) {
+        List<String> cacheNames = new ArrayList<String>();
+        GridCacheProcessor cacheProcessor = ctx.cache();
+        Collection<IgniteCacheProxy<?, ?>> caches = cacheProcessor.jcaches();
+        for (IgniteCacheProxy ca : caches) {
+            if (ca.context().started()) {
+                String cacheName = ca.getName();
+                if(!includeSystemCache){
+                    VisorCacheMetrics cm = VisorCacheMetrics.from(this, cacheName);
+                    if(!cm.system()){
+                        cacheNames.add(cacheName);
+                    }
+                } else {
+                    cacheNames.add(cacheName);
+                }
+            }
+        }
+        return cacheNames;
     }
 }

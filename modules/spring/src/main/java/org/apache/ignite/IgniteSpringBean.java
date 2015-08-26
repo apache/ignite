@@ -436,4 +436,9 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
 
         cfg = g.configuration();
     }
+
+    @Override
+    public List<String> cacheNames(Boolean includeSystemCache) {
+        return g.cacheNames(includeSystemCache);
+    }
 }
