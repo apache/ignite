@@ -1927,34 +1927,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Gets local transaction for pessimistic tx recovery.
-     *
-     * @param nearXidVer Near tx ID.
-     * @return Near local or colocated local transaction.
-     */
-    @Nullable public IgniteInternalTx localTxForRecovery(GridCacheVersion nearXidVer, boolean markFinalizing) {
-        // First check if we have near transaction with this ID.
-        IgniteInternalTx tx = idMap.get(nearXidVer);
-
-        if (tx == null) {
-            // Check all local transactions and mark them as waiting for recovery to prevent finish race.
-            for (IgniteInternalTx txEx : idMap.values()) {
-                if (nearXidVer.equals(txEx.nearXidVersion())) {
-                    if (!markFinalizing || !txEx.markFinalizing(RECOVERY_WAIT))
-                        tx = txEx;
-                }
-            }
-        }
-
-        // Either we found near transaction or one of transactions is being committed by user.
-        // Wait for it and send reply.
-        if (tx != null && tx.local())
-            return tx;
-
-        return null;
-    }
-
-    /**
      * Commits or rolls back prepared transaction.
      *
      * @param tx Transaction.

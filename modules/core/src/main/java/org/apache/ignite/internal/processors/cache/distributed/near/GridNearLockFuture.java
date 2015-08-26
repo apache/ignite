@@ -1456,8 +1456,12 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                         tx.entry(cctx.txKey(k)).filters(pass ? CU.empty0() : CU.alwaysFalse0Arr());
                                     }
                                 }
-                                
-                                entry.readyNearLock(lockVer, mappedVer, res.committedVersions(), res.rolledbackVersions(), res.pending());
+
+                                entry.readyNearLock(lockVer,
+                                    mappedVer,
+                                    res.committedVersions(),
+                                    res.rolledbackVersions(),
+                                    res.pending());
 
                                 if (retval) {
                                     if (readRecordable)

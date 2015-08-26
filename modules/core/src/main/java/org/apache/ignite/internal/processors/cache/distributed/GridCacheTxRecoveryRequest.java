@@ -124,13 +124,6 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
         return sys;
     }
 
-    /**
-     * @return Near check flag.
-     */
-    public boolean nearCheck() {
-        return nearTxCheck;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
