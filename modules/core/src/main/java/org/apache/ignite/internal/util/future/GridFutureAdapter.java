@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.future;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -244,8 +245,24 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
             U.error(null, "Failed to notify listener (is grid stopped?) [fut=" + this +
                 ", lsnr=" + lsnr + ", err=" + e.getMessage() + ']', e);
         }
-        catch (RuntimeException | Error e) {
-            U.error(null, "Failed to notify listener: " + lsnr, e);
+        catch (final RuntimeException | Error e) {
+            if (e instanceof StackOverflowError) {
+                // TODO: this is investigation code, remove it.
+                // Start a separate thread to avoid another SOE while printing:
+                new Thread(new Runnable() {
+                    @Override public void run() {
+                        StackTraceElement[] els = e.getStackTrace();
+
+                        StringBuilder sb = new StringBuilder("StackOverflowError:");
+
+                        for (int i=0; i<els.length; i++)
+                            sb.append(i).append(":  ").append(els[i]).append('\n');
+
+                        System.out.println(sb);
+                    }
+                }).start();
+            } else
+                U.error(null, "Failed to notify listener: " + lsnr, e);
 
             throw e;
         }

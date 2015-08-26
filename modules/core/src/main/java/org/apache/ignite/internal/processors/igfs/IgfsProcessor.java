@@ -311,14 +311,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                         ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
             }
 
-            if (dataCacheCfg.getCacheMode() == PARTITIONED) {
-                int backups = dataCacheCfg.getBackups();
-
-                if (backups != 0)
-                    throw new IgniteCheckedException("IGFS data cache cannot be used with backups (set backup count " +
-                        "to 0 and restart the grid): " + cfg.getDataCacheName());
-            }
-
             if (cfg.getMaxSpaceSize() == 0 && dataCacheCfg.getMemoryMode() == OFFHEAP_VALUES)
                 U.warn(log, "IGFS max space size is not specified but data cache values are stored off-heap (max " +
                     "space will be limited to 80% of max JVM heap size): " + cfg.getName());
