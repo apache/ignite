@@ -23,93 +23,93 @@ namespace Apache.Ignite.Core.Portable
     public static class PortableTypeNames
     {
         /** Type name: boolean. */
-        public const string Bool = "boolean";
+        public const string TypeNameBool = "boolean";
 
         /** Type name: byte. */
-        public const string Byte = "byte";
+        public const string TypeNameByte = "byte";
 
         /** Type name: short. */
-        public const string Short = "short";
+        public const string TypeNameShort = "short";
 
         /** Type name: char. */
-        public const string Char = "char";
+        public const string TypeNameChar = "char";
 
         /** Type name: int. */
-        public const string Int = "int";
+        public const string TypeNameInt = "int";
 
         /** Type name: long. */
-        public const string Long = "long";
+        public const string TypeNameLong = "long";
 
         /** Type name: float. */
-        public const string Float = "float";
+        public const string TypeNameFloat = "float";
 
         /** Type name: double. */
-        public const string Double = "double";
+        public const string TypeNameDouble = "double";
 
         /** Type name: decimal. */
-        public const string Decimal = "decimal";
+        public const string TypeNameDecimal = "decimal";
 
         /** Type name: String. */
-        public const string String = "String";
+        public const string TypeNameString = "String";
 
         /** Type name: UUID. */
-        public const string Guid = "UUID";
+        public const string TypeNameGuid = "UUID";
 
         /** Type name: Date. */
-        public const string Date = "Date";
+        public const string TypeNameDate = "Date";
 
         /** Type name: Enum. */
-        public const string Enum = "Enum";
+        public const string TypeNameEnum = "Enum";
 
         /** Type name: Object. */
-        public const string Object = "Object";
+        public const string TypeNameObject = "Object";
 
         /** Type name: boolean array. */
-        public const string ArrayBool = "boolean[]";
+        public const string TypeNameArrayBool = "boolean[]";
 
         /** Type name: byte array. */
-        public const string ArrayByte = "byte[]";
+        public const string TypeNameArrayByte = "byte[]";
 
         /** Type name: short array. */
-        public const string ArrayShort = "short[]";
+        public const string TypeNameArrayShort = "short[]";
 
         /** Type name: char array. */
-        public const string ArrayChar = "char[]";
+        public const string TypeNameArrayChar = "char[]";
 
         /** Type name: int array. */
-        public const string ArrayInt = "int[]";
+        public const string TypeNameArrayInt = "int[]";
 
         /** Type name: long array. */
-        public const string ArrayLong = "long[]";
+        public const string TypeNameArrayLong = "long[]";
 
         /** Type name: float array. */
-        public const string ArrayFloat = "float[]";
+        public const string TypeNameArrayFloat = "float[]";
 
         /** Type name: double array. */
-        public const string ArrayDouble = "double[]";
+        public const string TypeNameArrayDouble = "double[]";
 
         /** Type name: decimal array. */
-        public const string ArrayDecimal = "decimal[]";
+        public const string TypeNameArrayDecimal = "decimal[]";
 
         /** Type name: String array. */
-        public const string ArrayString = "String[]";
+        public const string TypeNameArrayString = "String[]";
 
         /** Type name: UUID array. */
-        public const string ArrayGuid = "UUID[]";
+        public const string TypeNameArrayGuid = "UUID[]";
 
         /** Type name: Date array. */
-        public const string ArrayDate = "Date[]";
+        public const string TypeNameArrayDate = "Date[]";
 
         /** Type name: Enum array. */
-        public const string ArrayEnum = "Enum[]";
+        public const string TypeNameArrayEnum = "Enum[]";
 
         /** Type name: Object array. */
-        public const string ArrayObject = "Object[]";
+        public const string TypeNameArrayObject = "Object[]";
 
         /** Type name: Collection. */
-        public const string Collection = "Collection";
+        public const string TypeNameCollection = "Collection";
 
         /** Type name: Map. */
-        public const string Map = "Map";
+        public const string TypeNameMap = "Map";
     }
 }

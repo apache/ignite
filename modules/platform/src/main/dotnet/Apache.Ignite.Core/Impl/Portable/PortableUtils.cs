@@ -1,0 +1,2016 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+namespace Apache.Ignite.Core.Impl.Portable
+{
+    using System;
+    using System.Collections;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.IO;
+    using System.Reflection;
+    using System.Runtime.Serialization.Formatters.Binary;
+    using System.Text;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Portable;
+
+    /**
+     * <summary>Utilities for portable serialization.</summary>
+     */
+    static class PortableUtils
+    {
+        /** Cache empty dictionary. */
+        public static readonly IDictionary<int, int> EMPTY_FIELDS = new Dictionary<int, int>();
+
+        /** Header of NULL object. */
+        public const byte HDR_NULL = 101;
+
+        /** Header of object handle. */
+        public const byte HDR_HND = 102;
+
+        /** Header of object in fully serialized form. */
+        public const byte HDR_FULL = 103;
+        
+        /** Full header length. */
+        public const int FULL_HDR_LEN = 18;
+
+        /** Type: object. */
+        public const byte TYPE_OBJECT = HDR_FULL;
+
+        /** Type: unsigned byte. */
+        public const byte TYPE_BYTE = 1;
+
+        /** Type: short. */
+        public const byte TYPE_SHORT = 2;
+
+        /** Type: int. */
+        public const byte TYPE_INT = 3;
+
+        /** Type: long. */
+        public const byte TYPE_LONG = 4;
+
+        /** Type: float. */
+        public const byte TYPE_FLOAT = 5;
+
+        /** Type: double. */
+        public const byte TYPE_DOUBLE = 6;
+
+        /** Type: char. */
+        public const byte TYPE_CHAR = 7;
+
+        /** Type: boolean. */
+        public const byte TYPE_BOOL = 8;
+        
+        /** Type: decimal. */
+        public const byte TYPE_DECIMAL = 30;
+
+        /** Type: string. */
+        public const byte TYPE_STRING = 9;
+
+        /** Type: GUID. */
+        public const byte TYPE_GUID = 10;
+
+        /** Type: date. */
+        public const byte TYPE_DATE = 11;
+
+        /** Type: unsigned byte array. */
+        public const byte TYPE_ARRAY_BYTE = 12;
+
+        /** Type: short array. */
+        public const byte TYPE_ARRAY_SHORT = 13;
+
+        /** Type: int array. */
+        public const byte TYPE_ARRAY_INT = 14;
+
+        /** Type: long array. */
+        public const byte TYPE_ARRAY_LONG = 15;
+
+        /** Type: float array. */
+        public const byte TYPE_ARRAY_FLOAT = 16;
+
+        /** Type: double array. */
+        public const byte TYPE_ARRAY_DOUBLE = 17;
+
+        /** Type: char array. */
+        public const byte TYPE_ARRAY_CHAR = 18;
+
+        /** Type: boolean array. */
+        public const byte TYPE_ARRAY_BOOL = 19;
+
+        /** Type: decimal array. */
+        public const byte TYPE_ARRAY_DECIMAL = 31;
+
+        /** Type: string array. */
+        public const byte TYPE_ARRAY_STRING = 20;
+
+        /** Type: GUID array. */
+        public const byte TYPE_ARRAY_GUID = 21;
+
+        /** Type: date array. */
+        public const byte TYPE_ARRAY_DATE = 22;
+
+        /** Type: object array. */
+        public const byte TYPE_ARRAY = 23;
+
+        /** Type: collection. */
+        public const byte TYPE_COLLECTION = 24;
+
+        /** Type: map. */
+        public const byte TYPE_DICTIONARY = 25;
+
+        /** Type: map entry. */
+        public const byte TYPE_MAP_ENTRY = 26;
+
+        /** Type: portable object. */
+        public const byte TYPE_PORTABLE = 27;
+
+        /** Type: enum. */
+        public const byte TYPE_ENUM = 28;
+
+        /** Type: enum array. */
+        public const byte TYPE_ARRAY_ENUM = 29;
+
+        /** Type: cluster node. */
+        public const byte TYPE_CLUSTER_NODE = 67;
+
+        /** Type: cluster metrics. */
+        public const byte TYPE_CLUSTER_METRICS = 68;
+        
+        /** Type: metadata. */
+        public const byte TYPE_METADATA = 70;
+
+        /** Type: native job holder. */
+        public const byte TYPE_NATIVE_JOB_HOLDER = 77;
+
+        /** Type: native job result holder. */
+        public const byte TYPE_PORTABLE_JOB_RES_HOLDER = 76;
+
+        /** Type: .Net configuration. */
+        public const byte TYPE_DOT_NET_CFG = 71;
+
+        /** Type: .Net portable configuration. */
+        public const byte TYPE_DOT_NET_PORTABLE_CFG = 72;
+
+        /** Type: .Net portable type configuration. */
+        public const byte TYPE_DOT_NET_PORTABLE_TYP_CFG = 73;
+
+        /** Type: Grid proxy. */
+        public const byte TYPE_GRID_PROXY = 74;
+
+        /** Type: function wrapper. */
+        public const byte TYPE_COMPUTE_OUT_FUNC_JOB = 80;
+
+        /** Type: function wrapper. */
+        public const byte TYPE_COMPUTE_FUNC_JOB = 81;
+
+        /** Type: continuous query remote filter. */
+        public const byte TYPE_CONTINUOUS_QUERY_REMOTE_FILTER_HOLDER = 82;
+
+        /** Type: Compute out func wrapper. */
+        public const byte TYPE_COMPUTE_OUT_FUNC_WRAPPER = 83;
+
+        /** Type: Compute func wrapper. */
+        public const byte TYPE_COMPUTE_FUNC_WRAPPER = 85;
+
+        /** Type: Compute job wrapper. */
+        public const byte TYPE_COMPUTE_JOB_WRAPPER = 86;
+
+        /** Type: Compute job wrapper. */
+        public const byte TYPE_SERIALIZABLE_HOLDER = 87;
+
+        /** Type: action wrapper. */
+        public const byte TYPE_COMPUTE_ACTION_JOB = 88;
+
+        /** Type: entry processor holder. */
+        public const byte TYPE_CACHE_ENTRY_PROCESSOR_HOLDER = 89;
+
+        /** Type: entry predicate holder. */
+        public const byte TYPE_CACHE_ENTRY_PREDICATE_HOLDER = 90;
+
+        /** Type: cache metrics holder. */
+        public const byte TYPE_CACHE_METRICS = 75;
+
+        /** Type: product license. */
+        public const byte TYPE_PRODUCT_LICENSE = 78;
+
+        /** Type: message filter holder. */
+        public const byte TYPE_MESSAGE_FILTER_HOLDER = 92;
+
+        /** Type: message filter holder. */
+        public const byte TYPE_PORTABLE_OR_SERIALIZABLE_HOLDER = 93;
+
+        /** Type: stream receiver holder. */
+        public const byte TYPE_STREAM_RECEIVER_HOLDER = 94;
+
+        /** Collection: custom. */
+        public const byte COLLECTION_CUSTOM = 0;
+
+        /** Collection: array list. */
+        public const byte COLLECTION_ARRAY_LIST = 1;
+
+        /** Collection: linked list. */
+        public const byte COLLECTION_LINKED_LIST = 2;
+
+        /** Collection: hash set. */
+        public const byte COLLECTION_HASH_SET = 3;
+
+        /** Collection: hash set. */
+        public const byte COLLECTION_LINKED_HASH_SET = 4;
+
+        /** Collection: sorted set. */
+        public const byte COLLECTION_SORTED_SET = 5;
+
+        /** Collection: concurrent bag. */
+        public const byte COLLECTION_CONCURRENT_BAG = 6;
+
+        /** Map: custom. */
+        public const byte MAP_CUSTOM = 0;
+
+        /** Map: hash map. */
+        public const byte MAP_HASH_MAP = 1;
+
+        /** Map: linked hash map. */
+        public const byte MAP_LINKED_HASH_MAP = 2;
+
+        /** Map: sorted map. */
+        public const byte MAP_SORTED_MAP = 3;
+
+        /** Map: concurrent hash map. */
+        public const byte MAP_CONCURRENT_HASH_MAP = 4;
+
+        /** Byte "0". */
+        public const byte BYTE_ZERO = 0;
+
+        /** Byte "1". */
+        public const byte BYTE_ONE = 1;
+
+        /** Indicates object array. */
+        public const int OBJ_TYPE_ID = -1;
+
+        /** Int type. */
+        public static readonly Type TYP_INT = typeof(int);
+
+        /** Collection type. */
+        public static readonly Type TYP_COLLECTION = typeof(ICollection);
+
+        /** Dictionary type. */
+        public static readonly Type TYP_DICTIONARY = typeof(IDictionary);
+
+        /** Generic collection type. */
+        public static readonly Type TYP_GENERIC_COLLECTION = typeof(ICollection<>);
+
+        /** Generic dictionary type. */
+        public static readonly Type TYP_GENERIC_DICTIONARY = typeof(IDictionary<,>);
+
+        /** Ticks for Java epoch. */
+        private static readonly long JAVA_DATE_TICKS = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
+        
+        /** Bindig flags for static search. */
+        private static BindingFlags BIND_FLAGS_STATIC = 
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
+        /** Default poratble marshaller. */
+        private static readonly PortableMarshaller MARSH = new PortableMarshaller(null, new IgniteContext());
+
+        /** Method: WriteGenericCollection. */
+        public static readonly MethodInfo MTDH_WRITE_GENERIC_COLLECTION =
+            typeof(PortableUtils).GetMethod("WriteGenericCollection", BIND_FLAGS_STATIC);
+
+        /** Method: ReadGenericCollection. */
+        public static readonly MethodInfo MTDH_READ_GENERIC_COLLECTION =
+            typeof(PortableUtils).GetMethod("ReadGenericCollection", BIND_FLAGS_STATIC);
+
+        /** Method: WriteGenericDictionary. */
+        public static readonly MethodInfo MTDH_WRITE_GENERIC_DICTIONARY =
+            typeof(PortableUtils).GetMethod("WriteGenericDictionary", BIND_FLAGS_STATIC);
+
+        /** Method: ReadGenericDictionary. */
+        public static readonly MethodInfo MTDH_READ_GENERIC_DICTIONARY =
+            typeof(PortableUtils).GetMethod("ReadGenericDictionary", BIND_FLAGS_STATIC);
+
+        /** Method: ReadGenericArray. */
+        public static readonly MethodInfo MTDH_READ_GENERIC_ARRAY =
+            typeof(PortableUtils).GetMethod("ReadGenericArray", BIND_FLAGS_STATIC);
+
+        /** Cached UTF8 encoding. */
+        private static readonly Encoding UTF8 = Encoding.UTF8;
+
+        /** Cached generic array read funcs. */
+        private static readonly CopyOnWriteConcurrentDictionary<Type, Func<IPortableReaderEx, bool, object>>
+            ARRAY_READERS = new CopyOnWriteConcurrentDictionary<Type, Func<IPortableReaderEx, bool, object>>();
+
+        /// <summary>
+        /// Default marshaller.
+        /// </summary>
+        public static PortableMarshaller Marshaller
+        {
+            get { return MARSH; }
+        }
+
+        /**
+         * <summary>Write boolean array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteBooleanArray(bool[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            stream.WriteBoolArray(vals);
+        }
+
+        /**
+         * <summary>Read boolean array.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static bool[] ReadBooleanArray(IPortableStream stream)
+        {
+            int len = stream.ReadInt();
+
+            return stream.ReadBoolArray(len);
+        }
+
+        /**
+         * <summary>Write byte array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         * <returns>Length of written data.</returns>
+         */
+        public static void WriteByteArray(byte[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            stream.WriteByteArray(vals);
+        }
+
+        /**
+         * <summary>Read byte array.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static byte[] ReadByteArray(IPortableStream stream)
+        {
+            return stream.ReadByteArray(stream.ReadInt());
+        }
+
+        /**
+         * <summary>Read byte array.</summary>
+         * <param name="stream">Output stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe sbyte[] ReadSbyteArray(IPortableStream stream)
+        {
+            int len = stream.ReadInt();
+
+            sbyte[] res = new sbyte[len];
+
+            fixed (sbyte* res0 = res)
+            {
+                stream.Read((byte*) res0, len);
+            }
+
+            return res;
+        }
+
+        /**
+         * <summary>Read byte array.</summary>
+         * <param name="data">Data.</param>
+         * <param name="pos">Position.</param>
+         * <returns>Value.</returns>
+         */
+        public static byte[] ReadByteArray(byte[] data, int pos) {
+            int len = ReadInt(data, pos);
+
+            pos += 4;
+
+            byte[] res = new byte[len];
+
+            Buffer.BlockCopy(data, pos, res, 0, len);
+
+            return res;
+        }
+
+        /**
+         * <summary>Write short array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteShortArray(short[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            stream.WriteShortArray(vals);
+        }
+
+        /**
+         * <summary>Read short array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe ushort[] ReadUshortArray(IPortableStream stream)
+        {
+            int len = stream.ReadInt();
+
+            ushort[] res = new ushort[len];
+
+            fixed (ushort* res0 = res)
+            {
+                stream.Read((byte*) res0, len * 2);
+            }
+
+            return res;
+        }
+
+        /**
+         * <summary>Read short array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static short[] ReadShortArray(IPortableStream stream)
+        {
+            return stream.ReadShortArray(stream.ReadInt());
+        }
+
+        /**
+         * <summary>Read int value.</summary>
+         * <param name="data">Data array.</param>
+         * <param name="pos">Position.</param>
+         * <returns>Value.</returns>
+         */
+        public static int ReadInt(byte[] data, int pos) {
+            int val = data[pos];
+
+            val |= data[pos + 1] << 8;
+            val |= data[pos + 2] << 16;
+            val |= data[pos + 3] << 24;
+
+            return val;
+        }
+
+        /**
+         * <summary>Read long value.</summary>
+         * <param name="data">Data array.</param>
+         * <param name="pos">Position.</param>
+         * <returns>Value.</returns>
+         */
+        public static long ReadLong(byte[] data, int pos) {
+            long val = (long)(data[pos]) << 0;
+
+            val |= (long)(data[pos + 1]) << 8;
+            val |= (long)(data[pos + 2]) << 16;
+            val |= (long)(data[pos + 3]) << 24;
+            val |= (long)(data[pos + 4]) << 32;
+            val |= (long)(data[pos + 5]) << 40;
+            val |= (long)(data[pos + 6]) << 48;
+            val |= (long)(data[pos + 7]) << 56;
+
+            return val;
+        }
+
+        /**
+         * <summary>Write int array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteIntArray(int[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            stream.WriteIntArray(vals);
+        }
+
+        /**
+         * <summary>Read int array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static int[] ReadIntArray(IPortableStream stream)
+        {
+            return stream.ReadIntArray(stream.ReadInt());
+        }
+
+        /**
+         * <summary>Read int array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe uint[] ReadUintArray(IPortableStream stream)
+        {
+            int len = stream.ReadInt();
+
+            uint[] res = new uint[len];
+
+            fixed (uint* res0 = res)
+            {
+                stream.Read((byte*) res0, len * 4);
+            }
+
+            return res;
+        }
+
+        /**
+         * <summary>Write long array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteLongArray(long[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            stream.WriteLongArray(vals);
+        }
+
+        /**
+         * <summary>Read long array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static long[] ReadLongArray(IPortableStream stream)
+        {
+            return stream.ReadLongArray(stream.ReadInt());
+        }
+
+        /**
+         * <summary>Read ulong array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static unsafe ulong[] ReadUlongArray(IPortableStream stream)
+        {
+            int len = stream.ReadInt();
+
+            ulong[] res = new ulong[len];
+
+            fixed (ulong* res0 = res)
+            {
+                stream.Read((byte*) res0, len * 8);
+            }
+
+            return res;
+        }
+
+        /**
+         * <summary>Write char array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteCharArray(char[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            stream.WriteCharArray(vals);
+        }
+
+        /**
+         * <summary>Read char array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static char[] ReadCharArray(IPortableStream stream)
+        {
+            int len = stream.ReadInt();
+
+            return stream.ReadCharArray(len);
+        }
+
+        /**
+         * <summary>Write float array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteFloatArray(float[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            stream.WriteFloatArray(vals);
+        }
+
+        /**
+         * <summary>Read float array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static float[] ReadFloatArray(IPortableStream stream)
+        {
+            int len = stream.ReadInt();
+
+            return stream.ReadFloatArray(len);
+        }
+
+        /**
+         * <summary>Write double array.</summary>
+         * <param name="vals">Value.</param>
+         * <param name="stream">Output stream.</param>
+         */
+        public static void WriteDoubleArray(double[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            stream.WriteDoubleArray(vals);
+        }
+
+        /**
+         * <summary>Read double array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Value.</returns>
+         */
+        public static double[] ReadDoubleArray(IPortableStream stream)
+        {
+            int len = stream.ReadInt();
+
+            return stream.ReadDoubleArray(len);
+        }
+
+        /**
+         * <summary>Write date.</summary>
+         * <param name="val">Date.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteDate(DateTime? val, IPortableStream stream)
+        {
+            long high;
+            int low;
+
+            Debug.Assert(val.HasValue);
+            ToJavaDate(val.Value, out high, out low);
+
+            stream.WriteLong(high);
+            stream.WriteInt(low);
+        }
+
+        /**
+         * <summary>Read date.</summary>
+         * <param name="stream">Stream.</param>
+         * <param name="local">Local flag.</param>
+         * <returns>Date</returns>
+         */
+        public static DateTime? ReadDate(IPortableStream stream, bool local)
+        {
+            long high = stream.ReadLong();
+            int low = stream.ReadInt();
+
+            return ToDotNetDate(high, low, local);
+        }
+
+        /**
+         * <summary>Write date array.</summary>
+         * <param name="vals">Date array.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteDateArray(DateTime?[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            foreach (DateTime? val in vals)
+            {
+                if (val.HasValue)
+                    PortableSystemHandlers.WRITE_HND_DATE_TYPED(stream, val);
+                else
+                    stream.WriteByte(HDR_NULL);
+            }
+        }
+        
+        /**
+         * <summary>Write string in UTF8 encoding.</summary>
+         * <param name="val">String.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static unsafe void WriteString(string val, IPortableStream stream)
+        {
+            stream.WriteBool(true);
+
+            int charCnt = val.Length;
+
+            fixed (char* chars = val)
+            {
+                int byteCnt = UTF8.GetByteCount(chars, charCnt);
+
+                stream.WriteInt(byteCnt);
+
+                stream.WriteString(chars, charCnt, byteCnt, UTF8);
+            }
+        }
+
+        /**
+         * <summary>Read string in UTF8 encoding.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>String.</returns>
+         */
+        public static string ReadString(IPortableStream stream)
+        {
+            if (stream.ReadBool())
+            {
+                byte[] bytes = ReadByteArray(stream);
+
+                return bytes != null ? UTF8.GetString(bytes) : null;
+            }
+            
+            char[] chars = ReadCharArray(stream);
+
+            return new string(chars);
+        }
+
+        /**
+         * <summary>Write string array in UTF8 encoding.</summary>
+         * <param name="vals">String array.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteStringArray(string[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            foreach (string val in vals)
+            {
+                if (val != null)
+                    PortableSystemHandlers.WRITE_HND_STRING_TYPED(stream, val); 
+                else
+                    stream.WriteByte(HDR_NULL);
+            }
+        }
+
+        /**
+         * <summary>Read string array in UTF8 encoding.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>String array.</returns>
+         */
+        public static string[] ReadStringArray(IPortableStream stream)
+        {
+            int len = stream.ReadInt();
+
+            string[] vals = new string[len];
+
+            for (int i = 0; i < len; i++)
+                vals[i] = ReadString(stream);
+
+            return vals;
+        }
+
+        /**
+         * <summary>Write decimal value.</summary>
+         * <param name="val">Decimal value.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteDecimal(decimal val, IPortableStream stream) 
+        {
+            // Vals are:
+            // [0] = lo
+            // [1] = mid
+            // [2] = high
+            // [3] = flags
+            int[] vals = decimal.GetBits(val);
+            
+            // Get start index skipping leading zeros.
+            int idx = vals[2] != 0 ? 2 : vals[1] != 0 ? 1 : vals[0] != 0 ? 0 : -1;
+                        
+            // Write scale and negative flag.
+            int scale = (vals[3] & 0x00FF0000) >> 16; 
+
+            stream.WriteInt(((vals[3] & 0x80000000) == 0x80000000) ? (int)((uint)scale | 0x80000000) : scale);
+
+            if (idx == -1)
+            {
+                // Writing zero.
+                stream.WriteInt(1);
+                stream.WriteByte(0);
+            }
+            else
+            {
+                int len = (idx + 1) << 2;
+                
+                // Write data.
+                for (int i = idx; i >= 0; i--)
+                {
+                    int curPart = vals[i];
+
+                    int part24 = (curPart >> 24) & 0xFF;
+                    int part16 = (curPart >> 16) & 0xFF;
+                    int part8 = (curPart >> 8) & 0xFF;
+                    int part0 = curPart & 0xFF;
+                    
+                    if (i == idx)
+                    {
+                        // Possibly skipping some values here.
+                        if (part24 != 0)
+                        {
+                            if ((part24 & 0x80) == 0x80)
+                            {
+                                stream.WriteInt(len + 1);
+
+                                stream.WriteByte(BYTE_ZERO);
+                            }
+                            else
+                                stream.WriteInt(len);
+
+                            stream.WriteByte((byte)part24);
+                            stream.WriteByte((byte)part16);
+                            stream.WriteByte((byte)part8);
+                            stream.WriteByte((byte)part0);
+                        }
+                        else if (part16 != 0)
+                        {
+                            if ((part16 & 0x80) == 0x80)
+                            {
+                                stream.WriteInt(len);
+
+                                stream.WriteByte(BYTE_ZERO);
+                            }
+                            else
+                                stream.WriteInt(len - 1);
+
+                            stream.WriteByte((byte)part16);
+                            stream.WriteByte((byte)part8);
+                            stream.WriteByte((byte)part0);
+                        }
+                        else if (part8 != 0)
+                        {
+                            if ((part8 & 0x80) == 0x80)
+                            {
+                                stream.WriteInt(len - 1);
+
+                                stream.WriteByte(BYTE_ZERO);
+                            }
+                            else
+                                stream.WriteInt(len - 2);
+
+                            stream.WriteByte((byte)part8);
+                            stream.WriteByte((byte)part0);
+                        }
+                        else
+                        {
+                            if ((part0 & 0x80) == 0x80)
+                            {
+                                stream.WriteInt(len - 2);
+
+                                stream.WriteByte(BYTE_ZERO);
+                            }
+                            else
+                                stream.WriteInt(len - 3);
+
+                            stream.WriteByte((byte)part0);
+                        }
+                    }
+                    else
+                    {
+                        stream.WriteByte((byte)part24);
+                        stream.WriteByte((byte)part16);
+                        stream.WriteByte((byte)part8);
+                        stream.WriteByte((byte)part0);
+                    }
+                }
+            }
+        }
+
+        /**
+         * <summary>Read decimal value.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Decimal value.</returns>
+         */
+        public static decimal ReadDecimal(IPortableStream stream)
+        {
+            int scale = stream.ReadInt();
+
+            bool neg;
+
+            if (scale < 0)
+            {
+                scale = scale & 0x7FFFFFFF;
+
+                neg = true;
+            }
+            else
+                neg = false;
+
+            byte[] mag = ReadByteArray(stream);
+
+            if (scale < 0 || scale > 28)
+                throw new PortableException("Decimal value scale overflow (must be between 0 and 28): " + scale);
+
+            if (mag.Length > 13)
+                throw new PortableException("Decimal magnitude overflow (must be less than 96 bits): " + 
+                    mag.Length * 8);
+
+            if (mag.Length == 13 && mag[0] != 0)
+                throw new PortableException("Decimal magnitude overflow (must be less than 96 bits): " +
+                        mag.Length * 8);
+
+            int hi = 0;
+            int mid = 0;
+            int lo = 0;
+
+            int ctr = -1;
+
+            for (int i = mag.Length - 12; i < mag.Length; i++)
+            {
+                if (++ctr == 4)
+                {
+                    mid = lo;
+                    lo = 0;
+                }
+                else if (ctr == 8)
+                {
+                    hi = mid;
+                    mid = lo;
+                    lo = 0;
+                }
+
+                if (i >= 0)
+                    lo = (lo << 8) + mag[i];
+            }
+
+            return new decimal(lo, mid, hi, neg, (byte)scale);
+        }
+
+        /**
+         * <summary>Write decimal array.</summary>
+         * <param name="vals">Decimal array.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteDecimalArray(decimal[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            foreach (decimal val in vals)
+                WriteDecimal(val, stream);
+        }
+
+        /**
+         * <summary>Read decimal array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>Decimal array.</returns>
+         */
+        public static decimal[] ReadDecimalArray(IPortableStream stream)
+        {
+            int len = stream.ReadInt();
+
+            decimal[] vals = new decimal[len];
+
+            for (int i = 0; i < len; i++)
+                vals[i] = ReadDecimal(stream);
+
+            return vals;
+        }
+
+        /**
+         * <summary>Write GUID.</summary>
+         * <param name="val">GUID.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static unsafe void WriteGuid(Guid? val, IPortableStream stream)
+        {
+            Debug.Assert(val.HasValue);
+            byte[] bytes = val.Value.ToByteArray();
+
+            // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
+            // And _a, _b and _c are always in little endian format irrespective of system configuration.
+            // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _e, _d.
+            fixed (byte* bytes0 = bytes)
+            {
+                stream.Write(bytes0 + 6, 2); // _c
+                stream.Write(bytes0 + 4, 2); // _a
+                stream.Write(bytes0, 4);     // _a
+            }
+
+            stream.WriteByte(bytes[15]); // _k
+            stream.WriteByte(bytes[14]); // _j
+            stream.WriteByte(bytes[13]); // _i
+            stream.WriteByte(bytes[12]); // _h
+
+            stream.WriteByte(bytes[11]); // _g
+            stream.WriteByte(bytes[10]); // _f
+            stream.WriteByte(bytes[9]);  // _e
+            stream.WriteByte(bytes[8]);  // _d
+        }
+
+        /**
+         * <summary>Read GUID.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>GUID</returns>
+         */
+        public static unsafe Guid? ReadGuid(IPortableStream stream)
+        {
+            byte[] bytes = new byte[16];
+
+            // Perform conversion opposite to what write does.
+            fixed (byte* bytes0 = bytes)
+            {
+                stream.Read(bytes0 + 6, 2);      // _c
+                stream.Read(bytes0 + 4, 2);      // _b
+                stream.Read(bytes0, 4);          // _a
+            }
+
+            bytes[15] = stream.ReadByte();  // _k
+            bytes[14] = stream.ReadByte();  // _j
+            bytes[13] = stream.ReadByte();  // _i
+            bytes[12] = stream.ReadByte();  // _h
+
+            bytes[11] = stream.ReadByte();  // _g
+            bytes[10] = stream.ReadByte();  // _f
+            bytes[9] = stream.ReadByte();   // _e
+            bytes[8] = stream.ReadByte();   // _d
+
+            return new Guid(bytes);
+        }
+
+        /**
+         * <summary>Read GUID.</summary>
+         * <param name="data">Data array.</param>
+         * <param name="pos">Position.</param>
+         * <returns>GUID</returns>
+         */
+        public static Guid ReadGuid(byte[] data, int pos) {
+            byte[] bytes = new byte[16];
+
+            // Perform conversion opposite to what write does.
+            bytes[6] = data[pos];  // _c
+            bytes[7] = data[pos + 1];
+
+            bytes[4] = data[pos + 2];  // _b
+            bytes[5] = data[pos + 3];
+
+            bytes[0] = data[pos + 4];  // _a
+            bytes[1] = data[pos + 5];
+            bytes[2] = data[pos + 6];
+            bytes[3] = data[pos + 7];
+
+            bytes[15] = data[pos + 8];  // _k
+            bytes[14] = data[pos + 9];  // _j
+            bytes[13] = data[pos + 10];  // _i
+            bytes[12] = data[pos + 11];  // _h
+
+            bytes[11] = data[pos + 12];  // _g
+            bytes[10] = data[pos + 13];  // _f
+            bytes[9] = data[pos + 14];   // _e
+            bytes[8] = data[pos + 15];   // _d
+
+            return new Guid(bytes);
+        }
+
+        /**
+         * <summary>Write GUID array.</summary>
+         * <param name="vals">GUID array.</param>
+         * <param name="stream">Stream.</param>
+         */
+        public static void WriteGuidArray(Guid?[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            foreach (Guid? val in vals)
+            {
+                if (val.HasValue)
+                    PortableSystemHandlers.WRITE_HND_GUID_TYPED(stream, val);
+                else
+                    stream.WriteByte(HDR_NULL);
+            }
+        }
+
+        /**
+         * <summary>Read GUID array.</summary>
+         * <param name="stream">Stream.</param>
+         * <returns>GUID array.</returns>
+         */
+        public static Guid?[] ReadGuidArray(IPortableStream stream)
+        {
+            int len = stream.ReadInt();
+
+            Guid?[] vals = new Guid?[len];
+
+            for (int i = 0; i < len; i++)
+                vals[i] = ReadGuid(stream);
+
+            return vals;
+        }
+        
+        /// <summary>
+        /// Write array.
+        /// </summary>
+        /// <param name="val">Array.</param>
+        /// <param name="ctx">Write context.</param>
+        /// <param name="typed">Typed flag.</param>
+        public static void WriteArray(Array val, IPortableWriterEx ctx, bool typed)
+        {
+            IPortableStream stream = ctx.Stream;
+
+            if (typed)
+                stream.WriteInt(OBJ_TYPE_ID);
+
+            stream.WriteInt(val.Length);
+
+            for (int i = 0; i < val.Length; i++)
+                ctx.Write(val.GetValue(i));
+        }
+
+        /// <summary>
+        /// Read array.
+        /// </summary>
+        /// <param name="ctx">Read context.</param>
+        /// <param name="typed">Typed flag.</param>
+        /// <param name="elementType">Type of the element.</param>
+        /// <returns>Array.</returns>
+        public static object ReadArray(IPortableReaderEx ctx, bool typed, Type elementType)
+        {
+            Func<IPortableReaderEx, bool, object> result;
+
+            if (!ARRAY_READERS.TryGetValue(elementType, out result))
+                result = ARRAY_READERS.GetOrAdd(elementType, t =>
+                    DelegateConverter.CompileFunc<Func<IPortableReaderEx, bool, object>>(null,
+                        MTDH_READ_GENERIC_ARRAY.MakeGenericMethod(t),
+                        new[] { typeof(IPortableReaderEx), typeof(bool) }, new[] { false, false, true }));
+
+            return result(ctx, typed);
+        }
+
+        /// <summary>
+        /// Read array.
+        /// </summary>
+        /// <param name="ctx">Read context.</param>
+        /// <param name="typed">Typed flag.</param>
+        /// <returns>Array.</returns>
+        public static T[] ReadGenericArray<T>(IPortableReaderEx ctx, bool typed)
+        {
+            IPortableStream stream = ctx.Stream;
+
+            if (typed)
+                stream.ReadInt();
+
+            int len = stream.ReadInt();
+
+            var vals = new T[len];
+
+            for (int i = 0; i < len; i++)
+                vals[i] = ctx.Deserialize<T>();
+
+            return vals;
+        }
+
+        /**
+         * <summary>Read DateTime array.</summary>
+         * <param name="stream">Stream.</param>
+         * <param name="local">Local flag.</param>
+         * <returns>Array.</returns>
+         */
+        public static DateTime?[] ReadDateArray(IPortableStream stream, bool local)
+        {
+            int len = stream.ReadInt();
+
+            DateTime?[] vals = new DateTime?[len];
+
+            for (int i = 0; i < len; i++)
+                vals[i] = stream.ReadByte() == HDR_NULL ? null : ReadDate(stream, local);
+
+            return vals;
+        }
+
+        /**
+         * <summary>Write collection.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteCollection(ICollection val, IPortableWriterEx ctx)
+        {
+            byte colType = val.GetType() == typeof(ArrayList) ? COLLECTION_ARRAY_LIST : COLLECTION_CUSTOM;
+
+            WriteTypedCollection(val, ctx, colType);
+        }
+
+        /**
+         * <summary>Write non-null collection with known type.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         * <param name="colType">Collection type.</param>
+         */
+        public static void WriteTypedCollection(ICollection val, IPortableWriterEx ctx, byte colType)
+        {
+            ctx.Stream.WriteInt(val.Count);
+
+            ctx.Stream.WriteByte(colType);
+
+            foreach (object elem in val)
+                ctx.Write(elem);
+        }
+
+        /**
+         * <summary>Read collection.</summary>
+         * <param name="ctx">Context.</param>
+         * <param name="factory">Factory delegate.</param>
+         * <param name="adder">Adder delegate.</param>
+         * <returns>Collection.</returns>
+         */
+        public static ICollection ReadCollection(IPortableReaderEx ctx,
+            PortableCollectionFactory factory, PortableCollectionAdder adder)
+        {
+            if (factory == null)
+                factory = PortableSystemHandlers.CreateArrayList;
+
+            if (adder == null)
+                adder = PortableSystemHandlers.AddToArrayList;
+
+            IPortableStream stream = ctx.Stream;
+
+            int len = stream.ReadInt();
+
+            ctx.Stream.Seek(1, SeekOrigin.Current);
+
+            ICollection res = factory.Invoke(len);
+
+            for (int i = 0; i < len; i++)
+                adder.Invoke(res, ctx.Deserialize<object>());
+
+            return res;
+        }
+
+        /**
+         * <summary>Write generic collection.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteGenericCollection<T>(ICollection<T> val, IPortableWriterEx ctx)
+        {
+            Type type = val.GetType().GetGenericTypeDefinition();
+
+            byte colType;
+
+            if (type == typeof(List<>))
+                colType = COLLECTION_ARRAY_LIST;
+            else if (type == typeof(LinkedList<>))
+                colType = COLLECTION_LINKED_LIST;
+            else if (type == typeof(HashSet<>))
+                colType = COLLECTION_HASH_SET;
+            else if (type == typeof(SortedSet<>))
+                colType = COLLECTION_SORTED_SET;
+            else
+                colType = COLLECTION_CUSTOM;
+
+            WriteTypedGenericCollection(val, ctx, colType);
+        }
+
+        /**
+         * <summary>Write generic non-null collection with known type.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         * <param name="colType">Collection type.</param>
+         */
+        public static void WriteTypedGenericCollection<T>(ICollection<T> val, IPortableWriterEx ctx,
+            byte colType)
+        {
+            ctx.Stream.WriteInt(val.Count);
+
+            ctx.Stream.WriteByte(colType);
+
+            foreach (T elem in val)
+                ctx.Write(elem);
+        }
+
+        /**
+         * <summary>Read generic collection.</summary>
+         * <param name="ctx">Context.</param>
+         * <param name="factory">Factory delegate.</param>
+         * <returns>Collection.</returns>
+         */
+        public static ICollection<T> ReadGenericCollection<T>(IPortableReaderEx ctx,
+            PortableGenericCollectionFactory<T> factory)
+        {
+            int len = ctx.Stream.ReadInt();
+
+            if (len >= 0)
+            {
+                byte colType = ctx.Stream.ReadByte();
+
+                if (factory == null)
+                {
+                    // Need to detect factory automatically.
+                    if (colType == COLLECTION_LINKED_LIST)
+                        factory = PortableSystemHandlers.CreateLinkedList<T>;
+                    else if (colType == COLLECTION_HASH_SET)
+                        factory = PortableSystemHandlers.CreateHashSet<T>;
+                    else if (colType == COLLECTION_SORTED_SET)
+                        factory = PortableSystemHandlers.CreateSortedSet<T>;
+                    else
+                        factory = PortableSystemHandlers.CreateList<T>;
+                }
+
+                ICollection<T> res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                    res.Add(ctx.Deserialize<T>());
+
+                return res;
+            }
+            else
+                return null;
+        }
+
+        /**
+         * <summary>Write dictionary.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteDictionary(IDictionary val, IPortableWriterEx ctx)
+        {
+            byte dictType = val.GetType() == typeof(Hashtable) ? MAP_HASH_MAP : MAP_CUSTOM;
+
+            WriteTypedDictionary(val, ctx, dictType);
+        }
+
+        /**
+         * <summary>Write non-null dictionary with known type.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         * <param name="dictType">Dictionary type.</param>
+         */
+        public static void WriteTypedDictionary(IDictionary val, IPortableWriterEx ctx, byte dictType)
+        {
+            ctx.Stream.WriteInt(val.Count);
+
+            ctx.Stream.WriteByte(dictType);
+
+            foreach (DictionaryEntry entry in val)
+            {
+                ctx.Write(entry.Key);
+                ctx.Write(entry.Value);
+            }
+        }
+
+        /**
+         * <summary>Read dictionary.</summary>
+         * <param name="ctx">Context.</param>
+         * <param name="factory">Factory delegate.</param>
+         * <returns>Dictionary.</returns>
+         */
+        public static IDictionary ReadDictionary(IPortableReaderEx ctx,
+            PortableDictionaryFactory factory)
+        {
+            if (factory == null)
+                factory = PortableSystemHandlers.CreateHashtable;
+
+            IPortableStream stream = ctx.Stream;
+
+            int len = stream.ReadInt();
+
+            ctx.Stream.Seek(1, SeekOrigin.Current);
+
+            IDictionary res = factory.Invoke(len);
+
+            for (int i = 0; i < len; i++)
+            {
+                object key = ctx.Deserialize<object>();
+                object val = ctx.Deserialize<object>();
+
+                res[key] = val;
+            }
+
+            return res;
+        }
+
+        /**
+         * <summary>Write generic dictionary.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         */
+        public static void WriteGenericDictionary<K, V>(IDictionary<K, V> val, IPortableWriterEx ctx)
+        {
+            Type type = val.GetType().GetGenericTypeDefinition();
+
+            byte dictType;
+
+            if (type == typeof(Dictionary<,>))
+                dictType = MAP_HASH_MAP;
+            else if (type == typeof(SortedDictionary<,>))
+                dictType = MAP_SORTED_MAP;
+            else if (type == typeof(ConcurrentDictionary<,>))
+                dictType = MAP_CONCURRENT_HASH_MAP;
+            else
+                dictType = MAP_CUSTOM;
+
+            WriteTypedGenericDictionary(val, ctx, dictType);
+        }
+
+        /**
+         * <summary>Write generic non-null dictionary with known type.</summary>
+         * <param name="val">Value.</param>
+         * <param name="ctx">Write context.</param>
+         * <param name="dictType">Dictionary type.</param>
+         */
+        public static void WriteTypedGenericDictionary<K, V>(IDictionary<K, V> val,
+            IPortableWriterEx ctx, byte dictType)
+        {
+            ctx.Stream.WriteInt(val.Count);
+
+            ctx.Stream.WriteByte(dictType);
+
+            foreach (KeyValuePair<K, V> entry in val)
+            {
+                ctx.Write(entry.Key);
+                ctx.Write(entry.Value);
+            }
+        }
+
+        /**
+         * <summary>Read generic dictionary.</summary>
+         * <param name="ctx">Context.</param>
+         * <param name="factory">Factory delegate.</param>
+         * <returns>Collection.</returns>
+         */
+        public static IDictionary<K, V> ReadGenericDictionary<K, V>(IPortableReaderEx ctx,
+            PortableGenericDictionaryFactory<K, V> factory)
+        {
+            int len = ctx.Stream.ReadInt();
+
+            if (len >= 0)
+            {
+                byte colType = ctx.Stream.ReadByte();
+
+                if (factory == null)
+                {
+                    if (colType == MAP_SORTED_MAP)
+                        factory = PortableSystemHandlers.CreateSortedDictionary<K, V>;
+                    else if (colType == MAP_CONCURRENT_HASH_MAP)
+                        factory = PortableSystemHandlers.CreateConcurrentDictionary<K, V>;
+                    else
+                        factory = PortableSystemHandlers.CreateDictionary<K, V>;
+                }
+
+                IDictionary<K, V> res = factory.Invoke(len);
+
+                for (int i = 0; i < len; i++)
+                {
+                    K key = ctx.Deserialize<K>();
+                    V val = ctx.Deserialize<V>();
+
+                    res[key] = val;
+                }
+
+                return res;
+            }
+            else
+                return null;
+        }
+
+        /**
+         * <summary>Write map entry.</summary>
+         * <param name="ctx">Write context.</param>
+         * <param name="val">Value.</param>
+         */
+        public static void WriteMapEntry(IPortableWriterEx ctx, DictionaryEntry val)
+        {
+            ctx.Write(val.Key);
+            ctx.Write(val.Value);
+        }
+
+        /**
+         * <summary>Read map entry.</summary>
+         * <param name="ctx">Context.</param>
+         * <returns>Map entry.</returns>
+         */
+        public static DictionaryEntry ReadMapEntry(IPortableReaderEx ctx)
+        {
+            object key = ctx.Deserialize<object>();
+            object val = ctx.Deserialize<object>();
+
+            return new DictionaryEntry(key, val);
+        }
+
+        /**
+         * <summary>Write portable object.</summary>
+         * <param name="stream">Stream.</param>
+         * <param name="val">Value.</param>
+         */
+        public static void WritePortable(IPortableStream stream, PortableUserObject val)
+        {
+            WriteByteArray(val.Data, stream);
+
+            stream.WriteInt(val.Offset);
+        }
+
+        /// <summary>
+        /// Write enum.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="val">Value.</param>
+        public static void WriteEnum(IPortableStream stream, Enum val)
+        {
+            if (Enum.GetUnderlyingType(val.GetType()) == TYP_INT)
+            {
+                stream.WriteInt(OBJ_TYPE_ID);
+                stream.WriteInt(Convert.ToInt32(val));
+            }
+            else
+                throw new PortableException("Only Int32 underlying type is supported for enums: " +
+                    val.GetType().Name);
+        }
+
+        /// <summary>
+        /// Read enum.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <returns>Enumeration.</returns>
+        public static T ReadEnum<T>(IPortableStream stream)
+        {
+            if (!typeof(T).IsEnum || Enum.GetUnderlyingType(typeof(T)) == TYP_INT)
+            {
+                stream.ReadInt();
+
+                return TypeCaster<T>.Cast(stream.ReadInt());
+            }
+
+            throw new PortableException("Only Int32 underlying type is supported for enums: " +
+                                        typeof (T).Name);
+        }
+
+        /**
+         * <summary>Gets type key.</summary>
+         * <param name="userType">User type flag.</param>
+         * <param name="typeId">Type ID.</param>
+         * <returns>Type key.</returns>
+         */
+        public static long TypeKey(bool userType, int typeId)
+        {
+            long res = typeId;
+
+            if (userType)
+                res |= (long)1 << 32;
+
+            return res;
+        }
+
+        /**
+         * <summary>Get string hash code.</summary>
+         * <param name="val">Value.</param>
+         * <returns>Hash code.</returns>
+         */
+        public static int StringHashCode(string val)
+        {
+            if (val == null)
+                return 0;
+            else
+            {
+                int hash = 0;
+
+                for (int i = 0; i < val.Length; i++)
+                {
+                    char c = val[i];
+
+                    if ('A' <= c && c <= 'Z')
+                        c = (char)(c | 0x20);
+
+                    hash = 31 * hash + c;
+                }
+
+                return hash;
+            }
+        }
+
+        public static string CleanFieldName(string fieldName)
+        {
+            if (fieldName.StartsWith("<") && fieldName.EndsWith(">k__BackingField"))
+                return fieldName.Substring(1, fieldName.IndexOf(">", StringComparison.Ordinal) - 1);
+            
+            return fieldName;
+        }
+
+        /**
+         * <summary>Check whether this is predefined type.</summary>
+         * <param name="hdr">Header.</param>
+         * <returns>True is this is one of predefined types with special semantics.</returns>
+         */
+        public static bool IsPredefinedType(byte hdr)
+        {
+            switch (hdr)
+            {
+                case TYPE_BYTE:
+                case TYPE_SHORT:
+                case TYPE_INT:
+                case TYPE_LONG:
+                case TYPE_FLOAT:
+                case TYPE_DOUBLE:
+                case TYPE_CHAR:
+                case TYPE_BOOL:
+                case TYPE_DECIMAL:
+                case TYPE_STRING:
+                case TYPE_GUID:
+                case TYPE_DATE:
+                case TYPE_ENUM:
+                case TYPE_ARRAY_BYTE:
+                case TYPE_ARRAY_SHORT:
+                case TYPE_ARRAY_INT:
+                case TYPE_ARRAY_LONG:
+                case TYPE_ARRAY_FLOAT:
+                case TYPE_ARRAY_DOUBLE:
+                case TYPE_ARRAY_CHAR:
+                case TYPE_ARRAY_BOOL:
+                case TYPE_ARRAY_DECIMAL:
+                case TYPE_ARRAY_STRING:
+                case TYPE_ARRAY_GUID:
+                case TYPE_ARRAY_DATE:
+                case TYPE_ARRAY_ENUM:
+                case TYPE_ARRAY:
+                case TYPE_COLLECTION:
+                case TYPE_DICTIONARY:
+                case TYPE_MAP_ENTRY:
+                case TYPE_PORTABLE:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /**
+         * <summary>Convert type name.</summary>
+         * <param name="typeName">Type name.</param>
+         * <param name="converter">Converter.</param>
+         * <returns>Converted name.</returns>
+         */
+        public static string ConvertTypeName(string typeName, IPortableNameMapper converter)
+        {
+            var typeName0 = typeName;
+
+            try
+            {
+                if (converter != null)
+                    typeName = converter.TypeName(typeName);
+            }
+            catch (Exception e)
+            {
+                throw new PortableException("Failed to convert type name due to converter exception " +
+                    "[typeName=" + typeName + ", converter=" + converter + ']', e);
+            }
+
+            if (typeName == null)
+                throw new PortableException("Name converter returned null name for type [typeName=" +
+                    typeName0 + ", converter=" + converter + "]");
+
+            return typeName;
+        }
+
+        /**
+         * <summary>Convert field name.</summary>
+         * <param name="fieldName">Field name.</param>
+         * <param name="converter">Converter.</param>
+         * <returns>Converted name.</returns>
+         */
+        public static string ConvertFieldName(string fieldName, IPortableNameMapper converter)
+        {
+            var fieldName0 = fieldName;
+
+            try
+            {
+                if (converter != null)
+                    fieldName = converter.FieldName(fieldName);
+            }
+            catch (Exception e)
+            {
+                throw new PortableException("Failed to convert field name due to converter exception " +
+                    "[fieldName=" + fieldName + ", converter=" + converter + ']', e);
+            }
+
+            if (fieldName == null)
+                throw new PortableException("Name converter returned null name for field [fieldName=" +
+                    fieldName0 + ", converter=" + converter + "]");
+
+            return fieldName;
+        }
+
+        /**
+         * <summary>Extract simple type name.</summary>
+         * <param name="typeName">Type name.</param>
+         * <returns>Simple type name.</returns>
+         */
+        public static string SimpleTypeName(string typeName)
+        {
+            int idx = typeName.LastIndexOf('.');
+
+            return idx < 0 ? typeName : typeName.Substring(idx + 1);
+        }
+
+        /**
+         * <summary>Resolve type ID.</summary>
+         * <param name="typeName">Type name.</param>
+         * <param name="nameMapper">Name mapper.</param>
+         * <param name="idMapper">ID mapper.</param>
+         */
+        public static int TypeId(string typeName, IPortableNameMapper nameMapper,
+            IPortableIdMapper idMapper)
+        {
+            Debug.Assert(typeName != null);
+
+            typeName = ConvertTypeName(typeName, nameMapper);
+
+            int id = 0;
+
+            if (idMapper != null)
+            {
+                try
+                {
+                    id = idMapper.TypeId(typeName);
+                }
+                catch (Exception e)
+                {
+                    throw new PortableException("Failed to resolve type ID due to ID mapper exception " +
+                        "[typeName=" + typeName + ", idMapper=" + idMapper + ']', e);
+                }
+            }
+
+            if (id == 0)
+                id = StringHashCode(typeName);
+
+            return id;
+        }
+
+        /**
+         * <summary>Resolve field ID.</summary>
+         * <param name="typeId">Type ID.</param>
+         * <param name="fieldName">Field name.</param>
+         * <param name="nameMapper">Name mapper.</param>
+         * <param name="idMapper">ID mapper.</param>
+         */
+        public static int FieldId(int typeId, string fieldName, IPortableNameMapper nameMapper,
+            IPortableIdMapper idMapper)
+        {
+            Debug.Assert(typeId != 0);
+            Debug.Assert(fieldName != null);
+
+            fieldName = ConvertFieldName(fieldName, nameMapper);
+
+            int id = 0;
+
+            if (idMapper != null)
+            {
+                try
+                {
+                    id = idMapper.FieldId(typeId, fieldName);
+                }
+                catch (Exception e)
+                {
+                    throw new PortableException("Failed to resolve field ID due to ID mapper exception " +
+                        "[typeId=" + typeId + ", fieldName=" + fieldName + ", idMapper=" + idMapper + ']', e);
+                }
+            }
+
+            if (id == 0)
+                id = StringHashCode(fieldName);
+
+            return id;
+        }
+
+        /**
+         * <summary>Get fields map for the given object.</summary>
+         * <param name="stream">Stream.</param>
+         * <param name="typeId">Type ID.</param>
+         * <param name="rawDataOffset">Raw data offset.</param>
+         * <returns>Dictionary with field ID as key and field position as value.</returns>
+         */
+        public static IDictionary<int, int> ObjectFields(IPortableStream stream, int typeId, int rawDataOffset)
+        {
+            int endPos = stream.Position + rawDataOffset - 18;
+
+            // First loop detects amount of fields in the object.
+            int retPos = stream.Position;
+            int cnt = 0;
+
+            while (stream.Position < endPos)
+            {
+                cnt++;
+
+                stream.Seek(4, SeekOrigin.Current);
+                int len = stream.ReadInt();
+
+                stream.Seek(stream.Position + len, SeekOrigin.Begin);
+            }
+
+            if (cnt == 0)
+                return EMPTY_FIELDS;
+
+            stream.Seek(retPos, SeekOrigin.Begin);
+
+            IDictionary<int, int> fields = new Dictionary<int, int>(cnt);
+
+            // Second loop populates fields.
+            while (stream.Position < endPos)
+            {
+                int id = stream.ReadInt();
+                int len = stream.ReadInt();
+
+                if (fields.ContainsKey(id))
+                    throw new PortableException("Object contains duplicate field IDs [typeId=" +
+                        typeId + ", fieldId=" + id + ']');
+
+                fields[id] = stream.Position; // Add field ID and length.
+
+                stream.Seek(stream.Position + len, SeekOrigin.Begin);
+            }
+
+            return fields;
+        }
+
+        /// <summary>
+        /// Compare contents of two byte array chunks.
+        /// </summary>
+        /// <param name="arr1">Array 1.</param>
+        /// <param name="offset1">Offset 1.</param>
+        /// <param name="len1">Length 1.</param>
+        /// <param name="arr2">Array 2.</param>
+        /// <param name="offset2">Offset 2.</param>
+        /// <param name="len2">Length 2.</param>
+        /// <returns>True if array chunks are equal.</returns>
+        public static bool CompareArrays(byte[] arr1, int offset1, int len1, byte[] arr2, int offset2, int len2)
+        {
+            if (len1 == len2)
+            {
+                for (int i = 0; i < len1; i++)
+                {
+                    if (arr1[offset1 + i] != arr2[offset2 + i])
+                        return false;
+                }
+
+                return true;
+            }
+            else
+                return false;
+        }
+
+        /// <summary>
+        /// Write object which is not necessary portable.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="obj">Object.</param>
+        public static void WritePortableOrSerializable<T>(IPortableWriterEx writer, T obj)
+        {
+            if (writer.Marshaller.IsPortable(obj))
+            {
+                writer.WriteBoolean(true);
+
+                writer.WriteObject(obj);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+
+                WriteSerializable(writer, obj);
+            }
+        }
+
+        /// <summary>
+        /// Writes a serializable object.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="obj">Object.</param>
+        public static void WriteSerializable<T>(IPortableWriterEx writer, T obj)
+        {
+            new BinaryFormatter().Serialize(new PortableStreamAdapter(writer.Stream), obj);
+        }
+
+        /// <summary>
+        /// Read object which is not necessary portable.
+        /// </summary>
+        /// <param name="reader">Reader.</param>
+        /// <returns>Object.</returns>
+        public static T ReadPortableOrSerializable<T>(IPortableReaderEx reader)
+        {
+            return reader.ReadBoolean()
+                ? reader.ReadObject<T>()
+                : ReadSerializable<T>(reader);
+        }
+
+        /// <summary>
+        /// Reads a serializable object.
+        /// </summary>
+        /// <param name="reader">Reader.</param>
+        /// <returns>Object.</returns>
+        public static T ReadSerializable<T>(IPortableReaderEx reader)
+        {
+            return (T) new BinaryFormatter().Deserialize(new PortableStreamAdapter(reader.Stream), null);
+        }
+
+        /// <summary>
+        /// Writes wrapped invocation result.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="success">Success flag.</param>
+        /// <param name="res">Result.</param>
+        public static void WriteWrappedInvocationResult(IPortableWriterEx writer, bool success, object res)
+        {
+            var pos = writer.Stream.Position;
+
+            try
+            {
+                if (success)
+                    writer.WriteBoolean(true);
+                else
+                {
+                    writer.WriteBoolean(false); // Call failed.
+                    writer.WriteBoolean(true); // Exception serialized sucessfully.
+                }
+
+                writer.Write(new PortableResultWrapper(res));
+            }
+            catch (Exception marshErr)
+            {
+                // Failed to serialize result, fallback to plain string.
+                writer.Stream.Seek(pos, SeekOrigin.Begin);
+
+                writer.WriteBoolean(false); // Call failed.
+                writer.WriteBoolean(false); // Cannot serialize result or exception.
+
+                if (success)
+                {
+                    writer.WriteString("Call completed successfully, but result serialization failed [resultType=" +
+                        res.GetType().Name + ", serializationErrMsg=" + marshErr.Message + ']');
+                }
+                else
+                {
+                    writer.WriteString("Call completed with error, but error serialization failed [errType=" +
+                        res.GetType().Name + ", serializationErrMsg=" + marshErr.Message + ']');
+                }
+            }
+        }
+        /// <summary>
+        /// Writes invocation result.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="success">Success flag.</param>
+        /// <param name="res">Result.</param>
+        public static void WriteInvocationResult(IPortableWriterEx writer, bool success, object res)
+        {
+            var pos = writer.Stream.Position;
+
+            try
+            {
+                if (success)
+                    writer.WriteBoolean(true);
+                else
+                {
+                    writer.WriteBoolean(false); // Call failed.
+                    writer.WriteBoolean(true); // Exception serialized sucessfully.
+                }
+
+                writer.Write(res);
+            }
+            catch (Exception marshErr)
+            {
+                // Failed to serialize result, fallback to plain string.
+                writer.Stream.Seek(pos, SeekOrigin.Begin);
+
+                writer.WriteBoolean(false); // Call failed.
+                writer.WriteBoolean(false); // Cannot serialize result or exception.
+
+                if (success)
+                {
+                    writer.WriteString("Call completed successfully, but result serialization failed [resultType=" +
+                        res.GetType().Name + ", serializationErrMsg=" + marshErr.Message + ']');
+                }
+                else
+                {
+                    writer.WriteString("Call completed with error, but error serialization failed [errType=" +
+                        res.GetType().Name + ", serializationErrMsg=" + marshErr.Message + ']');
+                }
+            }
+        }
+
+
+        /**
+         * <summary>Convert date to Java ticks.</summary>
+         * <param name="date">Date</param>
+         * <param name="high">High part (milliseconds).</param>
+         * <param name="low">Low part (nanoseconds)</param>
+         */
+        private static void ToJavaDate(DateTime date, out long high, out int low)
+        {
+            long diff = date.ToUniversalTime().Ticks - JAVA_DATE_TICKS;
+
+            high = diff / TimeSpan.TicksPerMillisecond;
+
+            low = (int)(diff % TimeSpan.TicksPerMillisecond) * 100; 
+        }
+
+        /**
+         * <summary>Convert Java ticks to date.</summary>
+         * <param name="high">High part (milliseconds).</param>
+         * <param name="low">Low part (nanoseconds).</param>
+         * <param name="local">Whether the time should be treaten as local.</param>
+         * <returns>Date.</returns>
+         */
+        private static DateTime ToDotNetDate(long high, int low, bool local)
+        {
+            DateTime res = 
+                new DateTime(JAVA_DATE_TICKS + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
+
+            return local ? res.ToLocalTime() : res;
+        }
+    }
+}
