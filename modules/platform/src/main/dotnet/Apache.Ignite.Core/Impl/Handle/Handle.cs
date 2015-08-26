@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Handle
     /// <summary>
     /// Wrapper over some resource ensuring it's release.
     /// </summary>
-    internal class Handle<T> : IHandle
+    public class Handle<T> : IHandle
     {
         /** Target.*/
         private readonly T _target;

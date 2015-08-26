@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Handle
     /// <summary>
     /// Resource registry.
     /// </summary>
-    internal class HandleRegistry
+    public class HandleRegistry
     {
         /** Default critical resources capacity. */
         internal const int DfltFastCap = 1024;
