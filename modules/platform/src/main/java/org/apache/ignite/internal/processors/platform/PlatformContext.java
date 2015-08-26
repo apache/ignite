@@ -104,4 +104,11 @@ public interface PlatformContext {
      * @param nodes Nodes.
      */
     public void writeNodes(PortableRawWriterEx writer, Collection<ClusterNode> nodes);
+
+    /**
+     * Process metadata from the platform.
+     *
+     * @param reader Reader.
+     */
+    public void processMetadata(PortableRawReaderEx reader);
 }
