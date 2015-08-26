@@ -235,7 +235,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     return new DirectMessageWriter();
                 }
 
-                @Override public MessageReader reader(MessageFactory factory) {
+                @Override public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls) {
                     return new DirectMessageReader(msgFactory, this);
                 }
             };

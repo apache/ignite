@@ -525,7 +525,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDistributedLockRequest.class);
     }
 
     /** {@inheritDoc} */

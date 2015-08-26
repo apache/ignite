@@ -326,7 +326,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridCacheVersion.class);
     }
 
     /** {@inheritDoc} */

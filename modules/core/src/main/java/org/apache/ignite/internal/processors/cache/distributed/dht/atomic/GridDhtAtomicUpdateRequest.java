@@ -884,7 +884,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDhtAtomicUpdateRequest.class);
     }
 
     /** {@inheritDoc} */

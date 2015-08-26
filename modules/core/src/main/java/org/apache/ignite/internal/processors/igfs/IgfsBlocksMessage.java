@@ -158,7 +158,7 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(IgfsBlocksMessage.class);
     }
 
     /** {@inheritDoc} */

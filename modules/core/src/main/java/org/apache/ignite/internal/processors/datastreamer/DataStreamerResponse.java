@@ -151,7 +151,7 @@ public class DataStreamerResponse implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(DataStreamerResponse.class);
     }
 
     /** {@inheritDoc} */

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.platform.*;
+import org.apache.ignite.internal.processors.platform.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;

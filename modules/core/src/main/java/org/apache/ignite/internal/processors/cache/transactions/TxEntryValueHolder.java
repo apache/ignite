@@ -222,7 +222,7 @@ public class TxEntryValueHolder implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(TxEntryValueHolder.class);
     }
 
     /** {@inheritDoc} */

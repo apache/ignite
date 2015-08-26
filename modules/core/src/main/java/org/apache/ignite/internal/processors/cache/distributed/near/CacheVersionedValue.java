@@ -149,7 +149,7 @@ public class CacheVersionedValue implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(CacheVersionedValue.class);
     }
 
     /** {@inheritDoc} */

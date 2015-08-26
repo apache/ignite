@@ -248,7 +248,7 @@ public class GridContinuousMessage implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridContinuousMessage.class);
     }
 
     /** {@inheritDoc} */

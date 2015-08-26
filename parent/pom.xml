@@ -736,6 +736,7 @@
                                         <!--platform-->
                                         <exclude>src/main/dotnet/Apache.Ignite.Core/Apache.Ignite.Core.csproj</exclude>
                                         <exclude>src/main/dotnet/Apache.Ignite.sln</exclude>
+                                        <exclude>src/main/dotnet/Apache.Ignite.sln.DotSettings</exclude>
                                         <exclude>src/test/dotnet/Apache.Ignite.Core.Tests/Apache.Ignite.Core.Tests.csproj</exclude>
                                     </excludes>
                                 </configuration>

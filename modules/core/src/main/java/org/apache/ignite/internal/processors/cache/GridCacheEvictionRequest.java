@@ -220,7 +220,7 @@ public class GridCacheEvictionRequest extends GridCacheMessage implements GridCa
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridCacheEvictionRequest.class);
     }
 
     /** {@inheritDoc} */

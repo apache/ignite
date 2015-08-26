@@ -1510,13 +1510,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         return impl.writer();
                     }
 
-                    @Override public MessageReader reader(MessageFactory factory) {
+                    @Override public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls) {
                         if (impl == null)
                             impl = getSpiContext().messageFormatter();
 
                         assert impl != null;
 
-                        return impl.reader(factory);
+                        return impl.reader(factory, msgCls);
                     }
                 };
 
@@ -2845,13 +2845,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         return impl.writer();
                     }
 
-                    @Override public MessageReader reader(MessageFactory factory) {
+                    @Override public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls) {
                         if (impl == null)
                             impl = getSpiContext().messageFormatter();
 
                         assert impl != null;
 
-                        return impl.reader(factory);
+                        return impl.reader(factory, msgCls);
                     }
                 };
 

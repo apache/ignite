@@ -465,9 +465,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 25:
-                ownedValues = reader.readObjectArray("ownedValues",
-                                                     MessageCollectionItemType.MSG,
-                                                     GridCacheVersion.class);
+                ownedValues = reader.readObjectArray("ownedValues", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -508,7 +506,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDhtLockRequest.class);
     }
 
     /** {@inheritDoc} */

@@ -55,6 +55,9 @@ public class GridCacheSqlQuery implements Message {
     @GridDirectTransient
     private LinkedHashMap<String, ?> cols;
 
+    /** Field kept for backward compatibility. */
+    private String alias;
+
     /**
      * For {@link Message}.
      */
@@ -149,7 +152,7 @@ public class GridCacheSqlQuery implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("alias", null))
+                if (!writer.writeString("alias", alias))
                     return false;
 
                 writer.incrementState();
@@ -180,7 +183,7 @@ public class GridCacheSqlQuery implements Message {
 
         switch (reader.state()) {
             case 0:
-                reader.readString("alias");
+                alias = reader.readString("alias");
 
                 if (!reader.isLastRead())
                     return false;
@@ -205,7 +208,7 @@ public class GridCacheSqlQuery implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridCacheSqlQuery.class);
     }
 
     /** {@inheritDoc} */
