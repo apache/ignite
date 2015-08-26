@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Collections
     /// <summary>
     /// Collection extension methods.
     /// </summary>
-    internal static class CollectionExtensions
+    public static class CollectionExtensions
     {
         /// <summary>
         /// Returns a read-only System.Collections.Generic.IDictionary{K, V} wrapper for the current collection.

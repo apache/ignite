@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Collections
     /// <summary>
     /// Multiple-values-per-key dictionary.
     /// </summary>
-    internal class MultiValueDictionary<TKey, TValue>
+    public class MultiValueDictionary<TKey, TValue>
     {
         /** Inner dictionary */
         private readonly Dictionary<TKey, object> _dict = new Dictionary<TKey, object>();
