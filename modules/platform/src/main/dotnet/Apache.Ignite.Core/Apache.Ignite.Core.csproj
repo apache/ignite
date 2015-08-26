@@ -48,6 +48,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Ignition.cs" />
+    <Compile Include="Impl\Handle\Handle.cs" />
+    <Compile Include="Impl\Handle\HandleRegistry.cs" />
+    <Compile Include="Impl\Handle\IHandle.cs" />
     <Compile Include="Impl\Memory\IPlatformMemory.cs" />
     <Compile Include="Impl\Memory\PlatformBigEndianMemoryStream.cs" />
     <Compile Include="Impl\Memory\PlatformMemory.cs" />

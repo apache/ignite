@@ -79,6 +79,13 @@ public class IgniteIgfsTestSuite extends TestSuite {
 
         suite.addTestSuite(IgfsStartCacheTest.class);
 
+        suite.addTestSuite(IgfsBackupsPrimarySelfTest.class);
+        suite.addTestSuite(IgfsBackupsDualSyncSelfTest.class);
+        suite.addTestSuite(IgfsBackupsDualAsyncSelfTest.class);
+
+        // TODO: Enable when IGFS failover is fixed.
+        //suite.addTestSuite(IgfsBackupFailoverSelfTest.class);
+
         return suite;
     }
 }
