@@ -1167,18 +1167,49 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * @param timeoutHelper Timeout helper.
      * @return Opened socket.
      * @throws IOException If failed.
+     * @throws IgniteSpiOperationTimeoutException In case of timeout.
      */
     protected Socket openSocket(InetSocketAddress sockAddr, IgniteSpiOperationTimeoutHelper timeoutHelper)
         throws IOException, IgniteSpiOperationTimeoutException {
-        assert sockAddr != null;
+        return openSocket(createSocket(), sockAddr, timeoutHelper);
+    }
 
-        InetSocketAddress resolved = sockAddr.isUnresolved() ?
-            new InetSocketAddress(InetAddress.getByName(sockAddr.getHostName()), sockAddr.getPort()) : sockAddr;
+    /**
+     * Connects to remote address sending {@code U.IGNITE_HEADER} when connection is established.
+     *
+     * @param sock Socket bound to a local host address.
+     * @param remAddr Remote address.
+     * @param timeoutHelper Timeout helper.
+     * @return Connected socket.
+     * @throws IOException If failed.
+     * @throws IgniteSpiOperationTimeoutException In case of timeout.
+     */
+    protected Socket openSocket(Socket sock, InetSocketAddress remAddr, IgniteSpiOperationTimeoutHelper timeoutHelper)
+        throws IOException, IgniteSpiOperationTimeoutException {
+
+        assert remAddr != null;
+
+        InetSocketAddress resolved = remAddr.isUnresolved() ?
+            new InetSocketAddress(InetAddress.getByName(remAddr.getHostName()), remAddr.getPort()) : remAddr;
 
         InetAddress addr = resolved.getAddress();
 
         assert addr != null;
 
+        sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
+
+        writeToSocket(sock, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
+
+        return sock;
+    }
+
+    /**
+     * Creates socket binding it to a local host address. This operation is not blocking.
+     *
+     * @return Created socket.
+     * @throws IOException If failed.
+     */
+    Socket createSocket() throws IOException {
         Socket sock;
 
         if (isSslEnabled())
@@ -1189,10 +1220,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         sock.bind(new InetSocketAddress(locHost, 0));
 
         sock.setTcpNoDelay(true);
-
-        sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
-
-        writeToSocket(sock, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
 
         return sock;
     }
@@ -1250,8 +1277,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * @throws IOException If IO failed or write timed out.
      * @throws IgniteCheckedException If marshalling failed.
      */
-    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout)
-        throws IOException, IgniteCheckedException {
+    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
+        IgniteCheckedException {
         writeToSocket(sock, msg, new GridByteArrayOutputStream(8 * 1024), timeout); // 8K.
     }
 
@@ -1371,8 +1398,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
             T res = marsh.unmarshal(in == null ? sock.getInputStream() : in, U.gridClassLoader());
 
-            impl.onDataReceived();
-
             return res;
         }
         catch (IOException | IgniteCheckedException e) {
@@ -1413,8 +1438,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
             if (res == -1)
                 throw new EOFException();
-
-            impl.onDataReceived();
 
             return res;
         }
@@ -1579,10 +1602,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * @return Marshalled exchange data.
      */
     protected Map<Integer, byte[]> collectExchangeData(UUID nodeId) {
+        if (locNode.isDaemon())
+            return Collections.emptyMap();
+
         Map<Integer, Serializable> data = exchange.collect(nodeId);
 
-        if (data == null)
-            return null;
+        assert data != null;
 
         Map<Integer, byte[]> data0 = U.newHashMap(data.size());
 
@@ -1612,6 +1637,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         Map<Integer, byte[]> data,
         ClassLoader clsLdr)
     {
+        if (locNode.isDaemon())
+            return;
+
         Map<Integer, Serializable> data0 = U.newHashMap(data.size());
 
         for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {

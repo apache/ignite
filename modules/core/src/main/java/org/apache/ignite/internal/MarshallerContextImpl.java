@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.*;
 
@@ -135,7 +136,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                 throw new IllegalStateException("Failed to initialize marshaller context (grid is stopping).");
         }
 
-        String clsName = cache0.get(id);
+        String clsName = cache0.getTopologySafe(id);
 
         if (clsName == null) {
             File file = new File(workDir, id + ".classname");
@@ -177,18 +178,21 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> events)
             throws CacheEntryListenerException {
             for (CacheEntryEvent<? extends Integer, ? extends String> evt : events) {
-                assert evt.getOldValue() == null : "Received non-null old value for system marshaller cache: " + evt;
+                assert evt.getOldValue() == null || F.eq(evt.getOldValue(), evt.getValue()):
+                    "Received cache entry update for system marshaller cache: " + evt;
 
-                File file = new File(workDir, evt.getKey() + ".classname");
+                if (evt.getOldValue() == null) {
+                    File file = new File(workDir, evt.getKey() + ".classname");
 
-                try (Writer writer = new FileWriter(file)) {
-                    writer.write(evt.getValue());
+                    try (Writer writer = new FileWriter(file)) {
+                        writer.write(evt.getValue());
 
-                    writer.flush();
-                }
-                catch (IOException e) {
-                    U.error(log, "Failed to write class name to file [id=" + evt.getKey() +
-                        ", clsName=" + evt.getValue() + ", file=" + file.getAbsolutePath() + ']', e);
+                        writer.flush();
+                    }
+                    catch (IOException e) {
+                        U.error(log, "Failed to write class name to file [id=" + evt.getKey() +
+                            ", clsName=" + evt.getValue() + ", file=" + file.getAbsolutePath() + ']', e);
+                    }
                 }
             }
         }

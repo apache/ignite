@@ -237,7 +237,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDeploymentInfoBean.class);
     }
 
     /** {@inheritDoc} */

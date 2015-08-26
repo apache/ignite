@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -68,6 +69,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      *
      * @param threadId Owning thread ID.
      * @param ver Lock version.
+     * @param topVer Topology version.
      * @param timeout Timeout to acquire lock.
      * @param reenter Reentry flag.
      * @param tx Transaction flag.
@@ -78,6 +80,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     @Nullable public GridCacheMvccCandidate addLocal(
         long threadId,
         GridCacheVersion ver,
+        AffinityTopologyVersion topVer,
         long timeout,
         boolean reenter,
         boolean tx,
@@ -104,6 +107,9 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
             boolean emptyBefore = mvcc.isEmpty();
 
             cand = mvcc.addLocal(this, threadId, ver, timeout, reenter, tx, implicitSingle);
+
+            if (cand != null)
+                cand.topologyVersion(topVer);
 
             owner = mvcc.anyOwner();
 
@@ -641,6 +647,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
             return addLocal(
                 tx.threadId(),
                 tx.xidVersion(),
+                tx.topologyVersion(),
                 timeout,
                 false,
                 true,
@@ -736,8 +743,10 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
                 // Allow next lock in the thread to proceed.
                 if (!cand.used()) {
+                    GridCacheContext cctx0 = cand.parent().context();
+
                     GridDistributedCacheEntry e =
-                        (GridDistributedCacheEntry)cctx.cache().peekEx(cand.key());
+                        (GridDistributedCacheEntry)cctx0.cache().peekEx(cand.key());
 
                     if (e != null)
                         e.recheck();

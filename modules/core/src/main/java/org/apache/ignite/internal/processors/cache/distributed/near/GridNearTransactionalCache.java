@@ -101,7 +101,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializePortable,
-        final boolean skipVals
+        final boolean skipVals,
+        boolean canRemap
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
@@ -142,7 +143,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             deserializePortable,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
-            skipStore);
+            skipStore,
+            canRemap);
     }
 
     /**
@@ -172,7 +174,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             tx.resolveTaskName(),
             deserializePortable,
             expiryPlc,
-            skipVals);
+            skipVals,
+            /*can remap*/true);
 
         // init() will register future for responses if it has remote mappings.
         fut.init();

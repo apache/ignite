@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.affinity.*;
 
 import java.util.*;
 
@@ -32,6 +33,9 @@ public class CachePartialUpdateCheckedException extends IgniteCheckedException {
     /** Failed keys. */
     private final Collection<Object> failedKeys = new ArrayList<>();
 
+    /** */
+    private transient AffinityTopologyVersion topVer;
+
     /**
      * @param msg Error message.
      */
@@ -43,18 +47,42 @@ public class CachePartialUpdateCheckedException extends IgniteCheckedException {
      * Gets collection of failed keys.
      * @return Collection of failed keys.
      */
-    public <K> Collection<K> failedKeys() {
-        return (Collection<K>)failedKeys;
+    @SuppressWarnings("unchecked")
+    public synchronized <K> Collection<K> failedKeys() {
+        return new LinkedHashSet<>((Collection<K>)failedKeys);
+    }
+
+    /**
+     * @param failedKeys Failed keys.
+     * @param err Error.
+     * @param topVer Topology version for failed update.
+     */
+    public synchronized void add(Collection<?> failedKeys, Throwable err, AffinityTopologyVersion topVer) {
+        if (topVer != null) {
+            AffinityTopologyVersion topVer0 = this.topVer;
+
+            if (topVer0 == null || topVer.compareTo(topVer0) > 0)
+                this.topVer = topVer;
+        }
+
+        this.failedKeys.addAll(failedKeys);
+
+        addSuppressed(err);
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public synchronized AffinityTopologyVersion topologyVersion() {
+        return topVer;
     }
 
     /**
      * @param failedKeys Failed keys.
      * @param err Error.
      */
-    public void add(Collection<?> failedKeys, Throwable err) {
-        this.failedKeys.addAll(failedKeys);
-
-        addSuppressed(err);
+    public synchronized void add(Collection<?> failedKeys, Throwable err) {
+        add(failedKeys, err, null);
     }
 
     /** {@inheritDoc} */

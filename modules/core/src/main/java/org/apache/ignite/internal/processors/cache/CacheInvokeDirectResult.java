@@ -198,7 +198,7 @@ public class CacheInvokeDirectResult implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(CacheInvokeDirectResult.class);
     }
 
     /** {@inheritDoc} */

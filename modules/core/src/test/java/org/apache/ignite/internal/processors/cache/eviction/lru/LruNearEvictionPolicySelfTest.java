@@ -29,6 +29,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -49,14 +50,18 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
     /** Cache atomicity mode specified by test. */
     private CacheAtomicityMode atomicityMode;
 
+    /** Memory mode. */
+    private CacheMemoryMode memMode;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
         CacheConfiguration cc = new CacheConfiguration();
 
-        cc.setAtomicityMode(atomicityMode);
         cc.setCacheMode(PARTITIONED);
+        cc.setAtomicityMode(atomicityMode);
+        cc.setMemoryMode(memMode);
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
         cc.setRebalanceMode(SYNC);
         cc.setStartSize(100);
@@ -86,6 +91,17 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
      */
     public void testAtomicNearEvictionMaxSize() throws Exception {
         atomicityMode = ATOMIC;
+        memMode = ONHEAP_TIERED;
+
+        checkNearEvictionMaxSize();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicOffHeapNearEvictionMaxSize() throws Exception {
+        atomicityMode = ATOMIC;
+        memMode = CacheMemoryMode.OFFHEAP_TIERED;
 
         checkNearEvictionMaxSize();
     }
@@ -95,6 +111,17 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
      */
     public void testTransactionalNearEvictionMaxSize() throws Exception {
         atomicityMode = TRANSACTIONAL;
+        memMode = ONHEAP_TIERED;
+
+        checkNearEvictionMaxSize();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTransactionalOffHeapNearEvictionMaxSize() throws Exception {
+        atomicityMode = TRANSACTIONAL;
+        memMode = CacheMemoryMode.OFFHEAP_TIERED;
 
         checkNearEvictionMaxSize();
     }

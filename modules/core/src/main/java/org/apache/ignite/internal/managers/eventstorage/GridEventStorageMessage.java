@@ -417,7 +417,7 @@ public class GridEventStorageMessage implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridEventStorageMessage.class);
     }
 
     /** {@inheritDoc} */

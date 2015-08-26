@@ -101,7 +101,7 @@ public class GridTaskCancelRequest implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridTaskCancelRequest.class);
     }
 
     /** {@inheritDoc} */

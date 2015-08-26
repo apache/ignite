@@ -174,7 +174,7 @@ public class GridDeploymentResponse implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDeploymentResponse.class);
     }
 
     /** {@inheritDoc} */

@@ -47,17 +47,17 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
         private static final long serialVersionUID = 0L;
 
         /** */
-        @JobContextResource
-        private ComputeJobContext jobCtx;
+        private final String cacheName;
 
         /** */
         private final IgniteInClosure<IgniteFuture<Integer>> lsnr;
 
         /** */
-        private final IgniteFuture<Integer>[] futs = new IgniteFuture[3];
+        private IgniteFuture<Integer>[] futs;
 
         /** */
-        private final String cacheName;
+        @JobContextResource
+        private ComputeJobContext jobCtx;
 
         /**
          * Create job.
@@ -110,6 +110,9 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
 
         /** {@inheritDoc} */
         @Override protected IgniteBiTuple<Integer, Integer> run(final String cacheName) {
+            if (futs == null)
+                futs = new IgniteFuture[3];
+
             if (futs[0] == null || futs[1] == null || futs[2] == null) {
                 IgniteCache cache = ignite.cache(cacheName);
 

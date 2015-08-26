@@ -71,7 +71,7 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
         if (!super.readFrom(buf, reader))
             return false;
 
-        return true;
+        return reader.afterMessageRead(GridDhtPartitionsSingleRequest.class);
     }
 
     /** {@inheritDoc} */

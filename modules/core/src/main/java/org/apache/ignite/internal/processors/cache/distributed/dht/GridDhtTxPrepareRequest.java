@@ -533,7 +533,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDhtTxPrepareRequest.class);
     }
 
     /** {@inheritDoc} */

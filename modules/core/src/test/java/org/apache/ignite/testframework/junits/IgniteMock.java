@@ -248,6 +248,11 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
+    @Override public IgnitePortables portables() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() {}
 
     @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {

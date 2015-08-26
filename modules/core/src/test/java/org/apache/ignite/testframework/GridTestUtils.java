@@ -1353,7 +1353,7 @@ public final class GridTestUtils {
             U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
         factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
 
-        factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
+        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
 
         return factory;
     }

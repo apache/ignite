@@ -291,7 +291,6 @@ public class IgniteTxHandler {
                         req.version(),
                         null,
                         null,
-                        null,
                         top.topologyVersion());
 
                     try {
@@ -762,7 +761,7 @@ public class IgniteTxHandler {
                 res.nearEvicted(nearTx.evicted());
 
             if (dhtTx != null && !F.isEmpty(dhtTx.invalidPartitions()))
-                res.invalidPartitions(dhtTx.invalidPartitions());
+                res.invalidPartitionsByCacheId(dhtTx.invalidPartitions());
 
             if (req.onePhaseCommit()) {
                 assert req.last();
@@ -1154,7 +1153,7 @@ public class IgniteTxHandler {
                 tx.state(PREPARED);
             }
 
-            res.invalidPartitions(tx.invalidPartitions());
+            res.invalidPartitionsByCacheId(tx.invalidPartitions());
 
             if (tx.empty() && req.last()) {
                 tx.rollback();

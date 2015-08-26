@@ -41,7 +41,8 @@ public interface MessageFormatter extends Extension {
      * Creates new message reader instance.
      *
      * @param factory Message factory.
+     * @param msgCls Message class to read.
      * @return Message reader.
      */
-    public MessageReader reader(MessageFactory factory);
+    public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls);
 }

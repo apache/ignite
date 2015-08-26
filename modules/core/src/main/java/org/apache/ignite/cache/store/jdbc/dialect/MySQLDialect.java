@@ -25,6 +25,9 @@ import java.util.*;
  * A dialect compatible with the MySQL database.
  */
 public class MySQLDialect extends BasicJdbcDialect {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public boolean hasMerge() {
         return true;

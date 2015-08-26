@@ -32,6 +32,7 @@ import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.portable.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.offheap.*;
+import org.apache.ignite.internal.processors.platform.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.internal.processors.query.*;
@@ -232,6 +234,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private IgniteCacheObjectProcessor cacheObjProc;
+
+    /** */
+    @GridToStringExclude
+    private PlatformProcessor platformProc;
 
     /** */
     @GridToStringExclude
@@ -485,6 +491,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             dataStructuresProc = (DataStructuresProcessor)comp;
         else if (comp instanceof ClusterProcessor)
             cluster = (ClusterProcessor)comp;
+        else if (comp instanceof PlatformProcessor)
+            platformProc = (PlatformProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
@@ -803,7 +811,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             return res;
 
         if (cls.equals(IgniteCacheObjectProcessor.class))
-            return (T)new IgniteCacheObjectProcessorImpl(this);
+            return (T)new CacheObjectPortableProcessorImpl(this);
 
         if (cls.equals(CacheConflictResolutionManager.class))
             return null;
@@ -922,6 +930,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             locNode = discoMgr != null ? discoMgr.localNode() : null;
 
         return locNode != null ? (locNode.isClient() && disconnected) : false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformProcessor platform() {
+        return platformProc;
     }
 
     /**

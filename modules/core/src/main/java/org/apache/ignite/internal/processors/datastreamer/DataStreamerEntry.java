@@ -150,7 +150,7 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
 
         }
 
-        return true;
+        return reader.afterMessageRead(DataStreamerEntry.class);
     }
 
     /** {@inheritDoc} */

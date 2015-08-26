@@ -921,7 +921,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridNearAtomicUpdateRequest.class);
     }
 
     /** {@inheritDoc} */

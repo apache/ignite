@@ -46,6 +46,8 @@ public class IgniteCacheFailoverTestSuite2 {
         suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class);
 
+        suite.addTestSuite(IgniteCacheCrossCacheTxFailoverTest.class);
+
         return suite;
     }
 }

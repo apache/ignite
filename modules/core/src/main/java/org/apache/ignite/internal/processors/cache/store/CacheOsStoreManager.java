@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.store;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.marshaller.portable.*;
 
 /**
  * Default store manager implementation.
@@ -53,6 +54,6 @@ public class CacheOsStoreManager extends GridCacheStoreManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected boolean convertPortable() {
-        return true;
+        return !(cfg.isKeepPortableInStore() && ctx.config().getMarshaller() instanceof PortableMarshaller);
     }
 }

@@ -125,7 +125,7 @@ public class GridQueryFailResponse implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridQueryFailResponse.class);
     }
 
     /** {@inheritDoc} */

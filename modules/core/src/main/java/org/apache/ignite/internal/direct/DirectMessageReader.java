@@ -55,6 +55,12 @@ public class DirectMessageReader implements MessageReader {
         return true;
     }
 
+    /** {@inheritDoc}
+     * @param msgCls*/
+    @Override public boolean afterMessageRead(Class<? extends Message> msgCls) {
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override public byte readByte(String name) {
         byte val = stream.readByte();

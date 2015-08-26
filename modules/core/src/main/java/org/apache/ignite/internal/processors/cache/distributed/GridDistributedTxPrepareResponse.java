@@ -151,7 +151,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDistributedTxPrepareResponse.class);
     }
 
     /** {@inheritDoc} */

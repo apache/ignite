@@ -41,9 +41,9 @@
     </properties>
 
     <scm>
-        <url>https://git-wip-us.apache.org/repos/asf/incubator-ignite</url>
-        <connection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-ignite</connection>
-        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-ignite</developerConnection>
+        <url>https://git-wip-us.apache.org/repos/asf/ignite</url>
+        <connection>scm:git:https://git-wip-us.apache.org/repos/asf/ignite</connection>
+        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/ignite</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
@@ -74,6 +74,9 @@
         <module>modules/mesos</module>
         <module>modules/kafka</module>
         <module>modules/yarn</module>
+        <module>modules/jms11</module>
+        <module>modules/zookeeper</module>
+        <module>modules/platform</module>
     </modules>
 
     <profiles>

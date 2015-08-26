@@ -37,6 +37,9 @@ public class Person implements Serializable {
     /** Value for name. */
     private String name;
 
+    /** Value for salary. */
+    private Integer salary;
+
     /**
      * Empty constructor.
      */
@@ -50,11 +53,13 @@ public class Person implements Serializable {
     public Person(
         Integer id,
         Integer orgId,
-        String name
+        String name,
+        Integer salary
     ) {
         this.id = id;
         this.orgId = orgId;
         this.name = name;
+        this.salary = salary;
     }
 
     /**
@@ -109,6 +114,25 @@ public class Person implements Serializable {
      */
     public void setName(String name) {
         this.name = name;
+    }
+
+
+    /**
+     * Gets salary.
+     *
+     * @return Value for salary.
+     */
+    public Integer getSalary() {
+        return salary;
+    }
+
+    /**
+     * Sets salary.
+     *
+     * @param salary New value for salary.
+     */
+    public void setSalary(Integer salary) {
+        this.salary = salary;
     }
 
     /** {@inheritDoc} */

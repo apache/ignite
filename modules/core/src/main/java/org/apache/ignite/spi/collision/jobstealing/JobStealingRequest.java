@@ -95,7 +95,7 @@ public class JobStealingRequest implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(JobStealingRequest.class);
     }
 
     /** {@inheritDoc} */
