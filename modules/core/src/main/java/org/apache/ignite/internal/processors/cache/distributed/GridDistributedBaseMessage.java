@@ -208,6 +208,18 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
                 writer.incrementState();
 
             case 4:
+                if (!writer.writeCollection("committedVers", committedVers, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeCollection("rolledbackVers", rolledbackVers, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -238,6 +250,22 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
                 reader.incrementState();
 
             case 4:
+                committedVers = reader.readCollection("committedVers", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                rolledbackVers = reader.readCollection("rolledbackVers", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())

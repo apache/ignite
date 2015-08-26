@@ -83,7 +83,7 @@ public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 8;
     }
 
     /** {@inheritDoc} */
