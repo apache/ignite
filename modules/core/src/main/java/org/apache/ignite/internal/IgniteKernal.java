@@ -3069,21 +3069,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     @Override
-    public List<String> cacheNames(Boolean includeSystemCache) {
+    public Collection<String> cacheNames() {
         List<String> cacheNames = new ArrayList<String>();
         GridCacheProcessor cacheProcessor = ctx.cache();
         Collection<IgniteCacheProxy<?, ?>> caches = cacheProcessor.jcaches();
         for (IgniteCacheProxy ca : caches) {
-            if (ca.context().started()) {
-                String cacheName = ca.getName();
-                if(!includeSystemCache){
-                    VisorCacheMetrics cm = VisorCacheMetrics.from(this, cacheName);
-                    if(!cm.system()){
-                        cacheNames.add(cacheName);
-                    }
-                } else {
-                    cacheNames.add(cacheName);
-                }
+            if (ca.context().started() && ca.context().userCache()) {
+                cacheNames.add(ca.getName());
             }
         }
         return cacheNames;

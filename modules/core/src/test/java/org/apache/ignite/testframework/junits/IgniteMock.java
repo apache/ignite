@@ -318,7 +318,7 @@ public class IgniteMock implements Ignite {
     }
 
     @Override
-    public List<String> cacheNames(Boolean includeSystemCache) {
+    public Collection<String> cacheNames() {
         return null;
     }
 }

@@ -575,7 +575,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     @Override
-    public List<String> cacheNames(Boolean includeSystemCache) {
-        return locJvmGrid.cacheNames(includeSystemCache);
+    public Collection<String> cacheNames() {
+        return locJvmGrid.cacheNames();
     }
 }

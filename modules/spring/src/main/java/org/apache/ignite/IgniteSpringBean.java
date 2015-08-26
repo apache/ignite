@@ -438,7 +438,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     @Override
-    public List<String> cacheNames(Boolean includeSystemCache) {
-        return g.cacheNames(includeSystemCache);
+    public Collection<String> cacheNames() {
+        return g.cacheNames();
     }
 }

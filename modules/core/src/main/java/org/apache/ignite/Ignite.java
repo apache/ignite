@@ -483,8 +483,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      *Gets names of currently available caches
-     * @param includeSystemCache show system cache name or not
-     * @return Cache name list
+     * @return Cache name collection
      */
-    public List<String> cacheNames(Boolean includeSystemCache);
+    public Collection<String> cacheNames();
 }
