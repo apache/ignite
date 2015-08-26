@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Concurrent dictionary with CopyOnWrite mechanism inside. 
     /// Good for frequent reads / infrequent writes scenarios.
     /// </summary>
-    internal class CopyOnWriteConcurrentDictionary<TK, TV>
+    public class CopyOnWriteConcurrentDictionary<TK, TV>
     {
         /** */
         private volatile Dictionary<TK, TV> _dict = new Dictionary<TK, TV>();

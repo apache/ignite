@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Common
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable", 
         Justification = "Implementing IDisposable has no point since we return this class as IAsyncResult " +
                         "to the client, and IAsyncResult is not IDisposable.")]
-    internal class CompletedAsyncResult : IAsyncResult
+    public class CompletedAsyncResult : IAsyncResult
     {
         /** Singleton instance. */
         public static readonly IAsyncResult Instance = new CompletedAsyncResult();

@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// <summary>
     /// Converts generic and non-generic delegates.
     /// </summary>
-    internal static class DelegateConverter
+    public static class DelegateConverter
     {
         /** */
         private const string DefaultMethodName = "Invoke";
