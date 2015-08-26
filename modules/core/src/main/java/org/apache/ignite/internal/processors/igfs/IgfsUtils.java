@@ -26,11 +26,9 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.lang.reflect.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
@@ -41,6 +39,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * Common IGFS utility methods.
  */
 public class IgfsUtils {
+    /** Maximum number of file unlock transaction retries when topology changes. */
+    private static final int MAX_UNLOCK_TX_RETRIES = IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, 100);
+
     /**
      * Converts any passed exception to IGFS exception.
      *
@@ -124,15 +125,14 @@ public class IgfsUtils {
      * @return Result of closure execution.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static <T> T doInTransactionWithRetries(IgniteInternalCache cache, IgniteOutClosureX<T> clo)
             throws IgniteCheckedException {
         assert cache != null;
 
-        final int maxAttempts = IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, 100);
-
         int attempts = 0;
 
-        while (attempts < maxAttempts) {
+        while (attempts < MAX_UNLOCK_TX_RETRIES) {
             attempts++;
 
             try (Transaction tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -142,29 +142,17 @@ public class IgfsUtils {
 
                 return res;
             }
-            catch (CacheException e) {
-                if (e.getCause() instanceof ClusterTopologyException) {
-                    ClusterTopologyException topEx = (ClusterTopologyException)e.getCause();
+            catch (IgniteException | IgniteCheckedException e) {
+                ClusterTopologyException cte = X.cause(e, ClusterTopologyException.class);
 
-                    topEx.retryReadyFuture().get();
-                }
+                if (cte != null)
+                    cte.retryReadyFuture().get();
                 else
-                    throw e;
-            }
-            catch (ClusterTopologyException e) {
-                IgniteFuture<?> fut = e.retryReadyFuture();
-
-                fut.get();
-            }
-            catch (TransactionRollbackException ignore) {
-                // Safe to retry right away.
-            }
-            catch (GridClosureException e) {
-                throw U.cast(e);
+                    throw U.cast(e);
             }
         }
 
         throw new IgniteCheckedException("Failed to perform operation since max number of attempts " +
-            "exceeded. [maxAttempts=" + maxAttempts + ']');
+            "exceeded. [maxAttempts=" + MAX_UNLOCK_TX_RETRIES + ']');
     }
 }
