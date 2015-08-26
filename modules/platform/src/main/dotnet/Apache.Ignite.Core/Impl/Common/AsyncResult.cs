@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Common{
+namespace Apache.Ignite.Core.Impl.Common
+{
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Adapts IGridFuture to the IAsyncResult.
@@ -29,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Common{
     internal class AsyncResult : IAsyncResult
     {
         /** */
-        private readonly ManualResetEvent waitHandle;
+        private readonly ManualResetEvent _waitHandle;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AsyncResult"/> class.
@@ -37,21 +39,21 @@ namespace Apache.Ignite.Core.Impl.Common{
         /// <param name="fut">The future to wrap.</param>
         public AsyncResult(IFuture fut)
         {
-            waitHandle = new ManualResetEvent(false);
+            _waitHandle = new ManualResetEvent(false);
 
-            fut.Listen(() => waitHandle.Set());
+            fut.Listen(() => _waitHandle.Set());
         }
 
         /** <inheritdoc /> */
         public bool IsCompleted
         {
-            get { return waitHandle.WaitOne(0); }
+            get { return _waitHandle.WaitOne(0); }
         }
 
         /** <inheritdoc /> */
         public WaitHandle AsyncWaitHandle
         {
-            get { return waitHandle; }
+            get { return _waitHandle; }
         }
 
         /** <inheritdoc /> */

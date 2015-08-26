@@ -30,46 +30,46 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Grid future implementation.
     /// </summary>
     [SuppressMessage("ReSharper", "ParameterHidesMember")]
-    internal sealed class Future<T> : IFutureInternal, IFuture<T>
+    public sealed class Future<T> : IFutureInternal, IFuture<T>
     {
         /** Converter. */
-        private readonly FutureConverter<T> converter;
+        private readonly IFutureConverter<T> _converter;
 
         /** Result. */
-        private T res;
+        private T _res;
 
         /** Caught cxception. */
-        private Exception err;
+        private Exception _err;
 
         /** Done flag. */
-        private volatile bool done;
+        private volatile bool _done;
 
         /** Listener(s). Either Action or List{Action}. */
-        private object callbacks;
+        private object _callbacks;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="converter">Future result marshaller and converter.</param>
-        public Future(FutureConverter<T> converter = null)
+        public Future(IFutureConverter<T> converter = null)
         {
-            this.converter = converter;
+            _converter = converter;
         }
 
         /** <inheritdoc/> */
         public bool IsDone
         {
-            get { return done; }
+            get { return _done; }
         }
 
         /** <inheritdoc/> */
         public T Get()
         {
-            if (!done)
+            if (!_done)
             {
                 lock (this)
                 {
-                    while (!done)
+                    while (!_done)
                         Monitor.Wait(this);
                 }
             }
@@ -88,20 +88,20 @@ namespace Apache.Ignite.Core.Impl.Common
             if (ticks == 0)
                 return Get();
 
-            if (!done)
+            if (!_done)
             {
                 // Fallback to locked mode.
                 lock (this)
                 {
                     long endTime = DateTime.Now.Ticks + ticks;
 
-                    if (!done)
+                    if (!_done)
                     {
                         while (true)
                         {
                             Monitor.Wait(this, timeout);
 
-                            if (done)
+                            if (_done)
                                 break;
 
                             ticks = endTime - DateTime.Now.Ticks;
@@ -133,13 +133,13 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc/> */
         public void Listen(Action<IFuture<T>> callback)
         {
-            A.NotNull(callback, "callback");
+            GridArgumentCheck.NotNull(callback, "callback");
 
-            if (!done)
+            if (!_done)
             {
                 lock (this)
                 {
-                    if (!done)
+                    if (!_done)
                     {
                         AddCallback(callback);
 
@@ -156,16 +156,16 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private T Get0()
         {
-            if (err != null)
-                throw err;
+            if (_err != null)
+                throw _err;
 
-            return res;
+            return _res;
         }
 
         /** <inheritdoc/> */
         public IAsyncResult ToAsyncResult()
         {
-            return done ? CompletedAsyncResult.INSTANCE : new AsyncResult(this);
+            return _done ? CompletedAsyncResult.INSTANCE : new AsyncResult(this);
         }
 
         /** <inheritdoc/> */
@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             try
             {
-                OnResult(converter.Convert(stream));
+                OnResult(_converter.Convert(stream));
             }
             catch (Exception ex)
             {
@@ -237,18 +237,18 @@ namespace Apache.Ignite.Core.Impl.Common
 
             lock (this)
             {
-                if (!done)
+                if (!_done)
                 {
-                    this.res = res;
-                    this.err = err;
+                    _res = res;
+                    _err = err;
 
-                    done = true;
+                    _done = true;
 
                     Monitor.PulseAll(this);
 
                     // Notify listeners outside the lock
-                    callbacks0 = callbacks;
-                    callbacks = null;
+                    callbacks0 = _callbacks;
+                    _callbacks = null;
                 }
             }
 
@@ -268,19 +268,19 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private void AddCallback(Action<IFuture<T>> callback)
         {
-            if (callbacks == null)
+            if (_callbacks == null)
             {
-                callbacks = callback;
+                _callbacks = callback;
 
                 return;
             }
 
-            var list = callbacks as List<Action<IFuture<T>>> ??
-                new List<Action<IFuture<T>>> {(Action<IFuture<T>>) callbacks};
+            var list = _callbacks as List<Action<IFuture<T>>> ??
+                new List<Action<IFuture<T>>> {(Action<IFuture<T>>) _callbacks};
 
             list.Add(callback);
 
-            callbacks = list;
+            _callbacks = list;
         }
     }
 }

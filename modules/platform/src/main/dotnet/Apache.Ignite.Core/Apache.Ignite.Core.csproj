@@ -57,8 +57,9 @@
     <Compile Include="Impl\Common\CopyOnWriteConcurrentDictionary.cs" />
     <Compile Include="Impl\Common\DelegateConverter.cs" />
     <Compile Include="Impl\Common\Future.cs" />
-    <Compile Include="Impl\Common\FutureConverter.cs" />
     <Compile Include="Impl\Common\FutureType.cs" />
+    <Compile Include="Impl\Common\GridArgumentCheck.cs" />
+    <Compile Include="Impl\Common\IFutureConverter.cs" />
     <Compile Include="Impl\Common\IFutureInternal.cs" />
     <Compile Include="Impl\Common\LoadedAssembliesResolver.cs" />
     <Compile Include="Impl\Common\TypeCaster.cs" />
