@@ -24,10 +24,10 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Concurrent dictionary with CopyOnWrite mechanism inside. 
     /// Good for frequent reads / infrequent writes scenarios.
     /// </summary>
-    public class CopyOnWriteConcurrentDictionary<TK, TV>
+    public class CopyOnWriteConcurrentDictionary<TKey, TValue>
     {
         /** */
-        private volatile Dictionary<TK, TV> _dict = new Dictionary<TK, TV>();
+        private volatile Dictionary<TKey, TValue> _dict = new Dictionary<TKey, TValue>();
 
         /// <summary>
         /// Gets the value associated with the specified key.
@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="key">The key.</param>
         /// <param name="val">The value.</param>
         /// <returns>true if the dictionary contains an element with the specified key; otherwise, false.</returns>
-        public bool TryGetValue(TK key, out TV val)
+        public bool TryGetValue(TKey key, out TValue val)
         {
             return _dict.TryGetValue(key, out val);
         }
@@ -46,16 +46,16 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="key">The key.</param>
         /// <param name="valueFactory">The function used to generate a value for the key.</param>
         /// <returns>The value for the key.</returns>
-        public TV GetOrAdd(TK key, Func<TK, TV> valueFactory)
+        public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
         {
             lock (this)
             {
-                TV res;
+                TValue res;
 
                 if (_dict.TryGetValue(key, out res))
                     return res;
 
-                var dict0 = new Dictionary<TK, TV>(_dict);
+                var dict0 = new Dictionary<TKey, TValue>(_dict);
 
                 res = valueFactory(key);
 
