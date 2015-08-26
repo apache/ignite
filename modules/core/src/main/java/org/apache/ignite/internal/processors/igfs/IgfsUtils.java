@@ -40,7 +40,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  */
 public class IgfsUtils {
     /** Maximum number of file unlock transaction retries when topology changes. */
-    private static final int MAX_UNLOCK_TX_RETRIES = IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, 100);
+    private static final int MAX_CACHE_TX_RETRIES = IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, 100);
 
     /**
      * Converts any passed exception to IGFS exception.
@@ -132,7 +132,7 @@ public class IgfsUtils {
 
         int attempts = 0;
 
-        while (attempts < MAX_UNLOCK_TX_RETRIES) {
+        while (attempts < MAX_CACHE_TX_RETRIES) {
             attempts++;
 
             try (Transaction tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -153,6 +153,6 @@ public class IgfsUtils {
         }
 
         throw new IgniteCheckedException("Failed to perform operation since max number of attempts " +
-            "exceeded. [maxAttempts=" + MAX_UNLOCK_TX_RETRIES + ']');
+            "exceeded. [maxAttempts=" + MAX_CACHE_TX_RETRIES + ']');
     }
 }
