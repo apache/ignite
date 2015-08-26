@@ -638,7 +638,7 @@ public class PortableContext implements Externalizable {
      * @param id Type ID.
      * @return PortableClassDescriptor.
      */
-    private PortableClassDescriptor registerPredefinedType(Class<?> cls, int id) {
+    public PortableClassDescriptor registerPredefinedType(Class<?> cls, int id) {
         PortableClassDescriptor desc = new PortableClassDescriptor(
             this,
             cls,
