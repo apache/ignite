@@ -231,7 +231,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="res">Result.</param>
         /// <param name="err">Error.</param>
-        internal void OnDone(T res, Exception err)
+        public void OnDone(T res, Exception err)
         {
             object callbacks0 = null;
 
