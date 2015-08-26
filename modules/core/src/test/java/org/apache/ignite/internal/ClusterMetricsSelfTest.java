@@ -95,6 +95,41 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    public void testAllCachesNamesInCluster(){
+        Ignite g0 = grid(0);
+        Ignite g1 = grid(1);
+
+
+        g0.getOrCreateCache("Cache1");
+        g1.getOrCreateCache("Cache2");
+        g1.getOrCreateCache("Cache3");
+
+        List<String> caches = g0.cacheNames(false);
+        assertTrue(caches.contains("Cache1"));
+        assertTrue(caches.contains("Cache2"));
+        assertTrue(caches.contains("Cache3"));
+        assertEquals(3, g0.cacheNames(false).size());
+
+        caches = g1.cacheNames(false);
+        assertTrue(caches.contains("Cache1"));
+        assertTrue(caches.contains("Cache2"));
+        assertTrue(caches.contains("Cache3"));
+        assertEquals(3, g1.cacheNames(false).size());
+
+
+        /**
+         *  When call this method with true, it will return all the cache names including
+         *  system cache
+         * ignite-marshaller-sys-cache
+         * ignite-sys-cache
+         * ignite-atomics-sys-cache
+         * Cache1
+         * Cache2
+         * Cache3
+         */
+
+        assertEquals(6, g1.cacheNames(true).size());
+    }
     /**
      * @throws Exception In case of error.
      */
