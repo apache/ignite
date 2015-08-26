@@ -206,7 +206,6 @@ public class PortableContext implements Externalizable {
 //
 //        registerPredefinedType(InteropClusterNode.class, 67);
 //        registerPredefinedType(InteropClusterMetrics.class, 68);
-//        registerPredefinedType(InteropTransactionMetrics.class, 69);
 //        registerPredefinedType(InteropMetadata.class, 70);
 //
 //        registerPredefinedType(InteropDotNetConfiguration.class, 71);
