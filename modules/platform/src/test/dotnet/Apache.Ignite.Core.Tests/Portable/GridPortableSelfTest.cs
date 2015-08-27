@@ -17,6 +17,7 @@
 
 // ReSharper disable PossibleInvalidOperationException
 // ReSharper disable NonReadonlyMemberInGetHashCode
+// ReSharper disable CompareOfFloatsByEqualityOperator
 namespace Apache.Ignite.Core.Tests.Portable 
 {
     using System;
@@ -1358,8 +1359,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                     return CompareCollections(_col1, that._col1) && CompareCollections(_col2, that._col2);
                 }
-                else
-                    return false;
+
+                return false;
             }
 
             /** <inheritdoc /> */
@@ -1415,39 +1416,14 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             if (col1 == null && col2 == null)
                 return true;
+            
             if (col1 == null || col2 == null)
                 return false;
-            else
-            {
-                if (col1.Count != col2.Count)
-                    return false;
-                else
-                {
-                    IEnumerator enum1 = col1.GetEnumerator();
+            
+            if (col1.Count != col2.Count)
+                return false;
 
-                    while (enum1.MoveNext())
-                    {
-                        object elem = enum1.Current;
-
-                        bool contains = false;
-
-                        foreach (object thatElem in col2)
-                        {
-                            if (elem == null && thatElem == null || elem != null && elem.Equals(thatElem))
-                            {
-                                contains = true;
-
-                                break;
-                            }
-                        }
-
-                        if (!contains)
-                            return false;
-                    }
-
-                    return true;
-                }
-            }
+            return col1.OfType<object>().SequenceEqual(col2.OfType<object>());
         }
 
         public class PrimitiveArrayFieldType
@@ -1746,34 +1722,31 @@ namespace Apache.Ignite.Core.Tests.Portable
                 if (this == obj)
                     return true;
 
-                if (obj != null && obj is PrimitiveFieldType)
-                {
-                    PrimitiveFieldType that = (PrimitiveFieldType)obj;
+                var that = obj as PrimitiveFieldType;
 
-                    return _pBool == that._pBool &&
-                        _pByte == that._pByte &&
-                        _pSbyte == that._pSbyte &&
-                        _pShort == that._pShort &&
-                        _pUshort == that._pUshort &&
-                        _pInt == that._pInt &&
-                        _pUint == that._pUint &&
-                        _pLong == that._pLong &&
-                        _pUlong == that._pUlong &&
-                        _pChar == that._pChar &&
-                        _pFloat == that._pFloat &&
-                        _pDouble == that._pDouble &&
-                        (_pString == null && that._pString == null || _pString != null && _pString.Equals(that._pString)) &&
-                        _pGuid.Equals(that._pGuid) &&
-                        (_pNguid == null && that._pNguid == null || _pNguid != null && _pNguid.Equals(that._pNguid));
-                }
-                else
+                if (that == null) 
                     return false;
+                
+                return _pBool == that._pBool &&
+                       _pByte == that._pByte &&
+                       _pSbyte == that._pSbyte &&
+                       _pShort == that._pShort &&
+                       _pUshort == that._pUshort &&
+                       _pInt == that._pInt &&
+                       _pUint == that._pUint &&
+                       _pLong == that._pLong &&
+                       _pUlong == that._pUlong &&
+                       _pChar == that._pChar &&
+                       _pFloat == that._pFloat &&
+                       _pDouble == that._pDouble &&
+                       (_pString == null && that._pString == null || _pString != null && _pString.Equals(that._pString)) &&
+                       _pGuid.Equals(that._pGuid) &&
+                       (_pNguid == null && that._pNguid == null || _pNguid != null && _pNguid.Equals(that._pNguid));
             }
 
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                // ReSharper disable once NonReadonlyMemberInGetHashCode
                 return _pInt;
             }
         }
