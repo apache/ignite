@@ -114,10 +114,19 @@ public class PortableContext implements Externalizable {
     private String gridName;
 
     /** */
-    private PortableMarshaller marsh;
+    private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller();
 
     /** */
-    private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller();
+    private boolean convertStrings;
+
+    /** */
+    private boolean useTs;
+
+    /** */
+    private boolean metaDataEnabled;
+
+    /** */
+    private boolean keepDeserialized;
 
     /**
      * For {@link Externalizable}.
@@ -209,40 +218,68 @@ public class PortableContext implements Externalizable {
         if (marsh == null)
             return;
 
-        this.marsh = marsh;
+        convertStrings = marsh.isConvertStringToBytes();
+        useTs = marsh.isUseTimestamp();
+        metaDataEnabled = marsh.isMetaDataEnabled();
+        keepDeserialized = marsh.isKeepDeserialized();
+
         marshCtx = marsh.getContext();
 
         assert marshCtx != null;
 
         optmMarsh.setContext(marshCtx);
 
-        PortableIdMapper globalIdMapper = marsh.getIdMapper();
-        PortableSerializer globalSerializer = marsh.getSerializer();
-        boolean globalUseTs = marsh.isUseTimestamp();
-        boolean globalMetaDataEnabled = marsh.isMetaDataEnabled();
-        boolean globalKeepDeserialized = marsh.isKeepDeserialized();
+        configure(
+            marsh.getIdMapper(),
+            marsh.getSerializer(),
+            marsh.isUseTimestamp(),
+            marsh.isMetaDataEnabled(),
+            marsh.isKeepDeserialized(),
+            marsh.getClassNames(),
+            marsh.getTypeConfigurations()
+        );
+    }
 
+    /**
+     * @param globalIdMapper ID mapper.
+     * @param globalSerializer Serializer.
+     * @param globalUseTs Use timestamp flag.
+     * @param globalMetaDataEnabled Metadata enabled flag.
+     * @param globalKeepDeserialized Keep deserialized flag.
+     * @param clsNames Class names.
+     * @param typeCfgs Type configurations.
+     * @throws PortableException In case of error.
+     */
+    private void configure(
+        PortableIdMapper globalIdMapper,
+        PortableSerializer globalSerializer,
+        boolean globalUseTs,
+        boolean globalMetaDataEnabled,
+        boolean globalKeepDeserialized,
+        Collection<String> clsNames,
+        Collection<PortableTypeConfiguration> typeCfgs
+    ) throws PortableException {
         TypeDescriptors descs = new TypeDescriptors();
 
-        if (marsh.getClassNames() != null) {
+        if (clsNames != null) {
             PortableIdMapper idMapper = new IdMapperWrapper(globalIdMapper);
 
-            for (String clsName : marsh.getClassNames()) {
+            for (String clsName : clsNames) {
                 if (clsName.endsWith(".*")) { // Package wildcard
                     String pkgName = clsName.substring(0, clsName.length() - 2);
 
                     for (String clsName0 : classesInPackage(pkgName))
                         descs.add(clsName0, idMapper, null, null, globalUseTs, globalMetaDataEnabled,
-                                  globalKeepDeserialized, true);
+                            globalKeepDeserialized, true);
                 }
                 else // Regular single class
                     descs.add(clsName, idMapper, null, null, globalUseTs, globalMetaDataEnabled,
-                              globalKeepDeserialized, true);
+                        globalKeepDeserialized, true);
             }
         }
 
-        if (marsh.getTypeConfigurations() != null) {
-            for (PortableTypeConfiguration typeCfg : marsh.getTypeConfigurations()) {
+        if (typeCfgs != null) {
+            for (PortableTypeConfiguration typeCfg : typeCfgs) {
                 String clsName = typeCfg.getClassName();
 
                 if (clsName == null)
@@ -271,17 +308,18 @@ public class PortableContext implements Externalizable {
 
                     for (String clsName0 : classesInPackage(pkgName))
                         descs.add(clsName0, idMapper, serializer, typeCfg.getAffinityKeyFieldName(), useTs,
-                                  metaDataEnabled, keepDeserialized, true);
+                            metaDataEnabled, keepDeserialized, true);
                 }
                 else
                     descs.add(clsName, idMapper, serializer, typeCfg.getAffinityKeyFieldName(), useTs,
-                              metaDataEnabled, keepDeserialized, false);
+                        metaDataEnabled, keepDeserialized, false);
             }
         }
 
-        for (TypeDescriptor desc : descs.descriptors())
+        for (TypeDescriptor desc : descs.descriptors()) {
             registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName, desc.useTs,
-                             desc.metadataEnabled, desc.keepDeserialized);
+                desc.metadataEnabled, desc.keepDeserialized);
+        }
     }
 
     /**
@@ -425,9 +463,9 @@ public class PortableContext implements Externalizable {
                 clsName,
                 BASIC_CLS_ID_MAPPER,
                 null,
-                marsh.isUseTimestamp(),
-                marsh.isMetaDataEnabled(),
-                marsh.isKeepDeserialized());
+                useTs,
+                metaDataEnabled,
+                keepDeserialized);
 
             PortableClassDescriptor old = descByCls.putIfAbsent(cls, desc);
 
@@ -471,9 +509,9 @@ public class PortableContext implements Externalizable {
             typeName,
             idMapper,
             null,
-            marsh.isUseTimestamp(),
-            marsh.isMetaDataEnabled(),
-            marsh.isKeepDeserialized(),
+            useTs,
+            metaDataEnabled,
+            keepDeserialized,
             registered);
 
         // perform put() instead of putIfAbsent() because "registered" flag may have been changed.
@@ -620,7 +658,7 @@ public class PortableContext implements Externalizable {
     /**
      * @param cls Class.
      * @param id Type ID.
-     * @return PortableClassDescriptor.
+     * @return GridPortableClassDescriptor.
      */
     public PortableClassDescriptor registerPredefinedType(Class<?> cls, int id) {
         PortableClassDescriptor desc = new PortableClassDescriptor(
@@ -717,15 +755,8 @@ public class PortableContext implements Externalizable {
      * @return Meta data.
      * @throws PortableException In case of error.
      */
-    @Nullable public PortableMetadata metaData(int typeId) throws PortableException {
+    @Nullable public org.apache.ignite.portable.PortableMetadata metaData(int typeId) throws PortableException {
         return metaHnd != null ? metaHnd.metadata(typeId) : null;
-    }
-
-    /**
-     * @return Whether meta data is globally enabled.
-     */
-    boolean isMetaDataEnabled() {
-        return marsh.isMetaDataEnabled();
     }
 
     /**
@@ -782,7 +813,7 @@ public class PortableContext implements Externalizable {
      * @return Use timestamp flag.
      */
     public boolean isUseTimestamp() {
-        return marsh.isUseTimestamp();
+        return useTs;
     }
 
     /**
@@ -797,7 +828,7 @@ public class PortableContext implements Externalizable {
      * @return Whether to convert string to UTF8 bytes.
      */
     public boolean isConvertString() {
-        return marsh.isConvertStringToBytes();
+        return convertStrings;
     }
 
     /**
