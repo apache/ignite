@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Portable
         /// <returns>
         /// Type ID.
         /// </returns>
-        int GetTypeId();
+        int TypeId { get; }
 
         /// <summary>
         /// Gets object metadata.

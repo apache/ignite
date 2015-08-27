@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (obj0 == null)
                 throw new ArgumentException("Unsupported object type: " + obj.GetType());
 
-            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj0.GetTypeId());
+            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj0.TypeId);
             
             return Builder0(null, obj0, desc);
         }
@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns></returns>
         internal PortableBuilderImpl ChildBuilder(PortableBuilderImpl parent, PortableUserObject obj)
         {
-            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj.GetTypeId());
+            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj.TypeId);
 
             return Builder0(null, obj, desc);
         }
