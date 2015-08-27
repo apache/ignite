@@ -1015,10 +1015,29 @@ public class IgnitionEx {
      * @return List of all grids started so far.
      */
     public static List<Ignite> allGrids() {
+        return allGrids(true);
+    }
+
+    /**
+     * Gets a list of all grids started so far.
+     *
+     * @return List of all grids started so far.
+     */
+    public static List<Ignite> allGridsx() {
+        return allGrids(false);
+    }
+
+    /**
+     * Gets a list of all grids started so far.
+     *
+     * @param wait If {@code true} wait for node start finish.
+     * @return List of all grids started so far.
+     */
+    private static List<Ignite> allGrids(boolean wait) {
         List<Ignite> allIgnites = new ArrayList<>(grids.size() + 1);
 
         for (IgniteNamedInstance grid : grids.values()) {
-            Ignite g = grid.grid();
+            Ignite g = wait ? grid.grid() : grid.gridx();
 
             if (g != null)
                 allIgnites.add(g);
@@ -1027,7 +1046,7 @@ public class IgnitionEx {
         IgniteNamedInstance dfltGrid0 = dfltGrid;
 
         if (dfltGrid0 != null) {
-            IgniteKernal g = dfltGrid0.grid();
+            IgniteKernal g = wait ? dfltGrid0.grid() : dfltGrid0.gridx();
 
             if (g != null)
                 allIgnites.add(g);

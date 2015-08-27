@@ -18,18 +18,31 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
+
+import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Common IGFS utility methods.
  */
 public class IgfsUtils {
+    /** Maximum number of file unlock transaction retries when topology changes. */
+    private static final int MAX_CACHE_TX_RETRIES = IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, 100);
+
     /**
      * Converts any passed exception to IGFS exception.
      *
@@ -103,5 +116,44 @@ public class IgfsUtils {
            user = FileSystemConfiguration.DFLT_USER_NAME;
 
         return user;
+    }
+
+    /**
+     * Performs an operation with transaction with retries.
+     *
+     * @param cache Cache to do the transaction on.
+     * @param clo Closure.
+     * @return Result of closure execution.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public static <T> T doInTransactionWithRetries(IgniteInternalCache cache, IgniteOutClosureX<T> clo)
+        throws IgniteCheckedException {
+        assert cache != null;
+
+        int attempts = 0;
+
+        while (attempts < MAX_CACHE_TX_RETRIES) {
+            try (Transaction tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                T res = clo.applyx();
+
+                tx.commit();
+
+                return res;
+            }
+            catch (IgniteException | IgniteCheckedException e) {
+                ClusterTopologyException cte = X.cause(e, ClusterTopologyException.class);
+
+                if (cte != null)
+                    ((IgniteFutureImpl)cte.retryReadyFuture()).internalFuture().getUninterruptibly();
+                else
+                    throw U.cast(e);
+            }
+
+            attempts++;
+        }
+
+        throw new IgniteCheckedException("Failed to perform operation since max number of attempts " +
+            "exceeded. [maxAttempts=" + MAX_CACHE_TX_RETRIES + ']');
     }
 }
