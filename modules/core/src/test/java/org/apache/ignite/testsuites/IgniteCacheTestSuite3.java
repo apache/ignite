@@ -133,6 +133,8 @@ public class IgniteCacheTestSuite3 extends TestSuite {
 
         suite.addTestSuite(IgniteTxGetAfterStopTest.class);
 
+        suite.addTestSuite(CacheAsyncOperationsTest.class);
+
         return suite;
     }
 }
