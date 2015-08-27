@@ -81,6 +81,7 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheSizeFailoverTest.class);
 
         suite.addTestSuite(IgniteCacheTopologySafeGetSelfTest.class);
+        suite.addTestSuite(IgniteAtomicLongChangingTopologySelfTest.class);
 
         return suite;
     }

@@ -320,7 +320,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     public void map() {
         AffinityTopologyVersion topVer = null;
 
-        IgniteInternalTx tx = cctx.tm().anyActiveThreadTx();
+        IgniteInternalTx tx = cctx.tm().anyActiveThreadTx(null);
 
         if (tx != null && tx.topologyVersionSnapshot() != null)
             topVer = tx.topologyVersionSnapshot();
