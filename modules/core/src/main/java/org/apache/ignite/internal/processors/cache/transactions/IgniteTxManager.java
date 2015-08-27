@@ -1023,7 +1023,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public boolean addCommittedTx(IgniteInternalTx tx) {
         boolean res = addCommittedTx(tx.xidVersion(), tx.nearXidVersion());
 
-        if (!tx.local() && tx.onePhaseCommit())
+        if (!tx.local() && !tx.near() && tx.onePhaseCommit())
             addCommittedTx(tx.nearXidVersion(), null);
 
         return res;
