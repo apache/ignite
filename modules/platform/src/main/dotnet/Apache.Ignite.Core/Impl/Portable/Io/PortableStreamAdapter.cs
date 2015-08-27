@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
     /// <summary>
     /// Adapter providing .Net streaming functionality over the portable stream.
     /// </summary>
-    internal class PortableStreamAdapter : Stream
+    public class PortableStreamAdapter : Stream
     {
         /// <summary>
         /// 
