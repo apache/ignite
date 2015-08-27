@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 
+// ReSharper disable PossibleInvalidOperationException
+// ReSharper disable NonReadonlyMemberInGetHashCode
 namespace Apache.Ignite.Core.Tests.Portable 
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Impl.Portable;
@@ -450,6 +453,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             nGuid = null;
 
+            // ReSharper disable once ExpressionIsAlwaysNull
             Assert.AreEqual(_marsh.Unmarshal<Guid?>(_marsh.Marshal(nGuid)), null);
         }
 
@@ -471,7 +475,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWriteEnum()
         {
-            TestEnum val = TestEnum.VAL1;
+            TestEnum val = TestEnum.Val1;
 
             Assert.AreEqual(_marsh.Unmarshal<TestEnum>(_marsh.Marshal(val)), val);
         }
@@ -482,7 +486,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWriteEnumArray()
         {
-            TestEnum[] vals = { TestEnum.VAL2, TestEnum.VAL3 };
+            TestEnum[] vals = { TestEnum.Val2, TestEnum.Val3 };
             TestEnum[] newVals = _marsh.Unmarshal<TestEnum[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -504,16 +508,11 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestDateObject()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs =
-                new List<PortableTypeConfiguration>();
-
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(DateTimeType)));
-
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
-
-            PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
+            PortableMarshaller marsh = new PortableMarshaller(new PortableConfiguration
+            {
+                TypeConfigurations =
+                    new List<PortableTypeConfiguration> {new PortableTypeConfiguration(typeof (DateTimeType))}
+            }, new IgniteContext());
 
             DateTime now = DateTime.Now;
 
@@ -521,19 +520,19 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             DateTimeType otherObj = marsh.Unmarshal<DateTimeType>(marsh.Marshal(obj));
 
-            Assert.AreEqual(obj.loc, otherObj.loc);
-            Assert.AreEqual(obj.utc, otherObj.utc);
-            Assert.AreEqual(obj.locNull, otherObj.locNull);
-            Assert.AreEqual(obj.utcNull, otherObj.utcNull);            
-            Assert.AreEqual(obj.locArr, otherObj.locArr);
-            Assert.AreEqual(obj.utcArr, otherObj.utcArr);
+            Assert.AreEqual(obj.Loc, otherObj.Loc);
+            Assert.AreEqual(obj.Utc, otherObj.Utc);
+            Assert.AreEqual(obj.LocNull, otherObj.LocNull);
+            Assert.AreEqual(obj.UtcNull, otherObj.UtcNull);            
+            Assert.AreEqual(obj.LocArr, otherObj.LocArr);
+            Assert.AreEqual(obj.UtcArr, otherObj.UtcArr);
 
-            Assert.AreEqual(obj.locRaw, otherObj.locRaw);
-            Assert.AreEqual(obj.utcRaw, otherObj.utcRaw);
-            Assert.AreEqual(obj.locNullRaw, otherObj.locNullRaw);
-            Assert.AreEqual(obj.utcNullRaw, otherObj.utcNullRaw);
-            Assert.AreEqual(obj.locArrRaw, otherObj.locArrRaw);
-            Assert.AreEqual(obj.utcArrRaw, otherObj.utcArrRaw);
+            Assert.AreEqual(obj.LocRaw, otherObj.LocRaw);
+            Assert.AreEqual(obj.UtcRaw, otherObj.UtcRaw);
+            Assert.AreEqual(obj.LocNullRaw, otherObj.LocNullRaw);
+            Assert.AreEqual(obj.UtcNullRaw, otherObj.UtcNullRaw);
+            Assert.AreEqual(obj.LocArrRaw, otherObj.LocArrRaw);
+            Assert.AreEqual(obj.UtcArrRaw, otherObj.UtcArrRaw);
         }
 
         /**
@@ -548,16 +547,13 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             byte[] data = _marsh.Marshal(list);
 
-            ICollection<object> newObjList = _marsh.Unmarshal<List<object>>(data);
+            var newObjList = _marsh.Unmarshal<List<object>>(data);
 
             Assert.NotNull(newObjList);
 
-            ICollection<string> newList = new List<string>();
+            var newList = newObjList.Cast<string>().ToList();
 
-            foreach (object obj in newObjList)
-                newList.Add((string)obj);
-
-            CompareCollections(list, newList);
+            CollectionAssert.AreEquivalent(list, newList);
         }
 
         /**
@@ -566,32 +562,28 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestProperty()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            var typeCfgs = new List<PortableTypeConfiguration> {new PortableTypeConfiguration(typeof (PropertyType))};
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(PropertyType)));
-
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
+            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
             PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
 
-            PropertyType obj = new PropertyType();
-
-            obj.field1 = 1;
-            obj.Field2 = 2;
+            var obj = new PropertyType
+            {
+                Field1 = 1,
+                Field2 = 2
+            };
 
             byte[] data = marsh.Marshal(obj);
 
             PropertyType newObj = marsh.Unmarshal<PropertyType>(data);
 
-            Assert.AreEqual(obj.field1, newObj.field1);
+            Assert.AreEqual(obj.Field1, newObj.Field1);
             Assert.AreEqual(obj.Field2, newObj.Field2);
 
             IPortableObject portNewObj = marsh.Unmarshal<IPortableObject>(data, PortableMode.ForcePortable);
 
-            Assert.AreEqual(obj.field1, portNewObj.GetField<int>("field1"));
+            Assert.AreEqual(obj.Field1, portNewObj.GetField<int>("field1"));
             Assert.AreEqual(obj.Field2, portNewObj.GetField<int>("Field2"));
         }
 
@@ -700,41 +692,43 @@ namespace Apache.Ignite.Core.Tests.Portable
             { 
                 new PortableTypeConfiguration(typeof(DecimalReflective)),
                 new PortableTypeConfiguration(typeof(DecimalMarshalAware))
-            }; ;
+            };
 
             PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
 
             // 1. Test reflective stuff.
-            DecimalReflective obj1 = new DecimalReflective();
-
-            obj1.val = decimal.Zero;
-            obj1.valArr = new decimal[] { decimal.One, decimal.MinusOne };
+            DecimalReflective obj1 = new DecimalReflective
+            {
+                Val = decimal.Zero,
+                ValArr = new[] {decimal.One, decimal.MinusOne}
+            };
 
             IPortableObject portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj1), PortableMode.ForcePortable);
 
-            Assert.AreEqual(obj1.val, portObj.GetField<decimal>("val"));
-            Assert.AreEqual(obj1.valArr, portObj.GetField<decimal[]>("valArr"));
+            Assert.AreEqual(obj1.Val, portObj.GetField<decimal>("val"));
+            Assert.AreEqual(obj1.ValArr, portObj.GetField<decimal[]>("valArr"));
 
-            Assert.AreEqual(obj1.val, portObj.Deserialize<DecimalReflective>().val);
-            Assert.AreEqual(obj1.valArr, portObj.Deserialize<DecimalReflective>().valArr);
+            Assert.AreEqual(obj1.Val, portObj.Deserialize<DecimalReflective>().Val);
+            Assert.AreEqual(obj1.ValArr, portObj.Deserialize<DecimalReflective>().ValArr);
 
             // 2. Test marshal aware stuff.
-            DecimalMarshalAware obj2 = new DecimalMarshalAware();
-
-            obj2.val = decimal.Zero;
-            obj2.valArr = new decimal[] { decimal.One, decimal.MinusOne };
-            obj2.rawVal = decimal.MaxValue;
-            obj2.rawValArr = new decimal[] { decimal.MinusOne, decimal.One} ;
+            DecimalMarshalAware obj2 = new DecimalMarshalAware
+            {
+                Val = decimal.Zero,
+                ValArr = new[] {decimal.One, decimal.MinusOne},
+                RawVal = decimal.MaxValue,
+                RawValArr = new[] {decimal.MinusOne, decimal.One}
+            };
 
             portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj2), PortableMode.ForcePortable);
 
-            Assert.AreEqual(obj2.val, portObj.GetField<decimal>("val"));
-            Assert.AreEqual(obj2.valArr, portObj.GetField<decimal[]>("valArr"));
+            Assert.AreEqual(obj2.Val, portObj.GetField<decimal>("val"));
+            Assert.AreEqual(obj2.ValArr, portObj.GetField<decimal[]>("valArr"));
 
-            Assert.AreEqual(obj2.val, portObj.Deserialize<DecimalMarshalAware>().val);
-            Assert.AreEqual(obj2.valArr, portObj.Deserialize<DecimalMarshalAware>().valArr);
-            Assert.AreEqual(obj2.rawVal, portObj.Deserialize<DecimalMarshalAware>().rawVal);
-            Assert.AreEqual(obj2.rawValArr, portObj.Deserialize<DecimalMarshalAware>().rawValArr);
+            Assert.AreEqual(obj2.Val, portObj.Deserialize<DecimalMarshalAware>().Val);
+            Assert.AreEqual(obj2.ValArr, portObj.Deserialize<DecimalMarshalAware>().ValArr);
+            Assert.AreEqual(obj2.RawVal, portObj.Deserialize<DecimalMarshalAware>().RawVal);
+            Assert.AreEqual(obj2.RawValArr, portObj.Deserialize<DecimalMarshalAware>().RawValArr);
         }
 
         /**
@@ -780,7 +774,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             obj.PDouble = 11;
             obj.PString = "abc";
             obj.PGuid = Guid.NewGuid();
-            obj.PNGuid = Guid.NewGuid();
+            obj.PnGuid = Guid.NewGuid();
             
             //CheckPrimitiveFieldsSerialization(marsh, obj);
 
@@ -825,8 +819,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             EnumType obj = new EnumType
             {
-                PEnum = TestEnum.VAL1,
-                PEnumArray = new[] {TestEnum.VAL2, TestEnum.VAL3}
+                PEnum = TestEnum.Val1,
+                PEnumArray = new[] {TestEnum.Val2, TestEnum.Val3}
             };
 
             byte[] bytes = marsh.Marshal(obj);
@@ -949,30 +943,30 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             HandleOuter outer = new HandleOuter();
 
-            outer.before = "outBefore";
-            outer.after = "outAfter";
-            outer.rawBefore = "outRawBefore";
-            outer.rawAfter = "outRawAfter";
+            outer.Before = "outBefore";
+            outer.After = "outAfter";
+            outer.RawBefore = "outRawBefore";
+            outer.RawAfter = "outRawAfter";
 
             HandleInner inner = new HandleInner();
 
-            inner.before = "inBefore";
-            inner.after = "inAfter";
-            inner.rawBefore = "inRawBefore";
-            inner.rawAfter = "inRawAfter";
+            inner.Before = "inBefore";
+            inner.After = "inAfter";
+            inner.RawBefore = "inRawBefore";
+            inner.RawAfter = "inRawAfter";
 
-            outer.inner = inner;
-            outer.rawInner = inner;
+            outer.Inner = inner;
+            outer.RawInner = inner;
 
-            inner.outer = outer;
-            inner.rawOuter = outer;
+            inner.Outer = outer;
+            inner.RawOuter = outer;
 
             byte[] bytes = marsh.Marshal(outer);
 
             IPortableObject outerObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
 
             HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
-            HandleInner newInner = newOuter.inner;
+            HandleInner newInner = newOuter.Inner;
 
             CheckHandlesConsistency(outer, inner, newOuter, newInner);
 
@@ -980,7 +974,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             IPortableObject innerObj = outerObj.GetField<IPortableObject>("inner");
 
             newInner = innerObj.Deserialize<HandleInner>();
-            newOuter = newInner.outer;
+            newOuter = newInner.Outer;
 
             CheckHandlesConsistency(outer, inner, newOuter, newInner);
 
@@ -988,7 +982,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             outerObj = innerObj.GetField<IPortableObject>("outer");
 
             newOuter = outerObj.Deserialize<HandleOuter>();
-            newInner = newOuter.inner;
+            newInner = newOuter.Inner;
 
             CheckHandlesConsistency(outer, inner, newOuter, newInner);
         }
@@ -1010,24 +1004,24 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             var inner = new HandleInner
             {
-                before = "inBefore",
-                after = "inAfter",
-                rawBefore = "inRawBefore",
-                rawAfter = "inRawAfter"
+                Before = "inBefore",
+                After = "inAfter",
+                RawBefore = "inRawBefore",
+                RawAfter = "inRawAfter"
             };
 
             var outer = new HandleOuterExclusive
             {
-                before = "outBefore",
-                after = "outAfter",
-                rawBefore = "outRawBefore",
-                rawAfter = "outRawAfter",
-                inner = inner,
-                rawInner = inner
+                Before = "outBefore",
+                After = "outAfter",
+                RawBefore = "outRawBefore",
+                RawAfter = "outRawAfter",
+                Inner = inner,
+                RawInner = inner
             };
 
-            inner.outer = outer;
-            inner.rawOuter = outer;
+            inner.Outer = outer;
+            inner.RawOuter = outer;
 
             var bytes = asPortable
                 ? marsh.Marshal(new PortablesImpl(marsh).ToPortable<IPortableObject>(outer))
@@ -1049,20 +1043,20 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
 
-            Assert.IsFalse(newOuter == newOuter.inner.outer);
-            Assert.IsFalse(newOuter == newOuter.inner.rawOuter);
-            Assert.IsFalse(newOuter == newOuter.rawInner.rawOuter);
-            Assert.IsFalse(newOuter == newOuter.rawInner.rawOuter);
+            Assert.IsFalse(newOuter == newOuter.Inner.Outer);
+            Assert.IsFalse(newOuter == newOuter.Inner.RawOuter);
+            Assert.IsFalse(newOuter == newOuter.RawInner.RawOuter);
+            Assert.IsFalse(newOuter == newOuter.RawInner.RawOuter);
 
-            Assert.IsFalse(newOuter.inner == newOuter.rawInner);
+            Assert.IsFalse(newOuter.Inner == newOuter.RawInner);
 
-            Assert.IsTrue(newOuter.inner.outer == newOuter.inner.rawOuter);
-            Assert.IsTrue(newOuter.rawInner.outer == newOuter.rawInner.rawOuter);
+            Assert.IsTrue(newOuter.Inner.Outer == newOuter.Inner.RawOuter);
+            Assert.IsTrue(newOuter.RawInner.Outer == newOuter.RawInner.RawOuter);
 
-            Assert.IsTrue(newOuter.inner == newOuter.inner.outer.inner);
-            Assert.IsTrue(newOuter.inner == newOuter.inner.outer.rawInner);
-            Assert.IsTrue(newOuter.rawInner == newOuter.rawInner.outer.inner);
-            Assert.IsTrue(newOuter.rawInner == newOuter.rawInner.outer.rawInner);
+            Assert.IsTrue(newOuter.Inner == newOuter.Inner.Outer.Inner);
+            Assert.IsTrue(newOuter.Inner == newOuter.Inner.Outer.RawInner);
+            Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.Inner);
+            Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.RawInner);
         }
 
         ///
@@ -1147,10 +1141,10 @@ namespace Apache.Ignite.Core.Tests.Portable
             // Use special object.
             SpecialArray obj1 = new SpecialArray();
 
-            obj1.guidArr = guidArr;
-            obj1.nGuidArr = nGuidArr;
-            obj1.dateArr = dateArr;
-            obj1.nDateArr = nDateArr;
+            obj1.GuidArr = guidArr;
+            obj1.NGuidArr = nGuidArr;
+            obj1.DateArr = dateArr;
+            obj1.NDateArr = nDateArr;
 
             byte[] bytes = marsh.Marshal(obj1);
 
@@ -1163,18 +1157,18 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             obj1 = portObj.Deserialize<SpecialArray>();
 
-            Assert.AreEqual(guidArr, obj1.guidArr);
-            Assert.AreEqual(nGuidArr, obj1.nGuidArr);
-            Assert.AreEqual(dateArr, obj1.dateArr);
-            Assert.AreEqual(nDateArr, obj1.nDateArr);
+            Assert.AreEqual(guidArr, obj1.GuidArr);
+            Assert.AreEqual(nGuidArr, obj1.NGuidArr);
+            Assert.AreEqual(dateArr, obj1.DateArr);
+            Assert.AreEqual(nDateArr, obj1.NDateArr);
 
             // Use special with IGridPortableMarshalAware.
             SpecialArrayMarshalAware obj2 = new SpecialArrayMarshalAware();
 
-            obj2.guidArr = guidArr;
-            obj2.nGuidArr = nGuidArr;
-            obj2.dateArr = dateArr;
-            obj2.nDateArr = nDateArr;
+            obj2.GuidArr = guidArr;
+            obj2.NGuidArr = nGuidArr;
+            obj2.DateArr = dateArr;
+            obj2.NDateArr = nDateArr;
 
             bytes = marsh.Marshal(obj2);
 
@@ -1187,10 +1181,10 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             obj2 = portObj.Deserialize<SpecialArrayMarshalAware>();
 
-            Assert.AreEqual(guidArr, obj2.guidArr);
-            Assert.AreEqual(nGuidArr, obj2.nGuidArr);
-            Assert.AreEqual(dateArr, obj2.dateArr);
-            Assert.AreEqual(nDateArr, obj2.nDateArr);
+            Assert.AreEqual(guidArr, obj2.GuidArr);
+            Assert.AreEqual(nGuidArr, obj2.NGuidArr);
+            Assert.AreEqual(dateArr, obj2.DateArr);
+            Assert.AreEqual(nDateArr, obj2.NDateArr);
         }
 
         private static void CheckKeepSerialized(PortableConfiguration cfg, bool expKeep)
@@ -1221,20 +1215,20 @@ namespace Apache.Ignite.Core.Tests.Portable
             HandleInner newInner)
         {
             Assert.True(newOuter != null);
-            Assert.AreEqual(outer.before, newOuter.before);
-            Assert.True(newOuter.inner == newInner);
-            Assert.AreEqual(outer.after, newOuter.after);
-            Assert.AreEqual(outer.rawBefore, newOuter.rawBefore);
-            Assert.True(newOuter.rawInner == newInner);
-            Assert.AreEqual(outer.rawAfter, newOuter.rawAfter);
+            Assert.AreEqual(outer.Before, newOuter.Before);
+            Assert.True(newOuter.Inner == newInner);
+            Assert.AreEqual(outer.After, newOuter.After);
+            Assert.AreEqual(outer.RawBefore, newOuter.RawBefore);
+            Assert.True(newOuter.RawInner == newInner);
+            Assert.AreEqual(outer.RawAfter, newOuter.RawAfter);
 
             Assert.True(newInner != null);
-            Assert.AreEqual(inner.before, newInner.before);
-            Assert.True(newInner.outer == newOuter);
-            Assert.AreEqual(inner.after, newInner.after);
-            Assert.AreEqual(inner.rawBefore, newInner.rawBefore);
-            Assert.True(newInner.rawOuter == newOuter);
-            Assert.AreEqual(inner.rawAfter, newInner.rawAfter);            
+            Assert.AreEqual(inner.Before, newInner.Before);
+            Assert.True(newInner.Outer == newOuter);
+            Assert.AreEqual(inner.After, newInner.After);
+            Assert.AreEqual(inner.RawBefore, newInner.RawBefore);
+            Assert.True(newInner.RawOuter == newOuter);
+            Assert.AreEqual(inner.RawAfter, newInner.RawAfter);            
         }
 
         private static void CheckObject(PortableMarshaller marsh, OuterObjectType outObj, InnerObjectType inObj)
@@ -1257,12 +1251,12 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public class OuterObjectType
         {
-            private InnerObjectType inObj;
+            private InnerObjectType _inObj;
 
             public InnerObjectType InObj
             {
-                get { return inObj; }
-                set { inObj = value; }
+                get { return _inObj; }
+                set { _inObj = value; }
             }
 
             /** <inheritdoc /> */
@@ -1275,7 +1269,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 {
                     OuterObjectType that = (OuterObjectType)obj;
 
-                    return inObj == null ? that.inObj == null : inObj.Equals(that.inObj);
+                    return _inObj == null ? that._inObj == null : _inObj.Equals(that._inObj);
                 }
                 else
                     return false;
@@ -1284,25 +1278,25 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                return inObj != null ? inObj.GetHashCode() : 0;
+                return _inObj != null ? _inObj.GetHashCode() : 0;
             }
         }
 
         public class InnerObjectType
         {
-            private int pInt1;
-            private int pInt2;
+            private int _pInt1;
+            private int _pInt2;
 
             public int PInt1
             {
-                get { return pInt1; }
-                set { pInt1 = value; }
+                get { return _pInt1; }
+                set { _pInt1 = value; }
             }
 
             public int PInt2
             {
-                get { return pInt2; }
-                set { pInt2 = value; }
+                get { return _pInt2; }
+                set { _pInt2 = value; }
             }
 
             /** <inheritdoc /> */
@@ -1315,7 +1309,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 {
                     InnerObjectType that = (InnerObjectType)obj;
 
-                    return pInt1 == that.pInt1 && pInt2 == that.pInt2;
+                    return _pInt1 == that._pInt1 && _pInt2 == that._pInt2;
                 }
                 else
                     return false;
@@ -1324,32 +1318,32 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                return 31 * pInt1 + pInt2;
+                return 31 * _pInt1 + _pInt2;
             }
 
             /** <inheritdoc /> */
             public override string ToString()
             {
-                return "InnerObjectType[pInt1=" + pInt1 + ", pInt2=" + pInt2 + ']';
+                return "InnerObjectType[pInt1=" + _pInt1 + ", pInt2=" + _pInt2 + ']';
             }
         }
 
         public class CollectionsType
         {
-            private ICollection col1;
+            private ICollection _col1;
 
-            private ArrayList col2;
+            private ArrayList _col2;
             
             public ICollection Col1
             {
-                get { return col1; }
-                set { col1 = value; }
+                get { return _col1; }
+                set { _col1 = value; }
             }
 
             public ArrayList Col2
             {
-                get { return col2; }
-                set { col2 = value; }
+                get { return _col2; }
+                set { _col2 = value; }
             }
             
             /** <inheritdoc /> */
@@ -1362,7 +1356,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 {
                     CollectionsType that = (CollectionsType)obj;
 
-                    return CompareCollections(col1, that.col1) && CompareCollections(col2, that.col2);
+                    return CompareCollections(_col1, that._col1) && CompareCollections(_col2, that._col2);
                 }
                 else
                     return false;
@@ -1371,9 +1365,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                int res = col1 != null ? col1.GetHashCode() : 0;
+                int res = _col1 != null ? _col1.GetHashCode() : 0;
 
-                res = 31 * res + (col2 != null ? col2.GetHashCode() : 0);
+                res = 31 * res + (_col2 != null ? _col2.GetHashCode() : 0);
 
                 return res;
             }
@@ -1381,8 +1375,8 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritdoc /> */
             public override string ToString()
             {
-                return "CollectoinsType[col1=" + CollectionAsString(col1) + 
-                    ", col2=" + CollectionAsString(col2) + ']'; 
+                return "CollectoinsType[col1=" + CollectionAsString(_col1) + 
+                    ", col2=" + CollectionAsString(_col2) + ']'; 
             }
         }
 
@@ -1421,185 +1415,140 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             if (col1 == null && col2 == null)
                 return true;
+            if (col1 == null || col2 == null)
+                return false;
             else
             {
-                if (col1 == null || col2 == null)
+                if (col1.Count != col2.Count)
                     return false;
                 else
                 {
-                    if (col1.Count != col2.Count)
-                        return false;
-                    else
+                    IEnumerator enum1 = col1.GetEnumerator();
+
+                    while (enum1.MoveNext())
                     {
-                        IEnumerator enum1 = col1.GetEnumerator();
+                        object elem = enum1.Current;
 
-                        while (enum1.MoveNext())
+                        bool contains = false;
+
+                        foreach (object thatElem in col2)
                         {
-                            object elem = enum1.Current;
-
-                            bool contains = false;
-
-                            foreach (object thatElem in col2)
+                            if (elem == null && thatElem == null || elem != null && elem.Equals(thatElem))
                             {
-                                if (elem == null && thatElem == null || elem != null && elem.Equals(thatElem))
-                                {
-                                    contains = true;
+                                contains = true;
 
-                                    break;
-                                }
+                                break;
                             }
-
-                            if (!contains)
-                                return false;
                         }
 
-                        return true;
+                        if (!contains)
+                            return false;
                     }
-                }
-            }
-        }
 
-        private static bool CompareCollections<T>(ICollection<T> col1, ICollection<T> col2)
-        {
-            if (col1 == null && col2 == null)
-                return true;
-            else
-            {
-                if (col1 == null || col2 == null)
-                    return false;
-                else
-                {
-                    if (col1.Count != col2.Count)
-                        return false;
-                    else
-                    {
-                        IEnumerator enum1 = col1.GetEnumerator();
-
-                        while (enum1.MoveNext())
-                        {
-                            object elem = enum1.Current;
-
-                            bool contains = false;
-
-                            foreach (object thatElem in col2)
-                            {
-                                if (elem == null && thatElem == null || elem != null && elem.Equals(thatElem))
-                                {
-                                    contains = true;
-
-                                    break;
-                                }
-                            }
-
-                            if (!contains)
-                                return false;
-                        }
-
-                        return true;
-                    }
+                    return true;
                 }
             }
         }
 
         public class PrimitiveArrayFieldType
         {
-            private bool[] pBool;
-            private sbyte[] pSbyte;
-            private byte[] pByte;
-            private short[] pShort;
-            private ushort[] pUshort;
-            private char[] pChar;
-            private int[] pInt;
-            private uint[] pUint;
-            private long[] pLong;
-            private ulong[] pUlong;
-            private float[] pFloat;
-            private double[] pDouble;
-            private string[] pString;
-            private Guid?[] pGuid;
+            private bool[] _pBool;
+            private sbyte[] _pSbyte;
+            private byte[] _pByte;
+            private short[] _pShort;
+            private ushort[] _pUshort;
+            private char[] _pChar;
+            private int[] _pInt;
+            private uint[] _pUint;
+            private long[] _pLong;
+            private ulong[] _pUlong;
+            private float[] _pFloat;
+            private double[] _pDouble;
+            private string[] _pString;
+            private Guid?[] _pGuid;
             
             public bool[] PBool
             {
-                get { return pBool; }
-                set { pBool = value; }
+                get { return _pBool; }
+                set { _pBool = value; }
             }
 
             public sbyte[] PSbyte
             {
-                get { return pSbyte; }
-                set { pSbyte = value; }
+                get { return _pSbyte; }
+                set { _pSbyte = value; }
             }
 
             public byte[] PByte
             {
-                get { return pByte; }
-                set { pByte = value; }
+                get { return _pByte; }
+                set { _pByte = value; }
             }
 
             public short[] PShort
             {
-                get { return pShort; }
-                set { pShort = value; }
+                get { return _pShort; }
+                set { _pShort = value; }
             }
 
             public ushort[] PUshort
             {
-                get { return pUshort; }
-                set { pUshort = value; }
+                get { return _pUshort; }
+                set { _pUshort = value; }
             }
 
             public char[] PChar
             {
-                get { return pChar; }
-                set { pChar = value; }
+                get { return _pChar; }
+                set { _pChar = value; }
             }
 
             public int[] PInt
             {
-                get { return pInt; }
-                set { pInt = value; }
+                get { return _pInt; }
+                set { _pInt = value; }
             }
 
             public uint[] PUint
             {
-                get { return pUint; }
-                set { pUint = value; }
+                get { return _pUint; }
+                set { _pUint = value; }
             }
 
             public long[] PLong
             {
-                get { return pLong; }
-                set { pLong = value; }
+                get { return _pLong; }
+                set { _pLong = value; }
             }
 
             public ulong[] PUlong
             {
-                get { return pUlong; }
-                set { pUlong = value; }
+                get { return _pUlong; }
+                set { _pUlong = value; }
             }
 
             public float[] PFloat
             {
-                get { return pFloat; }
-                set { pFloat = value; }
+                get { return _pFloat; }
+                set { _pFloat = value; }
             }
 
             public double[] PDouble
             {
-                get { return pDouble; }
-                set { pDouble = value; }
+                get { return _pDouble; }
+                set { _pDouble = value; }
             }
 
             public string[] PString
             {
-                get { return pString; }
-                set { pString = value; }
+                get { return _pString; }
+                set { _pString = value; }
             }
 
             public Guid?[] PGuid
             {
-                get { return pGuid; }
-                set { pGuid = value; }
+                get { return _pGuid; }
+                set { _pGuid = value; }
             }
 
             /** <inheritdoc /> */
@@ -1612,20 +1561,20 @@ namespace Apache.Ignite.Core.Tests.Portable
                 {
                     PrimitiveArrayFieldType that = (PrimitiveArrayFieldType)obj;
 
-                    return pBool == that.pBool &&
-                        pByte == that.pByte &&
-                        pSbyte == that.pSbyte &&
-                        pShort == that.pShort &&
-                        pUshort == that.pUshort &&
-                        pInt == that.pInt &&
-                        pUint == that.pUint &&
-                        pLong == that.pLong &&
-                        pUlong == that.pUlong &&
-                        pChar == that.pChar &&
-                        pFloat == that.pFloat &&
-                        pDouble == that.pDouble &&
-                        pString == that.pString &&
-                        pGuid == that.pGuid;
+                    return _pBool == that._pBool &&
+                        _pByte == that._pByte &&
+                        _pSbyte == that._pSbyte &&
+                        _pShort == that._pShort &&
+                        _pUshort == that._pUshort &&
+                        _pInt == that._pInt &&
+                        _pUint == that._pUint &&
+                        _pLong == that._pLong &&
+                        _pUlong == that._pUlong &&
+                        _pChar == that._pChar &&
+                        _pFloat == that._pFloat &&
+                        _pDouble == that._pDouble &&
+                        _pString == that._pString &&
+                        _pGuid == that._pGuid;
                 }
                 else
                     return false;
@@ -1634,161 +1583,161 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                return pInt != null && pInt.Length > 0 ? pInt[0].GetHashCode() : 0;
+                return _pInt != null && _pInt.Length > 0 ? _pInt[0].GetHashCode() : 0;
             }
         }
 
         public class SpecialArray
         {
-            public Guid[] guidArr;
-            public Guid?[] nGuidArr;
-            public DateTime[] dateArr;
-            public DateTime?[] nDateArr;
+            public Guid[] GuidArr;
+            public Guid?[] NGuidArr;
+            public DateTime[] DateArr;
+            public DateTime?[] NDateArr;
         }
 
         public class SpecialArrayMarshalAware : SpecialArray, IPortableMarshalAware
         {
             public void WritePortable(IPortableWriter writer)
             {
-                writer.WriteObjectArray("a", guidArr);
-                writer.WriteObjectArray("b", nGuidArr);
-                writer.WriteObjectArray("c", dateArr);
-                writer.WriteObjectArray("d", nDateArr);
+                writer.WriteObjectArray("a", GuidArr);
+                writer.WriteObjectArray("b", NGuidArr);
+                writer.WriteObjectArray("c", DateArr);
+                writer.WriteObjectArray("d", NDateArr);
             }
 
             public void ReadPortable(IPortableReader reader)
             {
-                guidArr = reader.ReadObjectArray<Guid>("a");
-                nGuidArr = reader.ReadObjectArray<Guid?>("b");
-                dateArr = reader.ReadObjectArray<DateTime>("c");
-                nDateArr = reader.ReadObjectArray<DateTime?>("d");
+                GuidArr = reader.ReadObjectArray<Guid>("a");
+                NGuidArr = reader.ReadObjectArray<Guid?>("b");
+                DateArr = reader.ReadObjectArray<DateTime>("c");
+                NDateArr = reader.ReadObjectArray<DateTime?>("d");
             }
         }
 
         public class EnumType
         {
-            private TestEnum pEnum;
-            private TestEnum[] pEnumArr;
+            private TestEnum _pEnum;
+            private TestEnum[] _pEnumArr;
 
             public TestEnum PEnum
             {
-                get { return pEnum; }
-                set { pEnum = value; }
+                get { return _pEnum; }
+                set { _pEnum = value; }
             }
 
             public TestEnum[] PEnumArray
             {
-                get { return pEnumArr; }
-                set { pEnumArr = value; }
+                get { return _pEnumArr; }
+                set { _pEnumArr = value; }
             }
         }
 
         public class PrimitiveFieldType 
         {
-            private bool pBool;
-            private sbyte pSbyte;
-            private byte pByte;
-            private short pShort;
-            private ushort pUshort;
-            private char pChar;
-            private int pInt;
-            private uint pUint;
-            private long pLong;
-            private ulong pUlong;
-            private float pFloat;
-            private double pDouble;
-            private string pString;
-            private Guid pGuid;
-            private Guid? pNguid;
+            private bool _pBool;
+            private sbyte _pSbyte;
+            private byte _pByte;
+            private short _pShort;
+            private ushort _pUshort;
+            private char _pChar;
+            private int _pInt;
+            private uint _pUint;
+            private long _pLong;
+            private ulong _pUlong;
+            private float _pFloat;
+            private double _pDouble;
+            private string _pString;
+            private Guid _pGuid;
+            private Guid? _pNguid;
             
             public bool PBool
             {
-                get { return pBool; }
-                set { pBool = value; }
+                get { return _pBool; }
+                set { _pBool = value; }
             }
 
             public sbyte PSbyte
             {
-                get { return pSbyte; }
-                set { pSbyte = value; }
+                get { return _pSbyte; }
+                set { _pSbyte = value; }
             }
 
             public byte PByte
             {
-                get { return pByte; }
-                set { pByte = value; }
+                get { return _pByte; }
+                set { _pByte = value; }
             }
 
             public short PShort
             {
-                get { return pShort; }
-                set { pShort = value; }
+                get { return _pShort; }
+                set { _pShort = value; }
             }
 
             public ushort PUshort
             {
-                get { return pUshort; }
-                set { pUshort = value; }
+                get { return _pUshort; }
+                set { _pUshort = value; }
             }
 
             public char PChar
             {
-                get { return pChar; }
-                set { pChar = value; }
+                get { return _pChar; }
+                set { _pChar = value; }
             }
 
             public int PInt
             {
-                get { return pInt; }
-                set { pInt = value; }
+                get { return _pInt; }
+                set { _pInt = value; }
             }
 
             public uint PUint
             {
-                get { return pUint; }
-                set { pUint = value; }
+                get { return _pUint; }
+                set { _pUint = value; }
             }
 
             public long PLong
             {
-                get { return pLong; }
-                set { pLong = value; }
+                get { return _pLong; }
+                set { _pLong = value; }
             }
 
             public ulong PUlong
             {
-                get { return pUlong; }
-                set { pUlong = value; }
+                get { return _pUlong; }
+                set { _pUlong = value; }
             }
 
             public float PFloat
             {
-                get { return pFloat; }
-                set { pFloat = value; }
+                get { return _pFloat; }
+                set { _pFloat = value; }
             }
 
             public double PDouble
             {
-                get { return pDouble; }
-                set { pDouble = value; }
+                get { return _pDouble; }
+                set { _pDouble = value; }
             }
 
             public string PString
             {
-                get { return pString; }
-                set { pString = value; }
+                get { return _pString; }
+                set { _pString = value; }
             }
 
             public Guid PGuid
             {
-                get { return pGuid; }
-                set { pGuid = value; }
+                get { return _pGuid; }
+                set { _pGuid = value; }
             }
 
-            public Guid? PNGuid
+            public Guid? PnGuid
             {
-                get { return pNguid; }
-                set { pNguid = value; }
+                get { return _pNguid; }
+                set { _pNguid = value; }
             }
 
             /** <inheritdoc /> */
@@ -1801,21 +1750,21 @@ namespace Apache.Ignite.Core.Tests.Portable
                 {
                     PrimitiveFieldType that = (PrimitiveFieldType)obj;
 
-                    return pBool == that.pBool &&
-                        pByte == that.pByte &&
-                        pSbyte == that.pSbyte &&
-                        pShort == that.pShort &&
-                        pUshort == that.pUshort &&
-                        pInt == that.pInt &&
-                        pUint == that.pUint &&
-                        pLong == that.pLong &&
-                        pUlong == that.pUlong &&
-                        pChar == that.pChar &&
-                        pFloat == that.pFloat &&
-                        pDouble == that.pDouble &&
-                        (pString == null && that.pString == null || pString != null && pString.Equals(that.pString)) &&
-                        pGuid.Equals(that.pGuid) &&
-                        (pNguid == null && that.pNguid == null || pNguid != null && pNguid.Equals(that.pNguid));
+                    return _pBool == that._pBool &&
+                        _pByte == that._pByte &&
+                        _pSbyte == that._pSbyte &&
+                        _pShort == that._pShort &&
+                        _pUshort == that._pUshort &&
+                        _pInt == that._pInt &&
+                        _pUint == that._pUint &&
+                        _pLong == that._pLong &&
+                        _pUlong == that._pUlong &&
+                        _pChar == that._pChar &&
+                        _pFloat == that._pFloat &&
+                        _pDouble == that._pDouble &&
+                        (_pString == null && that._pString == null || _pString != null && _pString.Equals(that._pString)) &&
+                        _pGuid.Equals(that._pGuid) &&
+                        (_pNguid == null && that._pNguid == null || _pNguid != null && _pNguid.Equals(that._pNguid));
                 }
                 else
                     return false;
@@ -1824,7 +1773,8 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                return pInt;
+                // ReSharper disable once NonReadonlyMemberInGetHashCode
+                return _pInt;
             }
         }
 
@@ -1853,7 +1803,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 writer.WriteString("string", PString);
                 writer.WriteGuid("guid", PGuid);
-                writer.WriteGuid("nguid", PNGuid);
+                writer.WriteGuid("nguid", PnGuid);
             }
 
             public unsafe void ReadPortable(IPortableReader reader)
@@ -1880,7 +1830,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 PString = reader.ReadString("string");
                 PGuid = reader.ReadGuid("guid").Value;
-                PNGuid = reader.ReadGuid("nguid");
+                PnGuid = reader.ReadGuid("nguid");
             }
         }
 
@@ -1911,7 +1861,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 rawWriter.WriteString(PString);
                 rawWriter.WriteGuid(PGuid);
-                rawWriter.WriteGuid(PNGuid);
+                rawWriter.WriteGuid(PnGuid);
             }
 
             public unsafe void ReadPortable(IPortableReader reader)
@@ -1940,7 +1890,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 PString = rawReader.ReadString();
                 PGuid = rawReader.ReadGuid().Value;
-                PNGuid = rawReader.ReadGuid();
+                PnGuid = rawReader.ReadGuid();
             }
         }
 
@@ -1971,7 +1921,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 writer.WriteString("string", obj0.PString);
                 writer.WriteGuid("guid", obj0.PGuid);
-                writer.WriteGuid("nguid", obj0.PNGuid);
+                writer.WriteGuid("nguid", obj0.PnGuid);
             }
 
             public unsafe void ReadPortable(object obj, IPortableReader reader)
@@ -2000,7 +1950,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 obj0.PString = reader.ReadString("string");
                 obj0.PGuid = reader.ReadGuid("guid").Value;
-                obj0.PNGuid = reader.ReadGuid("nguid");
+                obj0.PnGuid = reader.ReadGuid("nguid");
             }
         }
 
@@ -2033,7 +1983,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 rawWriter.WriteString(obj0.PString);
                 rawWriter.WriteGuid(obj0.PGuid);
-                rawWriter.WriteGuid(obj0.PNGuid);
+                rawWriter.WriteGuid(obj0.PnGuid);
             }
 
             public unsafe void ReadPortable(object obj, IPortableReader reader)
@@ -2063,7 +2013,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 obj0.PString = rawReader.ReadString();
                 obj0.PGuid = rawReader.ReadGuid().Value;
-                obj0.PNGuid = rawReader.ReadGuid();
+                obj0.PnGuid = rawReader.ReadGuid();
             }
         }
 
@@ -2079,79 +2029,79 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public class HandleOuter : IPortableMarshalAware
         {
-            public string before;
-            public HandleInner inner;
-            public string after;
+            public string Before;
+            public HandleInner Inner;
+            public string After;
 
-            public string rawBefore;
-            public HandleInner rawInner;
-            public string rawAfter;
+            public string RawBefore;
+            public HandleInner RawInner;
+            public string RawAfter;
 
             /** <inheritdoc /> */
             virtual public void WritePortable(IPortableWriter writer)
             {
-                writer.WriteString("before", before);
-                writer.WriteObject("inner", inner);
-                writer.WriteString("after", after);
+                writer.WriteString("before", Before);
+                writer.WriteObject("inner", Inner);
+                writer.WriteString("after", After);
 
                 IPortableRawWriter rawWriter = writer.RawWriter();
 
-                rawWriter.WriteString(rawBefore);
-                rawWriter.WriteObject(rawInner);
-                rawWriter.WriteString(rawAfter);
+                rawWriter.WriteString(RawBefore);
+                rawWriter.WriteObject(RawInner);
+                rawWriter.WriteString(RawAfter);
             }
 
             /** <inheritdoc /> */
             virtual public void ReadPortable(IPortableReader reader)
             {
-                before = reader.ReadString("before");
-                inner = reader.ReadObject<HandleInner>("inner");
-                after = reader.ReadString("after");
+                Before = reader.ReadString("before");
+                Inner = reader.ReadObject<HandleInner>("inner");
+                After = reader.ReadString("after");
 
                 IPortableRawReader rawReader = reader.RawReader();
 
-                rawBefore = rawReader.ReadString();
-                rawInner = rawReader.ReadObject<HandleInner>();
-                rawAfter = rawReader.ReadString();
+                RawBefore = rawReader.ReadString();
+                RawInner = rawReader.ReadObject<HandleInner>();
+                RawAfter = rawReader.ReadString();
             }
         }
 
         public class HandleInner : IPortableMarshalAware
         {
-            public string before;
-            public HandleOuter outer;
-            public string after;
+            public string Before;
+            public HandleOuter Outer;
+            public string After;
 
-            public string rawBefore;
-            public HandleOuter rawOuter;
-            public string rawAfter;
+            public string RawBefore;
+            public HandleOuter RawOuter;
+            public string RawAfter;
 
             /** <inheritdoc /> */
             virtual public void WritePortable(IPortableWriter writer)
             {
-                writer.WriteString("before", before);
-                writer.WriteObject("outer", outer);
-                writer.WriteString("after", after);
+                writer.WriteString("before", Before);
+                writer.WriteObject("outer", Outer);
+                writer.WriteString("after", After);
 
                 IPortableRawWriter rawWriter = writer.RawWriter();
 
-                rawWriter.WriteString(rawBefore);
-                rawWriter.WriteObject(rawOuter);
-                rawWriter.WriteString(rawAfter);
+                rawWriter.WriteString(RawBefore);
+                rawWriter.WriteObject(RawOuter);
+                rawWriter.WriteString(RawAfter);
             }
 
             /** <inheritdoc /> */
             virtual public void ReadPortable(IPortableReader reader)
             {
-                before = reader.ReadString("before");
-                outer = reader.ReadObject<HandleOuter>("outer");
-                after = reader.ReadString("after");
+                Before = reader.ReadString("before");
+                Outer = reader.ReadObject<HandleOuter>("outer");
+                After = reader.ReadString("after");
 
                 IPortableRawReader rawReader = reader.RawReader();
 
-                rawBefore = rawReader.ReadString();
-                rawOuter = rawReader.ReadObject<HandleOuter>();
-                rawAfter = rawReader.ReadString();
+                RawBefore = rawReader.ReadString();
+                RawOuter = rawReader.ReadObject<HandleOuter>();
+                RawAfter = rawReader.ReadString();
             }
         }
 
@@ -2163,21 +2113,21 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 var writer0 = (IPortableWriterEx)writer;
 
-                writer.WriteString("before", before);
+                writer.WriteString("before", Before);
 
                 writer0.DetachNext();
-                writer.WriteObject("inner", inner);
+                writer.WriteObject("inner", Inner);
 
-                writer.WriteString("after", after);
+                writer.WriteString("after", After);
 
                 IPortableRawWriter rawWriter = writer.RawWriter();
 
-                rawWriter.WriteString(rawBefore);
+                rawWriter.WriteString(RawBefore);
 
                 writer0.DetachNext();
-                rawWriter.WriteObject(rawInner);
+                rawWriter.WriteObject(RawInner);
 
-                rawWriter.WriteString(rawAfter);
+                rawWriter.WriteString(RawAfter);
             }
 
             /** <inheritdoc /> */
@@ -2185,27 +2135,27 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 var reader0 = (IPortableReaderEx) reader;
 
-                before = reader0.ReadString("before");
+                Before = reader0.ReadString("before");
 
                 reader0.DetachNext();
-                inner = reader0.ReadObject<HandleInner>("inner");
+                Inner = reader0.ReadObject<HandleInner>("inner");
 
-                after = reader0.ReadString("after");
+                After = reader0.ReadString("after");
 
                 var rawReader = (IPortableReaderEx) reader.RawReader();
 
-                rawBefore = rawReader.ReadString();
+                RawBefore = rawReader.ReadString();
 
                 reader0.DetachNext();
-                rawInner = rawReader.ReadObject<HandleInner>();
+                RawInner = rawReader.ReadObject<HandleInner>();
 
-                rawAfter = rawReader.ReadString();
+                RawAfter = rawReader.ReadString();
             }
         }
 
         public class PropertyType
         {
-            public int field1;
+            public int Field1;
 
             public int Field2
             {
@@ -2216,48 +2166,48 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public enum TestEnum
         {
-            VAL1, VAL2, VAL3 = 10
+            Val1, Val2, Val3 = 10
         }
 
         public class DecimalReflective
         {
             /** */
-            public decimal val;
+            public decimal Val;
 
             /** */
-            public decimal[] valArr;
+            public decimal[] ValArr;
         }
 
         public class DecimalMarshalAware : DecimalReflective, IPortableMarshalAware
         {
             /** */
-            public decimal rawVal;
+            public decimal RawVal;
 
             /** */
-            public decimal[] rawValArr;
+            public decimal[] RawValArr;
 
             /** <inheritDoc /> */
             public void WritePortable(IPortableWriter writer)
             {
-                writer.WriteDecimal("val", val);
-                writer.WriteDecimalArray("valArr", valArr);
+                writer.WriteDecimal("val", Val);
+                writer.WriteDecimalArray("valArr", ValArr);
 
                 IPortableRawWriter rawWriter = writer.RawWriter();
 
-                rawWriter.WriteDecimal(rawVal);
-                rawWriter.WriteDecimalArray(rawValArr);
+                rawWriter.WriteDecimal(RawVal);
+                rawWriter.WriteDecimalArray(RawValArr);
             }
 
             /** <inheritDoc /> */
             public void ReadPortable(IPortableReader reader)
             {
-                val = reader.ReadDecimal("val");
-                valArr = reader.ReadDecimalArray("valArr");
+                Val = reader.ReadDecimal("val");
+                ValArr = reader.ReadDecimalArray("valArr");
 
                 IPortableRawReader rawReader = reader.RawReader();
 
-                rawVal = rawReader.ReadDecimal();
-                rawValArr = rawReader.ReadDecimalArray();
+                RawVal = rawReader.ReadDecimal();
+                RawValArr = rawReader.ReadDecimalArray();
             }
         }
 
@@ -2266,23 +2216,23 @@ namespace Apache.Ignite.Core.Tests.Portable
         /// </summary>
         public class DateTimeType : IPortableMarshalAware
         {
-            public DateTime loc;
-            public DateTime utc;
+            public DateTime Loc;
+            public DateTime Utc;
 
-            public DateTime? locNull;
-            public DateTime? utcNull;
+            public DateTime? LocNull;
+            public DateTime? UtcNull;
 
-            public DateTime?[] locArr;
-            public DateTime?[] utcArr;
+            public DateTime?[] LocArr;
+            public DateTime?[] UtcArr;
 
-            public DateTime locRaw;
-            public DateTime utcRaw;
+            public DateTime LocRaw;
+            public DateTime UtcRaw;
 
-            public DateTime? locNullRaw;
-            public DateTime? utcNullRaw;
+            public DateTime? LocNullRaw;
+            public DateTime? UtcNullRaw;
 
-            public DateTime?[] locArrRaw;
-            public DateTime?[] utcArrRaw;
+            public DateTime?[] LocArrRaw;
+            public DateTime?[] UtcArrRaw;
 
             /// <summary>
             /// Constructor.
@@ -2290,63 +2240,63 @@ namespace Apache.Ignite.Core.Tests.Portable
             /// <param name="now">Current local time.</param>
             public DateTimeType(DateTime now)
             {
-                loc = now;
-                utc = now.ToUniversalTime();
+                Loc = now;
+                Utc = now.ToUniversalTime();
 
-                locNull = loc;
-                utcNull = utc;
+                LocNull = Loc;
+                UtcNull = Utc;
 
-                locArr = new DateTime?[] { loc };
-                utcArr = new DateTime?[] { utc };
+                LocArr = new DateTime?[] { Loc };
+                UtcArr = new DateTime?[] { Utc };
 
-                locRaw = loc;
-                utcRaw = utc;
+                LocRaw = Loc;
+                UtcRaw = Utc;
 
-                locNullRaw = locNull;
-                utcNullRaw = utcNull;
+                LocNullRaw = LocNull;
+                UtcNullRaw = UtcNull;
 
-                locArrRaw = new DateTime?[] { locArr[0] };
-                utcArrRaw = new DateTime?[] { utcArr[0] };
+                LocArrRaw = new[] { LocArr[0] };
+                UtcArrRaw = new[] { UtcArr[0] };
             }
 
             /** <inheritDoc /> */
             public void WritePortable(IPortableWriter writer)
             {
-                writer.WriteDate("loc", loc);
-                writer.WriteDate("utc", utc);
-                writer.WriteDate("locNull", locNull);
-                writer.WriteDate("utcNull", utcNull);
-                writer.WriteDateArray("locArr", locArr);
-                writer.WriteDateArray("utcArr", utcArr);
+                writer.WriteDate("loc", Loc);
+                writer.WriteDate("utc", Utc);
+                writer.WriteDate("locNull", LocNull);
+                writer.WriteDate("utcNull", UtcNull);
+                writer.WriteDateArray("locArr", LocArr);
+                writer.WriteDateArray("utcArr", UtcArr);
 
                 IPortableRawWriter rawWriter = writer.RawWriter();
 
-                rawWriter.WriteDate(locRaw);
-                rawWriter.WriteDate(utcRaw);
-                rawWriter.WriteDate(locNullRaw);
-                rawWriter.WriteDate(utcNullRaw);
-                rawWriter.WriteDateArray(locArrRaw);
-                rawWriter.WriteDateArray(utcArrRaw);
+                rawWriter.WriteDate(LocRaw);
+                rawWriter.WriteDate(UtcRaw);
+                rawWriter.WriteDate(LocNullRaw);
+                rawWriter.WriteDate(UtcNullRaw);
+                rawWriter.WriteDateArray(LocArrRaw);
+                rawWriter.WriteDateArray(UtcArrRaw);
             }
 
             /** <inheritDoc /> */
             public void ReadPortable(IPortableReader reader)
             {
-                loc = reader.ReadDate("loc", true).Value;
-                utc = reader.ReadDate("utc", false).Value;
-                locNull = reader.ReadDate("loc", true).Value;
-                utcNull = reader.ReadDate("utc", false).Value;
-                locArr = reader.ReadDateArray("locArr", true);
-                utcArr = reader.ReadDateArray("utcArr", false);
+                Loc = reader.ReadDate("loc", true).Value;
+                Utc = reader.ReadDate("utc", false).Value;
+                LocNull = reader.ReadDate("loc", true).Value;
+                UtcNull = reader.ReadDate("utc", false).Value;
+                LocArr = reader.ReadDateArray("locArr", true);
+                UtcArr = reader.ReadDateArray("utcArr", false);
 
                 IPortableRawReader rawReader = reader.RawReader();
 
-                locRaw = rawReader.ReadDate(true).Value;
-                utcRaw = rawReader.ReadDate(false).Value;
-                locNullRaw = rawReader.ReadDate(true).Value;
-                utcNullRaw = rawReader.ReadDate(false).Value;
-                locArrRaw = rawReader.ReadDateArray(true);
-                utcArrRaw = rawReader.ReadDateArray(false);
+                LocRaw = rawReader.ReadDate(true).Value;
+                UtcRaw = rawReader.ReadDate(false).Value;
+                LocNullRaw = rawReader.ReadDate(true).Value;
+                UtcNullRaw = rawReader.ReadDate(false).Value;
+                LocArrRaw = rawReader.ReadDateArray(true);
+                UtcArrRaw = rawReader.ReadDateArray(false);
             }
         }
     }
