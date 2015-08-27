@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveSbyteArray()
         {
             sbyte[] vals = { SByte.MinValue, 0, 1, SByte.MaxValue };
-            sbyte[] newVals = _marsh.Unmarshal<sbyte[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<sbyte[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveByteArray()
         {
             byte[] vals = { Byte.MinValue, 0, 1, Byte.MaxValue };
-            byte[] newVals = _marsh.Unmarshal<byte[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<byte[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveShortArray()
         {
             short[] vals = { Int16.MinValue, 0, 1, Int16.MaxValue };
-            short[] newVals = _marsh.Unmarshal<short[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<short[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveUshortArray()
         {
             ushort[] vals = { UInt16.MinValue, 0, 1, UInt16.MaxValue };
-            ushort[] newVals = _marsh.Unmarshal<ushort[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<ushort[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveCharArray()
         {
             char[] vals = { Char.MinValue, (char)0, (char)1, Char.MaxValue };
-            char[] newVals = _marsh.Unmarshal<char[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<char[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -223,7 +223,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveIntArray()
         {
             int[] vals = { Int32.MinValue, 0, 1, Int32.MaxValue };
-            int[] newVals = _marsh.Unmarshal<int[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<int[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveUintArray()
         {
             uint[] vals = { UInt32.MinValue, 0, 1, UInt32.MaxValue };
-            uint[] newVals = _marsh.Unmarshal<uint[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<uint[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -275,7 +275,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveLongArray()
         {
             long[] vals = { Int64.MinValue, 0, 1, Int64.MaxValue };
-            long[] newVals = _marsh.Unmarshal<long[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<long[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -301,7 +301,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveUlongArray()
         {
             ulong[] vals = { UInt64.MinValue, 0, 1, UInt64.MaxValue };
-            ulong[] newVals = _marsh.Unmarshal<ulong[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<ulong[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveFloatArray()
         {
             float[] vals = { float.MinValue, 0, 1, float.MaxValue };
-            float[] newVals = _marsh.Unmarshal<float[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<float[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -353,7 +353,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveDoubleArray()
         {
             double[] vals = { double.MinValue, 0, 1, double.MaxValue };
-            double[] newVals = _marsh.Unmarshal<double[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<double[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -413,7 +413,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveDecimalArray()
         {
             decimal[] vals = { decimal.One, decimal.Parse("11,12") };
-            decimal[] newVals = _marsh.Unmarshal<decimal[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<decimal[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -435,7 +435,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWriteStringArray()
         {
             string[] vals = { "str1", null, "", "str2", null};
-            string[] newVals = _marsh.Unmarshal<string[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<string[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -446,7 +446,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWriteGuid()
         {
-            Guid guid = Guid.NewGuid();
+            var guid = Guid.NewGuid();
             Guid? nGuid = guid;
 
             Assert.AreEqual(_marsh.Unmarshal<Guid>(_marsh.Marshal(guid)), guid);
@@ -465,7 +465,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWriteGuidArray()
         {
             Guid?[] vals = { Guid.NewGuid(), null, Guid.Empty, Guid.NewGuid(), null };
-            Guid?[] newVals = _marsh.Unmarshal<Guid?[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<Guid?[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -476,7 +476,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWriteEnum()
         {
-            TestEnum val = TestEnum.Val1;
+            var val = TestEnum.Val1;
 
             Assert.AreEqual(_marsh.Unmarshal<TestEnum>(_marsh.Marshal(val)), val);
         }
@@ -488,7 +488,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWriteEnumArray()
         {
             TestEnum[] vals = { TestEnum.Val2, TestEnum.Val3 };
-            TestEnum[] newVals = _marsh.Unmarshal<TestEnum[]>(_marsh.Marshal(vals));
+            var newVals = _marsh.Unmarshal<TestEnum[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -498,7 +498,7 @@ namespace Apache.Ignite.Core.Tests.Portable
          */
         [Test]
         public void TestWriteDate() {
-            DateTime time = DateTime.Now.ToUniversalTime();
+            var time = DateTime.Now.ToUniversalTime();
 
             Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(time)), time);
         }
@@ -509,17 +509,17 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestDateObject()
         {
-            PortableMarshaller marsh = new PortableMarshaller(new PortableConfiguration
+            var marsh = new PortableMarshaller(new PortableConfiguration
             {
                 TypeConfigurations =
                     new List<PortableTypeConfiguration> {new PortableTypeConfiguration(typeof (DateTimeType))}
             }, new IgniteContext());
 
-            DateTime now = DateTime.Now;
+            var now = DateTime.Now;
 
-            DateTimeType obj = new DateTimeType(now);
+            var obj = new DateTimeType(now);
 
-            DateTimeType otherObj = marsh.Unmarshal<DateTimeType>(marsh.Marshal(obj));
+            var otherObj = marsh.Unmarshal<DateTimeType>(marsh.Marshal(obj));
 
             Assert.AreEqual(obj.Loc, otherObj.Loc);
             Assert.AreEqual(obj.Utc, otherObj.Utc);
@@ -546,7 +546,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             list.Add("1");
 
-            byte[] data = _marsh.Marshal(list);
+            var data = _marsh.Marshal(list);
 
             var newObjList = _marsh.Unmarshal<List<object>>(data);
 
@@ -565,9 +565,9 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             var typeCfgs = new List<PortableTypeConfiguration> {new PortableTypeConfiguration(typeof (PropertyType))};
 
-            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
+            var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg, new IgniteContext());
 
             var obj = new PropertyType
             {
@@ -575,14 +575,14 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Field2 = 2
             };
 
-            byte[] data = marsh.Marshal(obj);
+            var data = marsh.Marshal(obj);
 
-            PropertyType newObj = marsh.Unmarshal<PropertyType>(data);
+            var newObj = marsh.Unmarshal<PropertyType>(data);
 
             Assert.AreEqual(obj.Field1, newObj.Field1);
             Assert.AreEqual(obj.Field2, newObj.Field2);
 
-            IPortableObject portNewObj = marsh.Unmarshal<IPortableObject>(data, PortableMode.ForcePortable);
+            var portNewObj = marsh.Unmarshal<IPortableObject>(data, PortableMode.ForcePortable);
 
             Assert.AreEqual(obj.Field1, portNewObj.GetField<int>("field1"));
             Assert.AreEqual(obj.Field2, portNewObj.GetField<int>("Field2"));
@@ -594,18 +594,16 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsReflective()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            var typeCfgs = new List<PortableTypeConfiguration>
+            {
+                new PortableTypeConfiguration(typeof (PrimitiveFieldType))
+            };
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(PrimitiveFieldType)));
+            var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            var marsh = new PortableMarshaller(cfg, new IgniteContext());
 
-            cfg.TypeConfigurations = typeCfgs;
-
-            PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
-
-            PrimitiveFieldType obj = new PrimitiveFieldType();
+            var obj = new PrimitiveFieldType();
 
             CheckPrimitiveFields(marsh, obj);
         }
@@ -616,18 +614,16 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsPortable()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            var typeCfgs = new List<PortableTypeConfiguration>
+            {
+                new PortableTypeConfiguration(typeof (PrimitiveFieldPortableType))
+            };
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(PrimitiveFieldPortableType)));
+            var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            var marsh = new PortableMarshaller(cfg, new IgniteContext());
 
-            cfg.TypeConfigurations = typeCfgs;
-
-            PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
-
-            PrimitiveFieldPortableType obj = new PrimitiveFieldPortableType();
+            var obj = new PrimitiveFieldPortableType();
 
             CheckPrimitiveFields(marsh, obj);
         }
@@ -638,18 +634,16 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsRawPortable()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            var typeCfgs = new List<PortableTypeConfiguration>
+            {
+                new PortableTypeConfiguration(typeof (PrimitiveFieldRawPortableType))
+            };
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(PrimitiveFieldRawPortableType)));
+            var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            var marsh = new PortableMarshaller(cfg, new IgniteContext());
 
-            cfg.TypeConfigurations = typeCfgs;
-
-            PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
-
-            PrimitiveFieldRawPortableType obj = new PrimitiveFieldRawPortableType();
+            var obj = new PrimitiveFieldRawPortableType();
 
             CheckPrimitiveFields(marsh, obj);
         }
@@ -660,23 +654,19 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsSerializer()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
-
-            PortableTypeConfiguration typeCfg =
-                new PortableTypeConfiguration(typeof(PrimitiveFieldType));
-
-            typeCfg.Serializer = new PrimitiveFieldsSerializer();
+            var typeCfgs = new List<PortableTypeConfiguration>
+            {
+                new PortableTypeConfiguration(typeof (PrimitiveFieldType))
+                {
+                    Serializer = new PrimitiveFieldsSerializer()
+                }
+            };
             
-            typeCfgs.Add(typeCfg);
+            var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            var marsh = new PortableMarshaller(cfg, new IgniteContext());
 
-            cfg.TypeConfigurations = typeCfgs;
-
-            PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
-
-            PrimitiveFieldType obj = new PrimitiveFieldType();
+            var obj = new PrimitiveFieldType();
 
             CheckPrimitiveFields(marsh, obj);
         }
@@ -687,24 +677,25 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestDecimalFields()
         {
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = new List<PortableTypeConfiguration> 
-            { 
-                new PortableTypeConfiguration(typeof(DecimalReflective)),
-                new PortableTypeConfiguration(typeof(DecimalMarshalAware))
+            var cfg = new PortableConfiguration
+            {
+                TypeConfigurations = new List<PortableTypeConfiguration>
+                {
+                    new PortableTypeConfiguration(typeof (DecimalReflective)),
+                    new PortableTypeConfiguration(typeof (DecimalMarshalAware))
+                }
             };
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg, new IgniteContext());
 
             // 1. Test reflective stuff.
-            DecimalReflective obj1 = new DecimalReflective
+            var obj1 = new DecimalReflective
             {
                 Val = decimal.Zero,
                 ValArr = new[] {decimal.One, decimal.MinusOne}
             };
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj1), PortableMode.ForcePortable);
+            var portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj1), PortableMode.ForcePortable);
 
             Assert.AreEqual(obj1.Val, portObj.GetField<decimal>("val"));
             Assert.AreEqual(obj1.ValArr, portObj.GetField<decimal[]>("valArr"));
@@ -713,7 +704,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(obj1.ValArr, portObj.Deserialize<DecimalReflective>().ValArr);
 
             // 2. Test marshal aware stuff.
-            DecimalMarshalAware obj2 = new DecimalMarshalAware
+            var obj2 = new DecimalMarshalAware
             {
                 Val = decimal.Zero,
                 ValArr = new[] {decimal.One, decimal.MinusOne},
@@ -738,23 +729,19 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsRawSerializer()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            var typeCfgs = new List<PortableTypeConfiguration>
+            {
+                new PortableTypeConfiguration(typeof (PrimitiveFieldType))
+                {
+                    Serializer = new PrimitiveFieldsRawSerializer()
+                }
+            };
 
-            PortableTypeConfiguration typeCfg =
-                new PortableTypeConfiguration(typeof(PrimitiveFieldType));
+            var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            typeCfg.Serializer = new PrimitiveFieldsRawSerializer();
+            var marsh = new PortableMarshaller(cfg, new IgniteContext());
 
-            typeCfgs.Add(typeCfg);
-
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
-
-            PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
-
-            PrimitiveFieldType obj = new PrimitiveFieldType();
+            var obj = new PrimitiveFieldType();
 
             CheckPrimitiveFields(marsh, obj);
         }
@@ -795,13 +782,13 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         private void CheckPrimitiveFieldsSerialization(PortableMarshaller marsh, PrimitiveFieldType obj)
         {
-            byte[] bytes = marsh.Marshal(obj);
+            var bytes = marsh.Marshal(obj);
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            var portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
 
             Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
-            PrimitiveFieldType newObj = portObj.Deserialize<PrimitiveFieldType>();
+            var newObj = portObj.Deserialize<PrimitiveFieldType>();
 
             Assert.AreEqual(obj, newObj);
         }
@@ -818,19 +805,19 @@ namespace Apache.Ignite.Core.Tests.Portable
                     new List<PortableTypeConfiguration> {new PortableTypeConfiguration(typeof (EnumType))}
             }, new IgniteContext());
 
-            EnumType obj = new EnumType
+            var obj = new EnumType
             {
                 PEnum = TestEnum.Val1,
                 PEnumArray = new[] {TestEnum.Val2, TestEnum.Val3}
             };
 
-            byte[] bytes = marsh.Marshal(obj);
+            var bytes = marsh.Marshal(obj);
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            var portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
 
             Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
-            EnumType newObj = portObj.Deserialize<EnumType>();
+            var newObj = portObj.Deserialize<EnumType>();
 
             Assert.AreEqual(obj.PEnum, newObj.PEnum);
             Assert.AreEqual(obj.PEnumArray, newObj.PEnumArray);
@@ -842,50 +829,49 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestCollectionsReflective()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs =
-                new List<PortableTypeConfiguration>();
+            var typeCfgs = new List<PortableTypeConfiguration>
+            {
+                new PortableTypeConfiguration(typeof (CollectionsType)),
+                new PortableTypeConfiguration(typeof (InnerObjectType))
+            };
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(CollectionsType)));
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(InnerObjectType)));
+            var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            var marsh = new PortableMarshaller(cfg, new IgniteContext());
 
-            cfg.TypeConfigurations = typeCfgs;
+            var obj = new CollectionsType();
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var list = new ArrayList
+            {
+                true,
+                (byte) 1,
+                (short) 2,
+                'a',
+                3,
+                (long) 4,
+                (float) 5,
+                (double) 6,
+                "string",
+                Guid.NewGuid()
+            };
 
-            CollectionsType obj = new CollectionsType();
+            var innerObj = new InnerObjectType
+            {
+                PInt1 = 1,
+                PInt2 = 2
+            };
 
-            ArrayList list = new ArrayList();
-
-            list.Add(true);
-            list.Add((byte)1);
-            list.Add((short)2);
-            list.Add('a');
-            list.Add(3);
-            list.Add((long)4);
-            list.Add((float)5);
-            list.Add((double)6);
-
-            list.Add("string");
-            list.Add(Guid.NewGuid());
-
-            InnerObjectType innerObj = new InnerObjectType();
-
-            innerObj.PInt1 = 1;
-            innerObj.PInt2 = 2;
-            
             list.Add(innerObj);
 
             obj.Col1 = list;
 
-            byte[] bytes = marsh.Marshal(obj);
+            var bytes = marsh.Marshal(obj);
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            var portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
 
             Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
-            CollectionsType newObj = portObj.Deserialize<CollectionsType>();
+            var newObj = portObj.Deserialize<CollectionsType>();
 
             Assert.AreEqual(obj, newObj);
 
@@ -909,17 +895,16 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestObjectReflective()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            var typeCfgs = new List<PortableTypeConfiguration>
+            {
+                new PortableTypeConfiguration(typeof (OuterObjectType)),
+                new PortableTypeConfiguration(typeof (InnerObjectType))
+            };
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(OuterObjectType)));
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(InnerObjectType)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            cfg.TypeConfigurations = typeCfgs;
-
-            PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg, new IgniteContext());
 
             CheckObject(marsh, new OuterObjectType(), new InnerObjectType());
         }
@@ -930,31 +915,32 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestHandles()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs =
-                new List<PortableTypeConfiguration>();
+            var typeCfgs = new List<PortableTypeConfiguration>
+            {
+                new PortableTypeConfiguration(typeof (HandleInner)),
+                new PortableTypeConfiguration(typeof (HandleOuter))
+            };
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(HandleInner)));
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(HandleOuter)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            cfg.TypeConfigurations = typeCfgs;
+            var marsh = new PortableMarshaller(cfg, new IgniteContext());
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var outer = new HandleOuter
+            {
+                Before = "outBefore",
+                After = "outAfter",
+                RawBefore = "outRawBefore",
+                RawAfter = "outRawAfter"
+            };
 
-            HandleOuter outer = new HandleOuter();
-
-            outer.Before = "outBefore";
-            outer.After = "outAfter";
-            outer.RawBefore = "outRawBefore";
-            outer.RawAfter = "outRawAfter";
-
-            HandleInner inner = new HandleInner();
-
-            inner.Before = "inBefore";
-            inner.After = "inAfter";
-            inner.RawBefore = "inRawBefore";
-            inner.RawAfter = "inRawAfter";
+            var inner = new HandleInner
+            {
+                Before = "inBefore",
+                After = "inAfter",
+                RawBefore = "inRawBefore",
+                RawAfter = "inRawAfter"
+            };
 
             outer.Inner = inner;
             outer.RawInner = inner;
@@ -962,17 +948,17 @@ namespace Apache.Ignite.Core.Tests.Portable
             inner.Outer = outer;
             inner.RawOuter = outer;
 
-            byte[] bytes = marsh.Marshal(outer);
+            var bytes = marsh.Marshal(outer);
 
-            IPortableObject outerObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            var outerObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
 
-            HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
-            HandleInner newInner = newOuter.Inner;
+            var newOuter = outerObj.Deserialize<HandleOuter>();
+            var newInner = newOuter.Inner;
 
             CheckHandlesConsistency(outer, inner, newOuter, newInner);
 
             // Get inner object by field.
-            IPortableObject innerObj = outerObj.GetField<IPortableObject>("inner");
+            var innerObj = outerObj.GetField<IPortableObject>("inner");
 
             newInner = innerObj.Deserialize<HandleInner>();
             newOuter = newInner.Outer;
@@ -1042,7 +1028,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             else
                 outerObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
 
-            HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
+            var newOuter = outerObj.Deserialize<HandleOuter>();
 
             Assert.IsFalse(newOuter == newOuter.Inner.Outer);
             Assert.IsFalse(newOuter == newOuter.Inner.RawOuter);
@@ -1075,11 +1061,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestKeepSerializedDefaultFalse()
         {
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.DefaultKeepDeserialized = false;
-
-            CheckKeepSerialized(cfg, false);
+            CheckKeepSerialized(new PortableConfiguration {DefaultKeepDeserialized = false}, false);
         }
 
         ///
@@ -1088,13 +1070,13 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestKeepSerializedTypeCfgFalse()
         {
-            PortableTypeConfiguration typeCfg = new PortableTypeConfiguration(typeof(PropertyType));
-
-            typeCfg.KeepDeserialized = false;
-
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = new List<PortableTypeConfiguration>() { typeCfg };
+            var cfg = new PortableConfiguration
+            {
+                TypeConfigurations = new List<PortableTypeConfiguration>
+                {
+                    new PortableTypeConfiguration(typeof (PropertyType)) {KeepDeserialized = false}
+                }
+            };
 
             CheckKeepSerialized(cfg, false);
         }
@@ -1105,13 +1087,16 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestKeepSerializedTypeCfgTrue()
         {
-            PortableTypeConfiguration typeCfg = new PortableTypeConfiguration(typeof(PropertyType));
-            typeCfg.KeepDeserialized = true;
+            var typeCfg = new PortableTypeConfiguration(typeof (PropertyType))
+            {
+                KeepDeserialized = true
+            };
 
-            PortableConfiguration cfg = new PortableConfiguration();
-            cfg.DefaultKeepDeserialized = false;
-
-            cfg.TypeConfigurations = new List<PortableTypeConfiguration>() { typeCfg };
+            var cfg = new PortableConfiguration
+            {
+                DefaultKeepDeserialized = false,
+                TypeConfigurations = new List<PortableTypeConfiguration>() {typeCfg}
+            };
 
             CheckKeepSerialized(cfg, true);
         }
@@ -1122,17 +1107,15 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestSpecialArrays()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs =
-                new List<PortableTypeConfiguration>();
+            var typeCfgs = new List<PortableTypeConfiguration>
+            {
+                new PortableTypeConfiguration(typeof (SpecialArray)),
+                new PortableTypeConfiguration(typeof (SpecialArrayMarshalAware))
+            };
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(SpecialArray)));
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(SpecialArrayMarshalAware)));
+            var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
-
-            PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg, new IgniteContext());
 
             Guid[] guidArr = { Guid.NewGuid() };
             Guid?[] nGuidArr = { Guid.NewGuid() };
@@ -1148,9 +1131,9 @@ namespace Apache.Ignite.Core.Tests.Portable
                 NDateArr = nDateArr
             };
 
-            byte[] bytes = marsh.Marshal(obj1);
+            var bytes = marsh.Marshal(obj1);
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            var portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
 
             Assert.AreEqual(guidArr, portObj.GetField<Guid[]>("guidArr"));
             Assert.AreEqual(nGuidArr, portObj.GetField<Guid?[]>("nGuidArr"));
@@ -1200,14 +1183,14 @@ namespace Apache.Ignite.Core.Tests.Portable
                 };
             }
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg, new IgniteContext());
 
-            byte[] data = marsh.Marshal(new PropertyType());
+            var data = marsh.Marshal(new PropertyType());
 
-            IPortableObject portNewObj = marsh.Unmarshal<IPortableObject>(data, PortableMode.ForcePortable);
+            var portNewObj = marsh.Unmarshal<IPortableObject>(data, PortableMode.ForcePortable);
 
-            PropertyType deserialized1 = portNewObj.Deserialize<PropertyType>();
-            PropertyType deserialized2 = portNewObj.Deserialize<PropertyType>();
+            var deserialized1 = portNewObj.Deserialize<PropertyType>();
+            var deserialized2 = portNewObj.Deserialize<PropertyType>();
 
             Assert.NotNull(deserialized1);
 
@@ -1241,13 +1224,13 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             outObj.InObj = inObj;
 
-            byte[] bytes = marsh.Marshal(outObj);
+            var bytes = marsh.Marshal(outObj);
 
-            IPortableObject portOutObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            var portOutObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
 
             Assert.AreEqual(outObj.GetHashCode(), portOutObj.GetHashCode());
 
-            OuterObjectType newOutObj = portOutObj.Deserialize<OuterObjectType>();
+            var newOutObj = portOutObj.Deserialize<OuterObjectType>();
 
             Assert.AreEqual(outObj, newOutObj);
         }
@@ -1324,7 +1307,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                int res = Col1 != null ? Col1.GetHashCode() : 0;
+                var res = Col1 != null ? Col1.GetHashCode() : 0;
 
                 res = 31 * res + (Col2 != null ? Col2.GetHashCode() : 0);
 
@@ -1345,11 +1328,11 @@ namespace Apache.Ignite.Core.Tests.Portable
                 return null;
             else
             {
-                StringBuilder sb = new StringBuilder("[");
+                var sb = new StringBuilder("[");
 
-                bool first = true;
+                var first = true;
 
-                foreach (Object elem in col)
+                foreach (var elem in col)
                 {
                     if (first)
                         first = false;
@@ -1559,10 +1542,10 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteFloat("float", PFloat);
                 writer.WriteDouble("double", PDouble);
 
-                sbyte sByte = PSbyte;
-                ushort uShort = PUshort;
-                uint uInt = PUint;
-                ulong uLong = PUlong;
+                var sByte = PSbyte;
+                var uShort = PUshort;
+                var uInt = PUint;
+                var uLong = PUlong;
 
                 writer.WriteByte("sbyte", *(byte*)&sByte);
                 writer.WriteShort("ushort", *(short*)&uShort);
@@ -1586,10 +1569,10 @@ namespace Apache.Ignite.Core.Tests.Portable
                 PFloat = reader.ReadFloat("float");
                 PDouble = reader.ReadDouble("double");
 
-                byte sByte = reader.ReadByte("sbyte");
-                short uShort = reader.ReadShort("ushort");
-                int uInt = reader.ReadInt("uint");
-                long uLong = reader.ReadLong("ulong");
+                var sByte = reader.ReadByte("sbyte");
+                var uShort = reader.ReadShort("ushort");
+                var uInt = reader.ReadInt("uint");
+                var uLong = reader.ReadLong("ulong");
 
                 PSbyte = *(sbyte*)&sByte;
                 PUshort = *(ushort*)&uShort;
@@ -1606,7 +1589,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             public unsafe void WritePortable(IPortableWriter writer)
             {
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                var rawWriter = writer.RawWriter();
 
                 rawWriter.WriteBoolean(PBool);
                 rawWriter.WriteByte(PByte);
@@ -1617,10 +1600,10 @@ namespace Apache.Ignite.Core.Tests.Portable
                 rawWriter.WriteFloat(PFloat);
                 rawWriter.WriteDouble(PDouble);
 
-                sbyte sByte = PSbyte;
-                ushort uShort = PUshort;
-                uint uInt = PUint;
-                ulong uLong = PUlong;
+                var sByte = PSbyte;
+                var uShort = PUshort;
+                var uInt = PUint;
+                var uLong = PUlong;
 
                 rawWriter.WriteByte(*(byte*)&sByte);
                 rawWriter.WriteShort(*(short*)&uShort);
@@ -1634,7 +1617,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             public unsafe void ReadPortable(IPortableReader reader)
             {
-                IPortableRawReader rawReader = reader.RawReader();
+                var rawReader = reader.RawReader();
 
                 PBool = rawReader.ReadBoolean();
                 PByte = rawReader.ReadByte();
@@ -1646,10 +1629,10 @@ namespace Apache.Ignite.Core.Tests.Portable
                 PFloat = rawReader.ReadFloat();
                 PDouble = rawReader.ReadDouble();
 
-                byte sByte = rawReader.ReadByte();
-                short uShort = rawReader.ReadShort();
-                int uInt = rawReader.ReadInt();
-                long uLong = rawReader.ReadLong();
+                var sByte = rawReader.ReadByte();
+                var uShort = rawReader.ReadShort();
+                var uInt = rawReader.ReadInt();
+                var uLong = rawReader.ReadLong();
 
                 PSbyte = *(sbyte*)&sByte;
                 PUshort = *(ushort*)&uShort;
@@ -1666,7 +1649,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             public unsafe void WritePortable(object obj, IPortableWriter writer)
             {
-                PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
+                var obj0 = (PrimitiveFieldType)obj;
 
                 writer.WriteBoolean("bool", obj0.PBool);
                 writer.WriteByte("byte", obj0.PByte);
@@ -1677,10 +1660,10 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteFloat("float", obj0.PFloat);
                 writer.WriteDouble("double", obj0.PDouble);
 
-                sbyte sByte = obj0.PSbyte;
-                ushort uShort = obj0.PUshort;
-                uint uInt = obj0.PUint;
-                ulong uLong = obj0.PUlong;
+                var sByte = obj0.PSbyte;
+                var uShort = obj0.PUshort;
+                var uInt = obj0.PUint;
+                var uLong = obj0.PUlong;
 
                 writer.WriteByte("sbyte", *(byte*)&sByte);
                 writer.WriteShort("ushort", *(short*)&uShort);
@@ -1694,7 +1677,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             public unsafe void ReadPortable(object obj, IPortableReader reader)
             {
-                PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
+                var obj0 = (PrimitiveFieldType)obj;
 
                 obj0.PBool = reader.ReadBoolean("bool");
                 obj0.PByte = reader.ReadByte("byte");
@@ -1706,10 +1689,10 @@ namespace Apache.Ignite.Core.Tests.Portable
                 obj0.PFloat = reader.ReadFloat("float");
                 obj0.PDouble = reader.ReadDouble("double");
 
-                byte sByte = reader.ReadByte("sbyte");
-                short uShort = reader.ReadShort("ushort");
-                int uInt = reader.ReadInt("uint");
-                long uLong = reader.ReadLong("ulong");
+                var sByte = reader.ReadByte("sbyte");
+                var uShort = reader.ReadShort("ushort");
+                var uInt = reader.ReadInt("uint");
+                var uLong = reader.ReadLong("ulong");
 
                 obj0.PSbyte = *(sbyte*)&sByte;
                 obj0.PUshort = *(ushort*)&uShort;
@@ -1726,9 +1709,9 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             public unsafe void WritePortable(object obj, IPortableWriter writer)
             {
-                PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
+                var obj0 = (PrimitiveFieldType)obj;
 
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                var rawWriter = writer.RawWriter();
 
                 rawWriter.WriteBoolean(obj0.PBool);
                 rawWriter.WriteByte(obj0.PByte);
@@ -1739,10 +1722,10 @@ namespace Apache.Ignite.Core.Tests.Portable
                 rawWriter.WriteFloat(obj0.PFloat);
                 rawWriter.WriteDouble( obj0.PDouble);
 
-                sbyte sByte = obj0.PSbyte;
-                ushort uShort = obj0.PUshort;
-                uint uInt = obj0.PUint;
-                ulong uLong = obj0.PUlong;
+                var sByte = obj0.PSbyte;
+                var uShort = obj0.PUshort;
+                var uInt = obj0.PUint;
+                var uLong = obj0.PUlong;
 
                 rawWriter.WriteByte(*(byte*)&sByte);
                 rawWriter.WriteShort(*(short*)&uShort);
@@ -1756,9 +1739,9 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             public unsafe void ReadPortable(object obj, IPortableReader reader)
             {
-                PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
+                var obj0 = (PrimitiveFieldType)obj;
 
-                IPortableRawReader rawReader = reader.RawReader();
+                var rawReader = reader.RawReader();
 
                 obj0.PBool = rawReader.ReadBoolean();
                 obj0.PByte = rawReader.ReadByte();
@@ -1769,10 +1752,10 @@ namespace Apache.Ignite.Core.Tests.Portable
                 obj0.PFloat = rawReader.ReadFloat();
                 obj0.PDouble = rawReader.ReadDouble();
 
-                byte sByte = rawReader.ReadByte();
-                short uShort = rawReader.ReadShort();
-                int uInt = rawReader.ReadInt();
-                long uLong = rawReader.ReadLong();
+                var sByte = rawReader.ReadByte();
+                var uShort = rawReader.ReadShort();
+                var uInt = rawReader.ReadInt();
+                var uLong = rawReader.ReadLong();
 
                 obj0.PSbyte = *(sbyte*)&sByte;
                 obj0.PUshort = *(ushort*)&uShort;
@@ -1787,9 +1770,9 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public static string PrintBytes(byte[] bytes)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
-            foreach (byte b in bytes)
+            foreach (var b in bytes)
                 sb.Append(b + " ");
 
             return sb.ToString();
@@ -1812,7 +1795,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteObject("inner", Inner);
                 writer.WriteString("after", After);
 
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                var rawWriter = writer.RawWriter();
 
                 rawWriter.WriteString(RawBefore);
                 rawWriter.WriteObject(RawInner);
@@ -1826,7 +1809,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Inner = reader.ReadObject<HandleInner>("inner");
                 After = reader.ReadString("after");
 
-                IPortableRawReader rawReader = reader.RawReader();
+                var rawReader = reader.RawReader();
 
                 RawBefore = rawReader.ReadString();
                 RawInner = rawReader.ReadObject<HandleInner>();
@@ -1851,7 +1834,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteObject("outer", Outer);
                 writer.WriteString("after", After);
 
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                var rawWriter = writer.RawWriter();
 
                 rawWriter.WriteString(RawBefore);
                 rawWriter.WriteObject(RawOuter);
@@ -1865,7 +1848,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Outer = reader.ReadObject<HandleOuter>("outer");
                 After = reader.ReadString("after");
 
-                IPortableRawReader rawReader = reader.RawReader();
+                var rawReader = reader.RawReader();
 
                 RawBefore = rawReader.ReadString();
                 RawOuter = rawReader.ReadObject<HandleOuter>();
@@ -1888,7 +1871,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 writer.WriteString("after", After);
 
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                var rawWriter = writer.RawWriter();
 
                 rawWriter.WriteString(RawBefore);
 
@@ -1960,7 +1943,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteDecimal("val", Val);
                 writer.WriteDecimalArray("valArr", ValArr);
 
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                var rawWriter = writer.RawWriter();
 
                 rawWriter.WriteDecimal(RawVal);
                 rawWriter.WriteDecimalArray(RawValArr);
@@ -1972,7 +1955,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Val = reader.ReadDecimal("val");
                 ValArr = reader.ReadDecimalArray("valArr");
 
-                IPortableRawReader rawReader = reader.RawReader();
+                var rawReader = reader.RawReader();
 
                 RawVal = rawReader.ReadDecimal();
                 RawValArr = rawReader.ReadDecimalArray();
@@ -2037,7 +2020,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteDateArray("locArr", LocArr);
                 writer.WriteDateArray("utcArr", UtcArr);
 
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                var rawWriter = writer.RawWriter();
 
                 rawWriter.WriteDate(LocRaw);
                 rawWriter.WriteDate(UtcRaw);
@@ -2057,7 +2040,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 LocArr = reader.ReadDateArray("locArr", true);
                 UtcArr = reader.ReadDateArray("utcArr", false);
 
-                IPortableRawReader rawReader = reader.RawReader();
+                var rawReader = reader.RawReader();
 
                 LocRaw = rawReader.ReadDate(true).Value;
                 UtcRaw = rawReader.ReadDate(false).Value;
