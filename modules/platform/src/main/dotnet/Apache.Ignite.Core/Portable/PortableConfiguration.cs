@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Portable
             {
                 TypeConfigurations = new List<PortableTypeConfiguration>(cfg.TypeConfigurations.Count);
 
-                foreach (PortableTypeConfiguration typeCfg in cfg.TypeConfigurations) 
+                foreach (var typeCfg in cfg.TypeConfigurations)
                     TypeConfigurations.Add(new PortableTypeConfiguration(typeCfg));
             }
         }
@@ -60,64 +60,36 @@ namespace Apache.Ignite.Core.Portable
         /// <summary>
         /// Type configurations.
         /// </summary>
-        public ICollection<PortableTypeConfiguration> TypeConfigurations
-        {
-            get;
-            set;
-        }
+        public ICollection<PortableTypeConfiguration> TypeConfigurations { get; set; }
 
         /// <summary>
         /// Portable types. Shorthand for creating PortableTypeConfiguration.
         /// </summary>
-        public ICollection<String> Types
-        {
-            get;
-            set;
-        }
+        public ICollection<string> Types { get; set; }
 
         /// <summary>
         /// Default name mapper.
         /// </summary>
-        public IPortableNameMapper DefaultNameMapper
-        {
-            get;
-            set;
-        }
+        public IPortableNameMapper DefaultNameMapper { get; set; }
 
         /// <summary>
         /// Default ID mapper.
         /// </summary>
-        public IPortableIdMapper DefaultIdMapper
-        {
-            get;
-            set;
-        }
+        public IPortableIdMapper DefaultIdMapper { get; set; }
 
         /// <summary>
         /// Default serializer.
         /// </summary>
-        public IPortableSerializer DefaultSerializer
-        {
-            get;
-            set;
-        }
+        public IPortableSerializer DefaultSerializer { get; set; }
 
         /// <summary>
         /// Default metadata enabled flag. Defaults to true.
         /// </summary>
-        public bool DefaultMetadataEnabled
-        {
-            get;
-            set;
-        }
+        public bool DefaultMetadataEnabled { get; set; }
 
         /// <summary>
         /// Default keep deserialized flag.
         /// </summary>
-        public bool DefaultKeepDeserialized
-        {
-            get;
-            set;
-        }
+        public bool DefaultKeepDeserialized { get; set; }
     }
 }

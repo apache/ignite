@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Portable
 {
-    using System.Diagnostics.CodeAnalysis;
-
     /// <summary>
     /// Portable object builder. Provides ability to build portable objects dynamically
     /// without having class definitions.
@@ -38,23 +36,23 @@ namespace Apache.Ignite.Core.Portable
         /// returned through this method will be reflected in the resulting
         /// portable object after build.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <returns>Field value.</returns>
+        /// <param name="fieldName">GetField name.</param>
+        /// <returns>GetField value.</returns>
         T GetField<T>(string fieldName);
 
         /// <summary>
         /// Set object field value. Value can be of any type including other
         /// <see cref="IPortableObject"/> and other builders.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="val">Field value.</param>
+        /// <param name="fieldName">GetField name.</param>
+        /// <param name="val">GetField value.</param>
         /// <returns>Current builder instance.</returns>
         IPortableBuilder SetField<T>(string fieldName, T val);
 
         /// <summary>
         /// Remove object field.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <returns>Current builder instance.</returns>
         IPortableBuilder RemoveField(string fieldName);
 
@@ -66,8 +64,7 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="hashCode">Hash code.</param>
         /// <returns>Current builder instance.</returns>
-        [SuppressMessage("Microsoft.Naming", "CA1719:ParameterNamesShouldNotMatchMemberNames", MessageId = "0#")]
-        IPortableBuilder HashCode(int hashCode);
+        IPortableBuilder SetHashCode(int hashCode);
 
         /// <summary>
         /// Build the object.

@@ -291,8 +291,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <returns>Metadata or null.</returns>
-        public virtual IPortableMetadata Metadata(int typeId)
+        public virtual IPortableMetadata GetMetadata(int typeId)
         {
+            // TODO:
             return PortableMetadataImpl.EMPTY_META;
         }
 

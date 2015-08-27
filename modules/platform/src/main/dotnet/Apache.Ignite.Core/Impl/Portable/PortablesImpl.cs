@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder Builder(Type type)
+        public IPortableBuilder GetBuilder(Type type)
         {
             A.NotNull(type, "type");
 
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder Builder(string typeName)
+        public IPortableBuilder GetBuilder(string typeName)
         {
             A.NotNullOrEmpty(typeName, "typeName");
 
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder Builder(IPortableObject obj)
+        public IPortableBuilder GetBuilder(IPortableObject obj)
         {
             A.NotNull(obj, "obj");
 
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (obj0 == null)
                 throw new ArgumentException("Unsupported object type: " + obj.GetType());
 
-            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj0.TypeId());
+            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj0.GetTypeId());
             
             return Builder0(null, obj0, desc);
         }
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableMetadata GetMetadata(int typeId)
         {
-            return Marshaller.Metadata(typeId);
+            return Marshaller.GetMetadata(typeId);
         }
 
         /** <inheritDoc /> */
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var desc = Marshaller.Descriptor(type);
 
-            return desc == null ? null : Marshaller.Metadata(desc.TypeId);
+            return desc == null ? null : Marshaller.GetMetadata(desc.TypeId);
         }
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns></returns>
         internal PortableBuilderImpl ChildBuilder(PortableBuilderImpl parent, PortableUserObject obj)
         {
-            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj.TypeId());
+            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj.GetTypeId());
 
             return Builder0(null, obj, desc);
         }

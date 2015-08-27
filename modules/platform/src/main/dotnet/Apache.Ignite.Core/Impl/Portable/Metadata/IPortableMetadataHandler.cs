@@ -27,9 +27,9 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <summary>
         /// Callback invoked when named field is written.
         /// </summary>
-        /// <param name="fieldId">Field ID.</param>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="typeId">Field type ID.</param>
+        /// <param name="fieldId">GetField ID.</param>
+        /// <param name="fieldName">GetField name.</param>
+        /// <param name="typeId">GetField type ID.</param>
         void OnFieldWrite(int fieldId, string fieldName, int typeId);
 
         /// <summary>

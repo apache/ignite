@@ -1643,7 +1643,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             try
             {
                 if (converter != null)
-                    typeName = converter.TypeName(typeName);
+                    typeName = converter.GetTypeName(typeName);
             }
             catch (Exception e)
             {
@@ -1660,7 +1660,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /**
          * <summary>Convert field name.</summary>
-         * <param name="fieldName">Field name.</param>
+         * <param name="fieldName">GetField name.</param>
          * <param name="converter">Converter.</param>
          * <returns>Converted name.</returns>
          */
@@ -1671,7 +1671,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             try
             {
                 if (converter != null)
-                    fieldName = converter.FieldName(fieldName);
+                    fieldName = converter.GetFieldName(fieldName);
             }
             catch (Exception e)
             {
@@ -1717,7 +1717,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 try
                 {
-                    id = idMapper.TypeId(typeName);
+                    id = idMapper.GetTypeId(typeName);
                 }
                 catch (Exception e)
                 {
@@ -1735,7 +1735,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /**
          * <summary>Resolve field ID.</summary>
          * <param name="typeId">Type ID.</param>
-         * <param name="fieldName">Field name.</param>
+         * <param name="fieldName">GetField name.</param>
          * <param name="nameMapper">Name mapper.</param>
          * <param name="idMapper">ID mapper.</param>
          */
@@ -1753,7 +1753,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 try
                 {
-                    id = idMapper.FieldId(typeId, fieldName);
+                    id = idMapper.GetFieldId(typeId, fieldName);
                 }
                 catch (Exception e)
                 {

@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
     
@@ -29,7 +28,6 @@ namespace Apache.Ignite.Core.Impl.Common
     /// <summary>
     /// Grid future implementation.
     /// </summary>
-    [SuppressMessage("ReSharper", "ParameterHidesMember")]
     public sealed class Future<T> : IFutureInternal, IFuture<T>
     {
         /** Converter. */

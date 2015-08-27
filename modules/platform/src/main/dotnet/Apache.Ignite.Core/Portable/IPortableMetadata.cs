@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Portable
         /// <summary>
         /// Gets field names for that type.
         /// </summary>
-        /// <returns>Field names.</returns>
+        /// <returns>GetField names.</returns>
         ICollection<string> Fields
         {
             get;
@@ -45,9 +45,9 @@ namespace Apache.Ignite.Core.Portable
         /// <summary>
         /// Gets field type for the given field name.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <returns>Field type.</returns>
-        string FieldTypeName(string fieldName);
+        /// <param name="fieldName">GetField name.</param>
+        /// <returns>GetField type.</returns>
+        string GetFieldTypeName(string fieldName);
 
         /// <summary>
         /// Gets optional affinity key field name.

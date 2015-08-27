@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named boolean value.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Boolean value.</param>
         public void WriteBoolean(string fieldName, bool val)
         {
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named boolean array.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Boolean array.</param>
         public void WriteBooleanArray(string fieldName, bool[] val)
         {
@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named byte value.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Byte value.</param>
         public void WriteByte(string fieldName, byte val)
         {
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named byte array.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Byte array.</param>
         public void WriteByteArray(string fieldName, byte[] val)
         {
@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named short value.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Short value.</param>
         public void WriteShort(string fieldName, short val)
         {
@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named short array.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Short array.</param>
         public void WriteShortArray(string fieldName, short[] val)
         {
@@ -198,7 +198,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named char value.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Char value.</param>
         public void WriteChar(string fieldName, char val)
         {
@@ -217,7 +217,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named char array.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Char array.</param>
         public void WriteCharArray(string fieldName, char[] val)
         {
@@ -237,7 +237,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named int value.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Int value.</param>
         public void WriteInt(string fieldName, int val)
         {
@@ -256,7 +256,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named int array.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Int array.</param>
         public void WriteIntArray(string fieldName, int[] val)
         {
@@ -276,7 +276,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named long value.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Long value.</param>
         public void WriteLong(string fieldName, long val)
         {
@@ -295,7 +295,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named long array.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Long array.</param>
         public void WriteLongArray(string fieldName, long[] val)
         {
@@ -315,7 +315,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named float value.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Float value.</param>
         public void WriteFloat(string fieldName, float val)
         {
@@ -334,7 +334,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named float array.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Float array.</param>
         public void WriteFloatArray(string fieldName, float[] val)
         {
@@ -354,7 +354,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named double value.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Double value.</param>
         public void WriteDouble(string fieldName, double val)
         {
@@ -373,7 +373,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named double array.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Double array.</param>
         public void WriteDoubleArray(string fieldName, double[] val)
         {
@@ -393,7 +393,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named decimal value.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Decimal value.</param>
         public void WriteDecimal(string fieldName, decimal val)
         {
@@ -412,7 +412,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named decimal array.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Decimal array.</param>
         public void WriteDecimalArray(string fieldName, decimal[] val)
         {
@@ -432,7 +432,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named date value.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Date value.</param>
         public void WriteDate(string fieldName, DateTime? val)
         {
@@ -452,7 +452,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named date array.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Date array.</param>
         public void WriteDateArray(string fieldName, DateTime?[] val)
         {
@@ -472,7 +472,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named string value.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">String value.</param>
         public void WriteString(string fieldName, string val)
         {
@@ -491,7 +491,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named string array.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">String array.</param>
         public void WriteStringArray(string fieldName, string[] val)
         {
@@ -511,7 +511,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named GUID value.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">GUID value.</param>
         public void WriteGuid(string fieldName, Guid? val)
         {
@@ -531,7 +531,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named GUID array.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">GUID array.</param>
         public void WriteGuidArray(string fieldName, Guid?[] val)
         {
@@ -552,7 +552,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write named enum value.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Enum value.</param>
         public void WriteEnum<T>(string fieldName, T val)
         {
@@ -573,7 +573,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write named enum array.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Enum array.</param>
         public void WriteEnumArray<T>(string fieldName, T[] val)
         {
@@ -594,7 +594,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write named object value.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Object value.</param>
         public void WriteObject<T>(string fieldName, T val)
         {
@@ -615,7 +615,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write named object array.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Object array.</param>
         public void WriteObjectArray<T>(string fieldName, T[] val)
         {
@@ -635,7 +635,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named collection.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Collection.</param>
         public void WriteCollection(string fieldName, ICollection val)
         {
@@ -655,7 +655,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write named generic collection.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Collection.</param>
         public void WriteGenericCollection<T>(string fieldName, ICollection<T> val)
         {
@@ -675,7 +675,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named dictionary.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(string fieldName, IDictionary val)
         {
@@ -696,7 +696,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <typeparam name="K"></typeparam>
         /// <typeparam name="V"></typeparam>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Dictionary.</param>
         public void WriteGenericDictionary<K, V>(string fieldName, IDictionary<K, V> val)
         {
@@ -1030,7 +1030,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write simple field with known length.
         /// </summary>
-        /// <param name="fieldId">Field ID.</param>
+        /// <param name="fieldId">GetField ID.</param>
         /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
@@ -1049,7 +1049,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write simple nullable field with unknown length.
         /// </summary>
-        /// <param name="fieldId">Field ID.</param>
+        /// <param name="fieldId">GetField ID.</param>
         /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
@@ -1081,7 +1081,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write simple nullable field with known length.
         /// </summary>
-        /// <param name="fieldId">Field ID.</param>
+        /// <param name="fieldId">GetField ID.</param>
         /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
@@ -1110,7 +1110,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write field.
         /// </summary>
-        /// <param name="fieldId">Field ID.</param>
+        /// <param name="fieldId">GetField ID.</param>
         /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
@@ -1158,7 +1158,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write simple field with known length.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
@@ -1177,7 +1177,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write simple nullable field with unknown length.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
@@ -1195,7 +1195,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write simple nullable field with known length.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
@@ -1227,7 +1227,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write field.
         /// </summary>
-        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldName">GetField name.</param>
         /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>

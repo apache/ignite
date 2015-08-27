@@ -873,7 +873,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Seek field with the given ID in the current object.
         /// </summary>
-        /// <param name="fieldId">Field ID.</param>
+        /// <param name="fieldId">GetField ID.</param>
         /// <returns>True in case the field was found and position adjusted, false otherwise.</returns>
         private bool SeekField(int fieldId)
         {
@@ -892,7 +892,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 if (fieldId == id)
                 {
-                    // Field is found, return.
+                    // GetField is found, return.
                     Stream.Seek(4, SeekOrigin.Current);
 
                     return true;
@@ -913,7 +913,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 if (fieldId == id)
                 {
-                    // Field is found, return.
+                    // GetField is found, return.
                     Stream.Seek(4, SeekOrigin.Current);
 
                     return true;

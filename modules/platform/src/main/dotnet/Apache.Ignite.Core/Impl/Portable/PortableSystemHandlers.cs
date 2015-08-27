@@ -37,12 +37,12 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     /// <param name="stream">Stream.</param>
     /// <param name="obj">Object to write.</param>
-    internal delegate void PortableSystemTypedWriteDelegate<T>(IPortableStream stream, T obj);
+    public delegate void PortableSystemTypedWriteDelegate<T>(IPortableStream stream, T obj);
 
     /**
      * <summary>Collection of predefined handlers for various system types.</summary>
      */
-    internal static class PortableSystemHandlers
+    public static class PortableSystemHandlers
     {
         /** Write handlers. */
         private static readonly Dictionary<Type, PortableSystemWriteDelegate> WRITE_HANDLERS =

@@ -72,13 +72,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public int TypeId()
+        public int GetTypeId()
         {
             return typeId;
         }
 
         /** <inheritdoc /> */
-        public T Field<T>(string fieldName)
+        public T GetField<T>(string fieldName)
         {
             return Field<T>(fieldName, null);
         }
@@ -118,9 +118,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public IPortableMetadata Metadata()
+        public IPortableMetadata GetMetadata()
         {
-            return marsh.Metadata(typeId);
+            return marsh.GetMetadata(typeId);
         }
 
         /// <summary>
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="pos">Position.</param>
         /// <param name="builder">Builder.</param>
-        /// <returns>Field value.</returns>
+        /// <returns>GetField value.</returns>
         private T Field0<T>(int pos, PortableBuilderImpl builder)
         {
             IPortableStream stream = new PortableHeapStream(data);
@@ -304,7 +304,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             try
             {
-                meta = marsh.Metadata(typeId);
+                meta = marsh.GetMetadata(typeId);
             }
             catch (IgniteException)
             {
