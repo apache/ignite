@@ -95,15 +95,18 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    public void testAllCachesNamesInCluster(){
+    public void testAllCachesNamesInCluster() throws InterruptedException {
         Ignite g0 = grid(0);
         Ignite g1 = grid(1);
+        Ignite g2 = grid(2);
+        Ignite g3 = grid(3);
 
 
         g0.getOrCreateCache("Cache1");
         g1.getOrCreateCache("Cache2");
         g1.getOrCreateCache("Cache3");
 
+        Thread.sleep(20);
         Collection<String> caches = g0.cacheNames();
         assertTrue(caches.contains("Cache1"));
         assertTrue(caches.contains("Cache2"));
@@ -116,6 +119,17 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         assertTrue(caches.contains("Cache3"));
         assertEquals(3, g1.cacheNames().size());
 
+        caches = g2.cacheNames();
+        assertTrue(caches.contains("Cache1"));
+        assertTrue(caches.contains("Cache2"));
+        assertTrue(caches.contains("Cache3"));
+        assertEquals(3, g2.cacheNames().size());
+
+        caches = g3.cacheNames();
+        assertTrue(caches.contains("Cache1"));
+        assertTrue(caches.contains("Cache2"));
+        assertTrue(caches.contains("Cache3"));
+        assertEquals(3, g3.cacheNames().size());
     }
     /**
      * @throws Exception In case of error.
