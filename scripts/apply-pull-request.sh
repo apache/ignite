@@ -128,6 +128,8 @@ if [ "${COMMENT}" == "" ]; then
     COMMENT=${ORIG_COMMENT}
 fi
 
+COMMENT="${COMMENT} - Fixes #${PR_ID}."
+
 git commit --author "${AUTHOR}" -a -s -m "${COMMENT}" &> /dev/null
 
 echo "Squash commit for pull request with id='${PR_ID}' has been added. The commit has been added with comment '${COMMENT}'."
