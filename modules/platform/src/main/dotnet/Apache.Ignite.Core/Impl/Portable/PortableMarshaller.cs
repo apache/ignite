@@ -146,6 +146,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
+        /// Gets the Ignite context.
+        /// </summary>
+        public IIgniteContext IgniteContext
+        {
+            get { return _igniteContext; }
+        }
+
+        /// <summary>
         /// Marshal object.
         /// </summary>
         /// <param name="val">Value.</param>

@@ -33,40 +33,40 @@ namespace Apache.Ignite.Core.Impl.Portable
     public class PortableReaderImpl : IPortableReaderEx
     {
         /** Marshaller. */
-        private readonly PortableMarshaller marsh;
+        private readonly PortableMarshaller _marsh;
 
         /** Type descriptors. */
-        private readonly IDictionary<long, IPortableTypeDescriptor> descs;
+        private readonly IDictionary<long, IPortableTypeDescriptor> _descs;
 
         /** Parent builder. */
-        private readonly PortableBuilderImpl builder;
+        private readonly PortableBuilderImpl _builder;
 
         /** Handles. */
-        private PortableReaderHandleDictionary hnds;
+        private PortableReaderHandleDictionary _hnds;
 
         /** Current type ID. */
-        private int curTypeId;
+        private int _curTypeId;
 
         /** Current position. */
-        private int curPos;
+        private int _curPos;
 
         /** Current raw data offset. */
-        private int curRawOffset;
+        private int _curRawOffset;
 
         /** Current converter. */
-        private IPortableNameMapper curConverter;
+        private IPortableNameMapper _curConverter;
 
         /** Current mapper. */
-        private IPortableIdMapper curMapper;
+        private IPortableIdMapper _curMapper;
 
         /** Current raw flag. */
-        private bool curRaw;
+        private bool _curRaw;
 
         /** Detach flag. */
-        private bool detach;
+        private bool _detach;
 
         /** Portable read mode. */
-        private PortableMode mode;
+        private PortableMode _mode;
 
         /// <summary>
         /// Constructor.
@@ -83,10 +83,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             PortableMode mode,
             PortableBuilderImpl builder)
         {
-            this.marsh = marsh;
-            this.descs = descs;
-            this.mode = mode;
-            this.builder = builder;
+            _marsh = marsh;
+            _descs = descs;
+            _mode = mode;
+            _builder = builder;
 
             Stream = stream;
         }
@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public PortableMarshaller Marshaller
         {
-            get { return marsh; }
+            get { return _marsh; }
         }
 
         /** <inheritdoc /> */
@@ -446,10 +446,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public T ReadObject<T>(string fieldName)
         {
-            if (curRaw)
+            if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
 
-            int fieldId = PortableUtils.FieldId(curTypeId, fieldName, curConverter, curMapper);
+            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
 
             if (SeekField(fieldId))
                 return Deserialize<T>();
@@ -551,26 +551,27 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName)
+        public IDictionary<TKey, TValue> ReadGenericDictionary<TKey, TValue>(string fieldName)
         {
-            return ReadGenericDictionary<K, V>(fieldName, null);
+            return ReadGenericDictionary<TKey, TValue>(fieldName, null);
         }
 
         /** <inheritdoc /> */
-        public IDictionary<K, V> ReadGenericDictionary<K, V>()
+        public IDictionary<TKey, TValue> ReadGenericDictionary<TKey, TValue>()
         {
-            return ReadGenericDictionary((PortableGenericDictionaryFactory<K, V>) null);
+            return ReadGenericDictionary((PortableGenericDictionaryFactory<TKey, TValue>) null);
         }
 
         /** <inheritdoc /> */
-        public IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName,
-            PortableGenericDictionaryFactory<K, V> factory)
+        public IDictionary<TKey, TValue> ReadGenericDictionary<TKey, TValue>(string fieldName,
+            PortableGenericDictionaryFactory<TKey, TValue> factory)
         {
             return ReadField(fieldName, r => PortableUtils.ReadGenericDictionary(r, factory));
         }
 
         /** <inheritdoc /> */
-        public IDictionary<K, V> ReadGenericDictionary<K, V>(PortableGenericDictionaryFactory<K, V> factory)
+        public IDictionary<TKey, TValue> ReadGenericDictionary<TKey, TValue>(
+            PortableGenericDictionaryFactory<TKey, TValue> factory)
         {
             return Read(r => PortableUtils.ReadGenericDictionary(r, factory));
         }
@@ -580,7 +581,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public void DetachNext()
         {
-            detach = true;
+            _detach = true;
         }
 
         /// <summary>
@@ -593,9 +594,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             byte hdr = Stream.ReadByte();
 
-            var doDetach = detach;  // save detach flag into a var and reset so it does not go deeper
+            var doDetach = _detach;  // save detach flag into a var and reset so it does not go deeper
 
-            detach = false;
+            _detach = false;
 
             switch (hdr)
             {
@@ -627,7 +628,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var portablePos = Stream.Position;
 
-            if (mode != PortableMode.Deserialize)
+            if (_mode != PortableMode.Deserialize)
                 return TypeCaster<T>.Cast(ReadAsPortable(portablePos, len, doDetach));
 
             Stream.Seek(len, SeekOrigin.Current);
@@ -638,7 +639,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             Stream.Seek(portablePos + offset, SeekOrigin.Begin);
 
-            mode = PortableMode.KeepPortable;
+            _mode = PortableMode.KeepPortable;
 
             try
             {
@@ -646,7 +647,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             finally
             {
-                mode = PortableMode.Deserialize;
+                _mode = PortableMode.Deserialize;
 
                 Stream.Seek(retPos, SeekOrigin.Begin);
             }
@@ -701,14 +702,14 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Already read this object?
                 object hndObj;
 
-                if (hnds != null && hnds.TryGetValue(pos, out hndObj))
+                if (_hnds != null && _hnds.TryGetValue(pos, out hndObj))
                     return (T) hndObj;
 
-                if (userType && mode == PortableMode.ForcePortable)
+                if (userType && _mode == PortableMode.ForcePortable)
                 {
                     PortableUserObject portObj;
 
-                    if (detach)
+                    if (_detach)
                     {
                         Stream.Seek(pos, SeekOrigin.Begin);
 
@@ -717,7 +718,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     else
                         portObj = GetPortableUserObject(pos, pos, Stream.Array());
 
-                    T obj = builder == null ? TypeCaster<T>.Cast(portObj) : TypeCaster<T>.Cast(builder.Child(portObj));
+                    T obj = _builder == null ? TypeCaster<T>.Cast(portObj) : TypeCaster<T>.Cast(_builder.Child(portObj));
 
                     AddHandle(pos, obj);
 
@@ -728,7 +729,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // Find descriptor.
                     IPortableTypeDescriptor desc;
 
-                    if (!descs.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc))
+                    if (!_descs.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc))
                         throw new PortableException("Unknown type ID: " + typeId);
 
                     // Instantiate object. 
@@ -737,20 +738,20 @@ namespace Apache.Ignite.Core.Impl.Portable
                                                     desc.TypeId + ", typeName=" + desc.TypeName + ']');
 
                     // Preserve old frame.
-                    int oldTypeId = curTypeId;
-                    int oldPos = curPos;
-                    int oldRawOffset = curRawOffset;
-                    IPortableNameMapper oldConverter = curConverter;
-                    IPortableIdMapper oldMapper = curMapper;
-                    bool oldRaw = curRaw;
+                    int oldTypeId = _curTypeId;
+                    int oldPos = _curPos;
+                    int oldRawOffset = _curRawOffset;
+                    IPortableNameMapper oldConverter = _curConverter;
+                    IPortableIdMapper oldMapper = _curMapper;
+                    bool oldRaw = _curRaw;
 
                     // Set new frame.
-                    curTypeId = typeId;
-                    curPos = pos;
-                    curRawOffset = rawOffset;
-                    curConverter = desc.NameConverter;
-                    curMapper = desc.Mapper;
-                    curRaw = false;
+                    _curTypeId = typeId;
+                    _curPos = pos;
+                    _curRawOffset = rawOffset;
+                    _curConverter = desc.NameConverter;
+                    _curMapper = desc.Mapper;
+                    _curRaw = false;
 
                     // Read object.
                     object obj;
@@ -778,12 +779,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                     }
 
                     // Restore old frame.
-                    curTypeId = oldTypeId;
-                    curPos = oldPos;
-                    curRawOffset = oldRawOffset;
-                    curConverter = oldConverter;
-                    curMapper = oldMapper;
-                    curRaw = oldRaw;
+                    _curTypeId = oldTypeId;
+                    _curPos = oldPos;
+                    _curRawOffset = oldRawOffset;
+                    _curConverter = oldConverter;
+                    _curMapper = oldMapper;
+                    _curRaw = oldRaw;
 
                     var wrappedSerializable = obj as SerializableObjectHolder;
 
@@ -811,9 +812,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 object hndObj;
 
-                if (builder == null || !builder.CachedField(hndPos, out hndObj))
+                if (_builder == null || !_builder.CachedField(hndPos, out hndObj))
                 {
-                    if (hnds == null || !hnds.TryGetValue(hndPos, out hndObj))
+                    if (_hnds == null || !_hnds.TryGetValue(hndPos, out hndObj))
                     {
                         // No such handler, i.e. we trying to deserialize inner object before deserializing outer.
                         Stream.Seek(hndPos, SeekOrigin.Begin);
@@ -822,8 +823,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     }
 
                     // Notify builder that we deserialized object on other location.
-                    if (builder != null)
-                        builder.CacheField(hndPos, hndObj);
+                    if (_builder != null)
+                        _builder.CacheField(hndPos, hndObj);
                 }
 
                 return (T) hndObj;
@@ -842,10 +843,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="obj">Object.</param>
         private void AddHandle(int pos, object obj)
         {
-            if (hnds == null)
-                hnds = new PortableReaderHandleDictionary(pos, obj);
+            if (_hnds == null)
+                _hnds = new PortableReaderHandleDictionary(pos, obj);
             else
-                hnds.Add(pos, obj);
+                _hnds.Add(pos, obj);
         }
 
         /// <summary>
@@ -862,11 +863,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private void MarkRaw()
         {
-            if (!curRaw)
+            if (!_curRaw)
             {
-                curRaw = true;
+                _curRaw = true;
 
-                Stream.Seek(curPos + curRawOffset, SeekOrigin.Begin);
+                Stream.Seek(_curPos + _curRawOffset, SeekOrigin.Begin);
             }
         }
 
@@ -879,8 +880,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             // This method is expected to be called when stream pointer is set either before
             // the field or on raw data offset.
-            int start = curPos + 18;
-            int end = curPos + curRawOffset;
+            int start = _curPos + 18;
+            int end = _curPos + _curRawOffset;
 
             int initial = Stream.Position;
 
@@ -942,10 +943,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private bool SeekField(string fieldName)
         {
-            if (curRaw)
+            if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
 
-            var fieldId = PortableUtils.FieldId(curTypeId, fieldName, curConverter, curMapper);
+            var fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
 
             if (!SeekField(fieldId))
                 return false;
@@ -1007,7 +1008,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var hash = Stream.ReadInt();
 
-            return new PortableUserObject(marsh, bytes, offs, id, hash);
+            return new PortableUserObject(_marsh, bytes, offs, id, hash);
         }
     }
 }

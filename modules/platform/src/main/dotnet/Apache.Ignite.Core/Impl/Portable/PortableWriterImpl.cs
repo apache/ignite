@@ -32,50 +32,50 @@ namespace Apache.Ignite.Core.Impl.Portable
     public class PortableWriterImpl : IPortableWriterEx
     {
         /** Marshaller. */
-        private readonly PortableMarshaller marsh;
+        private readonly PortableMarshaller _marsh;
 
         /** Stream. */
-        private readonly IPortableStream stream;
+        private readonly IPortableStream _stream;
 
         /** Builder (used only during build). */
-        private PortableBuilderImpl builder;
+        private PortableBuilderImpl _builder;
 
         /** Handles. */
-        private PortableHandleDictionary<object, long> hnds;
+        private PortableHandleDictionary<object, long> _hnds;
 
         /** Metadatas collected during this write session. */
-        private IDictionary<int, IPortableMetadata> metas;
+        private IDictionary<int, IPortableMetadata> _metas;
 
         /** Current type ID. */
-        private int curTypeId;
+        private int _curTypeId;
 
         /** Current name converter */
-        private IPortableNameMapper curConverter;
+        private IPortableNameMapper _curConverter;
 
         /** Current mapper. */
-        private IPortableIdMapper curMapper;
+        private IPortableIdMapper _curMapper;
 
         /** Current metadata handler. */
-        private IPortableMetadataHandler curMetaHnd;
+        private IPortableMetadataHandler _curMetaHnd;
 
         /** Current raw flag. */
-        private bool curRaw;
+        private bool _curRaw;
 
         /** Current raw position. */
-        private long curRawPos;
+        private long _curRawPos;
 
         /** Ignore handles flag. */
-        private bool detach;
+        private bool _detach;
 
         /** Object started ignore mode. */
-        private bool detachMode;
+        private bool _detachMode;
 
         /// <summary>
         /// Gets the marshaller.
         /// </summary>
         PortableMarshaller IPortableWriterEx.Marshaller
         {
-            get { return marsh; }
+            get { return _marsh; }
         }
 
         /// <summary>
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Boolean value.</param>
         public void WriteBoolean(bool val)
         {
-            stream.WriteBool(val);
+            _stream.WriteBool(val);
         }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Byte value.</param>
         public void WriteByte(byte val)
         {
-            stream.WriteByte(val);
+            _stream.WriteByte(val);
         }
 
         /// <summary>
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Short value.</param>
         public void WriteShort(short val)
         {
-            stream.WriteShort(val);
+            _stream.WriteShort(val);
         }
 
         /// <summary>
@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Char value.</param>
         public void WriteChar(char val)
         {
-            stream.WriteChar(val);
+            _stream.WriteChar(val);
         }
 
         /// <summary>
@@ -250,7 +250,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Int value.</param>
         public void WriteInt(int val)
         {
-            stream.WriteInt(val);
+            _stream.WriteInt(val);
         }
 
         /// <summary>
@@ -289,7 +289,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Long value.</param>
         public void WriteLong(long val)
         {
-            stream.WriteLong(val);
+            _stream.WriteLong(val);
         }
 
         /// <summary>
@@ -328,7 +328,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Float value.</param>
         public void WriteFloat(float val)
         {
-            stream.WriteFloat(val);
+            _stream.WriteFloat(val);
         }
 
         /// <summary>
@@ -367,7 +367,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Double value.</param>
         public void WriteDouble(double val)
         {
-            stream.WriteDouble(val);
+            _stream.WriteDouble(val);
         }
 
         /// <summary>
@@ -694,11 +694,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named generic dictionary.
         /// </summary>
-        /// <typeparam name="K"></typeparam>
-        /// <typeparam name="V"></typeparam>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
         /// <param name="fieldName">GetField name.</param>
         /// <param name="val">Dictionary.</param>
-        public void WriteGenericDictionary<K, V>(string fieldName, IDictionary<K, V> val)
+        public void WriteGenericDictionary<TKey, TValue>(string fieldName, IDictionary<TKey, TValue> val)
         {
             WriteField(fieldName, PortableUtils.TypeDictionary, val, null);
         }
@@ -706,10 +706,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write generic dictionary.
         /// </summary>
-        /// <typeparam name="K"></typeparam>
-        /// <typeparam name="V"></typeparam>
         /// <param name="val">Dictionary.</param>
-        public void WriteGenericDictionary<K, V>(IDictionary<K, V> val)
+        public void WriteGenericDictionary<TKey, TValue>(IDictionary<TKey, TValue> val)
         {
             Write(val);
         }
@@ -722,10 +720,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </returns>
         public IPortableRawWriter RawWriter()
         {
-            if (!curRaw)
+            if (!_curRaw)
             {
-                curRaw = true;
-                curRawPos = stream.Position;
+                _curRaw = true;
+                _curRawPos = _stream.Position;
             }
 
             return this;
@@ -738,9 +736,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Previous builder.</returns>
         PortableBuilderImpl IPortableWriterEx.SetBuilder(PortableBuilderImpl portableBuilder)
         {
-            var ret = builder;
+            var ret = _builder;
 
-            builder = portableBuilder;
+            _builder = portableBuilder;
 
             return ret;
         }
@@ -752,8 +750,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="stream">Stream.</param>
         internal PortableWriterImpl(PortableMarshaller marsh, IPortableStream stream)
         {
-            this.marsh = marsh;
-            this.stream = stream;
+            _marsh = marsh;
+            _stream = stream;
         }
 
         /// <summary>
@@ -787,15 +785,15 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             bool resetDetach = false;
 
-            if (detach)
+            if (_detach)
             {
-                detach = false;
-                detachMode = true;
+                _detach = false;
+                _detachMode = true;
                 resetDetach = true;
 
-                oldHnds = hnds;
+                oldHnds = _hnds;
 
-                hnds = null;
+                _hnds = null;
             }
 
             try
@@ -803,20 +801,20 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Write null.
                 if (obj == null)
                 {
-                    stream.WriteByte(PortableUtils.HdrNull);
+                    _stream.WriteByte(PortableUtils.HdrNull);
 
                     return;
                 }
 
-                if (builder != null)
+                if (_builder != null)
                 {
                     // Special case for portable object during build.
                     PortableUserObject portObj = obj as PortableUserObject;
 
                     if (portObj != null)
                     {
-                        if (!WriteHandle(stream.Position, portObj))
-                            builder.ProcessPortable(stream, portObj);
+                        if (!WriteHandle(_stream.Position, portObj))
+                            _builder.ProcessPortable(_stream, portObj);
 
                         return;
                     }
@@ -826,8 +824,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     if (portBuilder != null)
                     {
-                        if (!WriteHandle(stream.Position, portBuilder))
-                            builder.ProcessBuilder(stream, portBuilder);
+                        if (!WriteHandle(_stream.Position, portBuilder))
+                            _builder.ProcessBuilder(_stream, portBuilder);
 
                         return;
                     }
@@ -839,7 +837,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 Type type = obj.GetType();
 
-                IPortableTypeDescriptor desc = marsh.Descriptor(type);
+                IPortableTypeDescriptor desc = _marsh.Descriptor(type);
 
                 object typedHandler;
                 PortableSystemWriteDelegate untypedHandler;
@@ -862,83 +860,84 @@ namespace Apache.Ignite.Core.Impl.Portable
                 {
                     if (!type.IsSerializable)
                         // If neither handler, nor descriptor exist, and not serializable, this is an exception.
-                        throw new PortableException("Unsupported object type [type=" + type +
-                            ", object=" + obj + ']');
+                        throw _marsh.IgniteContext.ConvertException(
+                            new PortableException("Unsupported object type [type=" + type +
+                                                  ", object=" + obj + ']'));
 
                     Write(new SerializableObjectHolder(obj));
 
                     return;
                 }
 
-                int pos = stream.Position;
+                int pos = _stream.Position;
 
                 // Dealing with handles.
                 if (!(desc.Serializer is IPortableSystemTypeSerializer) && WriteHandle(pos, obj))
                     return;
 
                 // Write header.
-                stream.WriteByte(PortableUtils.HdrFull);
+                _stream.WriteByte(PortableUtils.HdrFull);
 
-                stream.WriteBool(desc.UserType);
-                stream.WriteInt(desc.TypeId);
-                stream.WriteInt(obj.GetHashCode());
+                _stream.WriteBool(desc.UserType);
+                _stream.WriteInt(desc.TypeId);
+                _stream.WriteInt(obj.GetHashCode());
 
                 // Skip length as it is not known in the first place.
-                stream.Seek(8, SeekOrigin.Current);
+                _stream.Seek(8, SeekOrigin.Current);
 
                 // Preserve old frame.
-                int oldTypeId = curTypeId;
-                IPortableNameMapper oldConverter = curConverter;
-                IPortableIdMapper oldMapper = curMapper;
-                IPortableMetadataHandler oldMetaHnd = curMetaHnd;
-                bool oldRaw = curRaw;
-                long oldRawPos = curRawPos;
+                int oldTypeId = _curTypeId;
+                IPortableNameMapper oldConverter = _curConverter;
+                IPortableIdMapper oldMapper = _curMapper;
+                IPortableMetadataHandler oldMetaHnd = _curMetaHnd;
+                bool oldRaw = _curRaw;
+                long oldRawPos = _curRawPos;
 
                 // Push new frame.
-                curTypeId = desc.TypeId;
-                curConverter = desc.NameConverter;
-                curMapper = desc.Mapper;
-                curMetaHnd = desc.MetadataEnabled ? marsh.MetadataHandler(desc) : null;
-                curRaw = false;
-                curRawPos = 0;
+                _curTypeId = desc.TypeId;
+                _curConverter = desc.NameConverter;
+                _curMapper = desc.Mapper;
+                _curMetaHnd = desc.MetadataEnabled ? _marsh.MetadataHandler(desc) : null;
+                _curRaw = false;
+                _curRawPos = 0;
 
                 // Write object fields.
                 desc.Serializer.WritePortable(obj, this);
 
                 // Calculate and write length.
-                int retPos = stream.Position;
+                int retPos = _stream.Position;
 
-                stream.Seek(pos + 10, SeekOrigin.Begin);
+                _stream.Seek(pos + 10, SeekOrigin.Begin);
 
                 int len = retPos - pos;
 
-                stream.WriteInt(len);
+                _stream.WriteInt(len);
 
-                if (curRawPos != 0)
+                if (_curRawPos != 0)
                     // When set, it is difference between object head and raw position.
-                    stream.WriteInt((int)(curRawPos - pos));
+                    _stream.WriteInt((int)(_curRawPos - pos));
                 else
                     // When no set, it is equal to object length.
-                    stream.WriteInt(len);
+                    _stream.WriteInt(len);
 
-                stream.Seek(retPos, SeekOrigin.Begin);
+                _stream.Seek(retPos, SeekOrigin.Begin);
 
                 // 13. Collect metadata.
-                if (curMetaHnd != null)
+                if (_curMetaHnd != null)
                 {
-                    IDictionary<string, int> meta = curMetaHnd.OnObjectWriteFinished();
+                    IDictionary<string, int> meta = _curMetaHnd.OnObjectWriteFinished();
 
                     if (meta != null)
-                        SaveMetadata(curTypeId, desc.TypeName, desc.AffinityKeyFieldName, meta);
+                        SaveMetadata(_curTypeId, desc.TypeName, desc.AffinityKeyFieldName, meta);
                 }
 
                 // Restore old frame.
-                curTypeId = oldTypeId;
-                curConverter = oldConverter;
-                curMapper = oldMapper;
-                curMetaHnd = oldMetaHnd;
-                curRaw = oldRaw;
-                curRawPos = oldRawPos;
+                _curTypeId = oldTypeId;
+                _curConverter = oldConverter;
+                _curMapper = oldMapper;
+                _curMetaHnd = oldMetaHnd;
+                _curRaw = oldRaw;
+                _curRawPos = oldRawPos;
             }
             finally
             {
@@ -946,17 +945,17 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (resetDetach)
                 {
                     // Add newly recorded handles without overriding already existing ones.
-                    if (hnds != null)
+                    if (_hnds != null)
                     {
                         if (oldHnds == null)
-                            oldHnds = hnds;
+                            oldHnds = _hnds;
                         else
-                            oldHnds.Merge(hnds);
+                            oldHnds.Merge(_hnds);
                     }
 
-                    hnds = oldHnds;
+                    _hnds = oldHnds;
 
-                    detachMode = false;
+                    _detachMode = false;
                 }
             }
         }
@@ -969,28 +968,28 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns><c>true</c> if object was written as handle.</returns>
         private bool WriteHandle(long pos, object obj)
         {
-            if (hnds == null)
+            if (_hnds == null)
             {
                 // Cache absolute handle position.
-                hnds = new PortableHandleDictionary<object, long>(obj, pos);
+                _hnds = new PortableHandleDictionary<object, long>(obj, pos);
 
                 return false;
             }
 
             long hndPos;
 
-            if (!hnds.TryGetValue(obj, out hndPos))
+            if (!_hnds.TryGetValue(obj, out hndPos))
             {
                 // Cache absolute handle position.
-                hnds.Add(obj, pos);
+                _hnds.Add(obj, pos);
 
                 return false;
             }
 
-            stream.WriteByte(PortableUtils.HdrHnd);
+            _stream.WriteByte(PortableUtils.HdrHnd);
 
             // Handle is written as difference between position before header and handle position.
-            stream.WriteInt((int)(pos - hndPos));
+            _stream.WriteInt((int)(pos - hndPos));
 
             return true;
         }
@@ -1004,17 +1003,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>True if handler was called.</returns>
         private bool InvokeHandler<T>(object typedHandler, PortableSystemWriteDelegate untypedHandler, T obj)
         {
-            if (typedHandler != null)
+            var typedHandler0 = typedHandler as PortableSystemTypedWriteDelegate<T>;
+
+            if (typedHandler0 != null)
             {
-                PortableSystemTypedWriteDelegate<T> typedHandler0 =
-                    typedHandler as PortableSystemTypedWriteDelegate<T>;
+                typedHandler0.Invoke(_stream, obj);
 
-                if (typedHandler0 != null)
-                {
-                    typedHandler0.Invoke(stream, obj);
-
-                    return true;
-                }
+                return true;
             }
 
             if (untypedHandler != null)
@@ -1040,10 +1035,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             CheckNotRaw();
 
-            stream.WriteInt(fieldId);
-            stream.WriteInt(1 + len); // Additional byte for field type.
+            _stream.WriteInt(fieldId);
+            _stream.WriteInt(1 + len); // Additional byte for field type.
 
-            handler(stream, val);
+            handler(_stream, val);
         }
 
         /// <summary>
@@ -1058,23 +1053,23 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             CheckNotRaw();
 
-            stream.WriteInt(fieldId);
+            _stream.WriteInt(fieldId);
 
             if (val == null)
             {
-                stream.WriteInt(1);
+                _stream.WriteInt(1);
 
-                stream.WriteByte(PortableUtils.HdrNull);
+                _stream.WriteByte(PortableUtils.HdrNull);
             }
             else
             {
-                int pos = stream.Position;
+                int pos = _stream.Position;
 
-                stream.Seek(4, SeekOrigin.Current);
+                _stream.Seek(4, SeekOrigin.Current);
 
-                handler(stream, val);
+                handler(_stream, val);
 
-                WriteFieldLength(stream, pos);
+                WriteFieldLength(_stream, pos);
             }
         }
 
@@ -1091,19 +1086,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             CheckNotRaw();
 
-            stream.WriteInt(fieldId);
+            _stream.WriteInt(fieldId);
 
             if (val == null)
             {
-                stream.WriteInt(1);
+                _stream.WriteInt(1);
 
-                stream.WriteByte(PortableUtils.HdrNull);
+                _stream.WriteByte(PortableUtils.HdrNull);
             }
             else
             {
-                stream.WriteInt(1 + len);
+                _stream.WriteInt(1 + len);
 
-                handler(stream, val);
+                handler(_stream, val);
             }
         }
 
@@ -1118,15 +1113,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             CheckNotRaw();
 
-            stream.WriteInt(fieldId);
+            _stream.WriteInt(fieldId);
 
-            int pos = stream.Position;
+            int pos = _stream.Position;
 
-            stream.Seek(4, SeekOrigin.Current);
+            _stream.Seek(4, SeekOrigin.Current);
 
             Write(val, handler);
 
-            WriteFieldLength(stream, pos);
+            WriteFieldLength(_stream, pos);
         }
 
         /// <summary>
@@ -1134,8 +1129,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         void IPortableWriterEx.DetachNext()
         {
-            if (!detachMode)
-                detach = true;
+            if (!_detachMode)
+                _detach = true;
         }
 
         /// <summary>
@@ -1143,7 +1138,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         IPortableStream IPortableWriterEx.Stream
         {
-            get { return stream; }
+            get { return _stream; }
         }
 
         /// <summary>
@@ -1152,7 +1147,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <value>Collected metadatas (if any).</value>
         IDictionary<int, IPortableMetadata> IPortableWriterEx.Metadata
         {
-            get { return metas; }
+            get { return _metas; }
         }
 
         /// <summary>
@@ -1166,12 +1161,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         private void WriteSimpleField<T>(string fieldName, byte typeId, T val,
             PortableSystemTypedWriteDelegate<T> handler, int len)
         {
-            int fieldId = PortableUtils.FieldId(curTypeId, fieldName, curConverter, curMapper);
+            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
 
             WriteSimpleField(fieldId, typeId, val, handler, len);
 
-            if (curMetaHnd != null)
-                curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
+            if (_curMetaHnd != null)
+                _curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
         }
 
         /// <summary>
@@ -1184,12 +1179,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         private void WriteSimpleNullableField<T>(string fieldName, byte typeId, T val,
             PortableSystemTypedWriteDelegate<T> handler)
         {
-            int fieldId = PortableUtils.FieldId(curTypeId, fieldName, curConverter, curMapper);
+            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
 
             WriteSimpleNullableField(fieldId, typeId, val, handler);
 
-            if (curMetaHnd != null)
-                curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
+            if (_curMetaHnd != null)
+                _curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
         }
 
         /// <summary>
@@ -1203,12 +1198,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         private void WriteSimpleNullableField<T>(string fieldName, byte typeId, T val,
             PortableSystemTypedWriteDelegate<T> handler, int len)
         {
-            int fieldId = PortableUtils.FieldId(curTypeId, fieldName, curConverter, curMapper);
+            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
 
             WriteSimpleNullableField(fieldId, typeId, val, handler, len);
 
-            if (curMetaHnd != null)
-                curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
+            if (_curMetaHnd != null)
+                _curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
         }
 
         /// <summary>
@@ -1219,9 +1214,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         private void WriteSimpleNullableRawField<T>(T val, PortableSystemTypedWriteDelegate<T> handler)
         {
             if (val == null)
-                stream.WriteByte(PortableUtils.HdrNull);
+                _stream.WriteByte(PortableUtils.HdrNull);
             else
-                handler(stream, val);
+                handler(_stream, val);
         }
 
         /// <summary>
@@ -1234,12 +1229,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         private void WriteField(string fieldName, byte typeId, object val,
             PortableSystemWriteDelegate handler)
         {
-            int fieldId = PortableUtils.FieldId(curTypeId, fieldName, curConverter, curMapper);
+            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
 
             WriteField(fieldId, typeId, val, handler);
 
-            if (curMetaHnd != null)
-                curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
+            if (_curMetaHnd != null)
+                _curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
         }
 
         /// <summary>
@@ -1263,8 +1258,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private void CheckNotRaw()
         {
-            if (curRaw)
-                throw new PortableException("Cannot write named fields after raw data is written.");
+            if (_curRaw)
+                throw _marsh.IgniteContext.ConvertException(
+                    new PortableException("Cannot write named fields after raw data is written."));
         }
 
         /** <inheritdoc /> */
@@ -1283,20 +1279,20 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="fields">Fields metadata.</param>
         private void SaveMetadata(int typeId, string typeName, string affKeyFieldName, IDictionary<string, int> fields)
         {
-            if (metas == null)
+            if (_metas == null)
             {
                 PortableMetadataImpl meta =
                     new PortableMetadataImpl(typeId, typeName, fields, affKeyFieldName);
 
-                metas = new Dictionary<int, IPortableMetadata>(1);
+                _metas = new Dictionary<int, IPortableMetadata>(1);
 
-                metas[typeId] = meta;
+                _metas[typeId] = meta;
             }
             else
             {
                 IPortableMetadata meta;
 
-                if (metas.TryGetValue(typeId, out meta))
+                if (_metas.TryGetValue(typeId, out meta))
                 {
                     IDictionary<string, int> existingFields = ((PortableMetadataImpl)meta).FieldsMap();
 
@@ -1307,7 +1303,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     }
                 }
                 else
-                    metas[typeId] = new PortableMetadataImpl(typeId, typeName, fields, affKeyFieldName);
+                    _metas[typeId] = new PortableMetadataImpl(typeId, typeName, fields, affKeyFieldName);
             }
         }
     }
