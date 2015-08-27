@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Writer.</returns>
         public IPortableWriterEx StartMarshal(IPortableStream stream)
         {
-            return new PortableWriterImpl(this, stream);
+            return CreateWriter(stream);
         }
 
         /// <summary>
@@ -296,21 +296,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             return CreateReader(_idToDesc, stream, mode, null);
         }
-
-        /// <summary>
-        /// Creates reader for unmarshalling.
-        /// </summary>
-        /// <param name="descs">The descs.</param>
-        /// <param name="stream">The stream.</param>
-        /// <param name="mode">The mode.</param>
-        /// <param name="builder">The builder.</param>
-        /// <returns>Reader.</returns>
-        protected virtual IPortableReaderEx CreateReader(IDictionary<long, IPortableTypeDescriptor> descs,
-            IPortableStream stream, PortableMode mode, PortableBuilderImpl builder)
-        {
-            return new PortableReaderImpl(this, _idToDesc, stream, mode, builder);
-        }
-        
         /// <summary>
         /// Gets metadata for the given type ID.
         /// </summary>
@@ -583,6 +568,30 @@ namespace Apache.Ignite.Core.Impl.Portable
             var serializer = new PortableSystemTypeSerializer<T>(ctor);
 
             AddType(type, typeId, GetTypeName(type), false, false, false, null, null, serializer, null, null, null);
+        }
+
+        /// <summary>
+        /// Creates reader for unmarshalling.
+        /// </summary>
+        /// <param name="descs">The descs.</param>
+        /// <param name="stream">The stream.</param>
+        /// <param name="mode">The mode.</param>
+        /// <param name="builder">The builder.</param>
+        /// <returns>Reader.</returns>
+        protected virtual IPortableReaderEx CreateReader(IDictionary<long, IPortableTypeDescriptor> descs,
+            IPortableStream stream, PortableMode mode, PortableBuilderImpl builder)
+        {
+            return new PortableReaderImpl(this, _idToDesc, stream, mode, builder);
+        }
+
+        /// <summary>
+        /// Creates writer for marshalling.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>Writer.</returns>
+        protected virtual IPortableWriterEx CreateWriter(IPortableStream stream)
+        {
+            return new PortableWriterImpl(this, stream);
         }
 
         /// <summary>
