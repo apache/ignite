@@ -22,6 +22,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.platform.callback.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -111,4 +112,12 @@ public interface PlatformContext {
      * @param reader Reader.
      */
     public void processMetadata(PortableRawReaderEx reader);
+
+    /**
+     * Write cluster metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics.
+     */
+    public void writeClusterMetrics(PortableRawWriterEx writer, @Nullable ClusterMetrics metrics);
 }

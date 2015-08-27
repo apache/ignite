@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,33 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+namespace Apache.Ignite.Core.Common
+{
+    using System;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.*;
-
-/**
- * Platform processor.
- */
-public interface PlatformProcessor extends GridProcessor {
-    /**
-     * Get owning Ignite instance.
-     *
-     * @return Ignite instance.
-     */
-    public Ignite ignite();
-
-    /**
-     * Get environment pointer associated with this processor.
-     *
-     * @return Environment pointer.
-     */
-    public long environmentPointer();
-
-    /**
-     * Gets platform context.
-     *
-     * @return Platform context.
-     */
-    public PlatformContext context();
+    /// <summary>
+    /// Attribute to indicate that method can be executed asynchronously if async mode is enabled.
+    /// To enable async mode, invoke <see cref="IAsyncSupport{TWithAsync}.WithAsync"/> method on the API.
+    /// The future for the async method can be retrieved via 
+    /// <see cref="IFuture{T}"/> right after the execution of an asynchronous method.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class AsyncSupportedAttribute : Attribute
+    {
+        // No-op.
+    }
 }

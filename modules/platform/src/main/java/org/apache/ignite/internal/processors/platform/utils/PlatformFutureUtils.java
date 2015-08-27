@@ -58,7 +58,7 @@ public class PlatformFutureUtils {
     /**
      * Listen future.
      *
-     * @param ctx Interop context.
+     * @param ctx Context.
      * @param fut Java future.
      * @param futPtr Native future pointer.
      * @param typ Expected return type.
@@ -70,7 +70,7 @@ public class PlatformFutureUtils {
     /**
      * Listen future.
      *
-     * @param ctx Interop context.
+     * @param ctx Context.
      * @param fut Java future.
      * @param futPtr Native future pointer.
      * @param typ Expected return type.
@@ -84,7 +84,7 @@ public class PlatformFutureUtils {
     /**
      * Listen future.
      *
-     * @param ctx Interop context.
+     * @param ctx Context.
      * @param fut Java future.
      * @param futPtr Native future pointer.
      * @param writer Writer.
@@ -96,7 +96,7 @@ public class PlatformFutureUtils {
     /**
      * Listen future.
      *
-     * @param ctx Interop context.
+     * @param ctx Context.
      * @param listenable Listenable entry.
      * @param futPtr Native future pointer.
      * @param typ Expected return type.
@@ -200,7 +200,7 @@ public class PlatformFutureUtils {
     /**
      * Write future error.
      *
-     * @param ctx Interop context.
+     * @param ctx Context.
      * @param futPtr Future pointer.
      * @param err Error.
      */
@@ -226,7 +226,7 @@ public class PlatformFutureUtils {
      *
      * @param obj Object to write.
      * @param err Error to write.
-     * @param ctx Interop context.
+     * @param ctx Context.
      * @param writer Writer.
      * @param futPtr Future pointer.
      * @return Value indicating whether custom write was performed. When false, default write will be used.

@@ -15,33 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+namespace Apache.Ignite.Core.Impl.Common
+{
+    using System;
+    using Apache.Ignite.Core.Impl.Portable.IO;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.*;
+    /// <summary>
+    /// Internal future interface.
+    /// </summary>
+    public interface IFutureInternal
+    {
+        /// <summary>
+        /// Set result from stream.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        void OnResult(IPortableStream stream);
 
-/**
- * Platform processor.
- */
-public interface PlatformProcessor extends GridProcessor {
-    /**
-     * Get owning Ignite instance.
-     *
-     * @return Ignite instance.
-     */
-    public Ignite ignite();
+        /// <summary>
+        /// Set null result.
+        /// </summary>
+        void OnNullResult();
 
-    /**
-     * Get environment pointer associated with this processor.
-     *
-     * @return Environment pointer.
-     */
-    public long environmentPointer();
-
-    /**
-     * Gets platform context.
-     *
-     * @return Platform context.
-     */
-    public PlatformContext context();
+        /// <summary>
+        /// Set error result.
+        /// </summary>
+        /// <param name="err">Exception.</param>
+        void OnError(Exception err);
+    }
 }

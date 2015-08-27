@@ -233,7 +233,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPortableEnabled() {
+    @Override public boolean isPortableEnabled(CacheConfiguration<?, ?> ccfg) {
         return false;
     }
 

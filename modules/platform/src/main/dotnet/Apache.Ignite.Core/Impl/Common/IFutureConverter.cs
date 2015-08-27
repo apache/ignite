@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,33 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+namespace Apache.Ignite.Core.Impl.Common
+{
+    using Apache.Ignite.Core.Impl.Portable.IO;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.*;
-
-/**
- * Platform processor.
- */
-public interface PlatformProcessor extends GridProcessor {
-    /**
-     * Get owning Ignite instance.
-     *
-     * @return Ignite instance.
-     */
-    public Ignite ignite();
-
-    /**
-     * Get environment pointer associated with this processor.
-     *
-     * @return Environment pointer.
-     */
-    public long environmentPointer();
-
-    /**
-     * Gets platform context.
-     *
-     * @return Platform context.
-     */
-    public PlatformContext context();
+    /// <summary>
+    /// Marshals and converts future value.
+    /// </summary>
+    public interface IFutureConverter<out T>
+    {
+        /// <summary>
+        /// Reads and converts a value.
+        /// </summary>
+        T Convert(IPortableStream stream);
+    }
 }

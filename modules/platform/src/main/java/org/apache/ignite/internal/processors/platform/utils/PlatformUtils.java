@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.utils;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.platform.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
@@ -434,7 +435,7 @@ public class PlatformUtils {
     /**
      * Apply continuous query events to listener.
      *
-     * @param ctx Interop context.
+     * @param ctx Context.
      * @param lsnrPtr Listener pointer.
      * @param evts Events.
      * @throws javax.cache.event.CacheEntryListenerException In case of failure.
@@ -473,7 +474,7 @@ public class PlatformUtils {
     /**
      * Evaluate the filter.
      *
-     * @param ctx Interop context.
+     * @param ctx Context.
      * @param filterPtr Native filter pointer.
      * @param evt Event.
      * @return Result.
@@ -574,6 +575,83 @@ public class PlatformUtils {
         }
         else
             writer.writeBoolean(false);
+    }
+
+    /**
+     * Get GridGain platform processor.
+     *
+     * @param grid Ignite instance.
+     * @return Platform processor.
+     */
+    public static PlatformProcessor platformProcessor(Ignite grid) {
+        GridKernalContext ctx = ((IgniteKernal) grid).context();
+
+        return ctx.platform();
+    }
+
+    /**
+     * Gets interop context for the grid.
+     *
+     * @param grid Grid
+     * @return Context.
+     */
+    public static PlatformContext platformContext(Ignite grid) {
+        return platformProcessor(grid).context();
+    }
+
+    /**
+     * Reallocate arbitrary memory chunk.
+     *
+     * @param memPtr Memory pointer.
+     * @param cap Capacity.
+     */
+    public static void reallocate(long memPtr, int cap) {
+        PlatformMemoryUtils.reallocate(memPtr, cap);
+    }
+
+    /**
+     * Get error data.
+     *
+     * @param err Error.
+     * @return Error data.
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public static byte[] errorData(Throwable err) {
+        if (err instanceof PlatformExtendedException) {
+            PlatformContext ctx = ((PlatformExtendedException)err).context();
+
+            try (PlatformMemory mem = ctx.memory().allocate()) {
+                // Write error data.
+                PlatformOutputStream out = mem.output();
+
+                PortableRawWriterEx writer = ctx.writer(out);
+
+                try {
+                    PlatformUtils.writeErrorData(err, writer, ctx.kernalContext().log(PlatformContext.class));
+                }
+                finally {
+                    out.synchronize();
+                }
+
+                // Read error data into separate array.
+                PlatformInputStream in = mem.input();
+
+                in.synchronize();
+
+                int len = in.remaining();
+
+                assert len > 0;
+
+                byte[] arr = in.array();
+                byte[] res = new byte[len];
+
+                System.arraycopy(arr, 0, res, 0, len);
+
+                return res;
+            }
+        }
+        else
+            return null;
     }
 
     /**

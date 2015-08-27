@@ -15,33 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+namespace Apache.Ignite.Core.Impl.Common
+{
+    /// <summary>
+    /// Future types.
+    /// </summary>
+    public enum FutureType
+    {
+        /** Future type: byte. */
+        Byte = 1,
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.*;
+        /** Future type: boolean. */
+        Bool = 2,
 
-/**
- * Platform processor.
- */
-public interface PlatformProcessor extends GridProcessor {
-    /**
-     * Get owning Ignite instance.
-     *
-     * @return Ignite instance.
-     */
-    public Ignite ignite();
+        /** Future type: short. */
+        Short = 3,
 
-    /**
-     * Get environment pointer associated with this processor.
-     *
-     * @return Environment pointer.
-     */
-    public long environmentPointer();
+        /** Future type: char. */
+        Char = 4,
 
-    /**
-     * Gets platform context.
-     *
-     * @return Platform context.
-     */
-    public PlatformContext context();
+        /** Future type: int. */
+        Int = 5,
+
+        /** Future type: float. */
+        Float = 6,
+
+        /** Future type: long. */
+        Long = 7,
+
+        /** Future type: double. */
+        Double = 8,
+
+        /** Future type: object. */
+        Object = 9
+    }
 }

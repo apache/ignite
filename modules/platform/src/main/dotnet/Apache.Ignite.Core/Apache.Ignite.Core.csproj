@@ -16,6 +16,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <OutputPath>bin\x64\Debug\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>DEBUG</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <PlatformTarget>x64</PlatformTarget>
@@ -26,6 +27,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>bin\x86\Debug\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>DEBUG</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
@@ -47,7 +49,26 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\IgniteException.cs" />
+    <Compile Include="Common\IAsyncSupport.cs" />
+    <Compile Include="Common\IFuture.cs" />
     <Compile Include="Ignition.cs" />
+    <Compile Include="Common\AsyncSupportedAttribute.cs" />
+    <Compile Include="Impl\Collections\CollectionExtensions.cs" />
+    <Compile Include="Impl\Collections\MultiValueDictionary.cs" />
+    <Compile Include="Impl\Collections\ReadOnlyCollection.cs" />
+    <Compile Include="Impl\Collections\ReadOnlyDictionary.cs" />
+    <Compile Include="Impl\Common\AsyncResult.cs" />
+    <Compile Include="Impl\Common\CompletedAsyncResult.cs" />
+    <Compile Include="Impl\Common\CopyOnWriteConcurrentDictionary.cs" />
+    <Compile Include="Impl\Common\DelegateConverter.cs" />
+    <Compile Include="Impl\Common\Future.cs" />
+    <Compile Include="Impl\Common\FutureType.cs" />
+    <Compile Include="Impl\Common\GridArgumentCheck.cs" />
+    <Compile Include="Impl\Common\IFutureConverter.cs" />
+    <Compile Include="Impl\Common\IFutureInternal.cs" />
+    <Compile Include="Impl\Common\LoadedAssembliesResolver.cs" />
+    <Compile Include="Impl\Common\TypeCaster.cs" />
     <Compile Include="Impl\Handle\Handle.cs" />
     <Compile Include="Impl\Handle\HandleRegistry.cs" />
     <Compile Include="Impl\Handle\IHandle.cs" />
@@ -64,6 +85,7 @@
     <Compile Include="Impl\Portable\IO\IPortableStream.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
