@@ -159,6 +159,8 @@ public class PortableContext implements Externalizable {
         mapTypes.put(ConcurrentHashMap8.class, GridPortableMarshaller.CONC_HASH_MAP);
         mapTypes.put(Properties.class, GridPortableMarshaller.PROPERTIES_MAP);
 
+        // IDs range from [0..200] is used by Java SDK API and GridGain legacy API
+
         registerPredefinedType(Byte.class, GridPortableMarshaller.BYTE);
         registerPredefinedType(Boolean.class, GridPortableMarshaller.BOOLEAN);
         registerPredefinedType(Short.class, GridPortableMarshaller.SHORT);
@@ -205,9 +207,10 @@ public class PortableContext implements Externalizable {
         registerPredefinedType(IgniteBiTuple.class, 61);
         registerPredefinedType(T2.class, 62);
 
-        registerPredefinedType(PortableObjectImpl.class, 63);
+        // IDs range [200..1000] is used by Ignite internal APIs.
 
-        registerPredefinedType(PortableMetaDataImpl.class, 64);
+        registerPredefinedType(PortableObjectImpl.class, 200);
+        registerPredefinedType(PortableMetaDataImpl.class, 201);
     }
 
     /**
