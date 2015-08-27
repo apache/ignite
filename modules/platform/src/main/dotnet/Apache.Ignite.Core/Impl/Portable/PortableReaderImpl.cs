@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Portable reader implementation. 
     /// </summary>
-    internal class PortableReaderImpl : IPortableReaderEx
+    public class PortableReaderImpl : IPortableReaderEx
     {
         /** Marshaller. */
         private readonly PortableMarshaller marsh;
