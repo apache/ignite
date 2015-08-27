@@ -255,84 +255,84 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             // 1. Primitives.
 
-            READ_HANDLERS[PortableUtils.TYPE_BOOL] = new PortableSystemReader<bool>(s => s.ReadBool());
+            READ_HANDLERS[PortableUtils.TypeBool] = new PortableSystemReader<bool>(s => s.ReadBool());
 
             WRITE_HANDLERS[typeof(sbyte)] = WRITE_HND_SBYTE;
-            READ_HANDLERS[PortableUtils.TYPE_BYTE] = new PortableSystemReader<byte>(s => s.ReadByte());
+            READ_HANDLERS[PortableUtils.TypeByte] = new PortableSystemReader<byte>(s => s.ReadByte());
 
             WRITE_HANDLERS[typeof(ushort)] = WRITE_HND_USHORT;
-            READ_HANDLERS[PortableUtils.TYPE_SHORT] = new PortableSystemReader<short>(s => s.ReadShort());
+            READ_HANDLERS[PortableUtils.TypeShort] = new PortableSystemReader<short>(s => s.ReadShort());
 
-            READ_HANDLERS[PortableUtils.TYPE_CHAR] = new PortableSystemReader<char>(s => s.ReadChar());
+            READ_HANDLERS[PortableUtils.TypeChar] = new PortableSystemReader<char>(s => s.ReadChar());
 
             WRITE_HANDLERS[typeof(uint)] = WRITE_HND_UINT;
-            READ_HANDLERS[PortableUtils.TYPE_INT] = new PortableSystemReader<int>(s => s.ReadInt());
+            READ_HANDLERS[PortableUtils.TypeInt] = new PortableSystemReader<int>(s => s.ReadInt());
 
             WRITE_HANDLERS[typeof(ulong)] = WRITE_HND_ULONG;
-            READ_HANDLERS[PortableUtils.TYPE_LONG] = new PortableSystemReader<long>(s => s.ReadLong());
+            READ_HANDLERS[PortableUtils.TypeLong] = new PortableSystemReader<long>(s => s.ReadLong());
 
-            READ_HANDLERS[PortableUtils.TYPE_FLOAT] = new PortableSystemReader<float>(s => s.ReadFloat());
+            READ_HANDLERS[PortableUtils.TypeFloat] = new PortableSystemReader<float>(s => s.ReadFloat());
 
-            READ_HANDLERS[PortableUtils.TYPE_DOUBLE] = new PortableSystemReader<double>(s => s.ReadDouble());
+            READ_HANDLERS[PortableUtils.TypeDouble] = new PortableSystemReader<double>(s => s.ReadDouble());
 
-            READ_HANDLERS[PortableUtils.TYPE_DECIMAL] = new PortableSystemReader<decimal>(PortableUtils.ReadDecimal);
+            READ_HANDLERS[PortableUtils.TypeDecimal] = new PortableSystemReader<decimal>(PortableUtils.ReadDecimal);
 
             // 2. Date.
-            READ_HANDLERS[PortableUtils.TYPE_DATE] =
+            READ_HANDLERS[PortableUtils.TypeDate] =
                 new PortableSystemReader<DateTime?>(s => PortableUtils.ReadDate(s, false));
 
             // 3. String.
-            READ_HANDLERS[PortableUtils.TYPE_STRING] = new PortableSystemReader<string>(PortableUtils.ReadString);
+            READ_HANDLERS[PortableUtils.TypeString] = new PortableSystemReader<string>(PortableUtils.ReadString);
 
             // 4. Guid.
-            READ_HANDLERS[PortableUtils.TYPE_GUID] = new PortableSystemReader<Guid?>(PortableUtils.ReadGuid);
+            READ_HANDLERS[PortableUtils.TypeGuid] = new PortableSystemReader<Guid?>(PortableUtils.ReadGuid);
 
             // 5. Primitive arrays.
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY_BOOL] = new PortableSystemReader<bool[]>(PortableUtils.ReadBooleanArray);
+            READ_HANDLERS[PortableUtils.TypeArrayBool] = new PortableSystemReader<bool[]>(PortableUtils.ReadBooleanArray);
 
             WRITE_HANDLERS[typeof(sbyte[])] = WRITE_HND_SBYTE_ARRAY;
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY_BYTE] =
+            READ_HANDLERS[PortableUtils.TypeArrayByte] =
                 new PortableSystemDualReader<byte[], sbyte[]>(PortableUtils.ReadByteArray, PortableUtils.ReadSbyteArray);
 
             WRITE_HANDLERS[typeof(ushort[])] = WRITE_HND_USHORT_ARRAY;
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY_SHORT] =
+            READ_HANDLERS[PortableUtils.TypeArrayShort] =
                 new PortableSystemDualReader<short[], ushort[]>(PortableUtils.ReadShortArray,
                     PortableUtils.ReadUshortArray);
 
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY_CHAR] = 
+            READ_HANDLERS[PortableUtils.TypeArrayChar] = 
                 new PortableSystemReader<char[]>(PortableUtils.ReadCharArray);
 
             WRITE_HANDLERS[typeof(uint[])] = WRITE_HND_UINT_ARRAY;
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY_INT] =
+            READ_HANDLERS[PortableUtils.TypeArrayInt] =
                 new PortableSystemDualReader<int[], uint[]>(PortableUtils.ReadIntArray, PortableUtils.ReadUintArray);
 
 
             WRITE_HANDLERS[typeof(ulong[])] = WRITE_HND_ULONG_ARRAY;
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY_LONG] =
+            READ_HANDLERS[PortableUtils.TypeArrayLong] =
                 new PortableSystemDualReader<long[], ulong[]>(PortableUtils.ReadLongArray, 
                     PortableUtils.ReadUlongArray);
 
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY_FLOAT] =
+            READ_HANDLERS[PortableUtils.TypeArrayFloat] =
                 new PortableSystemReader<float[]>(PortableUtils.ReadFloatArray);
 
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY_DOUBLE] =
+            READ_HANDLERS[PortableUtils.TypeArrayDouble] =
                 new PortableSystemReader<double[]>(PortableUtils.ReadDoubleArray);
 
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY_DECIMAL] =
+            READ_HANDLERS[PortableUtils.TypeArrayDecimal] =
                 new PortableSystemReader<decimal[]>(PortableUtils.ReadDecimalArray);
 
             // 6. Date array.
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY_DATE] =
+            READ_HANDLERS[PortableUtils.TypeArrayDate] =
                 new PortableSystemReader<DateTime?[]>(s => PortableUtils.ReadDateArray(s, false));
 
             // 7. String array.
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY_STRING] = new PortableSystemGenericArrayReader<string>();
+            READ_HANDLERS[PortableUtils.TypeArrayString] = new PortableSystemGenericArrayReader<string>();
 
             // 8. Guid array.
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY_GUID] = new PortableSystemGenericArrayReader<Guid?>();
+            READ_HANDLERS[PortableUtils.TypeArrayGuid] = new PortableSystemGenericArrayReader<Guid?>();
 
             // 9. Array.
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY] = new PortableSystemReader(ReadArray);
+            READ_HANDLERS[PortableUtils.TypeArray] = new PortableSystemReader(ReadArray);
 
             // 10. Predefined collections.
             WRITE_HANDLERS[typeof(ArrayList)] = WriteArrayList;
@@ -341,21 +341,21 @@ namespace Apache.Ignite.Core.Impl.Portable
             WRITE_HANDLERS[typeof(Hashtable)] = WriteHashtable;
 
             // 12. Arbitrary collection.
-            READ_HANDLERS[PortableUtils.TYPE_COLLECTION] = new PortableSystemReader(ReadCollection);
+            READ_HANDLERS[PortableUtils.TypeCollection] = new PortableSystemReader(ReadCollection);
 
             // 13. Arbitrary dictionary.
-            READ_HANDLERS[PortableUtils.TYPE_DICTIONARY] = new PortableSystemReader(ReadDictionary);
+            READ_HANDLERS[PortableUtils.TypeDictionary] = new PortableSystemReader(ReadDictionary);
 
             // 14. Map entry.
             WRITE_HANDLERS[typeof(DictionaryEntry)] = WriteMapEntry;
-            READ_HANDLERS[PortableUtils.TYPE_MAP_ENTRY] = new PortableSystemReader(ReadMapEntry);
+            READ_HANDLERS[PortableUtils.TypeMapEntry] = new PortableSystemReader(ReadMapEntry);
 
             // 15. Portable.
             WRITE_HANDLERS[typeof(PortableUserObject)] = WritePortable;
 
             // 16. Enum.
-            READ_HANDLERS[PortableUtils.TYPE_ENUM] = new PortableSystemReader<int>(PortableUtils.ReadEnum<int>);
-            READ_HANDLERS[PortableUtils.TYPE_ARRAY_ENUM] = new PortableSystemReader(ReadEnumArray);
+            READ_HANDLERS[PortableUtils.TypeEnum] = new PortableSystemReader<int>(PortableUtils.ReadEnum<int>);
+            READ_HANDLERS[PortableUtils.TypeArrayEnum] = new PortableSystemReader(ReadEnumArray);
         }
 
         /**
@@ -417,7 +417,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteBoolTyped(IPortableStream stream, bool obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_BOOL);
+            stream.WriteByte(PortableUtils.TypeBool);
 
             stream.WriteBool(obj);
         }
@@ -429,7 +429,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             sbyte val = (sbyte)obj;
 
-            ctx.Stream.WriteByte(PortableUtils.TYPE_BYTE);
+            ctx.Stream.WriteByte(PortableUtils.TypeByte);
             ctx.Stream.WriteByte(*(byte*)&val);
         }
 
@@ -446,7 +446,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteByteTyped(IPortableStream stream, byte obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_BYTE);
+            stream.WriteByte(PortableUtils.TypeByte);
             stream.WriteByte(obj);
         }
 
@@ -463,7 +463,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteShortTyped(IPortableStream stream, short obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_SHORT);
+            stream.WriteByte(PortableUtils.TypeShort);
 
             stream.WriteShort(obj);
         }
@@ -475,7 +475,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ushort val = (ushort)obj;
 
-            ctx.Stream.WriteByte(PortableUtils.TYPE_SHORT);
+            ctx.Stream.WriteByte(PortableUtils.TypeShort);
 
             ctx.Stream.WriteShort(*(short*)&val);
         }
@@ -493,7 +493,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteCharTyped(IPortableStream stream, char obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_CHAR);
+            stream.WriteByte(PortableUtils.TypeChar);
 
             stream.WriteChar(obj);
         }
@@ -511,7 +511,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteIntTyped(IPortableStream stream, int obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_INT);
+            stream.WriteByte(PortableUtils.TypeInt);
             stream.WriteInt(obj);
         }
 
@@ -522,7 +522,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             uint val = (uint)obj;
 
-            ctx.Stream.WriteByte(PortableUtils.TYPE_INT);
+            ctx.Stream.WriteByte(PortableUtils.TypeInt);
             ctx.Stream.WriteInt(*(int*)&val);
         }
 
@@ -539,7 +539,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteLongTyped(IPortableStream stream, long obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_LONG);
+            stream.WriteByte(PortableUtils.TypeLong);
             stream.WriteLong(obj);
         }
 
@@ -550,7 +550,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ulong val = (ulong)obj;
 
-            ctx.Stream.WriteByte(PortableUtils.TYPE_LONG);
+            ctx.Stream.WriteByte(PortableUtils.TypeLong);
             ctx.Stream.WriteLong(*(long*)&val);
         }
 
@@ -567,7 +567,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteFloatTyped(IPortableStream stream, float obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_FLOAT);
+            stream.WriteByte(PortableUtils.TypeFloat);
             stream.WriteFloat(obj);
         }
 
@@ -584,7 +584,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteDoubleTyped(IPortableStream stream, double obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_DOUBLE);
+            stream.WriteByte(PortableUtils.TypeDouble);
             stream.WriteDouble(obj);
         }
 
@@ -601,7 +601,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteDecimalTyped(IPortableStream stream, decimal obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_DECIMAL);
+            stream.WriteByte(PortableUtils.TypeDecimal);
 
             PortableUtils.WriteDecimal(obj, stream);
         }
@@ -619,7 +619,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteDateTyped(IPortableStream stream, DateTime? obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_DATE);
+            stream.WriteByte(PortableUtils.TypeDate);
 
             PortableUtils.WriteDate(obj, stream);
         }
@@ -637,7 +637,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteStringTyped(IPortableStream stream, string obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_STRING);
+            stream.WriteByte(PortableUtils.TypeString);
 
             PortableUtils.WriteString(obj, stream);
         }
@@ -655,7 +655,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteGuidTyped(IPortableStream stream, Guid? obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_GUID);
+            stream.WriteByte(PortableUtils.TypeGuid);
 
             PortableUtils.WriteGuid(obj, stream);
         }
@@ -673,7 +673,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteBoolArrayTyped(IPortableStream stream, bool[] obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_ARRAY_BOOL);
+            stream.WriteByte(PortableUtils.TypeArrayBool);
 
             PortableUtils.WriteBooleanArray(obj, stream);
         }
@@ -691,7 +691,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteByteArrayTyped(IPortableStream stream, byte[] obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_ARRAY_BYTE);
+            stream.WriteByte(PortableUtils.TypeArrayByte);
 
             PortableUtils.WriteByteArray(obj, stream);
         }
@@ -701,7 +701,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteSbyteArray(IPortableWriterEx ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TYPE_ARRAY_BYTE);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayByte);
 
             PortableUtils.WriteByteArray((byte[])(Array)obj, ctx.Stream);
         }
@@ -719,7 +719,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteShortArrayTyped(IPortableStream stream, short[] obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_ARRAY_SHORT);
+            stream.WriteByte(PortableUtils.TypeArrayShort);
 
             PortableUtils.WriteShortArray(obj, stream);
         }
@@ -729,7 +729,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteUshortArray(IPortableWriterEx ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TYPE_ARRAY_SHORT);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayShort);
 
             PortableUtils.WriteShortArray((short[])(Array)obj, ctx.Stream);
         }
@@ -747,7 +747,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteCharArrayTyped(IPortableStream stream, char[] obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_ARRAY_CHAR);
+            stream.WriteByte(PortableUtils.TypeArrayChar);
 
             PortableUtils.WriteCharArray(obj, stream);
         }
@@ -765,7 +765,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteIntArrayTyped(IPortableStream stream, int[] obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_ARRAY_INT);
+            stream.WriteByte(PortableUtils.TypeArrayInt);
 
             PortableUtils.WriteIntArray(obj, stream);
         }
@@ -775,7 +775,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteUintArray(IPortableWriterEx ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TYPE_ARRAY_INT);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayInt);
 
             PortableUtils.WriteIntArray((int[])(Array)obj, ctx.Stream);
         }
@@ -793,7 +793,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteLongArrayTyped(IPortableStream stream, long[] obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_ARRAY_LONG);
+            stream.WriteByte(PortableUtils.TypeArrayLong);
 
             PortableUtils.WriteLongArray(obj, stream);
         }
@@ -803,7 +803,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteUlongArray(IPortableWriterEx ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TYPE_ARRAY_LONG);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayLong);
 
             PortableUtils.WriteLongArray((long[])(Array)obj, ctx.Stream);
         }
@@ -821,7 +821,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteFloatArrayTyped(IPortableStream stream, float[] obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_ARRAY_FLOAT);
+            stream.WriteByte(PortableUtils.TypeArrayFloat);
 
             PortableUtils.WriteFloatArray(obj, stream);
         }
@@ -839,7 +839,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteDoubleArrayTyped(IPortableStream stream, double[] obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_ARRAY_DOUBLE);
+            stream.WriteByte(PortableUtils.TypeArrayDouble);
 
             PortableUtils.WriteDoubleArray(obj, stream);
         }
@@ -857,7 +857,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteDecimalArrayTyped(IPortableStream stream, decimal[] obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_ARRAY_DECIMAL);
+            stream.WriteByte(PortableUtils.TypeArrayDecimal);
 
             PortableUtils.WriteDecimalArray(obj, stream);
         }
@@ -875,7 +875,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteDateArrayTyped(IPortableStream stream, DateTime?[] obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_ARRAY_DATE);
+            stream.WriteByte(PortableUtils.TypeArrayDate);
 
             PortableUtils.WriteDateArray(obj, stream);
         }
@@ -893,7 +893,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteStringArrayTyped(IPortableStream stream, string[] obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_ARRAY_STRING);
+            stream.WriteByte(PortableUtils.TypeArrayString);
 
             PortableUtils.WriteStringArray(obj, stream);
         }
@@ -911,7 +911,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteGuidArrayTyped(IPortableStream stream, Guid?[] obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_ARRAY_GUID);
+            stream.WriteByte(PortableUtils.TypeArrayGuid);
 
             PortableUtils.WriteGuidArray(obj, stream);
         }
@@ -921,7 +921,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteEnumArray(IPortableWriterEx ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TYPE_ARRAY_ENUM);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayEnum);
 
             PortableUtils.WriteArray((Array)obj, ctx, true);
         }
@@ -931,7 +931,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteArray(IPortableWriterEx ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TYPE_ARRAY);
+            ctx.Stream.WriteByte(PortableUtils.TypeArray);
 
             PortableUtils.WriteArray((Array)obj, ctx, true);
         }
@@ -941,7 +941,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteCollection(IPortableWriterEx ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TYPE_COLLECTION);
+            ctx.Stream.WriteByte(PortableUtils.TypeCollection);
 
             PortableUtils.WriteCollection((ICollection)obj, ctx);
         }
@@ -955,7 +955,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             Debug.Assert(info.IsGenericCollection, "Not generic collection: " + obj.GetType().FullName);
 
-            ctx.Stream.WriteByte(PortableUtils.TYPE_COLLECTION);
+            ctx.Stream.WriteByte(PortableUtils.TypeCollection);
 
             info.WriteGeneric(ctx, obj);
         }
@@ -965,7 +965,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteDictionary(IPortableWriterEx ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TYPE_DICTIONARY);
+            ctx.Stream.WriteByte(PortableUtils.TypeDictionary);
 
             PortableUtils.WriteDictionary((IDictionary)obj, ctx);
         }
@@ -979,7 +979,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             Debug.Assert(info.IsGenericDictionary, "Not generic dictionary: " + obj.GetType().FullName);
 
-            ctx.Stream.WriteByte(PortableUtils.TYPE_DICTIONARY);
+            ctx.Stream.WriteByte(PortableUtils.TypeDictionary);
 
             info.WriteGeneric(ctx, obj);
         }
@@ -989,9 +989,9 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteArrayList(IPortableWriterEx ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TYPE_COLLECTION);
+            ctx.Stream.WriteByte(PortableUtils.TypeCollection);
 
-            PortableUtils.WriteTypedCollection((ICollection)obj, ctx, PortableUtils.COLLECTION_ARRAY_LIST);
+            PortableUtils.WriteTypedCollection((ICollection)obj, ctx, PortableUtils.CollectionArrayList);
         }
 
         /**
@@ -999,9 +999,9 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteHashtable(IPortableWriterEx ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TYPE_DICTIONARY);
+            ctx.Stream.WriteByte(PortableUtils.TypeDictionary);
 
-            PortableUtils.WriteTypedDictionary((IDictionary)obj, ctx, PortableUtils.MAP_HASH_MAP);
+            PortableUtils.WriteTypedDictionary((IDictionary)obj, ctx, PortableUtils.MapHashMap);
         }
 
         /**
@@ -1009,7 +1009,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteMapEntry(IPortableWriterEx ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TYPE_MAP_ENTRY);
+            ctx.Stream.WriteByte(PortableUtils.TypeMapEntry);
 
             PortableUtils.WriteMapEntry(ctx, (DictionaryEntry)obj);
         }
@@ -1019,7 +1019,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WritePortable(IPortableWriterEx ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TYPE_PORTABLE);
+            ctx.Stream.WriteByte(PortableUtils.TypePortable);
 
             PortableUtils.WritePortable(ctx.Stream, (PortableUserObject)obj);
         }
@@ -1029,7 +1029,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WritePortableTyped(IPortableStream stream, PortableUserObject obj)
         {
-            stream.WriteByte(PortableUtils.TYPE_PORTABLE);
+            stream.WriteByte(PortableUtils.TypePortable);
 
             PortableUtils.WritePortable(stream, obj);
         }
@@ -1039,7 +1039,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private static void WriteEnum(IPortableWriterEx ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TYPE_ENUM);
+            ctx.Stream.WriteByte(PortableUtils.TypeEnum);
 
             PortableUtils.WriteEnum(ctx.Stream, (Enum)obj);
         }

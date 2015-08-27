@@ -32,25 +32,25 @@ namespace Apache.Ignite.Core.Impl.Portable
     public class PortableMarshaller
     {
         /** Portable configuration. */
-        private readonly PortableConfiguration cfg;
+        private readonly PortableConfiguration _cfg;
 
         /** Ignite context. */
-        private readonly IIgniteContext igniteContext;
+        private readonly IIgniteContext _igniteContext;
 
         /** Type to descriptor map. */
-        private readonly IDictionary<Type, IPortableTypeDescriptor> typeToDesc =
+        private readonly IDictionary<Type, IPortableTypeDescriptor> _typeToDesc =
             new Dictionary<Type, IPortableTypeDescriptor>();
 
         /** Type name to descriptor map. */
-        private readonly IDictionary<string, IPortableTypeDescriptor> typeNameToDesc =
+        private readonly IDictionary<string, IPortableTypeDescriptor> _typeNameToDesc =
             new Dictionary<string, IPortableTypeDescriptor>();
 
         /** ID to descriptor map. */
-        private readonly IDictionary<long, IPortableTypeDescriptor> idToDesc =
+        private readonly IDictionary<long, IPortableTypeDescriptor> _idToDesc =
             new Dictionary<long, IPortableTypeDescriptor>();
 
         /** Cached metadatas. */
-        private volatile IDictionary<int, PortableMetadataHolder> metas =
+        private volatile IDictionary<int, PortableMetadataHolder> _metas =
             new Dictionary<int, PortableMetadataHolder>();
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             Debug.Assert(igniteContext != null);
 
-            this.igniteContext = igniteContext;
+            _igniteContext = igniteContext;
 
             // Validation.
             if (cfg == null)
@@ -81,45 +81,45 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             // Define predefined types.
-            AddPredefinedType(typeof(bool), PortableUtils.TYPE_BOOL, PortableSystemHandlers.WRITE_HND_BOOL_TYPED, PortableSystemHandlers.WRITE_HND_BOOL);
-            AddPredefinedType(typeof(byte), PortableUtils.TYPE_BYTE, PortableSystemHandlers.WRITE_HND_BYTE_TYPED, PortableSystemHandlers.WRITE_HND_BYTE);
-            AddPredefinedType(typeof(short), PortableUtils.TYPE_SHORT, PortableSystemHandlers.WRITE_HND_SHORT_TYPED, PortableSystemHandlers.WRITE_HND_SHORT);
-            AddPredefinedType(typeof(char), PortableUtils.TYPE_CHAR, PortableSystemHandlers.WRITE_HND_CHAR_TYPED, PortableSystemHandlers.WRITE_HND_CHAR);
-            AddPredefinedType(typeof(int), PortableUtils.TYPE_INT, PortableSystemHandlers.WRITE_HND_INT_TYPED, PortableSystemHandlers.WRITE_HND_INT);
-            AddPredefinedType(typeof(long), PortableUtils.TYPE_LONG, PortableSystemHandlers.WRITE_HND_LONG_TYPED, PortableSystemHandlers.WRITE_HND_LONG);
-            AddPredefinedType(typeof(float), PortableUtils.TYPE_FLOAT, PortableSystemHandlers.WRITE_HND_FLOAT_TYPED, PortableSystemHandlers.WRITE_HND_FLOAT);
-            AddPredefinedType(typeof(double), PortableUtils.TYPE_DOUBLE, PortableSystemHandlers.WRITE_HND_DOUBLE_TYPED, PortableSystemHandlers.WRITE_HND_DOUBLE);
-            AddPredefinedType(typeof(string), PortableUtils.TYPE_STRING, PortableSystemHandlers.WRITE_HND_STRING_TYPED, PortableSystemHandlers.WRITE_HND_STRING);
-            AddPredefinedType(typeof(decimal), PortableUtils.TYPE_DECIMAL, PortableSystemHandlers.WRITE_HND_DECIMAL_TYPED, PortableSystemHandlers.WRITE_HND_DECIMAL);
-            AddPredefinedType(typeof(DateTime), PortableUtils.TYPE_DATE, PortableSystemHandlers.WRITE_HND_DATE_TYPED, PortableSystemHandlers.WRITE_HND_DATE);
-            AddPredefinedType(typeof(Guid), PortableUtils.TYPE_GUID, PortableSystemHandlers.WRITE_HND_GUID_TYPED, PortableSystemHandlers.WRITE_HND_GUID);
+            AddPredefinedType(typeof(bool), PortableUtils.TypeBool, PortableSystemHandlers.WRITE_HND_BOOL_TYPED, PortableSystemHandlers.WRITE_HND_BOOL);
+            AddPredefinedType(typeof(byte), PortableUtils.TypeByte, PortableSystemHandlers.WRITE_HND_BYTE_TYPED, PortableSystemHandlers.WRITE_HND_BYTE);
+            AddPredefinedType(typeof(short), PortableUtils.TypeShort, PortableSystemHandlers.WRITE_HND_SHORT_TYPED, PortableSystemHandlers.WRITE_HND_SHORT);
+            AddPredefinedType(typeof(char), PortableUtils.TypeChar, PortableSystemHandlers.WRITE_HND_CHAR_TYPED, PortableSystemHandlers.WRITE_HND_CHAR);
+            AddPredefinedType(typeof(int), PortableUtils.TypeInt, PortableSystemHandlers.WRITE_HND_INT_TYPED, PortableSystemHandlers.WRITE_HND_INT);
+            AddPredefinedType(typeof(long), PortableUtils.TypeLong, PortableSystemHandlers.WRITE_HND_LONG_TYPED, PortableSystemHandlers.WRITE_HND_LONG);
+            AddPredefinedType(typeof(float), PortableUtils.TypeFloat, PortableSystemHandlers.WRITE_HND_FLOAT_TYPED, PortableSystemHandlers.WRITE_HND_FLOAT);
+            AddPredefinedType(typeof(double), PortableUtils.TypeDouble, PortableSystemHandlers.WRITE_HND_DOUBLE_TYPED, PortableSystemHandlers.WRITE_HND_DOUBLE);
+            AddPredefinedType(typeof(string), PortableUtils.TypeString, PortableSystemHandlers.WRITE_HND_STRING_TYPED, PortableSystemHandlers.WRITE_HND_STRING);
+            AddPredefinedType(typeof(decimal), PortableUtils.TypeDecimal, PortableSystemHandlers.WRITE_HND_DECIMAL_TYPED, PortableSystemHandlers.WRITE_HND_DECIMAL);
+            AddPredefinedType(typeof(DateTime), PortableUtils.TypeDate, PortableSystemHandlers.WRITE_HND_DATE_TYPED, PortableSystemHandlers.WRITE_HND_DATE);
+            AddPredefinedType(typeof(Guid), PortableUtils.TypeGuid, PortableSystemHandlers.WRITE_HND_GUID_TYPED, PortableSystemHandlers.WRITE_HND_GUID);
 
-            AddPredefinedType(typeof(PortableUserObject), PortableUtils.TYPE_PORTABLE, PortableSystemHandlers.WRITE_HND_PORTABLE_TYPED, 
+            AddPredefinedType(typeof(PortableUserObject), PortableUtils.TypePortable, PortableSystemHandlers.WRITE_HND_PORTABLE_TYPED, 
                 PortableSystemHandlers.WRITE_HND_PORTABLE);
 
-            AddPredefinedType(typeof(bool[]), PortableUtils.TYPE_ARRAY_BOOL, PortableSystemHandlers.WRITE_HND_BOOL_ARRAY_TYPED,
+            AddPredefinedType(typeof(bool[]), PortableUtils.TypeArrayBool, PortableSystemHandlers.WRITE_HND_BOOL_ARRAY_TYPED,
                 PortableSystemHandlers.WRITE_HND_BOOL_ARRAY);
-            AddPredefinedType(typeof(byte[]), PortableUtils.TYPE_ARRAY_BYTE, PortableSystemHandlers.WRITE_HND_BYTE_ARRAY_TYPED,
+            AddPredefinedType(typeof(byte[]), PortableUtils.TypeArrayByte, PortableSystemHandlers.WRITE_HND_BYTE_ARRAY_TYPED,
                 PortableSystemHandlers.WRITE_HND_BYTE_ARRAY);
-            AddPredefinedType(typeof(short[]), PortableUtils.TYPE_ARRAY_SHORT, PortableSystemHandlers.WRITE_HND_SHORT_ARRAY_TYPED,
+            AddPredefinedType(typeof(short[]), PortableUtils.TypeArrayShort, PortableSystemHandlers.WRITE_HND_SHORT_ARRAY_TYPED,
                 PortableSystemHandlers.WRITE_HND_SHORT_ARRAY);
-            AddPredefinedType(typeof(char[]), PortableUtils.TYPE_ARRAY_CHAR, PortableSystemHandlers.WRITE_HND_CHAR_ARRAY_TYPED,
+            AddPredefinedType(typeof(char[]), PortableUtils.TypeArrayChar, PortableSystemHandlers.WRITE_HND_CHAR_ARRAY_TYPED,
                 PortableSystemHandlers.WRITE_HND_CHAR_ARRAY);
-            AddPredefinedType(typeof(int[]), PortableUtils.TYPE_ARRAY_INT, PortableSystemHandlers.WRITE_HND_INT_ARRAY_TYPED,
+            AddPredefinedType(typeof(int[]), PortableUtils.TypeArrayInt, PortableSystemHandlers.WRITE_HND_INT_ARRAY_TYPED,
                 PortableSystemHandlers.WRITE_HND_INT_ARRAY);
-            AddPredefinedType(typeof(long[]), PortableUtils.TYPE_ARRAY_LONG, PortableSystemHandlers.WRITE_HND_LONG_ARRAY_TYPED,
+            AddPredefinedType(typeof(long[]), PortableUtils.TypeArrayLong, PortableSystemHandlers.WRITE_HND_LONG_ARRAY_TYPED,
                 PortableSystemHandlers.WRITE_HND_LONG_ARRAY);
-            AddPredefinedType(typeof(float[]), PortableUtils.TYPE_ARRAY_FLOAT, PortableSystemHandlers.WRITE_HND_FLOAT_ARRAY_TYPED,
+            AddPredefinedType(typeof(float[]), PortableUtils.TypeArrayFloat, PortableSystemHandlers.WRITE_HND_FLOAT_ARRAY_TYPED,
                 PortableSystemHandlers.WRITE_HND_FLOAT_ARRAY);
-            AddPredefinedType(typeof(double[]), PortableUtils.TYPE_ARRAY_DOUBLE, PortableSystemHandlers.WRITE_HND_DOUBLE_ARRAY_TYPED,
+            AddPredefinedType(typeof(double[]), PortableUtils.TypeArrayDouble, PortableSystemHandlers.WRITE_HND_DOUBLE_ARRAY_TYPED,
                 PortableSystemHandlers.WRITE_HND_DOUBLE_ARRAY);
-            AddPredefinedType(typeof(decimal[]), PortableUtils.TYPE_ARRAY_DECIMAL, PortableSystemHandlers.WRITE_HND_DECIMAL_ARRAY_TYPED,
+            AddPredefinedType(typeof(decimal[]), PortableUtils.TypeArrayDecimal, PortableSystemHandlers.WRITE_HND_DECIMAL_ARRAY_TYPED,
                 PortableSystemHandlers.WRITE_HND_DECIMAL_ARRAY);
-            AddPredefinedType(typeof(string[]), PortableUtils.TYPE_ARRAY_STRING, PortableSystemHandlers.WRITE_HND_STRING_ARRAY_TYPED,
+            AddPredefinedType(typeof(string[]), PortableUtils.TypeArrayString, PortableSystemHandlers.WRITE_HND_STRING_ARRAY_TYPED,
                 PortableSystemHandlers.WRITE_HND_STRING_ARRAY);
-            AddPredefinedType(typeof(DateTime?[]), PortableUtils.TYPE_ARRAY_DATE, PortableSystemHandlers.WRITE_HND_DATE_ARRAY_TYPED,
+            AddPredefinedType(typeof(DateTime?[]), PortableUtils.TypeArrayDate, PortableSystemHandlers.WRITE_HND_DATE_ARRAY_TYPED,
                 PortableSystemHandlers.WRITE_HND_DATE_ARRAY);
-            AddPredefinedType(typeof(Guid?[]), PortableUtils.TYPE_ARRAY_GUID, PortableSystemHandlers.WRITE_HND_GUID_ARRAY_TYPED,
+            AddPredefinedType(typeof(Guid?[]), PortableUtils.TypeArrayGuid, PortableSystemHandlers.WRITE_HND_GUID_ARRAY_TYPED,
                 PortableSystemHandlers.WRITE_HND_GUID_ARRAY);
 
             // 2. Define user types.
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (cfg.DefaultSerializer == null)
                 cfg.DefaultSerializer = dfltSerializer;
 
-            this.cfg = cfg;
+            _cfg = cfg;
         }
 
         /// <summary>
@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>
         /// Object.
         /// </returns>
-        public T Unmarshal<T>(byte[] data, PortableMode mode = PortableMode.DESERIALIZE)
+        public T Unmarshal<T>(byte[] data, PortableMode mode = PortableMode.Deserialize)
         {
             return Unmarshal<T>(new PortableHeapStream(data), mode);
         }
@@ -231,7 +231,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </returns>
         public T Unmarshal<T>(IPortableStream stream, bool keepPortable)
         {
-            return Unmarshal<T>(stream, keepPortable ? PortableMode.KEEP_PORTABLE : PortableMode.DESERIALIZE, null);
+            return Unmarshal<T>(stream, keepPortable ? PortableMode.KeepPortable : PortableMode.Deserialize, null);
         }
 
         /// <summary>
@@ -242,7 +242,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>
         /// Object.
         /// </returns>
-        public T Unmarshal<T>(IPortableStream stream, PortableMode mode = PortableMode.DESERIALIZE)
+        public T Unmarshal<T>(IPortableStream stream, PortableMode mode = PortableMode.Deserialize)
         {
             return Unmarshal<T>(stream, mode, null);
         }
@@ -258,7 +258,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </returns>
         public T Unmarshal<T>(IPortableStream stream, PortableMode mode, PortableBuilderImpl builder)
         {
-            return CreateReader(idToDesc, stream, mode, builder).Deserialize<T>();
+            return CreateReader(_idToDesc, stream, mode, builder).Deserialize<T>();
         }
 
         /// <summary>
@@ -271,7 +271,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </returns>
         public IPortableReaderEx StartUnmarshal(IPortableStream stream, bool keepPortable)
         {
-            return CreateReader(idToDesc, stream, keepPortable ? PortableMode.KEEP_PORTABLE : PortableMode.DESERIALIZE,
+            return CreateReader(_idToDesc, stream, keepPortable ? PortableMode.KeepPortable : PortableMode.Deserialize,
                 null);
         }
 
@@ -281,9 +281,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="stream">Stream.</param>
         /// <param name="mode">The mode.</param>
         /// <returns>Reader.</returns>
-        public IPortableReaderEx StartUnmarshal(IPortableStream stream, PortableMode mode = PortableMode.DESERIALIZE)
+        public IPortableReaderEx StartUnmarshal(IPortableStream stream, PortableMode mode = PortableMode.Deserialize)
         {
-            return CreateReader(idToDesc, stream, mode, null);
+            return CreateReader(_idToDesc, stream, mode, null);
         }
 
         /// <summary>
@@ -297,7 +297,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         protected virtual IPortableReaderEx CreateReader(IDictionary<long, IPortableTypeDescriptor> descs,
             IPortableStream stream, PortableMode mode, PortableBuilderImpl builder)
         {
-            return new PortableReaderImpl(this, idToDesc, stream, mode, builder);
+            return new PortableReaderImpl(this, _idToDesc, stream, mode, builder);
         }
         
         /// <summary>
@@ -308,7 +308,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         public virtual IPortableMetadata GetMetadata(int typeId)
         {
             // TODO:
-            return PortableMetadataImpl.EMPTY_META;
+            return PortableMetadataImpl.EmptyMeta;
         }
 
         /// <summary>
@@ -320,21 +320,21 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             PortableMetadataHolder holder;
 
-            if (!metas.TryGetValue(desc.TypeId, out holder))
+            if (!_metas.TryGetValue(desc.TypeId, out holder))
             {
                 lock (this)
                 {
-                    if (!metas.TryGetValue(desc.TypeId, out holder))
+                    if (!_metas.TryGetValue(desc.TypeId, out holder))
                     {
                         IDictionary<int, PortableMetadataHolder> metas0 =
-                            new Dictionary<int, PortableMetadataHolder>(metas);
+                            new Dictionary<int, PortableMetadataHolder>(_metas);
 
                         holder = desc.MetadataEnabled ? new PortableMetadataHolder(desc.TypeId,
                             desc.TypeName, desc.AffinityKeyFieldName) : null;
 
                         metas0[desc.TypeId] = holder;
 
-                        metas = metas0;
+                        _metas = metas0;
                     }
                 }
             }
@@ -371,7 +371,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     mergeInfo[fieldId] = new Tuple<string, int>(fieldMeta.Key, fieldMeta.Value);
                 }
 
-                metas[metaEntry.Key].Merge(mergeInfo);
+                _metas[metaEntry.Key].Merge(mergeInfo);
             }
         }
         
@@ -384,7 +384,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IPortableTypeDescriptor desc;
 
-            typeToDesc.TryGetValue(type, out desc);
+            _typeToDesc.TryGetValue(type, out desc);
 
             return desc;
         }
@@ -398,8 +398,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IPortableTypeDescriptor desc;
 
-            return typeNameToDesc.TryGetValue(typeName, out desc) ? desc : 
-                new PortableSurrogateTypeDescriptor(cfg, typeName);
+            return _typeNameToDesc.TryGetValue(typeName, out desc) ? desc : 
+                new PortableSurrogateTypeDescriptor(_cfg, typeName);
         }
 
         /// <summary>
@@ -412,8 +412,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IPortableTypeDescriptor desc;
 
-            return idToDesc.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc) ? desc :
-                userType ? new PortableSurrogateTypeDescriptor(cfg, typeId) : null;
+            return _idToDesc.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc) ? desc :
+                userType ? new PortableSurrogateTypeDescriptor(_cfg, typeId) : null;
         }
 
         /// <summary>
@@ -497,7 +497,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static IPortableSerializer GetPortableMarshalAwareSerializer(Type type)
         {
             return type.GetInterfaces().Contains(typeof (IPortableMarshalAware)) 
-                ? PortableMarshalAwareSerializer.INSTANCE 
+                ? PortableMarshalAwareSerializer.Instance 
                 : null;
         }
 
@@ -537,29 +537,29 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             long typeKey = PortableUtils.TypeKey(userType, typeId);
 
-            if (idToDesc.ContainsKey(typeKey))
+            if (_idToDesc.ContainsKey(typeKey))
             {
-                string type1 = idToDesc[typeKey].Type != null ? idToDesc[typeKey].Type.AssemblyQualifiedName : null;
+                string type1 = _idToDesc[typeKey].Type != null ? _idToDesc[typeKey].Type.AssemblyQualifiedName : null;
                 string type2 = type != null ? type.AssemblyQualifiedName : null;
 
-                throw igniteContext.ConvertException(new PortableException("Conflicting type IDs [type1=" + type1 + ", type2=" + type2 +
+                throw _igniteContext.ConvertException(new PortableException("Conflicting type IDs [type1=" + type1 + ", type2=" + type2 +
                     ", typeId=" + typeId + ']'));
             }
 
-            if (userType && typeNameToDesc.ContainsKey(typeName))
-                throw igniteContext.ConvertException(new PortableException("Conflicting type name: " + typeName));
+            if (userType && _typeNameToDesc.ContainsKey(typeName))
+                throw _igniteContext.ConvertException(new PortableException("Conflicting type name: " + typeName));
 
             IPortableTypeDescriptor descriptor =
                 new PortableFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, serializer,
                     metaEnabled, keepDeserialized, affKeyFieldName, typedHandler, untypedHandler);
 
             if (type != null)
-                typeToDesc[type] = descriptor;
+                _typeToDesc[type] = descriptor;
 
             if (userType)
-                typeNameToDesc[typeName] = descriptor;
+                _typeNameToDesc[typeName] = descriptor;
 
-            idToDesc[typeKey] = descriptor;            
+            _idToDesc[typeKey] = descriptor;            
         }
 
         /// <summary>

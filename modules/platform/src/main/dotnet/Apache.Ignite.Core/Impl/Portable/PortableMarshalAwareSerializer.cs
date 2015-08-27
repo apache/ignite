@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Default instance.
         /// </summary>
-        public static readonly PortableMarshalAwareSerializer INSTANCE = new PortableMarshalAwareSerializer();
+        public static readonly PortableMarshalAwareSerializer Instance = new PortableMarshalAwareSerializer();
 
         /** <inheritdoc /> */
         public void WritePortable(object obj, IPortableWriter writer)

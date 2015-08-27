@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <summary>
         /// 
         /// </summary>
-        private readonly IPortableStream stream;
+        private readonly IPortableStream _stream;
 
         /// <summary>
         /// Constructor.
@@ -36,19 +36,19 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="stream">Stream.</param>
         public PortableStreamAdapter(IPortableStream stream)
         {
-            this.stream = stream;
+            _stream = stream;
         }
 
         /** <inheritDoc /> */
         public override void Write(byte[] buffer, int offset, int count)
         {
-            stream.Write(buffer, offset, count);
+            _stream.Write(buffer, offset, count);
         }
 
         /** <inheritDoc /> */
         public override int Read(byte[] buffer, int offset, int count)
         {
-            stream.Read(buffer, offset, count);
+            _stream.Read(buffer, offset, count);
 
             return count;
         }

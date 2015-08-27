@@ -42,11 +42,11 @@ namespace Apache.Ignite.Core.Impl.Portable
     internal class PortableReflectiveSerializer : IPortableSerializer
     {
         /** Cached binding flags. */
-        private static readonly BindingFlags FLAGS = BindingFlags.Instance | BindingFlags.Public |
+        private static readonly BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public |
             BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
         /** Cached type descriptors. */
-        private readonly IDictionary<Type, Descriptor> types = new Dictionary<Type, Descriptor>();
+        private readonly IDictionary<Type, Descriptor> _types = new Dictionary<Type, Descriptor>();
 
         /// <summary>
         /// Write portalbe object.
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             while (curType != null)
             {
-                foreach (FieldInfo field in curType.GetFields(FLAGS))
+                foreach (FieldInfo field in curType.GetFields(Flags))
                 {
                     if (!field.IsNotSerialized)
                         fields.Add(field);
@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             Descriptor desc = new Descriptor(fields);
 
-            types[type] = desc;
+            _types[type] = desc;
         }
 
         /// <summary>
@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             Descriptor desc;
 
-            if (!types.TryGetValue(type, out desc))
+            if (!_types.TryGetValue(type, out desc))
                 throw new PortableException("Type is not registered in serializer: " + type.Name);
 
             return desc;
@@ -162,10 +162,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         private class Descriptor
         {
             /** Write actions to be performed. */
-            private readonly List<PortableReflectiveWriteAction> wActions;
+            private readonly List<PortableReflectiveWriteAction> _wActions;
 
             /** Read actions to be performed. */
-            private readonly List<PortableReflectiveReadAction> rActions;
+            private readonly List<PortableReflectiveReadAction> _rActions;
 
             /// <summary>
             /// Constructor.
@@ -173,8 +173,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <param name="fields">Fields.</param>
             public Descriptor(List<FieldInfo> fields)
             {
-                wActions = new List<PortableReflectiveWriteAction>(fields.Count);
-                rActions = new List<PortableReflectiveReadAction>(fields.Count);
+                _wActions = new List<PortableReflectiveWriteAction>(fields.Count);
+                _rActions = new List<PortableReflectiveReadAction>(fields.Count);
 
                 foreach (FieldInfo field in fields)
                 {
@@ -183,8 +183,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     PortableReflectiveActions.TypeActions(field, out writeAction, out readAction);
 
-                    wActions.Add(writeAction);
-                    rActions.Add(readAction);
+                    _wActions.Add(writeAction);
+                    _rActions.Add(readAction);
                 }
             }
 
@@ -195,10 +195,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <param name="writer">Portable writer.</param>
             public void Write(object obj, IPortableWriter writer)
             {
-                int cnt = wActions.Count;
+                int cnt = _wActions.Count;
 
                 for (int i = 0; i < cnt; i++)
-                    wActions[i](obj, writer);                   
+                    _wActions[i](obj, writer);                   
             }
 
             /// <summary>
@@ -208,10 +208,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <param name="reader">Portable reader.</param>
             public void Read(object obj, IPortableReader reader)
             {
-                int cnt = rActions.Count;
+                int cnt = _rActions.Count;
 
                 for (int i = 0; i < cnt; i++ )
-                    rActions[i](obj, reader);
+                    _rActions[i](obj, reader);
             }
         }
     }

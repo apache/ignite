@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             // Deserialize.
             stream.Seek(0, SeekOrigin.Begin);
 
-            return _marsh.Unmarshal<T>(stream, PortableMode.FORCE_PORTABLE);
+            return _marsh.Unmarshal<T>(stream, PortableMode.ForcePortable);
         }
 
         /** <inheritDoc /> */
@@ -178,12 +178,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             PortableHeapStream stream = new PortableHeapStream(18);
 
-            stream.WriteByte(PortableUtils.HDR_FULL);
+            stream.WriteByte(PortableUtils.HdrFull);
             stream.WriteBool(true);
             stream.WriteInt(desc.TypeId);
             stream.WriteInt(0); // Hash.
-            stream.WriteInt(PortableUtils.FULL_HDR_LEN); // Length.
-            stream.WriteInt(PortableUtils.FULL_HDR_LEN); // Raw data offset.
+            stream.WriteInt(PortableUtils.FullHdrLen); // Length.
+            stream.WriteInt(PortableUtils.FullHdrLen); // Raw data offset.
 
             return new PortableUserObject(_marsh, stream.InternalArray, 0, desc.TypeId, 0);
         }

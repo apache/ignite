@@ -27,25 +27,25 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
     internal class PortableMetadataHolder
     {
         /** Type ID. */
-        private readonly int typeId;
+        private readonly int _typeId;
 
         /** Type name. */
-        private readonly string typeName;
+        private readonly string _typeName;
 
         /** Affinity key field name. */
-        private readonly string affKeyFieldName;
+        private readonly string _affKeyFieldName;
 
         /** Empty metadata when nothig is know about object fields yet. */
-        private readonly IPortableMetadata emptyMeta;
+        private readonly IPortableMetadata _emptyMeta;
 
         /** Collection of know field IDs. */
-        private volatile ICollection<int> ids;
+        private volatile ICollection<int> _ids;
 
         /** Last known unmodifiable metadata which is given to the user. */
-        private volatile PortableMetadataImpl meta;
+        private volatile PortableMetadataImpl _meta;
 
         /** Saved flag (set if type metadata was saved at least once). */
-        private volatile bool saved;
+        private volatile bool _saved;
 
         /// <summary>
         /// Constructor.
@@ -55,11 +55,11 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         public PortableMetadataHolder(int typeId, string typeName, string affKeyFieldName)
         {
-            this.typeId = typeId;
-            this.typeName = typeName;
-            this.affKeyFieldName = affKeyFieldName;
+            this._typeId = typeId;
+            this._typeName = typeName;
+            this._affKeyFieldName = affKeyFieldName;
 
-            emptyMeta = new PortableMetadataImpl(typeId, typeName, null, affKeyFieldName);
+            _emptyMeta = new PortableMetadataImpl(typeId, typeName, null, affKeyFieldName);
         }
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <returns>True if type metadata was saved at least once.</returns>
         public bool Saved()
         {
-            return saved;
+            return _saved;
         }
 
         /// <summary>
@@ -77,9 +77,9 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <returns>Type metadata.</returns>
         public IPortableMetadata Metadata()
         {
-            PortableMetadataImpl meta0 = meta;
+            PortableMetadataImpl meta0 = _meta;
 
-            return meta0 != null ? meta : emptyMeta;
+            return meta0 != null ? _meta : _emptyMeta;
         }
 
         /// <summary>
@@ -88,19 +88,19 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <returns>Cached field IDs.</returns>
         public ICollection<int> FieldIds()
         {
-            ICollection<int> ids0 = ids;
+            ICollection<int> ids0 = _ids;
 
-            if (ids == null)
+            if (_ids == null)
             {
                 lock (this)
                 {
-                    ids0 = ids;
+                    ids0 = _ids;
 
                     if (ids0 == null)
                     {
                         ids0 = new HashSet<int>();
 
-                        ids = ids0;
+                        _ids = ids0;
                     }
                 }
             }
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <param name="newMap">New field metadatas map.</param>
         public void Merge(IDictionary<int, Tuple<string, int>> newMap)
         {
-            saved = true;
+            _saved = true;
 
             if (newMap == null || newMap.Count == 0)
                 return;
@@ -122,8 +122,8 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
             lock (this)
             {
                 // 1. Create copies of the old meta.
-                ICollection<int> ids0 = ids;
-                PortableMetadataImpl meta0 = meta;
+                ICollection<int> ids0 = _ids;
+                PortableMetadataImpl meta0 = _meta;
 
                 ICollection<int> newIds = ids0 != null ? new HashSet<int>(ids0) : new HashSet<int>();
 
@@ -141,8 +141,8 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
                 }
 
                 // 3. Assign new meta. Order is important here: meta must be assigned before field IDs.
-                meta = new PortableMetadataImpl(typeId, typeName, newFields, affKeyFieldName);
-                ids = newIds;
+                _meta = new PortableMetadataImpl(_typeId, _typeName, newFields, _affKeyFieldName);
+                _ids = newIds;
             }
         }
     }

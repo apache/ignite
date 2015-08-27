@@ -26,13 +26,13 @@ namespace Apache.Ignite.Core.Impl.Portable
     internal class PortableSurrogateTypeDescriptor : IPortableTypeDescriptor
     {
         /** Portable configuration. */
-        private readonly PortableConfiguration cfg;
+        private readonly PortableConfiguration _cfg;
 
         /** Type ID. */
-        private readonly int id;
+        private readonly int _id;
 
         /** Type name. */
-        private readonly string name;
+        private readonly string _name;
 
         /// <summary>
         /// Constructor.
@@ -41,8 +41,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="id">Type ID.</param>
         public PortableSurrogateTypeDescriptor(PortableConfiguration cfg, int id)
         {
-            this.cfg = cfg;
-            this.id = id;
+            this._cfg = cfg;
+            this._id = id;
         }
 
         /// <summary>
@@ -52,10 +52,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="name">Type name.</param>
         public PortableSurrogateTypeDescriptor(PortableConfiguration cfg, string name)
         {
-            this.cfg = cfg;
-            this.name = name;
+            this._cfg = cfg;
+            this._name = name;
 
-            id = PortableUtils.TypeId(name, cfg.DefaultNameMapper, cfg.DefaultIdMapper);
+            _id = PortableUtils.TypeId(name, cfg.DefaultNameMapper, cfg.DefaultIdMapper);
         }
 
         /** <inheritDoc /> */
@@ -67,13 +67,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public int TypeId
         {
-            get { return id; }
+            get { return _id; }
         }
 
         /** <inheritDoc /> */
         public string TypeName
         {
-            get { return name; }
+            get { return _name; }
         }
 
         /** <inheritDoc /> */
@@ -85,31 +85,31 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public bool MetadataEnabled
         {
-            get { return cfg.DefaultMetadataEnabled; }
+            get { return _cfg.DefaultMetadataEnabled; }
         }
 
         /** <inheritDoc /> */
         public bool KeepDeserialized
         {
-            get { return cfg.DefaultKeepDeserialized; }
+            get { return _cfg.DefaultKeepDeserialized; }
         }
 
         /** <inheritDoc /> */
         public IPortableNameMapper NameConverter
         {
-            get { return cfg.DefaultNameMapper; }
+            get { return _cfg.DefaultNameMapper; }
         }
 
         /** <inheritDoc /> */
         public IPortableIdMapper Mapper
         {
-            get { return cfg.DefaultIdMapper; }
+            get { return _cfg.DefaultIdMapper; }
         }
 
         /** <inheritDoc /> */
         public IPortableSerializer Serializer
         {
-            get { return cfg.DefaultSerializer; }
+            get { return _cfg.DefaultSerializer; }
         }
 
         /** <inheritDoc /> */

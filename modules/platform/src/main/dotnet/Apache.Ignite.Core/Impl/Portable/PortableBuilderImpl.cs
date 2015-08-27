@@ -31,81 +31,81 @@ namespace Apache.Ignite.Core.Impl.Portable
     public class PortableBuilderImpl : IPortableBuilder
     {
         /** Type IDs for metadata. */
-        private static readonly IDictionary<Type, int> TYPE_IDS;
+        private static readonly IDictionary<Type, int> TypeIds;
 
         /** Cached dictionary with no values. */
-        private static readonly IDictionary<int, object> EMPTY_VALS = new Dictionary<int, object>();
+        private static readonly IDictionary<int, object> EmptyVals = new Dictionary<int, object>();
 
         /** Offset: length. */
-        private const int OFFSET_LEN = 10;
+        private const int OffsetLen = 10;
 
         /** Portables. */
-        private readonly PortablesImpl portables;
+        private readonly PortablesImpl _portables;
 
         /** */
-        private readonly PortableBuilderImpl parent;
+        private readonly PortableBuilderImpl _parent;
 
         /** Initial portable object. */
-        private readonly PortableUserObject obj;
+        private readonly PortableUserObject _obj;
 
         /** Type descriptor. */
-        private readonly IPortableTypeDescriptor desc;
+        private readonly IPortableTypeDescriptor _desc;
 
         /** Values. */
-        private IDictionary<string, PortableBuilderField> vals;
+        private IDictionary<string, PortableBuilderField> _vals;
 
         /** Contextual fields. */
-        private IDictionary<int, object> cache;
+        private IDictionary<int, object> _cache;
 
         /** Hash code. */
-        private int hashCode;
+        private int _hashCode;
         
         /** Current context. */
-        private Context ctx;
+        private Context _ctx;
         
         /// <summary>
         /// Static initializer.
         /// </summary>
         static PortableBuilderImpl()
         {
-            TYPE_IDS = new Dictionary<Type, int>();
+            TypeIds = new Dictionary<Type, int>();
 
             // 1. Primitives.
-            TYPE_IDS[typeof(byte)] = PortableUtils.TYPE_BYTE;
-            TYPE_IDS[typeof(bool)] = PortableUtils.TYPE_BOOL;
-            TYPE_IDS[typeof(short)] = PortableUtils.TYPE_SHORT;
-            TYPE_IDS[typeof(char)] = PortableUtils.TYPE_CHAR;
-            TYPE_IDS[typeof(int)] = PortableUtils.TYPE_INT;
-            TYPE_IDS[typeof(long)] = PortableUtils.TYPE_LONG;
-            TYPE_IDS[typeof(float)] = PortableUtils.TYPE_FLOAT;
-            TYPE_IDS[typeof(double)] = PortableUtils.TYPE_DOUBLE;
-            TYPE_IDS[typeof(decimal)] = PortableUtils.TYPE_DECIMAL;
+            TypeIds[typeof(byte)] = PortableUtils.TypeByte;
+            TypeIds[typeof(bool)] = PortableUtils.TypeBool;
+            TypeIds[typeof(short)] = PortableUtils.TypeShort;
+            TypeIds[typeof(char)] = PortableUtils.TypeChar;
+            TypeIds[typeof(int)] = PortableUtils.TypeInt;
+            TypeIds[typeof(long)] = PortableUtils.TypeLong;
+            TypeIds[typeof(float)] = PortableUtils.TypeFloat;
+            TypeIds[typeof(double)] = PortableUtils.TypeDouble;
+            TypeIds[typeof(decimal)] = PortableUtils.TypeDecimal;
 
-            TYPE_IDS[typeof(byte[])] = PortableUtils.TYPE_ARRAY_BYTE;
-            TYPE_IDS[typeof(bool[])] = PortableUtils.TYPE_ARRAY_BOOL;
-            TYPE_IDS[typeof(short[])] = PortableUtils.TYPE_ARRAY_SHORT;
-            TYPE_IDS[typeof(char[])] = PortableUtils.TYPE_ARRAY_CHAR;
-            TYPE_IDS[typeof(int[])] = PortableUtils.TYPE_ARRAY_INT;
-            TYPE_IDS[typeof(long[])] = PortableUtils.TYPE_ARRAY_LONG;
-            TYPE_IDS[typeof(float[])] = PortableUtils.TYPE_ARRAY_FLOAT;
-            TYPE_IDS[typeof(double[])] = PortableUtils.TYPE_ARRAY_DOUBLE;
-            TYPE_IDS[typeof(decimal[])] = PortableUtils.TYPE_ARRAY_DECIMAL;
+            TypeIds[typeof(byte[])] = PortableUtils.TypeArrayByte;
+            TypeIds[typeof(bool[])] = PortableUtils.TypeArrayBool;
+            TypeIds[typeof(short[])] = PortableUtils.TypeArrayShort;
+            TypeIds[typeof(char[])] = PortableUtils.TypeArrayChar;
+            TypeIds[typeof(int[])] = PortableUtils.TypeArrayInt;
+            TypeIds[typeof(long[])] = PortableUtils.TypeArrayLong;
+            TypeIds[typeof(float[])] = PortableUtils.TypeArrayFloat;
+            TypeIds[typeof(double[])] = PortableUtils.TypeArrayDouble;
+            TypeIds[typeof(decimal[])] = PortableUtils.TypeArrayDecimal;
 
             // 2. String.
-            TYPE_IDS[typeof(string)] = PortableUtils.TYPE_STRING;
-            TYPE_IDS[typeof(string[])] = PortableUtils.TYPE_ARRAY_STRING;
+            TypeIds[typeof(string)] = PortableUtils.TypeString;
+            TypeIds[typeof(string[])] = PortableUtils.TypeArrayString;
 
             // 3. Guid.
-            TYPE_IDS[typeof(Guid)] = PortableUtils.TYPE_GUID;
-            TYPE_IDS[typeof(Guid?)] = PortableUtils.TYPE_GUID;
-            TYPE_IDS[typeof(Guid[])] = PortableUtils.TYPE_ARRAY_GUID;
-            TYPE_IDS[typeof(Guid?[])] = PortableUtils.TYPE_ARRAY_GUID;
+            TypeIds[typeof(Guid)] = PortableUtils.TypeGuid;
+            TypeIds[typeof(Guid?)] = PortableUtils.TypeGuid;
+            TypeIds[typeof(Guid[])] = PortableUtils.TypeArrayGuid;
+            TypeIds[typeof(Guid?[])] = PortableUtils.TypeArrayGuid;
 
             // 4. Date.
-            TYPE_IDS[typeof(DateTime)] = PortableUtils.TYPE_DATE;
-            TYPE_IDS[typeof(DateTime?)] = PortableUtils.TYPE_DATE;
-            TYPE_IDS[typeof(DateTime[])] = PortableUtils.TYPE_ARRAY_DATE;
-            TYPE_IDS[typeof(DateTime?[])] = PortableUtils.TYPE_ARRAY_DATE;
+            TypeIds[typeof(DateTime)] = PortableUtils.TypeDate;
+            TypeIds[typeof(DateTime?)] = PortableUtils.TypeDate;
+            TypeIds[typeof(DateTime[])] = PortableUtils.TypeArrayDate;
+            TypeIds[typeof(DateTime?[])] = PortableUtils.TypeArrayDate;
         }
 
         /// <summary>
@@ -130,18 +130,18 @@ namespace Apache.Ignite.Core.Impl.Portable
         public PortableBuilderImpl(PortablesImpl portables, PortableBuilderImpl parent, 
             PortableUserObject obj, IPortableTypeDescriptor desc)
         {
-            this.portables = portables;
-            this.parent = parent ?? this;
-            this.obj = obj;
-            this.desc = desc;
+            this._portables = portables;
+            this._parent = parent ?? this;
+            this._obj = obj;
+            this._desc = desc;
 
-            hashCode = obj.GetHashCode();
+            _hashCode = obj.GetHashCode();
         }
 
         /** <inheritDoc /> */
         public IPortableBuilder SetHashCode(int hashCode)
         {
-            this.hashCode = hashCode;
+            this._hashCode = hashCode;
 
             return this;
         }
@@ -151,16 +151,16 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             PortableBuilderField field;
 
-            if (vals != null && vals.TryGetValue(name, out field))
-                return field != PortableBuilderField.RMV_MARKER ? (T)field.Value : default(T);
+            if (_vals != null && _vals.TryGetValue(name, out field))
+                return field != PortableBuilderField.RmvMarker ? (T)field.Value : default(T);
             else
             {
-                T val = obj.Field<T>(name, this);
+                T val = _obj.Field<T>(name, this);
 
-                if (vals == null)
-                    vals = new Dictionary<string, PortableBuilderField>(2);
+                if (_vals == null)
+                    _vals = new Dictionary<string, PortableBuilderField>(2);
 
-                vals[name] = new PortableBuilderField(typeof(T), val);
+                _vals[name] = new PortableBuilderField(typeof(T), val);
 
                 return val;
             }
@@ -175,27 +175,27 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableBuilder RemoveField(string name)
         {
-            return SetField0(name, PortableBuilderField.RMV_MARKER);
+            return SetField0(name, PortableBuilderField.RmvMarker);
         }
 
         /** <inheritDoc /> */
         public IPortableObject Build()
         {
-            PortableHeapStream inStream = new PortableHeapStream(obj.Data);
+            PortableHeapStream inStream = new PortableHeapStream(_obj.Data);
 
-            inStream.Seek(obj.Offset, SeekOrigin.Begin);
+            inStream.Seek(_obj.Offset, SeekOrigin.Begin);
 
             // Assume that resulting length will be no less than header + [fields_cnt] * 12;
-            int len = PortableUtils.FULL_HDR_LEN + (vals == null ? 0 : vals.Count * 12);
+            int len = PortableUtils.FullHdrLen + (_vals == null ? 0 : _vals.Count * 12);
 
             PortableHeapStream outStream = new PortableHeapStream(len);
 
-            var writer = portables.Marshaller.StartMarshal(outStream);
+            var writer = _portables.Marshaller.StartMarshal(outStream);
 
             writer.SetBuilder(this);
 
             // All related builders will work in this context with this writer.
-            parent.ctx = new Context(writer);
+            _parent._ctx = new Context(writer);
             
             try
             {
@@ -203,16 +203,16 @@ namespace Apache.Ignite.Core.Impl.Portable
                 writer.Write(this);
                 
                 // Process metadata.
-                portables.Marshaller.FinishMarshal(writer);
+                _portables.Marshaller.FinishMarshal(writer);
 
                 // Create portable object once metadata is processed.
-                return new PortableUserObject(portables.Marshaller, outStream.InternalArray, 0,
-                    desc.TypeId, hashCode);
+                return new PortableUserObject(_portables.Marshaller, outStream.InternalArray, 0,
+                    _desc.TypeId, _hashCode);
             }
             finally
             {
                 // Cleanup.
-                parent.ctx.Closed = true;
+                _parent._ctx.Closed = true;
             }
         }
 
@@ -223,7 +223,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Child builder.</returns>
         public PortableBuilderImpl Child(PortableUserObject obj)
         {
-            return portables.ChildBuilder(parent, obj);
+            return _portables.ChildBuilder(_parent, obj);
         }
         
         /// <summary>
@@ -234,11 +234,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns><c>true</c> if value is found in cache.</returns>
         public bool CachedField<T>(int pos, out T val)
         {
-            if (parent.cache != null)
+            if (_parent._cache != null)
             {
                 object res;
 
-                if (parent.cache.TryGetValue(pos, out res))
+                if (_parent._cache.TryGetValue(pos, out res))
                 {
                     val = res != null ? (T)res : default(T);
 
@@ -258,10 +258,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Value.</param>
         public void CacheField(int pos, object val)
         {
-            if (parent.cache == null)
-                parent.cache = new Dictionary<int, object>(2);
+            if (_parent._cache == null)
+                _parent._cache = new Dictionary<int, object>(2);
 
-            parent.cache[pos] = val;
+            _parent._cache[pos] = val;
         }
 
         /// <summary>
@@ -272,10 +272,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>This builder.</returns>
         private IPortableBuilder SetField0(string fieldName, PortableBuilderField val)
         {
-            if (vals == null)
-                vals = new Dictionary<string, PortableBuilderField>();
+            if (_vals == null)
+                _vals = new Dictionary<string, PortableBuilderField>();
 
-            vals[fieldName] = val;
+            _vals[fieldName] = val;
 
             return this;
         }
@@ -296,19 +296,19 @@ namespace Apache.Ignite.Core.Impl.Portable
             IDictionary<string, PortableBuilderField> vals)
         {
             // Set correct builder to writer frame.
-            PortableBuilderImpl oldBuilder = parent.ctx.Writer.SetBuilder(parent);
+            PortableBuilderImpl oldBuilder = _parent._ctx.Writer.SetBuilder(_parent);
 
             int streamPos = inStream.Position;
             
             try
             {
                 // Prepare fields.
-                IPortableMetadataHandler metaHnd = portables.Marshaller.MetadataHandler(desc);
+                IPortableMetadataHandler metaHnd = _portables.Marshaller.MetadataHandler(desc);
 
                 IDictionary<int, object> vals0;
 
                 if (vals == null || vals.Count == 0)
-                    vals0 = EMPTY_VALS;
+                    vals0 = EmptyVals;
                 else
                 {
                     vals0 = new Dictionary<int, object>(vals.Count);
@@ -331,7 +331,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
 
                 // Actual processing.
-                Mutate0(parent.ctx, inStream, outStream, true, hashCode, vals0);
+                Mutate0(_parent._ctx, inStream, outStream, true, hashCode, vals0);
 
                 // 3. Handle metadata.
                 if (metaHnd != null)
@@ -339,13 +339,13 @@ namespace Apache.Ignite.Core.Impl.Portable
                     IDictionary<string, int> meta = metaHnd.OnObjectWriteFinished();
 
                     if (meta != null)
-                        parent.ctx.Writer.SaveMetadata(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName, meta);
+                        _parent._ctx.Writer.SaveMetadata(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName, meta);
                 }
             }
             finally
             {
                 // Restore builder frame.
-                parent.ctx.Writer.SetBuilder(oldBuilder);
+                _parent._ctx.Writer.SetBuilder(oldBuilder);
 
                 inStream.Seek(streamPos, SeekOrigin.Begin);
             }
@@ -369,9 +369,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             byte inHdr = inStream.ReadByte();
 
-            if (inHdr == PortableUtils.HDR_NULL)
-                outStream.WriteByte(PortableUtils.HDR_NULL);
-            else if (inHdr == PortableUtils.HDR_HND)
+            if (inHdr == PortableUtils.HdrNull)
+                outStream.WriteByte(PortableUtils.HdrNull);
+            else if (inHdr == PortableUtils.HdrHnd)
             {
                 int inHnd = inStream.ReadInt();
 
@@ -381,7 +381,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (ctx.OldToNew(oldPos, out newPos))
                 {
                     // Handle is still valid.
-                    outStream.WriteByte(PortableUtils.HDR_HND);
+                    outStream.WriteByte(PortableUtils.HdrHnd);
                     outStream.WriteInt(outStartPos - newPos);
                 }
                 else
@@ -391,12 +391,12 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     inStream.Seek(oldPos, SeekOrigin.Begin);
 
-                    Mutate0(ctx, inStream, outStream, false, 0, EMPTY_VALS);
+                    Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
 
                     inStream.Seek(inRetPos, SeekOrigin.Begin);
                 }
             }
-            else if (inHdr == PortableUtils.HDR_FULL)
+            else if (inHdr == PortableUtils.HdrFull)
             {
                 byte inUsrFlag = inStream.ReadByte();
                 int inTypeId = inStream.ReadInt();
@@ -411,13 +411,13 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // Object could be cached in parent builder.
                     object cachedVal;
 
-                    if (parent.cache != null && parent.cache.TryGetValue(inStartPos, out cachedVal)) {
+                    if (_parent._cache != null && _parent._cache.TryGetValue(inStartPos, out cachedVal)) {
                         ctx.Writer.Write(cachedVal);
                     }
                     else
                     {
                         // New object, write in full form.
-                        outStream.WriteByte(PortableUtils.HDR_FULL);
+                        outStream.WriteByte(PortableUtils.HdrFull);
                         outStream.WriteByte(inUsrFlag);
                         outStream.WriteInt(inTypeId);
                         outStream.WriteInt(changeHash ? hash : inHash);
@@ -436,7 +436,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                             bool fieldFound = vals.TryGetValue(inFieldId, out fieldVal);
 
-                            if (!fieldFound || fieldVal != PortableBuilderField.RMV_MARKER_OBJ)
+                            if (!fieldFound || fieldVal != PortableBuilderField.RmvMarkerObj)
                             {
                                 outStream.WriteInt(inFieldId);
 
@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 if (fieldFound)
                                 {
                                     // Replace field with new value.
-                                    if (fieldVal != PortableBuilderField.RMV_MARKER_OBJ)
+                                    if (fieldVal != PortableBuilderField.RmvMarkerObj)
                                         ctx.Writer.Write(fieldVal);
 
                                     vals.Remove(inFieldId);
@@ -455,11 +455,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 else
                                 {
                                     // If field was requested earlier, then we must write tracked value
-                                    if (parent.cache != null && parent.cache.TryGetValue(inFieldDataPos, out fieldVal))
+                                    if (_parent._cache != null && _parent._cache.TryGetValue(inFieldDataPos, out fieldVal))
                                         ctx.Writer.Write(fieldVal);
                                     else
                                         // Filed is not tracked, re-write as is.
-                                        Mutate0(ctx, inStream, outStream, false, 0, EMPTY_VALS);                                    
+                                        Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);                                    
                                 }
 
                                 int fieldEndPos = outStream.Position;
@@ -476,7 +476,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         // Write remaining new fields.
                         foreach (KeyValuePair<int, object> valEntry in vals)
                         {
-                            if (valEntry.Value != PortableBuilderField.RMV_MARKER_OBJ)
+                            if (valEntry.Value != PortableBuilderField.RmvMarkerObj)
                             {
                                 outStream.WriteInt(valEntry.Key);
 
@@ -502,7 +502,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         // Write length and raw data offset.
                         int outResPos = outStream.Position;
 
-                        outStream.Seek(outStartPos + OFFSET_LEN, SeekOrigin.Begin);
+                        outStream.Seek(outStartPos + OffsetLen, SeekOrigin.Begin);
 
                         outStream.WriteInt(outResPos - outStartPos); // Length.
                         outStream.WriteInt(rawPos - outStartPos); // Raw offset.
@@ -513,7 +513,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 else
                 {
                     // Object has already been written, write as handle.
-                    outStream.WriteByte(PortableUtils.HDR_HND);
+                    outStream.WriteByte(PortableUtils.HdrHnd);
                     outStream.WriteInt(outStartPos - hndPos);
                 }
 
@@ -544,7 +544,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             inStream.Seek(port.Offset, SeekOrigin.Begin);
 
             // Use fresh context to ensure correct portable inversion.
-            Mutate0(new Context(), inStream, outStream, false, 0, EMPTY_VALS);
+            Mutate0(new Context(), inStream, outStream, false, 0, EmptyVals);
         }
 
         /// <summary>
@@ -554,18 +554,18 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="builder">Builder.</param>
         internal void ProcessBuilder(IPortableStream outStream, PortableBuilderImpl builder)
         {
-            PortableHeapStream inStream = new PortableHeapStream(builder.obj.Data);
+            PortableHeapStream inStream = new PortableHeapStream(builder._obj.Data);
 
-            inStream.Seek(builder.obj.Offset, SeekOrigin.Begin);
+            inStream.Seek(builder._obj.Offset, SeekOrigin.Begin);
 
             // Builder parent context might be null only in one case: if we never met this group of
             // builders before. In this case we set context to their parent and track it. Context
             // cleanup will be performed at the very end of build process.
-            if (builder.parent.ctx == null || builder.parent.ctx.Closed)
-                builder.parent.ctx = new Context(parent.ctx);
+            if (builder._parent._ctx == null || builder._parent._ctx.Closed)
+                builder._parent._ctx = new Context(_parent._ctx);
 
-            builder.Mutate(inStream, outStream as PortableHeapStream, builder.desc,
-                    builder.hashCode, builder.vals);
+            builder.Mutate(inStream, outStream as PortableHeapStream, builder._desc,
+                    builder._hashCode, builder._vals);
         }
 
         /// <summary>
@@ -581,47 +581,47 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             switch (hdr)
             {
-                case PortableUtils.TYPE_BYTE:
+                case PortableUtils.TypeByte:
                     TransferBytes(inStream, outStream, 1);
 
                     break;
 
-                case PortableUtils.TYPE_SHORT:
+                case PortableUtils.TypeShort:
                     TransferBytes(inStream, outStream, 2);
 
                     break;
 
-                case PortableUtils.TYPE_INT:
+                case PortableUtils.TypeInt:
                     TransferBytes(inStream, outStream, 4);
 
                     break;
 
-                case PortableUtils.TYPE_LONG:
+                case PortableUtils.TypeLong:
                     TransferBytes(inStream, outStream, 8);
 
                     break;
 
-                case PortableUtils.TYPE_FLOAT:
+                case PortableUtils.TypeFloat:
                     TransferBytes(inStream, outStream, 4);
 
                     break;
 
-                case PortableUtils.TYPE_DOUBLE:
+                case PortableUtils.TypeDouble:
                     TransferBytes(inStream, outStream, 8);
 
                     break;
 
-                case PortableUtils.TYPE_CHAR:
+                case PortableUtils.TypeChar:
                     TransferBytes(inStream, outStream, 2);
 
                     break;
 
-                case PortableUtils.TYPE_BOOL:
+                case PortableUtils.TypeBool:
                     TransferBytes(inStream, outStream, 1);
 
                     break;
 
-                case PortableUtils.TYPE_DECIMAL:
+                case PortableUtils.TypeDecimal:
                     TransferBytes(inStream, outStream, 4); // Transfer scale
 
                     int magLen = inStream.ReadInt(); // Transfer magnitude length.
@@ -632,67 +632,67 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     break;
 
-                case PortableUtils.TYPE_STRING:
+                case PortableUtils.TypeString:
                     PortableUtils.WriteString(PortableUtils.ReadString(inStream), outStream);
 
                     break;
 
-                case PortableUtils.TYPE_GUID:
+                case PortableUtils.TypeGuid:
                     TransferBytes(inStream, outStream, 16);
 
                     break;
 
-                case PortableUtils.TYPE_DATE:
+                case PortableUtils.TypeDate:
                     TransferBytes(inStream, outStream, 12);
 
                     break;
 
-                case PortableUtils.TYPE_ARRAY_BYTE:
+                case PortableUtils.TypeArrayByte:
                     TransferArray(inStream, outStream, 1);
 
                     break;
 
-                case PortableUtils.TYPE_ARRAY_SHORT:
+                case PortableUtils.TypeArrayShort:
                     TransferArray(inStream, outStream, 2);
 
                     break;
 
-                case PortableUtils.TYPE_ARRAY_INT:
+                case PortableUtils.TypeArrayInt:
                     TransferArray(inStream, outStream, 4);
 
                     break;
 
-                case PortableUtils.TYPE_ARRAY_LONG:
+                case PortableUtils.TypeArrayLong:
                     TransferArray(inStream, outStream, 8);
 
                     break;
 
-                case PortableUtils.TYPE_ARRAY_FLOAT:
+                case PortableUtils.TypeArrayFloat:
                     TransferArray(inStream, outStream, 4);
 
                     break;
 
-                case PortableUtils.TYPE_ARRAY_DOUBLE:
+                case PortableUtils.TypeArrayDouble:
                     TransferArray(inStream, outStream, 8);
 
                     break;
 
-                case PortableUtils.TYPE_ARRAY_CHAR:
+                case PortableUtils.TypeArrayChar:
                     TransferArray(inStream, outStream, 2);
 
                     break;
 
-                case PortableUtils.TYPE_ARRAY_BOOL:
+                case PortableUtils.TypeArrayBool:
                     TransferArray(inStream, outStream, 1);
 
                     break;
 
-                case PortableUtils.TYPE_ARRAY_DECIMAL:
-                case PortableUtils.TYPE_ARRAY_STRING:
-                case PortableUtils.TYPE_ARRAY_GUID:
-                case PortableUtils.TYPE_ARRAY_DATE:
-                case PortableUtils.TYPE_ARRAY_ENUM:
-                case PortableUtils.TYPE_ARRAY:
+                case PortableUtils.TypeArrayDecimal:
+                case PortableUtils.TypeArrayString:
+                case PortableUtils.TypeArrayGuid:
+                case PortableUtils.TypeArrayDate:
+                case PortableUtils.TypeArrayEnum:
+                case PortableUtils.TypeArray:
                     int arrLen = inStream.ReadInt();
 
                     outStream.WriteInt(arrLen);
@@ -702,7 +702,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     break;
 
-                case PortableUtils.TYPE_COLLECTION:
+                case PortableUtils.TypeCollection:
                     int colLen = inStream.ReadInt();
 
                     outStream.WriteInt(colLen);
@@ -710,11 +710,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                     outStream.WriteByte(inStream.ReadByte());
 
                     for (int i = 0; i < colLen; i++)
-                        Mutate0(ctx, inStream, outStream, false, 0, EMPTY_VALS);
+                        Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
 
                     break;
 
-                case PortableUtils.TYPE_DICTIONARY:
+                case PortableUtils.TypeDictionary:
                     int dictLen = inStream.ReadInt();
 
                     outStream.WriteInt(dictLen);
@@ -723,25 +723,25 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     for (int i = 0; i < dictLen; i++)
                     {
-                        Mutate0(ctx, inStream, outStream, false, 0, EMPTY_VALS);
-                        Mutate0(ctx, inStream, outStream, false, 0, EMPTY_VALS);
+                        Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
+                        Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
                     }
 
                     break;
 
-                case PortableUtils.TYPE_MAP_ENTRY:
-                    Mutate0(ctx, inStream, outStream, false, 0, EMPTY_VALS);
-                    Mutate0(ctx, inStream, outStream, false, 0, EMPTY_VALS);
+                case PortableUtils.TypeMapEntry:
+                    Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
+                    Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
 
                     break;
 
-                case PortableUtils.TYPE_PORTABLE:
+                case PortableUtils.TypePortable:
                     TransferArray(inStream, outStream, 1); // Data array.
                     TransferBytes(inStream, outStream, 4); // Offset in array.
 
                     break;
 
-                case PortableUtils.TYPE_ENUM:
+                case PortableUtils.TypeEnum:
                     TransferBytes(inStream, outStream, 4); // Integer ordinal.
 
                     break;
@@ -762,18 +762,18 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             int typeId;
 
-            if (TYPE_IDS.TryGetValue(type, out typeId))
+            if (TypeIds.TryGetValue(type, out typeId))
                 return typeId;
             else if (type.IsEnum)
-                return PortableUtils.TYPE_ENUM;
+                return PortableUtils.TypeEnum;
             else if (type.IsArray)
-                return type.GetElementType().IsEnum ? PortableUtils.TYPE_ARRAY_ENUM : PortableUtils.TYPE_ARRAY;
+                return type.GetElementType().IsEnum ? PortableUtils.TypeArrayEnum : PortableUtils.TypeArray;
             else
             {
                 PortableCollectionInfo colInfo = PortableCollectionInfo.Info(type);
 
                 return colInfo.IsAny ? colInfo.IsCollection || colInfo.IsGenericCollection ?
-                    PortableUtils.TYPE_COLLECTION : PortableUtils.TYPE_DICTIONARY : PortableUtils.TYPE_OBJECT;
+                    PortableUtils.TypeCollection : PortableUtils.TypeDictionary : PortableUtils.TypeObject;
             }
         }
 
@@ -812,19 +812,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         private class Context
         {
             /** Map from object position in old portable to position in new portable. */
-            private IDictionary<int, int> oldToNew;
+            private IDictionary<int, int> _oldToNew;
 
             /** Parent context. */
-            private readonly Context parent;
+            private readonly Context _parent;
 
             /** Portable writer. */
-            private readonly IPortableWriterEx writer;
+            private readonly IPortableWriterEx _writer;
 
             /** Children contexts. */
-            private ICollection<Context> children;
+            private ICollection<Context> _children;
 
             /** Closed flag; if context is closed, it can no longer be used. */
-            private bool closed;
+            private bool _closed;
 
             /// <summary>
             /// Constructor for parent context where writer invocation is not expected.
@@ -840,7 +840,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <param name="writer">Writer</param>
             public Context(IPortableWriterEx writer)
             {
-                this.writer = writer;
+                this._writer = writer;
             }
 
             /// <summary>
@@ -849,14 +849,14 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <param name="parent">Parent context.</param>
             public Context(Context parent)
             {
-                this.parent = parent;
+                this._parent = parent;
                 
-                writer = parent.writer;
+                _writer = parent._writer;
 
-                if (parent.children == null)
-                    parent.children = new List<Context>();
+                if (parent._children == null)
+                    parent._children = new List<Context>();
 
-                parent.children.Add(this);
+                parent._children.Add(this);
             }
 
             /// <summary>
@@ -869,14 +869,14 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// position in the new object is returned.</returns>
             public bool AddOldToNew(int oldPos, int newPos, out int hndPos)
             {
-                if (oldToNew == null)
-                    oldToNew = new Dictionary<int, int>();
+                if (_oldToNew == null)
+                    _oldToNew = new Dictionary<int, int>();
 
-                if (oldToNew.TryGetValue(oldPos, out hndPos))
+                if (_oldToNew.TryGetValue(oldPos, out hndPos))
                     return false;
                 else
                 {
-                    oldToNew[oldPos] = newPos;
+                    _oldToNew[oldPos] = newPos;
 
                     return true;
                 }
@@ -890,7 +890,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <returns><c>True</c> if mapping exists.</returns>
             public bool OldToNew(int oldPos, out int newPos)
             {
-                return oldToNew.TryGetValue(oldPos, out newPos);
+                return _oldToNew.TryGetValue(oldPos, out newPos);
             }
 
             /// <summary>
@@ -898,7 +898,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// </summary>
             public IPortableWriterEx Writer
             {
-                get { return writer; }
+                get { return _writer; }
             }
 
             /// <summary>
@@ -908,7 +908,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 get
                 {
-                    return closed;
+                    return _closed;
                 }
                 set
                 {
@@ -916,14 +916,14 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     while (ctx != null)
                     {
-                        ctx.closed = value;
+                        ctx._closed = value;
 
-                        if (children != null) {
-                            foreach (Context child in children)
+                        if (_children != null) {
+                            foreach (Context child in _children)
                                 child.Closed = value;
                         }
 
-                        ctx = ctx.parent;
+                        ctx = ctx._parent;
                     }
                 }
             }

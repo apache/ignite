@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     internal class PortableObjectHandle
     {
         /** Value. */
-        private readonly object val;
+        private readonly object _val;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PortableObjectHandle"/> class.
@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">The value.</param>
         public PortableObjectHandle(object val)
         {
-            this.val = val;
+            this._val = val;
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public object Value
         {
-            get { return val; }
+            get { return _val; }
         }
 
         /** <inheritdoc /> */
@@ -47,13 +47,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var that = obj as PortableObjectHandle;
 
-            return that != null && val == that.val;
+            return that != null && _val == that._val;
         }
 
         /** <inheritdoc /> */
         public override int GetHashCode()
         {
-            return val != null ? val.GetHashCode() : 0;
+            return _val != null ? _val.GetHashCode() : 0;
         }
     }
 }

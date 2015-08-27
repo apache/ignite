@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Boolean value.</param>
         public void WriteBoolean(string fieldName, bool val)
         {
-            WriteSimpleField(fieldName, PortableUtils.TYPE_BOOL, val, PortableSystemHandlers.WRITE_HND_BOOL_TYPED, 1);
+            WriteSimpleField(fieldName, PortableUtils.TypeBool, val, PortableSystemHandlers.WRITE_HND_BOOL_TYPED, 1);
         }
         
         /// <summary>
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Boolean array.</param>
         public void WriteBooleanArray(string fieldName, bool[] val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_ARRAY_BOOL, val,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeArrayBool, val,
                 PortableSystemHandlers.WRITE_HND_BOOL_ARRAY_TYPED, val != null ? val.Length + 4 : 0);
         }
 
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Byte value.</param>
         public void WriteByte(string fieldName, byte val)
         {
-            WriteSimpleField(fieldName, PortableUtils.TYPE_BYTE, val, PortableSystemHandlers.WRITE_HND_BYTE_TYPED, 1);
+            WriteSimpleField(fieldName, PortableUtils.TypeByte, val, PortableSystemHandlers.WRITE_HND_BYTE_TYPED, 1);
         }
 
         /// <summary>
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Byte array.</param>
         public void WriteByteArray(string fieldName, byte[] val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_ARRAY_BYTE, val,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeArrayByte, val,
                 PortableSystemHandlers.WRITE_HND_BYTE_ARRAY_TYPED, val != null ? val.Length + 4 : 0);
         }
 
@@ -163,7 +163,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Short value.</param>
         public void WriteShort(string fieldName, short val)
         {
-            WriteSimpleField(fieldName, PortableUtils.TYPE_SHORT, val, PortableSystemHandlers.WRITE_HND_SHORT_TYPED, 2);
+            WriteSimpleField(fieldName, PortableUtils.TypeShort, val, PortableSystemHandlers.WRITE_HND_SHORT_TYPED, 2);
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Short array.</param>
         public void WriteShortArray(string fieldName, short[] val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_ARRAY_SHORT, val,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeArrayShort, val,
                 PortableSystemHandlers.WRITE_HND_SHORT_ARRAY_TYPED, val != null ? 2 * val.Length + 4 : 0);
         }
 
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Char value.</param>
         public void WriteChar(string fieldName, char val)
         {
-            WriteSimpleField(fieldName, PortableUtils.TYPE_CHAR, val, PortableSystemHandlers.WRITE_HND_CHAR_TYPED, 2);
+            WriteSimpleField(fieldName, PortableUtils.TypeChar, val, PortableSystemHandlers.WRITE_HND_CHAR_TYPED, 2);
         }
 
         /// <summary>
@@ -221,7 +221,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Char array.</param>
         public void WriteCharArray(string fieldName, char[] val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_ARRAY_CHAR, val,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeArrayChar, val,
                 PortableSystemHandlers.WRITE_HND_CHAR_ARRAY_TYPED, val != null ? 2 * val.Length + 4 : 0);
         }
 
@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Int value.</param>
         public void WriteInt(string fieldName, int val)
         {
-            WriteSimpleField(fieldName, PortableUtils.TYPE_INT, val, PortableSystemHandlers.WRITE_HND_INT_TYPED, 4);
+            WriteSimpleField(fieldName, PortableUtils.TypeInt, val, PortableSystemHandlers.WRITE_HND_INT_TYPED, 4);
         }
 
         /// <summary>
@@ -260,7 +260,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Int array.</param>
         public void WriteIntArray(string fieldName, int[] val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_ARRAY_INT, val,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeArrayInt, val,
                 PortableSystemHandlers.WRITE_HND_INT_ARRAY_TYPED, val != null ? 4 * val.Length + 4 : 0);
         }
 
@@ -280,7 +280,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Long value.</param>
         public void WriteLong(string fieldName, long val)
         {
-            WriteSimpleField(fieldName, PortableUtils.TYPE_LONG, val, PortableSystemHandlers.WRITE_HND_LONG_TYPED, 8);
+            WriteSimpleField(fieldName, PortableUtils.TypeLong, val, PortableSystemHandlers.WRITE_HND_LONG_TYPED, 8);
         }
 
         /// <summary>
@@ -299,7 +299,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Long array.</param>
         public void WriteLongArray(string fieldName, long[] val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_ARRAY_LONG, val,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeArrayLong, val,
                 PortableSystemHandlers.WRITE_HND_LONG_ARRAY_TYPED, val != null ? 8 * val.Length + 4 : 0);
         }
 
@@ -319,7 +319,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Float value.</param>
         public void WriteFloat(string fieldName, float val)
         {
-            WriteSimpleField(fieldName, PortableUtils.TYPE_FLOAT, val, PortableSystemHandlers.WRITE_HND_FLOAT_TYPED, 4);
+            WriteSimpleField(fieldName, PortableUtils.TypeFloat, val, PortableSystemHandlers.WRITE_HND_FLOAT_TYPED, 4);
         }
 
         /// <summary>
@@ -338,7 +338,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Float array.</param>
         public void WriteFloatArray(string fieldName, float[] val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_ARRAY_FLOAT, val,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeArrayFloat, val,
                 PortableSystemHandlers.WRITE_HND_FLOAT_ARRAY_TYPED, val != null ? 4 * val.Length + 4 : 0);
         }
 
@@ -358,7 +358,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Double value.</param>
         public void WriteDouble(string fieldName, double val)
         {
-            WriteSimpleField(fieldName, PortableUtils.TYPE_DOUBLE, val, PortableSystemHandlers.WRITE_HND_DOUBLE_TYPED, 8);
+            WriteSimpleField(fieldName, PortableUtils.TypeDouble, val, PortableSystemHandlers.WRITE_HND_DOUBLE_TYPED, 8);
         }
 
         /// <summary>
@@ -377,7 +377,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Double array.</param>
         public void WriteDoubleArray(string fieldName, double[] val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_ARRAY_DOUBLE, val,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeArrayDouble, val,
                 PortableSystemHandlers.WRITE_HND_DOUBLE_ARRAY_TYPED, val != null ? 8 * val.Length + 4 : 0);
         }
 
@@ -397,7 +397,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Decimal value.</param>
         public void WriteDecimal(string fieldName, decimal val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_DECIMAL, val, PortableSystemHandlers.WRITE_HND_DECIMAL_TYPED);
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeDecimal, val, PortableSystemHandlers.WRITE_HND_DECIMAL_TYPED);
         }
 
         /// <summary>
@@ -416,7 +416,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Decimal array.</param>
         public void WriteDecimalArray(string fieldName, decimal[] val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_ARRAY_DECIMAL, val,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeArrayDecimal, val,
                 PortableSystemHandlers.WRITE_HND_DECIMAL_ARRAY_TYPED);
         }
         
@@ -436,7 +436,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Date value.</param>
         public void WriteDate(string fieldName, DateTime? val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_DATE, val, PortableSystemHandlers.WRITE_HND_DATE_TYPED,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeDate, val, PortableSystemHandlers.WRITE_HND_DATE_TYPED,
                 val.HasValue ? 12 : 0);
         }
         
@@ -456,7 +456,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Date array.</param>
         public void WriteDateArray(string fieldName, DateTime?[] val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_ARRAY_DATE, val,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeArrayDate, val,
                 PortableSystemHandlers.WRITE_HND_DATE_ARRAY_TYPED);
         }
 
@@ -476,7 +476,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">String value.</param>
         public void WriteString(string fieldName, string val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_STRING, val, PortableSystemHandlers.WRITE_HND_STRING_TYPED);
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeString, val, PortableSystemHandlers.WRITE_HND_STRING_TYPED);
         }
 
         /// <summary>
@@ -495,7 +495,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">String array.</param>
         public void WriteStringArray(string fieldName, string[] val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_ARRAY_STRING, val,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeArrayString, val,
                 PortableSystemHandlers.WRITE_HND_STRING_ARRAY_TYPED);
         }
 
@@ -515,7 +515,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">GUID value.</param>
         public void WriteGuid(string fieldName, Guid? val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_GUID, val, PortableSystemHandlers.WRITE_HND_GUID_TYPED,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeGuid, val, PortableSystemHandlers.WRITE_HND_GUID_TYPED,
                 val.HasValue ? 16 : 0);
         }
 
@@ -535,7 +535,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">GUID array.</param>
         public void WriteGuidArray(string fieldName, Guid?[] val)
         {
-            WriteSimpleNullableField(fieldName, PortableUtils.TYPE_ARRAY_GUID, val,
+            WriteSimpleNullableField(fieldName, PortableUtils.TypeArrayGuid, val,
                 PortableSystemHandlers.WRITE_HND_GUID_ARRAY_TYPED);
         }
 
@@ -556,7 +556,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Enum value.</param>
         public void WriteEnum<T>(string fieldName, T val)
         {
-            WriteField(fieldName, PortableUtils.TYPE_ENUM, val, PortableSystemHandlers.WRITE_HND_ENUM);
+            WriteField(fieldName, PortableUtils.TypeEnum, val, PortableSystemHandlers.WRITE_HND_ENUM);
         }
 
         /// <summary>
@@ -577,7 +577,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Enum array.</param>
         public void WriteEnumArray<T>(string fieldName, T[] val)
         {
-            WriteField(fieldName, PortableUtils.TYPE_ARRAY_ENUM, val, PortableSystemHandlers.WRITE_HND_ENUM_ARRAY);
+            WriteField(fieldName, PortableUtils.TypeArrayEnum, val, PortableSystemHandlers.WRITE_HND_ENUM_ARRAY);
         }
 
         /// <summary>
@@ -598,7 +598,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Object value.</param>
         public void WriteObject<T>(string fieldName, T val)
         {
-            WriteField(fieldName, PortableUtils.TYPE_OBJECT, val, null);
+            WriteField(fieldName, PortableUtils.TypeObject, val, null);
         }
 
         /// <summary>
@@ -619,7 +619,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Object array.</param>
         public void WriteObjectArray<T>(string fieldName, T[] val)
         {
-            WriteField(fieldName, PortableUtils.TYPE_ARRAY, val, PortableSystemHandlers.WRITE_HND_ARRAY);
+            WriteField(fieldName, PortableUtils.TypeArray, val, PortableSystemHandlers.WRITE_HND_ARRAY);
         }
 
         /// <summary>
@@ -639,7 +639,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Collection.</param>
         public void WriteCollection(string fieldName, ICollection val)
         {
-            WriteField(fieldName, PortableUtils.TYPE_COLLECTION, val, null);
+            WriteField(fieldName, PortableUtils.TypeCollection, val, null);
         }
 
         /// <summary>
@@ -659,7 +659,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Collection.</param>
         public void WriteGenericCollection<T>(string fieldName, ICollection<T> val)
         {
-            WriteField(fieldName, PortableUtils.TYPE_COLLECTION, val, null);
+            WriteField(fieldName, PortableUtils.TypeCollection, val, null);
         }
 
         /// <summary>
@@ -679,7 +679,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(string fieldName, IDictionary val)
         {
-            WriteField(fieldName, PortableUtils.TYPE_DICTIONARY, val, null);
+            WriteField(fieldName, PortableUtils.TypeDictionary, val, null);
         }
 
         /// <summary>
@@ -700,7 +700,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Dictionary.</param>
         public void WriteGenericDictionary<K, V>(string fieldName, IDictionary<K, V> val)
         {
-            WriteField(fieldName, PortableUtils.TYPE_DICTIONARY, val, null);
+            WriteField(fieldName, PortableUtils.TypeDictionary, val, null);
         }
 
         /// <summary>
@@ -803,7 +803,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Write null.
                 if (obj == null)
                 {
-                    stream.WriteByte(PortableUtils.HDR_NULL);
+                    stream.WriteByte(PortableUtils.HdrNull);
 
                     return;
                 }
@@ -877,7 +877,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     return;
 
                 // Write header.
-                stream.WriteByte(PortableUtils.HDR_FULL);
+                stream.WriteByte(PortableUtils.HdrFull);
 
                 stream.WriteBool(desc.UserType);
                 stream.WriteInt(desc.TypeId);
@@ -987,7 +987,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return false;
             }
 
-            stream.WriteByte(PortableUtils.HDR_HND);
+            stream.WriteByte(PortableUtils.HdrHnd);
 
             // Handle is written as difference between position before header and handle position.
             stream.WriteInt((int)(pos - hndPos));
@@ -1064,7 +1064,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 stream.WriteInt(1);
 
-                stream.WriteByte(PortableUtils.HDR_NULL);
+                stream.WriteByte(PortableUtils.HdrNull);
             }
             else
             {
@@ -1097,7 +1097,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 stream.WriteInt(1);
 
-                stream.WriteByte(PortableUtils.HDR_NULL);
+                stream.WriteByte(PortableUtils.HdrNull);
             }
             else
             {
@@ -1219,7 +1219,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private void WriteSimpleNullableRawField<T>(T val, PortableSystemTypedWriteDelegate<T> handler)
         {
             if (val == null)
-                stream.WriteByte(PortableUtils.HDR_NULL);
+                stream.WriteByte(PortableUtils.HdrNull);
             else
                 handler(stream, val);
         }

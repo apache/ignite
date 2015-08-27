@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
-            return Deserialize<T>(PortableMode.DESERIALIZE);
+            return Deserialize<T>(PortableMode.Deserialize);
         }
 
         /// <summary>
@@ -217,7 +217,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             stream.Seek(pos, SeekOrigin.Begin);
 
-            return _marsh.Unmarshal<T>(stream, PortableMode.FORCE_PORTABLE, builder);
+            return _marsh.Unmarshal<T>(stream, PortableMode.ForcePortable, builder);
         }
 
         /** <inheritdoc /> */

@@ -30,34 +30,34 @@ namespace Apache.Ignite.Core.Impl.Portable
     internal class PortableCollectionInfo
     {
         /** Flag: none. */
-        private const byte FLAG_NONE = 0;
+        private const byte FlagNone = 0;
 
         /** Flag: generic dictionary. */
-        private const byte FLAG_GENERIC_DICTIONARY = 1;
+        private const byte FlagGenericDictionary = 1;
 
         /** Flag: generic collection. */
-        private const byte FLAG_GENERIC_COLLECTION = 2;
+        private const byte FlagGenericCollection = 2;
 
         /** Flag: dictionary. */
-        private const byte FLAG_DICTIONARY = 3;
+        private const byte FlagDictionary = 3;
 
         /** Flag: collection. */
-        private const byte FLAG_COLLECTION = 4;
+        private const byte FlagCollection = 4;
 
         /** Cache "none" value. */
-        private static readonly PortableCollectionInfo NONE =
-            new PortableCollectionInfo(FLAG_NONE, null, null, null);
+        private static readonly PortableCollectionInfo None =
+            new PortableCollectionInfo(FlagNone, null, null, null);
 
         /** Cache "dictionary" value. */
-        private static readonly PortableCollectionInfo DICTIONARY =
-            new PortableCollectionInfo(FLAG_DICTIONARY, PortableSystemHandlers.WRITE_HND_DICTIONARY, null, null);
+        private static readonly PortableCollectionInfo Dictionary =
+            new PortableCollectionInfo(FlagDictionary, PortableSystemHandlers.WRITE_HND_DICTIONARY, null, null);
 
         /** Cache "collection" value. */
-        private static readonly PortableCollectionInfo COLLECTION =
-            new PortableCollectionInfo(FLAG_COLLECTION, PortableSystemHandlers.WRITE_HND_COLLECTION, null, null);
+        private static readonly PortableCollectionInfo Collection =
+            new PortableCollectionInfo(FlagCollection, PortableSystemHandlers.WRITE_HND_COLLECTION, null, null);
 
         /** Cached infos. */
-        private static readonly IDictionary<Type, PortableCollectionInfo> INFOS =
+        private static readonly IDictionary<Type, PortableCollectionInfo> Infos =
             new ConcurrentDictionary<Type, PortableCollectionInfo>(64, 32);
 
         /**
@@ -69,11 +69,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             PortableCollectionInfo info;
 
-            if (!INFOS.TryGetValue(type, out info))
+            if (!Infos.TryGetValue(type, out info))
             {
                 info = Info0(type);
 
-                INFOS[type] = info;
+                Infos[type] = info;
             }
 
             return info;
@@ -88,74 +88,74 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             if (type.IsGenericType)
             {
-                if (type.GetGenericTypeDefinition() == PortableUtils.TYP_GENERIC_DICTIONARY)
+                if (type.GetGenericTypeDefinition() == PortableUtils.TypGenericDictionary)
                 {
                     MethodInfo writeMthd =
-                        PortableUtils.MTDH_WRITE_GENERIC_DICTIONARY.MakeGenericMethod(type.GetGenericArguments());
+                        PortableUtils.MtdhWriteGenericDictionary.MakeGenericMethod(type.GetGenericArguments());
                     MethodInfo readMthd =
-                        PortableUtils.MTDH_READ_GENERIC_DICTIONARY.MakeGenericMethod(type.GetGenericArguments());
+                        PortableUtils.MtdhReadGenericDictionary.MakeGenericMethod(type.GetGenericArguments());
 
-                    return new PortableCollectionInfo(FLAG_GENERIC_DICTIONARY,
+                    return new PortableCollectionInfo(FlagGenericDictionary,
                         PortableSystemHandlers.WRITE_HND_GENERIC_DICTIONARY, writeMthd, readMthd);
                 }
 
-                Type genTyp = type.GetInterface(PortableUtils.TYP_GENERIC_DICTIONARY.FullName);
+                Type genTyp = type.GetInterface(PortableUtils.TypGenericDictionary.FullName);
 
                 if (genTyp != null)
                 {
                     MethodInfo writeMthd =
-                        PortableUtils.MTDH_WRITE_GENERIC_DICTIONARY.MakeGenericMethod(genTyp.GetGenericArguments());
+                        PortableUtils.MtdhWriteGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
                     MethodInfo readMthd =
-                        PortableUtils.MTDH_READ_GENERIC_DICTIONARY.MakeGenericMethod(genTyp.GetGenericArguments());
+                        PortableUtils.MtdhReadGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
 
-                    return new PortableCollectionInfo(FLAG_GENERIC_DICTIONARY,
+                    return new PortableCollectionInfo(FlagGenericDictionary,
                         PortableSystemHandlers.WRITE_HND_GENERIC_DICTIONARY, writeMthd, readMthd);
                 }
 
-                if (type.GetGenericTypeDefinition() == PortableUtils.TYP_GENERIC_COLLECTION)
+                if (type.GetGenericTypeDefinition() == PortableUtils.TypGenericCollection)
                 {
                     MethodInfo writeMthd =
-                        PortableUtils.MTDH_WRITE_GENERIC_COLLECTION.MakeGenericMethod(type.GetGenericArguments());
+                        PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(type.GetGenericArguments());
                     MethodInfo readMthd =
-                        PortableUtils.MTDH_READ_GENERIC_COLLECTION.MakeGenericMethod(type.GetGenericArguments());
+                        PortableUtils.MtdhReadGenericCollection.MakeGenericMethod(type.GetGenericArguments());
 
-                    return new PortableCollectionInfo(FLAG_GENERIC_COLLECTION,
+                    return new PortableCollectionInfo(FlagGenericCollection,
                         PortableSystemHandlers.WRITE_HND_GENERIC_COLLECTION, writeMthd, readMthd);
                 }
 
-                genTyp = type.GetInterface(PortableUtils.TYP_GENERIC_COLLECTION.FullName);
+                genTyp = type.GetInterface(PortableUtils.TypGenericCollection.FullName);
 
                 if (genTyp != null)
                 {
                     MethodInfo writeMthd =
-                        PortableUtils.MTDH_WRITE_GENERIC_COLLECTION.MakeGenericMethod(genTyp.GetGenericArguments());
+                        PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
                     MethodInfo readMthd =
-                        PortableUtils.MTDH_READ_GENERIC_COLLECTION.MakeGenericMethod(genTyp.GetGenericArguments());
+                        PortableUtils.MtdhReadGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
 
-                    return new PortableCollectionInfo(FLAG_GENERIC_COLLECTION,
+                    return new PortableCollectionInfo(FlagGenericCollection,
                         PortableSystemHandlers.WRITE_HND_GENERIC_COLLECTION, writeMthd, readMthd);
                 }
             }
 
-            if (type == PortableUtils.TYP_DICTIONARY || type.GetInterface(PortableUtils.TYP_DICTIONARY.FullName) != null)
-                return DICTIONARY;
-            else if (type == PortableUtils.TYP_COLLECTION || type.GetInterface(PortableUtils.TYP_COLLECTION.FullName) != null)
-                return COLLECTION;
+            if (type == PortableUtils.TypDictionary || type.GetInterface(PortableUtils.TypDictionary.FullName) != null)
+                return Dictionary;
+            else if (type == PortableUtils.TypCollection || type.GetInterface(PortableUtils.TypCollection.FullName) != null)
+                return Collection;
             else
-                return NONE;
+                return None;
         }
 
         /** Flag. */
-        private readonly byte flag;
+        private readonly byte _flag;
 
         /** Write handler. */
-        private readonly PortableSystemWriteDelegate writeHnd;
+        private readonly PortableSystemWriteDelegate _writeHnd;
 
         /** Generic write func. */
-        private readonly Action<object, IPortableWriterEx> writeFunc;
+        private readonly Action<object, IPortableWriterEx> _writeFunc;
 
         /** Generic read func. */
-        private readonly Func<IPortableReaderEx, object, object> readFunc;
+        private readonly Func<IPortableReaderEx, object, object> _readFunc;
 
         /**
          * <summary>Constructor.</summary>
@@ -167,15 +167,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         private PortableCollectionInfo(byte flag0, PortableSystemWriteDelegate writeHnd0,
             MethodInfo writeMthd0, MethodInfo readMthd0)
         {
-            flag = flag0;
-            writeHnd = writeHnd0;
+            _flag = flag0;
+            _writeHnd = writeHnd0;
 
             if (writeMthd0 != null)
-                writeFunc = DelegateConverter.CompileFunc<Action<object, IPortableWriterEx>>(null, writeMthd0, null,
+                _writeFunc = DelegateConverter.CompileFunc<Action<object, IPortableWriterEx>>(null, writeMthd0, null,
                     new[] {true, false, false});
 
             if (readMthd0 != null)
-                readFunc = DelegateConverter.CompileFunc<Func<IPortableReaderEx, object, object>>(null, readMthd0, 
+                _readFunc = DelegateConverter.CompileFunc<Func<IPortableReaderEx, object, object>>(null, readMthd0, 
                     null, new[] {false, true, false});
         }
 
@@ -184,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public bool IsGenericDictionary
         {
-            get { return flag == FLAG_GENERIC_DICTIONARY; }
+            get { return _flag == FlagGenericDictionary; }
         }
 
         /**
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public bool IsGenericCollection
         {
-            get { return flag == FLAG_GENERIC_COLLECTION; }
+            get { return _flag == FlagGenericCollection; }
         }
 
         /**
@@ -200,7 +200,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public bool IsDictionary
         {
-            get { return flag == FLAG_DICTIONARY; }
+            get { return _flag == FlagDictionary; }
         }
 
         /**
@@ -208,7 +208,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public bool IsCollection
         {
-            get { return flag == FLAG_COLLECTION; }
+            get { return _flag == FlagCollection; }
         }
 
         /**
@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public bool IsAny
         {
-            get { return flag != FLAG_NONE; }
+            get { return _flag != FlagNone; }
         }
 
         /**
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public PortableSystemWriteDelegate WriteHandler
         {
-            get { return writeHnd; }
+            get { return _writeHnd; }
         }
 
         /// <summary>
@@ -233,9 +233,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         public object ReadGeneric(IPortableReaderEx reader)
         {
             Debug.Assert(reader != null);
-            Debug.Assert(readFunc != null);
+            Debug.Assert(_readFunc != null);
 
-            return readFunc(reader, null);
+            return _readFunc(reader, null);
         }
 
         /// <summary>
@@ -244,9 +244,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         public void WriteGeneric(IPortableWriterEx writer, object value)
         {
             Debug.Assert(writer != null);
-            Debug.Assert(writeFunc != null);
+            Debug.Assert(_writeFunc != null);
 
-            writeFunc(value, writer);
+            _writeFunc(value, writer);
         }
     }
 }

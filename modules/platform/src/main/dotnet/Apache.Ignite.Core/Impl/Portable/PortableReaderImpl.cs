@@ -599,16 +599,16 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             switch (hdr)
             {
-                case PortableUtils.HDR_NULL:
+                case PortableUtils.HdrNull:
                     return default(T);
 
-                case PortableUtils.HDR_HND:
+                case PortableUtils.HdrHnd:
                     return ReadHandleObject<T>(pos);
 
-                case PortableUtils.HDR_FULL:
+                case PortableUtils.HdrFull:
                     return ReadFullObject<T>(pos);
 
-                case PortableUtils.TYPE_PORTABLE:
+                case PortableUtils.TypePortable:
                     return ReadPortableObject<T>(doDetach);
             }
 
@@ -627,7 +627,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var portablePos = Stream.Position;
 
-            if (mode != PortableMode.DESERIALIZE)
+            if (mode != PortableMode.Deserialize)
                 return TypeCaster<T>.Cast(ReadAsPortable(portablePos, len, doDetach));
 
             Stream.Seek(len, SeekOrigin.Current);
@@ -638,7 +638,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             Stream.Seek(portablePos + offset, SeekOrigin.Begin);
 
-            mode = PortableMode.KEEP_PORTABLE;
+            mode = PortableMode.KeepPortable;
 
             try
             {
@@ -646,7 +646,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             finally
             {
-                mode = PortableMode.DESERIALIZE;
+                mode = PortableMode.Deserialize;
 
                 Stream.Seek(retPos, SeekOrigin.Begin);
             }
@@ -704,7 +704,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (hnds != null && hnds.TryGetValue(pos, out hndObj))
                     return (T) hndObj;
 
-                if (userType && mode == PortableMode.FORCE_PORTABLE)
+                if (userType && mode == PortableMode.ForcePortable)
                 {
                     PortableUserObject portObj;
 
@@ -934,7 +934,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var hdr = ReadByte();
 
-            return hdr != PortableUtils.HDR_NULL;
+            return hdr != PortableUtils.HdrNull;
         }
 
         /// <summary>

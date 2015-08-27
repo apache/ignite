@@ -36,291 +36,291 @@ namespace Apache.Ignite.Core.Impl.Portable
     static class PortableUtils
     {
         /** Cache empty dictionary. */
-        public static readonly IDictionary<int, int> EMPTY_FIELDS = new Dictionary<int, int>();
+        public static readonly IDictionary<int, int> EmptyFields = new Dictionary<int, int>();
 
         /** Header of NULL object. */
-        public const byte HDR_NULL = 101;
+        public const byte HdrNull = 101;
 
         /** Header of object handle. */
-        public const byte HDR_HND = 102;
+        public const byte HdrHnd = 102;
 
         /** Header of object in fully serialized form. */
-        public const byte HDR_FULL = 103;
+        public const byte HdrFull = 103;
         
         /** Full header length. */
-        public const int FULL_HDR_LEN = 18;
+        public const int FullHdrLen = 18;
 
         /** Type: object. */
-        public const byte TYPE_OBJECT = HDR_FULL;
+        public const byte TypeObject = HdrFull;
 
         /** Type: unsigned byte. */
-        public const byte TYPE_BYTE = 1;
+        public const byte TypeByte = 1;
 
         /** Type: short. */
-        public const byte TYPE_SHORT = 2;
+        public const byte TypeShort = 2;
 
         /** Type: int. */
-        public const byte TYPE_INT = 3;
+        public const byte TypeInt = 3;
 
         /** Type: long. */
-        public const byte TYPE_LONG = 4;
+        public const byte TypeLong = 4;
 
         /** Type: float. */
-        public const byte TYPE_FLOAT = 5;
+        public const byte TypeFloat = 5;
 
         /** Type: double. */
-        public const byte TYPE_DOUBLE = 6;
+        public const byte TypeDouble = 6;
 
         /** Type: char. */
-        public const byte TYPE_CHAR = 7;
+        public const byte TypeChar = 7;
 
         /** Type: boolean. */
-        public const byte TYPE_BOOL = 8;
+        public const byte TypeBool = 8;
         
         /** Type: decimal. */
-        public const byte TYPE_DECIMAL = 30;
+        public const byte TypeDecimal = 30;
 
         /** Type: string. */
-        public const byte TYPE_STRING = 9;
+        public const byte TypeString = 9;
 
         /** Type: GUID. */
-        public const byte TYPE_GUID = 10;
+        public const byte TypeGuid = 10;
 
         /** Type: date. */
-        public const byte TYPE_DATE = 11;
+        public const byte TypeDate = 11;
 
         /** Type: unsigned byte array. */
-        public const byte TYPE_ARRAY_BYTE = 12;
+        public const byte TypeArrayByte = 12;
 
         /** Type: short array. */
-        public const byte TYPE_ARRAY_SHORT = 13;
+        public const byte TypeArrayShort = 13;
 
         /** Type: int array. */
-        public const byte TYPE_ARRAY_INT = 14;
+        public const byte TypeArrayInt = 14;
 
         /** Type: long array. */
-        public const byte TYPE_ARRAY_LONG = 15;
+        public const byte TypeArrayLong = 15;
 
         /** Type: float array. */
-        public const byte TYPE_ARRAY_FLOAT = 16;
+        public const byte TypeArrayFloat = 16;
 
         /** Type: double array. */
-        public const byte TYPE_ARRAY_DOUBLE = 17;
+        public const byte TypeArrayDouble = 17;
 
         /** Type: char array. */
-        public const byte TYPE_ARRAY_CHAR = 18;
+        public const byte TypeArrayChar = 18;
 
         /** Type: boolean array. */
-        public const byte TYPE_ARRAY_BOOL = 19;
+        public const byte TypeArrayBool = 19;
 
         /** Type: decimal array. */
-        public const byte TYPE_ARRAY_DECIMAL = 31;
+        public const byte TypeArrayDecimal = 31;
 
         /** Type: string array. */
-        public const byte TYPE_ARRAY_STRING = 20;
+        public const byte TypeArrayString = 20;
 
         /** Type: GUID array. */
-        public const byte TYPE_ARRAY_GUID = 21;
+        public const byte TypeArrayGuid = 21;
 
         /** Type: date array. */
-        public const byte TYPE_ARRAY_DATE = 22;
+        public const byte TypeArrayDate = 22;
 
         /** Type: object array. */
-        public const byte TYPE_ARRAY = 23;
+        public const byte TypeArray = 23;
 
         /** Type: collection. */
-        public const byte TYPE_COLLECTION = 24;
+        public const byte TypeCollection = 24;
 
         /** Type: map. */
-        public const byte TYPE_DICTIONARY = 25;
+        public const byte TypeDictionary = 25;
 
         /** Type: map entry. */
-        public const byte TYPE_MAP_ENTRY = 26;
+        public const byte TypeMapEntry = 26;
 
         /** Type: portable object. */
-        public const byte TYPE_PORTABLE = 27;
+        public const byte TypePortable = 27;
 
         /** Type: enum. */
-        public const byte TYPE_ENUM = 28;
+        public const byte TypeEnum = 28;
 
         /** Type: enum array. */
-        public const byte TYPE_ARRAY_ENUM = 29;
+        public const byte TypeArrayEnum = 29;
 
         /** Type: cluster node. */
-        public const byte TYPE_CLUSTER_NODE = 67;
+        public const byte TypeClusterNode = 67;
 
         /** Type: cluster metrics. */
-        public const byte TYPE_CLUSTER_METRICS = 68;
+        public const byte TypeClusterMetrics = 68;
         
         /** Type: metadata. */
-        public const byte TYPE_METADATA = 70;
+        public const byte TypeMetadata = 70;
 
         /** Type: native job holder. */
-        public const byte TYPE_NATIVE_JOB_HOLDER = 77;
+        public const byte TypeNativeJobHolder = 77;
 
         /** Type: native job result holder. */
-        public const byte TYPE_PORTABLE_JOB_RES_HOLDER = 76;
+        public const byte TypePortableJobResHolder = 76;
 
         /** Type: .Net configuration. */
-        public const byte TYPE_DOT_NET_CFG = 71;
+        public const byte TypeDotNetCfg = 71;
 
         /** Type: .Net portable configuration. */
-        public const byte TYPE_DOT_NET_PORTABLE_CFG = 72;
+        public const byte TypeDotNetPortableCfg = 72;
 
         /** Type: .Net portable type configuration. */
-        public const byte TYPE_DOT_NET_PORTABLE_TYP_CFG = 73;
+        public const byte TypeDotNetPortableTypCfg = 73;
 
         /** Type: Grid proxy. */
-        public const byte TYPE_GRID_PROXY = 74;
+        public const byte TypeGridProxy = 74;
 
         /** Type: function wrapper. */
-        public const byte TYPE_COMPUTE_OUT_FUNC_JOB = 80;
+        public const byte TypeComputeOutFuncJob = 80;
 
         /** Type: function wrapper. */
-        public const byte TYPE_COMPUTE_FUNC_JOB = 81;
+        public const byte TypeComputeFuncJob = 81;
 
         /** Type: continuous query remote filter. */
-        public const byte TYPE_CONTINUOUS_QUERY_REMOTE_FILTER_HOLDER = 82;
+        public const byte TypeContinuousQueryRemoteFilterHolder = 82;
 
         /** Type: Compute out func wrapper. */
-        public const byte TYPE_COMPUTE_OUT_FUNC_WRAPPER = 83;
+        public const byte TypeComputeOutFuncWrapper = 83;
 
         /** Type: Compute func wrapper. */
-        public const byte TYPE_COMPUTE_FUNC_WRAPPER = 85;
+        public const byte TypeComputeFuncWrapper = 85;
 
         /** Type: Compute job wrapper. */
-        public const byte TYPE_COMPUTE_JOB_WRAPPER = 86;
+        public const byte TypeComputeJobWrapper = 86;
 
         /** Type: Compute job wrapper. */
-        public const byte TYPE_SERIALIZABLE_HOLDER = 87;
+        public const byte TypeSerializableHolder = 87;
 
         /** Type: action wrapper. */
-        public const byte TYPE_COMPUTE_ACTION_JOB = 88;
+        public const byte TypeComputeActionJob = 88;
 
         /** Type: entry processor holder. */
-        public const byte TYPE_CACHE_ENTRY_PROCESSOR_HOLDER = 89;
+        public const byte TypeCacheEntryProcessorHolder = 89;
 
         /** Type: entry predicate holder. */
-        public const byte TYPE_CACHE_ENTRY_PREDICATE_HOLDER = 90;
+        public const byte TypeCacheEntryPredicateHolder = 90;
 
         /** Type: cache metrics holder. */
-        public const byte TYPE_CACHE_METRICS = 75;
+        public const byte TypeCacheMetrics = 75;
 
         /** Type: product license. */
-        public const byte TYPE_PRODUCT_LICENSE = 78;
+        public const byte TypeProductLicense = 78;
 
         /** Type: message filter holder. */
-        public const byte TYPE_MESSAGE_FILTER_HOLDER = 92;
+        public const byte TypeMessageFilterHolder = 92;
 
         /** Type: message filter holder. */
-        public const byte TYPE_PORTABLE_OR_SERIALIZABLE_HOLDER = 93;
+        public const byte TypePortableOrSerializableHolder = 93;
 
         /** Type: stream receiver holder. */
-        public const byte TYPE_STREAM_RECEIVER_HOLDER = 94;
+        public const byte TypeStreamReceiverHolder = 94;
 
         /** Collection: custom. */
-        public const byte COLLECTION_CUSTOM = 0;
+        public const byte CollectionCustom = 0;
 
         /** Collection: array list. */
-        public const byte COLLECTION_ARRAY_LIST = 1;
+        public const byte CollectionArrayList = 1;
 
         /** Collection: linked list. */
-        public const byte COLLECTION_LINKED_LIST = 2;
+        public const byte CollectionLinkedList = 2;
 
         /** Collection: hash set. */
-        public const byte COLLECTION_HASH_SET = 3;
+        public const byte CollectionHashSet = 3;
 
         /** Collection: hash set. */
-        public const byte COLLECTION_LINKED_HASH_SET = 4;
+        public const byte CollectionLinkedHashSet = 4;
 
         /** Collection: sorted set. */
-        public const byte COLLECTION_SORTED_SET = 5;
+        public const byte CollectionSortedSet = 5;
 
         /** Collection: concurrent bag. */
-        public const byte COLLECTION_CONCURRENT_BAG = 6;
+        public const byte CollectionConcurrentBag = 6;
 
         /** Map: custom. */
-        public const byte MAP_CUSTOM = 0;
+        public const byte MapCustom = 0;
 
         /** Map: hash map. */
-        public const byte MAP_HASH_MAP = 1;
+        public const byte MapHashMap = 1;
 
         /** Map: linked hash map. */
-        public const byte MAP_LINKED_HASH_MAP = 2;
+        public const byte MapLinkedHashMap = 2;
 
         /** Map: sorted map. */
-        public const byte MAP_SORTED_MAP = 3;
+        public const byte MapSortedMap = 3;
 
         /** Map: concurrent hash map. */
-        public const byte MAP_CONCURRENT_HASH_MAP = 4;
+        public const byte MapConcurrentHashMap = 4;
 
         /** Byte "0". */
-        public const byte BYTE_ZERO = 0;
+        public const byte ByteZero = 0;
 
         /** Byte "1". */
-        public const byte BYTE_ONE = 1;
+        public const byte ByteOne = 1;
 
         /** Indicates object array. */
-        public const int OBJ_TYPE_ID = -1;
+        public const int ObjTypeId = -1;
 
         /** Int type. */
-        public static readonly Type TYP_INT = typeof(int);
+        public static readonly Type TypInt = typeof(int);
 
         /** Collection type. */
-        public static readonly Type TYP_COLLECTION = typeof(ICollection);
+        public static readonly Type TypCollection = typeof(ICollection);
 
         /** Dictionary type. */
-        public static readonly Type TYP_DICTIONARY = typeof(IDictionary);
+        public static readonly Type TypDictionary = typeof(IDictionary);
 
         /** Generic collection type. */
-        public static readonly Type TYP_GENERIC_COLLECTION = typeof(ICollection<>);
+        public static readonly Type TypGenericCollection = typeof(ICollection<>);
 
         /** Generic dictionary type. */
-        public static readonly Type TYP_GENERIC_DICTIONARY = typeof(IDictionary<,>);
+        public static readonly Type TypGenericDictionary = typeof(IDictionary<,>);
 
         /** Ticks for Java epoch. */
-        private static readonly long JAVA_DATE_TICKS = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
+        private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
         
         /** Bindig flags for static search. */
-        private static BindingFlags BIND_FLAGS_STATIC = 
+        private static BindingFlags _bindFlagsStatic = 
             BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         /** Default poratble marshaller. */
-        private static readonly PortableMarshaller MARSH = new PortableMarshaller(null, new IgniteContext());
+        private static readonly PortableMarshaller Marsh = new PortableMarshaller(null, new IgniteContext());
 
         /** Method: WriteGenericCollection. */
-        public static readonly MethodInfo MTDH_WRITE_GENERIC_COLLECTION =
-            typeof(PortableUtils).GetMethod("WriteGenericCollection", BIND_FLAGS_STATIC);
+        public static readonly MethodInfo MtdhWriteGenericCollection =
+            typeof(PortableUtils).GetMethod("WriteGenericCollection", _bindFlagsStatic);
 
         /** Method: ReadGenericCollection. */
-        public static readonly MethodInfo MTDH_READ_GENERIC_COLLECTION =
-            typeof(PortableUtils).GetMethod("ReadGenericCollection", BIND_FLAGS_STATIC);
+        public static readonly MethodInfo MtdhReadGenericCollection =
+            typeof(PortableUtils).GetMethod("ReadGenericCollection", _bindFlagsStatic);
 
         /** Method: WriteGenericDictionary. */
-        public static readonly MethodInfo MTDH_WRITE_GENERIC_DICTIONARY =
-            typeof(PortableUtils).GetMethod("WriteGenericDictionary", BIND_FLAGS_STATIC);
+        public static readonly MethodInfo MtdhWriteGenericDictionary =
+            typeof(PortableUtils).GetMethod("WriteGenericDictionary", _bindFlagsStatic);
 
         /** Method: ReadGenericDictionary. */
-        public static readonly MethodInfo MTDH_READ_GENERIC_DICTIONARY =
-            typeof(PortableUtils).GetMethod("ReadGenericDictionary", BIND_FLAGS_STATIC);
+        public static readonly MethodInfo MtdhReadGenericDictionary =
+            typeof(PortableUtils).GetMethod("ReadGenericDictionary", _bindFlagsStatic);
 
         /** Method: ReadGenericArray. */
-        public static readonly MethodInfo MTDH_READ_GENERIC_ARRAY =
-            typeof(PortableUtils).GetMethod("ReadGenericArray", BIND_FLAGS_STATIC);
+        public static readonly MethodInfo MtdhReadGenericArray =
+            typeof(PortableUtils).GetMethod("ReadGenericArray", _bindFlagsStatic);
 
         /** Cached UTF8 encoding. */
-        private static readonly Encoding UTF8 = Encoding.UTF8;
+        private static readonly Encoding Utf8 = Encoding.UTF8;
 
         /** Cached generic array read funcs. */
         private static readonly CopyOnWriteConcurrentDictionary<Type, Func<IPortableReaderEx, bool, object>>
-            ARRAY_READERS = new CopyOnWriteConcurrentDictionary<Type, Func<IPortableReaderEx, bool, object>>();
+            ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<IPortableReaderEx, bool, object>>();
 
         /// <summary>
         /// Default marshaller.
         /// </summary>
         public static PortableMarshaller Marshaller
         {
-            get { return MARSH; }
+            get { return Marsh; }
         }
 
         /**
@@ -683,7 +683,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (val.HasValue)
                     PortableSystemHandlers.WRITE_HND_DATE_TYPED(stream, val);
                 else
-                    stream.WriteByte(HDR_NULL);
+                    stream.WriteByte(HdrNull);
             }
         }
         
@@ -700,11 +700,11 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             fixed (char* chars = val)
             {
-                int byteCnt = UTF8.GetByteCount(chars, charCnt);
+                int byteCnt = Utf8.GetByteCount(chars, charCnt);
 
                 stream.WriteInt(byteCnt);
 
-                stream.WriteString(chars, charCnt, byteCnt, UTF8);
+                stream.WriteString(chars, charCnt, byteCnt, Utf8);
             }
         }
 
@@ -719,7 +719,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 byte[] bytes = ReadByteArray(stream);
 
-                return bytes != null ? UTF8.GetString(bytes) : null;
+                return bytes != null ? Utf8.GetString(bytes) : null;
             }
             
             char[] chars = ReadCharArray(stream);
@@ -741,7 +741,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (val != null)
                     PortableSystemHandlers.WRITE_HND_STRING_TYPED(stream, val); 
                 else
-                    stream.WriteByte(HDR_NULL);
+                    stream.WriteByte(HdrNull);
             }
         }
 
@@ -813,7 +813,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                             {
                                 stream.WriteInt(len + 1);
 
-                                stream.WriteByte(BYTE_ZERO);
+                                stream.WriteByte(ByteZero);
                             }
                             else
                                 stream.WriteInt(len);
@@ -829,7 +829,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                             {
                                 stream.WriteInt(len);
 
-                                stream.WriteByte(BYTE_ZERO);
+                                stream.WriteByte(ByteZero);
                             }
                             else
                                 stream.WriteInt(len - 1);
@@ -844,7 +844,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                             {
                                 stream.WriteInt(len - 1);
 
-                                stream.WriteByte(BYTE_ZERO);
+                                stream.WriteByte(ByteZero);
                             }
                             else
                                 stream.WriteInt(len - 2);
@@ -858,7 +858,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                             {
                                 stream.WriteInt(len - 2);
 
-                                stream.WriteByte(BYTE_ZERO);
+                                stream.WriteByte(ByteZero);
                             }
                             else
                                 stream.WriteInt(len - 3);
@@ -1076,7 +1076,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (val.HasValue)
                     PortableSystemHandlers.WRITE_HND_GUID_TYPED(stream, val);
                 else
-                    stream.WriteByte(HDR_NULL);
+                    stream.WriteByte(HdrNull);
             }
         }
 
@@ -1108,7 +1108,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             IPortableStream stream = ctx.Stream;
 
             if (typed)
-                stream.WriteInt(OBJ_TYPE_ID);
+                stream.WriteInt(ObjTypeId);
 
             stream.WriteInt(val.Length);
 
@@ -1127,10 +1127,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             Func<IPortableReaderEx, bool, object> result;
 
-            if (!ARRAY_READERS.TryGetValue(elementType, out result))
-                result = ARRAY_READERS.GetOrAdd(elementType, t =>
+            if (!ArrayReaders.TryGetValue(elementType, out result))
+                result = ArrayReaders.GetOrAdd(elementType, t =>
                     DelegateConverter.CompileFunc<Func<IPortableReaderEx, bool, object>>(null,
-                        MTDH_READ_GENERIC_ARRAY.MakeGenericMethod(t),
+                        MtdhReadGenericArray.MakeGenericMethod(t),
                         new[] { typeof(IPortableReaderEx), typeof(bool) }, new[] { false, false, true }));
 
             return result(ctx, typed);
@@ -1172,7 +1172,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             DateTime?[] vals = new DateTime?[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = stream.ReadByte() == HDR_NULL ? null : ReadDate(stream, local);
+                vals[i] = stream.ReadByte() == HdrNull ? null : ReadDate(stream, local);
 
             return vals;
         }
@@ -1184,7 +1184,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static void WriteCollection(ICollection val, IPortableWriterEx ctx)
         {
-            byte colType = val.GetType() == typeof(ArrayList) ? COLLECTION_ARRAY_LIST : COLLECTION_CUSTOM;
+            byte colType = val.GetType() == typeof(ArrayList) ? CollectionArrayList : CollectionCustom;
 
             WriteTypedCollection(val, ctx, colType);
         }
@@ -1247,15 +1247,15 @@ namespace Apache.Ignite.Core.Impl.Portable
             byte colType;
 
             if (type == typeof(List<>))
-                colType = COLLECTION_ARRAY_LIST;
+                colType = CollectionArrayList;
             else if (type == typeof(LinkedList<>))
-                colType = COLLECTION_LINKED_LIST;
+                colType = CollectionLinkedList;
             else if (type == typeof(HashSet<>))
-                colType = COLLECTION_HASH_SET;
+                colType = CollectionHashSet;
             else if (type == typeof(SortedSet<>))
-                colType = COLLECTION_SORTED_SET;
+                colType = CollectionSortedSet;
             else
-                colType = COLLECTION_CUSTOM;
+                colType = CollectionCustom;
 
             WriteTypedGenericCollection(val, ctx, colType);
         }
@@ -1295,11 +1295,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (factory == null)
                 {
                     // Need to detect factory automatically.
-                    if (colType == COLLECTION_LINKED_LIST)
+                    if (colType == CollectionLinkedList)
                         factory = PortableSystemHandlers.CreateLinkedList<T>;
-                    else if (colType == COLLECTION_HASH_SET)
+                    else if (colType == CollectionHashSet)
                         factory = PortableSystemHandlers.CreateHashSet<T>;
-                    else if (colType == COLLECTION_SORTED_SET)
+                    else if (colType == CollectionSortedSet)
                         factory = PortableSystemHandlers.CreateSortedSet<T>;
                     else
                         factory = PortableSystemHandlers.CreateList<T>;
@@ -1323,7 +1323,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static void WriteDictionary(IDictionary val, IPortableWriterEx ctx)
         {
-            byte dictType = val.GetType() == typeof(Hashtable) ? MAP_HASH_MAP : MAP_CUSTOM;
+            byte dictType = val.GetType() == typeof(Hashtable) ? MapHashMap : MapCustom;
 
             WriteTypedDictionary(val, ctx, dictType);
         }
@@ -1383,20 +1383,20 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
          */
-        public static void WriteGenericDictionary<K, V>(IDictionary<K, V> val, IPortableWriterEx ctx)
+        public static void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val, IPortableWriterEx ctx)
         {
             Type type = val.GetType().GetGenericTypeDefinition();
 
             byte dictType;
 
             if (type == typeof(Dictionary<,>))
-                dictType = MAP_HASH_MAP;
+                dictType = MapHashMap;
             else if (type == typeof(SortedDictionary<,>))
-                dictType = MAP_SORTED_MAP;
+                dictType = MapSortedMap;
             else if (type == typeof(ConcurrentDictionary<,>))
-                dictType = MAP_CONCURRENT_HASH_MAP;
+                dictType = MapConcurrentHashMap;
             else
-                dictType = MAP_CUSTOM;
+                dictType = MapCustom;
 
             WriteTypedGenericDictionary(val, ctx, dictType);
         }
@@ -1407,14 +1407,14 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="ctx">Write context.</param>
          * <param name="dictType">Dictionary type.</param>
          */
-        public static void WriteTypedGenericDictionary<K, V>(IDictionary<K, V> val,
+        public static void WriteTypedGenericDictionary<TK, TV>(IDictionary<TK, TV> val,
             IPortableWriterEx ctx, byte dictType)
         {
             ctx.Stream.WriteInt(val.Count);
 
             ctx.Stream.WriteByte(dictType);
 
-            foreach (KeyValuePair<K, V> entry in val)
+            foreach (KeyValuePair<TK, TV> entry in val)
             {
                 ctx.Write(entry.Key);
                 ctx.Write(entry.Value);
@@ -1427,8 +1427,8 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="factory">Factory delegate.</param>
          * <returns>Collection.</returns>
          */
-        public static IDictionary<K, V> ReadGenericDictionary<K, V>(IPortableReaderEx ctx,
-            PortableGenericDictionaryFactory<K, V> factory)
+        public static IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(IPortableReaderEx ctx,
+            PortableGenericDictionaryFactory<TK, TV> factory)
         {
             int len = ctx.Stream.ReadInt();
 
@@ -1438,20 +1438,20 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 if (factory == null)
                 {
-                    if (colType == MAP_SORTED_MAP)
-                        factory = PortableSystemHandlers.CreateSortedDictionary<K, V>;
-                    else if (colType == MAP_CONCURRENT_HASH_MAP)
-                        factory = PortableSystemHandlers.CreateConcurrentDictionary<K, V>;
+                    if (colType == MapSortedMap)
+                        factory = PortableSystemHandlers.CreateSortedDictionary<TK, TV>;
+                    else if (colType == MapConcurrentHashMap)
+                        factory = PortableSystemHandlers.CreateConcurrentDictionary<TK, TV>;
                     else
-                        factory = PortableSystemHandlers.CreateDictionary<K, V>;
+                        factory = PortableSystemHandlers.CreateDictionary<TK, TV>;
                 }
 
-                IDictionary<K, V> res = factory.Invoke(len);
+                IDictionary<TK, TV> res = factory.Invoke(len);
 
                 for (int i = 0; i < len; i++)
                 {
-                    K key = ctx.Deserialize<K>();
-                    V val = ctx.Deserialize<V>();
+                    TK key = ctx.Deserialize<TK>();
+                    TV val = ctx.Deserialize<TV>();
 
                     res[key] = val;
                 }
@@ -1505,9 +1505,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Value.</param>
         public static void WriteEnum(IPortableStream stream, Enum val)
         {
-            if (Enum.GetUnderlyingType(val.GetType()) == TYP_INT)
+            if (Enum.GetUnderlyingType(val.GetType()) == TypInt)
             {
-                stream.WriteInt(OBJ_TYPE_ID);
+                stream.WriteInt(ObjTypeId);
                 stream.WriteInt(Convert.ToInt32(val));
             }
             else
@@ -1522,7 +1522,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Enumeration.</returns>
         public static T ReadEnum<T>(IPortableStream stream)
         {
-            if (!typeof(T).IsEnum || Enum.GetUnderlyingType(typeof(T)) == TYP_INT)
+            if (!typeof(T).IsEnum || Enum.GetUnderlyingType(typeof(T)) == TypInt)
             {
                 stream.ReadInt();
 
@@ -1593,37 +1593,37 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             switch (hdr)
             {
-                case TYPE_BYTE:
-                case TYPE_SHORT:
-                case TYPE_INT:
-                case TYPE_LONG:
-                case TYPE_FLOAT:
-                case TYPE_DOUBLE:
-                case TYPE_CHAR:
-                case TYPE_BOOL:
-                case TYPE_DECIMAL:
-                case TYPE_STRING:
-                case TYPE_GUID:
-                case TYPE_DATE:
-                case TYPE_ENUM:
-                case TYPE_ARRAY_BYTE:
-                case TYPE_ARRAY_SHORT:
-                case TYPE_ARRAY_INT:
-                case TYPE_ARRAY_LONG:
-                case TYPE_ARRAY_FLOAT:
-                case TYPE_ARRAY_DOUBLE:
-                case TYPE_ARRAY_CHAR:
-                case TYPE_ARRAY_BOOL:
-                case TYPE_ARRAY_DECIMAL:
-                case TYPE_ARRAY_STRING:
-                case TYPE_ARRAY_GUID:
-                case TYPE_ARRAY_DATE:
-                case TYPE_ARRAY_ENUM:
-                case TYPE_ARRAY:
-                case TYPE_COLLECTION:
-                case TYPE_DICTIONARY:
-                case TYPE_MAP_ENTRY:
-                case TYPE_PORTABLE:
+                case TypeByte:
+                case TypeShort:
+                case TypeInt:
+                case TypeLong:
+                case TypeFloat:
+                case TypeDouble:
+                case TypeChar:
+                case TypeBool:
+                case TypeDecimal:
+                case TypeString:
+                case TypeGuid:
+                case TypeDate:
+                case TypeEnum:
+                case TypeArrayByte:
+                case TypeArrayShort:
+                case TypeArrayInt:
+                case TypeArrayLong:
+                case TypeArrayFloat:
+                case TypeArrayDouble:
+                case TypeArrayChar:
+                case TypeArrayBool:
+                case TypeArrayDecimal:
+                case TypeArrayString:
+                case TypeArrayGuid:
+                case TypeArrayDate:
+                case TypeArrayEnum:
+                case TypeArray:
+                case TypeCollection:
+                case TypeDictionary:
+                case TypeMapEntry:
+                case TypePortable:
                     return true;
                 default:
                     return false;
@@ -1794,7 +1794,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             if (cnt == 0)
-                return EMPTY_FIELDS;
+                return EmptyFields;
 
             stream.Seek(retPos, SeekOrigin.Begin);
 
@@ -1991,7 +1991,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void ToJavaDate(DateTime date, out long high, out int low)
         {
-            long diff = date.ToUniversalTime().Ticks - JAVA_DATE_TICKS;
+            long diff = date.ToUniversalTime().Ticks - JavaDateTicks;
 
             high = diff / TimeSpan.TicksPerMillisecond;
 
@@ -2008,7 +2008,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static DateTime ToDotNetDate(long high, int low, bool local)
         {
             DateTime res = 
-                new DateTime(JAVA_DATE_TICKS + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
+                new DateTime(JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
 
             return local ? res.ToLocalTime() : res;
         }
