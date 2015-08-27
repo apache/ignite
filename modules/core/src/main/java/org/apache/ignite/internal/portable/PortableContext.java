@@ -204,15 +204,12 @@ public class PortableContext implements Externalizable {
 //        registerPredefinedType(DrSenderAttributes.class, 65);
 //        registerPredefinedType(DrSenderRemoteAttributes.class, 66);
 //
-//        registerPredefinedType(InteropClusterNode.class, 67);
-//        registerPredefinedType(InteropClusterMetrics.class, 68);
 //        registerPredefinedType(InteropMetadata.class, 70);
 //
 //        registerPredefinedType(InteropDotNetConfiguration.class, 71);
 //        registerPredefinedType(InteropDotNetPortableConfiguration.class, 72);
 //        registerPredefinedType(InteropDotNetPortableTypeConfiguration.class, 73);
 //        registerPredefinedType(InteropIgniteProxy.class, 74);
-//        registerPredefinedType(InteropCacheMetrics.class, 75);
 //        registerPredefinedType(InteropProductLicence.class, 78);
     }
 
