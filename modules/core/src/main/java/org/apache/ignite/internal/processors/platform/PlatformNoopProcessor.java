@@ -38,4 +38,9 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     @Override public long environmentPointer() {
         return 0;
     }
+
+    /** {@inheritDoc} */
+    @Override public PlatformContext context() {
+        return null;
+    }
 }

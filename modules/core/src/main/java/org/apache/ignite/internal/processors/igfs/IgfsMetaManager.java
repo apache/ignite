@@ -478,49 +478,46 @@ public class IgfsMetaManager extends IgfsManager {
      * @param modificationTime Modification time to write to file info.
      * @throws IgniteCheckedException If failed.
      */
-    public void unlock(IgfsFileInfo info, long modificationTime) throws IgniteCheckedException {
+    public void unlock(final IgfsFileInfo info, final long modificationTime) throws IgniteCheckedException {
         assert validTxState(false);
         assert info != null;
 
         if (busyLock.enterBusy()) {
             try {
-                IgniteUuid lockId = info.lockId();
+                final IgniteUuid lockId = info.lockId();
 
                 if (lockId == null)
                     return;
 
                 // Temporary clear interrupted state for unlocking.
-                boolean interrupted = Thread.interrupted();
-
-                IgniteUuid fileId = info.id();
-
-                IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+                final boolean interrupted = Thread.interrupted();
 
                 try {
-                    // Lock file ID for this transaction.
-                    IgfsFileInfo oldInfo = info(fileId);
+                    IgfsUtils.doInTransactionWithRetries(metaCache, new IgniteOutClosureX<Void>() {
+                        @Override public Void applyx() throws IgniteCheckedException {
+                            IgniteUuid fileId = info.id();
 
-                    if (oldInfo == null)
-                        throw fsException(new IgfsPathNotFoundException("Failed to unlock file (file not found): " + fileId));
+                            // Lock file ID for this transaction.
+                            IgfsFileInfo oldInfo = info(fileId);
 
-                    if (!info.lockId().equals(oldInfo.lockId()))
-                        throw new IgniteCheckedException("Failed to unlock file (inconsistent file lock ID) [fileId=" + fileId +
-                            ", lockId=" + info.lockId() + ", actualLockId=" + oldInfo.lockId() + ']');
+                            if (oldInfo == null)
+                                throw fsException(new IgfsPathNotFoundException("Failed to unlock file (file not found): " + fileId));
 
-                    IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, null, modificationTime);
+                            if (!info.lockId().equals(oldInfo.lockId()))
+                                throw new IgniteCheckedException("Failed to unlock file (inconsistent file lock ID) [fileId=" + fileId +
+                                    ", lockId=" + info.lockId() + ", actualLockId=" + oldInfo.lockId() + ']');
 
-                    boolean put = metaCache.put(fileId, newInfo);
+                            IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, null, modificationTime);
 
-                    assert put : "Value was not stored in cache [fileId=" + fileId + ", newInfo=" + newInfo + ']';
+                            boolean put = metaCache.put(fileId, newInfo);
 
-                    tx.commit();
-                }
-                catch (GridClosureException e) {
-                    throw U.cast(e);
+                            assert put : "Value was not stored in cache [fileId=" + fileId + ", newInfo=" + newInfo + ']';
+
+                            return null;
+                        }
+                    });
                 }
                 finally {
-                    tx.close();
-
                     assert validTxState(false);
 
                     if (interrupted)

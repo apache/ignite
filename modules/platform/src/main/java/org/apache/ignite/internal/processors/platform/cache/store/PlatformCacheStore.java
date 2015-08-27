@@ -15,33 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
-
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.*;
+package org.apache.ignite.internal.processors.platform.cache.store;
 
 /**
- * Platform processor.
+ * Marker interface denoting that this instance is platform cache store.
  */
-public interface PlatformProcessor extends GridProcessor {
-    /**
-     * Get owning Ignite instance.
-     *
-     * @return Ignite instance.
-     */
-    public Ignite ignite();
-
-    /**
-     * Get environment pointer associated with this processor.
-     *
-     * @return Environment pointer.
-     */
-    public long environmentPointer();
-
-    /**
-     * Gets platform context.
-     *
-     * @return Platform context.
-     */
-    public PlatformContext context();
+public interface PlatformCacheStore {
+    // No-op.
 }
