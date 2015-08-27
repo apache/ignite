@@ -729,7 +729,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * Completes this future.
      */
     public void complete() {
-        onComplete(null);
+        GridNearTxPrepareResponse res = new GridNearTxPrepareResponse();
+
+        res.error(new IgniteCheckedException("Failed to prepare transaction."));
+
+        onComplete(res);
     }
 
     /**
