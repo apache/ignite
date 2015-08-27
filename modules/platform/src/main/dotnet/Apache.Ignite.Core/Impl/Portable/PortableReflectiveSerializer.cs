@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// local date in any field/property, it will be implicitly converted to UTC
     /// form after the first serialization-deserialization cycle. 
     /// </summary>
-    internal class PortableReflectiveSerializer : IPortableSerializer
+    internal class PortableReflectiveSerializer : IPortableSerializerEx
     {
         /** Cached binding flags. */
         private static readonly BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public |

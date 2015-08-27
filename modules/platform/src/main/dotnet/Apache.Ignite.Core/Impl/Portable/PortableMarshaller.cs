@@ -58,7 +58,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="cfg">Configurtaion.</param>
         /// <param name="igniteContext">The context.</param>
-        public PortableMarshaller(PortableConfiguration cfg, IIgniteContext igniteContext)
+        /// <param name="defaultSerializer">The default serializer.</param>
+        public PortableMarshaller(PortableConfiguration cfg, IIgniteContext igniteContext, 
+            IPortableSerializerEx defaultSerializer = null)
         {
             Debug.Assert(igniteContext != null);
 
@@ -123,7 +125,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 PortableSystemHandlers.WRITE_HND_GUID_ARRAY);
 
             // 2. Define user types.
-            var dfltSerializer = cfg.DefaultSerializer == null ? new PortableReflectiveSerializer() : null;
+            defaultSerializer = defaultSerializer ?? new PortableReflectiveSerializer();
+            var dfltSerializer = cfg.DefaultSerializer == null ? defaultSerializer : null;
 
             var typeResolver = new TypeResolver();
 
@@ -477,7 +480,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var serializer = typeCfg.Serializer ?? cfg.DefaultSerializer
                                  ?? GetPortableMarshalAwareSerializer(type) ?? dfltSerializer;
 
-                var refSerializer = serializer as PortableReflectiveSerializer;
+                var refSerializer = serializer as IPortableSerializerEx;
 
                 if (refSerializer != null)
                     refSerializer.Register(type, typeId, nameMapper, idMapper);

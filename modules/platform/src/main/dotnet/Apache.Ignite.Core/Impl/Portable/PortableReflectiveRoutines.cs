@@ -31,19 +31,19 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     /// <param name="obj">Target object.</param>
     /// <param name="writer">Writer.</param>
-    internal delegate void PortableReflectiveWriteAction(object obj, IPortableWriter writer);
+    public delegate void PortableReflectiveWriteAction(object obj, IPortableWriter writer);
 
     /// <summary>
     /// Read action delegate.
     /// </summary>
     /// <param name="obj">Target object.</param>
     /// <param name="reader">Reader.</param>
-    internal delegate void PortableReflectiveReadAction(object obj, IPortableReader reader);
+    public delegate void PortableReflectiveReadAction(object obj, IPortableReader reader);
 
     /// <summary>
     /// Routines for reflective reads and writes.
     /// </summary>
-    internal static class PortableReflectiveActions
+    public static class PortableReflectiveActions
     {
         /** Method: read enum. */
         private static readonly MethodInfo MthdReadEnum =
