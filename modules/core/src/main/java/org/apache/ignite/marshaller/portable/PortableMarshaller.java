@@ -277,6 +277,9 @@ public class PortableMarshaller extends AbstractMarshaller {
      * @param protoVer Portable protocol version.
      */
     public void setProtocolVersion(PortableProtocolVersion protoVer) {
+        if (protoVer == null)
+            throw new IllegalArgumentException("Wrong portable protocol version: " + protoVer);
+
         this.protoVer = protoVer;
     }
 
