@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.portable.*;
+import org.apache.ignite.plugin.*;
 import org.apache.ignite.portable.*;
 
 import org.jetbrains.annotations.*;
@@ -569,7 +570,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPortableEnabled() {
+    @Override public boolean isPortableEnabled(CacheConfiguration<?, ?> ccfg) {
         return marsh instanceof PortableMarshaller;
     }
 
