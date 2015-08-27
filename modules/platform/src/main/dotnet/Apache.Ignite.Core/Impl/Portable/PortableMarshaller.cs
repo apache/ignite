@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Portable marshaller implementation.
     /// </summary>
-    internal class PortableMarshaller
+    public class PortableMarshaller
     {
         /** Portable configuration. */
         private readonly PortableConfiguration cfg;

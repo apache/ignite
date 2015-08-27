@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Portable mode.
     /// </summary>
-    internal enum PortableMode
+    public enum PortableMode
     {
         /// <summary>
         /// Deserialize top-level portable objects, but leave nested portable objects in portable form.

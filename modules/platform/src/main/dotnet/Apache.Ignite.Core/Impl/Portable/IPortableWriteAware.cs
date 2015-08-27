@@ -17,18 +17,16 @@
 
 namespace Apache.Ignite.Core.Impl.Portable
 {
-    using Apache.Ignite.Core.Portable;
-
     /// <summary>
     /// Represents an object that can write itself to a portable writer.
     /// </summary>
-    internal interface IPortableWriteAware
+    public interface IPortableWriteAware
     {
         /// <summary>
         /// Writes this object to the given writer.
         /// </summary> 
         /// <param name="writer">Writer.</param>
         /// <exception cref="System.IO.IOException">If write failed.</exception>
-        void WritePortable(IPortableWriter writer);
+        void WritePortable(IPortableWriterEx writer);
     }
 }

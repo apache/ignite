@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Portable builder implementation.
     /// </summary>
-    internal class PortableBuilderImpl : IPortableBuilder
+    public class PortableBuilderImpl : IPortableBuilder
     {
         /** Type IDs for metadata. */
         private static readonly IDictionary<Type, int> TYPE_IDS;

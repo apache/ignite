@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Writer interface for internal usage.
     /// </summary>
-    internal interface IPortableWriterEx : IPortableWriter, IPortableRawWriter
+    public interface IPortableWriterEx : IPortableWriter, IPortableRawWriter
     {
         /// <summary>
         /// Gets the marshaller.

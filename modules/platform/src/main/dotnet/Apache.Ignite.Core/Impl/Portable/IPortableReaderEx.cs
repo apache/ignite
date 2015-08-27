@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Reader interface for internal usage.
     /// </summary>
-    internal interface IPortableReaderEx : IPortableReader, IPortableRawReader
+    public interface IPortableReaderEx : IPortableReader, IPortableRawReader
     {
         /// <summary>
         /// Gets the underlying stream.

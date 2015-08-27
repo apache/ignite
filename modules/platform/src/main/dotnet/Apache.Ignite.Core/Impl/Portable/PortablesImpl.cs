@@ -28,18 +28,18 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Portables implementation.
     /// </summary>
-    internal class PortablesImpl : IPortables
+    public class PortablesImpl : IPortables
     {
         /** Owning grid. */
-        private readonly PortableMarshaller marsh;
+        private readonly PortableMarshaller _marsh;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
-        internal PortablesImpl(PortableMarshaller marsh)
+        public PortablesImpl(PortableMarshaller marsh)
         {
-            this.marsh = marsh;
+            _marsh = marsh;
         }
 
         /** <inheritDoc /> */
@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             IPortableStream stream = new PortableHeapStream(1024);
 
             // Serialize.
-            var writer = marsh.StartMarshal(stream);
+            var writer = _marsh.StartMarshal(stream);
 
             try
             {
@@ -60,13 +60,13 @@ namespace Apache.Ignite.Core.Impl.Portable
             finally
             {
                 // Save metadata.
-                marsh.FinishMarshal(writer);
+                _marsh.FinishMarshal(writer);
             }
 
             // Deserialize.
             stream.Seek(0, SeekOrigin.Begin);
 
-            return marsh.Unmarshal<T>(stream, PortableMode.FORCE_PORTABLE);
+            return _marsh.Unmarshal<T>(stream, PortableMode.FORCE_PORTABLE);
         }
 
         /** <inheritDoc /> */
@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             A.NotNull(type, "type");
 
-            IPortableTypeDescriptor desc = marsh.Descriptor(type);
+            IPortableTypeDescriptor desc = _marsh.Descriptor(type);
 
             if (desc == null)
                 throw new IgniteException("Type is not portable (add it to PortableConfiguration): " + 
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             A.NotNullOrEmpty(typeName, "typeName");
 
-            IPortableTypeDescriptor desc = marsh.Descriptor(typeName);
+            IPortableTypeDescriptor desc = _marsh.Descriptor(typeName);
             
             return Builder0(null, PortableFromDescriptor(desc), desc);
         }
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (obj0 == null)
                 throw new ArgumentException("Unsupported object type: " + obj.GetType());
 
-            IPortableTypeDescriptor desc = marsh.Descriptor(true, obj0.TypeId());
+            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj0.TypeId());
             
             return Builder0(null, obj0, desc);
         }
@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public ICollection<IPortableMetadata> GetMetadata()
         {
-            // TODO
+            // TODO: !!!
             return null;
             //return Marshaller.GetGrid().ClusterGroup.Metadata();
         }
@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns></returns>
         internal PortableBuilderImpl ChildBuilder(PortableBuilderImpl parent, PortableUserObject obj)
         {
-            IPortableTypeDescriptor desc = marsh.Descriptor(true, obj.TypeId());
+            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj.TypeId());
 
             return Builder0(null, obj, desc);
         }
@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             get
             {
-                return marsh;
+                return _marsh;
             }
         }
 
@@ -188,7 +188,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             stream.WriteInt(PortableUtils.FULL_HDR_LEN); // Length.
             stream.WriteInt(PortableUtils.FULL_HDR_LEN); // Raw data offset.
 
-            return new PortableUserObject(marsh, stream.InternalArray, 0, desc.TypeId, 0);
+            return new PortableUserObject(_marsh, stream.InternalArray, 0, desc.TypeId, 0);
         }
 
         /// <summary>
