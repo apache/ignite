@@ -447,7 +447,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         public T ReadObject<T>(string fieldName)
         {
             if (_curRaw)
-                throw new PortableException("Cannot read named fields after raw data is read.");
+                throw _marsh.IgniteContext.ConvertException(
+                    new PortableException("Cannot read named fields after raw data is read."));
 
             int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
 
@@ -616,7 +617,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (PortableUtils.IsPredefinedType(hdr))
                 return PortableSystemHandlers.ReadSystemType<T>(hdr, this);
 
-            throw new PortableException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']');
+            throw _marsh.IgniteContext.ConvertException(
+                new PortableException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']'));
         }
 
         /// <summary>
@@ -730,12 +732,13 @@ namespace Apache.Ignite.Core.Impl.Portable
                     IPortableTypeDescriptor desc;
 
                     if (!_descs.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc))
-                        throw new PortableException("Unknown type ID: " + typeId);
+                        throw _marsh.IgniteContext.ConvertException(new PortableException("Unknown type ID: " + typeId));
 
                     // Instantiate object. 
                     if (desc.Type == null)
-                        throw new PortableException("No matching type found for object [typeId=" +
-                                                    desc.TypeId + ", typeName=" + desc.TypeName + ']');
+                        throw _marsh.IgniteContext.ConvertException(
+                            new PortableException("No matching type found for object [typeId=" +
+                                                  desc.TypeId + ", typeName=" + desc.TypeName + ']'));
 
                     // Preserve old frame.
                     int oldTypeId = _curTypeId;
@@ -771,8 +774,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                         }
                         catch (Exception e)
                         {
-                            throw new PortableException("Failed to create type instance: " +
-                                                        desc.Type.AssemblyQualifiedName, e);
+                            throw _marsh.IgniteContext.ConvertException(
+                                new PortableException("Failed to create type instance: " +
+                                                      desc.Type.AssemblyQualifiedName, e));
                         }
 
                         desc.Serializer.ReadPortable(obj, this);
@@ -944,7 +948,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         private bool SeekField(string fieldName)
         {
             if (_curRaw)
-                throw new PortableException("Cannot read named fields after raw data is read.");
+                throw _marsh.IgniteContext.ConvertException(
+                    new PortableException("Cannot read named fields after raw data is read."));
 
             var fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
 
