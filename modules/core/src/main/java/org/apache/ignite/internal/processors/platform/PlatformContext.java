@@ -114,6 +114,21 @@ public interface PlatformContext {
     public void processMetadata(PortableRawReaderEx reader);
 
     /**
+     * Write metadata for the given type ID.
+     *
+     * @param writer Writer.
+     * @param typeId Type ID.
+     */
+    public void writeMetadata(PortableRawWriterEx writer, int typeId);
+
+    /**
+     * Write all available metadata.
+     *
+     * @param writer Writer.
+     */
+    public void writeAllMetadata(PortableRawWriterEx writer);
+
+    /**
      * Write cluster metrics.
      *
      * @param writer Writer.
