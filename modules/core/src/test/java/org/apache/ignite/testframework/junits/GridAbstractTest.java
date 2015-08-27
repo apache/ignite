@@ -1578,7 +1578,7 @@ public abstract class GridAbstractTest extends TestCase {
                 "Test has been timed out and will be interrupted (threads dump will be taken before interruption) [" +
                 "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
 
-            List<Ignite> nodes = G.allGrids();
+            List<Ignite> nodes = IgnitionEx.allGridsx();
 
             for (Ignite node : nodes)
                 ((IgniteKernal)node).dumpDebugInfo();
