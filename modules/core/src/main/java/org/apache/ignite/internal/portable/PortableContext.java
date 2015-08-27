@@ -755,7 +755,7 @@ public class PortableContext implements Externalizable {
      * @return Meta data.
      * @throws PortableException In case of error.
      */
-    @Nullable public org.apache.ignite.portable.PortableMetadata metaData(int typeId) throws PortableException {
+    @Nullable public PortableMetadata metaData(int typeId) throws PortableException {
         return metaHnd != null ? metaHnd.metadata(typeId) : null;
     }
 
