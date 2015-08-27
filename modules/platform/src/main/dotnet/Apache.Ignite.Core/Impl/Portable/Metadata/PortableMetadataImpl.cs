@@ -203,7 +203,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// Writes this object to the given writer.
         /// </summary>
         /// <param name="writer">Writer.</param>
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IPortableWriterEx writer)
         {
             IPortableRawWriter rawWriter = writer.RawWriter();
 

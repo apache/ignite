@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <returns>Dictionary with metadata.</returns>
-        public virtual void FinishMarshal(IPortableWriter writer)
+        public virtual void FinishMarshal(IPortableWriterEx writer)
         {
             // No-op.
         }

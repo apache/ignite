@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     internal class PortableSystemTypeSerializer<T> : IPortableSystemTypeSerializer where T : IPortableWriteAware
     {
         /** Ctor delegate. */
-        private readonly Func<IPortableReaderEx, T> ctor;
+        private readonly Func<IPortableReaderEx, T> _ctor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PortableSystemTypeSerializer{T}"/> class.
@@ -38,13 +38,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             Debug.Assert(ctor != null);
 
-            this.ctor = ctor;
+            _ctor = ctor;
         }
 
         /** <inheritdoc /> */
         public void WritePortable(object obj, IPortableWriter writer)
         {
-            ((T) obj).WritePortable(writer);
+            ((T) obj).WritePortable((IPortableWriterEx) writer);
         }
 
         /** <inheritdoc /> */
@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public object ReadInstance(IPortableReaderEx reader)
         {
-            return ctor(reader);
+            return _ctor(reader);
         }
     }
 }

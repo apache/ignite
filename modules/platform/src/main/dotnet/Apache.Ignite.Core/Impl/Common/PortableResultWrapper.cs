@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Initializes a new instance of the <see cref="PortableResultWrapper"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public PortableResultWrapper(IPortableReader reader)
+        public PortableResultWrapper(IPortableReaderEx reader)
         {
             var reader0 = (IPortableReaderEx)reader.RawReader();
 
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IPortableWriterEx writer)
         {
             var writer0 = (IPortableWriterEx) writer.RawWriter();
 

@@ -17,15 +17,13 @@
 
 namespace Apache.Ignite.Core.Impl.Portable
 {
-    using Apache.Ignite.Core.Portable;
-
     /// <summary>
     /// Wraps Serializable item in a portable.
     /// </summary>
     internal class SerializableObjectHolder : IPortableWriteAware
     {
         /** */
-        private readonly object item;
+        private readonly object _item;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SerializableObjectHolder"/> class.
@@ -33,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="item">The item to wrap.</param>
         public SerializableObjectHolder(object item)
         {
-            this.item = item;
+            _item = item;
         }
 
         /// <summary>
@@ -41,11 +39,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public object Item
         {
-            get { return item; }
+            get { return _item; }
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IPortableWriterEx writer)
         {
             var writer0 = (IPortableWriterEx)writer.RawWriter();
 
@@ -58,9 +56,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Initializes a new instance of the <see cref="SerializableObjectHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public SerializableObjectHolder(IPortableReader reader)
+        public SerializableObjectHolder(IPortableReaderEx reader)
         {
-            item = PortableUtils.ReadSerializable<object>((IPortableReaderEx)reader.RawReader());
+            _item = PortableUtils.ReadSerializable<object>((IPortableReaderEx)reader.RawReader());
         }
     }
 }

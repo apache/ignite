@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Resolves types by name.
     /// </summary>
-    internal class TypeResolver
+    public class TypeResolver
     {
         /** Regex to parse generic types from portable configuration. Allows nested generics in type arguments. */
         private static readonly Regex GENERIC_TYPE_REGEX =
