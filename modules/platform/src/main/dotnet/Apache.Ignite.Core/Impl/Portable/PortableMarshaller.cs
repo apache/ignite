@@ -258,7 +258,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </returns>
         public T Unmarshal<T>(IPortableStream stream, PortableMode mode, PortableBuilderImpl builder)
         {
-            return new PortableReaderImpl(this, idToDesc, stream, mode, builder).Deserialize<T>();
+            return CreateReader(idToDesc, stream, mode, builder).Deserialize<T>();
         }
 
         /// <summary>
@@ -271,8 +271,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </returns>
         public IPortableReaderEx StartUnmarshal(IPortableStream stream, bool keepPortable)
         {
-            return new PortableReaderImpl(this, idToDesc, stream,
-                keepPortable ? PortableMode.KEEP_PORTABLE : PortableMode.DESERIALIZE, null);
+            return CreateReader(idToDesc, stream, keepPortable ? PortableMode.KEEP_PORTABLE : PortableMode.DESERIALIZE,
+                null);
         }
 
         /// <summary>
@@ -283,7 +283,21 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Reader.</returns>
         public IPortableReaderEx StartUnmarshal(IPortableStream stream, PortableMode mode = PortableMode.DESERIALIZE)
         {
-            return new PortableReaderImpl(this, idToDesc, stream, mode, null);
+            return CreateReader(idToDesc, stream, mode, null);
+        }
+
+        /// <summary>
+        /// Creates reader for unmarshalling.
+        /// </summary>
+        /// <param name="descs">The descs.</param>
+        /// <param name="stream">The stream.</param>
+        /// <param name="mode">The mode.</param>
+        /// <param name="builder">The builder.</param>
+        /// <returns>Reader.</returns>
+        protected virtual IPortableReaderEx CreateReader(IDictionary<long, IPortableTypeDescriptor> descs,
+            IPortableStream stream, PortableMode mode, PortableBuilderImpl builder)
+        {
+            return new PortableReaderImpl(this, idToDesc, stream, mode, builder);
         }
         
         /// <summary>

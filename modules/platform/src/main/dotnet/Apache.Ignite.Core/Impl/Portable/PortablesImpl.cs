@@ -166,10 +166,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         internal PortableMarshaller Marshaller
         {
-            get
-            {
-                return _marsh;
-            }
+            get { return _marsh; }
         }
 
         /// <summary>
