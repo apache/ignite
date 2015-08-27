@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.platform.*;
 
 /**
  * Platform bootstrap. Responsible for starting Ignite node with non-Java platform.

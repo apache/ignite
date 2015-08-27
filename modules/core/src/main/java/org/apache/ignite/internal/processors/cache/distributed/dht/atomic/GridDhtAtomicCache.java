@@ -567,9 +567,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             IgniteInternalFuture fut = holder.future();
 
             if (fut != null && !fut.isDone()) {
-                IgniteInternalFuture<T> f = new GridEmbeddedFuture<>(fut,
-                    new C2<T, Exception, IgniteInternalFuture<T>>() {
-                        @Override public IgniteInternalFuture<T> apply(T t, Exception e) {
+                IgniteInternalFuture<T> f = new GridEmbeddedFuture(fut,
+                    new IgniteOutClosure<IgniteInternalFuture>() {
+                        @Override public IgniteInternalFuture<T> apply() {
                             return op.apply();
                         }
                     });

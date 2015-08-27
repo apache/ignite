@@ -37,4 +37,11 @@ public interface PlatformProcessor extends GridProcessor {
      * @return Environment pointer.
      */
     public long environmentPointer();
+
+    /**
+     * Gets platform context.
+     *
+     * @return Platform context.
+     */
+    public PlatformContext context();
 }

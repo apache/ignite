@@ -107,6 +107,43 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
 
     /** {@inheritDoc} */
     @Override public R get() throws IgniteCheckedException {
+        return get0(ignoreInterrupts);
+    }
+
+    /** {@inheritDoc} */
+    @Override public R getUninterruptibly() throws IgniteCheckedException {
+        return get0(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public R get(long timeout) throws IgniteCheckedException {
+        // Do not replace with static import, as it may not compile.
+        return get(timeout, TimeUnit.MILLISECONDS);
+    }
+
+    /** {@inheritDoc} */
+    @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException {
+        A.ensure(timeout >= 0, "timeout cannot be negative: " + timeout);
+        A.notNull(unit, "unit");
+
+        try {
+            return get0(unit.toNanos(timeout));
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedCheckedException("Got interrupted while waiting for future to complete.", e);
+        }
+    }
+
+    /**
+     * Internal get routine.
+     *
+     * @param ignoreInterrupts Whether to ignore interrupts.
+     * @return Result.
+     * @throws IgniteCheckedException If failed.
+     */
+    private R get0(boolean ignoreInterrupts) throws IgniteCheckedException {
         try {
             if (endTime == 0) {
                 if (ignoreInterrupts)
@@ -129,27 +166,6 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
             Thread.currentThread().interrupt();
 
             throw new IgniteInterruptedCheckedException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public R get(long timeout) throws IgniteCheckedException {
-        // Do not replace with static import, as it may not compile.
-        return get(timeout, TimeUnit.MILLISECONDS);
-    }
-
-    /** {@inheritDoc} */
-    @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException {
-        A.ensure(timeout >= 0, "timeout cannot be negative: " + timeout);
-        A.notNull(unit, "unit");
-
-        try {
-            return get0(unit.toNanos(timeout));
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedCheckedException("Got interrupted while waiting for future to complete.", e);
         }
     }
 
