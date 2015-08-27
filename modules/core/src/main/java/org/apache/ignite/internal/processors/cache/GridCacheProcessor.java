@@ -563,10 +563,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
-        Collection<CacheStoreSessionListener> sesLsnrs = CU.create(ctx,
-            ctx.config().getCacheStoreSessionListenerFactories());
+        Collection<CacheStoreSessionListener> sesLsnrs = null;
 
-        CU.startStoreSessionListeners(ctx, sesLsnrs);
+        if (!ctx.config().isDaemon()) {
+            sesLsnrs = CU.create(ctx, ctx.config().getCacheStoreSessionListenerFactories());
+
+            CU.startStoreSessionListeners(ctx, sesLsnrs);
+        }
 
         sharedCtx = createSharedContext(ctx, sesLsnrs);
 
