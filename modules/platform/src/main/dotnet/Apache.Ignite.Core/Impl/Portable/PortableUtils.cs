@@ -882,7 +882,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="stream">Stream.</param>
          * <returns>Decimal value.</returns>
          */
-        public static decimal ReadDecimal(IPortableStream stream)
+        public static decimal ReadDecimal(IPortableStream stream, IIgniteContext context)
         {
             int scale = stream.ReadInt();
 
@@ -900,15 +900,18 @@ namespace Apache.Ignite.Core.Impl.Portable
             byte[] mag = ReadByteArray(stream);
 
             if (scale < 0 || scale > 28)
-                throw new PortableException("Decimal value scale overflow (must be between 0 and 28): " + scale);
+                throw context.ConvertException(
+                    new PortableException("Decimal value scale overflow (must be between 0 and 28): " + scale));
 
             if (mag.Length > 13)
-                throw new PortableException("Decimal magnitude overflow (must be less than 96 bits): " + 
-                    mag.Length * 8);
+                throw context.ConvertException(
+                    new PortableException("Decimal magnitude overflow (must be less than 96 bits): " +
+                                          mag.Length*8));
 
             if (mag.Length == 13 && mag[0] != 0)
-                throw new PortableException("Decimal magnitude overflow (must be less than 96 bits): " +
-                        mag.Length * 8);
+                throw context.ConvertException(
+                    new PortableException("Decimal magnitude overflow (must be less than 96 bits): " +
+                                          mag.Length*8));
 
             int hi = 0;
             int mid = 0;
@@ -955,14 +958,14 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="stream">Stream.</param>
          * <returns>Decimal array.</returns>
          */
-        public static decimal[] ReadDecimalArray(IPortableStream stream)
+        public static decimal[] ReadDecimalArray(IPortableStream stream, IIgniteContext context)
         {
             int len = stream.ReadInt();
 
             decimal[] vals = new decimal[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = ReadDecimal(stream);
+                vals[i] = ReadDecimal(stream, context);
 
             return vals;
         }

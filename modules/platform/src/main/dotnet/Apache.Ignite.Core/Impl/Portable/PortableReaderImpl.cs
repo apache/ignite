@@ -970,6 +970,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Seeks specified field and invokes provided func.
         /// </summary>
+        private T ReadField<T>(string fieldName, Func<IPortableStream, IIgniteContext, T> readFunc)
+        {
+            return SeekField(fieldName) ? readFunc(Stream, _marsh.IgniteContext) : default(T);
+        }
+
+        /// <summary>
+        /// Seeks specified field and invokes provided func.
+        /// </summary>
         private T ReadField<T>(string fieldName, Func<PortableReaderImpl, T> readFunc)
         {
             return SeekField(fieldName) ? readFunc(this) : default(T);
@@ -997,6 +1005,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         private T Read<T>(Func<IPortableStream, T> readFunc)
         {
             return IsNullHeader() ? readFunc(Stream) : default(T);
+        }
+
+        /// <summary>
+        /// Reads header and invokes specified func if the header is not null.
+        /// </summary>
+        private T Read<T>(Func<IPortableStream, IIgniteContext, T> readFunc)
+        {
+            return IsNullHeader() ? readFunc(Stream, _marsh.IgniteContext) : default(T);
         }
 
         /// <summary>

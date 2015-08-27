@@ -275,7 +275,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             READ_HANDLERS[PortableUtils.TypeDouble] = new PortableSystemReader<double>(s => s.ReadDouble());
 
-            READ_HANDLERS[PortableUtils.TypeDecimal] = new PortableSystemReader<decimal>(PortableUtils.ReadDecimal);
+            READ_HANDLERS[PortableUtils.TypeDecimal] = new PortableSystemContextReader<decimal>(PortableUtils.ReadDecimal);
 
             // 2. Date.
             READ_HANDLERS[PortableUtils.TypeDate] =
@@ -319,7 +319,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 new PortableSystemReader<double[]>(PortableUtils.ReadDoubleArray);
 
             READ_HANDLERS[PortableUtils.TypeArrayDecimal] =
-                new PortableSystemReader<decimal[]>(PortableUtils.ReadDecimalArray);
+                new PortableSystemContextReader<decimal[]>(PortableUtils.ReadDecimalArray);
 
             // 6. Date array.
             READ_HANDLERS[PortableUtils.TypeArrayDate] =
@@ -1273,6 +1273,32 @@ namespace Apache.Ignite.Core.Impl.Portable
             public TResult Read<TResult>(IPortableReaderEx ctx)
             {
                 return TypeCaster<TResult>.Cast(readDelegate(ctx.Stream));
+            }
+        }
+
+        /// <summary>
+        /// Reader without boxing.
+        /// </summary>
+        private class PortableSystemContextReader<T> : IPortableSystemReader
+        {
+            /** */
+            private readonly Func<IPortableStream, IIgniteContext, T> readDelegate;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="PortableSystemReader{T}"/> class.
+            /// </summary>
+            /// <param name="readDelegate">The read delegate.</param>
+            public PortableSystemContextReader(Func<IPortableStream, IIgniteContext, T> readDelegate)
+            {
+                Debug.Assert(readDelegate != null);
+
+                this.readDelegate = readDelegate;
+            }
+
+            /** <inheritdoc /> */
+            public TResult Read<TResult>(IPortableReaderEx ctx)
+            {
+                return TypeCaster<TResult>.Cast(readDelegate(ctx.Stream, ctx.Marshaller.IgniteContext));
             }
         }
 
