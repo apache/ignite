@@ -166,7 +166,7 @@ public class GridTaskSessionRequest implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridTaskSessionRequest.class);
     }
 
     /** {@inheritDoc} */

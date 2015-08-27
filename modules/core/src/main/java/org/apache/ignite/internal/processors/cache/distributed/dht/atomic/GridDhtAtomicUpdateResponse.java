@@ -262,7 +262,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDhtAtomicUpdateResponse.class);
     }
 
     /** {@inheritDoc} */

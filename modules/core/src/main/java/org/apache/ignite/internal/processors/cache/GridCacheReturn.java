@@ -425,7 +425,7 @@ public class GridCacheReturn implements Externalizable, Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridCacheReturn.class);
     }
 
     /** {@inheritDoc} */

@@ -56,6 +56,9 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
     /** Range end offset (endOff + 1 divisible by block size). */
     private long endOff;
 
+    /** Field kept for backward compatibility. */
+    private boolean done;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -265,7 +268,7 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
 
             case 1:
                 // The field 'done' was removed, but its writing preserved for compatibility reasons.
-                if (!writer.writeBoolean("done", false))
+                if (!writer.writeBoolean("done", done))
                     return false;
 
                 writer.incrementState();
@@ -311,7 +314,7 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
 
             case 1:
                 // field 'done' was removed, but reading preserved for compatibility reasons.
-                reader.readBoolean("done");
+                done = reader.readBoolean("done");
 
                 if (!reader.isLastRead())
                     return false;
@@ -344,7 +347,7 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
 
         }
 
-        return true;
+        return reader.afterMessageRead(IgfsFileAffinityRange.class);
     }
 
     /** {@inheritDoc} */

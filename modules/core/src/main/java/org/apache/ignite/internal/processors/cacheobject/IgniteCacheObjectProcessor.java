@@ -78,7 +78,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      *
      * @return {@code true} If portable objects are enabled.
      */
-    public boolean isPortableEnabled();
+    public boolean isPortableEnabled(CacheConfiguration<?, ?> ccfg);
 
     /**
      * @param obj Portable object to get field from.

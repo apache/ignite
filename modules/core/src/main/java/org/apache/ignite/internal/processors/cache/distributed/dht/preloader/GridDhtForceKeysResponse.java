@@ -82,7 +82,7 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
 
     /**
      * Sets error.
-     * @param err
+     * @param err Error.
      */
     public void error(IgniteCheckedException err){
         this.err = err;
@@ -288,7 +288,7 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDhtForceKeysResponse.class);
     }
 
     /** {@inheritDoc} */

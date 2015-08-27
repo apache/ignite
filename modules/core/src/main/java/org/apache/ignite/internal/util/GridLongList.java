@@ -559,7 +559,7 @@ public class GridLongList implements Message, Externalizable {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridLongList.class);
     }
 
     /** {@inheritDoc} */

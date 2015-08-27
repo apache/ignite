@@ -29,6 +29,7 @@ import java.util.*;
 /**
  * Next page response.
  */
+@IgniteCodeGeneratingFail
 public class GridQueryNextPageResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
@@ -268,7 +269,7 @@ public class GridQueryNextPageResponse implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridQueryNextPageResponse.class);
     }
 
     /** {@inheritDoc} */

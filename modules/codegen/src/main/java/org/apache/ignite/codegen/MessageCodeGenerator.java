@@ -142,6 +142,8 @@ public class MessageCodeGenerator {
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
 
+        gen.generateAll(true);
+
 //        gen.generateAndWrite(DataStreamerEntry.class);
 
 //        gen.generateAndWrite(GridDistributedLockRequest.class);
@@ -213,14 +215,19 @@ public class MessageCodeGenerator {
         Collection<Class<? extends Message>> classes = classes();
 
         for (Class<? extends Message> cls : classes) {
-            boolean isAbstract = Modifier.isAbstract(cls.getModifiers());
+            try {
+                boolean isAbstract = Modifier.isAbstract(cls.getModifiers());
 
-            System.out.println("Processing class: " + cls.getName() + (isAbstract ? " (abstract)" : ""));
+                System.out.println("Processing class: " + cls.getName() + (isAbstract ? " (abstract)" : ""));
 
-            if (write)
-                generateAndWrite(cls);
-            else
-                generate(cls);
+                if (write)
+                    generateAndWrite(cls);
+                else
+                    generate(cls);
+            }
+            catch (IllegalStateException e) {
+                System.out.println("Will skip class generation [cls=" + cls + ", err=" + e.getMessage() + ']');
+            }
         }
     }
 
@@ -370,8 +377,8 @@ public class MessageCodeGenerator {
 
         indent--;
 
-        finish(write);
-        finish(read);
+        finish(write, null);
+        finish(read, cls.getSimpleName());
     }
 
     /**
@@ -460,7 +467,7 @@ public class MessageCodeGenerator {
     /**
      * @param code Code lines.
      */
-    private void finish(Collection<String> code) {
+    private void finish(Collection<String> code, String readClsName) {
         assert code != null;
 
         if (!fields.isEmpty()) {
@@ -468,7 +475,10 @@ public class MessageCodeGenerator {
             code.add(EMPTY);
         }
 
-        code.add(builder().a("return true;").toString());
+        if (readClsName == null)
+            code.add(builder().a("return true;").toString());
+        else
+            code.add(builder().a("return reader.afterMessageRead(").a(readClsName).a(".class);").toString());
     }
 
     /**

@@ -331,7 +331,7 @@ public class GridIoUserMessage implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridIoUserMessage.class);
     }
 
     /** {@inheritDoc} */

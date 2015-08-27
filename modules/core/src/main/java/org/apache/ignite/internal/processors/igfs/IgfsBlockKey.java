@@ -240,7 +240,7 @@ public final class IgfsBlockKey implements Message, Externalizable, Comparable<I
 
         }
 
-        return true;
+        return reader.afterMessageRead(IgfsBlockKey.class);
     }
 
     /** {@inheritDoc} */

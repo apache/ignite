@@ -987,7 +987,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(IgniteTxEntry.class);
     }
 
     /** {@inheritDoc} */

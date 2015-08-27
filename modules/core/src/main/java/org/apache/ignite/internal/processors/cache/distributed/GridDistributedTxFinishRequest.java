@@ -359,14 +359,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 12:
-                byte plcOrd;
-
-                plcOrd = reader.readByte("plc");
+                plc = reader.readByte("plc");
 
                 if (!reader.isLastRead())
                     return false;
-
-                plc = plcOrd;
 
                 reader.incrementState();
 
@@ -412,7 +408,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDistributedTxFinishRequest.class);
     }
 
     /** {@inheritDoc} */

@@ -125,7 +125,7 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridDhtAffinityAssignmentRequest.class);
     }
 
     /** {@inheritDoc} */

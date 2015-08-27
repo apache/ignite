@@ -318,6 +318,10 @@
                                 <packages>org.apache.ignite.marshaller*</packages>
                             </group>
                             <group>
+                                <title>Portable Objects API</title>
+                                <packages>org.apache.ignite.portable*</packages>
+                            </group>
+                            <group>
                                 <title>Visor Plugins</title>
                                 <packages>org.apache.ignite.visor.plugin</packages>
                             </group>
@@ -703,6 +707,10 @@
                                         <exclude>dev-tools/.gradle/**/*</exclude>
                                         <exclude>dev-tools/gradle/wrapper/**/*</exclude>
                                         <exclude>dev-tools/gradlew</exclude>
+                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/1.1/test2-1.1.pom</exclude>
+                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/maven-metadata-local.xml</exclude>
+                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/1.1/test1-1.1.pom</exclude>
+                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/maven-metadata-local.xml</exclude>
                                         <!--shmem-->
                                         <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
                                         <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
@@ -725,6 +733,11 @@
                                         <exclude>ipc/shmem/igniteshmem/.deps/*</exclude><!--tmp files-->
                                         <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude><!--tmp (not under VCS)-->
                                         <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude><!--tmp (not under VCS)-->
+                                        <!--platform-->
+                                        <exclude>src/main/dotnet/Apache.Ignite.Core/Apache.Ignite.Core.csproj</exclude>
+                                        <exclude>src/main/dotnet/Apache.Ignite.sln</exclude>
+                                        <exclude>src/main/dotnet/Apache.Ignite.sln.DotSettings</exclude>
+                                        <exclude>src/test/dotnet/Apache.Ignite.Core.Tests/Apache.Ignite.Core.Tests.csproj</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>

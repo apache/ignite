@@ -514,7 +514,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridNearTxPrepareResponse.class);
     }
 
     /** {@inheritDoc} */

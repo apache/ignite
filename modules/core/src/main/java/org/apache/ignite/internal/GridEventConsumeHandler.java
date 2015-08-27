@@ -21,11 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.interop.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.continuous.*;
+import org.apache.ignite.internal.processors.platform.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -125,8 +125,8 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         if (filter != null)
             ctx.resource().injectGeneric(filter);
 
-        if (filter instanceof InteropAwareEventFilter)
-            ((InteropAwareEventFilter)filter).initialize(ctx);
+        if (filter instanceof PlatformAwareEventFilter)
+            ((PlatformAwareEventFilter)filter).initialize(ctx);
 
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
@@ -246,16 +246,16 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         RuntimeException err = null;
 
         try {
-            if (filter instanceof InteropAwareEventFilter)
-                ((InteropAwareEventFilter)filter).close();
+            if (filter instanceof PlatformAwareEventFilter)
+                ((PlatformAwareEventFilter)filter).close();
         }
         catch(RuntimeException ex) {
             err = ex;
         }
 
         try {
-            if (cb instanceof InteropLocalEventListener)
-                ((InteropLocalEventListener)cb).close();
+            if (cb instanceof PlatformLocalEventListener)
+                ((PlatformLocalEventListener)cb).close();
         }
         catch (RuntimeException ex) {
             if (err == null)

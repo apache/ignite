@@ -317,7 +317,7 @@ public class GridCacheEntryInfo implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridCacheEntryInfo.class);
     }
 
     /** {@inheritDoc} */

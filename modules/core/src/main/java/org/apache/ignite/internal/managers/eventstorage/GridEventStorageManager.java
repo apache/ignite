@@ -22,10 +22,10 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.events.*;
-import org.apache.ignite.internal.interop.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.platform.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -655,8 +655,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         {
             IgnitePredicate p = ((UserListenerWrapper)lsnr).listener();
 
-            if (p instanceof InteropLocalEventListener)
-                ((InteropLocalEventListener)p).close();
+            if (p instanceof PlatformLocalEventListener)
+                ((PlatformLocalEventListener)p).close();
         }
 
         return found;
@@ -761,8 +761,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) {
         assert p != null;
 
-        if (p instanceof InteropAwareEventFilter) {
-            InteropAwareEventFilter p0 = (InteropAwareEventFilter)p;
+        if (p instanceof PlatformAwareEventFilter) {
+            PlatformAwareEventFilter p0 = (PlatformAwareEventFilter)p;
 
             p0.initialize(ctx);
 
