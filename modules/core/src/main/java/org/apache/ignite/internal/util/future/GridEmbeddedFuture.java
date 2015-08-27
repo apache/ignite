@@ -68,7 +68,8 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
     /**
      * Embeds futures. Specific change order of arguments to avoid conflicts.
-     *  @param embedded Closure.
+     *
+     * @param embedded Embedded future.
      * @param c Closure which runs upon completion of embedded closure and which returns another future.
      */
     public GridEmbeddedFuture(
@@ -190,6 +191,58 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
                     c1.apply(null, e);
 
                     onDone(e);
+                }
+                catch (Error e) {
+                    onDone(e);
+
+                    throw e;
+                }
+            }
+        });
+    }
+
+    /**
+     * @param embedded Embedded future.
+     * @param c Closure to create next future.
+     */
+    public GridEmbeddedFuture(
+        IgniteInternalFuture<B> embedded,
+        final IgniteOutClosure<IgniteInternalFuture<A>> c
+    ) {
+        assert embedded != null;
+        assert c != null;
+
+        this.embedded = embedded;
+
+        embedded.listen(new AL1() {
+            @Override public void applyx(IgniteInternalFuture<B> embedded) {
+                try {
+                    IgniteInternalFuture<A> next = c.apply();
+
+                    if (next == null) {
+                        onDone();
+
+                        return;
+                    }
+
+                    next.listen(new AL2() {
+                        @Override public void applyx(IgniteInternalFuture<A> next) {
+                            try {
+                                onDone(next.get());
+                            }
+                            catch (GridClosureException e) {
+                                onDone(e.unwrap());
+                            }
+                            catch (IgniteCheckedException | RuntimeException e) {
+                                onDone(e);
+                            }
+                            catch (Error e) {
+                                onDone(e);
+
+                                throw e;
+                            }
+                        }
+                    });
                 }
                 catch (Error e) {
                     onDone(e);
