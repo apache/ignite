@@ -54,14 +54,30 @@ namespace Apache.Ignite.Core.Impl.Portable
             new Dictionary<int, PortableMetadataHolder>();
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="PortableMarshaller"/> class.
+        /// </summary>
+        internal PortableMarshaller(PortableConfiguration cfg = null)
+            : this(cfg, typeof(PortableUserObject), new IgniteContext())
+        {
+            // No-op.
+        }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="cfg">Configurtaion.</param>
+        /// <param name="portableObjectType">Type of the portable object.</param>
         /// <param name="igniteContext">The context.</param>
         /// <param name="defaultSerializer">The default serializer.</param>
-        public PortableMarshaller(PortableConfiguration cfg, IIgniteContext igniteContext, 
+        /// <exception cref="PortableException">
+        /// Type name cannot be null or empty:  + typeCfg
+        /// or
+        /// Assembly name cannot be empty string:  + typeCfg
+        /// </exception>
+        public PortableMarshaller(PortableConfiguration cfg, Type portableObjectType, IIgniteContext igniteContext, 
             IPortableSerializerEx defaultSerializer = null)
         {
+            Debug.Assert(portableObjectType != null);
             Debug.Assert(igniteContext != null);
 
             _igniteContext = igniteContext;
@@ -96,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             AddPredefinedType(typeof(DateTime), PortableUtils.TypeDate, PortableSystemHandlers.WriteHndDateTyped, PortableSystemHandlers.WriteHndDate);
             AddPredefinedType(typeof(Guid), PortableUtils.TypeGuid, PortableSystemHandlers.WriteHndGuidTyped, PortableSystemHandlers.WriteHndGuid);
 
-            AddPredefinedType(typeof(PortableUserObject), PortableUtils.TypePortable, PortableSystemHandlers.WriteHndPortableTyped, 
+            AddPredefinedType(portableObjectType, PortableUtils.TypePortable, PortableSystemHandlers.WriteHndPortableTyped, 
                 PortableSystemHandlers.WriteHndPortable);
 
             AddPredefinedType(typeof(bool[]), PortableUtils.TypeArrayBool, PortableSystemHandlers.WriteHndBoolArrayTyped,

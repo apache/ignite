@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Tests.Portable
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;
@@ -47,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [TestFixtureSetUp]
         public void BeforeTest()
         {
-            _marsh = new PortableMarshaller(null, new IgniteContext());
+            _marsh = new PortableMarshaller();
         }
         
         /**
@@ -515,7 +514,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 TypeConfigurations =
                     new List<PortableTypeConfiguration> {new PortableTypeConfiguration(typeof (DateTimeType))}
-            }, new IgniteContext());
+            });
 
             var now = DateTime.Now;
 
@@ -569,7 +568,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            var marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg);
 
             var obj = new PropertyType
             {
@@ -603,7 +602,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            var marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg);
 
             var obj = new PrimitiveFieldType();
 
@@ -623,7 +622,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            var marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg);
 
             var obj = new PrimitiveFieldPortableType();
 
@@ -643,7 +642,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            var marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg);
 
             var obj = new PrimitiveFieldRawPortableType();
 
@@ -666,7 +665,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             
             var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            var marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg);
 
             var obj = new PrimitiveFieldType();
 
@@ -688,7 +687,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 }
             };
 
-            var marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg);
 
             // 1. Test reflective stuff.
             var obj1 = new DecimalReflective
@@ -741,7 +740,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            var marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg);
 
             var obj = new PrimitiveFieldType();
 
@@ -805,7 +804,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 TypeConfigurations =
                     new List<PortableTypeConfiguration> {new PortableTypeConfiguration(typeof (EnumType))}
-            }, new IgniteContext());
+            });
 
             var obj = new EnumType
             {
@@ -839,7 +838,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            var marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg);
 
             var obj = new CollectionsType();
 
@@ -906,7 +905,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            var marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg);
 
             CheckObject(marsh, new OuterObjectType(), new InnerObjectType());
         }
@@ -926,7 +925,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            var marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg);
 
             var outer = new HandleOuter
             {
@@ -989,7 +988,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                     new PortableTypeConfiguration(typeof (HandleInner)),
                     new PortableTypeConfiguration(typeof (HandleOuterExclusive))
                 }
-            }, new IgniteContext());
+            });
 
             var inner = new HandleInner
             {
@@ -1117,7 +1116,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             var cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
-            var marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg);
 
             Guid[] guidArr = { Guid.NewGuid() };
             Guid?[] nGuidArr = { Guid.NewGuid() };
@@ -1185,7 +1184,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 };
             }
 
-            var marsh = new PortableMarshaller(cfg, new IgniteContext());
+            var marsh = new PortableMarshaller(cfg);
 
             var data = marsh.Marshal(new PropertyType());
 

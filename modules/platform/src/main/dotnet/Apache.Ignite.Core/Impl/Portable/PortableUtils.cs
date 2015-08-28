@@ -286,7 +286,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         /** Default portable marshaller. */
-        private static readonly PortableMarshaller Marsh = new PortableMarshaller(null, new IgniteContext());
+        private static readonly PortableMarshaller Marsh = new PortableMarshaller();
 
         /** Method: WriteGenericCollection. */
         public static readonly MethodInfo MtdhWriteGenericCollection =
