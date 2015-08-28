@@ -59,5 +59,11 @@ namespace Apache.Ignite.Core.Impl
 
             return false;
         }
+
+        /** <inheritdoc /> */
+        public IPortableUserObject GetPortableObject(PortableMarshaller marshaller, int offset, byte[] bytes, int id, int hash)
+        {
+            return new PortableUserObject(marshaller, bytes, offset, id, hash);
+        }
     }
 }

@@ -186,7 +186,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             stream.WriteInt(PortableUtils.FullHdrLen); // Length.
             stream.WriteInt(PortableUtils.FullHdrLen); // Raw data offset.
 
-            return new PortableUserObject(_marsh, stream.InternalArray, 0, desc.TypeId, 0);
+            return _marsh.IgniteContext.GetPortableObject(_marsh, 0, stream.InternalArray, desc.TypeId, 0);
         }
 
         /// <summary>

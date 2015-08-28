@@ -1036,7 +1036,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var hash = Stream.ReadInt();
 
-            return new PortableUserObject(_marsh, bytes, offs, id, hash);
+            return IgniteContext.GetPortableObject(_marsh, offs, bytes, id, hash);
         }
     }
 }

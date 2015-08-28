@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core
 {
     using System;
+    using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
     /// Ignite extensibility context.
@@ -62,5 +63,16 @@ namespace Apache.Ignite.Core
         /// True if wrapping happened; false otherwise.
         /// </returns>
         bool WrapObjectOnWrite<T>(T obj, out object result);
+
+        /// <summary>
+        /// Creates a portable object.
+        /// </summary>
+        /// <param name="marshaller">Marshaller.</param>
+        /// <param name="offset">Offset.</param>
+        /// <param name="bytes">Bytes.</param>
+        /// <param name="id">Identifier.</param>
+        /// <param name="hash">Hash code.</param>
+        /// <returns>Portable user object.</returns>
+        IPortableUserObject GetPortableObject(PortableMarshaller marshaller, int offset, byte[] bytes, int id, int hash);
     }
 }
