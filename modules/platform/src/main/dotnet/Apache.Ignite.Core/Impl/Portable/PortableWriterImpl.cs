@@ -828,7 +828,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     }
 
                     // Special case for builder during build.
-                    var portBuilder = _marsh.IgniteContext.UnwrapPortableBuilder(obj);
+                    var portBuilder = obj as PortableBuilderImpl;
 
                     if (portBuilder != null)
                     {

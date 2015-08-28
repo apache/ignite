@@ -47,13 +47,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public PortableBuilderImpl UnwrapPortableBuilder(object obj)
-        {
-            return obj as PortableBuilderImpl;
-        }
-
-        /** <inheritdoc /> */
-        public T UnwrapObjectOnRead<T>(object obj)
+        public T WrapObjectOnRead<T>(object obj)
         {
             return TypeCaster<T>.Cast(obj);
         }
