@@ -140,6 +140,13 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(IgniteCacheClientNodeChangingTopologyTest.class));
         suite.addTest(new TestSuite(IgniteCacheServerNodeConcurrentStart.class));
 
+        suite.addTestSuite(CachePartUpdateIndexPartNearOptTxSelfTest.class);
+        suite.addTestSuite(CachePartUpdateIndexPartNearTxSelfTest.class);
+        suite.addTestSuite(CachePartUpdateIndexPartOptTxSelfTest.class);
+        suite.addTestSuite(CachePartUpdateIndexPartTxSelfTest.class);
+        suite.addTestSuite(CachePartUpdateIndexReplicatedNearTxSelfTest.class);
+        suite.addTestSuite(CachePartUpdateIndexReplicatedTxSelfTest.class);
+
         return suite;
     }
 }

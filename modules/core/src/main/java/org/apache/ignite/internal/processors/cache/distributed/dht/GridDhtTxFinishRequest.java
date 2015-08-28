@@ -21,6 +21,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -58,6 +59,11 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> pendingVers;
+
+    /** Partition update counter. */
+    @GridToStringInclude
+    @GridDirectCollection(Long.class)
+    private GridLongList partUpdateCnt;
 
     /** One phase commit write version. */
     private GridCacheVersion writeVer;
@@ -139,9 +145,77 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         this.taskNameHash = taskNameHash;
     }
 
+    /**
+     * @param nearNodeId Near node ID.
+     * @param futId Future ID.
+     * @param miniId Mini future ID.
+     * @param topVer Topology version.
+     * @param xidVer Transaction ID.
+     * @param threadId Thread ID.
+     * @param commitVer Commit version.
+     * @param isolation Transaction isolation.
+     * @param commit Commit flag.
+     * @param invalidate Invalidate flag.
+     * @param sys System flag.
+     * @param sysInvalidate System invalidation flag.
+     * @param syncCommit Synchronous commit flag.
+     * @param syncRollback Synchronous rollback flag.
+     * @param baseVer Base version.
+     * @param committedVers Committed versions.
+     * @param rolledbackVers Rolled back versions.
+     * @param pendingVers Pending versions.
+     * @param txSize Expected transaction size.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash.
+     * @param updateIdxs Partition update idxs.
+     */
+    public GridDhtTxFinishRequest(
+        UUID nearNodeId,
+        IgniteUuid futId,
+        IgniteUuid miniId,
+        @NotNull AffinityTopologyVersion topVer,
+        GridCacheVersion xidVer,
+        GridCacheVersion commitVer,
+        long threadId,
+        TransactionIsolation isolation,
+        boolean commit,
+        boolean invalidate,
+        boolean sys,
+        byte plc,
+        boolean sysInvalidate,
+        boolean syncCommit,
+        boolean syncRollback,
+        GridCacheVersion baseVer,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers,
+        Collection<GridCacheVersion> pendingVers,
+        int txSize,
+        @Nullable UUID subjId,
+        int taskNameHash,
+        Collection<Long> updateIdxs
+    ) {
+        this(nearNodeId, futId, miniId, topVer, xidVer, commitVer, threadId, isolation, commit, invalidate, sys, plc,
+            sysInvalidate, syncCommit, syncRollback, baseVer, committedVers, rolledbackVers, pendingVers, txSize,
+            subjId, taskNameHash);
+
+        if (updateIdxs != null && !updateIdxs.isEmpty()) {
+            partUpdateCnt = new GridLongList(updateIdxs.size());
+
+            for (Long idx : updateIdxs)
+                partUpdateCnt.add(idx);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public boolean allowForStartup() {
         return true;
+    }
+
+    /**
+     * @return Partition update counters.
+     */
+    public GridLongList partUpdateCounters(){
+        return partUpdateCnt;
     }
 
     /**
@@ -291,6 +365,11 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 writer.incrementState();
 
+            case 27:
+                if (!writer.writeMessage("partUpdateCnt", partUpdateCnt))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -377,6 +456,14 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
             case 26:
                 writeVer = reader.readMessage("writeVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 27:
+                partUpdateCnt = reader.readMessage("partUpdateCnt");
 
                 if (!reader.isLastRead())
                     return false;
