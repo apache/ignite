@@ -1149,7 +1149,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(dateArr, obj1.DateArr);
             Assert.AreEqual(nDateArr, obj1.NDateArr);
 
-            // Use special with IGridPortableMarshalAware.
+            // Use special with IPortableMarshalAware.
             var obj2 = new SpecialArrayMarshalAware
             {
                 GuidArr = guidArr,

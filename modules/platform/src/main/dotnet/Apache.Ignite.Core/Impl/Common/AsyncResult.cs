@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using Apache.Ignite.Core.Common;
 
     /// <summary>
-    /// Adapts IGridFuture to the IAsyncResult.
+    /// Adapts IFuture to the IAsyncResult.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = "Implementing IDisposable has no point since we return this class as IAsyncResult " +

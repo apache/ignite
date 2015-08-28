@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Portable
     /// without having class definitions.
     /// <para />
     /// Note that type ID is required in order to build portable object. Usually it is
-    /// enough to provide a simple type name and GridGain will generate the type ID
+    /// enough to provide a simple type name and Ignite will generate the type ID
     /// automatically.
     /// </summary>
     public interface IPortableBuilder
