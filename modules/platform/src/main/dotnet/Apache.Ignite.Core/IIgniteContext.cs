@@ -53,5 +53,12 @@ namespace Apache.Ignite.Core
         /// <param name="obj">The object.</param>
         /// <returns>Portable builder, or null.</returns>
         PortableBuilderImpl UnwrapPortableBuilder(object obj);
+
+        /// <summary>
+        /// Unwraps an object during serialization.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns>Unwrapped object.</returns>
+        T UnwrapObject<T>(object obj);
     }
 }

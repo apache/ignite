@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Runtime.Serialization;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;
 
@@ -447,7 +446,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         public T ReadObject<T>(string fieldName)
         {
             if (_curRaw)
-                throw _marsh.IgniteContext.ConvertException(
+                throw IgniteContext.ConvertException(
                     new PortableException("Cannot read named fields after raw data is read."));
 
             int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
@@ -617,7 +616,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (PortableUtils.IsPredefinedType(hdr))
                 return PortableSystemHandlers.ReadSystemType<T>(hdr, this);
 
-            throw _marsh.IgniteContext.ConvertException(
+            throw IgniteContext.ConvertException(
                 new PortableException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']'));
         }
 
@@ -631,7 +630,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var portablePos = Stream.Position;
 
             if (_mode != PortableMode.Deserialize)
-                return TypeCaster<T>.Cast(ReadAsPortable(portablePos, len, doDetach));
+                return IgniteContext.UnwrapObject<T>(ReadAsPortable(portablePos, len, doDetach));
 
             Stream.Seek(len, SeekOrigin.Current);
 
@@ -720,7 +719,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                     else
                         portObj = GetPortableUserObject(pos, pos, Stream.Array());
 
-                    T obj = _builder == null ? TypeCaster<T>.Cast(portObj) : TypeCaster<T>.Cast(_builder.Child(portObj));
+                    T obj = _builder == null 
+                        ? IgniteContext.UnwrapObject<T>(portObj)
+                        : IgniteContext.UnwrapObject<T>(_builder.Child(portObj));
 
                     AddHandle(pos, obj);
 
@@ -732,11 +733,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                     IPortableTypeDescriptor desc;
 
                     if (!_descs.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc))
-                        throw _marsh.IgniteContext.ConvertException(new PortableException("Unknown type ID: " + typeId));
+                        throw IgniteContext.ConvertException(new PortableException("Unknown type ID: " + typeId));
 
                     // Instantiate object. 
                     if (desc.Type == null)
-                        throw _marsh.IgniteContext.ConvertException(
+                        throw IgniteContext.ConvertException(
                             new PortableException("No matching type found for object [typeId=" +
                                                   desc.TypeId + ", typeName=" + desc.TypeName + ']'));
 
@@ -774,7 +775,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         }
                         catch (Exception e)
                         {
-                            throw _marsh.IgniteContext.ConvertException(
+                            throw IgniteContext.ConvertException(
                                 new PortableException("Failed to create type instance: " +
                                                       desc.Type.AssemblyQualifiedName, e));
                         }
@@ -790,7 +791,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curMapper = oldMapper;
                     _curRaw = oldRaw;
 
-                    return (T) _marsh.IgniteContext.UnwrapSerializableObjectHolder(obj);
+                    return (T) IgniteContext.UnwrapSerializableObjectHolder(obj);
                 }
             }
             finally
@@ -858,6 +859,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             get;
             private set;
+        }
+
+        /// <summary>
+        /// Gets the Ignite Context.
+        /// </summary>
+        private IIgniteContext IgniteContext
+        {
+            get { return _marsh.IgniteContext; }
         }
 
         /// <summary>
@@ -946,7 +955,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private bool SeekField(string fieldName)
         {
             if (_curRaw)
-                throw _marsh.IgniteContext.ConvertException(
+                throw IgniteContext.ConvertException(
                     new PortableException("Cannot read named fields after raw data is read."));
 
             var fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
@@ -970,7 +979,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private T ReadField<T>(string fieldName, Func<IPortableStream, IIgniteContext, T> readFunc)
         {
-            return SeekField(fieldName) ? readFunc(Stream, _marsh.IgniteContext) : default(T);
+            return SeekField(fieldName) ? readFunc(Stream, IgniteContext) : default(T);
         }
 
         /// <summary>
@@ -1010,7 +1019,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private T Read<T>(Func<IPortableStream, IIgniteContext, T> readFunc)
         {
-            return IsNullHeader() ? readFunc(Stream, _marsh.IgniteContext) : default(T);
+            return IsNullHeader() ? readFunc(Stream, IgniteContext) : default(T);
         }
 
         /// <summary>

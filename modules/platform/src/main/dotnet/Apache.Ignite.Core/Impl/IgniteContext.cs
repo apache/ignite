@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl
 {
     using System;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
@@ -49,6 +50,12 @@ namespace Apache.Ignite.Core.Impl
         public PortableBuilderImpl UnwrapPortableBuilder(object obj)
         {
             return obj as PortableBuilderImpl;
+        }
+
+        /** <inheritdoc /> */
+        public T UnwrapObject<T>(object obj)
+        {
+            return TypeCaster<T>.Cast(obj);
         }
     }
 }
