@@ -53,9 +53,17 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public T UnwrapObject<T>(object obj)
+        public T UnwrapObjectOnRead<T>(object obj)
         {
             return TypeCaster<T>.Cast(obj);
+        }
+
+        /** <inheritdoc /> */
+        public bool WrapObjectOnWrite<T>(T obj, out object result)
+        {
+            result = null;
+
+            return false;
         }
     }
 }

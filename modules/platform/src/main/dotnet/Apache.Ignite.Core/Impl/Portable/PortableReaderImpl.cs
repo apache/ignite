@@ -630,7 +630,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var portablePos = Stream.Position;
 
             if (_mode != PortableMode.Deserialize)
-                return IgniteContext.UnwrapObject<T>(ReadAsPortable(portablePos, len, doDetach));
+                return IgniteContext.UnwrapObjectOnRead<T>(ReadAsPortable(portablePos, len, doDetach));
 
             Stream.Seek(len, SeekOrigin.Current);
 
@@ -720,8 +720,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                         portObj = GetPortableUserObject(pos, pos, Stream.Array());
 
                     T obj = _builder == null 
-                        ? IgniteContext.UnwrapObject<T>(portObj)
-                        : IgniteContext.UnwrapObject<T>(_builder.Child(portObj));
+                        ? IgniteContext.UnwrapObjectOnRead<T>(portObj)
+                        : IgniteContext.UnwrapObjectOnRead<T>(_builder.Child(portObj));
 
                     AddHandle(pos, obj);
 

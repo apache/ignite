@@ -780,6 +780,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         [SuppressMessage("ReSharper", "FunctionComplexityOverflow")]
         internal void Write<T>(T obj, object handler)
         {
+            object wrappedObj;
+
+            if (IgniteContext.WrapObjectOnWrite(obj, out wrappedObj))
+            {
+                Write(wrappedObj, handler);
+                return;
+            }
+
             // Apply detach mode if needed.
             PortableHandleDictionary<object, long> oldHnds = null;
 
@@ -1148,6 +1156,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         IDictionary<int, IPortableMetadata> IPortableWriterEx.Metadata
         {
             get { return _metas; }
+        }
+
+        /// <summary>
+        /// Gets the ignite context.
+        /// </summary>
+        private IIgniteContext IgniteContext
+        {
+            get { return _marsh.IgniteContext; }
         }
 
         /// <summary>

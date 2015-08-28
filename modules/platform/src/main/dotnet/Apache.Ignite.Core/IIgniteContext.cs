@@ -55,10 +55,20 @@ namespace Apache.Ignite.Core
         PortableBuilderImpl UnwrapPortableBuilder(object obj);
 
         /// <summary>
-        /// Unwraps an object during serialization.
+        /// Unwraps an object during deserialization.
         /// </summary>
         /// <param name="obj">The object.</param>
         /// <returns>Unwrapped object.</returns>
-        T UnwrapObject<T>(object obj);
+        T UnwrapObjectOnRead<T>(object obj);
+
+        /// <summary>
+        /// Wraps an object during serialization.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="result">The result.</param>
+        /// <returns>
+        /// True if wrapping happened; false otherwise.
+        /// </returns>
+        bool WrapObjectOnWrite<T>(T obj, out object result);
     }
 }
