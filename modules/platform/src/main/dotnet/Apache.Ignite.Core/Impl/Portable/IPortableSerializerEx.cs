@@ -32,8 +32,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="typeId">Type ID.</param>
         /// <param name="converter">Name converter.</param>
         /// <param name="idMapper">ID mapper.</param>
-        /// <param name="context">The context.</param>
-        void Register(Type type, int typeId, IPortableNameMapper converter, IPortableIdMapper idMapper,
-            IIgniteContext context);
+        void Register(Type type, int typeId, IPortableNameMapper converter, IPortableIdMapper idMapper);
     }
 }

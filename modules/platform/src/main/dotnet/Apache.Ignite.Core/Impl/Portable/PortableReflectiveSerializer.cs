@@ -19,6 +19,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Portable;
 
@@ -47,6 +49,20 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Cached type descriptors. */
         private readonly IDictionary<Type, Descriptor> _types = new Dictionary<Type, Descriptor>();
+
+        /** Ignite context. */
+        private readonly IIgniteContext _context;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PortableReflectiveSerializer"/> class.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        public PortableReflectiveSerializer(IIgniteContext context)
+        {
+            Debug.Assert(context != null);
+
+            _context = context;
+        }
 
         /// <summary>
         /// Write portalbe object.
@@ -87,41 +103,35 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="typeId">Type ID.</param>
         /// <param name="converter">Name converter.</param>
         /// <param name="idMapper">ID mapper.</param>
-        /// <param name="context">The context.</param>
-        public void Register(Type type, int typeId, IPortableNameMapper converter,
-            IPortableIdMapper idMapper, IIgniteContext context)
+        public void Register(Type type, int typeId, IPortableNameMapper converter, IPortableIdMapper idMapper)
         {
             if (type.GetInterface(typeof(IPortableMarshalAware).Name) != null)
                 return;
 
-            List<FieldInfo> fields = new List<FieldInfo>();
+            var fields = new List<FieldInfo>();
 
             Type curType = type;
 
             while (curType != null)
             {
-                foreach (FieldInfo field in curType.GetFields(Flags))
-                {
-                    if (!field.IsNotSerialized)
-                        fields.Add(field);
-                }
+                fields.AddRange(curType.GetFields(Flags).Where(field => !field.IsNotSerialized));
 
                 curType = curType.BaseType;
             }
 
             IDictionary<int, string> idMap = new Dictionary<int, string>();
 
-            foreach (FieldInfo field in fields)
+            foreach (var field in fields)
             {
-                string fieldName = PortableUtils.CleanFieldName(field.Name);
-
+                var fieldName = PortableUtils.CleanFieldName(field.Name);
+                
                 int fieldId = PortableUtils.FieldId(typeId, fieldName, converter, idMapper);
 
                 if (idMap.ContainsKey(fieldId))
                 {
-                    throw new PortableException("Conflicting field IDs [type=" +
+                    throw _context.ConvertException(new PortableException("Conflicting field IDs [type=" +
                         type.Name + ", field1=" + idMap[fieldId] + ", field2=" + fieldName +
-                        ", fieldId=" + fieldId + ']');
+                        ", fieldId=" + fieldId + ']'));
                 }
                 
                 idMap[fieldId] = fieldName;
@@ -129,9 +139,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             fields.Sort(Compare);
 
-            Descriptor desc = new Descriptor(fields, context);
-
-            _types[type] = desc;
+            _types[type] = new Descriptor(fields, _context);
         }
 
         /// <summary>
@@ -144,7 +152,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             Descriptor desc;
 
             if (!_types.TryGetValue(type, out desc))
-                throw new PortableException("Type is not registered in serializer: " + type.Name);
+                throw _context.ConvertException(
+                    new PortableException("Type is not registered in serializer: " + type.Name));
 
             return desc;
         }

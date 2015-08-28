@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 PortableSystemHandlers.WRITE_HND_GUID_ARRAY);
 
             // 2. Define user types.
-            defaultSerializer = defaultSerializer ?? new PortableReflectiveSerializer();
+            defaultSerializer = defaultSerializer ?? new PortableReflectiveSerializer(_igniteContext);
             var dfltSerializer = cfg.DefaultSerializer == null ? defaultSerializer : null;
 
             var typeResolver = new TypeResolver();
@@ -471,7 +471,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var refSerializer = serializer as IPortableSerializerEx;
 
                 if (refSerializer != null)
-                    refSerializer.Register(type, typeId, nameMapper, idMapper, _igniteContext);
+                    refSerializer.Register(type, typeId, nameMapper, idMapper);
 
                 AddType(type, typeId, typeName, true, metaEnabled, keepDeserialized, nameMapper, idMapper, serializer,
                     typeCfg.AffinityKeyFieldName, null, null);
