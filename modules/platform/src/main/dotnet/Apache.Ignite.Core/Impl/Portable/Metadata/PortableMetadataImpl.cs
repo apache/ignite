@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
 {
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -147,7 +146,6 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         {
             Debug.Assert(!string.IsNullOrEmpty(typeName));
             Debug.Assert(context != null);
-            Debug.Assert(fields != null);
 
             TypeId = typeId;
             TypeName = typeName;
