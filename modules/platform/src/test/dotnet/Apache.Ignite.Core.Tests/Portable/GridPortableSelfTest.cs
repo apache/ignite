@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests.Portable
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using Apache.Ignite.Core;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -80,8 +79,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveSbyte()
         {
             Assert.AreEqual(_marsh.Unmarshal<sbyte>(_marsh.Marshal((sbyte)1)), 1);
-            Assert.AreEqual(_marsh.Unmarshal<sbyte>(_marsh.Marshal(SByte.MinValue)), SByte.MinValue);
-            Assert.AreEqual(_marsh.Unmarshal<sbyte>(_marsh.Marshal(SByte.MaxValue)), SByte.MaxValue);
+            Assert.AreEqual(_marsh.Unmarshal<sbyte>(_marsh.Marshal(sbyte.MinValue)), sbyte.MinValue);
+            Assert.AreEqual(_marsh.Unmarshal<sbyte>(_marsh.Marshal(sbyte.MaxValue)), sbyte.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<sbyte?>(_marsh.Marshal((sbyte?)1)), (sbyte?)1);
             Assert.AreEqual(_marsh.Unmarshal<sbyte?>(_marsh.Marshal(null)), null);
@@ -93,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveSbyteArray()
         {
-            sbyte[] vals = { SByte.MinValue, 0, 1, SByte.MaxValue };
+            sbyte[] vals = { sbyte.MinValue, 0, 1, sbyte.MaxValue };
             var newVals = _marsh.Unmarshal<sbyte[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -106,8 +105,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveByte()
         {
             Assert.AreEqual(_marsh.Unmarshal<byte>(_marsh.Marshal((byte)1)), 1);
-            Assert.AreEqual(_marsh.Unmarshal<byte>(_marsh.Marshal(Byte.MinValue)), Byte.MinValue);
-            Assert.AreEqual(_marsh.Unmarshal<byte>(_marsh.Marshal(Byte.MaxValue)), Byte.MaxValue);
+            Assert.AreEqual(_marsh.Unmarshal<byte>(_marsh.Marshal(byte.MinValue)), byte.MinValue);
+            Assert.AreEqual(_marsh.Unmarshal<byte>(_marsh.Marshal(byte.MaxValue)), byte.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<byte?>(_marsh.Marshal((byte?)1)), (byte?)1);
             Assert.AreEqual(_marsh.Unmarshal<byte?>(_marsh.Marshal(null)), null);
@@ -119,7 +118,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveByteArray()
         {
-            byte[] vals = { Byte.MinValue, 0, 1, Byte.MaxValue };
+            byte[] vals = { byte.MinValue, 0, 1, byte.MaxValue };
             var newVals = _marsh.Unmarshal<byte[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -132,8 +131,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveShort()
         {
             Assert.AreEqual(_marsh.Unmarshal<short>(_marsh.Marshal((short)1)), 1);
-            Assert.AreEqual(_marsh.Unmarshal<short>(_marsh.Marshal(Int16.MinValue)), Int16.MinValue);
-            Assert.AreEqual(_marsh.Unmarshal<short>(_marsh.Marshal(Int16.MaxValue)), Int16.MaxValue);
+            Assert.AreEqual(_marsh.Unmarshal<short>(_marsh.Marshal(short.MinValue)), short.MinValue);
+            Assert.AreEqual(_marsh.Unmarshal<short>(_marsh.Marshal(short.MaxValue)), short.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<short?>(_marsh.Marshal((short?)1)), (short?)1);
             Assert.AreEqual(_marsh.Unmarshal<short?>(_marsh.Marshal(null)), null);
@@ -145,7 +144,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveShortArray()
         {
-            short[] vals = { Int16.MinValue, 0, 1, Int16.MaxValue };
+            short[] vals = { short.MinValue, 0, 1, short.MaxValue };
             var newVals = _marsh.Unmarshal<short[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -158,8 +157,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveUshort()
         {
             Assert.AreEqual(_marsh.Unmarshal<ushort>(_marsh.Marshal((ushort)1)), 1);
-            Assert.AreEqual(_marsh.Unmarshal<ushort>(_marsh.Marshal(UInt16.MinValue)), UInt16.MinValue);
-            Assert.AreEqual(_marsh.Unmarshal<ushort>(_marsh.Marshal(UInt16.MaxValue)), UInt16.MaxValue);
+            Assert.AreEqual(_marsh.Unmarshal<ushort>(_marsh.Marshal(ushort.MinValue)), ushort.MinValue);
+            Assert.AreEqual(_marsh.Unmarshal<ushort>(_marsh.Marshal(ushort.MaxValue)), ushort.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<ushort?>(_marsh.Marshal((ushort?)1)), (ushort?)1);
             Assert.AreEqual(_marsh.Unmarshal<ushort?>(_marsh.Marshal(null)), null);
@@ -171,7 +170,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveUshortArray()
         {
-            ushort[] vals = { UInt16.MinValue, 0, 1, UInt16.MaxValue };
+            ushort[] vals = { ushort.MinValue, 0, 1, ushort.MaxValue };
             var newVals = _marsh.Unmarshal<ushort[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -184,8 +183,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveChar()
         {
             Assert.AreEqual(_marsh.Unmarshal<char>(_marsh.Marshal((char)1)), (char)1);
-            Assert.AreEqual(_marsh.Unmarshal<char>(_marsh.Marshal(Char.MinValue)), Char.MinValue);
-            Assert.AreEqual(_marsh.Unmarshal<char>(_marsh.Marshal(Char.MaxValue)), Char.MaxValue);
+            Assert.AreEqual(_marsh.Unmarshal<char>(_marsh.Marshal(char.MinValue)), char.MinValue);
+            Assert.AreEqual(_marsh.Unmarshal<char>(_marsh.Marshal(char.MaxValue)), char.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<char?>(_marsh.Marshal((char?)1)), (char?)1);
             Assert.AreEqual(_marsh.Unmarshal<char?>(_marsh.Marshal(null)), null);
@@ -197,7 +196,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveCharArray()
         {
-            char[] vals = { Char.MinValue, (char)0, (char)1, Char.MaxValue };
+            char[] vals = { char.MinValue, (char)0, (char)1, char.MaxValue };
             var newVals = _marsh.Unmarshal<char[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -210,8 +209,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveInt()
         {
             Assert.AreEqual(_marsh.Unmarshal<int>(_marsh.Marshal(1)), 1);
-            Assert.AreEqual(_marsh.Unmarshal<int>(_marsh.Marshal(Int32.MinValue)), Int32.MinValue);
-            Assert.AreEqual(_marsh.Unmarshal<int>(_marsh.Marshal(Int32.MaxValue)), Int32.MaxValue);
+            Assert.AreEqual(_marsh.Unmarshal<int>(_marsh.Marshal(int.MinValue)), int.MinValue);
+            Assert.AreEqual(_marsh.Unmarshal<int>(_marsh.Marshal(int.MaxValue)), int.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<int?>(_marsh.Marshal((int?)1)), (int?)1);
             Assert.AreEqual(_marsh.Unmarshal<int?>(_marsh.Marshal(null)), null);
@@ -223,7 +222,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveIntArray()
         {
-            int[] vals = { Int32.MinValue, 0, 1, Int32.MaxValue };
+            int[] vals = { int.MinValue, 0, 1, int.MaxValue };
             var newVals = _marsh.Unmarshal<int[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -236,8 +235,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveUint()
         {
             Assert.AreEqual(_marsh.Unmarshal<uint>(_marsh.Marshal((uint)1)), 1);
-            Assert.AreEqual(_marsh.Unmarshal<uint>(_marsh.Marshal(UInt32.MinValue)), UInt32.MinValue);
-            Assert.AreEqual(_marsh.Unmarshal<uint>(_marsh.Marshal(UInt32.MaxValue)), UInt32.MaxValue);
+            Assert.AreEqual(_marsh.Unmarshal<uint>(_marsh.Marshal(uint.MinValue)), uint.MinValue);
+            Assert.AreEqual(_marsh.Unmarshal<uint>(_marsh.Marshal(uint.MaxValue)), uint.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<uint?>(_marsh.Marshal((uint?)1)), (int?)1);
             Assert.AreEqual(_marsh.Unmarshal<uint?>(_marsh.Marshal(null)), null);
@@ -249,7 +248,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveUintArray()
         {
-            uint[] vals = { UInt32.MinValue, 0, 1, UInt32.MaxValue };
+            uint[] vals = { uint.MinValue, 0, 1, uint.MaxValue };
             var newVals = _marsh.Unmarshal<uint[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -262,8 +261,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveLong()
         {
             Assert.AreEqual(_marsh.Unmarshal<long>(_marsh.Marshal((long)1)), 1);
-            Assert.AreEqual(_marsh.Unmarshal<long>(_marsh.Marshal(Int64.MinValue)), Int64.MinValue);
-            Assert.AreEqual(_marsh.Unmarshal<long>(_marsh.Marshal(Int64.MaxValue)), Int64.MaxValue);
+            Assert.AreEqual(_marsh.Unmarshal<long>(_marsh.Marshal(long.MinValue)), long.MinValue);
+            Assert.AreEqual(_marsh.Unmarshal<long>(_marsh.Marshal(long.MaxValue)), long.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<long?>(_marsh.Marshal((long?)1)), (long?)1);
             Assert.AreEqual(_marsh.Unmarshal<long?>(_marsh.Marshal(null)), null);
@@ -275,7 +274,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveLongArray()
         {
-            long[] vals = { Int64.MinValue, 0, 1, Int64.MaxValue };
+            long[] vals = { long.MinValue, 0, 1, long.MaxValue };
             var newVals = _marsh.Unmarshal<long[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -288,8 +287,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWritePrimitiveUlong()
         {
             Assert.AreEqual(_marsh.Unmarshal<ulong>(_marsh.Marshal((ulong)1)), 1);
-            Assert.AreEqual(_marsh.Unmarshal<ulong>(_marsh.Marshal(UInt64.MinValue)), UInt64.MinValue);
-            Assert.AreEqual(_marsh.Unmarshal<ulong>(_marsh.Marshal(UInt64.MaxValue)), UInt64.MaxValue);
+            Assert.AreEqual(_marsh.Unmarshal<ulong>(_marsh.Marshal(ulong.MinValue)), ulong.MinValue);
+            Assert.AreEqual(_marsh.Unmarshal<ulong>(_marsh.Marshal(ulong.MaxValue)), ulong.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<ulong?>(_marsh.Marshal((ulong?)1)), (ulong?)1);
             Assert.AreEqual(_marsh.Unmarshal<ulong?>(_marsh.Marshal(null)), null);
@@ -301,7 +300,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveUlongArray()
         {
-            ulong[] vals = { UInt64.MinValue, 0, 1, UInt64.MaxValue };
+            ulong[] vals = { ulong.MinValue, 0, 1, ulong.MaxValue };
             var newVals = _marsh.Unmarshal<ulong[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);

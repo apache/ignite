@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">The value.</param>
         public PortableObjectHandle(object val)
         {
-            this._val = val;
+            _val = val;
         }
 
         /// <summary>

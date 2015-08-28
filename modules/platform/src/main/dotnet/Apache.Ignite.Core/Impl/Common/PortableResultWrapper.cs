@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Simple wrapper over result to handle marshalling properly.

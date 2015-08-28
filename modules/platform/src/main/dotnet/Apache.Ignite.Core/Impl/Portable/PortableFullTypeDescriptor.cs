@@ -90,18 +90,18 @@ namespace Apache.Ignite.Core.Impl.Portable
             object typedHandler,
             PortableSystemWriteDelegate untypedHandler)
         {
-            this._type = type;
-            this._typeId = typeId;
-            this._typeName = typeName;
-            this._userType = userType;
-            this._nameConverter = nameConverter;
-            this._mapper = mapper;
-            this._serializer = serializer;
-            this._metaEnabled = metaEnabled;
-            this._keepDeserialized = keepDeserialized;
-            this._affKeyFieldName = affKeyFieldName;
-            this._typedHandler = typedHandler;
-            this._untypedHandler = untypedHandler;
+            _type = type;
+            _typeId = typeId;
+            _typeName = typeName;
+            _userType = userType;
+            _nameConverter = nameConverter;
+            _mapper = mapper;
+            _serializer = serializer;
+            _metaEnabled = metaEnabled;
+            _keepDeserialized = keepDeserialized;
+            _affKeyFieldName = affKeyFieldName;
+            _typedHandler = typedHandler;
+            _untypedHandler = untypedHandler;
         }
 
         /// <summary>

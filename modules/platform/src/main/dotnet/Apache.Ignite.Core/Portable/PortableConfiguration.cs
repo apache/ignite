@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Portable
 {
-    using System;
     using System.Collections.Generic;
 
     /// <summary>
@@ -46,7 +45,7 @@ namespace Apache.Ignite.Core.Portable
             DefaultKeepDeserialized = cfg.DefaultKeepDeserialized;
             DefaultSerializer = cfg.DefaultSerializer;
 
-            Types = cfg.Types != null ? new List<String>(cfg.Types) : null;
+            Types = cfg.Types != null ? new List<string>(cfg.Types) : null;
 
             if (cfg.TypeConfigurations != null)
             {
