@@ -767,7 +767,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write object.
         /// </summary>
         /// <param name="obj">Object.</param>
-        internal void Write<T>(T obj)
+        private void Write<T>(T obj)
         {
             Write(obj, null);
         }
@@ -778,7 +778,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="obj">Object.</param>
         /// <param name="handler">Optional write handler.</param>
         [SuppressMessage("ReSharper", "FunctionComplexityOverflow")]
-        internal void Write<T>(T obj, object handler)
+        private void Write<T>(T obj, object handler)
         {
             object wrappedObj;
 
@@ -1034,11 +1034,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write simple field with known length.
         /// </summary>
         /// <param name="fieldId">GetField ID.</param>
-        /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
         /// <param name="len">Length.</param>
-        internal void WriteSimpleField<T>(int fieldId, byte typeId, T val,
+        private void WriteSimpleField<T>(int fieldId, T val,
             PortableSystemTypedWriteDelegate<T> handler, int len)
         {
             CheckNotRaw();
@@ -1053,10 +1052,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write simple nullable field with unknown length.
         /// </summary>
         /// <param name="fieldId">GetField ID.</param>
-        /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
-        internal void WriteSimpleNullableField<T>(int fieldId, byte typeId, T val,
+        private void WriteSimpleNullableField<T>(int fieldId, T val,
             PortableSystemTypedWriteDelegate<T> handler)
         {
             CheckNotRaw();
@@ -1085,12 +1083,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write simple nullable field with known length.
         /// </summary>
         /// <param name="fieldId">GetField ID.</param>
-        /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
         /// <param name="len">Length.</param>
-        internal void WriteSimpleNullableField<T>(int fieldId, byte typeId, T val,
-            PortableSystemTypedWriteDelegate<T> handler, int len)
+        private void WriteSimpleNullableField<T>(int fieldId, T val, PortableSystemTypedWriteDelegate<T> handler, int len)
         {
             CheckNotRaw();
 
@@ -1114,10 +1110,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write field.
         /// </summary>
         /// <param name="fieldId">GetField ID.</param>
-        /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
-        internal void WriteField(int fieldId, byte typeId, object val, PortableSystemWriteDelegate handler)
+        private void WriteField(int fieldId, object val, PortableSystemWriteDelegate handler)
         {
             CheckNotRaw();
 
@@ -1179,7 +1174,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper, IgniteContext);
 
-            WriteSimpleField(fieldId, typeId, val, handler, len);
+            WriteSimpleField(fieldId, val, handler, len);
 
             if (_curMetaHnd != null)
                 _curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
@@ -1197,7 +1192,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper, IgniteContext);
 
-            WriteSimpleNullableField(fieldId, typeId, val, handler);
+            WriteSimpleNullableField(fieldId, val, handler);
 
             if (_curMetaHnd != null)
                 _curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
@@ -1216,7 +1211,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper, IgniteContext);
 
-            WriteSimpleNullableField(fieldId, typeId, val, handler, len);
+            WriteSimpleNullableField(fieldId, val, handler, len);
 
             if (_curMetaHnd != null)
                 _curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
@@ -1247,7 +1242,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper, IgniteContext);
 
-            WriteField(fieldId, typeId, val, handler);
+            WriteField(fieldId, val, handler);
 
             if (_curMetaHnd != null)
                 _curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
