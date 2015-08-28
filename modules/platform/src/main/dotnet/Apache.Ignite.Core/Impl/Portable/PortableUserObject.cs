@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// User portable object.
     /// </summary>
-    public class PortableUserObject : IPortableUserObject
+    internal class PortableUserObject : IPortableUserObject
     {
         /** Marshaller. */
         private readonly PortableMarshaller _marsh;
