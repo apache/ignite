@@ -790,9 +790,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curMapper = oldMapper;
                     _curRaw = oldRaw;
 
-                    var wrappedSerializable = obj as SerializableObjectHolder;
-
-                    return wrappedSerializable != null ? (T) wrappedSerializable.Item : (T) obj;
+                    return (T) _marsh.IgniteContext.UnwrapSerializableObjectHolder(obj);
                 }
             }
             finally
