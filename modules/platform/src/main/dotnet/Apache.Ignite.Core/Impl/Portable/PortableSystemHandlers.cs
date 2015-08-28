@@ -354,7 +354,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             WRITE_HANDLERS[typeof(PortableUserObject)] = WritePortable;
 
             // 16. Enum.
-            READ_HANDLERS[PortableUtils.TypeEnum] = new PortableSystemReader<int>(PortableUtils.ReadEnum<int>);
+            READ_HANDLERS[PortableUtils.TypeEnum] = new PortableSystemContextReader<int>(PortableUtils.ReadEnum<int>);
             READ_HANDLERS[PortableUtils.TypeArrayEnum] = new PortableSystemReader(ReadEnumArray);
         }
 
@@ -1041,7 +1041,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypeEnum);
 
-            PortableUtils.WriteEnum(ctx.Stream, (Enum)obj);
+            PortableUtils.WriteEnum(ctx.Stream, (Enum)obj, ctx.Marshaller.IgniteContext);
         }
 
         /**

@@ -398,7 +398,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             IPortableTypeDescriptor desc;
 
             return _typeNameToDesc.TryGetValue(typeName, out desc) ? desc : 
-                new PortableSurrogateTypeDescriptor(_cfg, typeName);
+                new PortableSurrogateTypeDescriptor(_cfg, typeName, _igniteContext);
         }
 
         /// <summary>
@@ -469,7 +469,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Type is found.
                 var typeName = GetTypeName(type);
 
-                int typeId = PortableUtils.TypeId(typeName, nameMapper, idMapper);
+                int typeId = PortableUtils.TypeId(typeName, nameMapper, idMapper, _igniteContext);
 
                 var serializer = typeCfg.Serializer ?? cfg.DefaultSerializer
                                  ?? GetPortableMarshalAwareSerializer(type) ?? dfltSerializer;
@@ -487,7 +487,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Type is not found.
                 string typeName = PortableUtils.SimpleTypeName(typeCfg.TypeName);
 
-                int typeId = PortableUtils.TypeId(typeName, nameMapper, idMapper);
+                int typeId = PortableUtils.TypeId(typeName, nameMapper, idMapper, _igniteContext);
 
                 AddType(null, typeId, typeName, true, metaEnabled, keepDeserialized, nameMapper, idMapper, null,
                     typeCfg.AffinityKeyFieldName, null, null);

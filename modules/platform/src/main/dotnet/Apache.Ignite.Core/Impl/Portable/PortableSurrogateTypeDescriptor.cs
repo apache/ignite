@@ -41,21 +41,22 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="id">Type ID.</param>
         public PortableSurrogateTypeDescriptor(PortableConfiguration cfg, int id)
         {
-            this._cfg = cfg;
-            this._id = id;
+            _cfg = cfg;
+            _id = id;
         }
 
         /// <summary>
-        /// Constrcutor.
+        /// Constructor.
         /// </summary>
         /// <param name="cfg">Portable configuration.</param>
         /// <param name="name">Type name.</param>
-        public PortableSurrogateTypeDescriptor(PortableConfiguration cfg, string name)
+        /// <param name="context">The context.</param>
+        public PortableSurrogateTypeDescriptor(PortableConfiguration cfg, string name, IIgniteContext context)
         {
-            this._cfg = cfg;
-            this._name = name;
+            _cfg = cfg;
+            _name = name;
 
-            _id = PortableUtils.TypeId(name, cfg.DefaultNameMapper, cfg.DefaultIdMapper);
+            _id = PortableUtils.TypeId(name, cfg.DefaultNameMapper, cfg.DefaultIdMapper, context);
         }
 
         /** <inheritDoc /> */
