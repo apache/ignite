@@ -48,23 +48,6 @@ namespace Apache.Ignite.Core
         object UnwrapSerializableObjectHolder(object obj);
 
         /// <summary>
-        /// Wraps an object during deserialization.
-        /// </summary>
-        /// <param name="obj">The object.</param>
-        /// <returns>Unwrapped object.</returns>
-        T WrapObjectOnRead<T>(object obj);
-
-        /// <summary>
-        /// Wraps an object during serialization.
-        /// </summary>
-        /// <param name="obj">The object.</param>
-        /// <param name="result">The result.</param>
-        /// <returns>
-        /// True if wrapping happened; false otherwise.
-        /// </returns>
-        bool WrapObjectOnWrite<T>(T obj, out object result);
-
-        /// <summary>
         /// Creates a portable object.
         /// </summary>
         /// <param name="marshaller">Marshaller.</param>
@@ -74,5 +57,16 @@ namespace Apache.Ignite.Core
         /// <param name="hash">Hash code.</param>
         /// <returns>Portable user object.</returns>
         IPortableUserObject GetPortableObject(PortableMarshaller marshaller, int offset, byte[] bytes, int id, int hash);
+
+        /// <summary>
+        /// Gets the portable builder.
+        /// </summary>
+        /// <param name="parent">Parent.</param>
+        /// <param name="obj">Object.</param>
+        /// <param name="descriptor">Desc.</param>
+        /// <param name="marshaller">Marshaller.</param>
+        /// <returns>Portable builder.</returns>
+        IPortableBuilderEx GetPortableBuilder(IPortableBuilderEx parent, IPortableUserObject obj,
+            IPortableTypeDescriptor descriptor, PortableMarshaller marshaller);
     }
 }

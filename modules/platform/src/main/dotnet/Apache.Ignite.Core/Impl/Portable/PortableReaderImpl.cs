@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Runtime.Serialization;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;
 
@@ -630,7 +631,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var portablePos = Stream.Position;
 
             if (_mode != PortableMode.Deserialize)
-                return IgniteContext.WrapObjectOnRead<T>(ReadAsPortable(portablePos, len, doDetach));
+                return TypeCaster<T>.Cast(ReadAsPortable(portablePos, len, doDetach));
 
             Stream.Seek(len, SeekOrigin.Current);
 
@@ -720,8 +721,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                         portObj = GetIPortableUserObject(pos, pos, Stream.Array());
 
                     T obj = _builder == null 
-                        ? IgniteContext.WrapObjectOnRead<T>(portObj)
-                        : IgniteContext.WrapObjectOnRead<T>(_builder.Child(portObj));
+                        ? TypeCaster<T>.Cast(portObj)
+                        : TypeCaster<T>.Cast(_builder.Child(portObj));
 
                     AddHandle(pos, obj);
 

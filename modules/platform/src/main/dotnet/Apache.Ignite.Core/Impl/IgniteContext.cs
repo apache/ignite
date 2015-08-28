@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl
 {
     using System;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
@@ -47,23 +46,16 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public T WrapObjectOnRead<T>(object obj)
-        {
-            return TypeCaster<T>.Cast(obj);
-        }
-
-        /** <inheritdoc /> */
-        public bool WrapObjectOnWrite<T>(T obj, out object result)
-        {
-            result = null;
-
-            return false;
-        }
-
-        /** <inheritdoc /> */
         public IPortableUserObject GetPortableObject(PortableMarshaller marshaller, int offset, byte[] bytes, int id, int hash)
         {
             return new PortableUserObject(marshaller, bytes, offset, id, hash);
+        }
+
+        /** <inheritdoc /> */
+        public IPortableBuilderEx GetPortableBuilder(IPortableBuilderEx parent, IPortableUserObject obj,
+            IPortableTypeDescriptor descriptor, PortableMarshaller marshaller)
+        {
+            return new PortableBuilderImpl(parent, obj, descriptor, marshaller);
         }
     }
 }

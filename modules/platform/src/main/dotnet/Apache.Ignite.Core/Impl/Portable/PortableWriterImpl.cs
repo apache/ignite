@@ -780,14 +780,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         [SuppressMessage("ReSharper", "FunctionComplexityOverflow")]
         private void Write<T>(T obj, object handler)
         {
-            object wrappedObj;
-
-            if (IgniteContext.WrapObjectOnWrite(obj, out wrappedObj))
-            {
-                Write(wrappedObj, handler);
-                return;
-            }
-
             // Apply detach mode if needed.
             PortableHandleDictionary<object, long> oldHnds = null;
 

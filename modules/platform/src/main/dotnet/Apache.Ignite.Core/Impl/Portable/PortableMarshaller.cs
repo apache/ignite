@@ -424,14 +424,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (obj == null)
                 return true;
 
-            object wrappedObj;
-
-            if (_igniteContext.WrapObjectOnWrite(obj, out wrappedObj))
-                obj = wrappedObj;
-
-            if (obj == null) 
-                return true;
-
             // We assume object as portable only in case it has descriptor.
             // Collections, Enums and non-primitive arrays do not have descriptors
             // and this is fine here because we cannot know whether their members

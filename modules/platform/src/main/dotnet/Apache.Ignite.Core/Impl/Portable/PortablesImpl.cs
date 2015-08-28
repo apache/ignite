@@ -186,7 +186,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private IPortableBuilderEx Builder0(IPortableBuilderEx parent, IPortableUserObject obj, 
             IPortableTypeDescriptor desc)
         {
-            return new PortableBuilderImpl(parent, obj, desc, _marsh);
+            return _marsh.IgniteContext.GetPortableBuilder(parent, obj, desc, _marsh);
         }
     }
 }
