@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.platform;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.portable.*;
+import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.platform.cache.query.*;
 import org.apache.ignite.internal.processors.platform.callback.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
 import org.jetbrains.annotations.*;
@@ -135,4 +137,21 @@ public interface PlatformContext {
      * @param metrics Metrics.
      */
     public void writeClusterMetrics(PortableRawWriterEx writer, @Nullable ClusterMetrics metrics);
+
+    /**
+     *
+     * @param ptr Pointer to continuous query deployed on the platform.
+     * @param hasFilter Whether filter exists.
+     * @param filter Filter.
+     * @return Platform continuous query.
+     */
+    public PlatformContinuousQuery createContinuousQuery(long ptr, boolean hasFilter, @Nullable Object filter);
+
+    /**
+     * Create continuous query filter to be deployed on remote node.
+     *
+     * @param filter Native filter.
+     * @return Filter.
+     */
+    public CacheContinuousQueryFilterEx createContinuousQueryFilter(Object filter);
 }
