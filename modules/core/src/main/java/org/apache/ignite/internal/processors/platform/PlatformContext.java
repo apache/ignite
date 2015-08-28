@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.platform.cache.query.*;
 import org.apache.ignite.internal.processors.platform.callback.*;
 import org.apache.ignite.internal.processors.platform.compute.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
+import org.apache.ignite.stream.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -249,4 +250,14 @@ public interface PlatformContext {
      * @return Entry filter.
      */
     public PlatformCacheEntryFilter createCacheEntryFilter(Object filter, long ptr);
+
+    /**
+     * Create stream receiver.
+     *
+     * @param rcv Native receiver.
+     * @param ptr Pointer.
+     * @param keepPortable Keep portable flag.
+     * @return Stream receiver.
+     */
+    public StreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepPortable);
 }
