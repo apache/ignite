@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Portable builder implementation.
     /// </summary>
-    internal class PortableBuilderImpl : IPortableBuilderEx
+    public class PortableBuilderImpl : IPortableBuilderEx
     {
         /** Type IDs for metadata. */
         private static readonly IDictionary<Type, int> TypeIds;
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             Debug.Assert(obj != null);
             Debug.Assert(desc != null);
-            Debug.Assert(_marshaller != null);
+            Debug.Assert(marshaller != null);
 
             _parent = (PortableBuilderImpl) (parent ?? this);
             _obj = obj;
