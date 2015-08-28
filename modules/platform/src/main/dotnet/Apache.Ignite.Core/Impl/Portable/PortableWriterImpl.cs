@@ -734,7 +734,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="portableBuilder">Builder.</param>
         /// <returns>Previous builder.</returns>
-        IPortableBuilderEx IPortableWriterEx.SetBuilder(IPortableBuilderEx portableBuilder)
+        public IPortableBuilderEx SetBuilder(IPortableBuilderEx portableBuilder)
         {
             var ret = _builder;
 
