@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="parent">Parent builder.</param>
         /// <param name="obj">Portable object.</param>
         /// <returns></returns>
-        internal PortableBuilderImpl ChildBuilder(PortableBuilderImpl parent, IPortableUserObject obj)
+        internal IPortableBuilderEx ChildBuilder(IPortableBuilderEx parent, IPortableUserObject obj)
         {
             IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj.TypeId);
 
@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="obj">Portable object.</param>
         /// <param name="desc">Type descriptor.</param>
         /// <returns>Builder.</returns>
-        private PortableBuilderImpl Builder0(PortableBuilderImpl parent, IPortableUserObject obj, 
+        private IPortableBuilderEx Builder0(IPortableBuilderEx parent, IPortableUserObject obj, 
             IPortableTypeDescriptor desc)
         {
             return new PortableBuilderImpl(this, parent, obj, desc, _marsh.IgniteContext);

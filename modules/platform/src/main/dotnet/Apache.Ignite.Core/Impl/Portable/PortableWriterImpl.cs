@@ -828,7 +828,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     }
 
                     // Special case for builder during build.
-                    var portBuilder = obj as PortableBuilderImpl;
+                    var portBuilder = obj as IPortableBuilderEx;
 
                     if (portBuilder != null)
                     {

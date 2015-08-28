@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="obj">Initial portable object.</param>
         /// <param name="desc">Type descriptor.</param>
         /// <param name="igniteContext">The ignite context.</param>
-        public PortableBuilderImpl(PortablesImpl portables, PortableBuilderImpl parent, 
+        public PortableBuilderImpl(PortablesImpl portables, IPortableBuilderEx parent, 
             IPortableUserObject obj, IPortableTypeDescriptor desc, IIgniteContext igniteContext)
         {
             Debug.Assert(portables != null);
@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             Debug.Assert(igniteContext != null);
 
             _portables = portables;
-            _parent = parent ?? this;
+            _parent = (PortableBuilderImpl) (parent ?? this);
             _obj = obj;
             _desc = desc;
             _igniteContext = igniteContext;
