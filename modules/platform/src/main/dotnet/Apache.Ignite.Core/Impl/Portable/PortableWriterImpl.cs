@@ -1177,7 +1177,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private void WriteSimpleField<T>(string fieldName, byte typeId, T val,
             PortableSystemTypedWriteDelegate<T> handler, int len)
         {
-            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
+            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper, IgniteContext);
 
             WriteSimpleField(fieldId, typeId, val, handler, len);
 
@@ -1195,7 +1195,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private void WriteSimpleNullableField<T>(string fieldName, byte typeId, T val,
             PortableSystemTypedWriteDelegate<T> handler)
         {
-            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
+            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper, IgniteContext);
 
             WriteSimpleNullableField(fieldId, typeId, val, handler);
 
@@ -1214,7 +1214,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private void WriteSimpleNullableField<T>(string fieldName, byte typeId, T val,
             PortableSystemTypedWriteDelegate<T> handler, int len)
         {
-            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
+            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper, IgniteContext);
 
             WriteSimpleNullableField(fieldId, typeId, val, handler, len);
 
@@ -1245,7 +1245,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private void WriteField(string fieldName, byte typeId, object val,
             PortableSystemWriteDelegate handler)
         {
-            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
+            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper, IgniteContext);
 
             WriteField(fieldId, typeId, val, handler);
 

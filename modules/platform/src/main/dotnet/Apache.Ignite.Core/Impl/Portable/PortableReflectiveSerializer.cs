@@ -51,17 +51,17 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly IDictionary<Type, Descriptor> _types = new Dictionary<Type, Descriptor>();
 
         /** Ignite context. */
-        private readonly IIgniteContext _context;
+        private readonly IIgniteContext _igniteContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PortableReflectiveSerializer"/> class.
         /// </summary>
-        /// <param name="context">The context.</param>
-        public PortableReflectiveSerializer(IIgniteContext context)
+        /// <param name="igniteContext">The context.</param>
+        public PortableReflectiveSerializer(IIgniteContext igniteContext)
         {
-            Debug.Assert(context != null);
+            Debug.Assert(igniteContext != null);
 
-            _context = context;
+            _igniteContext = igniteContext;
         }
 
         /// <summary>
@@ -125,11 +125,11 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 var fieldName = PortableUtils.CleanFieldName(field.Name);
                 
-                int fieldId = PortableUtils.FieldId(typeId, fieldName, converter, idMapper);
+                int fieldId = PortableUtils.FieldId(typeId, fieldName, converter, idMapper, _igniteContext);
 
                 if (idMap.ContainsKey(fieldId))
                 {
-                    throw _context.ConvertException(new PortableException("Conflicting field IDs [type=" +
+                    throw _igniteContext.ConvertException(new PortableException("Conflicting field IDs [type=" +
                         type.Name + ", field1=" + idMap[fieldId] + ", field2=" + fieldName +
                         ", fieldId=" + fieldId + ']'));
                 }
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             fields.Sort(Compare);
 
-            _types[type] = new Descriptor(fields, _context);
+            _types[type] = new Descriptor(fields, _igniteContext);
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             Descriptor desc;
 
             if (!_types.TryGetValue(type, out desc))
-                throw _context.ConvertException(
+                throw _igniteContext.ConvertException(
                     new PortableException("Type is not registered in serializer: " + type.Name));
 
             return desc;

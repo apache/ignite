@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private Context _ctx;
 
         /** Ignite context. */
-        private IIgniteContext _igniteContext;
+        private readonly IIgniteContext _igniteContext;
 
         /// <summary>
         /// Static initializer.
@@ -314,7 +314,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     foreach (KeyValuePair<string, PortableBuilderField> valEntry in vals)
                     {
-                        int fieldId = PortableUtils.FieldId(desc.TypeId, valEntry.Key, desc.NameConverter, desc.Mapper);
+                        int fieldId = PortableUtils.FieldId(desc.TypeId, valEntry.Key, desc.NameConverter, desc.Mapper,
+                            _igniteContext);
 
                         if (vals0.ContainsKey(fieldId))
                             throw _igniteContext.ConvertException(

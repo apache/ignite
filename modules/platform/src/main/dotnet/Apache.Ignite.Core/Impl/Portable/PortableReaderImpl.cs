@@ -449,7 +449,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 throw IgniteContext.ConvertException(
                     new PortableException("Cannot read named fields after raw data is read."));
 
-            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
+            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper, IgniteContext);
 
             if (SeekField(fieldId))
                 return Deserialize<T>();
@@ -958,7 +958,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 throw IgniteContext.ConvertException(
                     new PortableException("Cannot read named fields after raw data is read."));
 
-            var fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
+            var fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper, IgniteContext);
 
             if (!SeekField(fieldId))
                 return false;

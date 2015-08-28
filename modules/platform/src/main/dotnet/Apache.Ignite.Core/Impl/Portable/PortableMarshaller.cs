@@ -365,7 +365,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 foreach (KeyValuePair<string, int> fieldMeta in meta.FieldsMap())
                 {
-                    int fieldId = PortableUtils.FieldId(metaEntry.Key, fieldMeta.Key, null, null);
+                    int fieldId = PortableUtils.FieldId(metaEntry.Key, fieldMeta.Key, null, null, _igniteContext);
 
                     mergeInfo[fieldId] = new Tuple<string, int>(fieldMeta.Key, fieldMeta.Value);
                 }

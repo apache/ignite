@@ -1683,10 +1683,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">GetField name.</param>
         /// <param name="converter">Converter.</param>
+        /// <param name="context">The context.</param>
         /// <returns>
         /// Converted name.
         /// </returns>
-        public static string ConvertFieldName(string fieldName, IPortableNameMapper converter)
+        public static string ConvertFieldName(string fieldName, IPortableNameMapper converter, IIgniteContext context)
         {
             var fieldName0 = fieldName;
 
@@ -1697,13 +1698,13 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             catch (Exception e)
             {
-                throw new PortableException("Failed to convert field name due to converter exception " +
-                    "[fieldName=" + fieldName + ", converter=" + converter + ']', e);
+                throw context.ConvertException(new PortableException("Failed to convert field name due to converter exception " +
+                    "[fieldName=" + fieldName + ", converter=" + converter + ']', e));
             }
 
             if (fieldName == null)
-                throw new PortableException("Name converter returned null name for field [fieldName=" +
-                    fieldName0 + ", converter=" + converter + "]");
+                throw context.ConvertException(new PortableException("Name converter returned null name for field [fieldName=" +
+                    fieldName0 + ", converter=" + converter + "]"));
 
             return fieldName;
         }
@@ -1727,7 +1728,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="nameMapper">Name mapper.</param>
         /// <param name="idMapper">ID mapper.</param>
         /// <param name="context">The context.</param>
-        /// <returns></returns>
+        /// <returns>Result.</returns>
         public static int TypeId(string typeName, IPortableNameMapper nameMapper,
             IPortableIdMapper idMapper, IIgniteContext context)
         {
@@ -1757,20 +1758,22 @@ namespace Apache.Ignite.Core.Impl.Portable
             return id;
         }
 
-        /**
-         * <summary>Resolve field ID.</summary>
-         * <param name="typeId">Type ID.</param>
-         * <param name="fieldName">GetField name.</param>
-         * <param name="nameMapper">Name mapper.</param>
-         * <param name="idMapper">ID mapper.</param>
-         */
+        /// <summary>
+        /// Resolve field ID.
+        /// </summary>
+        /// <param name="typeId">Type ID.</param>
+        /// <param name="fieldName">GetField name.</param>
+        /// <param name="nameMapper">Name mapper.</param>
+        /// <param name="idMapper">ID mapper.</param>
+        /// <param name="context">The context.</param>
+        /// <returns>Result.</returns>
         public static int FieldId(int typeId, string fieldName, IPortableNameMapper nameMapper,
-            IPortableIdMapper idMapper)
+            IPortableIdMapper idMapper, IIgniteContext context)
         {
             Debug.Assert(typeId != 0);
             Debug.Assert(fieldName != null);
 
-            fieldName = ConvertFieldName(fieldName, nameMapper);
+            fieldName = ConvertFieldName(fieldName, nameMapper, context);
 
             int id = 0;
 
@@ -1782,8 +1785,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
                 catch (Exception e)
                 {
-                    throw new PortableException("Failed to resolve field ID due to ID mapper exception " +
-                        "[typeId=" + typeId + ", fieldName=" + fieldName + ", idMapper=" + idMapper + ']', e);
+                    throw context.ConvertException(
+                        new PortableException("Failed to resolve field ID due to ID mapper exception " +
+                                              "[typeId=" + typeId + ", fieldName=" + fieldName + ", idMapper=" +
+                                              idMapper + ']', e));
                 }
             }
 
@@ -1800,7 +1805,9 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="rawDataOffset">Raw data offset.</param>
          * <returns>Dictionary with field ID as key and field position as value.</returns>
          */
-        public static IDictionary<int, int> ObjectFields(IPortableStream stream, int typeId, int rawDataOffset)
+
+        public static IDictionary<int, int> ObjectFields(IPortableStream stream, int typeId, int rawDataOffset,
+            IIgniteContext context)
         {
             int endPos = stream.Position + rawDataOffset - 18;
 
@@ -1832,8 +1839,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                 int len = stream.ReadInt();
 
                 if (fields.ContainsKey(id))
-                    throw new PortableException("Object contains duplicate field IDs [typeId=" +
-                        typeId + ", fieldId=" + id + ']');
+                    throw context.ConvertException(
+                        new PortableException("Object contains duplicate field IDs [typeId=" +
+                                              typeId + ", fieldId=" + id + ']'));
 
                 fields[id] = stream.Position; // Add field ID and length.
 
@@ -1865,8 +1873,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 return true;
             }
-            else
-                return false;
+            
+            return false;
         }
 
         /// <summary>

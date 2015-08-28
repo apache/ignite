@@ -160,7 +160,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             InitializeFields();
 
-            int fieldId = PortableUtils.FieldId(_typeId, fieldName, desc.NameConverter, desc.Mapper);
+            int fieldId = PortableUtils.FieldId(_typeId, fieldName, desc.NameConverter, desc.Mapper,
+                _marsh.IgniteContext);
 
             int pos;
 
@@ -201,7 +202,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 int rawDataOffset = stream.ReadInt();
 
-                _fields = PortableUtils.ObjectFields(stream, _typeId, rawDataOffset);
+                _fields = PortableUtils.ObjectFields(stream, _typeId, rawDataOffset, _marsh.IgniteContext);
             }
         }
 
@@ -335,7 +336,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     {
                         sb.Append(", ");
 
-                        int fieldId = PortableUtils.FieldId(_typeId, fieldName, desc.NameConverter, desc.Mapper);
+                        int fieldId = PortableUtils.FieldId(_typeId, fieldName, desc.NameConverter, desc.Mapper,
+                            _marsh.IgniteContext);
 
                         int fieldPos;
 
