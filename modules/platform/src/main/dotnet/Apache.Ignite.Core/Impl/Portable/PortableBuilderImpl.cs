@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -62,7 +63,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         
         /** Current context. */
         private Context _ctx;
-        
+
+        /** Ignite context. */
+        private IIgniteContext _igniteContext;
+
         /// <summary>
         /// Static initializer.
         /// </summary>
@@ -112,28 +116,23 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Constructor.
         /// </summary>
         /// <param name="portables">Portables.</param>
-        /// <param name="obj">Initial portable object.</param>
-        /// <param name="desc">Type descriptor.</param>
-        public PortableBuilderImpl(PortablesImpl portables, PortableUserObject obj,
-            IPortableTypeDescriptor desc) : this(portables, null, obj, desc) 
-        { 
-            // No-op.
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="portables">Portables.</param>
         /// <param name="parent">Parent builder.</param>
         /// <param name="obj">Initial portable object.</param>
         /// <param name="desc">Type descriptor.</param>
+        /// <param name="igniteContext">The ignite context.</param>
         public PortableBuilderImpl(PortablesImpl portables, PortableBuilderImpl parent, 
-            PortableUserObject obj, IPortableTypeDescriptor desc)
+            PortableUserObject obj, IPortableTypeDescriptor desc, IIgniteContext igniteContext)
         {
-            this._portables = portables;
-            this._parent = parent ?? this;
-            this._obj = obj;
-            this._desc = desc;
+            Debug.Assert(portables != null);
+            Debug.Assert(obj != null);
+            Debug.Assert(desc != null);
+            Debug.Assert(igniteContext != null);
+
+            _portables = portables;
+            _parent = parent ?? this;
+            _obj = obj;
+            _desc = desc;
+            _igniteContext = igniteContext;
 
             _hashCode = obj.GetHashCode();
         }
@@ -141,7 +140,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableBuilder SetHashCode(int hashCode)
         {
-            this._hashCode = hashCode;
+            _hashCode = hashCode;
 
             return this;
         }
@@ -318,8 +317,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                         int fieldId = PortableUtils.FieldId(desc.TypeId, valEntry.Key, desc.NameConverter, desc.Mapper);
 
                         if (vals0.ContainsKey(fieldId))
-                            throw new IgniteException("Collision in field ID detected (change field name or " +
-                                "define custom ID mapper) [fieldName=" + valEntry.Key + ", fieldId=" + fieldId + ']');
+                            throw _igniteContext.ConvertException(
+                                new IgniteException("Collision in field ID detected (change field name or " +
+                                                    "define custom ID mapper) [fieldName=" + valEntry.Key + 
+                                                    ", fieldId=" + fieldId + ']'));
 
                         vals0[fieldId] = valEntry.Value.Value;
 
@@ -526,8 +527,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                 outStream.WriteByte(inHdr);
 
                 if (!WriteAsPredefined(inHdr, inStream, outStream, ctx))
-                    throw new IgniteException("Unexpected header [position=" + (inStream.Position - 1) +
-                        ", header=" + inHdr + ']');
+                    throw _igniteContext.ConvertException(
+                        new IgniteException("Unexpected header [position=" + (inStream.Position - 1) +
+                                            ", header=" + inHdr + ']'));
             }
         }
 
@@ -840,7 +842,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <param name="writer">Writer</param>
             public Context(IPortableWriterEx writer)
             {
-                this._writer = writer;
+                _writer = writer;
             }
 
             /// <summary>
@@ -849,7 +851,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <param name="parent">Parent context.</param>
             public Context(Context parent)
             {
-                this._parent = parent;
+                _parent = parent;
                 
                 _writer = parent._writer;
 
