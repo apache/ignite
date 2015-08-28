@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.portable.*;
@@ -164,4 +165,37 @@ public interface PlatformContext {
      * @return Filter.
      */
     public GridLifecycleAwareMessageFilter<UUID, Object> createRemoteMessageFilter(Object filter, long ptr);
+
+    /**
+     * Check whether the given event type is supported.
+     *
+     * @param evtTyp Event type.
+     * @return {@code True} if supported.
+     */
+    public boolean isEventTypeSupported(int evtTyp);
+
+    /**
+     * Write event.
+     *
+     * @param writer Writer.
+     * @param event Event.
+     */
+    public void writeEvent(PortableRawWriterEx writer, EventAdapter event);
+
+    /**
+     * Create local event filter.
+     *
+     * @param hnd Native handle.
+     * @return Filter.
+     */
+    public <E extends Event> PlatformAwareEventFilter<E> createLocalEventFilter(long hnd);
+
+    /**
+     * Create remote event filter.
+     *
+     * @param pred Native predicate.
+     * @param types Event types.
+     * @return Filter.
+     */
+    public <E extends Event> PlatformAwareEventFilter<E> createRemoteEventFilter(Object pred, final int... types);
 }
