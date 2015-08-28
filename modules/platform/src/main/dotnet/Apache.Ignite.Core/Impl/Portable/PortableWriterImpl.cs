@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -989,6 +990,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             _stream.WriteByte(PortableUtils.HdrHnd);
 
             // Handle is written as difference between position before header and handle position.
+            Debug.Assert(pos != hndPos);
             _stream.WriteInt((int)(pos - hndPos));
 
             return true;
