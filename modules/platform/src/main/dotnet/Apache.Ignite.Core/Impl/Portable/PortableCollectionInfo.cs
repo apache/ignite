@@ -50,11 +50,11 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Cache "dictionary" value. */
         private static readonly PortableCollectionInfo Dictionary =
-            new PortableCollectionInfo(FlagDictionary, PortableSystemHandlers.WRITE_HND_DICTIONARY, null, null);
+            new PortableCollectionInfo(FlagDictionary, PortableSystemHandlers.WriteHndDictionary, null, null);
 
         /** Cache "collection" value. */
         private static readonly PortableCollectionInfo Collection =
-            new PortableCollectionInfo(FlagCollection, PortableSystemHandlers.WRITE_HND_COLLECTION, null, null);
+            new PortableCollectionInfo(FlagCollection, PortableSystemHandlers.WriteHndCollection, null, null);
 
         /** Cached infos. */
         private static readonly IDictionary<Type, PortableCollectionInfo> Infos =
@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         PortableUtils.MtdhReadGenericDictionary.MakeGenericMethod(type.GetGenericArguments());
 
                     return new PortableCollectionInfo(FlagGenericDictionary,
-                        PortableSystemHandlers.WRITE_HND_GENERIC_DICTIONARY, writeMthd, readMthd);
+                        PortableSystemHandlers.WriteHndGenericDictionary, writeMthd, readMthd);
                 }
 
                 Type genTyp = type.GetInterface(PortableUtils.TypGenericDictionary.FullName);
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         PortableUtils.MtdhReadGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
 
                     return new PortableCollectionInfo(FlagGenericDictionary,
-                        PortableSystemHandlers.WRITE_HND_GENERIC_DICTIONARY, writeMthd, readMthd);
+                        PortableSystemHandlers.WriteHndGenericDictionary, writeMthd, readMthd);
                 }
 
                 if (type.GetGenericTypeDefinition() == PortableUtils.TypGenericCollection)
@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         PortableUtils.MtdhReadGenericCollection.MakeGenericMethod(type.GetGenericArguments());
 
                     return new PortableCollectionInfo(FlagGenericCollection,
-                        PortableSystemHandlers.WRITE_HND_GENERIC_COLLECTION, writeMthd, readMthd);
+                        PortableSystemHandlers.WriteHndGenericCollection, writeMthd, readMthd);
                 }
 
                 genTyp = type.GetInterface(PortableUtils.TypGenericCollection.FullName);
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         PortableUtils.MtdhReadGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
 
                     return new PortableCollectionInfo(FlagGenericCollection,
-                        PortableSystemHandlers.WRITE_HND_GENERIC_COLLECTION, writeMthd, readMthd);
+                        PortableSystemHandlers.WriteHndGenericCollection, writeMthd, readMthd);
                 }
             }
 

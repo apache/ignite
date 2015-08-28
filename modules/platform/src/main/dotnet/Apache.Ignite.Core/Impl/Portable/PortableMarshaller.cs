@@ -83,46 +83,46 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             // Define predefined types.
-            AddPredefinedType(typeof(bool), PortableUtils.TypeBool, PortableSystemHandlers.WRITE_HND_BOOL_TYPED, PortableSystemHandlers.WRITE_HND_BOOL);
-            AddPredefinedType(typeof(byte), PortableUtils.TypeByte, PortableSystemHandlers.WRITE_HND_BYTE_TYPED, PortableSystemHandlers.WRITE_HND_BYTE);
-            AddPredefinedType(typeof(short), PortableUtils.TypeShort, PortableSystemHandlers.WRITE_HND_SHORT_TYPED, PortableSystemHandlers.WRITE_HND_SHORT);
-            AddPredefinedType(typeof(char), PortableUtils.TypeChar, PortableSystemHandlers.WRITE_HND_CHAR_TYPED, PortableSystemHandlers.WRITE_HND_CHAR);
-            AddPredefinedType(typeof(int), PortableUtils.TypeInt, PortableSystemHandlers.WRITE_HND_INT_TYPED, PortableSystemHandlers.WRITE_HND_INT);
-            AddPredefinedType(typeof(long), PortableUtils.TypeLong, PortableSystemHandlers.WRITE_HND_LONG_TYPED, PortableSystemHandlers.WRITE_HND_LONG);
-            AddPredefinedType(typeof(float), PortableUtils.TypeFloat, PortableSystemHandlers.WRITE_HND_FLOAT_TYPED, PortableSystemHandlers.WRITE_HND_FLOAT);
-            AddPredefinedType(typeof(double), PortableUtils.TypeDouble, PortableSystemHandlers.WRITE_HND_DOUBLE_TYPED, PortableSystemHandlers.WRITE_HND_DOUBLE);
-            AddPredefinedType(typeof(string), PortableUtils.TypeString, PortableSystemHandlers.WRITE_HND_STRING_TYPED, PortableSystemHandlers.WRITE_HND_STRING);
-            AddPredefinedType(typeof(decimal), PortableUtils.TypeDecimal, PortableSystemHandlers.WRITE_HND_DECIMAL_TYPED, PortableSystemHandlers.WRITE_HND_DECIMAL);
-            AddPredefinedType(typeof(DateTime), PortableUtils.TypeDate, PortableSystemHandlers.WRITE_HND_DATE_TYPED, PortableSystemHandlers.WRITE_HND_DATE);
-            AddPredefinedType(typeof(Guid), PortableUtils.TypeGuid, PortableSystemHandlers.WRITE_HND_GUID_TYPED, PortableSystemHandlers.WRITE_HND_GUID);
+            AddPredefinedType(typeof(bool), PortableUtils.TypeBool, PortableSystemHandlers.WriteHndBoolTyped, PortableSystemHandlers.WriteHndBool);
+            AddPredefinedType(typeof(byte), PortableUtils.TypeByte, PortableSystemHandlers.WriteHndByteTyped, PortableSystemHandlers.WriteHndByte);
+            AddPredefinedType(typeof(short), PortableUtils.TypeShort, PortableSystemHandlers.WriteHndShortTyped, PortableSystemHandlers.WriteHndShort);
+            AddPredefinedType(typeof(char), PortableUtils.TypeChar, PortableSystemHandlers.WriteHndCharTyped, PortableSystemHandlers.WriteHndChar);
+            AddPredefinedType(typeof(int), PortableUtils.TypeInt, PortableSystemHandlers.WriteHndIntTyped, PortableSystemHandlers.WriteHndInt);
+            AddPredefinedType(typeof(long), PortableUtils.TypeLong, PortableSystemHandlers.WriteHndLongTyped, PortableSystemHandlers.WriteHndLong);
+            AddPredefinedType(typeof(float), PortableUtils.TypeFloat, PortableSystemHandlers.WriteHndFloatTyped, PortableSystemHandlers.WriteHndFloat);
+            AddPredefinedType(typeof(double), PortableUtils.TypeDouble, PortableSystemHandlers.WriteHndDoubleTyped, PortableSystemHandlers.WriteHndDouble);
+            AddPredefinedType(typeof(string), PortableUtils.TypeString, PortableSystemHandlers.WriteHndStringTyped, PortableSystemHandlers.WriteHndString);
+            AddPredefinedType(typeof(decimal), PortableUtils.TypeDecimal, PortableSystemHandlers.WriteHndDecimalTyped, PortableSystemHandlers.WriteHndDecimal);
+            AddPredefinedType(typeof(DateTime), PortableUtils.TypeDate, PortableSystemHandlers.WriteHndDateTyped, PortableSystemHandlers.WriteHndDate);
+            AddPredefinedType(typeof(Guid), PortableUtils.TypeGuid, PortableSystemHandlers.WriteHndGuidTyped, PortableSystemHandlers.WriteHndGuid);
 
-            AddPredefinedType(typeof(PortableUserObject), PortableUtils.TypePortable, PortableSystemHandlers.WRITE_HND_PORTABLE_TYPED, 
-                PortableSystemHandlers.WRITE_HND_PORTABLE);
+            AddPredefinedType(typeof(PortableUserObject), PortableUtils.TypePortable, PortableSystemHandlers.WriteHndPortableTyped, 
+                PortableSystemHandlers.WriteHndPortable);
 
-            AddPredefinedType(typeof(bool[]), PortableUtils.TypeArrayBool, PortableSystemHandlers.WRITE_HND_BOOL_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_BOOL_ARRAY);
-            AddPredefinedType(typeof(byte[]), PortableUtils.TypeArrayByte, PortableSystemHandlers.WRITE_HND_BYTE_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_BYTE_ARRAY);
-            AddPredefinedType(typeof(short[]), PortableUtils.TypeArrayShort, PortableSystemHandlers.WRITE_HND_SHORT_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_SHORT_ARRAY);
-            AddPredefinedType(typeof(char[]), PortableUtils.TypeArrayChar, PortableSystemHandlers.WRITE_HND_CHAR_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_CHAR_ARRAY);
-            AddPredefinedType(typeof(int[]), PortableUtils.TypeArrayInt, PortableSystemHandlers.WRITE_HND_INT_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_INT_ARRAY);
-            AddPredefinedType(typeof(long[]), PortableUtils.TypeArrayLong, PortableSystemHandlers.WRITE_HND_LONG_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_LONG_ARRAY);
-            AddPredefinedType(typeof(float[]), PortableUtils.TypeArrayFloat, PortableSystemHandlers.WRITE_HND_FLOAT_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_FLOAT_ARRAY);
-            AddPredefinedType(typeof(double[]), PortableUtils.TypeArrayDouble, PortableSystemHandlers.WRITE_HND_DOUBLE_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_DOUBLE_ARRAY);
-            AddPredefinedType(typeof(decimal[]), PortableUtils.TypeArrayDecimal, PortableSystemHandlers.WRITE_HND_DECIMAL_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_DECIMAL_ARRAY);
-            AddPredefinedType(typeof(string[]), PortableUtils.TypeArrayString, PortableSystemHandlers.WRITE_HND_STRING_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_STRING_ARRAY);
-            AddPredefinedType(typeof(DateTime?[]), PortableUtils.TypeArrayDate, PortableSystemHandlers.WRITE_HND_DATE_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_DATE_ARRAY);
-            AddPredefinedType(typeof(Guid?[]), PortableUtils.TypeArrayGuid, PortableSystemHandlers.WRITE_HND_GUID_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_GUID_ARRAY);
+            AddPredefinedType(typeof(bool[]), PortableUtils.TypeArrayBool, PortableSystemHandlers.WriteHndBoolArrayTyped,
+                PortableSystemHandlers.WriteHndBoolArray);
+            AddPredefinedType(typeof(byte[]), PortableUtils.TypeArrayByte, PortableSystemHandlers.WriteHndByteArrayTyped,
+                PortableSystemHandlers.WriteHndByteArray);
+            AddPredefinedType(typeof(short[]), PortableUtils.TypeArrayShort, PortableSystemHandlers.WriteHndShortArrayTyped,
+                PortableSystemHandlers.WriteHndShortArray);
+            AddPredefinedType(typeof(char[]), PortableUtils.TypeArrayChar, PortableSystemHandlers.WriteHndCharArrayTyped,
+                PortableSystemHandlers.WriteHndCharArray);
+            AddPredefinedType(typeof(int[]), PortableUtils.TypeArrayInt, PortableSystemHandlers.WriteHndIntArrayTyped,
+                PortableSystemHandlers.WriteHndIntArray);
+            AddPredefinedType(typeof(long[]), PortableUtils.TypeArrayLong, PortableSystemHandlers.WriteHndLongArrayTyped,
+                PortableSystemHandlers.WriteHndLongArray);
+            AddPredefinedType(typeof(float[]), PortableUtils.TypeArrayFloat, PortableSystemHandlers.WriteHndFloatArrayTyped,
+                PortableSystemHandlers.WriteHndFloatArray);
+            AddPredefinedType(typeof(double[]), PortableUtils.TypeArrayDouble, PortableSystemHandlers.WriteHndDoubleArrayTyped,
+                PortableSystemHandlers.WriteHndDoubleArray);
+            AddPredefinedType(typeof(decimal[]), PortableUtils.TypeArrayDecimal, PortableSystemHandlers.WriteHndDecimalArrayTyped,
+                PortableSystemHandlers.WriteHndDecimalArray);
+            AddPredefinedType(typeof(string[]), PortableUtils.TypeArrayString, PortableSystemHandlers.WriteHndStringArrayTyped,
+                PortableSystemHandlers.WriteHndStringArray);
+            AddPredefinedType(typeof(DateTime?[]), PortableUtils.TypeArrayDate, PortableSystemHandlers.WriteHndDateArrayTyped,
+                PortableSystemHandlers.WriteHndDateArray);
+            AddPredefinedType(typeof(Guid?[]), PortableUtils.TypeArrayGuid, PortableSystemHandlers.WriteHndGuidArrayTyped,
+                PortableSystemHandlers.WriteHndGuidArray);
 
             // 2. Define user types.
             defaultSerializer = defaultSerializer ?? new PortableReflectiveSerializer(_igniteContext);

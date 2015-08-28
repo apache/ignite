@@ -679,7 +679,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             foreach (DateTime? val in vals)
             {
                 if (val.HasValue)
-                    PortableSystemHandlers.WRITE_HND_DATE_TYPED(stream, val);
+                    PortableSystemHandlers.WriteHndDateTyped(stream, val);
                 else
                     stream.WriteByte(HdrNull);
             }
@@ -737,7 +737,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             foreach (string val in vals)
             {
                 if (val != null)
-                    PortableSystemHandlers.WRITE_HND_STRING_TYPED(stream, val); 
+                    PortableSystemHandlers.WriteHndStringTyped(stream, val); 
                 else
                     stream.WriteByte(HdrNull);
             }
@@ -1075,7 +1075,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             foreach (Guid? val in vals)
             {
                 if (val.HasValue)
-                    PortableSystemHandlers.WRITE_HND_GUID_TYPED(stream, val);
+                    PortableSystemHandlers.WriteHndGuidTyped(stream, val);
                 else
                     stream.WriteByte(HdrNull);
             }
