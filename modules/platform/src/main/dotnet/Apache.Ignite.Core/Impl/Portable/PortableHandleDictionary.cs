@@ -55,6 +55,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
+        [SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         [SuppressMessage("ReSharper", "DoNotCallOverridableMethodsInConstructor")]
         public PortableHandleDictionary(TKey key, TValue val)
         {

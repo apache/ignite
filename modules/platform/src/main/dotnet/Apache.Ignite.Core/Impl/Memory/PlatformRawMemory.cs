@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void Release()
         {
-            throw new NotSupportedException();
+            // No-op.
         }
     }
 }
