@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.portable.*;
+import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.platform.cache.query.*;
 import org.apache.ignite.internal.processors.platform.callback.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
 import org.jetbrains.annotations.*;
@@ -135,4 +139,63 @@ public interface PlatformContext {
      * @param metrics Metrics.
      */
     public void writeClusterMetrics(PortableRawWriterEx writer, @Nullable ClusterMetrics metrics);
+
+    /**
+     *
+     * @param ptr Pointer to continuous query deployed on the platform.
+     * @param hasFilter Whether filter exists.
+     * @param filter Filter.
+     * @return Platform continuous query.
+     */
+    public PlatformContinuousQuery createContinuousQuery(long ptr, boolean hasFilter, @Nullable Object filter);
+
+    /**
+     * Create continuous query filter to be deployed on remote node.
+     *
+     * @param filter Native filter.
+     * @return Filter.
+     */
+    public CacheContinuousQueryFilterEx createContinuousQueryFilter(Object filter);
+
+    /**
+     * Create remote message filter.
+     *
+     * @param filter Native filter.
+     * @param ptr Pointer of deployed native filter.
+     * @return Filter.
+     */
+    public GridLifecycleAwareMessageFilter<UUID, Object> createRemoteMessageFilter(Object filter, long ptr);
+
+    /**
+     * Check whether the given event type is supported.
+     *
+     * @param evtTyp Event type.
+     * @return {@code True} if supported.
+     */
+    public boolean isEventTypeSupported(int evtTyp);
+
+    /**
+     * Write event.
+     *
+     * @param writer Writer.
+     * @param event Event.
+     */
+    public void writeEvent(PortableRawWriterEx writer, EventAdapter event);
+
+    /**
+     * Create local event filter.
+     *
+     * @param hnd Native handle.
+     * @return Filter.
+     */
+    public <E extends Event> PlatformAwareEventFilter<E> createLocalEventFilter(long hnd);
+
+    /**
+     * Create remote event filter.
+     *
+     * @param pred Native predicate.
+     * @param types Event types.
+     * @return Filter.
+     */
+    public <E extends Event> PlatformAwareEventFilter<E> createRemoteEventFilter(Object pred, final int... types);
 }
