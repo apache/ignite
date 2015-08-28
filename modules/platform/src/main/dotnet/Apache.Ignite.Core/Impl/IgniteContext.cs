@@ -44,5 +44,11 @@ namespace Apache.Ignite.Core.Impl
 
             return holder == null ? obj : holder.Item;
         }
+
+        /** <inheritdoc /> */
+        public PortableBuilderImpl UnwrapPortableBuilder(object obj)
+        {
+            return obj as PortableBuilderImpl;
+        }
     }
 }

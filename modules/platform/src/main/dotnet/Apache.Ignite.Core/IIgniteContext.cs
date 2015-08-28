@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core
 {
     using System;
+    using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
     /// Ignite extensibility context.
@@ -45,5 +46,12 @@ namespace Apache.Ignite.Core
         /// <param name="obj">The object.</param>
         /// <returns>Wrapped object.</returns>
         object UnwrapSerializableObjectHolder(object obj);
+
+        /// <summary>
+        /// Unwraps the portable builder.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns>Portable builder, or null.</returns>
+        PortableBuilderImpl UnwrapPortableBuilder(object obj);
     }
 }
