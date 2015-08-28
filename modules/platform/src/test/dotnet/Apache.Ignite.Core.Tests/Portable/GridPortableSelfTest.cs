@@ -18,6 +18,8 @@
 // ReSharper disable PossibleInvalidOperationException
 // ReSharper disable NonReadonlyMemberInGetHashCode
 // ReSharper disable CompareOfFloatsByEqualityOperator
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
 namespace Apache.Ignite.Core.Tests.Portable 
 {
     using System;
@@ -1766,16 +1768,6 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public static string PrintBytes(byte[] bytes)
-        {
-            var sb = new StringBuilder();
-
-            foreach (var b in bytes)
-                sb.Append(b + " ");
-
-            return sb.ToString();
-        }
-
         public class HandleOuter : IPortableMarshalAware
         {
             public string Before;
@@ -1826,7 +1818,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             public string RawAfter;
 
             /** <inheritdoc /> */
-            virtual public void WritePortable(IPortableWriter writer)
+            public void WritePortable(IPortableWriter writer)
             {
                 writer.WriteString("before", Before);
                 writer.WriteObject("outer", Outer);
@@ -1840,7 +1832,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
 
             /** <inheritdoc /> */
-            virtual public void ReadPortable(IPortableReader reader)
+            public void ReadPortable(IPortableReader reader)
             {
                 Before = reader.ReadString("before");
                 Outer = reader.ReadObject<HandleOuter>("outer");
