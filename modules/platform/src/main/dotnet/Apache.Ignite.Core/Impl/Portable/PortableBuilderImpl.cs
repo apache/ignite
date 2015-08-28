@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private Context _ctx;
 
         /** Marshaller. */
-        private readonly PortableMarshaller _marshaller;
+        protected readonly PortableMarshaller _marshaller;
 
         /** Ignite context. */
         private readonly IIgniteContext _igniteContext;
@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="obj">Portable object.</param>
         /// <returns>Child builder.</returns>
-        public IPortableBuilderEx Child(IPortableUserObject obj)
+        public virtual IPortableBuilderEx Child(IPortableUserObject obj)
         {
             var desc = _marshaller.Descriptor(true, obj.TypeId);
 
