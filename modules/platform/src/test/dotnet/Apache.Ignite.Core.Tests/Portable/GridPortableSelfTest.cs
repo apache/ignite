@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     using System.Linq;
     using System.Text;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;

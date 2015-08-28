@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core
+namespace Apache.Ignite.Core.Impl
 {
     using System;
     using Apache.Ignite.Core.Impl.Portable;
@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core
     /// <summary>
     /// Ignite extensibility context default implementation.
     /// </summary>
-    public class IgniteContext : IIgniteContext
+    internal class IgniteContext : IIgniteContext
     {
         /** <inheritdoc /> */
         public Exception ConvertException(Exception exception)

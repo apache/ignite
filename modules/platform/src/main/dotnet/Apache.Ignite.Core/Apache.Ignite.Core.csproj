@@ -52,7 +52,7 @@
     <Compile Include="Common\IgniteException.cs" />
     <Compile Include="Common\IAsyncSupport.cs" />
     <Compile Include="Common\IFuture.cs" />
-    <Compile Include="IgniteContext.cs" />
+    <Compile Include="Impl\IgniteContext.cs" />
     <Compile Include="Ignition.cs" />
     <Compile Include="Common\AsyncSupportedAttribute.cs" />
     <Compile Include="IIgniteContext.cs" />
