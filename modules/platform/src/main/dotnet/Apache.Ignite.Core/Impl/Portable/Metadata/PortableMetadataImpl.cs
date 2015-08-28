@@ -39,85 +39,6 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         private readonly IIgniteContext _context;
 
         /// <summary>
-        /// Get type name by type ID.
-        /// </summary>
-        /// <param name="typeId">Type ID.</param>
-        /// <param name="context">The context.</param>
-        /// <returns>
-        /// Type name.
-        /// </returns>
-        /// <exception cref="PortableException">Invalid type ID:  + typeId</exception>
-        private static string ConvertTypeName(int typeId, IIgniteContext context)
-        {
-            switch (typeId)
-            {
-                case PortableUtils.TypeBool:
-                    return PortableTypeNames.TypeNameBool;
-                case PortableUtils.TypeByte:
-                    return PortableTypeNames.TypeNameByte;
-                case PortableUtils.TypeShort:
-                    return PortableTypeNames.TypeNameShort;
-                case PortableUtils.TypeChar:
-                    return PortableTypeNames.TypeNameChar;
-                case PortableUtils.TypeInt:
-                    return PortableTypeNames.TypeNameInt;
-                case PortableUtils.TypeLong:
-                    return PortableTypeNames.TypeNameLong;
-                case PortableUtils.TypeFloat:
-                    return PortableTypeNames.TypeNameFloat;
-                case PortableUtils.TypeDouble:
-                    return PortableTypeNames.TypeNameDouble;
-                case PortableUtils.TypeDecimal:
-                    return PortableTypeNames.TypeNameDecimal;
-                case PortableUtils.TypeString:
-                    return PortableTypeNames.TypeNameString;
-                case PortableUtils.TypeGuid:
-                    return PortableTypeNames.TypeNameGuid;
-                case PortableUtils.TypeDate:
-                    return PortableTypeNames.TypeNameDate;
-                case PortableUtils.TypeEnum:
-                    return PortableTypeNames.TypeNameEnum;
-                case PortableUtils.TypePortable:
-                case PortableUtils.TypeObject:
-                    return PortableTypeNames.TypeNameObject;
-                case PortableUtils.TypeArrayBool:
-                    return PortableTypeNames.TypeNameArrayBool;
-                case PortableUtils.TypeArrayByte:
-                    return PortableTypeNames.TypeNameArrayByte;
-                case PortableUtils.TypeArrayShort:
-                    return PortableTypeNames.TypeNameArrayShort;
-                case PortableUtils.TypeArrayChar:
-                    return PortableTypeNames.TypeNameArrayChar;
-                case PortableUtils.TypeArrayInt:
-                    return PortableTypeNames.TypeNameArrayInt;
-                case PortableUtils.TypeArrayLong:
-                    return PortableTypeNames.TypeNameArrayLong;
-                case PortableUtils.TypeArrayFloat:
-                    return PortableTypeNames.TypeNameArrayFloat;
-                case PortableUtils.TypeArrayDouble:
-                    return PortableTypeNames.TypeNameArrayDouble;
-                case PortableUtils.TypeArrayDecimal:
-                    return PortableTypeNames.TypeNameArrayDecimal;
-                case PortableUtils.TypeArrayString:
-                    return PortableTypeNames.TypeNameArrayString;
-                case PortableUtils.TypeArrayGuid:
-                    return PortableTypeNames.TypeNameArrayGuid;
-                case PortableUtils.TypeArrayDate:
-                    return PortableTypeNames.TypeNameArrayDate;
-                case PortableUtils.TypeArrayEnum:
-                    return PortableTypeNames.TypeNameArrayEnum;
-                case PortableUtils.TypeArray:
-                    return PortableTypeNames.TypeNameArrayObject;
-                case PortableUtils.TypeCollection:
-                    return PortableTypeNames.TypeNameCollection;
-                case PortableUtils.TypeDictionary:
-                    return PortableTypeNames.TypeNameMap;
-                default:
-                    throw context.ConvertException(new PortableException("Invalid type ID: " + typeId));
-            }
-        }
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="PortableMetadataImpl" /> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
@@ -189,7 +110,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
 
                 _fields.TryGetValue(fieldName, out typeId);
 
-                return ConvertTypeName(typeId, _context);
+                return PortableUtils.ConvertTypeName(typeId, _context);
             }
             
             return null;

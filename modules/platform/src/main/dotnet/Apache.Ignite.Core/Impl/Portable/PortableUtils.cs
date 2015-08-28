@@ -1679,6 +1679,85 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
+        /// Get type name by type ID.
+        /// </summary>
+        /// <param name="typeId">Type ID.</param>
+        /// <param name="context">The context.</param>
+        /// <returns>
+        /// Type name.
+        /// </returns>
+        /// <exception cref="PortableException">Invalid type ID:  + typeId</exception>
+        public static string ConvertTypeName(int typeId, IIgniteContext context)
+        {
+            switch (typeId)
+            {
+                case TypeBool:
+                    return PortableTypeNames.TypeNameBool;
+                case TypeByte:
+                    return PortableTypeNames.TypeNameByte;
+                case TypeShort:
+                    return PortableTypeNames.TypeNameShort;
+                case TypeChar:
+                    return PortableTypeNames.TypeNameChar;
+                case TypeInt:
+                    return PortableTypeNames.TypeNameInt;
+                case TypeLong:
+                    return PortableTypeNames.TypeNameLong;
+                case TypeFloat:
+                    return PortableTypeNames.TypeNameFloat;
+                case TypeDouble:
+                    return PortableTypeNames.TypeNameDouble;
+                case TypeDecimal:
+                    return PortableTypeNames.TypeNameDecimal;
+                case TypeString:
+                    return PortableTypeNames.TypeNameString;
+                case TypeGuid:
+                    return PortableTypeNames.TypeNameGuid;
+                case TypeDate:
+                    return PortableTypeNames.TypeNameDate;
+                case TypeEnum:
+                    return PortableTypeNames.TypeNameEnum;
+                case TypePortable:
+                case TypeObject:
+                    return PortableTypeNames.TypeNameObject;
+                case TypeArrayBool:
+                    return PortableTypeNames.TypeNameArrayBool;
+                case TypeArrayByte:
+                    return PortableTypeNames.TypeNameArrayByte;
+                case TypeArrayShort:
+                    return PortableTypeNames.TypeNameArrayShort;
+                case TypeArrayChar:
+                    return PortableTypeNames.TypeNameArrayChar;
+                case TypeArrayInt:
+                    return PortableTypeNames.TypeNameArrayInt;
+                case TypeArrayLong:
+                    return PortableTypeNames.TypeNameArrayLong;
+                case TypeArrayFloat:
+                    return PortableTypeNames.TypeNameArrayFloat;
+                case TypeArrayDouble:
+                    return PortableTypeNames.TypeNameArrayDouble;
+                case TypeArrayDecimal:
+                    return PortableTypeNames.TypeNameArrayDecimal;
+                case TypeArrayString:
+                    return PortableTypeNames.TypeNameArrayString;
+                case TypeArrayGuid:
+                    return PortableTypeNames.TypeNameArrayGuid;
+                case TypeArrayDate:
+                    return PortableTypeNames.TypeNameArrayDate;
+                case TypeArrayEnum:
+                    return PortableTypeNames.TypeNameArrayEnum;
+                case TypeArray:
+                    return PortableTypeNames.TypeNameArrayObject;
+                case TypeCollection:
+                    return PortableTypeNames.TypeNameCollection;
+                case TypeDictionary:
+                    return PortableTypeNames.TypeNameMap;
+                default:
+                    throw context.ConvertException(new PortableException("Invalid type ID: " + typeId));
+            }
+        }
+
+        /// <summary>
         /// Convert field name.
         /// </summary>
         /// <param name="fieldName">GetField name.</param>
