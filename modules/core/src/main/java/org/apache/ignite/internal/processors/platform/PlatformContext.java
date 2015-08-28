@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.platform.cache.query.*;
@@ -154,4 +155,13 @@ public interface PlatformContext {
      * @return Filter.
      */
     public CacheContinuousQueryFilterEx createContinuousQueryFilter(Object filter);
+
+    /**
+     * Create remote message filter.
+     *
+     * @param filter Native filter.
+     * @param ptr Pointer of deployed native filter.
+     * @return Filter.
+     */
+    public GridLifecycleAwareMessageFilter<UUID, Object> createRemoteMessageFilter(Object filter, long ptr);
 }
