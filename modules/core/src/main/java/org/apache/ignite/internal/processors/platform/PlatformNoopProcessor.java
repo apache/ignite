@@ -43,4 +43,9 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     @Override public PlatformContext context() {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public void awaitStart() throws IgniteCheckedException {
+        // No-op.
+    }
 }

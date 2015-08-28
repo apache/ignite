@@ -15,40 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+package org.apache.ignite.internal.processors.platform.compute;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.compute.*;
 
 /**
- * Platform processor.
+ * Platform closure job interface.
  */
-public interface PlatformProcessor extends GridProcessor {
+public interface PlatformJob extends ComputeJob {
     /**
-     * Get owning Ignite instance.
+     * Gets native pointer to deployed job.
      *
-     * @return Ignite instance.
+     * @return Pointer.
      */
-    public Ignite ignite();
+    public long pointer();
 
     /**
-     * Get environment pointer associated with this processor.
+     * Gets native job.
      *
-     * @return Environment pointer.
+     * @return Native job.
      */
-    public long environmentPointer();
-
-    /**
-     * Gets platform context.
-     *
-     * @return Platform context.
-     */
-    public PlatformContext context();
-
-    /**
-     * Await until platform processor is safe to use.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void awaitStart() throws IgniteCheckedException;
+    public Object job();
 }
