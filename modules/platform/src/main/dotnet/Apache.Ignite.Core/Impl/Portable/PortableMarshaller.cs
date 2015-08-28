@@ -338,16 +338,14 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
             }
 
-            if (holder != null)
-            {
-                ICollection<int> ids = holder.FieldIds();
-
-                bool newType = ids.Count == 0 && !holder.Saved();
-
-                return new PortableHashsetMetadataHandler(ids, newType);
-            }
-            else
+            if (holder == null) 
                 return null;
+            
+            var ids = holder.FieldIds();
+
+            bool newType = ids.Count == 0 && !holder.Saved();
+
+            return new PortableHashsetMetadataHandler(ids, newType);
         }
 
         /// <summary>

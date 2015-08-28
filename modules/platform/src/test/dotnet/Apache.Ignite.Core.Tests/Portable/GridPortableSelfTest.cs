@@ -1095,7 +1095,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             var cfg = new PortableConfiguration
             {
                 DefaultKeepDeserialized = false,
-                TypeConfigurations = new List<PortableTypeConfiguration>() {typeCfg}
+                TypeConfigurations = new List<PortableTypeConfiguration> {typeCfg}
             };
 
             CheckKeepSerialized(cfg, true);
@@ -1177,7 +1177,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             if (cfg.TypeConfigurations == null)
             {
-                cfg.TypeConfigurations = new List<PortableTypeConfiguration>() 
+                cfg.TypeConfigurations = new List<PortableTypeConfiguration>
                 {
                     new PortableTypeConfiguration(typeof(PropertyType))
                 };
@@ -1326,26 +1326,24 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             if (col == null)
                 return null;
-            else
+            
+            var sb = new StringBuilder("[");
+
+            var first = true;
+
+            foreach (var elem in col)
             {
-                var sb = new StringBuilder("[");
+                if (first)
+                    first = false;
+                else
+                    sb.Append(", ");
 
-                var first = true;
-
-                foreach (var elem in col)
-                {
-                    if (first)
-                        first = false;
-                    else
-                        sb.Append(", ");
-
-                    sb.Append(elem);
-                }
-
-                sb.Append("]");
-
-                return sb.ToString();
+                sb.Append(elem);
             }
+
+            sb.Append("]");
+
+            return sb.ToString();
         }
 
         public class TestList : ArrayList

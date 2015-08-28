@@ -139,10 +139,11 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (type == PortableUtils.TypDictionary || type.GetInterface(PortableUtils.TypDictionary.FullName) != null)
                 return Dictionary;
-            else if (type == PortableUtils.TypCollection || type.GetInterface(PortableUtils.TypCollection.FullName) != null)
+            
+            if (type == PortableUtils.TypCollection || type.GetInterface(PortableUtils.TypCollection.FullName) != null)
                 return Collection;
-            else
-                return None;
+            
+            return None;
         }
 
         /** Flag. */

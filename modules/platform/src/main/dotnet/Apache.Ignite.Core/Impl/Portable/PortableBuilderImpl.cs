@@ -152,17 +152,15 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (_vals != null && _vals.TryGetValue(name, out field))
                 return field != PortableBuilderField.RmvMarker ? (T)field.Value : default(T);
-            else
-            {
-                T val = _obj.Field<T>(name, this);
+            
+            T val = _obj.Field<T>(name, this);
 
-                if (_vals == null)
-                    _vals = new Dictionary<string, PortableBuilderField>(2);
+            if (_vals == null)
+                _vals = new Dictionary<string, PortableBuilderField>(2);
 
-                _vals[name] = new PortableBuilderField(typeof(T), val);
+            _vals[name] = new PortableBuilderField(typeof(T), val);
 
-                return val;
-            }
+            return val;
         }
 
         /** <inheritDoc /> */
@@ -767,17 +765,17 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (TypeIds.TryGetValue(type, out typeId))
                 return typeId;
-            else if (type.IsEnum)
+            
+            if (type.IsEnum)
                 return PortableUtils.TypeEnum;
-            else if (type.IsArray)
+            
+            if (type.IsArray)
                 return type.GetElementType().IsEnum ? PortableUtils.TypeArrayEnum : PortableUtils.TypeArray;
-            else
-            {
-                PortableCollectionInfo colInfo = PortableCollectionInfo.Info(type);
+            
+            var colInfo = PortableCollectionInfo.Info(type);
 
-                return colInfo.IsAny ? colInfo.IsCollection || colInfo.IsGenericCollection ?
-                    PortableUtils.TypeCollection : PortableUtils.TypeDictionary : PortableUtils.TypeObject;
-            }
+            return colInfo.IsAny ? colInfo.IsCollection || colInfo.IsGenericCollection ?
+                PortableUtils.TypeCollection : PortableUtils.TypeDictionary : PortableUtils.TypeObject;
         }
 
         /// <summary>
@@ -877,12 +875,10 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 if (_oldToNew.TryGetValue(oldPos, out hndPos))
                     return false;
-                else
-                {
-                    _oldToNew[oldPos] = newPos;
+                
+                _oldToNew[oldPos] = newPos;
 
-                    return true;
-                }
+                return true;
             }
 
             /// <summary>

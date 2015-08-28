@@ -1313,8 +1313,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 return res;
             }
-            else
-                return null;
+            
+            return null;
         }
 
         /**
@@ -1459,8 +1459,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 return res;
             }
-            else
-                return null;
+            
+            return null;
         }
 
         /**
