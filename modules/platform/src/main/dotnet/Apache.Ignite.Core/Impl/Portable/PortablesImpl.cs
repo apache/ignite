@@ -150,19 +150,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Create child builder.
-        /// </summary>
-        /// <param name="parent">Parent builder.</param>
-        /// <param name="obj">Portable object.</param>
-        /// <returns></returns>
-        internal IPortableBuilderEx ChildBuilder(IPortableBuilderEx parent, IPortableUserObject obj)
-        {
-            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj.TypeId);
-
-            return Builder0(null, obj, desc);
-        }
-
-        /// <summary>
         /// Marshaller.
         /// </summary>
         internal PortableMarshaller Marshaller
@@ -199,7 +186,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private IPortableBuilderEx Builder0(IPortableBuilderEx parent, IPortableUserObject obj, 
             IPortableTypeDescriptor desc)
         {
-            return new PortableBuilderImpl(this, parent, obj, desc, _marsh.IgniteContext);
+            return new PortableBuilderImpl(parent, obj, desc, _marsh);
         }
     }
 }

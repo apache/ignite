@@ -40,9 +40,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Offset: length. */
         private const int OffsetLen = 10;
 
-        /** Portables. */
-        private readonly PortablesImpl _portables;
-
         /** */
         private readonly PortableBuilderImpl _parent;
 
@@ -63,6 +60,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         
         /** Current context. */
         private Context _ctx;
+
+        /** Marshaller. */
+        private readonly PortableMarshaller _marshaller;
 
         /** Ignite context. */
         private readonly IIgniteContext _igniteContext;
@@ -115,24 +115,22 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="portables">Portables.</param>
         /// <param name="parent">Parent builder.</param>
         /// <param name="obj">Initial portable object.</param>
         /// <param name="desc">Type descriptor.</param>
-        /// <param name="igniteContext">The ignite context.</param>
-        public PortableBuilderImpl(PortablesImpl portables, IPortableBuilderEx parent, 
-            IPortableUserObject obj, IPortableTypeDescriptor desc, IIgniteContext igniteContext)
+        /// <param name="marshaller">Marshaller.</param>
+        public PortableBuilderImpl(IPortableBuilderEx parent, IPortableUserObject obj, IPortableTypeDescriptor desc,
+            PortableMarshaller marshaller)
         {
-            Debug.Assert(portables != null);
             Debug.Assert(obj != null);
             Debug.Assert(desc != null);
-            Debug.Assert(igniteContext != null);
+            Debug.Assert(_marshaller != null);
 
-            _portables = portables;
             _parent = (PortableBuilderImpl) (parent ?? this);
             _obj = obj;
             _desc = desc;
-            _igniteContext = igniteContext;
+            _marshaller = marshaller;
+            _igniteContext = marshaller.IgniteContext;
 
             _hashCode = obj.GetHashCode();
         }
@@ -187,7 +185,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             PortableHeapStream outStream = new PortableHeapStream(len);
 
-            var writer = _portables.Marshaller.StartMarshal(outStream);
+            var writer = _marshaller.StartMarshal(outStream);
 
             writer.SetBuilder(this);
 
@@ -200,10 +198,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                 writer.Write(this);
                 
                 // Process metadata.
-                _portables.Marshaller.FinishMarshal(writer);
+                _marshaller.FinishMarshal(writer);
 
                 // Create portable object once metadata is processed.
-                return _igniteContext.GetPortableObject(_portables.Marshaller, 0, outStream.InternalArray, _desc.TypeId,
+                return _igniteContext.GetPortableObject(_marshaller, 0, outStream.InternalArray, _desc.TypeId, 
                     _hashCode);
             }
             finally
@@ -220,7 +218,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Child builder.</returns>
         public IPortableBuilderEx Child(IPortableUserObject obj)
         {
-            return _portables.ChildBuilder(_parent, obj);
+            var desc = _marshaller.Descriptor(true, obj.TypeId);
+
+            return new PortableBuilderImpl(this, obj, desc, _marshaller);
         }
         
         /// <summary>
@@ -300,7 +300,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             try
             {
                 // Prepare fields.
-                IPortableMetadataHandler metaHnd = _portables.Marshaller.MetadataHandler(desc);
+                IPortableMetadataHandler metaHnd = _marshaller.MetadataHandler(desc);
 
                 IDictionary<int, object> vals0;
 
