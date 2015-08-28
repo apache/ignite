@@ -142,6 +142,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param oldVal Old value.
      * @param primary {@code True} if called on primary node.
      * @param preload Whether update happened during preloading.
+     * @param updateIdx Update index.
      * @param topVer Topology version.
      * @throws IgniteCheckedException In case of error.
      */
@@ -151,6 +152,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         CacheObject oldVal,
         boolean primary,
         boolean preload,
+        long updateIdx,
         AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
@@ -178,18 +180,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         if (!hasNewVal && !hasOldVal)
             return;
-
-        long updateIdx;
-
-        if (!cctx.isLocal()) {
-            GridDhtLocalPartition locPart = cctx.topology().localPartition(e.partition(), topVer, false);
-
-            assert locPart != null;
-
-            updateIdx = locPart.nextContinuousQueryUpdateIndex();
-        }
-        else
-            updateIdx = 0;
 
         EventType evtType = !hasNewVal ? REMOVED : !hasOldVal ? CREATED : UPDATED;
 
