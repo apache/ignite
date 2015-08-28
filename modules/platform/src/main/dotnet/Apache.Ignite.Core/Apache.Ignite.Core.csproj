@@ -88,6 +88,7 @@
     <Compile Include="Impl\Portable\IO\PortableAbstractStream.cs" />
     <Compile Include="Impl\Portable\IO\PortableHeapStream.cs" />
     <Compile Include="Impl\Portable\IO\PortableStreamAdapter.cs" />
+    <Compile Include="Impl\Portable\IPortableBuilderEx.cs" />
     <Compile Include="Impl\Portable\IPortableReaderEx.cs" />
     <Compile Include="Impl\Portable\IPortableSerializerEx.cs" />
     <Compile Include="Impl\Portable\IPortableSystemTypeSerializer.cs" />

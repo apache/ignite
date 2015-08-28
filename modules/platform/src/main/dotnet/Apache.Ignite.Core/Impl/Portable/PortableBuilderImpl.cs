@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Portable builder implementation.
     /// </summary>
-    public class PortableBuilderImpl : IPortableBuilder
+    internal class PortableBuilderImpl : IPortableBuilderEx
     {
         /** Type IDs for metadata. */
         private static readonly IDictionary<Type, int> TypeIds;
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly IPortableTypeDescriptor _desc;
 
         /** Values. */
-        private IDictionary<string, PortableBuilderField> _vals;
+        private IDictionary<string, IPortableBuilderField> _vals;
 
         /** Contextual fields. */
         private IDictionary<int, object> _cache;
@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public T GetField<T>(string name)
         {
-            PortableBuilderField field;
+            IPortableBuilderField field;
 
             if (_vals != null && _vals.TryGetValue(name, out field))
                 return field != PortableBuilderField.RmvMarker ? (T)field.Value : default(T);
@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             T val = _obj.Field<T>(name, this);
 
             if (_vals == null)
-                _vals = new Dictionary<string, PortableBuilderField>(2);
+                _vals = new Dictionary<string, IPortableBuilderField>(2);
 
             _vals[name] = new PortableBuilderField(typeof(T), val);
 
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="obj">Portable object.</param>
         /// <returns>Child builder.</returns>
-        public PortableBuilderImpl Child(IPortableUserObject obj)
+        public IPortableBuilderEx Child(IPortableUserObject obj)
         {
             return _portables.ChildBuilder(_parent, obj);
         }
@@ -270,7 +270,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private IPortableBuilder SetField0(string fieldName, PortableBuilderField val)
         {
             if (_vals == null)
-                _vals = new Dictionary<string, PortableBuilderField>();
+                _vals = new Dictionary<string, IPortableBuilderField>();
 
             _vals[fieldName] = val;
 
@@ -285,15 +285,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="desc">Portable type descriptor.</param>
         /// <param name="hashCode">Hash code.</param>
         /// <param name="vals">Values.</param>
-        internal void Mutate(
+        public void Mutate(
             PortableHeapStream inStream,
             PortableHeapStream outStream,
             IPortableTypeDescriptor desc,
             int hashCode, 
-            IDictionary<string, PortableBuilderField> vals)
+            IDictionary<string, IPortableBuilderField> vals)
         {
             // Set correct builder to writer frame.
-            PortableBuilderImpl oldBuilder = _parent._ctx.Writer.SetBuilder(_parent);
+            var oldBuilder = _parent._ctx.Writer.SetBuilder(_parent);
 
             int streamPos = inStream.Position;
             
@@ -310,7 +310,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 {
                     vals0 = new Dictionary<int, object>(vals.Count);
 
-                    foreach (KeyValuePair<string, PortableBuilderField> valEntry in vals)
+                    foreach (var valEntry in vals)
                     {
                         int fieldId = PortableUtils.FieldId(desc.TypeId, valEntry.Key, desc.NameConverter, desc.Mapper,
                             _igniteContext);
@@ -537,7 +537,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="outStream">Output stream.</param>
         /// <param name="port">Portable.</param>
-        internal void ProcessPortable(IPortableStream outStream, IPortableUserObject port)
+        public void ProcessPortable(IPortableStream outStream, IPortableUserObject port)
         {
             // Special case: writing portable object with correct inversions.
             PortableHeapStream inStream = new PortableHeapStream(port.Data);
@@ -553,20 +553,22 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="outStream">Output stream.</param>
         /// <param name="builder">Builder.</param>
-        internal void ProcessBuilder(IPortableStream outStream, PortableBuilderImpl builder)
+        public void ProcessBuilder(IPortableStream outStream, IPortableBuilderEx builder)
         {
-            PortableHeapStream inStream = new PortableHeapStream(builder._obj.Data);
+            var builder0 = (PortableBuilderImpl) builder;
 
-            inStream.Seek(builder._obj.Offset, SeekOrigin.Begin);
+            PortableHeapStream inStream = new PortableHeapStream(builder0._obj.Data);
+
+            inStream.Seek(builder0._obj.Offset, SeekOrigin.Begin);
 
             // Builder parent context might be null only in one case: if we never met this group of
             // builders before. In this case we set context to their parent and track it. Context
             // cleanup will be performed at the very end of build process.
-            if (builder._parent._ctx == null || builder._parent._ctx.Closed)
-                builder._parent._ctx = new Context(_parent._ctx);
+            if (builder0._parent._ctx == null || builder0._parent._ctx.Closed)
+                builder0._parent._ctx = new Context(_parent._ctx);
 
-            builder.Mutate(inStream, outStream as PortableHeapStream, builder._desc,
-                    builder._hashCode, builder._vals);
+            builder0.Mutate(inStream, outStream as PortableHeapStream, builder0._desc,
+                    builder0._hashCode, builder0._vals);
         }
 
         /// <summary>

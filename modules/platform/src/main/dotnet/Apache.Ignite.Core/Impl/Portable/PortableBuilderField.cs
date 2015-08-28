@@ -19,10 +19,23 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
 
+    public interface IPortableBuilderField
+    {
+        /// <summary>
+        /// Type.
+        /// </summary>
+        Type Type { get; }
+
+        /// <summary>
+        /// Value.
+        /// </summary>
+        object Value { get; }
+    }
+
     /// <summary>
     /// Portable builder field.
     /// </summary>
-    internal class PortableBuilderField
+    internal class PortableBuilderField : IPortableBuilderField
     {
         /** Remove marker object. */
         public static readonly object RmvMarkerObj = new object();

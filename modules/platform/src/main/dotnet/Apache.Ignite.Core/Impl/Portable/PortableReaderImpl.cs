@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly IDictionary<long, IPortableTypeDescriptor> _descs;
 
         /** Parent builder. */
-        private readonly PortableBuilderImpl _builder;
+        private readonly IPortableBuilderEx _builder;
 
         /** Handles. */
         private PortableReaderHandleDictionary _hnds;
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             IDictionary<long, IPortableTypeDescriptor> descs, 
             IPortableStream stream, 
             PortableMode mode,
-            PortableBuilderImpl builder)
+            IPortableBuilderEx builder)
         {
             _marsh = marsh;
             _descs = descs;

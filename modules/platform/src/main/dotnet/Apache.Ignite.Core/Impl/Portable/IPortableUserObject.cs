@@ -46,6 +46,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="fieldName"></param>
         /// <param name="builder"></param>
         /// <returns></returns>
-        T Field<T>(string fieldName, PortableBuilderImpl builder);
+        T Field<T>(string fieldName, IPortableBuilderEx builder);
     }
 }

@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly IPortableStream _stream;
 
         /** Builder (used only during build). */
-        private PortableBuilderImpl _builder;
+        private IPortableBuilderEx _builder;
 
         /** Handles. */
         private PortableHandleDictionary<object, long> _hnds;
@@ -734,7 +734,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="portableBuilder">Builder.</param>
         /// <returns>Previous builder.</returns>
-        PortableBuilderImpl IPortableWriterEx.SetBuilder(PortableBuilderImpl portableBuilder)
+        IPortableBuilderEx IPortableWriterEx.SetBuilder(IPortableBuilderEx portableBuilder)
         {
             var ret = _builder;
 

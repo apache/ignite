@@ -154,7 +154,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="fieldName"></param>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public T Field<T>(string fieldName, PortableBuilderImpl builder)
+        public T Field<T>(string fieldName, IPortableBuilderEx builder)
         {
             IPortableTypeDescriptor desc = _marsh.Descriptor(true, _typeId);
 
@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="pos">Position.</param>
         /// <param name="builder">Builder.</param>
         /// <returns>GetField value.</returns>
-        private T Field0<T>(int pos, PortableBuilderImpl builder)
+        private T Field0<T>(int pos, IPortableBuilderEx builder)
         {
             IPortableStream stream = new PortableHeapStream(_data);
 

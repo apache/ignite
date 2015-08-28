@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="portableBuilder">Builder.</param>
         /// <returns>Previous builder.</returns>
-        PortableBuilderImpl SetBuilder(PortableBuilderImpl portableBuilder);
+        IPortableBuilderEx SetBuilder(IPortableBuilderEx portableBuilder);
 
         /// <summary>
         /// Saves metadata for this session.
