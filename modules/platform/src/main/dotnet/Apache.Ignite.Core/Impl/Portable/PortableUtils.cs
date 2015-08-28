@@ -2009,50 +2009,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             return (T) new BinaryFormatter().Deserialize(new PortableStreamAdapter(reader.Stream), null);
         }
 
-        /// <summary>
-        /// Writes invocation result.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="success">Success flag.</param>
-        /// <param name="res">Result.</param>
-        public static void WriteInvocationResult(IPortableWriterEx writer, bool success, object res)
-        {
-            var pos = writer.Stream.Position;
-
-            try
-            {
-                if (success)
-                    writer.WriteBoolean(true);
-                else
-                {
-                    writer.WriteBoolean(false); // Call failed.
-                    writer.WriteBoolean(true); // Exception serialized sucessfully.
-                }
-
-                writer.Write(res);
-            }
-            catch (Exception marshErr)
-            {
-                // Failed to serialize result, fallback to plain string.
-                writer.Stream.Seek(pos, SeekOrigin.Begin);
-
-                writer.WriteBoolean(false); // Call failed.
-                writer.WriteBoolean(false); // Cannot serialize result or exception.
-
-                if (success)
-                {
-                    writer.WriteString("Call completed successfully, but result serialization failed [resultType=" +
-                        res.GetType().Name + ", serializationErrMsg=" + marshErr.Message + ']');
-                }
-                else
-                {
-                    writer.WriteString("Call completed with error, but error serialization failed [errType=" +
-                        res.GetType().Name + ", serializationErrMsg=" + marshErr.Message + ']');
-                }
-            }
-        }
-
-
         /**
          * <summary>Convert date to Java ticks.</summary>
          * <param name="date">Date</param>
