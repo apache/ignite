@@ -77,8 +77,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             IPortableTypeDescriptor desc = _marsh.Descriptor(type);
 
             if (desc == null)
-                throw new IgniteException("Type is not portable (add it to PortableConfiguration): " + 
-                    type.FullName);
+                throw _marsh.IgniteContext.ConvertException(
+                    new IgniteException("Type is not portable (add it to PortableConfiguration): " +
+                                        type.FullName));
 
             return Builder0(null, PortableFromDescriptor(desc), desc);
         }

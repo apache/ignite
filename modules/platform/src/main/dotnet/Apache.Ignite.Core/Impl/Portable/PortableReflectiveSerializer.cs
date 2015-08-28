@@ -80,13 +80,16 @@ namespace Apache.Ignite.Core.Impl.Portable
                 GetDescriptor(obj).Read(obj, reader);
         }
 
-        /// <summary>Register type.</summary>
+        /// <summary>
+        /// Register type.
+        /// </summary>
         /// <param name="type">Type.</param>
         /// <param name="typeId">Type ID.</param>
         /// <param name="converter">Name converter.</param>
         /// <param name="idMapper">ID mapper.</param>
+        /// <param name="context">The context.</param>
         public void Register(Type type, int typeId, IPortableNameMapper converter,
-            IPortableIdMapper idMapper)
+            IPortableIdMapper idMapper, IIgniteContext context)
         {
             if (type.GetInterface(typeof(IPortableMarshalAware).Name) != null)
                 return;
@@ -126,7 +129,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             fields.Sort(Compare);
 
-            Descriptor desc = new Descriptor(fields);
+            Descriptor desc = new Descriptor(fields, context);
 
             _types[type] = desc;
         }
@@ -171,7 +174,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// Constructor.
             /// </summary>
             /// <param name="fields">Fields.</param>
-            public Descriptor(List<FieldInfo> fields)
+            /// <param name="context">The context.</param>
+            public Descriptor(ICollection<FieldInfo> fields, IIgniteContext context)
             {
                 _wActions = new List<PortableReflectiveWriteAction>(fields.Count);
                 _rActions = new List<PortableReflectiveReadAction>(fields.Count);
@@ -181,7 +185,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     PortableReflectiveWriteAction writeAction;
                     PortableReflectiveReadAction readAction;
 
-                    PortableReflectiveActions.TypeActions(field, out writeAction, out readAction);
+                    PortableReflectiveActions.GetTypeActions(field, out writeAction, out readAction, context);
 
                     _wActions.Add(writeAction);
                     _rActions.Add(readAction);

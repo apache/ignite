@@ -95,13 +95,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="field">The field.</param>
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
-        public static void TypeActions(FieldInfo field, out PortableReflectiveWriteAction writeAction, 
-            out PortableReflectiveReadAction readAction)
+        /// <param name="context">The context.</param>
+        public static void GetTypeActions(FieldInfo field, out PortableReflectiveWriteAction writeAction, 
+            out PortableReflectiveReadAction readAction, IIgniteContext context)
         {
             var type = field.FieldType;
 
             if (type.IsPrimitive)
-                HandlePrimitive(field, out writeAction, out readAction);
+                HandlePrimitive(field, out writeAction, out readAction, context);
             else if (type.IsArray)
                 HandleArray(field, out writeAction, out readAction);
             else
@@ -114,9 +115,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="field">The field.</param>
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
-        /// <exception cref="GridException">Unsupported primitive type:  + type.Name</exception>
+        /// <param name="context">The context.</param>
+        /// <exception cref="IgniteException">Unsupported primitive type:  + type.Name</exception>
         private static void HandlePrimitive(FieldInfo field, out PortableReflectiveWriteAction writeAction,
-            out PortableReflectiveReadAction readAction)
+            out PortableReflectiveReadAction readAction, IIgniteContext context)
         {
             var type = field.FieldType;
 
@@ -181,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 readAction = GetReader(field, (f, r) => r.ReadDouble(f));
             }
             else
-                throw new IgniteException("Unsupported primitive type: " + type.Name);
+                throw context.ConvertException(new IgniteException("Unsupported primitive type: " + type.Name));
         }
 
         /// <summary>

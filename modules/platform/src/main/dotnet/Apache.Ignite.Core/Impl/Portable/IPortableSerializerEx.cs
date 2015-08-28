@@ -21,10 +21,19 @@ namespace Apache.Ignite.Core.Impl.Portable
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Extended portable serializer with registration.
+    /// Extended portable serializer with registration, for internal usage.
     /// </summary>
     public interface IPortableSerializerEx : IPortableSerializer
     {
-        void Register(Type type, int typeId, IPortableNameMapper converter, IPortableIdMapper idMapper);
+        /// <summary>
+        /// Registers specified type.
+        /// </summary>
+        /// <param name="type">Type.</param>
+        /// <param name="typeId">Type ID.</param>
+        /// <param name="converter">Name converter.</param>
+        /// <param name="idMapper">ID mapper.</param>
+        /// <param name="context">The context.</param>
+        void Register(Type type, int typeId, IPortableNameMapper converter, IPortableIdMapper idMapper,
+            IIgniteContext context);
     }
 }

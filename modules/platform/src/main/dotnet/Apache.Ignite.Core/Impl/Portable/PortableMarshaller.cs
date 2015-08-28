@@ -468,7 +468,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var refSerializer = serializer as IPortableSerializerEx;
 
                 if (refSerializer != null)
-                    refSerializer.Register(type, typeId, nameMapper, idMapper);
+                    refSerializer.Register(type, typeId, nameMapper, idMapper, _igniteContext);
 
                 AddType(type, typeId, typeName, true, metaEnabled, keepDeserialized, nameMapper, idMapper, serializer,
                     typeCfg.AffinityKeyFieldName, null, null);
