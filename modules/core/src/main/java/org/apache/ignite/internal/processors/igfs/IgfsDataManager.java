@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -322,57 +321,57 @@ public class IgfsDataManager extends IgfsManager {
         return ldr;
     }
 
-    /**
-     * Get list of local data blocks of the given file.
-     *
-     * @param fileInfo File info.
-     * @return List of local data block indices.
-     * @throws IgniteCheckedException If failed.
-     */
-    public List<Long> listLocalDataBlocks(IgfsFileInfo fileInfo)
-        throws IgniteCheckedException {
-        assert fileInfo != null;
-
-        int prevGrpIdx = 0; // Block index within affinity group.
-
-        boolean prevPrimaryFlag = false; // Whether previous block was primary.
-
-        List<Long> res = new ArrayList<>();
-
-        for (long i = 0; i < fileInfo.blocksCount(); i++) {
-            // Determine group index.
-            int grpIdx = (int)(i % grpSize);
-
-            if (prevGrpIdx < grpIdx) {
-                // Reuse existing affinity result.
-                if (prevPrimaryFlag)
-                    res.add(i);
-            }
-            else {
-                // Re-calculate affinity result.
-                IgfsBlockKey key = new IgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(),
-                    fileInfo.evictExclude(), i);
-
-                Collection<ClusterNode> affNodes = dataCache.affinity().mapKeyToPrimaryAndBackups(key);
-
-                assert affNodes != null && !affNodes.isEmpty();
-
-                ClusterNode primaryNode = affNodes.iterator().next();
-
-                if (primaryNode.id().equals(igfsCtx.kernalContext().localNodeId())) {
-                    res.add(i);
-
-                    prevPrimaryFlag = true;
-                }
-                else
-                    prevPrimaryFlag = false;
-            }
-
-            prevGrpIdx = grpIdx;
-        }
-
-        return res;
-    }
+//    /**
+//     * Get list of local data blocks of the given file.
+//     *
+//     * @param fileInfo File info.
+//     * @return List of local data block indices.
+//     * @throws IgniteCheckedException If failed.
+//     */
+//    public List<Long> listLocalDataBlocks(IgfsFileInfo fileInfo)
+//        throws IgniteCheckedException {
+//        assert fileInfo != null;
+//
+//        int prevGrpIdx = 0; // Block index within affinity group.
+//
+//        boolean prevPrimaryFlag = false; // Whether previous block was primary.
+//
+//        List<Long> res = new ArrayList<>();
+//
+//        for (long i = 0; i < fileInfo.blocksCount(); i++) {
+//            // Determine group index.
+//            int grpIdx = (int)(i % grpSize);
+//
+//            if (prevGrpIdx < grpIdx) {
+//                // Reuse existing affinity result.
+//                if (prevPrimaryFlag)
+//                    res.add(i);
+//            }
+//            else {
+//                // Re-calculate affinity result.
+//                IgfsBlockKey key = new IgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(),
+//                    fileInfo.evictExclude(), i);
+//
+//                Collection<ClusterNode> affNodes = dataCache.affinity().mapKeyToPrimaryAndBackups(key);
+//
+//                assert affNodes != null && !affNodes.isEmpty();
+//
+//                ClusterNode primaryNode = affNodes.iterator().next();
+//
+//                if (primaryNode.id().equals(igfsCtx.kernalContext().localNodeId())) {
+//                    res.add(i);
+//
+//                    prevPrimaryFlag = true;
+//                }
+//                else
+//                    prevPrimaryFlag = false;
+//            }
+//
+//            prevGrpIdx = grpIdx;
+//        }
+//
+//        return res;
+//    }
 
     /**
      * Get data block for specified file ID and block index.
@@ -1764,6 +1763,19 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
+     * Allows output stream to await for all current acks.
+     *
+     * @param fileId
+     * @throws InterruptedException
+     */
+    void awaitAllAcksReceived(IgniteUuid fileId) throws InterruptedException {
+        WriteCompletionFuture fut = pendingWrites.get(fileId);
+
+        if (fut != null)
+            fut.awaitAllAcksReceived();
+    }
+
+    /**
      * Future that is completed when all participating
      */
     private class WriteCompletionFuture extends GridFutureAdapter<Boolean> {
@@ -1771,10 +1783,16 @@ public class IgfsDataManager extends IgfsManager {
         private static final long serialVersionUID = 0L;
 
         /** File id to remove future from map. */
-        private IgniteUuid fileId;
+        private final IgniteUuid fileId;
 
         /** Pending acks. */
-        private ConcurrentMap<UUID, Set<Long>> pendingAcks = new ConcurrentHashMap8<>();
+        private final ConcurrentMap<Long, UUID> ackMap = new ConcurrentHashMap8<>();
+
+        /** Lock for map-related conditions. */
+        private final Lock lock = new ReentrantLock();
+
+        /** Condition to wait for empty map. */
+        private final Condition allAcksRcvCond = lock.newCondition();
 
         /** Flag indicating future is waiting for last ack. */
         private volatile boolean awaitingLast;
@@ -1786,6 +1804,21 @@ public class IgfsDataManager extends IgfsManager {
             assert fileId != null;
 
             this.fileId = fileId;
+        }
+
+        /**
+         * Used for flush
+         * @throws InterruptedException
+         */
+        public void awaitAllAcksReceived() throws InterruptedException {
+            lock.lock();
+
+            try {
+                while (!ackMap.isEmpty())
+                    allAcksRcvCond.await();
+            } finally {
+                lock.unlock();
+            }
         }
 
         /** {@inheritDoc} */
@@ -1808,13 +1841,26 @@ public class IgfsDataManager extends IgfsManager {
          */
         private void onWriteRequest(UUID nodeId, long batchId) {
             if (!isDone()) {
-                Set<Long> reqIds = pendingAcks.get(nodeId);
+                UUID pushedOut = ackMap.putIfAbsent(batchId, nodeId);
 
-                if (reqIds == null)
-                    reqIds = F.addIfAbsent(pendingAcks, nodeId, new GridConcurrentHashSet<Long>());
-
-                reqIds.add(batchId);
+                assert pushedOut == null;
             }
+        }
+
+        /**
+         * Answers if there are some batches for the specified node we're currently waiting acks for.
+         *
+         * @param nodeId The node Id.
+         * @return If there are acks awaited from this node.
+         */
+        private boolean hasPendingAcks(UUID nodeId) {
+            assert nodeId != null;
+
+            for (Map.Entry<Long, UUID> e: ackMap.entrySet())
+                if (nodeId.equals(e.getValue()))
+                    return true;
+
+            return false;
         }
 
         /**
@@ -1824,15 +1870,33 @@ public class IgfsDataManager extends IgfsManager {
          * @param e Caught exception.
          */
         private void onError(UUID nodeId, IgniteCheckedException e) {
-            Set<Long> reqIds = pendingAcks.get(nodeId);
-
             // If waiting for ack from this node.
-            if (reqIds != null && !reqIds.isEmpty()) {
+            if (hasPendingAcks(nodeId)) {
+                // TODO: need to implement correct failover logic there:
+                // TODO: all the sent data should be stored there (TBD?)
+                // TODO: and the data should be resent to another node upon failure.
+                // TODO: Currently we just fail entire the stream.
+
+                ackMap.clear();
+
+                signalAckMapSizeReduced();
+
                 if (e.hasCause(IgfsOutOfSpaceException.class))
                     onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " + nodeId, e));
                 else
                     onDone(new IgniteCheckedException(
                         "Failed to wait for write completion (write failed on node): " + nodeId, e));
+            }
+        }
+
+        private void signalAckMapSizeReduced() {
+            lock.lock();
+
+            try {
+                allAcksRcvCond.signalAll();
+            }
+            finally {
+                lock.unlock();
             }
         }
 
@@ -1844,17 +1908,14 @@ public class IgfsDataManager extends IgfsManager {
          */
         private void onWriteAck(UUID nodeId, long batchId) {
             if (!isDone()) {
-                Set<Long> reqIds = pendingAcks.get(nodeId);
-
-                assert reqIds != null : "Received acknowledgement message for not registered node [nodeId=" +
-                    nodeId + ", batchId=" + batchId + ']';
-
-                boolean rmv = reqIds.remove(batchId);
+                boolean rmv = ackMap.remove(batchId, nodeId);
 
                 assert rmv : "Received acknowledgement message for not registered batch [nodeId=" +
                     nodeId + ", batchId=" + batchId + ']';
 
-                if (awaitingLast && checkCompleted())
+                signalAckMapSizeReduced();
+
+                if (awaitingLast && ackMap.isEmpty())
                     onDone(true);
             }
         }
@@ -1868,24 +1929,8 @@ public class IgfsDataManager extends IgfsManager {
             if (log.isDebugEnabled())
                 log.debug("Marked write completion future as awaiting last ack: " + fileId);
 
-            if (checkCompleted())
+            if (ackMap.isEmpty())
                 onDone(true);
-        }
-
-        /**
-         * @return True if received all request acknowledgements after {@link #markWaitingLastAck()} was called.
-         */
-        private boolean checkCompleted() {
-            for (Map.Entry<UUID, Set<Long>> entry : pendingAcks.entrySet()) {
-                Set<Long> reqIds = entry.getValue();
-
-                // If still waiting for some acks.
-                if (!reqIds.isEmpty())
-                    return false;
-            }
-
-            // Got match for each entry in sent map.
-            return true;
         }
     }
 }

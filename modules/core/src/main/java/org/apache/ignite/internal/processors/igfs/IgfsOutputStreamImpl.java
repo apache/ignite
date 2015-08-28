@@ -283,6 +283,13 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             }
 
             if (space > 0) {
+                try {
+                    data.awaitAllAcksReceived(fileInfo.id());
+                }
+                catch (InterruptedException ie) {
+                    throw new IOException(ie);
+                }
+
                 IgfsFileInfo fileInfo0 = meta.updateInfo(fileInfo.id(),
                     new ReserveSpaceClosure(space, streamRange));
 
