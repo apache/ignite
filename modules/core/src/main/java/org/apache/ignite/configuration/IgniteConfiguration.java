@@ -141,6 +141,9 @@ public class IgniteConfiguration {
     /** Default keep alive time for public thread pool. */
     public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
 
+    /** Default limit of threads used at rebalance. 2 demand + 2 supply threads. */
+    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 4;
+
     /** Default max queue capacity of public thread pool. */
     public static final int DFLT_PUBLIC_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
@@ -345,6 +348,9 @@ public class IgniteConfiguration {
 
     /** Client mode flag. */
     private Boolean clientMode;
+
+    /** Rebalance thread pool size. */
+    private int rebalanceThreadPoolSize = DFLT_REBALANCE_THREAD_POOL_SIZE;
 
     /** Transactions configuration. */
     private TransactionConfiguration txCfg = new TransactionConfiguration();
@@ -1322,6 +1328,30 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setClockSyncFrequency(long clockSyncFreq) {
         this.clockSyncFreq = clockSyncFreq;
+
+        return this;
+    }
+
+
+    /**
+     * Gets count of available rebalancing threads.
+     * Half will be used for supplying and half for demanding of partitions.
+     * Minimum is 2.
+     * @return count.
+     */
+    public int getRebalanceThreadPoolSize(){
+        return rebalanceThreadPoolSize;
+    }
+
+    /**
+     * Sets count of available rebalancing threads.
+     * Half will be used for supplying and half for demanding of partitions.
+     * Minimum is 2.
+     * @param size Size.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setRebalanceThreadPoolSize(int size){
+        this.rebalanceThreadPoolSize = size;
 
         return this;
     }

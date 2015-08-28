@@ -91,7 +91,7 @@ public interface GridCachePreloader {
      * @param assignments Assignments to add.
      * @param forcePreload Force preload flag.
      */
-    public void addAssignments(GridDhtPreloaderAssignments assignments, boolean forcePreload);
+    public void addAssignments(GridDhtPreloaderAssignments assignments, boolean forcePreload) throws IgniteCheckedException;
 
     /**
      * @param p Preload predicate.
@@ -132,4 +132,22 @@ public interface GridCachePreloader {
      * Unwinds undeploys.
      */
     public void unwindUndeploys();
+
+
+    /**
+     * Handles Supply message.
+     *
+     * @param idx Index.
+     * @param id Node Id.
+     * @param s Supply message.
+     */
+    public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessageV2 s);
+
+    /**
+     * Handles Demand message.
+     *
+     * @param id Node Id.
+     * @param d Demand message.
+     */
+    public void handleDemandMessage(UUID id, GridDhtPartitionDemandMessage d);
 }

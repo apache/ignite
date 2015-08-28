@@ -53,7 +53,7 @@ public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2
 
         readCnt.set(Integer.MAX_VALUE);
 
-        for (int i = 0; i <= 1000; i++)
+        for (int i = 0; i <= 100000; i++)
             jcache(0).put(new TestKey(String.valueOf(++key)), "");
 
         startGrid(3);
@@ -68,6 +68,7 @@ public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2
         try {
             jcache(3).get(new TestKey(String.valueOf(key)));
 
+            //Can fail in case rebalancing finished before get
             assert false : "p2p marshalling failed, but error response was not sent";
         }
         catch (CacheException e) {

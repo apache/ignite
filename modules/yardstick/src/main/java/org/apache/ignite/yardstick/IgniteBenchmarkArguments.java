@@ -28,6 +28,10 @@ import org.apache.ignite.transactions.*;
 @SuppressWarnings({"UnusedDeclaration", "FieldCanBeLocal"})
 public class IgniteBenchmarkArguments {
     /** */
+    @Parameter(names = {"-cn", "--cacheName"}, description = "Cache name")
+    private String cacheName;
+
+    /** */
     @Parameter(names = {"-nn", "--nodeNumber"}, description = "Node number")
     private int nodes = 1;
 
@@ -265,11 +269,18 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Cache name.
+     */
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /**
      * @return Description.
      */
     public String description() {
         return "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-cl=" + clientOnly + "-nc=" + nearCacheFlag +
-            (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency;
+            (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency+ "-cn=" + cacheName;
     }
 
     /** {@inheritDoc} */

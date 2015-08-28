@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.*;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.*;
 import org.apache.ignite.internal.processors.cache.local.*;
@@ -78,6 +79,9 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedPreloadEventsSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadStartStopEventsSelfTest.class);
         suite.addTestSuite(GridReplicatedTxPreloadTest.class);
+
+        suite.addTestSuite(GridCacheRebalancingSyncSelfTest.class);
+        suite.addTestSuite(GridCacheRebalancingAsyncSelfTest.class);
 
         suite.addTestSuite(IgniteTxReentryNearSelfTest.class);
         suite.addTestSuite(IgniteTxReentryColocatedSelfTest.class);

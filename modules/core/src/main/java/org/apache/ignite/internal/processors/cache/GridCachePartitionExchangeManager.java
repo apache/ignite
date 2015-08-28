@@ -48,7 +48,8 @@ import java.util.concurrent.locks.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.GridTopic.*;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.*;
 
@@ -274,6 +275,41 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (reconnect)
             reconnectExchangeFut = new GridFutureAdapter<>();
 
+        if (!cctx.kernalContext().clientNode()) {
+
+            for (int cnt = 0; cnt < Math.max(1, cctx.gridConfig().getRebalanceThreadPoolSize() / 2); cnt++) {
+                final int idx = cnt;
+
+                cctx.io().addOrderedHandler(demanderTopic(cnt), new CI2<UUID, GridDhtPartitionSupplyMessageV2>() {
+                    @Override public void apply(final UUID id, final GridDhtPartitionSupplyMessageV2 m) {
+                        if (!enterBusy())
+                            return;
+
+                        try {
+
+                            cctx.cacheContext(m.cacheId).preloader().handleSupplyMessage(idx, id, m);
+                        }
+                        finally {
+                            leaveBusy();
+                        }
+                    }
+                });
+                cctx.io().addOrderedHandler(supplierTopic(cnt), new CI2<UUID, GridDhtPartitionDemandMessage>() {
+                    @Override public void apply(UUID id, GridDhtPartitionDemandMessage m) {
+                        if (!enterBusy())
+                            return;
+
+                        try {
+                            cctx.cacheContext(m.cacheId).preloader().handleDemandMessage(id, m);
+                        }
+                        finally {
+                            leaveBusy();
+                        }
+                    }
+                });
+            }
+        }
+
         new IgniteThread(cctx.gridName(), "exchange-worker", exchWorker).start();
 
         onDiscoveryEvent(cctx.localNodeId(), fut);
@@ -336,6 +372,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
     }
 
+    /**
+     * @param idx
+     * @return topic
+     */
+    public static Object demanderTopic(int idx) {
+        return TOPIC_CACHE.topic("Demander", idx);
+    }
+
+    /**
+     * @param idx
+     * @return topic
+     */
+    public static Object supplierTopic(int idx) {
+        return TOPIC_CACHE.topic("Supplier", idx);
+    }
+
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
         cctx.gridEvents().removeLocalEventListener(discoLsnr);
@@ -359,6 +411,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         for (AffinityReadyFuture f : readyFuts.values())
             f.onDone(err);
+
+        for (int cnt = 0; cnt < Math.max(1, cctx.gridConfig().getRebalanceThreadPoolSize() / 2); cnt++) {
+            cctx.io().removeOrderedHandler(demanderTopic(cnt));
+            cctx.io().removeOrderedHandler(supplierTopic(cnt));
+        }
 
         U.cancel(exchWorker);
 
