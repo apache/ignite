@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Portable writer implementation.
     /// </summary>
-    public class PortableWriterImpl : IPortableWriterEx
+    public sealed class PortableWriterImpl : IPortableWriterEx
     {
         /** Marshaller. */
         private readonly PortableMarshaller _marsh;
@@ -1135,7 +1135,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Enable detach mode for the next object.
         /// </summary>
-        void IPortableWriterEx.DetachNext()
+        public void DetachNext()
         {
             if (!_detachMode)
                 _detach = true;
@@ -1144,7 +1144,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Stream.
         /// </summary>
-        IPortableStream IPortableWriterEx.Stream
+        public IPortableStream Stream
         {
             get { return _stream; }
         }
@@ -1153,7 +1153,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Gets collected metadatas.
         /// </summary>
         /// <value>Collected metadatas (if any).</value>
-        IDictionary<int, IPortableMetadata> IPortableWriterEx.Metadata
+        public IDictionary<int, IPortableMetadata> Metadata
         {
             get { return _metas; }
         }
