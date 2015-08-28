@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -47,19 +48,27 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /** Saved flag (set if type metadata was saved at least once). */
         private volatile bool _saved;
 
+        /** Ignire context. */
+        private readonly IIgniteContext _context;
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <param name="typeName">Type name.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
-        public PortableMetadataHolder(int typeId, string typeName, string affKeyFieldName)
+        /// <param name="context">The context.</param>
+        public PortableMetadataHolder(int typeId, string typeName, string affKeyFieldName, IIgniteContext context)
         {
-            this._typeId = typeId;
-            this._typeName = typeName;
-            this._affKeyFieldName = affKeyFieldName;
+            Debug.Assert(!string.IsNullOrEmpty(typeName));
+            Debug.Assert(context != null);
 
-            _emptyMeta = new PortableMetadataImpl(typeId, typeName, null, affKeyFieldName);
+            _typeId = typeId;
+            _typeName = typeName;
+            _affKeyFieldName = affKeyFieldName;
+            _context = context;
+
+            _emptyMeta = new PortableMetadataImpl(typeId, typeName, null, affKeyFieldName, context);
         }
 
         /// <summary>
@@ -141,7 +150,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
                 }
 
                 // 3. Assign new meta. Order is important here: meta must be assigned before field IDs.
-                _meta = new PortableMetadataImpl(_typeId, _typeName, newFields, _affKeyFieldName);
+                _meta = new PortableMetadataImpl(_typeId, _typeName, newFields, _affKeyFieldName, _context);
                 _ids = newIds;
             }
         }

@@ -1298,7 +1298,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_metas == null)
             {
                 PortableMetadataImpl meta =
-                    new PortableMetadataImpl(typeId, typeName, fields, affKeyFieldName);
+                    new PortableMetadataImpl(typeId, typeName, fields, affKeyFieldName, IgniteContext);
 
                 _metas = new Dictionary<int, IPortableMetadata>(1);
 
@@ -1319,7 +1319,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     }
                 }
                 else
-                    _metas[typeId] = new PortableMetadataImpl(typeId, typeName, fields, affKeyFieldName);
+                    _metas[typeId] = new PortableMetadataImpl(typeId, typeName, fields, affKeyFieldName, IgniteContext);
             }
         }
     }

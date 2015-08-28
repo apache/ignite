@@ -304,7 +304,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         public virtual IPortableMetadata GetMetadata(int typeId)
         {
             // TODO:
-            return PortableMetadataImpl.EmptyMeta;
+
+            // Empty meta:
+            return new PortableMetadataImpl(PortableUtils.TypeObject, PortableTypeNames.TypeNameObject, null, null,
+                _igniteContext);
         }
 
         /// <summary>
@@ -326,7 +329,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                             new Dictionary<int, PortableMetadataHolder>(_metas);
 
                         holder = desc.MetadataEnabled ? new PortableMetadataHolder(desc.TypeId,
-                            desc.TypeName, desc.AffinityKeyFieldName) : null;
+                            desc.TypeName, desc.AffinityKeyFieldName, _igniteContext) : null;
 
                         metas0[desc.TypeId] = holder;
 

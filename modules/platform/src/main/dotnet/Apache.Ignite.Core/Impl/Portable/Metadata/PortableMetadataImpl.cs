@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Portable.Metadata
 {
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Portable;
 
@@ -26,11 +27,6 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
     /// </summary>
     public class PortableMetadataImpl : IPortableMetadata, IPortableWriteAware
     {
-        /** Empty metadata. */
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-        public static readonly PortableMetadataImpl EmptyMeta =
-            new PortableMetadataImpl(PortableUtils.TypeObject, PortableTypeNames.TypeNameObject, null, null);
-
         /** Empty dictionary. */
         private static readonly IDictionary<string, int> EmptyDict = new Dictionary<string, int>();
 
@@ -39,13 +35,20 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
 
         /** Fields. */
         private readonly IDictionary<string, int> _fields;
+        
+        /** */
+        private readonly IIgniteContext _context;
 
         /// <summary>
         /// Get type name by type ID.
         /// </summary>
         /// <param name="typeId">Type ID.</param>
-        /// <returns>Type name.</returns>
-        private static string ConvertTypeName(int typeId)
+        /// <param name="context">The context.</param>
+        /// <returns>
+        /// Type name.
+        /// </returns>
+        /// <exception cref="PortableException">Invalid type ID:  + typeId</exception>
+        private static string ConvertTypeName(int typeId, IIgniteContext context)
         {
             switch (typeId)
             {
@@ -111,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
                 case PortableUtils.TypeDictionary:
                     return PortableTypeNames.TypeNameMap;
                 default:
-                    throw new PortableException("Invalid type ID: " + typeId);
+                    throw context.ConvertException(new PortableException("Invalid type ID: " + typeId));
             }
         }
 
@@ -119,7 +122,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// Initializes a new instance of the <see cref="PortableMetadataImpl" /> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public PortableMetadataImpl(IPortableReader reader)
+        public PortableMetadataImpl(IPortableReaderEx reader)
         {
             var rawReader = reader.RawReader();
 
@@ -127,6 +130,8 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
             TypeName = rawReader.ReadString();
             AffinityKeyFieldName = rawReader.ReadString();
             _fields = rawReader.ReadGenericDictionary<string, int>();
+
+            _context = reader.Marshaller.IgniteContext;
         }
 
         /// <summary>
@@ -136,13 +141,20 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <param name="typeName">Type name.</param>
         /// <param name="fields">Fields.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
+        /// <param name="context">The context.</param>
         public PortableMetadataImpl(int typeId, string typeName, IDictionary<string, int> fields,
-            string affKeyFieldName)
+            string affKeyFieldName, IIgniteContext context)
         {
+            Debug.Assert(!string.IsNullOrEmpty(typeName));
+            Debug.Assert(context != null);
+            Debug.Assert(fields != null);
+
             TypeId = typeId;
             TypeName = typeName;
             AffinityKeyFieldName = affKeyFieldName;
-            this._fields = fields;
+            _fields = fields;
+
+            _context = context;
         }
 
         /// <summary>
@@ -179,7 +191,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
 
                 _fields.TryGetValue(fieldName, out typeId);
 
-                return ConvertTypeName(typeId);
+                return ConvertTypeName(typeId, _context);
             }
             
             return null;
