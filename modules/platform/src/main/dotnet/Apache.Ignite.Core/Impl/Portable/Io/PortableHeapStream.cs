@@ -359,7 +359,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void Write(byte* src, int cnt)
         {
-            EnsureWriteCapacity(pos + cnt);
+            EnsureWriteCapacity(Pos + cnt);
 
             fixed (byte* data0 = _data)
             {
@@ -381,7 +381,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override int Remaining()
         {
-            return _data.Length - pos;
+            return _data.Length - Pos;
         }
 
         /** <inheritdoc /> */
@@ -393,9 +393,9 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override byte[] ArrayCopy()
         {
-            byte[] copy = new byte[pos];
+            byte[] copy = new byte[Pos];
 
-            Buffer.BlockCopy(_data, 0, copy, 0, pos);
+            Buffer.BlockCopy(_data, 0, copy, 0, Pos);
 
             return copy;
         }
@@ -440,9 +440,9 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         protected override void EnsureReadCapacity(int cnt)
         {
-            if (_data.Length - pos < cnt)
+            if (_data.Length - Pos < cnt)
                 throw new EndOfStreamException("Not enough data in stream [expected=" + cnt +
-                    ", remaining=" + (_data.Length - pos) + ']');
+                    ", remaining=" + (_data.Length - Pos) + ']');
         }
     }
 }

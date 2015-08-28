@@ -24,31 +24,31 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Object handle dictionary.
     /// </summary>
-    internal class PortableHandleDictionary<K, V>
+    internal class PortableHandleDictionary<TKey, TValue>
     {
         /** Initial array sizes. */
-        private const int INITIAL_SIZE = 7;
+        private const int InitialSize = 7;
 
         /** Dictionary. */
-        private Dictionary<K, V> dict;
+        private Dictionary<TKey, TValue> _dict;
 
         /** First key. */
-        private readonly K key1;
+        private readonly TKey _key1;
 
         /** First value. */
-        private readonly V val1;
+        private readonly TValue _val1;
 
         /** Second key. */
-        private K key2;
+        private TKey _key2;
 
         /** Second value. */
-        private V val2;
+        private TValue _val2;
 
         /** Third key. */
-        private K key3;
+        private TKey _key3;
 
         /** Third value. */
-        private V val3;
+        private TValue _val3;
 
         /// <summary>
         /// Constructor with initial key-value pair.
@@ -56,15 +56,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
         [SuppressMessage("ReSharper", "DoNotCallOverridableMethodsInConstructor")]
-        public PortableHandleDictionary(K key, V val)
+        public PortableHandleDictionary(TKey key, TValue val)
         {
             Debug.Assert(!Equals(key, EmptyKey));
             
-            key1 = key;
-            val1 = val;
+            _key1 = key;
+            _val1 = val;
 
-            key2 = EmptyKey;
-            key3 = EmptyKey;
+            _key2 = EmptyKey;
+            _key3 = EmptyKey;
         }
 
         /// <summary>
@@ -72,30 +72,30 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
-        public void Add(K key, V val)
+        public void Add(TKey key, TValue val)
         {
             Debug.Assert(!Equals(key, EmptyKey));
 
-            if (Equals(key2, EmptyKey))
+            if (Equals(_key2, EmptyKey))
             {
-                key2 = key;
-                val2 = val;
+                _key2 = key;
+                _val2 = val;
 
                 return;
             }
 
-            if (Equals(key3, EmptyKey))
+            if (Equals(_key3, EmptyKey))
             {
-                key3 = key;
-                val3 = val;
+                _key3 = key;
+                _val3 = val;
 
                 return;
             }
 
-            if (dict == null)
-                dict = new Dictionary<K, V>(INITIAL_SIZE);
+            if (_dict == null)
+                _dict = new Dictionary<TKey, TValue>(InitialSize);
 
-            dict[key] = val;
+            _dict[key] = val;
         }
 
         /// <summary>
@@ -104,57 +104,57 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
         /// <returns>True if key was found.</returns>
-        public bool TryGetValue(K key, out V val)
+        public bool TryGetValue(TKey key, out TValue val)
         {
             Debug.Assert(!Equals(key, EmptyKey));
 
-            if (Equals(key, key1))
+            if (Equals(key, _key1))
             {
-                val = val1;
+                val = _val1;
 
                 return true;
             }
 
-            if (Equals(key, key2))
+            if (Equals(key, _key2))
             {
-                val = val2;
+                val = _val2;
 
                 return true;
             }
 
-            if (Equals(key, key3))
+            if (Equals(key, _key3))
             {
-                val = val3;
+                val = _val3;
 
                 return true;
             }
 
-            if (dict == null)
+            if (_dict == null)
             {
-                val = default(V);
+                val = default(TValue);
 
                 return false;
             }
 
-            return dict.TryGetValue(key, out val);
+            return _dict.TryGetValue(key, out val);
         }
 
         /// <summary>
         /// Merge data from another dictionary without overwrite.
         /// </summary>
         /// <param name="that">Other dictionary.</param>
-        public void Merge(PortableHandleDictionary<K, V> that)
+        public void Merge(PortableHandleDictionary<TKey, TValue> that)
         {
             Debug.Assert(that != null, "that == null");
             
-            AddIfAbsent(that.key1, that.val1);
-            AddIfAbsent(that.key2, that.val2);
-            AddIfAbsent(that.key3, that.val3);
+            AddIfAbsent(that._key1, that._val1);
+            AddIfAbsent(that._key2, that._val2);
+            AddIfAbsent(that._key3, that._val3);
 
-            if (that.dict == null)
+            if (that._dict == null)
                 return;
 
-            foreach (var pair in that.dict)
+            foreach (var pair in that._dict)
                 AddIfAbsent(pair.Key, pair.Value);
         }
 
@@ -163,24 +163,24 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
-        private void AddIfAbsent(K key, V val)
+        private void AddIfAbsent(TKey key, TValue val)
         {
             if (Equals(key, EmptyKey))
                 return;
 
-            if (Equals(key, key1) || Equals(key, key2) || Equals(key, key3))
+            if (Equals(key, _key1) || Equals(key, _key2) || Equals(key, _key3))
                 return;
 
-            if (dict == null || !dict.ContainsKey(key))
+            if (_dict == null || !_dict.ContainsKey(key))
                 Add(key, val);
         }
 
         /// <summary>
         /// Gets the empty key.
         /// </summary>
-        protected virtual K EmptyKey
+        protected virtual TKey EmptyKey
         {
-            get { return default(K); }
+            get { return default(TKey); }
         }
     }
 }
