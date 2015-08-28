@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -25,6 +26,7 @@ import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.platform.cache.query.*;
 import org.apache.ignite.internal.processors.platform.callback.*;
+import org.apache.ignite.internal.processors.platform.compute.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
 import org.jetbrains.annotations.*;
 
@@ -198,4 +200,33 @@ public interface PlatformContext {
      * @return Filter.
      */
     public <E extends Event> PlatformAwareEventFilter<E> createRemoteEventFilter(Object pred, final int... types);
+
+    /**
+     * Create native exception.
+     *
+     * @param cause Native cause.
+     * @return Exception.
+     */
+    // TODO: Some common interface must be used here.
+    public IgniteCheckedException createNativeException(Object cause);
+
+    /**
+     * Create job.
+     *
+     * @param task Task.
+     * @param ptr Pointer.
+     * @param job Native job.
+     * @return job.
+     */
+    public PlatformJob createJob(Object task, long ptr, @Nullable Object job);
+
+    /**
+     * Create closure job.
+     *
+     * @param task Task.
+     * @param ptr Pointer.
+     * @param job Native job.
+     * @return Closure job.
+     */
+    public PlatformJob createClosureJob(Object task, long ptr, Object job);
 }
