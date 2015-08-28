@@ -1492,7 +1492,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="stream">Stream.</param>
          * <param name="val">Value.</param>
          */
-        public static void WritePortable(IPortableStream stream, PortableUserObject val)
+        public static void WritePortable(IPortableStream stream, IPortableUserObject val)
         {
             WriteByteArray(val.Data, stream);
 

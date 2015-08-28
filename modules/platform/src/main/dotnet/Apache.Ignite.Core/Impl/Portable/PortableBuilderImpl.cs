@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly PortableBuilderImpl _parent;
 
         /** Initial portable object. */
-        private readonly PortableUserObject _obj;
+        private readonly IPortableUserObject _obj;
 
         /** Type descriptor. */
         private readonly IPortableTypeDescriptor _desc;
@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="desc">Type descriptor.</param>
         /// <param name="igniteContext">The ignite context.</param>
         public PortableBuilderImpl(PortablesImpl portables, PortableBuilderImpl parent, 
-            PortableUserObject obj, IPortableTypeDescriptor desc, IIgniteContext igniteContext)
+            IPortableUserObject obj, IPortableTypeDescriptor desc, IIgniteContext igniteContext)
         {
             Debug.Assert(portables != null);
             Debug.Assert(obj != null);
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="obj">Portable object.</param>
         /// <returns>Child builder.</returns>
-        public PortableBuilderImpl Child(PortableUserObject obj)
+        public PortableBuilderImpl Child(IPortableUserObject obj)
         {
             return _portables.ChildBuilder(_parent, obj);
         }
@@ -537,7 +537,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="outStream">Output stream.</param>
         /// <param name="port">Portable.</param>
-        internal void ProcessPortable(IPortableStream outStream, PortableUserObject port)
+        internal void ProcessPortable(IPortableStream outStream, IPortableUserObject port)
         {
             // Special case: writing portable object with correct inversions.
             PortableHeapStream inStream = new PortableHeapStream(port.Data);

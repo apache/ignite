@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static readonly PortableSystemTypedWriteDelegate<Guid?> WriteHndGuidTyped = WriteGuidTyped;
 
         /** Typed write handler: Portable. */
-        public static readonly PortableSystemTypedWriteDelegate<PortableUserObject> WriteHndPortableTyped = WritePortableTyped;
+        public static readonly PortableSystemTypedWriteDelegate<IPortableUserObject> WriteHndPortableTyped = WritePortableTyped;
 
         /** Typed write handler: boolean array. */
         public static readonly PortableSystemTypedWriteDelegate<bool[]> WriteHndBoolArrayTyped = WriteBoolArrayTyped;
@@ -353,7 +353,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             ReadHandlers[PortableUtils.TypeMapEntry] = new PortableSystemReader(ReadMapEntry);
 
             // 15. Portable.
-            WriteHandlers[typeof(PortableUserObject)] = WritePortable;
+            WriteHandlers[typeof(IPortableUserObject)] = WritePortable;
 
             // 16. Enum.
             ReadHandlers[PortableUtils.TypeEnum] = new PortableSystemContextReader<int>(PortableUtils.ReadEnum<int>);
@@ -1023,13 +1023,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypePortable);
 
-            PortableUtils.WritePortable(ctx.Stream, (PortableUserObject)obj);
+            PortableUtils.WritePortable(ctx.Stream, (IPortableUserObject)obj);
         }
 
         /**
          * <summary>Write portable object.</summary>
          */
-        private static void WritePortableTyped(IPortableStream stream, PortableUserObject obj)
+        private static void WritePortableTyped(IPortableStream stream, IPortableUserObject obj)
         {
             stream.WriteByte(PortableUtils.TypePortable);
 

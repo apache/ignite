@@ -657,7 +657,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads the portable object in portable form.
         /// </summary>
-        private PortableUserObject ReadAsPortable(int dataPos, int dataLen, bool doDetach)
+        private IPortableUserObject ReadAsPortable(int dataPos, int dataLen, bool doDetach)
         {
             try
             {
@@ -668,7 +668,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var pos = dataPos + offs;
 
                 if (!doDetach)
-                    return GetPortableUserObject(pos, pos, Stream.Array());
+                    return GetIPortableUserObject(pos, pos, Stream.Array());
                 
                 Stream.Seek(pos + 10, SeekOrigin.Begin);
 
@@ -676,7 +676,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 Stream.Seek(pos, SeekOrigin.Begin);
 
-                return GetPortableUserObject(pos, 0, Stream.ReadByteArray(len));
+                return GetIPortableUserObject(pos, 0, Stream.ReadByteArray(len));
             }
             finally
             {
@@ -708,16 +708,16 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 if (userType && _mode == PortableMode.ForcePortable)
                 {
-                    PortableUserObject portObj;
+                    IPortableUserObject portObj;
 
                     if (_detach)
                     {
                         Stream.Seek(pos, SeekOrigin.Begin);
 
-                        portObj = GetPortableUserObject(pos, 0, Stream.ReadByteArray(len));
+                        portObj = GetIPortableUserObject(pos, 0, Stream.ReadByteArray(len));
                     }
                     else
-                        portObj = GetPortableUserObject(pos, pos, Stream.Array());
+                        portObj = GetIPortableUserObject(pos, pos, Stream.Array());
 
                     T obj = _builder == null 
                         ? IgniteContext.WrapObjectOnRead<T>(portObj)
@@ -1028,7 +1028,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="pos">Position in the current stream.</param>
         /// <param name="offs">Offset in the byte array.</param>
         /// <param name="bytes">Bytes.</param>
-        private PortableUserObject GetPortableUserObject(int pos, int offs, byte[] bytes)
+        private IPortableUserObject GetIPortableUserObject(int pos, int offs, byte[] bytes)
         {
             Stream.Seek(pos + 2, SeekOrigin.Begin);
 

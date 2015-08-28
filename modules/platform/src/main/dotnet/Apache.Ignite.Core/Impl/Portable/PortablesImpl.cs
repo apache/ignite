@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             A.NotNull(obj, "obj");
 
-            PortableUserObject obj0 = obj as PortableUserObject;
+            IPortableUserObject obj0 = obj as IPortableUserObject;
 
             if (obj0 == null)
                 throw new ArgumentException("Unsupported object type: " + obj.GetType());
@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="parent">Parent builder.</param>
         /// <param name="obj">Portable object.</param>
         /// <returns></returns>
-        internal PortableBuilderImpl ChildBuilder(PortableBuilderImpl parent, PortableUserObject obj)
+        internal PortableBuilderImpl ChildBuilder(PortableBuilderImpl parent, IPortableUserObject obj)
         {
             IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj.TypeId);
 
@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="desc">Descriptor.</param>
         /// <returns>Empty portable object.</returns>
-        private PortableUserObject PortableFromDescriptor(IPortableTypeDescriptor desc)
+        private IPortableUserObject PortableFromDescriptor(IPortableTypeDescriptor desc)
         {
             PortableHeapStream stream = new PortableHeapStream(18);
 
@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="obj">Portable object.</param>
         /// <param name="desc">Type descriptor.</param>
         /// <returns>Builder.</returns>
-        private PortableBuilderImpl Builder0(PortableBuilderImpl parent, PortableUserObject obj, 
+        private PortableBuilderImpl Builder0(PortableBuilderImpl parent, IPortableUserObject obj, 
             IPortableTypeDescriptor desc)
         {
             return new PortableBuilderImpl(this, parent, obj, desc, _marsh.IgniteContext);
