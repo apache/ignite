@@ -92,6 +92,7 @@
     <Compile Include="Impl\Portable\IPortableSerializerEx.cs" />
     <Compile Include="Impl\Portable\IPortableSystemTypeSerializer.cs" />
     <Compile Include="Impl\Portable\IPortableTypeDescriptor.cs" />
+    <Compile Include="Impl\Portable\IPortableUserObject.cs" />
     <Compile Include="Impl\Portable\IPortableWriteAware.cs" />
     <Compile Include="Impl\Portable\IPortableWriterEx.cs" />
     <Compile Include="Impl\Portable\Metadata\IPortableMetadataHandler.cs" />
