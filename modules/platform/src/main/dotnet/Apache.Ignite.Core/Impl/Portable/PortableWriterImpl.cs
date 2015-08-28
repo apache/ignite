@@ -863,8 +863,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                         throw _marsh.IgniteContext.ConvertException(
                             new PortableException("Unsupported object type [type=" + type +
                                                   ", object=" + obj + ']'));
-
-                    Write(new SerializableObjectHolder(obj));
+                    
+                    Write(_marsh.IgniteContext.CreateSerializableObjectHolder(obj));
 
                     return;
                 }

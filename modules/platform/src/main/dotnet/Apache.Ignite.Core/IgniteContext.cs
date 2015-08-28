@@ -18,21 +18,31 @@
 namespace Apache.Ignite.Core
 {
     using System;
+    using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
     /// Ignite extensibility context default implementation.
     /// </summary>
     public class IgniteContext : IIgniteContext
     {
-        /// <summary>
-        /// Converts an exception.
-        /// All thrown exceptions should be passed through this method.
-        /// Provides custom error logic when overridden in a derived class.
-        /// </summary>
-        /// <param name="exception">The exception to convert.</param>
+        /** <inheritdoc /> */
         public Exception ConvertException(Exception exception)
         {
             return exception;
+        }
+
+        /** <inheritdoc /> */
+        public object CreateSerializableObjectHolder(object obj)
+        {
+            return new SerializableObjectHolder(obj);
+        }
+
+        /** <inheritdoc /> */
+        public object UnwrapSerializableObjectHolder(object obj)
+        {
+            var holder = obj as SerializableObjectHolder;
+
+            return holder == null ? obj : holder.Item;
         }
     }
 }

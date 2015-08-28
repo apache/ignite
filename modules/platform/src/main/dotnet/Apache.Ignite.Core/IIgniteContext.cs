@@ -24,6 +24,26 @@ namespace Apache.Ignite.Core
     /// </summary>
     public interface IIgniteContext
     {
+        /// <summary>
+        /// Converts an exception.
+        /// All thrown exceptions should be passed through this method.
+        /// Provides custom error logic when overridden in a derived class.
+        /// </summary>
+        /// <param name="exception">The exception to convert.</param>
         Exception ConvertException(Exception exception);
+
+        /// <summary>
+        /// Creates the serializable object holder.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns>Object holder.</returns>
+        object CreateSerializableObjectHolder(object obj);
+
+        /// <summary>
+        /// Unwraps the serializable object holder.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns>Wrapped object.</returns>
+        object UnwrapSerializableObjectHolder(object obj);
     }
 }
