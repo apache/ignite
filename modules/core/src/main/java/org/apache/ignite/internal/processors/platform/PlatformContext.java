@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.platform.cache.*;
 import org.apache.ignite.internal.processors.platform.cache.query.*;
 import org.apache.ignite.internal.processors.platform.callback.*;
 import org.apache.ignite.internal.processors.platform.compute.*;
@@ -223,10 +225,28 @@ public interface PlatformContext {
     /**
      * Create closure job.
      *
-     * @param task Task.
+     * @param task Native task.
      * @param ptr Pointer.
      * @param job Native job.
      * @return Closure job.
      */
     public PlatformJob createClosureJob(Object task, long ptr, Object job);
+
+    /**
+     * Create cache entry processor.
+     *
+     * @param proc Native processor.
+     * @param ptr Pointer.
+     * @return Entry processor.
+     */
+    public CacheEntryProcessor createCacheEntryProcessor(Object proc, long ptr);
+
+    /**
+     * Create cache entry filter.
+     *
+     * @param filter Native filter.
+     * @param ptr Pointer.
+     * @return Entry filter.
+     */
+    public PlatformCacheEntryFilter createCacheEntryFilter(Object filter, long ptr);
 }
