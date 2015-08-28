@@ -2010,48 +2010,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Writes wrapped invocation result.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="success">Success flag.</param>
-        /// <param name="res">Result.</param>
-        public static void WriteWrappedInvocationResult(IPortableWriterEx writer, bool success, object res)
-        {
-            var pos = writer.Stream.Position;
-
-            try
-            {
-                if (success)
-                    writer.WriteBoolean(true);
-                else
-                {
-                    writer.WriteBoolean(false); // Call failed.
-                    writer.WriteBoolean(true); // Exception serialized sucessfully.
-                }
-
-                writer.Write(new PortableResultWrapper(res));
-            }
-            catch (Exception marshErr)
-            {
-                // Failed to serialize result, fallback to plain string.
-                writer.Stream.Seek(pos, SeekOrigin.Begin);
-
-                writer.WriteBoolean(false); // Call failed.
-                writer.WriteBoolean(false); // Cannot serialize result or exception.
-
-                if (success)
-                {
-                    writer.WriteString("Call completed successfully, but result serialization failed [resultType=" +
-                        res.GetType().Name + ", serializationErrMsg=" + marshErr.Message + ']');
-                }
-                else
-                {
-                    writer.WriteString("Call completed with error, but error serialization failed [errType=" +
-                        res.GetType().Name + ", serializationErrMsg=" + marshErr.Message + ']');
-                }
-            }
-        }
-        /// <summary>
         /// Writes invocation result.
         /// </summary>
         /// <param name="writer">Writer.</param>
