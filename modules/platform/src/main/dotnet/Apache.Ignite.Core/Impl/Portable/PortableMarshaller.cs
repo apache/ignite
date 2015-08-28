@@ -411,7 +411,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IPortableTypeDescriptor desc;
 
-            return _idToDesc.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc) ? desc :
+            return _idToDesc.TryGetValue(PortableUtils.GetTypeKey(userType, typeId), out desc) ? desc :
                 userType ? new PortableSurrogateTypeDescriptor(_cfg, typeId) : null;
         }
 
@@ -540,7 +540,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             IPortableSerializer serializer, string affKeyFieldName, object typedHandler,
             PortableSystemWriteDelegate untypedHandler)
         {
-            long typeKey = PortableUtils.TypeKey(userType, typeId);
+            long typeKey = PortableUtils.GetTypeKey(userType, typeId);
 
             if (_idToDesc.ContainsKey(typeKey))
             {

@@ -732,7 +732,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // Find descriptor.
                     IPortableTypeDescriptor desc;
 
-                    if (!_descs.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc))
+                    if (!_descs.TryGetValue(PortableUtils.GetTypeKey(userType, typeId), out desc))
                         throw IgniteContext.ConvertException(new PortableException("Unknown type ID: " + typeId));
 
                     // Instantiate object. 

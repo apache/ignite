@@ -30,9 +30,9 @@ namespace Apache.Ignite.Core.Impl.Portable
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;
 
-    /**
-     * <summary>Utilities for portable serialization.</summary>
-     */
+    /// <summary>
+    /// Utilities for portable serialization.
+    /// </summary>
     static class PortableUtils
     {
         /** Cache empty dictionary. */
@@ -323,11 +323,11 @@ namespace Apache.Ignite.Core.Impl.Portable
             get { return Marsh; }
         }
 
-        /**
-         * <summary>Write boolean array.</summary>
-         * <param name="vals">Value.</param>
-         * <param name="stream">Output stream.</param>
-         */
+        /// <summary>
+        /// Writes the boolean array.
+        /// </summary>
+        /// <param name="vals">Values.</param>
+        /// <param name="stream">Stream.</param>
         public static void WriteBooleanArray(bool[] vals, IPortableStream stream)
         {
             stream.WriteInt(vals.Length);
@@ -335,24 +335,21 @@ namespace Apache.Ignite.Core.Impl.Portable
             stream.WriteBoolArray(vals);
         }
 
-        /**
-         * <summary>Read boolean array.</summary>
-         * <param name="stream">Output stream.</param>
-         * <returns>Value.</returns>
-         */
+        /// <summary>
+        /// Reads the boolean array.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>Array</returns>
         public static bool[] ReadBooleanArray(IPortableStream stream)
         {
-            int len = stream.ReadInt();
-
-            return stream.ReadBoolArray(len);
+            return stream.ReadBoolArray(stream.ReadInt());
         }
 
-        /**
-         * <summary>Write byte array.</summary>
-         * <param name="vals">Value.</param>
-         * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
-         */
+        /// <summary>
+        /// Writes the byte array.
+        /// </summary>
+        /// <param name="vals">Value.</param>
+        /// <param name="stream">Stream.</param>
         public static void WriteByteArray(byte[] vals, IPortableStream stream)
         {
             stream.WriteInt(vals.Length);
@@ -360,21 +357,21 @@ namespace Apache.Ignite.Core.Impl.Portable
             stream.WriteByteArray(vals);
         }
 
-        /**
-         * <summary>Read byte array.</summary>
-         * <param name="stream">Output stream.</param>
-         * <returns>Value.</returns>
-         */
+        /// <summary>
+        /// Reads the byte array.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>Value.</returns>
         public static byte[] ReadByteArray(IPortableStream stream)
         {
             return stream.ReadByteArray(stream.ReadInt());
         }
 
-        /**
-         * <summary>Read byte array.</summary>
-         * <param name="stream">Output stream.</param>
-         * <returns>Value.</returns>
-         */
+        /// <summary>
+        /// Reads the sbyte array.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>Value.</returns>
         public static unsafe sbyte[] ReadSbyteArray(IPortableStream stream)
         {
             int len = stream.ReadInt();
@@ -389,12 +386,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             return res;
         }
 
-        /**
-         * <summary>Read byte array.</summary>
-         * <param name="data">Data.</param>
-         * <param name="pos">Position.</param>
-         * <returns>Value.</returns>
-         */
+        /// <summary>
+        /// Reads the byte array.
+        /// </summary>
+        /// <param name="data">Data.</param>
+        /// <param name="pos">Position.</param>
+        /// <returns>Value</returns>
         public static byte[] ReadByteArray(byte[] data, int pos) {
             int len = ReadInt(data, pos);
 
@@ -407,11 +404,11 @@ namespace Apache.Ignite.Core.Impl.Portable
             return res;
         }
 
-        /**
-         * <summary>Write short array.</summary>
-         * <param name="vals">Value.</param>
-         * <param name="stream">Output stream.</param>
-         */
+        /// <summary>
+        /// Writes the short array.
+        /// </summary>
+        /// <param name="vals">Value.</param>
+        /// <param name="stream">Stream.</param>
         public static void WriteShortArray(short[] vals, IPortableStream stream)
         {
             stream.WriteInt(vals.Length);
@@ -419,11 +416,11 @@ namespace Apache.Ignite.Core.Impl.Portable
             stream.WriteShortArray(vals);
         }
 
-        /**
-         * <summary>Read short array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Value.</returns>
-         */
+        /// <summary>
+        /// Reads the ushort array.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <returns>Value</returns>
         public static unsafe ushort[] ReadUshortArray(IPortableStream stream)
         {
             int len = stream.ReadInt();
@@ -438,22 +435,22 @@ namespace Apache.Ignite.Core.Impl.Portable
             return res;
         }
 
-        /**
-         * <summary>Read short array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Value.</returns>
-         */
+        /// <summary>
+        /// Reads the short array.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <returns>Value.</returns>
         public static short[] ReadShortArray(IPortableStream stream)
         {
             return stream.ReadShortArray(stream.ReadInt());
         }
 
-        /**
-         * <summary>Read int value.</summary>
-         * <param name="data">Data array.</param>
-         * <param name="pos">Position.</param>
-         * <returns>Value.</returns>
-         */
+        /// <summary>
+        /// Reads int.
+        /// </summary>
+        /// <param name="data">Data.</param>
+        /// <param name="pos">Position.</param>
+        /// <returns>Value.</returns>
         public static int ReadInt(byte[] data, int pos) {
             int val = data[pos];
 
@@ -464,13 +461,14 @@ namespace Apache.Ignite.Core.Impl.Portable
             return val;
         }
 
-        /**
-         * <summary>Read long value.</summary>
-         * <param name="data">Data array.</param>
-         * <param name="pos">Position.</param>
-         * <returns>Value.</returns>
-         */
-        public static long ReadLong(byte[] data, int pos) {
+        /// <summary>
+        /// Reads long.
+        /// </summary>
+        /// <param name="data">Data.</param>
+        /// <param name="pos">Position.</param>
+        /// <returns>Value.</returns>
+        public static long ReadLong(byte[] data, int pos)
+        {
             long val = (long)(data[pos]) << 0;
 
             val |= (long)(data[pos + 1]) << 8;
@@ -1506,7 +1504,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <param name="val">Value.</param>
-        public static void WriteEnum(IPortableStream stream, Enum val)
+        /// <param name="context">The context.</param>
+        public static void WriteEnum(IPortableStream stream, Enum val, IIgniteContext context)
         {
             if (Enum.GetUnderlyingType(val.GetType()) == TypInt)
             {
@@ -1514,16 +1513,20 @@ namespace Apache.Ignite.Core.Impl.Portable
                 stream.WriteInt(Convert.ToInt32(val));
             }
             else
-                throw new PortableException("Only Int32 underlying type is supported for enums: " +
-                    val.GetType().Name);
+                throw context.ConvertException(new PortableException("Only Int32 underlying type is supported for enums: " +
+                    val.GetType().Name));
         }
 
         /// <summary>
         /// Read enum.
         /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="stream">Stream.</param>
-        /// <returns>Enumeration.</returns>
-        public static T ReadEnum<T>(IPortableStream stream)
+        /// <param name="context">The context.</param>
+        /// <returns>
+        /// Enumeration.
+        /// </returns>
+        public static T ReadEnum<T>(IPortableStream stream, IIgniteContext context)
         {
             if (!typeof(T).IsEnum || Enum.GetUnderlyingType(typeof(T)) == TypInt)
             {
@@ -1532,17 +1535,19 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return TypeCaster<T>.Cast(stream.ReadInt());
             }
 
-            throw new PortableException("Only Int32 underlying type is supported for enums: " +
-                                        typeof (T).Name);
+            throw context.ConvertException(new PortableException("Only Int32 underlying type is supported for enums: " +
+                                                                 typeof (T).Name));
         }
 
-        /**
-         * <summary>Gets type key.</summary>
-         * <param name="userType">User type flag.</param>
-         * <param name="typeId">Type ID.</param>
-         * <returns>Type key.</returns>
-         */
-        public static long TypeKey(bool userType, int typeId)
+        /// <summary>
+        /// Gets type key.
+        /// </summary>
+        /// <param name="userType">User type flag.</param>
+        /// <param name="typeId">Type ID.</param>
+        /// <returns>
+        /// Type key.
+        /// </returns>
+        public static long GetTypeKey(bool userType, int typeId)
         {
             long res = typeId;
 
@@ -1552,33 +1557,38 @@ namespace Apache.Ignite.Core.Impl.Portable
             return res;
         }
 
-        /**
-         * <summary>Get string hash code.</summary>
-         * <param name="val">Value.</param>
-         * <returns>Hash code.</returns>
-         */
-        public static int StringHashCode(string val)
+        /// <summary>
+        /// Get string hash code.
+        /// </summary>
+        /// <param name="val">Value.</param>
+        /// <returns>
+        /// Hash code.
+        /// </returns>
+        public static int GetStringHashCode(string val)
         {
             if (val == null)
                 return 0;
-            else
+            
+            int hash = 0;
+
+            for (int i = 0; i < val.Length; i++)
             {
-                int hash = 0;
+                char c = val[i];
 
-                for (int i = 0; i < val.Length; i++)
-                {
-                    char c = val[i];
+                if ('A' <= c && c <= 'Z')
+                    c = (char)(c | 0x20);
 
-                    if ('A' <= c && c <= 'Z')
-                        c = (char)(c | 0x20);
-
-                    hash = 31 * hash + c;
-                }
-
-                return hash;
+                hash = 31 * hash + c;
             }
+
+            return hash;
         }
 
+        /// <summary>
+        /// Cleans the name of the field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <returns>Cleaned up field name.</returns>
         public static string CleanFieldName(string fieldName)
         {
             if (fieldName.StartsWith("<") && fieldName.EndsWith(">k__BackingField"))
@@ -1587,11 +1597,13 @@ namespace Apache.Ignite.Core.Impl.Portable
             return fieldName;
         }
 
-        /**
-         * <summary>Check whether this is predefined type.</summary>
-         * <param name="hdr">Header.</param>
-         * <returns>True is this is one of predefined types with special semantics.</returns>
-         */
+        /// <summary>
+        /// Check whether this is predefined type.
+        /// </summary>
+        /// <param name="hdr">Header.</param>
+        /// <returns>
+        /// True is this is one of predefined types with special semantics.
+        /// </returns>
         public static bool IsPredefinedType(byte hdr)
         {
             switch (hdr)
@@ -1633,13 +1645,16 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
-        /**
-         * <summary>Convert type name.</summary>
-         * <param name="typeName">Type name.</param>
-         * <param name="converter">Converter.</param>
-         * <returns>Converted name.</returns>
-         */
-        public static string ConvertTypeName(string typeName, IPortableNameMapper converter)
+        /// <summary>
+        /// Convert type name.
+        /// </summary>
+        /// <param name="typeName">Type name.</param>
+        /// <param name="converter">Converter.</param>
+        /// <param name="context">The context.</param>
+        /// <returns>
+        /// Converted name.
+        /// </returns>
+        public static string ConvertTypeName(string typeName, IPortableNameMapper converter, IIgniteContext context)
         {
             var typeName0 = typeName;
 
@@ -1650,23 +1665,27 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             catch (Exception e)
             {
-                throw new PortableException("Failed to convert type name due to converter exception " +
-                    "[typeName=" + typeName + ", converter=" + converter + ']', e);
+                throw context.ConvertException(
+                    new PortableException("Failed to convert type name due to converter exception " +
+                                          "[typeName=" + typeName + ", converter=" + converter + ']', e));
             }
 
             if (typeName == null)
-                throw new PortableException("Name converter returned null name for type [typeName=" +
-                    typeName0 + ", converter=" + converter + "]");
+                throw context.ConvertException(
+                    new PortableException("Name converter returned null name for type [typeName=" +
+                                          typeName0 + ", converter=" + converter + "]"));
 
             return typeName;
         }
 
-        /**
-         * <summary>Convert field name.</summary>
-         * <param name="fieldName">GetField name.</param>
-         * <param name="converter">Converter.</param>
-         * <returns>Converted name.</returns>
-         */
+        /// <summary>
+        /// Convert field name.
+        /// </summary>
+        /// <param name="fieldName">GetField name.</param>
+        /// <param name="converter">Converter.</param>
+        /// <returns>
+        /// Converted name.
+        /// </returns>
         public static string ConvertFieldName(string fieldName, IPortableNameMapper converter)
         {
             var fieldName0 = fieldName;
@@ -1701,18 +1720,20 @@ namespace Apache.Ignite.Core.Impl.Portable
             return idx < 0 ? typeName : typeName.Substring(idx + 1);
         }
 
-        /**
-         * <summary>Resolve type ID.</summary>
-         * <param name="typeName">Type name.</param>
-         * <param name="nameMapper">Name mapper.</param>
-         * <param name="idMapper">ID mapper.</param>
-         */
+        /// <summary>
+        /// Resolve type ID.
+        /// </summary>
+        /// <param name="typeName">Type name.</param>
+        /// <param name="nameMapper">Name mapper.</param>
+        /// <param name="idMapper">ID mapper.</param>
+        /// <param name="context">The context.</param>
+        /// <returns></returns>
         public static int TypeId(string typeName, IPortableNameMapper nameMapper,
-            IPortableIdMapper idMapper)
+            IPortableIdMapper idMapper, IIgniteContext context)
         {
             Debug.Assert(typeName != null);
 
-            typeName = ConvertTypeName(typeName, nameMapper);
+            typeName = ConvertTypeName(typeName, nameMapper, context);
 
             int id = 0;
 
@@ -1724,13 +1745,14 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
                 catch (Exception e)
                 {
-                    throw new PortableException("Failed to resolve type ID due to ID mapper exception " +
-                        "[typeName=" + typeName + ", idMapper=" + idMapper + ']', e);
+                    throw context.ConvertException(
+                        new PortableException("Failed to resolve type ID due to ID mapper exception " +
+                                              "[typeName=" + typeName + ", idMapper=" + idMapper + ']', e));
                 }
             }
 
             if (id == 0)
-                id = StringHashCode(typeName);
+                id = GetStringHashCode(typeName);
 
             return id;
         }
@@ -1766,7 +1788,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             if (id == 0)
-                id = StringHashCode(fieldName);
+                id = GetStringHashCode(fieldName);
 
             return id;
         }
