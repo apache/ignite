@@ -238,18 +238,20 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Compound preloaders start future.
      */
-    public IgniteInternalFuture<Object> preloadersStartFuture() {
+    public IgniteInternalFuture<Object> preloadersStartFuture(AffinityTopologyVersion topVer) {
         if (preloadersStartFut == null) {
             GridCompoundFuture<Object, Object> compound = null;
 
-            for (GridCacheContext<K, V> cacheCtx : cacheContexts()) {
-                IgniteInternalFuture<Object> startFut = cacheCtx.preloader().startFuture();
+            for (GridCacheContext cacheCtx : cacheContexts()) {
+                if (cacheCtx.startTopologyVersion() != null && cacheCtx.startTopologyVersion().compareTo(topVer) <= 0) {
+                    IgniteInternalFuture<Object> startFut = cacheCtx.preloader().startFuture();
 
-                if (!startFut.isDone()) {
-                    if (compound == null)
-                        compound = new GridCompoundFuture<>();
+                    if (!startFut.isDone()) {
+                        if (compound == null)
+                            compound = new GridCompoundFuture<>();
 
-                    compound.add(startFut);
+                        compound.add(startFut);
+                    }
                 }
             }
 

@@ -672,6 +672,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
 
         return S.toString(GridNearOptimisticTxPrepareFuture.class, this,
             "futs", futs,
+            "xidVer", tx.xidVersion(),
+            "nearXidVer", tx.nearXidVersion(),
+            "topVer", tx.topologyVersionSnapshot(),
             "super", super.toString());
     }
 
