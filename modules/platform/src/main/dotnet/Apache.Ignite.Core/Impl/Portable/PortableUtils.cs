@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Utilities for portable serialization.
     /// </summary>
-    static class PortableUtils
+    public static class PortableUtils
     {
         /** Cache empty dictionary. */
         public static readonly IDictionary<int, int> EmptyFields = new Dictionary<int, int>();
