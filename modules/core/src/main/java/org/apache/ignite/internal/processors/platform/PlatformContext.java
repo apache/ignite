@@ -19,9 +19,13 @@ package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.portable.*;
+import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.platform.cache.query.*;
 import org.apache.ignite.internal.processors.platform.callback.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -111,4 +115,53 @@ public interface PlatformContext {
      * @param reader Reader.
      */
     public void processMetadata(PortableRawReaderEx reader);
+
+    /**
+     * Write metadata for the given type ID.
+     *
+     * @param writer Writer.
+     * @param typeId Type ID.
+     */
+    public void writeMetadata(PortableRawWriterEx writer, int typeId);
+
+    /**
+     * Write all available metadata.
+     *
+     * @param writer Writer.
+     */
+    public void writeAllMetadata(PortableRawWriterEx writer);
+
+    /**
+     * Write cluster metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics.
+     */
+    public void writeClusterMetrics(PortableRawWriterEx writer, @Nullable ClusterMetrics metrics);
+
+    /**
+     *
+     * @param ptr Pointer to continuous query deployed on the platform.
+     * @param hasFilter Whether filter exists.
+     * @param filter Filter.
+     * @return Platform continuous query.
+     */
+    public PlatformContinuousQuery createContinuousQuery(long ptr, boolean hasFilter, @Nullable Object filter);
+
+    /**
+     * Create continuous query filter to be deployed on remote node.
+     *
+     * @param filter Native filter.
+     * @return Filter.
+     */
+    public CacheContinuousQueryFilterEx createContinuousQueryFilter(Object filter);
+
+    /**
+     * Create remote message filter.
+     *
+     * @param filter Native filter.
+     * @param ptr Pointer of deployed native filter.
+     * @return Filter.
+     */
+    public GridLifecycleAwareMessageFilter<UUID, Object> createRemoteMessageFilter(Object filter, long ptr);
 }
