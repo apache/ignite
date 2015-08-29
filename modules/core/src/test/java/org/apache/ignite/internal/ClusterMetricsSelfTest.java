@@ -106,6 +106,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         g1.getOrCreateCache("Cache2");
         g1.getOrCreateCache("Cache3");
 
+        // Sleep 20 ms, otherwise this test case would fail sporadic.
         Thread.sleep(20);
         Collection<String> caches = g0.cacheNames();
         assertTrue(caches.contains("Cache1"));
