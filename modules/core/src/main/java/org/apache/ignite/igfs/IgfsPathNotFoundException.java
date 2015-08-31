@@ -17,7 +17,7 @@
 
 package org.apache.ignite.igfs;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * {@code IGFS} exception indicating that target resource is not found.

@@ -17,11 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.mxbean.*;
-import org.apache.ignite.spi.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.spi.IgniteSpiManagementMBean;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Management bean for {@link TcpDiscoverySpi}.

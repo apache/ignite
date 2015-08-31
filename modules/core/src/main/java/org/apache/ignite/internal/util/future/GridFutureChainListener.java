@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.util.future;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Future listener to fill chained future with converted result of the source future.

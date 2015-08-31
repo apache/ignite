@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.apache.ignite.cache.CacheTypeFieldMetadata;
+import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Data transfer object for {@link CacheTypeMetadata}.

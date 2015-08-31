@@ -17,21 +17,27 @@
 
 package org.apache.ignite.internal.managers.swapspace;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.SwapSpaceEvent;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.swapspace.SwapKey;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
-import java.util.concurrent.*;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.EventType.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.events.EventType.EVTS_SWAPSPACE;
+import static org.apache.ignite.events.EventType.EVT_SWAP_SPACE_CLEARED;
+import static org.apache.ignite.events.EventType.EVT_SWAP_SPACE_DATA_READ;
+import static org.apache.ignite.events.EventType.EVT_SWAP_SPACE_DATA_REMOVED;
+import static org.apache.ignite.events.EventType.EVT_SWAP_SPACE_DATA_STORED;
 
 /**
  * Tests for {@link GridSwapSpaceManager}.

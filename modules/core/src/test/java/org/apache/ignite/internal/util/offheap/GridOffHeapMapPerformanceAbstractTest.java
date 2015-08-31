@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.util.offheap;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tests off-heap map.

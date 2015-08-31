@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  * Multi-node tests for replicated cache.

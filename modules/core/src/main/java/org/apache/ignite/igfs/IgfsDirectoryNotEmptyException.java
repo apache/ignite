@@ -17,7 +17,7 @@
 
 package org.apache.ignite.igfs;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception indicating that directory can not be deleted because it is not empty.

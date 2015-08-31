@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.collision.fifoqueue;
 
-import org.apache.ignite.spi.*;
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.spi.GridSpiStartStopAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Unit tests for {@link FifoQueueCollisionSpi} start-stop.

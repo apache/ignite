@@ -17,9 +17,8 @@
 
 package org.apache.ignite.plugin;
 
-import org.apache.ignite.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.IgniteException;
 
 /**
  * TODO: Add class description.

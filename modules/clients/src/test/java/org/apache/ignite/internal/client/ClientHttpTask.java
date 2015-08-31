@@ -17,12 +17,19 @@
 
 package org.apache.ignite.internal.client;
 
-import net.sf.json.*;
-import org.apache.ignite.compute.*;
+import java.util.Collection;
+import java.util.List;
+import net.sf.json.JSON;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONSerializer;
+import net.sf.json.JsonConfig;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 
-import java.util.*;
-
-import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
 
 /**
  * Test task summarizes length of all strings in the arguments list.

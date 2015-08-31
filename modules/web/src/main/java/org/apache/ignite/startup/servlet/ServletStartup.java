@@ -17,18 +17,20 @@
 
 package org.apache.ignite.startup.servlet;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import javax.servlet.*;
-import javax.servlet.http.*;
-import java.net.*;
-import java.util.*;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * This class defines servlet-based Ignite startup. This startup can be used to start Ignite

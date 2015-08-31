@@ -17,15 +17,21 @@
 
 package org.apache.ignite.spi.deployment.uri.tasks;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.jetbrains.annotations.*;
-import org.springframework.beans.factory.support.*;
-import org.springframework.beans.factory.xml.*;
-import org.springframework.core.io.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskName;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.jetbrains.annotations.Nullable;
+import org.springframework.beans.factory.support.AbstractBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanFactory;
+import org.springframework.core.io.ClassPathResource;
 
 /**
  * This class defines grid task for this example. Grid task is responsible for splitting the task into jobs. This

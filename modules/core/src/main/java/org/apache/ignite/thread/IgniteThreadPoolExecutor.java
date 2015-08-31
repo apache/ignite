@@ -17,9 +17,14 @@
 
 package org.apache.ignite.thread;
 
-import org.jetbrains.annotations.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.logger.log4j.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.logger.log4j.GridLog4jCorrectFileNameTest;
+import org.apache.ignite.logger.log4j.GridLog4jInitializedTest;
+import org.apache.ignite.logger.log4j.GridLog4jNotInitializedTest;
 
 /**
  * Log4j logging tests.

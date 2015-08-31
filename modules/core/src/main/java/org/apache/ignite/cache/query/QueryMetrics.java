@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 
 /**
  * Cache query metrics used to obtain statistics on query. Metrics for particular query

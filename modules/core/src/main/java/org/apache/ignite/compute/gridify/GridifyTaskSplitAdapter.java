@@ -17,9 +17,8 @@
 
 package org.apache.ignite.compute.gridify;
 
-import org.apache.ignite.compute.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 
 /**
  * Convenience adapter for tasks that work with {@link Gridify} annotation

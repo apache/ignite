@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.product;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.IgniteVersionUtils.*;
-import static org.junit.Assert.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP;
+import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Versions test.

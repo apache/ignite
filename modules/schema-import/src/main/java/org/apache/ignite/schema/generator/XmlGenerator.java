@@ -17,22 +17,39 @@
 
 package org.apache.ignite.schema.generator;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.schema.model.*;
-import org.apache.ignite.schema.ui.*;
-import org.w3c.dom.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.text.SimpleDateFormat;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Map;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import org.apache.ignite.cache.CacheTypeFieldMetadata;
+import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.schema.model.IndexItem;
+import org.apache.ignite.schema.model.PojoDescriptor;
+import org.apache.ignite.schema.model.PojoField;
+import org.apache.ignite.schema.ui.ConfirmCallable;
+import org.apache.ignite.schema.ui.MessageBox;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
-import javax.xml.parsers.*;
-import javax.xml.transform.*;
-import javax.xml.transform.dom.*;
-import javax.xml.transform.stream.*;
-import java.io.*;
-import java.nio.file.*;
-import java.text.*;
-import java.util.*;
-
-import static org.apache.ignite.schema.ui.MessageBox.Result.*;
+import static org.apache.ignite.schema.ui.MessageBox.Result.CANCEL;
+import static org.apache.ignite.schema.ui.MessageBox.Result.NO;
+import static org.apache.ignite.schema.ui.MessageBox.Result.NO_TO_ALL;
 
 /**
  * Generator of XML files for type metadata.

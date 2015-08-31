@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheMemoryMode;
 
-import static org.apache.ignite.cache.CacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 
 /**
  * Tests replicated cache with off-heap tiered mode.

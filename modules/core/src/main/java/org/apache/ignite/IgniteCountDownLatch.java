@@ -17,8 +17,8 @@
 
 package org.apache.ignite;
 
-import java.io.*;
-import java.util.concurrent.*;
+import java.io.Closeable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This interface provides a rich API for working with distributed count down latch.

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.cache;
 
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
+import javax.cache.CacheException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception thrown when cache must be created but it already exists.

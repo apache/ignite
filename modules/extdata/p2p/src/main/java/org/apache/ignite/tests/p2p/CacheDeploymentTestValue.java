@@ -17,7 +17,7 @@
 
 package org.apache.ignite.tests.p2p;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Value object for {@code GridCacheDeploymentSelfTest}, {@code IgniteCacheAbstractExecutionContextTest}.

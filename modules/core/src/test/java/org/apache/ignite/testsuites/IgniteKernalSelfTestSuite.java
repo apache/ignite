@@ -17,21 +17,44 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.managers.events.*;
-import org.apache.ignite.internal.managers.swapspace.*;
-import org.apache.ignite.internal.processors.port.*;
-import org.apache.ignite.internal.processors.service.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.spi.communication.*;
-import org.apache.ignite.testframework.*;
-
-import java.util.*;
+import java.util.Set;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.GridCommunicationSelfTest;
+import org.apache.ignite.internal.GridDiscoveryEventSelfTest;
+import org.apache.ignite.internal.GridDiscoverySelfTest;
+import org.apache.ignite.internal.GridFailedInputParametersSelfTest;
+import org.apache.ignite.internal.GridHomePathSelfTest;
+import org.apache.ignite.internal.GridKernalConcurrentAccessStopSelfTest;
+import org.apache.ignite.internal.GridListenActorSelfTest;
+import org.apache.ignite.internal.GridLocalEventListenerSelfTest;
+import org.apache.ignite.internal.GridNodeFilterSelfTest;
+import org.apache.ignite.internal.GridNodeLocalSelfTest;
+import org.apache.ignite.internal.GridNodeVisorAttributesSelfTest;
+import org.apache.ignite.internal.GridRuntimeExceptionSelfTest;
+import org.apache.ignite.internal.GridSameVmStartupSelfTest;
+import org.apache.ignite.internal.GridSpiExceptionSelfTest;
+import org.apache.ignite.internal.GridUpdateNotifierSelfTest;
+import org.apache.ignite.internal.GridVersionSelfTest;
+import org.apache.ignite.internal.managers.GridManagerStopSelfTest;
+import org.apache.ignite.internal.managers.communication.GridCommunicationSendMessageSelfTest;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentManagerStopSelfTest;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAliveCacheSelfTest;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAttributesSelfTest;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerSelfTest;
+import org.apache.ignite.internal.managers.discovery.IgniteTopologyPrintFormatSelfTest;
+import org.apache.ignite.internal.managers.events.GridEventStorageManagerSelfTest;
+import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManagerSelfTest;
+import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
+import org.apache.ignite.internal.processors.service.GridServiceClientNodeTest;
+import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeConfigSelfTest;
+import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeSelfTest;
+import org.apache.ignite.internal.processors.service.GridServiceProcessorProxySelfTest;
+import org.apache.ignite.internal.processors.service.GridServiceProcessorSingleNodeSelfTest;
+import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelfTest;
+import org.apache.ignite.internal.util.GridStartupWithSpecifiedWorkDirectorySelfTest;
+import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;
+import org.apache.ignite.spi.communication.GridCacheMessageSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Kernal self test suite.

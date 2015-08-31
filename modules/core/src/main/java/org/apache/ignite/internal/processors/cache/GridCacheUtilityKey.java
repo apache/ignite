@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Key for system utility cache.

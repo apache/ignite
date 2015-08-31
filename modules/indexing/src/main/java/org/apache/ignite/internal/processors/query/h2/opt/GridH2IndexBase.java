@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
-import org.h2.engine.*;
-import org.h2.index.*;
-import org.h2.message.*;
-import org.h2.result.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Iterator;
+import org.apache.ignite.internal.util.lang.GridFilteredIterator;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.h2.engine.Session;
+import org.h2.index.BaseIndex;
+import org.h2.message.DbException;
+import org.h2.result.Row;
+import org.h2.result.SearchRow;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Index base.

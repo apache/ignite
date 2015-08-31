@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Data collector task arguments.

@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicReference;
+import org.apache.ignite.IgniteAtomicStamped;
+import org.apache.ignite.lang.IgniteCallable;
 
 /**
  * AtomicReference and AtomicStamped multi node tests.

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.segmentation.os;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.processors.segmentation.*;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 
 /**
  * No-op implementation for {@link GridSegmentationProcessor}.

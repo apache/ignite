@@ -17,15 +17,20 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import org.apache.ignite.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.yardstick.cache.model.Person;
 import org.yardstickframework.BenchmarkConfiguration;
-
-import javax.cache.Cache;
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static org.yardstickframework.BenchmarkUtils.println;
 

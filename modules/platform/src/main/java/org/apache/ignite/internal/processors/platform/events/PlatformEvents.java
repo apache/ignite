@@ -17,16 +17,22 @@
 
 package org.apache.ignite.internal.processors.platform.events;
 
-import org.apache.ignite.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.utils.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.events.EventAdapter;
+import org.apache.ignite.internal.portable.PortableRawReaderEx;
+import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
+import org.apache.ignite.internal.processors.platform.PlatformAwareEventFilter;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interop events.
@@ -387,4 +393,3 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
     }
 }
-

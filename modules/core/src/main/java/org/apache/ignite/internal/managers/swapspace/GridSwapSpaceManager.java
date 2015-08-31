@@ -17,22 +17,34 @@
 
 package org.apache.ignite.internal.managers.swapspace;
 
-import org.apache.ignite.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.swapspace.*;
-import org.jetbrains.annotations.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.events.SwapSpaceEvent;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.SkipDaemon;
+import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
+import org.apache.ignite.internal.util.GridSpiCloseableIteratorWrapper;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.spi.IgniteSpiCloseableIterator;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.swapspace.SwapContext;
+import org.apache.ignite.spi.swapspace.SwapKey;
+import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
+import org.apache.ignite.spi.swapspace.SwapSpaceSpiListener;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_SWAP_SPACE_CLEARED;
+import static org.apache.ignite.events.EventType.EVT_SWAP_SPACE_DATA_EVICTED;
+import static org.apache.ignite.events.EventType.EVT_SWAP_SPACE_DATA_READ;
+import static org.apache.ignite.events.EventType.EVT_SWAP_SPACE_DATA_REMOVED;
+import static org.apache.ignite.events.EventType.EVT_SWAP_SPACE_DATA_STORED;
 
 /**
  *

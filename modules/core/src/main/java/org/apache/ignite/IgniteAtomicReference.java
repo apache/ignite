@@ -17,7 +17,7 @@
 
 package org.apache.ignite;
 
-import java.io.*;
+import java.io.Closeable;
 
 /**
  * This interface provides a rich API for working with distributed atomic reference.

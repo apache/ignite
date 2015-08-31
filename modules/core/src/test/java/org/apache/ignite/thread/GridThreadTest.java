@@ -17,9 +17,10 @@
 
 package org.apache.ignite.thread;
 
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Test for {@link org.apache.ignite.thread.IgniteThread}.

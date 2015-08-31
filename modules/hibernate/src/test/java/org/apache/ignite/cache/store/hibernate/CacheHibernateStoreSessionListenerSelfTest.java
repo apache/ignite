@@ -17,19 +17,29 @@
 
 package org.apache.ignite.cache.store.hibernate;
 
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.cache.store.jdbc.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.hibernate.*;
-import org.hibernate.cfg.Configuration;
-
+import java.io.Serializable;
+import java.util.Map;
 import javax.cache.Cache;
-import javax.cache.configuration.*;
-import javax.cache.integration.*;
-import javax.persistence.*;
-import java.io.*;
-import java.util.*;
+import javax.cache.configuration.Factory;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cache.store.CacheStoreSession;
+import org.apache.ignite.cache.store.CacheStoreSessionListener;
+import org.apache.ignite.cache.store.CacheStoreSessionListenerAbstractSelfTest;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.resources.CacheStoreSessionResource;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.cfg.Configuration;
 
 /**
  * Tests for {@link CacheJdbcStoreSessionListener}.

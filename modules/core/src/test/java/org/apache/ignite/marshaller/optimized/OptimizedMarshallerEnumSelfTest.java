@@ -17,8 +17,8 @@
 
 package org.apache.ignite.marshaller.optimized;
 
-import junit.framework.*;
-import org.apache.ignite.marshaller.*;
+import junit.framework.TestCase;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 
 /**
  *

@@ -17,13 +17,15 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.jar.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiException;
 
 /**
  * Helper that loads classes either from directory or from JAR file.

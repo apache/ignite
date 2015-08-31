@@ -17,18 +17,26 @@
 
 package org.apache.ignite.spi.loadbalancing.roundrobin;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.spi.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.GridTestJob;
+import org.apache.ignite.GridTestTaskSession;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.events.TaskEvent;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.testframework.GridSpiTestContext;
+import org.apache.ignite.testframework.GridTestNode;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 
-import java.util.*;
-
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.spi.loadbalancing.roundrobin.GridRoundRobinTestUtils.*;
+import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
+import static org.apache.ignite.spi.loadbalancing.roundrobin.GridRoundRobinTestUtils.checkCyclicBalancing;
 
 /**
  * Tests round robin load balancing.

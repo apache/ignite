@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.services.*;
-import org.jetbrains.annotations.*;
-
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.lang.reflect.Method;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Service context implementation.

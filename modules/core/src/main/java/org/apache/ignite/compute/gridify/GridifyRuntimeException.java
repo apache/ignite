@@ -17,7 +17,7 @@
 
 package org.apache.ignite.compute.gridify;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
 
 /**
  * This defines gridify exception. This runtime exception gets thrown out of gridified

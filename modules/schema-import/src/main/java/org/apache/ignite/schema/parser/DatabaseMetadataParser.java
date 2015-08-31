@@ -17,13 +17,26 @@
 
 package org.apache.ignite.schema.parser;
 
-import javafx.collections.*;
-import org.apache.ignite.schema.model.*;
-import org.apache.ignite.schema.parser.dialect.*;
-
-import java.sql.*;
-import java.util.*;
-import java.util.logging.*;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import org.apache.ignite.schema.model.PojoDescriptor;
+import org.apache.ignite.schema.model.SchemaDescriptor;
+import org.apache.ignite.schema.parser.dialect.DB2MetadataDialect;
+import org.apache.ignite.schema.parser.dialect.DatabaseMetadataDialect;
+import org.apache.ignite.schema.parser.dialect.JdbcMetadataDialect;
+import org.apache.ignite.schema.parser.dialect.MySQLMetadataDialect;
+import org.apache.ignite.schema.parser.dialect.OracleMetadataDialect;
 
 /**
  * Database metadata parser.

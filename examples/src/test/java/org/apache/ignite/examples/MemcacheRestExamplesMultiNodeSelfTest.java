@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.misc.client.memcache.*;
+import org.apache.ignite.examples.misc.client.memcache.MemcacheRestExampleNodeStartup;
 
 /**
  * MemcacheRestExample multi-node self test.

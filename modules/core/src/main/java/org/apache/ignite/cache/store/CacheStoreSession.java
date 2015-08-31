@@ -17,11 +17,10 @@
 
 package org.apache.ignite.cache.store;
 
-import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.resources.CacheStoreSessionResource;
+import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Session for the cache store operations. The main purpose of cache store session

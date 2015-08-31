@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.hadoop.counter.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Comparator;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 
 /**
  * Task context.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.lifecycle;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
 
 /**
  * A bean that reacts to node lifecycle events defined in {@link LifecycleEventType}.

@@ -17,11 +17,11 @@
 
 package org.apache.ignite.cache.store;
 
-import org.apache.ignite.cache.store.jdbc.*;
-import org.apache.ignite.configuration.*;
-
-import javax.cache.configuration.*;
-import javax.sql.*;
+import javax.cache.configuration.Factory;
+import javax.sql.DataSource;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  * Cache store session listener that allows to implement callbacks

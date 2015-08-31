@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.processors.cache.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 
 /**
  * Keys for task name hashing.

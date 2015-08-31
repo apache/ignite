@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.processors.platform.compute;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.memory.*;
-import org.apache.ignite.internal.processors.platform.utils.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.portable.PortableRawReaderEx;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformProcessor;
+import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapper around job created in native platform.

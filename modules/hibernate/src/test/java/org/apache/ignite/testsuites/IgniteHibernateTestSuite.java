@@ -17,9 +17,14 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.cache.hibernate.*;
-import org.apache.ignite.cache.store.hibernate.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.cache.hibernate.HibernateL2CacheConfigurationSelfTest;
+import org.apache.ignite.cache.hibernate.HibernateL2CacheSelfTest;
+import org.apache.ignite.cache.hibernate.HibernateL2CacheTransactionalSelfTest;
+import org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreNodeRestartTest;
+import org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreSelfTest;
+import org.apache.ignite.cache.store.hibernate.CacheHibernateStoreFactorySelfTest;
+import org.apache.ignite.cache.store.hibernate.CacheHibernateStoreSessionListenerSelfTest;
 
 /**
  * Hibernate integration tests.

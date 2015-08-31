@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Map-reduce job execution plan.

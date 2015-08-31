@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * No-op processor.

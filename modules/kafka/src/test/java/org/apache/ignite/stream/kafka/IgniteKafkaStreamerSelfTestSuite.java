@@ -17,7 +17,7 @@
 
 package org.apache.ignite.stream.kafka;
 
-import junit.framework.*;
+import junit.framework.TestSuite;
 
 /**
  * Apache Kafka streamer tests.

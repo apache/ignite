@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.util.typedef;
 
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.lang.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import org.apache.ignite.internal.util.lang.GridFunc;
+import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Defines {@code alias} for {@link org.apache.ignite.lang.IgniteBiTuple} by extending it. Since Java doesn't provide type aliases

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
-import java.util.*;
+import java.util.List;
 
 /**
  * Query result cursor. Implements {@link Iterable} only for convenience, e.g. {@link #iterator()}

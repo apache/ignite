@@ -18,12 +18,16 @@
 package org.apache.ignite;
 
 
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.internal.jdbc.*;
-
-import java.sql.*;
-import java.util.*;
-import java.util.logging.*;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.DriverPropertyInfo;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.util.Properties;
+import java.util.logging.Logger;
+import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.internal.jdbc.JdbcConnection;
 
 /**
  * JDBC driver implementation for In-Memory Data Grid.

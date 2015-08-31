@@ -17,7 +17,7 @@
 
 package org.apache.ignite.igfs;
 
-import static org.apache.ignite.igfs.IgfsMode.*;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 
 /**
  * Tests for DUAL_ASYNC mode.

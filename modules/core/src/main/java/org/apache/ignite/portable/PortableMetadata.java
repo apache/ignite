@@ -17,11 +17,9 @@
 
 package org.apache.ignite.portable;
 
-import org.apache.ignite.*;
-
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.IgnitePortables;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Portable type meta data. Metadata for portable types can be accessed from any of the

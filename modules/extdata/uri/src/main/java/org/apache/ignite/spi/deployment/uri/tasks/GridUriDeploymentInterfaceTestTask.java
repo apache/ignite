@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.deployment.uri.tasks;
 
-import org.apache.ignite.compute.*;
+import org.apache.ignite.compute.ComputeTask;
 
 /**
  * URI deployment interface test task.

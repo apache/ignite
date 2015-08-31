@@ -17,23 +17,32 @@
 
 package org.apache.ignite.stream.kafka;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.zookeeper.server.*;
-
-import kafka.admin.*;
-import kafka.api.*;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.TimeoutException;
+import kafka.admin.AdminUtils;
+import kafka.api.LeaderAndIsr;
+import kafka.api.PartitionStateInfo;
 import kafka.api.Request;
-import kafka.producer.*;
-import kafka.serializer.*;
-import kafka.server.*;
-import kafka.utils.*;
-import org.I0Itec.zkclient.*;
-
-import java.io.*;
-import java.net.*;
-import java.nio.file.*;
-import java.util.*;
-import java.util.concurrent.*;
+import kafka.producer.KeyedMessage;
+import kafka.producer.Producer;
+import kafka.producer.ProducerConfig;
+import kafka.serializer.StringEncoder;
+import kafka.server.KafkaConfig;
+import kafka.server.KafkaServer;
+import kafka.utils.SystemTime$;
+import kafka.utils.ZKStringSerializer$;
+import kafka.utils.ZkUtils;
+import org.I0Itec.zkclient.ZkClient;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.zookeeper.server.NIOServerCnxnFactory;
+import org.apache.zookeeper.server.ZooKeeperServer;
 
 /**
  * Kafka Embedded Broker.

@@ -17,9 +17,7 @@
 
 package org.apache.ignite.igfs;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.*;
+import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT;
 
 /**
  * IGFS Hadoop file system IPC loopback self test.

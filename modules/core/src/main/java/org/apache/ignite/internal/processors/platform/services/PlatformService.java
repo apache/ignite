@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.services;
 
-import org.apache.ignite.*;
-import org.apache.ignite.services.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.services.Service;
 
 /**
  * Base class for all platform services.

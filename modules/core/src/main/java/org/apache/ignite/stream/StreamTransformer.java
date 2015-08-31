@@ -17,11 +17,14 @@
 
 package org.apache.ignite.stream;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-
-import javax.cache.processor.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheEntryProcessor;
 
 /**
  * Convenience adapter to transform update existing values in streaming cache

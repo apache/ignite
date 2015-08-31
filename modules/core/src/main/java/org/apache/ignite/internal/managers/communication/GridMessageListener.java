@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.util.*;
+import java.util.EventListener;
+import java.util.UUID;
 
 /**
  * Listener for messages received from remote nodes.

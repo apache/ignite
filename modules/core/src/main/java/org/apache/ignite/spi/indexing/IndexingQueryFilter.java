@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.indexing;
 
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache entry filter.

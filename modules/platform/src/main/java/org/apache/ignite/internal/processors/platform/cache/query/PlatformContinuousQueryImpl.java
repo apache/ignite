@@ -17,19 +17,24 @@
 
 package org.apache.ignite.internal.processors.platform.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.utils.*;
-import org.apache.ignite.internal.processors.query.*;
-
-import javax.cache.*;
-import javax.cache.event.*;
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.locks.*;
+import java.io.ObjectStreamException;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.cache.Cache;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**
  * Interop continuous query handle.

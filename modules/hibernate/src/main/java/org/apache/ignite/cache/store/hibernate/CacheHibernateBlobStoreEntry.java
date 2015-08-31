@@ -17,7 +17,10 @@
 
 package org.apache.ignite.cache.store.hibernate;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 /**
  * Entry that is used by {@link CacheHibernateBlobStore} implementation.

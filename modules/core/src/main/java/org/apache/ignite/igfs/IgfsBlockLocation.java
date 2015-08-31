@@ -17,7 +17,8 @@
 
 package org.apache.ignite.igfs;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.UUID;
 
 /**
  * {@code IGFS} file's data block location in the grid. It is used to determine
