@@ -57,7 +57,7 @@ public class CacheAsyncApiExample {
             cfg.setCacheMode(CacheMode.PARTITIONED);
             cfg.setName(CACHE_NAME);
 
-            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
+            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cfg)) {
                 // Enable asynchronous mode.
                 IgniteCache<Integer, String> asyncCache = cache.withAsync();
 
