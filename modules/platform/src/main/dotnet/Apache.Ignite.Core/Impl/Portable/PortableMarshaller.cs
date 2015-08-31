@@ -221,7 +221,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var meta = writer.Metadata;
 
             if (meta != null && meta.Count > 0)
-                // TODO: Send metadata
+                // TODO: IGNITE-1335
                 OnMetadataSent(meta);
         }
 
@@ -325,7 +325,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             PortableMetadataHolder result;
 
-            // TODO: Get from grid.
+            // TODO: IGNITE-1335
             if (_metas.TryGetValue(typeId, out result))
                 return result.Metadata;
 
@@ -339,7 +339,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         internal ICollection<IPortableMetadata> GetAllMetadata()
         {
-            // TODO: This is a workaround for tests. Remove as soon as Grid is merged to Ignite.
+            // TODO: IGNITE-1335
             return _metas.Values.Where(x => x != null).Select(x => x.Metadata).ToArray();
         }
 
