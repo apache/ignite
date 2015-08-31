@@ -90,7 +90,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override protected void processOutOp(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_METRICS:
                 platformCtx.writeClusterMetrics(writer, prj.metrics());
@@ -103,14 +103,14 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 break;
 
             default:
-                throwUnsupported(type);
+                super.processOutStream(type, writer);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "deprecation"})
-    @Override protected void processInOutOp(int type, PortableRawReaderEx reader, PortableRawWriterEx writer,
-        Object obj) throws IgniteCheckedException {
+    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_METRICS_FILTERED: {
                 Collection<UUID> ids = PlatformUtils.readCollection(reader);
@@ -185,22 +185,23 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
             }
 
             default:
-                throwUnsupported(type);
+                super.processInStreamOutStream(type, reader, writer);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected int processInOp(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_PING_NODE:
                 return pingNode(reader.readUuid()) ? TRUE : FALSE;
-        }
 
-        return throwUnsupported(type);
+            default:
+                return super.processInStreamOutLong(type, reader);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processInOpObject(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected Object processInStreamOutObject(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_FOR_NODE_IDS: {
                 Collection<UUID> ids = PlatformUtils.readCollection(reader);
@@ -239,7 +240,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
             }
 
             default:
-                return throwUnsupported(type);
+                return super.processInStreamOutObject(type, reader);
         }
     }
 

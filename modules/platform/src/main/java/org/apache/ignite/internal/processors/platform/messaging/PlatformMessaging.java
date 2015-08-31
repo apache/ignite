@@ -81,7 +81,8 @@ public class PlatformMessaging extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected int processInOp(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_SEND:
                 messaging.send(reader.readObjectDetached(), reader.readObjectDetached());
@@ -125,14 +126,14 @@ public class PlatformMessaging extends PlatformAbstractTarget {
             }
 
             default:
-                throw new IgniteCheckedException("Unsupported operation type: " + type);
+                return super.processInStreamOutLong(type, reader);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions", "unchecked"})
-    @Override protected void processInOutOp(int type, PortableRawReaderEx reader, PortableRawWriterEx writer,
-        Object arg) throws IgniteCheckedException {
+    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_REMOTE_LISTEN:{
                 Object nativeFilter = reader.readObjectDetached();
@@ -151,7 +152,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
             }
 
             default:
-                throw new IgniteCheckedException("Unsupported operation type: " + type);
+                super.processInStreamOutStream(type, reader, writer);
         }
     }
 

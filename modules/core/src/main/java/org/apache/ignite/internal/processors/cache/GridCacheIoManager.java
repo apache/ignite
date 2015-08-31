@@ -118,7 +118,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (fut != null && !fut.isDone()) {
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
-                        handleMessage(nodeId, cacheMsg);
+                        cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                            @Override public void run() {
+                                handleMessage(nodeId, cacheMsg);
+                            }
+                        });
                     }
                 });
 
