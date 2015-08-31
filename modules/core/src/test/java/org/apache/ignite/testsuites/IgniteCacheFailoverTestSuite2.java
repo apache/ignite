@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -47,6 +48,9 @@ public class IgniteCacheFailoverTestSuite2 {
         suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class);
 
         suite.addTestSuite(IgniteCacheCrossCacheTxFailoverTest.class);
+
+        suite.addTestSuite(CacheAsyncOperationsFailoverAtomicTest.class);
+        suite.addTestSuite(CacheAsyncOperationsFailoverTxTest.class);
 
         return suite;
     }

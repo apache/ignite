@@ -21,10 +21,12 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 
+import java.util.*;
+
 /**
  * Special version of predicate for events with initialize/close callbacks.
  */
-public interface PlatformAwareEventFilter<E extends Event> extends IgnitePredicate<E> {
+public interface PlatformAwareEventFilter<E extends Event> extends IgnitePredicate<E>, IgniteBiPredicate<UUID, E> {
     /**
      * Initializes the filter.
      */

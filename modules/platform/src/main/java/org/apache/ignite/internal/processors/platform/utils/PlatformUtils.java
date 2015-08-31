@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.platform.*;
+import org.apache.ignite.internal.processors.platform.compute.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -652,6 +653,80 @@ public class PlatformUtils {
         }
         else
             return null;
+    }
+
+    /**
+     * Writes invocation result (of a job/service/etc) using a common protocol.
+     *
+     * @param writer Writer.
+     * @param resObj Result.
+     * @param err Error.
+     */
+    public static void writeInvocationResult(PortableRawWriterEx writer, Object resObj, Exception err)
+    {
+        if (err == null) {
+            writer.writeBoolean(true);
+            writer.writeObject(resObj);
+        }
+        else {
+            writer.writeBoolean(false);
+
+            PlatformNativeException nativeErr = null;
+
+            if (err instanceof IgniteCheckedException)
+                nativeErr = ((IgniteCheckedException)err).getCause(PlatformNativeException.class);
+            else if (err instanceof IgniteException)
+                nativeErr = ((IgniteException)err).getCause(PlatformNativeException.class);
+
+            if (nativeErr == null) {
+                writer.writeBoolean(false);
+                writer.writeString(err.getClass().getName());
+                writer.writeString(err.getMessage());
+            }
+            else {
+                writer.writeBoolean(true);
+                writer.writeObject(nativeErr.cause());
+            }
+        }
+    }
+
+    /**
+     * Reads invocation result (of a job/service/etc) using a common protocol.
+     *
+     * @param ctx Platform context.
+     * @param reader Reader.
+     * @return Result.
+     * @throws IgniteCheckedException When invocation result is an error.
+     */
+    public static Object readInvocationResult(PlatformContext ctx, PortableRawReaderEx reader)
+        throws IgniteCheckedException {
+        // 1. Read success flag.
+        boolean success = reader.readBoolean();
+
+        if (success)
+            // 2. Return result as is.
+            return reader.readObjectDetached();
+        else {
+            // 3. Read whether exception is in form of object or string.
+            boolean hasException = reader.readBoolean();
+
+            if (hasException) {
+                // 4. Full exception.
+                Object nativeErr = reader.readObjectDetached();
+
+                assert nativeErr != null;
+
+                throw ctx.createNativeException(nativeErr);
+            }
+            else {
+                // 5. Native exception was not serializable, we have only message.
+                String errMsg = reader.readString();
+
+                assert errMsg != null;
+
+                throw new IgniteCheckedException(errMsg);
+            }
+        }
     }
 
     /**

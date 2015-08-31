@@ -17,11 +17,21 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.portable.*;
+import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.platform.cache.*;
+import org.apache.ignite.internal.processors.platform.cache.query.*;
 import org.apache.ignite.internal.processors.platform.callback.*;
+import org.apache.ignite.internal.processors.platform.compute.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.stream.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -135,4 +145,128 @@ public interface PlatformContext {
      * @param metrics Metrics.
      */
     public void writeClusterMetrics(PortableRawWriterEx writer, @Nullable ClusterMetrics metrics);
+
+    /**
+     *
+     * @param ptr Pointer to continuous query deployed on the platform.
+     * @param hasFilter Whether filter exists.
+     * @param filter Filter.
+     * @return Platform continuous query.
+     */
+    public PlatformContinuousQuery createContinuousQuery(long ptr, boolean hasFilter, @Nullable Object filter);
+
+    /**
+     * Create continuous query filter to be deployed on remote node.
+     *
+     * @param filter Native filter.
+     * @return Filter.
+     */
+    public CacheContinuousQueryFilterEx createContinuousQueryFilter(Object filter);
+
+    /**
+     * Create remote message filter.
+     *
+     * @param filter Native filter.
+     * @param ptr Pointer of deployed native filter.
+     * @return Filter.
+     */
+    public GridLifecycleAwareMessageFilter<UUID, Object> createRemoteMessageFilter(Object filter, long ptr);
+
+    /**
+     * Check whether the given event type is supported.
+     *
+     * @param evtTyp Event type.
+     * @return {@code True} if supported.
+     */
+    public boolean isEventTypeSupported(int evtTyp);
+
+    /**
+     * Write event.
+     *
+     * @param writer Writer.
+     * @param event Event.
+     */
+    public void writeEvent(PortableRawWriterEx writer, EventAdapter event);
+
+    /**
+     * Create local event filter.
+     *
+     * @param hnd Native handle.
+     * @return Filter.
+     */
+    public <E extends Event> PlatformAwareEventFilter<E> createLocalEventFilter(long hnd);
+
+    /**
+     * Create remote event filter.
+     *
+     * @param pred Native predicate.
+     * @param types Event types.
+     * @return Filter.
+     */
+    public <E extends Event> PlatformAwareEventFilter<E> createRemoteEventFilter(Object pred, final int... types);
+
+    /**
+     * Create native exception.
+     *
+     * @param cause Native cause.
+     * @return Exception.
+     */
+    // TODO: Some common interface must be used here.
+    public IgniteCheckedException createNativeException(Object cause);
+
+    /**
+     * Create job.
+     *
+     * @param task Task.
+     * @param ptr Pointer.
+     * @param job Native job.
+     * @return job.
+     */
+    public PlatformJob createJob(Object task, long ptr, @Nullable Object job);
+
+    /**
+     * Create closure job.
+     *
+     * @param task Native task.
+     * @param ptr Pointer.
+     * @param job Native job.
+     * @return Closure job.
+     */
+    public PlatformJob createClosureJob(Object task, long ptr, Object job);
+
+    /**
+     * Create cache entry processor.
+     *
+     * @param proc Native processor.
+     * @param ptr Pointer.
+     * @return Entry processor.
+     */
+    public CacheEntryProcessor createCacheEntryProcessor(Object proc, long ptr);
+
+    /**
+     * Create cache entry filter.
+     *
+     * @param filter Native filter.
+     * @param ptr Pointer.
+     * @return Entry filter.
+     */
+    public PlatformCacheEntryFilter createCacheEntryFilter(Object filter, long ptr);
+
+    /**
+     * Create stream receiver.
+     *
+     * @param rcv Native receiver.
+     * @param ptr Pointer.
+     * @param keepPortable Keep portable flag.
+     * @return Stream receiver.
+     */
+    public StreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepPortable);
+
+    /**
+     * Create cluster node filter.
+     *
+     * @param filter Native filter.
+     * @return Cluster node filter.
+     */
+    public IgnitePredicate<ClusterNode> createClusterNodeFilter(Object filter);
 }
