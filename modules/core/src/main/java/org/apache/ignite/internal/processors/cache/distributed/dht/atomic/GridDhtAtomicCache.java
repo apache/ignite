@@ -135,6 +135,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
             @Override public void apply(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
                 if (ctx.config().getAtomicWriteOrderMode() == CLOCK) {
+                    assert req.writeSynchronizationMode() != FULL_ASYNC : req;
+
                     // Always send reply in CLOCK ordering mode.
                     sendNearUpdateReply(res.nodeId(), res);
 
@@ -2247,6 +2249,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param req Request to remap.
      */
     private void remapToNewPrimary(GridNearAtomicUpdateRequest req) {
+        assert req.writeSynchronizationMode() == FULL_ASYNC : req;
+
         if (log.isDebugEnabled())
             log.debug("Remapping near update request locally: " + req);
 
@@ -2279,7 +2283,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             drRmvVals = null;
         }
         else {
-            assert req.operation() == DELETE;
+            assert req.operation() == DELETE : req;
 
             drRmvVals = req.conflictVersions();
 

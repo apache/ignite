@@ -142,26 +142,13 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
         return platformCtx;
     }
 
-    /**
-     * Start listening for the future.
-     *
-     * @param futId Future ID.
-     * @param typ Result type.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public void listenFuture(final long futId, int typ) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void listenFuture(final long futId, int typ) throws Exception {
         PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, null);
     }
 
-    /**
-     * Start listening for the future.
-     *
-     * @param futId Future ID.
-     * @param typ Result type.
-     * @param opId Operation ID required to pick correct result writer.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public void listenFuture(final long futId, int typ, int opId) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception {
         PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, futureWriter(opId));
     }
 
