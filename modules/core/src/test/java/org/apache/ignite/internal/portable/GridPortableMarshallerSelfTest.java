@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.portable.builder.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -28,7 +29,6 @@ import org.apache.ignite.portable.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import com.sun.tools.jdi.*;
 import com.sun.tools.jdi.LinkedHashMap;
 import org.jsr166.*;
 import sun.misc.*;

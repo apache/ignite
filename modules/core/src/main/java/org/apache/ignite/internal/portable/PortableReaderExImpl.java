@@ -85,7 +85,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @param start Start.
      * @param ldr Class loader.
      */
-    PortableReaderExImpl(PortableContext ctx, byte[] arr, int start, ClassLoader ldr) {
+    public PortableReaderExImpl(PortableContext ctx, byte[] arr, int start, ClassLoader ldr) {
         this(ctx, new PortableHeapInputStream(arr), start, ldr, new PortableReaderContext());
     }
 
@@ -185,7 +185,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Unmarshalled value.
      * @throws PortableException In case of error.
      */
-    Object unmarshal(int offset) throws PortableException {
+    public Object unmarshal(int offset) throws PortableException {
         off = offset;
 
         return off >= 0 ? unmarshal(false) : null;

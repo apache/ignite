@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.builder;
 
+import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.cache.portable.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -187,7 +188,6 @@ public class PortableBuilderImpl implements PortableBuilder {
         if (!registeredType)
             writer.writeString(clsNameToWrite);
 
-
         Set<Integer> remainsFlds = null;
 
         if (reader != null) {
@@ -240,7 +240,9 @@ public class PortableBuilderImpl implements PortableBuilder {
                     }
                 }
                 else {
-                    if (len != 0 && PortableUtils.isPlainType(reader.readByte(0))) {
+                    int type = len != 0 ? reader.readByte(0) : 0;
+
+                    if (len != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
                         if (cpStart < 0)
                             cpStart = reader.position() - 4 - 4;
 
@@ -435,7 +437,7 @@ public class PortableBuilderImpl implements PortableBuilder {
 
     /** {@inheritDoc} */
     @Override public PortableBuilder setField(String name, Object val) {
-        GridArgumentCheck.notNull(val, "val");
+        GridArgumentCheck.notNull(val, name);
 
         if (assignedVals == null)
             assignedVals = new LinkedHashMap<>();
@@ -513,7 +515,7 @@ public class PortableBuilderImpl implements PortableBuilder {
     /**
      * @return Object type id.
      */
-    int typeId() {
+    public int typeId() {
         return typeId;
     }
 }

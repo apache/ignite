@@ -15,43 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.builder;
+
+import org.apache.ignite.internal.portable.*;
+import org.apache.ignite.portable.*;
 
 /**
  *
  */
-abstract class PortableAbstractLazyValue implements PortableLazyValue {
+public class PortablePlainPortableObject implements PortableLazyValue {
     /** */
-    protected Object val;
-
-    /** */
-    protected final PortableBuilderReader reader;
-
-    /** */
-    protected final int valOff;
+    private final PortableObject portableObj;
 
     /**
-     * @param reader Reader.
-     * @param valOff Value.
+     * @param portableObj Portable object.
      */
-    protected PortableAbstractLazyValue(PortableBuilderReader reader, int valOff) {
-        this.reader = reader;
-        this.valOff = valOff;
+    public PortablePlainPortableObject(PortableObject portableObj) {
+        this.portableObj = portableObj;
     }
-
-    /**
-     * @return Value.
-     */
-    protected abstract Object init();
 
     /** {@inheritDoc} */
     @Override public Object value() {
-        if (val == null) {
-            val = init();
+        return portableObj;
+    }
 
-            assert val != null;
-        }
+    /** {@inheritDoc} */
+    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
+        PortableObject val = portableObj;
 
-        return val;
+        if (val instanceof PortableObjectOffheapImpl)
+            val = ((PortableObjectOffheapImpl)val).heapCopy();
+
+        writer.doWritePortableObject((PortableObjectImpl)val);
     }
 }

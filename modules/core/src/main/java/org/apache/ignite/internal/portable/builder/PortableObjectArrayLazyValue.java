@@ -15,28 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.builder;
 
+import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.portable.*;
 
 /**
  *
  */
-class PortableEnumArrayLazyValue extends PortableAbstractLazyValue {
+class PortableObjectArrayLazyValue extends PortableAbstractLazyValue {
     /** */
-    private final int len;
+    private Object[] lazyValsArr;
 
     /** */
-    private final int compTypeId;
+    private int compTypeId;
 
     /** */
-    private final String clsName;
+    private String clsName;
 
     /**
      * @param reader Reader.
      */
-    protected PortableEnumArrayLazyValue(PortableBuilderReader reader) {
+    protected PortableObjectArrayLazyValue(PortableBuilderReader reader) {
         super(reader, reader.position() - 1);
 
         int typeId = reader.readInt();
@@ -63,49 +64,27 @@ class PortableEnumArrayLazyValue extends PortableAbstractLazyValue {
 
         int size = reader.readInt();
 
-        for (int i = 0; i < size; i++)
-            reader.skipValue();
+        lazyValsArr = new Object[size];
 
-        len = reader.position() - valOff;
+        for (int i = 0; i < size; i++)
+            lazyValsArr[i] = reader.parseValue();
     }
 
     /** {@inheritDoc} */
     @Override protected Object init() {
-        reader.position(valOff + 1);
-
-        //skipping component type id
-        reader.readInt();
-
-        int size = reader.readInt();
-
-        PortableBuilderEnum[] res = new PortableBuilderEnum[size];
-
-        for (int i = 0; i < size; i++) {
-            byte flag = reader.readByte();
-
-            if (flag == GridPortableMarshaller.NULL)
-                continue;
-
-            if (flag != GridPortableMarshaller.ENUM)
-                throw new PortableException("Invalid flag value: " + flag);
-
-            res[i] = new PortableBuilderEnum(reader);
+        for (int i = 0; i < lazyValsArr.length; i++) {
+            if (lazyValsArr[i] instanceof PortableLazyValue)
+                lazyValsArr[i] = ((PortableLazyValue)lazyValsArr[i]).value();
         }
 
-        return res;
+        return lazyValsArr;
     }
 
     /** {@inheritDoc} */
     @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
-        if (val != null) {
-            if (clsName != null)
-                ctx.writeArray(writer, GridPortableMarshaller.ENUM_ARR, (Object[])val, clsName);
-            else
-                ctx.writeArray(writer, GridPortableMarshaller.ENUM_ARR, (Object[])val, compTypeId);
-
-            return;
-        }
-
-        writer.write(reader.array(), valOff, len);
+        if (clsName == null)
+            ctx.writeArray(writer, GridPortableMarshaller.OBJ_ARR, lazyValsArr, compTypeId);
+        else
+            ctx.writeArray(writer, GridPortableMarshaller.OBJ_ARR, lazyValsArr, clsName);
     }
 }

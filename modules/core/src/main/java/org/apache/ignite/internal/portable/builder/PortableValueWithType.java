@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.builder;
 
+import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.cache.portable.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 

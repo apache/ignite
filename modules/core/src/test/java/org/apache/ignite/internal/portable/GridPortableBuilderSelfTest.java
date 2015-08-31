@@ -19,6 +19,7 @@ package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.portable.builder.*;
 import org.apache.ignite.internal.processors.cache.portable.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;

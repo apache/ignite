@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.builder;
 
+import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.portable.*;
 
 import java.sql.*;
@@ -388,6 +389,8 @@ class PortableBuilderReader {
             case GridPortableMarshaller.STRING:
             case GridPortableMarshaller.UUID:
             case GridPortableMarshaller.DATE:
+                return new PortablePlainLazyValue(this, pos, len);
+
             case GridPortableMarshaller.BYTE_ARR:
             case GridPortableMarshaller.SHORT_ARR:
             case GridPortableMarshaller.INT_ARR:
@@ -400,12 +403,10 @@ class PortableBuilderReader {
             case GridPortableMarshaller.DATE_ARR:
             case GridPortableMarshaller.UUID_ARR:
             case GridPortableMarshaller.STRING_ARR:
-                return new PortablePlainLazyValue(this, pos, len);
-
-            case GridPortableMarshaller.COL:
-            case GridPortableMarshaller.OBJ_ARR:
-            case GridPortableMarshaller.MAP:
             case GridPortableMarshaller.ENUM_ARR:
+            case GridPortableMarshaller.OBJ_ARR:
+            case GridPortableMarshaller.COL:
+            case GridPortableMarshaller.MAP:
             case GridPortableMarshaller.MAP_ENTRY:
                 return new LazyCollection(pos);
 
@@ -450,6 +451,8 @@ class PortableBuilderReader {
         byte type = arr[pos++];
 
         int plainLazyValLen;
+
+        boolean modifiableLazyVal = false;
 
         switch (type) {
             case GridPortableMarshaller.NULL:
@@ -542,41 +545,49 @@ class PortableBuilderReader {
 
             case GridPortableMarshaller.BYTE_ARR:
                 plainLazyValLen = 4 + readLength();
+                modifiableLazyVal = true;
 
                 break;
 
             case GridPortableMarshaller.SHORT_ARR:
                 plainLazyValLen = 4 + readLength() * 2;
+                modifiableLazyVal = true;
 
                 break;
 
             case GridPortableMarshaller.INT_ARR:
                 plainLazyValLen = 4 + readLength() * 4;
+                modifiableLazyVal = true;
 
                 break;
 
             case GridPortableMarshaller.LONG_ARR:
                 plainLazyValLen = 4 + readLength() * 8;
+                modifiableLazyVal = true;
 
                 break;
 
             case GridPortableMarshaller.FLOAT_ARR:
                 plainLazyValLen = 4 + readLength() * 4;
+                modifiableLazyVal = true;
 
                 break;
 
             case GridPortableMarshaller.DOUBLE_ARR:
                 plainLazyValLen = 4 + readLength() * 8;
+                modifiableLazyVal = true;
 
                 break;
 
             case GridPortableMarshaller.CHAR_ARR:
                 plainLazyValLen = 4 + readLength() * 2;
+                modifiableLazyVal = true;
 
                 break;
 
             case GridPortableMarshaller.BOOLEAN_ARR:
                 plainLazyValLen = 4 + readLength();
+                modifiableLazyVal = true;
 
                 break;
 
@@ -629,13 +640,15 @@ class PortableBuilderReader {
                         pos += 8 + 8;
                     else if (flag == GridPortableMarshaller.STRING)
                         pos += 4 + readStringLength();
-                    else if (flag == GridPortableMarshaller.DECIMAL)
+                    else if (flag == GridPortableMarshaller.DECIMAL) {
+                        pos += 4; // scale value
                         pos += 4 + readLength();
+                    }
                     else
                         assert flag == GridPortableMarshaller.NULL;
                 }
 
-                return new PortablePlainLazyValue(this, valPos, pos - valPos);
+                return new PortableModifiableLazeValue(this, valPos, pos - valPos);
             }
 
             case GridPortableMarshaller.COL: {
@@ -690,7 +703,12 @@ class PortableBuilderReader {
                 throw new PortableException("Invalid flag value: " + type);
         }
 
-        PortablePlainLazyValue res = new PortablePlainLazyValue(this, valPos, 1 + plainLazyValLen);
+        PortableAbstractLazyValue res;
+
+        if (modifiableLazyVal)
+            res = new PortableModifiableLazeValue(this, valPos, 1 + plainLazyValLen);
+        else
+            res = new PortablePlainLazyValue(this, valPos, 1 + plainLazyValLen);
 
         pos += plainLazyValLen;
 

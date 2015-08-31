@@ -15,33 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.builder;
 
 /**
  *
  */
-class PortablePlainLazyValue extends PortableAbstractLazyValue {
+abstract class PortableAbstractLazyValue implements PortableLazyValue {
     /** */
-    protected final int len;
+    protected Object val;
+
+    /** */
+    protected final PortableBuilderReader reader;
+
+    /** */
+    protected final int valOff;
 
     /**
-     * @param reader Reader
-     * @param valOff Offset
-     * @param len Length.
+     * @param reader Reader.
+     * @param valOff Value.
      */
-    protected PortablePlainLazyValue(PortableBuilderReader reader, int valOff, int len) {
-        super(reader, valOff);
-
-        this.len = len;
+    protected PortableAbstractLazyValue(PortableBuilderReader reader, int valOff) {
+        this.reader = reader;
+        this.valOff = valOff;
     }
 
-    /** {@inheritDoc} */
-    @Override protected Object init() {
-        return reader.reader().unmarshal(valOff);
-    }
+    /**
+     * @return Value.
+     */
+    protected abstract Object init();
 
     /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
-        writer.write(reader.array(), valOff, len);
+    @Override public Object value() {
+        if (val == null) {
+            val = init();
+
+            assert val != null;
+        }
+
+        return val;
     }
 }

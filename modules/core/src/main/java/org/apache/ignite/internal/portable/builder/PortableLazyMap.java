@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.builder;
+
+import org.apache.ignite.internal.portable.*;
 
 import org.jetbrains.annotations.*;
 

@@ -37,7 +37,7 @@ import static java.lang.reflect.Modifier.*;
 /**
  * Portable class descriptor.
  */
-class PortableClassDescriptor {
+public class PortableClassDescriptor {
     /** */
     private final PortableContext ctx;
 
@@ -274,7 +274,7 @@ class PortableClassDescriptor {
     /**
      * @return Type ID.
      */
-    int typeId() {
+    public int typeId() {
         return typeId;
     }
 

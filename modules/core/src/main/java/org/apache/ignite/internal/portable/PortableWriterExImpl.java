@@ -109,7 +109,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param off Start offset.
      * @param typeId Type ID.
      */
-    PortableWriterExImpl(PortableContext ctx, int off, int typeId, boolean metaEnabled) {
+    public PortableWriterExImpl(PortableContext ctx, int off, int typeId, boolean metaEnabled) {
         this(ctx, off);
 
         this.typeId = typeId;
@@ -273,14 +273,14 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /**
      * @return Array.
      */
-    byte[] array() {
+    public byte[] array() {
         return wCtx.out.arrayCopy();
     }
 
     /**
      * @return Output stream.
      */
-    PortableOutputStream outputStream() {
+    public PortableOutputStream outputStream() {
         return wCtx.out;
     }
 
@@ -304,7 +304,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param bytes Number of bytes to reserve.
      * @return Offset.
      */
-    int reserve(int bytes) {
+    public int reserve(int bytes) {
         int pos = wCtx.out.position();
 
         wCtx.out.position(pos + bytes);
@@ -316,7 +316,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param bytes Number of bytes to reserve.
      * @return Offset.
      */
-    int reserveAndMark(int bytes) {
+    public int reserveAndMark(int bytes) {
         int off0 = reserve(bytes);
 
         mark = wCtx.out.position();
@@ -327,21 +327,21 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /**
      * @param off Offset.
      */
-    void writeDelta(int off) {
+    public void writeDelta(int off) {
         wCtx.out.writeInt(off, wCtx.out.position() - mark);
     }
 
     /**
      *
      */
-    void writeLength() {
+    public void writeLength() {
         wCtx.out.writeInt(start + TOTAL_LEN_POS, wCtx.out.position() - start);
     }
 
     /**
      *
      */
-    void writeRawOffsetIfNeeded() {
+    public void writeRawOffsetIfNeeded() {
         if (allowFields)
             wCtx.out.writeInt(start + RAW_DATA_OFF_POS, wCtx.out.position() - start);
     }
@@ -369,63 +369,63 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /**
      * @param val Value.
      */
-    void doWriteByte(byte val) {
+    public void doWriteByte(byte val) {
         wCtx.out.writeByte(val);
     }
 
     /**
      * @param val Value.
      */
-    void doWriteShort(short val) {
+    public void doWriteShort(short val) {
         wCtx.out.writeShort(val);
     }
 
     /**
      * @param val Value.
      */
-    void doWriteInt(int val) {
+    public void doWriteInt(int val) {
         wCtx.out.writeInt(val);
     }
 
     /**
      * @param val Value.
      */
-    void doWriteLong(long val) {
+    public void doWriteLong(long val) {
         wCtx.out.writeLong(val);
     }
 
     /**
      * @param val Value.
      */
-    void doWriteFloat(float val) {
+    public void doWriteFloat(float val) {
         wCtx.out.writeFloat(val);
     }
 
     /**
      * @param val Value.
      */
-    void doWriteDouble(double val) {
+    public void doWriteDouble(double val) {
         wCtx.out.writeDouble(val);
     }
 
     /**
      * @param val Value.
      */
-    void doWriteChar(char val) {
+    public void doWriteChar(char val) {
         wCtx.out.writeChar(val);
     }
 
     /**
      * @param val Value.
      */
-    void doWriteBoolean(boolean val) {
+    public void doWriteBoolean(boolean val) {
         wCtx.out.writeBoolean(val);
     }
 
     /**
      * @param val String value.
      */
-    void doWriteDecimal(@Nullable BigDecimal val) {
+    public void doWriteDecimal(@Nullable BigDecimal val) {
         if (val == null)
             doWriteByte(NULL);
         else {
@@ -451,7 +451,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /**
      * @param val String value.
      */
-    void doWriteString(@Nullable String val) {
+    public void doWriteString(@Nullable String val) {
         if (val == null)
             doWriteByte(NULL);
         else {
@@ -481,7 +481,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /**
      * @param uuid UUID.
      */
-    void doWriteUuid(@Nullable UUID uuid) {
+    public void doWriteUuid(@Nullable UUID uuid) {
         if (uuid == null)
             doWriteByte(NULL);
         else {
@@ -494,7 +494,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /**
      * @param date Date.
      */
-    void doWriteDate(@Nullable Date date) {
+    public void doWriteDate(@Nullable Date date) {
         if (date == null)
             doWriteByte(NULL);
         else {
@@ -507,7 +507,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /**
      * @param ts Timestamp.
      */
-    void doWriteTimestamp(@Nullable Timestamp ts) {
+    public void doWriteTimestamp(@Nullable Timestamp ts) {
         if (ts == null)
             doWriteByte(NULL);
         else {
@@ -522,7 +522,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param detached Detached or not.
      * @throws PortableException In case of error.
      */
-    void doWriteObject(@Nullable Object obj, boolean detached) throws PortableException {
+    public void doWriteObject(@Nullable Object obj, boolean detached) throws PortableException {
         if (obj == null)
             doWriteByte(NULL);
         else {
@@ -858,7 +858,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /**
      * @param po Portable object.
      */
-    void doWritePortableObject(@Nullable PortableObjectImpl po) {
+    public void doWritePortableObject(@Nullable PortableObjectImpl po) {
         if (po == null)
             doWriteByte(NULL);
         else {
@@ -1697,7 +1697,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param typeId type
      * @return New writer.
      */
-    PortableWriterExImpl newWriter(int typeId) {
+    public PortableWriterExImpl newWriter(int typeId) {
         PortableWriterExImpl res = new PortableWriterExImpl(ctx, wCtx);
 
         res.typeId = typeId;
@@ -1708,7 +1708,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /**
      * @return Portable context.
      */
-    PortableContext context() {
+    public PortableContext context() {
         return ctx;
     }
 

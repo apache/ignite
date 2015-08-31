@@ -23,6 +23,7 @@ import org.apache.ignite.portable.*;
 import com.google.common.base.*;
 
 import java.io.*;
+import java.math.*;
 import java.util.*;
 
 /**
@@ -175,7 +176,6 @@ public class GridPortableTestClasses {
         /** */
         public Date date;
 
-
         /** */
         public byte[] bArr;
 
@@ -201,10 +201,16 @@ public class GridPortableTestClasses {
         public boolean[] zArr;
 
         /** */
+        public BigDecimal[] bdArr;
+
+        /** */
         public String[] strArr;
 
         /** */
         public UUID[] uuidArr;
+
+        /** */
+        public Date[] dateArr;
 
         /** */
         public TestObjectEnum anEnum;
@@ -214,8 +220,6 @@ public class GridPortableTestClasses {
 
         /** */
         public Map.Entry entry;
-
-        //public Date[] dateArr; // todo test date array.
 
         /**
          * @return Array.
@@ -263,21 +267,23 @@ public class GridPortableTestClasses {
             uuid = new UUID(1, 1);
             date = new Date(1000000);
 
-            bArr = new byte[]{1, 2, 3};
-            sArr = new short[]{1, 2, 3};
-            iArr = new int[]{1, 2, 3};
-            lArr = new long[]{1, 2, 3};
-            fArr = new float[]{1, 2, 3};
-            dArr = new double[]{1, 2, 3};
-            cArr = new char[]{1, 2, 3};
-            zArr = new boolean[]{true, false};
+            bArr = new byte[] {1, 2, 3};
+            sArr = new short[] {1, 2, 3};
+            iArr = new int[] {1, 2, 3};
+            lArr = new long[] {1, 2, 3};
+            fArr = new float[] {1, 2, 3};
+            dArr = new double[] {1, 2, 3};
+            cArr = new char[] {1, 2, 3};
+            zArr = new boolean[] {true, false};
 
-            strArr = new String[]{"abc", "ab", "a"};
-            uuidArr = new UUID[]{new UUID(1, 1), new UUID(2, 2)};
+            strArr = new String[] {"abc", "ab", "a"};
+            uuidArr = new UUID[] {new UUID(1, 1), new UUID(2, 2)};
+            bdArr = new BigDecimal[] {new BigDecimal(1000), BigDecimal.TEN};
+            dateArr = new Date[] {new Date(1000000), new Date(200000)};
 
             anEnum = TestObjectEnum.A;
 
-            enumArr = new TestObjectEnum[]{TestObjectEnum.B};
+            enumArr = new TestObjectEnum[] {TestObjectEnum.B};
 
             entry = new GridMapEntry<>(1, "a");
         }
@@ -381,7 +387,6 @@ public class GridPortableTestClasses {
         private Map<String, List<Company>> companyByStreet = new TreeMap<>();
 
         /**
-         *
          * @param street Street.
          * @return Company.
          */
@@ -390,7 +395,6 @@ public class GridPortableTestClasses {
         }
 
         /**
-         *
          * @param company Company.
          */
         public void addCompany(Company company) {
@@ -406,7 +410,6 @@ public class GridPortableTestClasses {
         }
 
         /**
-         *
          * @return map
          */
         public Map<String, List<Company>> getCompanyByStreet() {
@@ -414,7 +417,6 @@ public class GridPortableTestClasses {
         }
 
         /**
-         *
          * @param companyByStreet map
          */
         public void setCompanyByStreet(Map<String, List<Company>> companyByStreet) {
