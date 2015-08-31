@@ -17,9 +17,11 @@
 
 package org.apache.ignite;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Closeable;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This interface provides a rich API for working with distributed queues based on In-Memory Data Grid.

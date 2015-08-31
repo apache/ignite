@@ -17,9 +17,9 @@
 
 package org.apache.ignite.cluster;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.lang.IgniteFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This exception is used to indicate error with the cluster topology (e.g., crashed node, etc.).

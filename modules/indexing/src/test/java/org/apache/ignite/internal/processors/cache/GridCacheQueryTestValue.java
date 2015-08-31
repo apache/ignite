@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.query.annotations.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.query.annotations.QueryTextField;
 
 /**
  * Query test value.

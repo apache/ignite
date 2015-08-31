@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.h2.command.*;
-import org.h2.util.*;
-import org.h2.value.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.internal.util.typedef.F;
+import org.h2.command.Parser;
+import org.h2.util.StatementBuilder;
+import org.h2.value.ValueString;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.*;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CASE;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CAST;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CONVERT;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.UNKNOWN_FUNCTION;
 
 /**
  * Function.

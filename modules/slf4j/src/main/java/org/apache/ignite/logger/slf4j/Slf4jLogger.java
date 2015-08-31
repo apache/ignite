@@ -17,9 +17,10 @@
 
 package org.apache.ignite.logger.slf4j;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
-import org.slf4j.*;
+import org.apache.ignite.IgniteLogger;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SLF4J-based implementation for logging. This logger should be used

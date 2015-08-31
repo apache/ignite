@@ -17,14 +17,17 @@
 
 package org.apache.ignite.cache.spring;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.jsr166.*;
-import org.springframework.beans.factory.*;
-import org.springframework.cache.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.jsr166.ConcurrentHashMap8;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.cache.CacheManager;
 
 /**
  * Implementation of Spring cache abstraction based on Ignite cache.

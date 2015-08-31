@@ -17,13 +17,14 @@
 
 package org.apache.ignite.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.marshaller.portable.*;
-
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.TreeMap;
+import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapper for portable object in portable binary format. Once an object is defined as portable,

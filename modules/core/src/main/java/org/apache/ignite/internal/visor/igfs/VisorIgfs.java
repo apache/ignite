@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.visor.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data transfer object for {@link org.apache.ignite.IgniteFileSystem}.

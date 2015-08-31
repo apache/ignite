@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.logger.jcl.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.logger.jcl.JclLoggerTest;
 
 /**
  * Commons logging test.

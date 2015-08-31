@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.counter;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.hadoop.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 
 /**
  * The object that writes some system counters to some storage for each running job. This operation is a part of

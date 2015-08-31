@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.store.jdbc.model;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Organization definition.
@@ -152,4 +152,3 @@ public class Organization implements Serializable {
             "]";
     }
 }
-

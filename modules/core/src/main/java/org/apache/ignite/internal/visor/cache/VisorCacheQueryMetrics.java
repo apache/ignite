@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.cache.query.QueryMetrics;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data transfer object for cache query metrics.

@@ -17,9 +17,10 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import org.hibernate.cache.*;
-import org.hibernate.cache.spi.access.*;
-import org.jetbrains.annotations.*;
+import org.hibernate.cache.CacheException;
+import org.hibernate.cache.spi.access.RegionAccessStrategy;
+import org.hibernate.cache.spi.access.SoftLock;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of L2 cache access strategy delegating to {@link HibernateAccessStrategyAdapter}.

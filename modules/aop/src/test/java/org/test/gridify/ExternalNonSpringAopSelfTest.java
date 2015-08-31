@@ -17,12 +17,15 @@
 
 package org.test.gridify;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.gridify.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.deployment.local.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.gridify.TestGridifyException;
+import org.apache.ignite.gridify.TestGridifyTask;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * To run this test with JBoss AOP make sure of the following:

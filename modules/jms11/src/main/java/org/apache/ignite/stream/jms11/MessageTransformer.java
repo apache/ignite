@@ -17,10 +17,9 @@
 
 package org.apache.ignite.stream.jms11;
 
-import org.jetbrains.annotations.*;
-
-import javax.jms.*;
-import java.util.*;
+import java.util.Map;
+import javax.jms.Message;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implement this interface to transform from a {@link Message} to a set of cache entries in the form of a {@link Map}.

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.mxbean.*;
-import org.apache.ignite.spi.*;
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.spi.IgniteSpiManagementMBean;
 
 /**
  * MBean provide access to TCP-based communication SPI.

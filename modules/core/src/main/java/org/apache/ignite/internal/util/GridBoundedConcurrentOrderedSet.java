@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.NoSuchElementException;
+import java.util.SortedSet;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Concurrent ordered set that automatically manages its maximum size.

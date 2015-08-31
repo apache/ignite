@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.h2.value.*;
-
-import java.math.*;
-import java.nio.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.h2.value.Value;
+import org.h2.value.ValueDecimal;
 
 /**
  * H2 Decimal.

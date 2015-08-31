@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import org.apache.ignite.internal.client.*;
+import org.apache.ignite.internal.client.GridClientPredicate;
 
 /**
  * AND predicate. Passes if and only if both provided filters accept the node.

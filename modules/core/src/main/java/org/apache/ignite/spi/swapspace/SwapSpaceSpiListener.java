@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.swapspace;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Swap space SPI eviction listener.

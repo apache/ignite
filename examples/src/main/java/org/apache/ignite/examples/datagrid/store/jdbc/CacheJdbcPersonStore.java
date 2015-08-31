@@ -17,17 +17,22 @@
 
 package org.apache.ignite.examples.datagrid.store.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.examples.datagrid.store.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.h2.jdbcx.*;
-
-import javax.cache.*;
-import javax.cache.integration.*;
-import javax.sql.*;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.cache.Cache;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
+import javax.sql.DataSource;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cache.store.CacheStoreSession;
+import org.apache.ignite.examples.datagrid.store.Person;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.resources.CacheStoreSessionResource;
+import org.h2.jdbcx.JdbcConnectionPool;
 
 /**
  * Example of {@link CacheStore} implementation that uses JDBC

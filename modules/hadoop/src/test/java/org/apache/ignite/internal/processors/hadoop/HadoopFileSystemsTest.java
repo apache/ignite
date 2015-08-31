@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.hadoop.conf.*;
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.mapreduce.*;
-import org.apache.ignite.internal.processors.hadoop.fs.*;
-import org.apache.ignite.testframework.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.ignite.internal.processors.hadoop.fs.HadoopFileSystemsUtils;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test file systems for the working directory multi-threading support.

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.sorted;
 
-import org.apache.ignite.cache.eviction.sorted.*;
-import org.apache.ignite.internal.processors.cache.eviction.*;
+import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy;
+import org.apache.ignite.internal.processors.cache.eviction.EvictionAbstractTest;
 
 /**
  * Sorted eviction policy tests.

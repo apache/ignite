@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
-import org.apache.ignite.internal.visor.util.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Task for execute SCAN or SQL query and get first page of results.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines different cache query types. For more information on cache query types

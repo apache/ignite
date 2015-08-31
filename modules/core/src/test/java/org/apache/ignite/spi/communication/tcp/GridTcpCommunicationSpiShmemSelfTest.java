@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  *

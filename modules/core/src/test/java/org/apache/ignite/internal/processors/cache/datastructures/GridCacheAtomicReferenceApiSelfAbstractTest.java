@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import org.apache.ignite.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.IgniteAtomicReference;
+import org.apache.ignite.IgniteException;
 
 /**
  * Basic tests for atomic reference.

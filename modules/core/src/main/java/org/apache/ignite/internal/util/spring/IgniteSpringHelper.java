@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.util.spring;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.lang.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Spring helper which can parse Spring configuration files, interface was introduced to avoid mandatory

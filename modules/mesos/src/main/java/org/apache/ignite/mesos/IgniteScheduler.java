@@ -17,12 +17,19 @@
 
 package org.apache.ignite.mesos;
 
-import org.apache.ignite.mesos.resource.*;
-import org.apache.mesos.*;
-
-import java.util.*;
-import java.util.concurrent.atomic.*;
-import java.util.logging.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.ignite.mesos.resource.ResourceProvider;
+import org.apache.mesos.Protos;
+import org.apache.mesos.Scheduler;
+import org.apache.mesos.SchedulerDriver;
 
 /**
  * Ignite scheduler receives offers from Mesos and decides how many resources will be occupied.

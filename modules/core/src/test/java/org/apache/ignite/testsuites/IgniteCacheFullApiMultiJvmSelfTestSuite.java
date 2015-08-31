@@ -17,8 +17,48 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.multijvm.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicClientOnlyFairAffinityMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicClientOnlyMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicClientOnlyMultiJvmP2PDisabledFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicCopyOnReadDisabledMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicFairAffinityMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMultiJvmP2PDisabledFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicNearEnabledFairAffinityMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicNearEnabledMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicNearEnabledPrimaryWriteOrderMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicNearOnlyMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicNearOnlyMultiJvmP2PDisabledFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicOffHeapMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicOffHeapTieredMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicPrimaryWriteOrderFairAffinityMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicPrimaryWriteOrderMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicPrimaryWriteOrderMultiJvmP2PDisabledFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicPrimaryWrityOrderOffHeapMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicPrimaryWrityOrderOffHeapTieredMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheNearOnlyFairAffinityMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheNearOnlyMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheNearOnlyMultiJvmP2PDisabledFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedCopyOnReadDisabledMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedFairAffinityMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmP2PDisabledFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedNearDisabledAtomicOffHeapTieredMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedNearDisabledFairAffinityMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedNearDisabledMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedNearDisabledMultiJvmP2PDisabledFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedNearDisabledOffHeapMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedNearDisabledOffHeapTieredMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedOffHeapMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedOffHeapTieredMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedAtomicMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedAtomicPrimaryWriteOrderMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedMultiJvmP2PDisabledFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedOffHeapMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheReplicatedOffHeapTieredMultiJvmFullApiSelfTest;
 
 /**
  * Multi-JVM test suite.

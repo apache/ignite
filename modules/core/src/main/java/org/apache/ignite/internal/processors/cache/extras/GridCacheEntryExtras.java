@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.extras;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache extras.

@@ -17,14 +17,18 @@
 
 package org.apache.ignite.spi.discovery;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.testframework.junits.spi.*;
-
-import javax.swing.*;
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+import javax.swing.JOptionPane;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 
 /**
  * Base discovery test class.

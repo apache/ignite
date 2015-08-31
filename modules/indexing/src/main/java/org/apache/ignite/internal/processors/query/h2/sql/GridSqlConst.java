@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.value.*;
-
-import java.util.*;
+import java.util.Collections;
+import org.h2.value.Value;
 
 /**
  * Constant value.

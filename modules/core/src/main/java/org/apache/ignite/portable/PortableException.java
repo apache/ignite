@@ -17,9 +17,8 @@
 
 package org.apache.ignite.portable;
 
-import org.apache.ignite.*;
-
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception indicating portable object serialization error.

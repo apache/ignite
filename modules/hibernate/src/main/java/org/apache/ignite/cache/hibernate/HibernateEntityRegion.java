@@ -17,11 +17,14 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.hibernate.cache.*;
-import org.hibernate.cache.spi.*;
-import org.hibernate.cache.spi.access.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.hibernate.cache.CacheException;
+import org.hibernate.cache.spi.CacheDataDescription;
+import org.hibernate.cache.spi.EntityRegion;
+import org.hibernate.cache.spi.access.AccessType;
+import org.hibernate.cache.spi.access.EntityRegionAccessStrategy;
+import org.hibernate.cache.spi.access.SoftLock;
 
 /**
  * Implementation of {@link EntityRegion}. This region is used to store entity data.

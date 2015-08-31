@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Provides possibility to schedule delayed execution,

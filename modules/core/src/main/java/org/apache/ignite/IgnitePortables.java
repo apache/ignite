@@ -17,15 +17,24 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.portable.*;
-import org.apache.ignite.marshaller.portable.*;
-
-import org.jetbrains.annotations.*;
-
-import java.sql.*;
-import java.util.*;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.TreeMap;
+import java.util.UUID;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.portable.PortableBuilder;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableIdMapper;
+import org.apache.ignite.portable.PortableMarshalAware;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.portable.PortableSerializer;
+import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines portable objects functionality. With portable objects you are able to:
@@ -359,4 +368,3 @@ public interface IgnitePortables {
      */
     public Collection<PortableMetadata> metadata() throws PortableException;
 }
-

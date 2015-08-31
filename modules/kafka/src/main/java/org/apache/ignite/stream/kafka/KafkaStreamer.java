@@ -17,17 +17,24 @@
 
 package org.apache.ignite.stream.kafka;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.stream.*;
-
-import kafka.consumer.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import kafka.consumer.ConsumerConfig;
+import kafka.consumer.ConsumerIterator;
+import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
-import kafka.message.*;
-import kafka.serializer.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import kafka.message.MessageAndMetadata;
+import kafka.serializer.Decoder;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.stream.StreamAdapter;
 
 /**
  * Server that subscribes to topic messages from Kafka broker and streams its to key-value pairs into

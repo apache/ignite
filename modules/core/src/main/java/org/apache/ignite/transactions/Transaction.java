@@ -17,10 +17,12 @@
 
 package org.apache.ignite.transactions;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.lang.IgniteAsyncSupport;
+import org.apache.ignite.lang.IgniteAsyncSupported;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Grid cache transaction. Cache transactions have a default 2PC (two-phase-commit) behavior and

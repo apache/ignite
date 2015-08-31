@@ -17,10 +17,10 @@
 
 package org.apache.ignite.logger.jcl;
 
-import junit.framework.*;
-import org.apache.commons.logging.*;
-import org.apache.ignite.*;
-import org.apache.ignite.testframework.junits.common.*;
+import junit.framework.TestCase;
+import org.apache.commons.logging.LogFactory;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Jcl logger test.

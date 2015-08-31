@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Starts up one grid node (server) with pre-defined ports and tasks to test client-server interactions.

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.util.io;
 
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
 
 /**
  * Test for {@link GridUnsafeDataOutput}.

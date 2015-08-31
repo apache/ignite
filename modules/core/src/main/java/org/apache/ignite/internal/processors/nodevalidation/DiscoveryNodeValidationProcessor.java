@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.nodevalidation;
 
-import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.GridProcessor;
 
 /**
  * Node validation.

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop.v2;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Fake manager for shutdown hooks.

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.igfs.mapreduce;
 
-import org.apache.ignite.igfs.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.igfs.IgfsPath;
 
 /**
  * IGFS task arguments. When you initiate new IGFS task execution using one of {@code IgniteFs.execute(...)} methods,

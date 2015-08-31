@@ -17,8 +17,10 @@
 
 package org.apache.ignite;
 
-import java.io.*;
-import java.util.*;
+import java.io.Closeable;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Set implementation based on on In-Memory Data Grid.

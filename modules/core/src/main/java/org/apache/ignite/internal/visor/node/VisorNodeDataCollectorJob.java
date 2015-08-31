@@ -17,23 +17,28 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.igfs.*;
-import org.apache.ignite.internal.util.ipc.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.*;
-import org.apache.ignite.internal.visor.cache.*;
-import org.apache.ignite.internal.visor.compute.*;
-import org.apache.ignite.internal.visor.igfs.*;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
+import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.cache.VisorCache;
+import org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder;
+import org.apache.ignite.internal.visor.igfs.VisorIgfs;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsEndpoint;
 
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
-import static org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder.*;
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isIgfsCache;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isSystemCache;
+import static org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder.COMPUTE_MONITORING_HOLDER_KEY;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VISOR_TASK_EVTS;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.checkExplicitTaskMonitoring;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.collectEvents;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.log;
 
 /**
  * Job that collects data from node.

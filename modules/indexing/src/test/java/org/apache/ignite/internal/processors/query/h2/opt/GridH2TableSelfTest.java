@@ -17,19 +17,35 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.testframework.junits.common.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.Driver;
-import org.h2.index.*;
-import org.h2.result.*;
-import org.h2.table.*;
-import org.h2.value.*;
-import org.jetbrains.annotations.*;
-import org.junit.*;
-
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import org.h2.index.Index;
+import org.h2.result.Row;
+import org.h2.result.SearchRow;
+import org.h2.result.SortOrder;
+import org.h2.table.IndexColumn;
+import org.h2.value.ValueLong;
+import org.h2.value.ValueString;
+import org.h2.value.ValueTimestamp;
+import org.h2.value.ValueUuid;
+import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 
 /**
  * Tests H2 Table.

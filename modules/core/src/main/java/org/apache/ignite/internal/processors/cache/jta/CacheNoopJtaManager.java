@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.jta;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * No-op implementation of {@link CacheJtaManagerAdapter}.

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testframework.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test for {@link TcpDiscoverySpi} with SSL.

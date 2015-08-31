@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import sun.misc.*;
-
-import java.net.*;
-import java.security.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import sun.misc.BASE64Encoder;
 
 /**
  *

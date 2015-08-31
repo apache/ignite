@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.portable.streams.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.portable.streams.PortableMemoryAllocator;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import sun.misc.Unsafe;
 
-import sun.misc.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
 
 /**
  * Thread-local memory allocator.

@@ -17,8 +17,8 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.resources.LoggerResource;
 
 /**
  * Test job.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import junit.framework.*;
+import junit.framework.TestSuite;
 
 /**
  * Cache interceptor suite.

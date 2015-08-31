@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.collision;
 
-import org.apache.ignite.spi.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.spi.IgniteSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Collision SPI allows to regulate how grid jobs get executed when they arrive on a

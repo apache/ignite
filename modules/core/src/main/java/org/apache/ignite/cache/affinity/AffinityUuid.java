@@ -17,8 +17,8 @@
 
 package org.apache.ignite.cache.affinity;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Guaranteed unique affinity-based key.

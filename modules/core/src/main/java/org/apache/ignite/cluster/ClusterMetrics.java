@@ -17,8 +17,8 @@
 
 package org.apache.ignite.cluster;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  * This class represents runtime information on a cluster. Apart from obvious

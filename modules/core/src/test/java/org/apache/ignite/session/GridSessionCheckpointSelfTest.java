@@ -17,12 +17,13 @@
 
 package org.apache.ignite.session;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.checkpoint.cache.*;
-import org.apache.ignite.spi.checkpoint.jdbc.*;
-import org.apache.ignite.spi.checkpoint.sharedfs.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.hsqldb.jdbc.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi;
+import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi;
+import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.hsqldb.jdbc.jdbcDataSource;
 
 /**
  * Grid session checkpoint self test.

@@ -17,10 +17,11 @@
 
 package org.apache.ignite.stream;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.lang.IgniteBiInClosure;
 
 /**
  * Convenience adapter to visit every key-value tuple in the stream. Note, that the visitor

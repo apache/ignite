@@ -17,16 +17,22 @@
 
 package org.apache.ignite.compute.gridify.aop.spring;
 
-import org.aopalliance.intercept.*;
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.compute.gridify.*;
-import org.apache.ignite.compute.gridify.aop.*;
-import org.apache.ignite.internal.util.typedef.*;
+import java.lang.reflect.Method;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.gridify.Gridify;
+import org.apache.ignite.compute.gridify.GridifyArgument;
+import org.apache.ignite.compute.gridify.GridifyInterceptor;
+import org.apache.ignite.compute.gridify.GridifyRuntimeException;
+import org.apache.ignite.compute.gridify.aop.GridifyArgumentAdapter;
+import org.apache.ignite.compute.gridify.aop.GridifyDefaultTask;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 
-import java.lang.reflect.*;
-
-import static org.apache.ignite.IgniteState.*;
+import static org.apache.ignite.IgniteState.STARTED;
 
 /**
  * Spring aspect that cross-cuts on all methods grid-enabled with

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.plugin.segmentation;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  * This is interface for segmentation (a.k.a "split-brain" problem) resolvers.

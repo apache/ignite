@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spring;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Complex key.

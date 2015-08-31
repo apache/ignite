@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop.v1;
 
-import org.apache.hadoop.mapred.*;
-import org.apache.ignite.internal.processors.hadoop.*;
-import org.apache.ignite.internal.processors.hadoop.counter.*;
+import org.apache.hadoop.mapred.Counters;
+import org.apache.hadoop.mapred.InputSplit;
+import org.apache.hadoop.mapred.Reporter;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopLongCounter;
 
 /**
  * Hadoop reporter implementation for v1 API.

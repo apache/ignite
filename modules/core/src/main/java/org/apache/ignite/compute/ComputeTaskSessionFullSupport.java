@@ -17,8 +17,12 @@
 
 package org.apache.ignite.compute;
 
-import java.lang.annotation.*;
-import java.util.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.Map;
 
 /**
  * Annotation for enabling task session attributes and checkpoints for tasks.

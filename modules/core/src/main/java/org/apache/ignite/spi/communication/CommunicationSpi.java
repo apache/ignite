@@ -17,12 +17,12 @@
 
 package org.apache.ignite.spi.communication;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.spi.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Communication SPI is responsible for data exchange between nodes.

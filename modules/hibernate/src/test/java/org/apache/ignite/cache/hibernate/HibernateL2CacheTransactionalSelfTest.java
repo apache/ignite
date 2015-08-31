@@ -17,23 +17,23 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import org.apache.commons.dbcp.managed.*;
-import org.apache.ignite.cache.jta.*;
-import org.apache.ignite.configuration.*;
-import org.h2.jdbcx.*;
-import org.hibernate.cache.spi.access.*;
-import org.hibernate.engine.transaction.internal.jta.*;
+import java.util.Collections;
+import javax.transaction.TransactionManager;
+import javax.transaction.UserTransaction;
+import org.apache.commons.dbcp.managed.BasicManagedDataSource;
+import org.apache.ignite.cache.jta.CacheTmLookup;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.h2.jdbcx.JdbcDataSource;
+import org.hibernate.cache.spi.access.AccessType;
+import org.hibernate.engine.transaction.internal.jta.JtaTransactionFactory;
 import org.hibernate.engine.transaction.spi.TransactionFactory;
-import org.hibernate.service.*;
-import org.hibernate.service.jdbc.connections.internal.*;
-import org.hibernate.service.jdbc.connections.spi.*;
-import org.hibernate.service.jta.platform.internal.*;
-import org.hibernate.service.jta.platform.spi.*;
-import org.jetbrains.annotations.*;
-import org.objectweb.jotm.*;
-
-import javax.transaction.*;
-import java.util.*;
+import org.hibernate.service.ServiceRegistryBuilder;
+import org.hibernate.service.jdbc.connections.internal.DatasourceConnectionProviderImpl;
+import org.hibernate.service.jdbc.connections.spi.ConnectionProvider;
+import org.hibernate.service.jta.platform.internal.AbstractJtaPlatform;
+import org.hibernate.service.jta.platform.spi.JtaPlatform;
+import org.jetbrains.annotations.Nullable;
+import org.objectweb.jotm.Jotm;
 
 /**
  *

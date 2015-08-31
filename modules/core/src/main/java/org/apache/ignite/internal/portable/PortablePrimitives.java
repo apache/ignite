@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.GridUnsafe;
+import sun.misc.Unsafe;
 
-import sun.misc.*;
-
-import static java.nio.ByteOrder.*;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.nio.ByteOrder.nativeOrder;
 
 /**
  * Primitives writer.
