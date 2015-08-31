@@ -413,7 +413,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             var builderItem =
                 _portables.GetBuilder(typeof (BuilderCollectionItem)).SetField("val", 1);
 
-            builderCol.SetField<ICollection>("col", new List<IPortableBuilder>() {builderItem});
+            builderCol.SetField<ICollection>("col", new List<IPortableBuilder> {builderItem});
 
             var portCol = builderCol.Build();
 
