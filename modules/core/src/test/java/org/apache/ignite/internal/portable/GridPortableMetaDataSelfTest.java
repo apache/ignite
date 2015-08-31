@@ -138,6 +138,15 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testNoConfiguration() throws Exception {
+        portables().toPortable(new TestObject3());
+
+        assertNotNull(portables().metadata(TestObject3.class));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testReflection() throws Exception {
         PortableMetadata meta = portables().metadata(TestObject1.class);
 
@@ -339,5 +348,13 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
         @Override public void readPortable(PortableReader reader) throws PortableException {
             // No-op.
         }
+    }
+
+    /**
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    private static class TestObject3 {
+        /** */
+        private int intVal;
     }
 }

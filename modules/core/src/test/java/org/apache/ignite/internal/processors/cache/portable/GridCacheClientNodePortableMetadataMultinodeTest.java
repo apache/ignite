@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.portable;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.portable.*;
 import org.apache.ignite.portable.*;
@@ -225,6 +226,16 @@ public class GridCacheClientNodePortableMetadataMultinodeTest extends GridCommon
             assertEquals((Object) client, ignite(i).configuration().isClientMode());
 
             portables = ignite(i).portables();
+
+            final IgnitePortables p0 = portables;
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    Collection<PortableMetadata> metaCol = p0.metadata();
+
+                    return metaCol.size() == 1000;
+                }
+            }, getTestTimeout());
 
             Collection<PortableMetadata> metaCol = portables.metadata();
 
