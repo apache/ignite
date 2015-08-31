@@ -390,6 +390,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                             ses.send(new RecoveryLastReceivedMessage(-1));
 
+                            fut.onDone(oldClient);
+
                             return;
                         }
                         else {
@@ -433,12 +435,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
                                 new ConnectClosure(ses, recoveryDesc, rmtNode, msg0, !hasShmemClient, fut));
 
-                        if (reserved) {
-                            GridTcpNioCommunicationClient client =
-                                    connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
-
-                            fut.onDone(client);
-                        }
+                        if (reserved)
+                            connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
                     }
                 }
             }
@@ -1413,7 +1411,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (slowClientQueueLimit > 0 && msgQueueLimit > 0 && slowClientQueueLimit >= msgQueueLimit) {
             U.quietAndWarn(log, "Slow client queue limit is set to a value greater than message queue limit " +
                 "(slow client queue limit will have no effect) [msgQueueLimit=" + msgQueueLimit +
-                    ", slowClientQueueLimit=" + slowClientQueueLimit + ']');
+                ", slowClientQueueLimit=" + slowClientQueueLimit + ']');
         }
 
         registerMBean(gridName, this, TcpCommunicationSpiMBean.class);
