@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         private PortableMarshaller _marsh;
 
         /** Portables. */
-        private PortablesImpl _portables;
+        private IPortables _portables;
 
         /// <summary>
         /// Set up routine.

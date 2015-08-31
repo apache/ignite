@@ -335,6 +335,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
+        /// Gets all metadata.
+        /// </summary>
+        internal ICollection<IPortableMetadata> GetAllMetadata()
+        {
+            // TODO: This is a workaround for tests. Remove as soon as Grid is merged to Ignite.
+            return _metas.Values.Where(x => x != null).Select(x => x.Metadata()).ToArray();
+        }
+
+        /// <summary>
         /// Gets metadata handler for the given type ID.
         /// </summary>
         /// <param name="desc">Type descriptor.</param>
