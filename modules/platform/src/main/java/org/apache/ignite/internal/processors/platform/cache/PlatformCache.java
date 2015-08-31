@@ -680,7 +680,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * {@link javax.cache.integration.CacheWriter}s.
      *
      * @throws IllegalStateException if the cache is closed.
-     * @throws javax.cache.CacheException        if there is a problem during the clear
+     * @throws javax.cache.CacheException if there is a problem during the clear
      */
     public void clear() throws IgniteCheckedException {
         cache.clear();
@@ -819,8 +819,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Runs specified query.
      */
-    private PlatformQueryCursor runQuery(PortableRawReaderEx reader, Query qry)
-        throws IgniteCheckedException {
+    private PlatformQueryCursor runQuery(PortableRawReaderEx reader, Query qry) throws IgniteCheckedException {
 
         try {
             QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);
@@ -852,8 +851,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Reads the query of specified type.
      */
-    private Query readInitialQuery(PortableRawReaderEx reader)
-        throws IgniteCheckedException {
+    private Query readInitialQuery(PortableRawReaderEx reader) throws IgniteCheckedException {
         int typ = reader.readInt();
 
         switch (typ) {
