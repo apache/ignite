@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private Context _ctx;
 
         /** Marshaller. */
-        protected readonly PortableMarshaller _marshaller;
+        private readonly PortableMarshaller _marshaller;
 
         /** Ignite context. */
         private readonly IIgniteContext _igniteContext;
@@ -133,6 +133,14 @@ namespace Apache.Ignite.Core.Impl.Portable
             _igniteContext = marshaller.IgniteContext;
 
             _hashCode = obj.GetHashCode();
+        }
+
+        /// <summary>
+        /// Gets the marshaller.
+        /// </summary>
+        public PortableMarshaller Marshaller
+        {
+            get { return _marshaller; }
         }
 
         /** <inheritDoc /> */
@@ -220,7 +228,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var desc = _marshaller.Descriptor(true, obj.TypeId);
 
-            return new PortableBuilderImpl(this, obj, desc, _marshaller);
+            return new PortableBuilderImpl(null, obj, desc, _marshaller);
         }
         
         /// <summary>
