@@ -85,6 +85,16 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     }
 
     /** {@inheritDoc} */
+    @Override public long outLong(int type) throws Exception {
+        try {
+            return processOutLong(type);
+        }
+        catch (Exception e) {
+            throw convertException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void outStream(int type, long memPtr) throws Exception {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
             PlatformOutputStream out = mem.output();
@@ -94,6 +104,16 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
             processOutStream(type, writer);
 
             out.synchronize();
+        }
+        catch (Exception e) {
+            throw convertException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object outObject(int type) throws Exception {
+        try {
+            return processOutObject(type);
         }
         catch (Exception e) {
             throw convertException(e);
@@ -271,11 +291,31 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * Process OUT operation.
      *
      * @param type Type.
+     * @throws IgniteCheckedException In case of exception.
+     */
+    protected long processOutLong(int type) throws IgniteCheckedException {
+        return throwUnsupported(type);
+    }
+
+    /**
+     * Process OUT operation.
+     *
+     * @param type Type.
      * @param writer Portable writer.
      * @throws IgniteCheckedException In case of exception.
      */
     protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
         throwUnsupported(type);
+    }
+
+    /**
+     * Process OUT operation.
+     *
+     * @param type Type.
+     * @throws IgniteCheckedException In case of exception.
+     */
+    protected Object processOutObject(int type) throws IgniteCheckedException {
+        return throwUnsupported(type);
     }
 
     /**
