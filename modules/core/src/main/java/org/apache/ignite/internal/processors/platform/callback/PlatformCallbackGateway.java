@@ -791,7 +791,14 @@ public class PlatformCallbackGateway {
      * @throws org.apache.ignite.IgniteCheckedException In case of error.
      */
     public long serviceInit(long memPtr) throws IgniteCheckedException {
-        return PlatformCallbackUtils.serviceInit(envPtr, memPtr);
+        enter();
+
+        try {
+            return PlatformCallbackUtils.serviceInit(envPtr, memPtr);
+        }
+        finally {
+            leave();
+        }
     }
 
     /**
@@ -802,7 +809,14 @@ public class PlatformCallbackGateway {
      * @throws org.apache.ignite.IgniteCheckedException In case of error.
      */
     public void serviceExecute(long svcPtr, long memPtr) throws IgniteCheckedException {
-        PlatformCallbackUtils.serviceExecute(envPtr, svcPtr, memPtr);
+        enter();
+
+        try {
+            PlatformCallbackUtils.serviceExecute(envPtr, svcPtr, memPtr);
+        }
+        finally {
+            leave();
+        }
     }
 
     /**
@@ -813,7 +827,14 @@ public class PlatformCallbackGateway {
      * @throws org.apache.ignite.IgniteCheckedException In case of error.
      */
     public void serviceCancel(long svcPtr, long memPtr) throws IgniteCheckedException {
-        PlatformCallbackUtils.serviceCancel(envPtr, svcPtr, memPtr);
+        enter();
+
+        try {
+            PlatformCallbackUtils.serviceCancel(envPtr, svcPtr, memPtr);
+        }
+        finally {
+            leave();
+        }
     }
 
     /**
@@ -825,7 +846,14 @@ public class PlatformCallbackGateway {
      * @throws org.apache.ignite.IgniteCheckedException In case of error.
      */
     public void serviceInvokeMethod(long svcPtr, long outMemPtr, long inMemPtr) throws IgniteCheckedException {
-        PlatformCallbackUtils.serviceInvokeMethod(envPtr, svcPtr, outMemPtr, inMemPtr);
+        enter();
+
+        try {
+            PlatformCallbackUtils.serviceInvokeMethod(envPtr, svcPtr, outMemPtr, inMemPtr);
+        }
+        finally {
+            leave();
+        }
     }
 
     /**
@@ -834,7 +862,51 @@ public class PlatformCallbackGateway {
      * @param memPtr Stream pointer.
      */
     public int clusterNodeFilterApply(long memPtr) {
-        return PlatformCallbackUtils.clusterNodeFilterApply(envPtr, memPtr);
+        enter();
+
+        try {
+            return PlatformCallbackUtils.clusterNodeFilterApply(envPtr, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Extension callback accepting single long argument and returning long result.
+     *
+     * @param typ Operation type.
+     * @param arg1 Argument 1.
+     * @return Long result.
+     */
+    public long extensionCallbackInLongOutLong(int typ, long arg1) {
+        enter();
+
+        try {
+            return PlatformCallbackUtils.extensionCallbackInLongOutLong(envPtr, typ, arg1);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Extension callback accepting two long arguments and returning long result.
+     *
+     * @param typ Operation type.
+     * @param arg1 Argument 1.
+     * @param arg2 Argument 2.
+     * @return Long result.
+     */
+    public long extensionCallbackInLongLongOutLong(int typ, long arg1, long arg2) {
+        enter();
+
+        try {
+            return PlatformCallbackUtils.extensionCallbackInLongLongOutLong(envPtr, typ, arg1, arg2);
+        }
+        finally {
+            leave();
+        }
     }
 
     /**
