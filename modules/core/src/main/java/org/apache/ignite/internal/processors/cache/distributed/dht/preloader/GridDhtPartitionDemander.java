@@ -954,11 +954,6 @@ public class GridDhtPartitionDemander {
                     cctx.events().removeListener(lsnr);
 
                 onDone(completed);
-
-                missed.clear();
-                remaining.clear();
-                started.clear();
-                assigns.clear();
             }
         }
     }
