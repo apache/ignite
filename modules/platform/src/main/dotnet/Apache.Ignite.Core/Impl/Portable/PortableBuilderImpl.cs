@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="obj">Portable object.</param>
         /// <returns>Child builder.</returns>
-        public virtual IPortableBuilderEx Child(IPortableUserObject obj)
+        public virtual IPortableBuilderEx CreateChild(IPortableUserObject obj)
         {
             var desc = _marshaller.Descriptor(true, obj.TypeId);
 

@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="obj">Portable object.</param>
         /// <returns>Child builder.</returns>
-        IPortableBuilderEx Child(IPortableUserObject obj);
+        IPortableBuilderEx CreateChild(IPortableUserObject obj);
 
         /// <summary>
         /// Get cache field.

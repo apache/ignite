@@ -722,7 +722,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     T obj = _builder == null 
                         ? TypeCaster<T>.Cast(portObj)
-                        : TypeCaster<T>.Cast(_builder.Child(portObj));
+                        : TypeCaster<T>.Cast(_builder.CreateChild(portObj));
 
                     AddHandle(pos, obj);
 
