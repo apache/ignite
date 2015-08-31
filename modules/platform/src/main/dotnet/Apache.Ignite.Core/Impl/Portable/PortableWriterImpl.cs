@@ -1299,7 +1299,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 if (_metas.TryGetValue(typeId, out meta))
                 {
-                    IDictionary<string, int> existingFields = ((PortableMetadataImpl)meta).FieldsMap();
+                    IDictionary<string, int> existingFields = ((PortableMetadataImpl)meta).FieldsMap;
 
                     foreach (KeyValuePair<string, int> field in fields)
                     {

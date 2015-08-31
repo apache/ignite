@@ -124,10 +124,10 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <summary>
         /// Gets fields map.
         /// </summary>
-        /// <returns>Fields map.</returns>
-        public IDictionary<string, int> FieldsMap()
+        /// <value>Fields map.</value>
+        public IDictionary<string, int> FieldsMap
         {
-            return _fields ?? EmptyDict;
+            get { return _fields ?? EmptyDict; }
         }
 
         /// <summary>

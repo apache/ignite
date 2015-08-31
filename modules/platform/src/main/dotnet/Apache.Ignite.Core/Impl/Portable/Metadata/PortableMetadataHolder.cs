@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
                 ICollection<int> newIds = ids0 != null ? new HashSet<int>(ids0) : new HashSet<int>();
 
                 IDictionary<string, int> newFields = meta0 != null ?
-                    new Dictionary<string, int>(meta0.FieldsMap()) : new Dictionary<string, int>(newMap.Count);
+                    new Dictionary<string, int>(meta0.FieldsMap) : new Dictionary<string, int>(newMap.Count);
 
                 // 2. Add new fields.
                 foreach (KeyValuePair<int, Tuple<string, int>> newEntry in newMap)

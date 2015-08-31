@@ -392,9 +392,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                 PortableMetadataImpl meta = (PortableMetadataImpl) metaEntry.Value;
 
                 IDictionary<int, Tuple<string, int>> mergeInfo =
-                    new Dictionary<int, Tuple<string, int>>(meta.FieldsMap().Count);
+                    new Dictionary<int, Tuple<string, int>>(meta.FieldsMap.Count);
 
-                foreach (KeyValuePair<string, int> fieldMeta in meta.FieldsMap())
+                foreach (KeyValuePair<string, int> fieldMeta in meta.FieldsMap)
                 {
                     int fieldId = PortableUtils.FieldId(metaEntry.Key, fieldMeta.Key, null, null, _igniteContext);
 
