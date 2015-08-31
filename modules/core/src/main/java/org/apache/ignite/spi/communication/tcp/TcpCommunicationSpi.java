@@ -507,6 +507,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         ses.send(new RecoveryLastReceivedMessage(-1));
                     }
                     else {
+                        // The code below causes a race condition between shmem and TCP (see IGNITE-1294)
                         boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
                                 new ConnectClosure(ses, recoveryDesc, rmtNode, msg0, !hasShmemClient, fut));
 
