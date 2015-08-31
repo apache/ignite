@@ -114,8 +114,7 @@ class GridUpdateNotifier {
 
             this.ver = ver;
 
-            //TODO: it should be  url = "http://tiny.cc/updater/update_status_ignite.php";
-            url = "http://191.191.191.191/updater/update_status_ignite.php";
+            url = "http://tiny.cc/updater/update_status_ignite.php";
 
             this.gridName = gridName == null ? "null" : gridName;
             this.gw = gw;
@@ -228,6 +227,13 @@ class GridUpdateNotifier {
     }
 
     /**
+     * Stops all work referenced with an instance.
+     */
+    public void stop() {
+        verCheckerExec.stop();
+    }
+
+    /**
      *
      * @param log Logger to use.
      * @param warn Whether or not this is a warning.
@@ -299,20 +305,15 @@ class GridUpdateNotifier {
                     conn.setRequestProperty("Accept-Charset", CHARSET);
                     conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + CHARSET);
 
-//                    TODO it should be next
-//                    conn.setConnectTimeout(3000);
-//                    conn.setReadTimeout(3000);
-                    conn.setConnectTimeout(30000);
-                    conn.setReadTimeout(30000);
+                    conn.setConnectTimeout(3000);
+                    conn.setReadTimeout(3000);
 
                     Document dom = null;
 
                     try {
-                        U.debug("Start connecting");
                         try (OutputStream os = conn.getOutputStream()) {
                             os.write(postParams.getBytes(CHARSET));
                         }
-                        U.debug("Connected");
 
                         try (InputStream in = conn.getInputStream()) {
                             if (in == null)
@@ -335,9 +336,6 @@ class GridUpdateNotifier {
                         }
                     }
                     catch (IOException e) {
-                        U.debug("Exception 1");
-                        e.printStackTrace();
-
                         if (log.isDebugEnabled())
                             log.debug("Failed to connect to Ignite update server. " + e.getMessage());
                     }
@@ -350,9 +348,6 @@ class GridUpdateNotifier {
                 }
             }
             catch (Exception e) {
-                U.debug("Exception 2");
-                e.printStackTrace();
-
                 if (log.isDebugEnabled())
                     log.debug("Unexpected exception in update checker. " + e.getMessage());
             }
@@ -488,10 +483,6 @@ class GridUpdateNotifier {
         /** {@inheritDoc} */
         @Override public void execute(@NotNull Runnable cmd) {
             this.cmd.set(cmd);
-
-            assert workerThread != null;
-            assert workerThread.isAlive();
-            assert !workerThread.isInterrupted();
         }
 
         /**
@@ -505,7 +496,21 @@ class GridUpdateNotifier {
                 // Order is important.
                 startWorkerThread();
 
+                if (workerThread0 != null)
+                    workerThread0.interrupt();
+            }
+        }
+
+        /**
+         * Stops worker thread.
+         */
+        public void stop() {
+            Thread workerThread0 = workerThread;
+
+            while (workerThread0 != null) {
                 workerThread0.interrupt();
+
+                workerThread0 = workerThread;
             }
         }
     }
