@@ -218,7 +218,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Dictionary with metadata.</returns>
         public virtual void FinishMarshal(IPortableWriterEx writer)
         {
-            // No-op.
+            var meta = writer.Metadata;
+
+            if (meta != null && meta.Count > 0)
+                // TODO: Send metadata
+                OnMetadataSent(meta);
         }
 
         /// <summary>
