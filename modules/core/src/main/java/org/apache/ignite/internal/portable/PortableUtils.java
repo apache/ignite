@@ -329,6 +329,7 @@ public class PortableUtils {
     public static boolean isPlainArrayType(int type) {
         return type >= BYTE_ARR && type <= DATE_ARR;
     }
+
     /**
      * @param cls Class.
      * @return Portable field type.

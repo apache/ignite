@@ -22,7 +22,7 @@ import org.apache.ignite.internal.portable.*;
 /**
  *
  */
-public class PortableModifiableLazeValue extends PortableAbstractLazyValue {
+public class PortableModifiableLazyValue extends PortableAbstractLazyValue {
     /** */
     protected final int len;
 
@@ -31,7 +31,7 @@ public class PortableModifiableLazeValue extends PortableAbstractLazyValue {
      * @param valOff
      * @param len
      */
-    public PortableModifiableLazeValue(PortableBuilderReader reader, int valOff, int len) {
+    public PortableModifiableLazyValue(PortableBuilderReader reader, int valOff, int len) {
         super(reader, valOff);
 
         this.len = len;

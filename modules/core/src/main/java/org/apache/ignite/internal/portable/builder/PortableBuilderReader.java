@@ -648,7 +648,7 @@ class PortableBuilderReader {
                         assert flag == GridPortableMarshaller.NULL;
                 }
 
-                return new PortableModifiableLazeValue(this, valPos, pos - valPos);
+                return new PortableModifiableLazyValue(this, valPos, pos - valPos);
             }
 
             case GridPortableMarshaller.COL: {
@@ -706,7 +706,7 @@ class PortableBuilderReader {
         PortableAbstractLazyValue res;
 
         if (modifiableLazyVal)
-            res = new PortableModifiableLazeValue(this, valPos, 1 + plainLazyValLen);
+            res = new PortableModifiableLazyValue(this, valPos, 1 + plainLazyValLen);
         else
             res = new PortablePlainLazyValue(this, valPos, 1 + plainLazyValLen);
 
