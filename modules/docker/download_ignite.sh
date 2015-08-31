@@ -32,7 +32,7 @@ fi
 
 if [ ! -z $IGNITE_VERSION ]; then
   if [[ $IGNITE_VERSION  =~ [0-9]*\.[0-9]*\.0 ]]; then
-    download http://apache-mirror.rbc.ru/pub/apache/incubator/ignite/${IGNITE_VERSION}/apache-ignite-fabric-${IGNITE_VERSION}-incubating-bin.zip
+    download http://apache-mirror.rbc.ru/pub/apache/ignite/${IGNITE_VERSION}/apache-ignite-fabric-${IGNITE_VERSION}-bin.zip
   else
     download http://www.gridgain.com/media/gridgain-community-fabric-${IGNITE_VERSION}.zip
   fi
