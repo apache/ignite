@@ -601,6 +601,10 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @Override protected Exception convertException(Exception e) {
+        if (e instanceof CachePartialUpdateException)
+            return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e.getCause(),
+                platformCtx, keepPortable);
+
         if (e instanceof CachePartialUpdateCheckedException)
             return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e, platformCtx, keepPortable);
 
