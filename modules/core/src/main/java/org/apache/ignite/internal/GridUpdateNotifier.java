@@ -26,12 +26,13 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.plugin.PluginProvider;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -59,6 +61,9 @@ import static java.net.URLEncoder.encode;
  * gracefully ignore any errors occurred during notification and verification process.
  */
 class GridUpdateNotifier {
+    /** Default encoding. */
+    private static final String CHARSET = "UTF-8";
+
     /** Access URL to be used to access latest version data. */
     private static final String UPD_STATUS_PARAMS = IgniteProperties.get("ignite.update.status.params");
 
@@ -92,7 +97,8 @@ class GridUpdateNotifier {
     /** System properties */
     private final String vmProps;
 
-    private final Map<String, String> pluginVers;
+    /** Plugins information for request */
+    private final String plugins;
 
     /** Kernal gateway */
     private final GridKernalGateway gw;
@@ -136,10 +142,13 @@ class GridUpdateNotifier {
             this.gridName = gridName == null ? "null" : gridName;
             this.gw = gw;
 
-            pluginVers = U.newHashMap(pluginProviders.size());
+            SB pluginsBuilder = new SB();
 
             for (PluginProvider provider : pluginProviders)
-                pluginVers.put(provider.name() + "-plugin-version", provider.version());
+                pluginsBuilder.a("&").a(provider.name() + "-plugin-version").a("=").
+                    a(encode(provider.version(), CHARSET));
+
+            plugins = pluginsBuilder.toString();
 
             this.reportOnlyNew = reportOnlyNew;
 
@@ -147,6 +156,9 @@ class GridUpdateNotifier {
         }
         catch (ParserConfigurationException e) {
             throw new IgniteCheckedException("Failed to create xml parser.", e);
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new IgniteCheckedException("Failed to encode.", e);
         }
     }
 
@@ -280,9 +292,6 @@ class GridUpdateNotifier {
      * Asynchronous checker of the latest version available.
      */
     private class UpdateChecker extends GridWorker {
-        /** Default encoding. */
-        private static final String CHARSET = "UTF-8";
-
         /** Logger. */
         private final IgniteLogger log;
 
@@ -302,18 +311,13 @@ class GridUpdateNotifier {
             try {
                 String stackTrace = gw != null ? gw.userStackTrace() : null;
 
-                SB plugins = new SB();
-
-                for (Map.Entry<String, String> p : pluginVers.entrySet())
-                    plugins.a("&").a(p.getKey()).a("=").a(encode(p.getValue(), CHARSET));
-
                 String postParams =
                     "gridName=" + encode(gridName, CHARSET) +
                     (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + UPD_STATUS_PARAMS : "") +
                     (topSize > 0 ? "&topSize=" + topSize : "") +
                     (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +
                     (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "") +
-                    plugins.toString();
+                    plugins;
 
                 URLConnection conn = new URL(url).openConnection();
 
