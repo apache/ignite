@@ -197,14 +197,33 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-    protected IgniteFuture currentFutureWrapped() throws IgniteCheckedException {
+    protected IgniteInternalFuture currentFutureWrapped() throws IgniteCheckedException {
 
         IgniteFutureImpl fut = (IgniteFutureImpl)currentFuture();
 
         IgniteInternalFuture internalFut = fut.internalFuture();
 
-        return new IgniteFutureImpl(internalFut) {
-            /** {@inheritDoc} */
+        return internalFut.chain(new IgniteClosure<IgniteInternalFuture, Object>() {
+            @Override public Object apply(IgniteInternalFuture o) {
+                try {
+                    return o.get();
+                }
+                catch (IgniteCheckedException e) {
+                    Exception converted = convertException(e);
+
+                    if (converted instanceof RuntimeException)
+                        throw (RuntimeException)converted;
+                    else {
+                        log.error("Interop future result cannot be obtained due to exception.", converted);
+
+                        throw new IgniteException("Interop future result cannot be obtained due to exception " +
+                            "(see log for more details).", converted);
+                    }
+                }
+            }
+        });
+
+        /*return new IgniteFutureImpl(internalFut) {
             @Override protected RuntimeException convertException(IgniteCheckedException e) {
                 Exception converted = PlatformAbstractTarget.this.convertException(e);
 
@@ -217,7 +236,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
                         "(see log for more details).", converted);
                 }
             }
-        };
+        };*/
     }
 
     /**

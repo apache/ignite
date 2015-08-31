@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.platform.*;
 import org.apache.ignite.internal.processors.platform.callback.*;
@@ -63,8 +64,33 @@ public class PlatformFutureUtils {
      * @param futPtr Native future pointer.
      * @param typ Expected return type.
      */
-    public static void listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ) {
+    public static void listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, final int typ) {
         listen(ctx, new FutureListenable(fut), futPtr, typ, null);
+    }
+    /**
+     * Listen future.
+     *
+     * @param ctx Context.
+     * @param fut Java future.
+     * @param futPtr Native future pointer.
+     * @param typ Expected return type.
+     */
+    public static void listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ) {
+        listen(ctx, (IgniteInternalFuture)fut, futPtr, typ, null);
+    }
+
+    /**
+     * Listen future.
+     *
+     * @param ctx Context.
+     * @param fut Java future.
+     * @param futPtr Native future pointer.
+     * @param typ Expected return type.
+     * @param writer Writer.
+     */
+    public static void listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, final int typ,
+        Writer writer) {
+        listen(ctx, new FutureListenable(fut), futPtr, typ, writer);
     }
 
     /**
@@ -78,7 +104,7 @@ public class PlatformFutureUtils {
      */
     public static void listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ,
         Writer writer) {
-        listen(ctx, new FutureListenable(fut), futPtr, typ, writer);
+        listen(ctx, (IgniteInternalFuture)fut, futPtr, typ, writer);
     }
 
     /**
@@ -89,7 +115,7 @@ public class PlatformFutureUtils {
      * @param futPtr Native future pointer.
      * @param writer Writer.
      */
-    public static void listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, Writer writer) {
+    public static void listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, Writer writer) {
         listen(ctx, new FutureListenable(fut), futPtr, TYP_OBJ, writer);
     }
 
@@ -143,42 +169,42 @@ public class PlatformFutureUtils {
                     else {
                         switch (typ) {
                             case TYP_BYTE:
-                                gate.futureByteResult(futPtr, (byte) res);
+                                gate.futureByteResult(futPtr, (byte)res);
 
                                 break;
 
                             case TYP_BOOL:
-                                gate.futureBoolResult(futPtr, (boolean) res ? 1 : 0);
+                                gate.futureBoolResult(futPtr, (boolean)res ? 1 : 0);
 
                                 break;
 
                             case TYP_SHORT:
-                                gate.futureShortResult(futPtr, (short) res);
+                                gate.futureShortResult(futPtr, (short)res);
 
                                 break;
 
                             case TYP_CHAR:
-                                gate.futureCharResult(futPtr, (char) res);
+                                gate.futureCharResult(futPtr, (char)res);
 
                                 break;
 
                             case TYP_INT:
-                                gate.futureIntResult(futPtr, (int) res);
+                                gate.futureIntResult(futPtr, (int)res);
 
                                 break;
 
                             case TYP_FLOAT:
-                                gate.futureFloatResult(futPtr, (float) res);
+                                gate.futureFloatResult(futPtr, (float)res);
 
                                 break;
 
                             case TYP_LONG:
-                                gate.futureLongResult(futPtr, (long) res);
+                                gate.futureLongResult(futPtr, (long)res);
 
                                 break;
 
                             case TYP_DOUBLE:
-                                gate.futureDoubleResult(futPtr, (double) res);
+                                gate.futureDoubleResult(futPtr, (double)res);
 
                                 break;
 
@@ -292,32 +318,32 @@ public class PlatformFutureUtils {
      */
     private static class FutureListenable implements Listenable {
         /** Future. */
-        private final IgniteFuture fut;
+        private final IgniteInternalFuture fut;
 
         /**
          * Constructor.
          *
          * @param fut Future.
          */
-        public FutureListenable(IgniteFuture fut) {
+        public FutureListenable(IgniteInternalFuture fut) {
             this.fut = fut;
         }
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public void listen(final IgniteBiInClosure<Object, Throwable> lsnr) {
-            fut.listen(new IgniteInClosure<IgniteFuture>() {
+            fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                 private static final long serialVersionUID = 0L;
 
-                @Override public void apply(IgniteFuture fut0) {
+                @Override public void apply(IgniteInternalFuture fut0) {
                     try {
                         lsnr.apply(fut0.get(), null);
                     }
                     catch (Throwable err) {
                         lsnr.apply(null, err);
 
-                        if (err instanceof Error)
-                            throw err;
+                        /*if (err instanceof Error)
+                            throw err;*/
                     }
                 }
             });
