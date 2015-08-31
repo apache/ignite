@@ -17,23 +17,33 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.*;
-import org.apache.ignite.internal.managers.deployment.protocol.gg.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.deployment.*;
-import org.jetbrains.annotations.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskName;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.managers.deployment.protocol.gg.GridProtocolHandler;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.deployment.DeploymentSpi;
+import org.apache.ignite.spi.deployment.IgnoreIfPeerClassLoadingDisabled;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
+import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
+import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
+import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
 /**
  * Deployment manager.

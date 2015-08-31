@@ -17,12 +17,11 @@
 
 package org.apache.ignite.services;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * Managed service configuration. In addition to deploying managed services by

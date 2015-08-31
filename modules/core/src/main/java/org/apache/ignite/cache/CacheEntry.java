@@ -17,11 +17,10 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.*;
-
-import javax.cache.*;
-import javax.cache.processor.*;
-import java.util.*;
+import java.util.Set;
+import javax.cache.Cache;
+import javax.cache.processor.EntryProcessor;
+import org.apache.ignite.IgniteCache;
 
 /**
  * Cache entry that extends {@link javax.cache.Cache.Entry} by providing additional entry related information.

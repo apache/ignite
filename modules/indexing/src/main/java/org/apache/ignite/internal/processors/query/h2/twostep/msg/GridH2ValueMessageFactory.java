@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.query.h2.opt.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.h2.value.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * H2 Value message factory.

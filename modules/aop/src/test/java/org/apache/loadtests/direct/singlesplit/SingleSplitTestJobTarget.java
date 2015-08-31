@@ -17,9 +17,9 @@
 
 package org.apache.loadtests.direct.singlesplit;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.compute.gridify.*;
-import org.apache.loadtests.gridify.*;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.compute.gridify.Gridify;
+import org.apache.loadtests.gridify.GridifyLoadTestTask;
 
 /**
  * Single split test job target.

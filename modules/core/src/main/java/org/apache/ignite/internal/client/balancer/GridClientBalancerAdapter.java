@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.client.balancer;
 
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * Base class for balancers. Contains common direct connection handling logic.

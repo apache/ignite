@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  * Special version of bi-predicate for cache scan queries with close callback.

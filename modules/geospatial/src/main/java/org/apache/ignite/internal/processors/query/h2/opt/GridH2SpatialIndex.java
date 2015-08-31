@@ -17,19 +17,36 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import com.vividsolutions.jts.geom.*;
-import org.h2.engine.*;
+import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.h2.engine.Constants;
+import org.h2.engine.Session;
 import org.h2.index.Cursor;
-import org.h2.index.*;
-import org.h2.message.*;
-import org.h2.mvstore.*;
-import org.h2.mvstore.rtree.*;
-import org.h2.result.*;
-import org.h2.table.*;
-import org.h2.value.*;
-
-import java.util.*;
-import java.util.concurrent.locks.*;
+import org.h2.index.IndexCondition;
+import org.h2.index.IndexType;
+import org.h2.index.SingleRowCursor;
+import org.h2.index.SpatialIndex;
+import org.h2.message.DbException;
+import org.h2.mvstore.MVStore;
+import org.h2.mvstore.rtree.MVRTreeMap;
+import org.h2.mvstore.rtree.SpatialKey;
+import org.h2.result.SearchRow;
+import org.h2.result.SortOrder;
+import org.h2.table.Column;
+import org.h2.table.IndexColumn;
+import org.h2.table.Table;
+import org.h2.table.TableFilter;
+import org.h2.value.Value;
+import org.h2.value.ValueGeometry;
 
 /**
  * Spatial index.

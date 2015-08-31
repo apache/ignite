@@ -17,15 +17,25 @@
 
 package org.apache.ignite.internal.util.nio.ssl;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.nio.GridNioException;
+import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
+import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import javax.net.ssl.*;
-import java.io.*;
-import java.nio.*;
-
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_HANDLER;
 
 /**
  * Implementation of SSL filter using {@link SSLEngine}

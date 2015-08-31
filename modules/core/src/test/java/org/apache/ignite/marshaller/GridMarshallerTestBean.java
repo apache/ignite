@@ -17,10 +17,9 @@
 
 package org.apache.ignite.marshaller;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.Arrays;
+import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Grid marshaller test bean.

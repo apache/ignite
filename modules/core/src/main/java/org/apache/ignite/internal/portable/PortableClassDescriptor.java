@@ -17,22 +17,33 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.lang.reflect.*;
-import java.math.*;
-import java.sql.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableIdMapper;
+import org.apache.ignite.portable.PortableMarshalAware;
+import org.apache.ignite.portable.PortableSerializer;
+import org.jetbrains.annotations.Nullable;
 
-import static java.lang.reflect.Modifier.*;
+import static java.lang.reflect.Modifier.isStatic;
+import static java.lang.reflect.Modifier.isTransient;
 
 /**
  * Portable class descriptor.

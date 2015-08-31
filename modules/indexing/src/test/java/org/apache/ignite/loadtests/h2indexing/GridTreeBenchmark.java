@@ -17,11 +17,15 @@
 
 package org.apache.ignite.loadtests.h2indexing;
 
-import org.apache.ignite.internal.util.snaptree.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
 
 /**
  * NavigableMaps PUT benchmark.

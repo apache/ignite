@@ -17,16 +17,32 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.testframework.*;
-
-import java.util.*;
+import java.util.Set;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.GridCacheIncrementTransformTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheTopologySafeGetSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicNodeJoinTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSizeFailoverTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxFairAffinityNodeJoinTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxNearDisabledFairAffinityPutGetRestartTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxNearDisabledPutGetRestartTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxNodeJoinTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtAtomicRemoveFailureTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtClientRemoveFailureTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtRemoveFailureTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicClientInvalidPartitionHandlingSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicClientRemoveFailureTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicInvalidPartitionHandlingSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicPrimaryWriteOrderRemoveFailureTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicRemoveFailureTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCachePutRetryAtomicPrimaryWriteOrderSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearRemoveFailureTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearRemoveFailureTest;
+import org.apache.ignite.spi.communication.tcp.IgniteCacheSslStartStopSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test suite.

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.loadtests.offheap.unsafe;
 
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.internal.util.offheap.*;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.internal.util.offheap.GridOffHeapMapFactory;
+import org.apache.ignite.internal.util.offheap.GridOffHeapPartitionedMap;
+import org.apache.ignite.internal.util.offheap.GridOffHeapPartitionedMapPerformanceAbstractTest;
 
 /**
  * Unsafe partitioned map performance test.

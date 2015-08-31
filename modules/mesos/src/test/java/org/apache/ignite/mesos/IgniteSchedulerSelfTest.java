@@ -17,12 +17,14 @@
 
 package org.apache.ignite.mesos;
 
-import junit.framework.*;
-import org.apache.ignite.mesos.resource.*;
-import org.apache.mesos.*;
-
-import java.util.*;
-import java.util.regex.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.regex.Pattern;
+import junit.framework.TestCase;
+import org.apache.ignite.mesos.resource.ResourceProvider;
+import org.apache.mesos.Protos;
+import org.apache.mesos.SchedulerDriver;
 
 /**
  * Scheduler tests.

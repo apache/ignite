@@ -17,11 +17,12 @@
 
 package org.apache.ignite.igfs.mapreduce;
 
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.Serializable;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.igfs.IgfsInputStream;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * IGFS record resolver. When {@link IgfsTask} is split into {@link IgfsJob}s each produced job will obtain

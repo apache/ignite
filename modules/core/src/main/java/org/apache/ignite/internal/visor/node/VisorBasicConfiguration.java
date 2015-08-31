@@ -17,17 +17,27 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.io.Serializable;
+import java.util.UUID;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
-
-import static java.lang.System.*;
-import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
+import static java.lang.System.getProperty;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_DISCO_ORDER;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PROG_NAME;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.boolValue;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactObject;
 
 /**
  * Data transfer object for node basic configuration properties.

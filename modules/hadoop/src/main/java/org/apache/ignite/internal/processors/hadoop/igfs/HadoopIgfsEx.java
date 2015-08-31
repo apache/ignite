@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.igfs;
 
-import org.apache.ignite.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.IOException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Extended IGFS server interface.

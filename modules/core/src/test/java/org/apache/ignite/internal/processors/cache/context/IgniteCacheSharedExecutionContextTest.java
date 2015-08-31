@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.context;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  *

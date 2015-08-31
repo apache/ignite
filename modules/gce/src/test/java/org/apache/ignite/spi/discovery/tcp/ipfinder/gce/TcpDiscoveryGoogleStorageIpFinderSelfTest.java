@@ -17,14 +17,13 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.gce;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.testsuites.*;
-
-import java.lang.reflect.*;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
+import org.apache.ignite.testsuites.IgniteGCETestSuite;
 
 /**
  * Google Cloud Storage based IP finder tests.

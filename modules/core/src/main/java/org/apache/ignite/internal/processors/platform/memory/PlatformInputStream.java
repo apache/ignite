@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
-import org.apache.ignite.internal.portable.streams.*;
+import org.apache.ignite.internal.portable.streams.PortableInputStream;
 
 /**
- * Interop output stream.
+ * Interop output stream,
  */
-public interface PlatformOutputStream extends PortableOutputStream {
+public interface PlatformInputStream extends PortableInputStream {
     /**
-     * Synchronize output stream with underlying memory
+     * Synchronize input. Must be called before start reading data from a memory changed by another platform.
      */
     public void synchronize();
 }

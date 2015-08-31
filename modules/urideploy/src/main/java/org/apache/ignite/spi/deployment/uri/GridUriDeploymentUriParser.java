@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Helper class which encodes given string.

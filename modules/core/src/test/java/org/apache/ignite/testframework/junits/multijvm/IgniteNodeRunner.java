@@ -17,21 +17,35 @@
 
 package org.apache.ignite.testframework.junits.multijvm;
 
-import com.thoughtworks.xstream.*;
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import sun.jvmstat.monitor.*;
-
-import java.io.*;
-import java.lang.reflect.*;
-import java.util.*;
+import com.thoughtworks.xstream.XStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
+import org.apache.ignite.internal.util.GridJavaProcess;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import sun.jvmstat.monitor.HostIdentifier;
+import sun.jvmstat.monitor.MonitoredHost;
+import sun.jvmstat.monitor.MonitoredVm;
+import sun.jvmstat.monitor.MonitoredVmUtil;
+import sun.jvmstat.monitor.VmIdentifier;
 
 /**
  * Run ignite node.

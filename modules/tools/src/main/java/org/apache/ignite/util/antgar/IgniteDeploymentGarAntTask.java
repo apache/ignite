@@ -17,12 +17,13 @@
 
 package org.apache.ignite.util.antgar;
 
-import org.apache.tools.ant.*;
-import org.apache.tools.ant.taskdefs.*;
-import org.apache.tools.ant.types.*;
-import org.apache.tools.zip.*;
-
-import java.io.*;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.taskdefs.Zip;
+import org.apache.tools.ant.types.ArchiveFileSet;
+import org.apache.tools.zip.ZipOutputStream;
 
 /**
  * Ant task for generating GAR file. This task extends standard {@code zip} Ant task and

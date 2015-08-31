@@ -17,14 +17,15 @@
 
 package org.apache.ignite.startup.cmdline;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.IgniteState;
+import org.apache.ignite.IgnitionListener;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
-import java.util.concurrent.*;
-
-import static org.apache.ignite.IgniteState.*;
+import static org.apache.ignite.IgniteState.STARTED;
 
 /**
  * Command line loader test.

@@ -17,17 +17,18 @@
 
 package org.apache.ignite.logger.log4j;
 
-import junit.framework.*;
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.log4j.*;
-import org.apache.log4j.varia.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.util.Enumeration;
+import junit.framework.TestCase;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.varia.LevelRangeFilter;
 
 /**
  * Tests that several grids log to files with correct names.
@@ -133,4 +134,3 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
         return appender;
     }
 }
-

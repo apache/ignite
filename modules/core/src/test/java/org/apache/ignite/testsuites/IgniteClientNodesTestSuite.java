@@ -17,8 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodeConcurrentStart;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientReconnectTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheManyClientsTest;
 
 /**
  *

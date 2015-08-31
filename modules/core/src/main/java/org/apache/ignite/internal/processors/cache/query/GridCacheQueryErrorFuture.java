@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.future.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Error future.

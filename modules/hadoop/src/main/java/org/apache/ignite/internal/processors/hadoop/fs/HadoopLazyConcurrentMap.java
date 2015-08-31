@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.hadoop.fs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.future.*;
-import org.jsr166.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
+import java.io.Closeable;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Maps values by keys.

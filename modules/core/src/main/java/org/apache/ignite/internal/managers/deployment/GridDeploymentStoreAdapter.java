@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.deployment.*;
-import org.jetbrains.annotations.*;
-
-import java.lang.reflect.*;
-import java.util.*;
+import java.lang.reflect.Field;
+import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.deployment.DeploymentSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Adapter for all store implementations.

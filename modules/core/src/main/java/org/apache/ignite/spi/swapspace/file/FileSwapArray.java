@@ -17,9 +17,8 @@
 
 package org.apache.ignite.spi.swapspace.file;
 
-import org.jetbrains.annotations.*;
-
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Growing array.

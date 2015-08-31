@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
-import sun.misc.*;
-
-import java.util.*;
+import java.util.Arrays;
+import sun.misc.Unsafe;
 
 /**
  * Lightweight identity hash table which maps objects to integer handles,

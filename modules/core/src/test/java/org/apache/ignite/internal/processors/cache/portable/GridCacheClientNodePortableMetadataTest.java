@@ -17,18 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.portable.*;
-import org.apache.ignite.spi.discovery.tcp.*;
+import java.util.Arrays;
+import java.util.Collection;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.portable.PortableBuilder;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  *

@@ -17,12 +17,16 @@
 
 package org.apache.ignite.mesos.resource;
 
-import org.apache.ignite.mesos.*;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.mesos.ClusterProperties;
 
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.mesos.resource.ResourceHandler.*;
+import static org.apache.ignite.mesos.resource.ResourceHandler.CONFIG_PREFIX;
+import static org.apache.ignite.mesos.resource.ResourceHandler.DEFAULT_CONFIG;
+import static org.apache.ignite.mesos.resource.ResourceHandler.IGNITE_PREFIX;
+import static org.apache.ignite.mesos.resource.ResourceHandler.LIBS_PREFIX;
 
 /**
  * Provides path to user's libs and config file.

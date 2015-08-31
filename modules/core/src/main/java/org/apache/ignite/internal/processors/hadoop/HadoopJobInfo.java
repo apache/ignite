@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Compact job description.

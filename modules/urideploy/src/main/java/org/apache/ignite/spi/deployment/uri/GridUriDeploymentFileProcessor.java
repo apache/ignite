@@ -17,22 +17,30 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.commons.codec.binary.*;
-import org.apache.commons.codec.digest.*;
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.*;
-import org.jetbrains.annotations.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.lang.reflect.*;
-import java.net.*;
-import java.security.*;
-import java.util.*;
-
-import static org.apache.ignite.spi.deployment.uri.UriDeploymentSpi.*;
+import static org.apache.ignite.spi.deployment.uri.UriDeploymentSpi.XML_DESCRIPTOR_PATH;
 
 /**
  * Utility class.

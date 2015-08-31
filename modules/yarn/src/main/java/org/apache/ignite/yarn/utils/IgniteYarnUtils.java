@@ -17,11 +17,16 @@
 
 package org.apache.ignite.yarn.utils;
 
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.yarn.api.records.*;
-import org.apache.hadoop.yarn.util.*;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.yarn.api.records.LocalResource;
+import org.apache.hadoop.yarn.api.records.LocalResourceType;
+import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
+import org.apache.hadoop.yarn.util.ConverterUtils;
+import org.apache.hadoop.yarn.util.Records;
 
-import static org.apache.hadoop.yarn.api.ApplicationConstants.*;
+import static org.apache.hadoop.yarn.api.ApplicationConstants.LOG_DIR_EXPANSION_VAR;
 
 /**
  * Utils.

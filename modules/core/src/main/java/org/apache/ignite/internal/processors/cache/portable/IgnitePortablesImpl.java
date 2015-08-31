@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cacheobject.*;
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.portable.PortableBuilder;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * {@link IgnitePortables} implementation.

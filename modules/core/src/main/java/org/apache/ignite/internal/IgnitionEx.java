@@ -17,61 +17,110 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.spring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.logger.*;
-import org.apache.ignite.logger.java.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.mxbean.*;
-import org.apache.ignite.plugin.segmentation.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.checkpoint.noop.*;
-import org.apache.ignite.spi.collision.noop.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.deployment.local.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
-import org.apache.ignite.spi.eventstorage.memory.*;
-import org.apache.ignite.spi.failover.always.*;
-import org.apache.ignite.spi.indexing.noop.*;
-import org.apache.ignite.spi.loadbalancing.roundrobin.*;
-import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.spi.swapspace.noop.*;
-import org.apache.ignite.thread.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Constructor;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Handler;
+import javax.management.JMException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteState;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.IgnitionListener;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
+import org.apache.ignite.internal.util.typedef.CA;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.mxbean.IgnitionMXBean;
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
+import org.apache.ignite.resources.SpringApplicationContextResource;
+import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
+import org.apache.ignite.spi.collision.noop.NoopCollisionSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
+import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
+import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
+import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
-import javax.management.*;
-import java.io.*;
-import java.lang.management.*;
-import java.lang.reflect.*;
-import java.net.*;
-import java.util.*;
-import java.util.Map.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.logging.*;
-
-import static org.apache.ignite.IgniteState.*;
-import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.configuration.IgniteConfiguration.*;
-import static org.apache.ignite.internal.IgniteComponentType.*;
-import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.*;
+import static org.apache.ignite.IgniteState.STARTED;
+import static org.apache.ignite.IgniteState.STOPPED;
+import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEP_MODE_OVERRIDE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_KEEP_ALIVE_TIME;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_THREADPOOL_QUEUE_CAP;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_KEEP_ALIVE_TIME;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_MAX_THREAD_CNT;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_THREADPOOL_QUEUE_CAP;
+import static org.apache.ignite.internal.IgniteComponentType.SPRING;
+import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
 /**
  * This class defines a factory for the main Ignite API. It controls Grid life cycle
@@ -1015,10 +1064,29 @@ public class IgnitionEx {
      * @return List of all grids started so far.
      */
     public static List<Ignite> allGrids() {
+        return allGrids(true);
+    }
+
+    /**
+     * Gets a list of all grids started so far.
+     *
+     * @return List of all grids started so far.
+     */
+    public static List<Ignite> allGridsx() {
+        return allGrids(false);
+    }
+
+    /**
+     * Gets a list of all grids started so far.
+     *
+     * @param wait If {@code true} wait for node start finish.
+     * @return List of all grids started so far.
+     */
+    private static List<Ignite> allGrids(boolean wait) {
         List<Ignite> allIgnites = new ArrayList<>(grids.size() + 1);
 
         for (IgniteNamedInstance grid : grids.values()) {
-            Ignite g = grid.grid();
+            Ignite g = wait ? grid.grid() : grid.gridx();
 
             if (g != null)
                 allIgnites.add(g);
@@ -1027,7 +1095,7 @@ public class IgnitionEx {
         IgniteNamedInstance dfltGrid0 = dfltGrid;
 
         if (dfltGrid0 != null) {
-            IgniteKernal g = dfltGrid0.grid();
+            IgniteKernal g = wait ? dfltGrid0.grid() : dfltGrid0.gridx();
 
             if (g != null)
                 allIgnites.add(g);

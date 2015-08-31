@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.visor.debug;
 
-import java.lang.management.*;
+import java.lang.management.MonitorInfo;
 
 /**
  * Data transfer object for {@link MonitorInfo}.

@@ -17,16 +17,25 @@
 
 package org.apache.ignite.marshaller.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.sql.*;
-import java.util.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.marshaller.AbstractMarshaller;
+import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableIdMapper;
+import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.portable.PortableProtocolVersion;
+import org.apache.ignite.portable.PortableSerializer;
+import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link org.apache.ignite.marshaller.Marshaller} that lets to serialize and deserialize all objects
@@ -63,7 +72,7 @@ import java.util.*;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
@@ -277,6 +286,9 @@ public class PortableMarshaller extends AbstractMarshaller {
      * @param protoVer Portable protocol version.
      */
     public void setProtocolVersion(PortableProtocolVersion protoVer) {
+        if (protoVer == null)
+            throw new IllegalArgumentException("Wrong portable protocol version: " + protoVer);
+
         this.protoVer = protoVer;
     }
 
@@ -344,4 +356,3 @@ public class PortableMarshaller extends AbstractMarshaller {
         }
     }
 }
-

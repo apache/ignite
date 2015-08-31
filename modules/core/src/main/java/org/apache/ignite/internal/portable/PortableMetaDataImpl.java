@@ -17,14 +17,24 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableMarshalAware;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableRawReader;
+import org.apache.ignite.portable.PortableRawWriter;
+import org.apache.ignite.portable.PortableReader;
+import org.apache.ignite.portable.PortableWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Portable meta data implementation.

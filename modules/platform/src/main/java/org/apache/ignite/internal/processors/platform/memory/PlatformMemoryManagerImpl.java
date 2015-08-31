@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
-import org.apache.ignite.internal.processors.platform.callback.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
+import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.*;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.flags;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.isExternal;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.isPooled;
 
 /**
  * Interop memory manager implementation.

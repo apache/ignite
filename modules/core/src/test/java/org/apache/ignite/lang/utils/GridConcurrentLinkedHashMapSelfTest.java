@@ -17,10 +17,14 @@
 
 package org.apache.ignite.lang.utils;
 
-import org.apache.ignite.testframework.junits.common.*;
-import org.jsr166.*;
-
-import java.util.*;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Random;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ConcurrentLinkedHashMap;
 
 /**
  * This class tests basic contracts of {@code ConcurrentLinkedHashMap}.

@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.hadoop.examples;
 
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapred.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.Iterator;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.MapReduceBase;
+import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.Reducer;
+import org.apache.hadoop.mapred.Reporter;
 
 /**
  * Combiner and Reducer phase of WordCount job.

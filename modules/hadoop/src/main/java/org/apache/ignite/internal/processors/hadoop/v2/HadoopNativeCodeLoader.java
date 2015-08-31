@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.v2;
 
-import org.apache.hadoop.classification.*;
-import org.apache.hadoop.conf.*;
+import org.apache.hadoop.classification.InterfaceAudience;
+import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.hadoop.conf.Configuration;
 
 /**
  * A fake helper to load the native hadoop code i.e. libhadoop.so.
@@ -71,4 +72,3 @@ public class HadoopNativeCodeLoader {
         // No-op.
     }
 }
-

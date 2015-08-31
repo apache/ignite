@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgnitionEx;
 
 /**
  * Interface was introduced to avoid compile-time dependency on spring framework. Spring resource context
@@ -45,4 +45,3 @@ public interface GridSpringResourceContext {
      */
     public Object unwrapTarget(Object target) throws IgniteCheckedException;
 }
-

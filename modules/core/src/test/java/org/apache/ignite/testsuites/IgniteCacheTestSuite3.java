@@ -17,15 +17,62 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.*;
-import org.apache.ignite.internal.processors.cache.local.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.GridCacheDeploymentOffHeapSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheDeploymentSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryVersionSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOrderedPreloadingSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheReferenceCleanupSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheReloadSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheReplicatedSynchronousCommitTest;
+import org.apache.ignite.internal.processors.cache.GridCacheValueBytesPreloadingSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheValueConsistencyTransactionalNearEnabledSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheValueConsistencyTransactionalSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheInterceptorSelfTestSuite;
+import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheMixedModeSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteTxGetAfterStopTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDaemonNodePartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedOnlyP2PDisabledByteArrayValuesSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedOnlyP2PEnabledByteArrayValuesSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedTransformWriteThroughBatchUpdateSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteTxReentryColocatedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheValueConsistencyAtomicNearEnabledSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheValueConsistencyAtomicPrimaryWriteOrderNearEnabledSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheValueConsistencyAtomicPrimaryWriteOrderSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheValueConsistencyAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearPartitionedP2PDisabledByteArrayValuesSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearPartitionedP2PEnabledByteArrayValuesSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePutArrayValueSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteTxReentryNearSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheDaemonNodeReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedAtomicGetAndTransformStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedBasicApiTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedBasicOpSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedBasicStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedEventSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedEvictionEventSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedGetAndTransformStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedInvalidateSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedLockSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeLockSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNodeFailureSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedP2PDisabledByteArrayValuesSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedP2PEnabledByteArrayValuesSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedPreloadEventsSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxSingleThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxTimeoutSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedUnswapAdvancedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheSyncReplicatedPreloadSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridReplicatedTxPreloadTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadLifecycleSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadOffHeapSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadStartStopEventsSelfTest;
+import org.apache.ignite.internal.processors.cache.local.GridCacheDaemonNodeLocalSelfTest;
 
 /**
  * Test suite.
@@ -132,6 +179,8 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTest(IgniteCacheInterceptorSelfTestSuite.suite());
 
         suite.addTestSuite(IgniteTxGetAfterStopTest.class);
+
+        suite.addTestSuite(CacheAsyncOperationsTest.class);
 
         return suite;
     }

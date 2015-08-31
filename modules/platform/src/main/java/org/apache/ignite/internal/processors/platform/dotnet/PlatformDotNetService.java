@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.memory;
+package org.apache.ignite.internal.processors.platform.dotnet;
 
-import org.apache.ignite.internal.portable.streams.*;
+import org.apache.ignite.internal.processors.platform.services.PlatformService;
 
 /**
- * Interop output stream,
+ * Marker interface to denote a service implemented on .Net platform.
  */
-public interface PlatformInputStream extends PortableInputStream {
-    /**
-     * Synchronize input. Must be called before start reading data from a memory changed by another platform.
-     */
-    public void synchronize();
+public interface PlatformDotNetService extends PlatformService {
+    // No-op.
 }

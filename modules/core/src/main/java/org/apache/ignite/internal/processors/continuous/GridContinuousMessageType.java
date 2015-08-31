@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous processor message types.

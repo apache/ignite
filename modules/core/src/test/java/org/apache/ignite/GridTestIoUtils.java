@@ -17,14 +17,24 @@
 
 package org.apache.ignite;
 
-import org.apache.commons.io.*;
-import org.apache.ignite.marshaller.*;
-import org.jetbrains.annotations.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
+import java.io.Serializable;
+import java.util.Arrays;
+import org.apache.commons.io.IOUtils;
+import org.apache.ignite.marshaller.Marshaller;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
-
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
 
 /**
  * IO test utilities.

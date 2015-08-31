@@ -17,12 +17,11 @@
 
 package org.apache.ignite.events;
 
+import java.util.List;
 import org.apache.ignite.IgniteEvents;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-
-import java.util.*;
 
 /**
  * Contains event type constants. The decision to use class and not enumeration

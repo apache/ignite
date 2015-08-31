@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicLong;
+import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Starts up an node with cache configuration.

@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.dr;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.dr.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.lang.IgniteFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * No-op implementation for {@link GridCacheDrManager}.

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-import net.sf.json.*;
-import net.sf.json.processors.*;
-
-import java.util.*;
+import java.util.UUID;
+import net.sf.json.JsonConfig;
+import net.sf.json.processors.JsonValueProcessor;
 
 /**
  * Jetty protocol json configuration.

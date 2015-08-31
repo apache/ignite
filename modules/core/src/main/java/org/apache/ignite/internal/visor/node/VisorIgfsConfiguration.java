@@ -17,17 +17,22 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.secondary.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_CONFIG_PATH;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_URI;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.SECONDARY_FS_USER_NAME;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 
 /**
  * Data transfer object for IGFS configuration properties.

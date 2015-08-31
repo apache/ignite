@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.Executor;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerPool;
 
 /**
  * Enables multithreaded notification of session opened, message received and session closed events.

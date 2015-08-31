@@ -17,20 +17,32 @@
 
 package org.apache.ignite.cache.store.hibernate;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.hibernate.*;
-import org.hibernate.engine.spi.*;
-import org.hibernate.metadata.*;
-import org.hibernate.stat.*;
-
-import javax.naming.*;
-import java.io.*;
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Serializable;
+import java.sql.Connection;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import javax.naming.NamingException;
+import javax.naming.Reference;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.hibernate.Cache;
+import org.hibernate.HibernateException;
+import org.hibernate.Session;
+import org.hibernate.SessionBuilder;
+import org.hibernate.SessionFactory;
+import org.hibernate.StatelessSession;
+import org.hibernate.StatelessSessionBuilder;
+import org.hibernate.TypeHelper;
+import org.hibernate.engine.spi.FilterDefinition;
+import org.hibernate.metadata.ClassMetadata;
+import org.hibernate.metadata.CollectionMetadata;
+import org.hibernate.stat.Statistics;
 
 /**
  * Test for Cache jdbc blob store factory.

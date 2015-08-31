@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop.v2;
 
-import org.apache.ignite.internal.processors.hadoop.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
 
 /**
  * Split serialized in external file.

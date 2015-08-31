@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
-import javax.cache.integration.*;
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import javax.cache.Cache;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheWriter;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lifecycle.LifecycleAware;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Store implementation wrapping {@link CacheLoader} and {@link CacheWriter}.

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.yardstick.cache.model;
 
-import org.apache.ignite.cache.query.annotations.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
  * Value used for indexed put test.

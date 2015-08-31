@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.mapreduce.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.util.ipc.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.mapreduce.IgfsJob;
+import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite file system processor adapter.

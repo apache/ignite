@@ -17,11 +17,10 @@
 
 package org.apache.ignite.testframework.junits.cache;
 
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.cache.store.CacheStoreSession;
+import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *

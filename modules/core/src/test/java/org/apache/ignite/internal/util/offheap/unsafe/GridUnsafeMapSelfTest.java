@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
-import org.apache.ignite.internal.util.offheap.*;
+import org.apache.ignite.internal.util.offheap.GridOffHeapMap;
+import org.apache.ignite.internal.util.offheap.GridOffHeapMapAbstractSelfTest;
+import org.apache.ignite.internal.util.offheap.GridOffHeapMapFactory;
 
 /**
  * Unsafe map test.

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.reducefields;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheMode;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Reduce fields queries tests for replicated cache.

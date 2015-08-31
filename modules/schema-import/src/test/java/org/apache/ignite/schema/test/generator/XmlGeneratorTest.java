@@ -17,12 +17,12 @@
 
 package org.apache.ignite.schema.test.generator;
 
-import org.apache.ignite.schema.generator.*;
-import org.apache.ignite.schema.test.*;
-import org.apache.ignite.schema.model.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.apache.ignite.schema.generator.XmlGenerator;
+import org.apache.ignite.schema.model.PojoDescriptor;
+import org.apache.ignite.schema.test.AbstractSchemaImportTest;
 
 /**
  * Tests for XML generator.

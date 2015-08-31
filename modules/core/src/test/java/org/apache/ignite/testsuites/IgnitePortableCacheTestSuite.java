@@ -17,18 +17,35 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.expiry.*;
-import org.apache.ignite.internal.processors.cache.portable.*;
-import org.apache.ignite.internal.processors.cache.portable.datastreaming.*;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.*;
-import org.apache.ignite.internal.processors.datastreamer.*;
-import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.testframework.config.*;
-
-import junit.framework.*;
-
-import java.util.*;
+import java.util.HashSet;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
+import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheExpiryPolicyTestSuite;
+import org.apache.ignite.internal.processors.cache.portable.GridPortableCacheEntryMemorySizeSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.datastreaming.DataStreamProcessorPortableSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.datastreaming.GridDataStreamerImplSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAffinityRoutingPortableSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyPortableDataStreamerMultiNodeSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyPortableDataStreamerMultithreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyPortableMultiNodeSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheAtomicPartitionedOnlyPortableMultithreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheMemoryModePortableSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheOffHeapTieredAtomicPortableSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheOffHeapTieredEvictionAtomicPortableSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheOffHeapTieredEvictionPortableSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCacheOffHeapTieredPortableSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortablesNearPartitionedByteArrayValuesSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortablesPartitionedOnlyByteArrayValuesSelfTest;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
  * Cache suite with portable marshaller.

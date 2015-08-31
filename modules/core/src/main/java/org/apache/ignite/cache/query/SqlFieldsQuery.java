@@ -17,11 +17,11 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * SQL Fields query. This query can return specific fields of data based

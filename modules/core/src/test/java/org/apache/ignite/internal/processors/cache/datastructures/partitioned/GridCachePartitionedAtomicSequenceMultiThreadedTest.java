@@ -17,16 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
-import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.util.Random;
+import java.util.UUID;
+import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteAtomicsAbstractTest;
+import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicSequenceImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Cache partitioned multi-threaded tests.

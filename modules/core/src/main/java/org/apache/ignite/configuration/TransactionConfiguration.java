@@ -17,9 +17,10 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.transactions.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
  * Transactions configuration.

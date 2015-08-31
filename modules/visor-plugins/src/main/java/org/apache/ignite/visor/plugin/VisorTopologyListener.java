@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.plugin;
 
-import java.util.*;
+import java.util.UUID;
 
 /**
  * Listener for grid node topology changes.

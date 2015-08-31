@@ -18,60 +18,29 @@
 package org.apache.ignite.internal.processors.platform.memory;
 
 /**
- * Interop memory chunk.
+ * Interop memory manager interface.
  */
-public interface PlatformMemory extends AutoCloseable {
+public interface PlatformMemoryManager {
     /**
-     * Gets input stream.
+     * Allocates memory.
      *
-     * @return Input stream.
+     * @return Memory.
      */
-    public PlatformInputStream input();
+    public PlatformMemory allocate();
 
     /**
-     * Gets output stream.
-     *
-     * @return Output stream.
-     */
-    public PlatformOutputStream output();
-
-    /**
-     * Gets pointer which can be passed between platforms.
-     *
-     * @return Pointer.
-     */
-    public long pointer();
-
-    /**
-     * Gets data pointer.
-     *
-     * @return Data pointer.
-     */
-    public long data();
-
-    /**
-     * Gets capacity.
-     *
-     * @return Capacity.
-     */
-    public int capacity();
-
-    /**
-     * Gets length.
-     *
-     * @return Length.
-     */
-    public int length();
-
-    /**
-     * Reallocate memory chunk.
+     * Allocates memory having at least the given capacity.
      *
      * @param cap Minimum capacity.
+     * @return Memory.
      */
-    public void reallocate(int cap);
+    public PlatformMemory allocate(int cap);
 
     /**
-     * Close memory releasing it.
+     * Gets memory from existing pointer.
+     *
+     * @param memPtr Cross-platform memory pointer.
+     * @return Memory.
      */
-    @Override void close();
+    public PlatformMemory get(long memPtr);
 }

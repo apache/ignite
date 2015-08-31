@@ -17,7 +17,7 @@
 
 package org.apache.ignite;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Deployment or re-deployment failed.

@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  * Test queries in off-heap tiered mode.

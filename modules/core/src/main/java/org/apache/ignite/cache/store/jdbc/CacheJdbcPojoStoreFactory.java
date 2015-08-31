@@ -17,16 +17,15 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.store.jdbc.dialect.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.spring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-
-import javax.cache.configuration.*;
-import javax.sql.*;
+import javax.cache.configuration.Factory;
+import javax.sql.DataSource;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.store.jdbc.dialect.JdbcDialect;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteComponentType;
+import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.resources.SpringApplicationContextResource;
 
 /**
  * {@link Factory} implementation for {@link CacheJdbcPojoStore}.
@@ -54,7 +53,7 @@ import javax.sql.*;
  *     &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.vm;
 
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 
 /**
  * GridTcpDiscoveryVmIpFinder test.

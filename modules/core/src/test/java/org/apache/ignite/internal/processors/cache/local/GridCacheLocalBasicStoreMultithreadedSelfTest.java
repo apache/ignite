@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.GridCacheBasicStoreMultithreadedAbstractTest;
 
 /**
  * Local test.

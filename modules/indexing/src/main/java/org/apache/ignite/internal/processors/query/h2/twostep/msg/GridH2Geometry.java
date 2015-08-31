@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.h2.value.*;
-
-import java.lang.reflect.*;
-import java.nio.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.h2.value.Value;
 
 /**
  * H2 Geometry.

@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.portable.*;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.portable.GridPortableDuplicateIndexObjectsAbstractSelfTest;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Test PARTITIONED and TRANSACTIONAL.

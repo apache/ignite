@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portable.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.portable.PortableObject;
 
 /**
  *

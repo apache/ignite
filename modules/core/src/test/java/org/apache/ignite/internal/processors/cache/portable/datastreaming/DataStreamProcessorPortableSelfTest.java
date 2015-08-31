@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.portable.datastreaming;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.datastreamer.*;
-import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.portable.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.stream.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.stream.StreamReceiver;
 
 /**
  *

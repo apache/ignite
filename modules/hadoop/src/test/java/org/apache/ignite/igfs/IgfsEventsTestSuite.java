@@ -17,15 +17,20 @@
 
 package org.apache.ignite.igfs;
 
-import junit.framework.*;
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.hadoop.fs.*;
-import org.apache.ignite.internal.util.ipc.shmem.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.jetbrains.annotations.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
+import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
+import org.apache.ignite.internal.util.typedef.G;
+import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.igfs.IgfsMode.*;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 
 /**
  * Test suite for IGFS event tests.

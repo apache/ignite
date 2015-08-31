@@ -17,12 +17,17 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.cache.store.jdbc.*;
-import org.apache.ignite.cache.store.spring.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.p2p.*;
-import org.apache.ignite.spring.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactorySelfTest;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactorySelfTest;
+import org.apache.ignite.cache.store.spring.CacheSpringStoreSessionListenerSelfTest;
+import org.apache.ignite.internal.GridFactorySelfTest;
+import org.apache.ignite.internal.GridSpringBeanSerializationSelfTest;
+import org.apache.ignite.internal.IgniteDynamicCacheConfigTest;
+import org.apache.ignite.p2p.GridP2PUserVersionChangeSelfTest;
+import org.apache.ignite.spring.GridSpringCacheManagerSelfTest;
+import org.apache.ignite.spring.IgniteExcludeInConfigurationTest;
+import org.apache.ignite.spring.IgniteStartFromStreamConfigurationTest;
 
 /**
  * Spring tests.

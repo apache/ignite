@@ -17,15 +17,19 @@
 
 package org.apache.ignite.examples.java8.streaming;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.stream.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Random;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.ExamplesUtils;
+import org.apache.ignite.stream.StreamVisitor;
 
 /**
  * Stream random numbers into the streaming cache.

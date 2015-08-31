@@ -17,15 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.IgniteTransactionsEx;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionMetrics;
+import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Grid transactions implementation.

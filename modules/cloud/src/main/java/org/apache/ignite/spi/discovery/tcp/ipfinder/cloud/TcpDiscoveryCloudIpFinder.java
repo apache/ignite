@@ -17,27 +17,40 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.cloud;
 
-import com.google.common.base.*;
-import com.google.common.io.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.jclouds.*;
-import org.jclouds.compute.*;
-import org.jclouds.compute.domain.*;
-import org.jclouds.domain.*;
-import org.jclouds.googlecloud.*;
-import org.jclouds.location.reference.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import com.google.common.base.Charsets;
+import com.google.common.base.Predicate;
+import com.google.common.base.Supplier;
+import com.google.common.io.Files;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Properties;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiConfiguration;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
+import org.jclouds.Constants;
+import org.jclouds.ContextBuilder;
+import org.jclouds.compute.ComputeService;
+import org.jclouds.compute.ComputeServiceContext;
+import org.jclouds.compute.domain.ComputeMetadata;
+import org.jclouds.compute.domain.NodeMetadata;
+import org.jclouds.domain.Credentials;
+import org.jclouds.domain.Location;
+import org.jclouds.googlecloud.GoogleCredentialsFromJson;
+import org.jclouds.location.reference.LocationConstants;
 
 /**
  * IP finder for automatic lookup of nodes running in a cloud.
@@ -115,7 +128,7 @@ import java.util.concurrent.atomic.*;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */

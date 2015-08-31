@@ -17,13 +17,28 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryMarshallerCheckSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiFailureTimeoutSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiMulticastTest;
+import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMarshallerCheckSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMultiThreadedTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConsistentIdSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryRestartTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySnapshotHistoryTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiConfigSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiFailureTimeoutSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiStartStopSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinderSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinderSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinderSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderSelfTest;
 
 /**
  * Test suite for all discovery spi implementations.

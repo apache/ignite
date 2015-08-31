@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.h2.index.*;
-import org.h2.message.*;
-import org.h2.result.*;
-
-import java.util.*;
+import java.util.Iterator;
+import org.h2.index.Cursor;
+import org.h2.message.DbException;
+import org.h2.result.Row;
+import org.h2.result.SearchRow;
 
 /**
  * H2 Cursor implementation.

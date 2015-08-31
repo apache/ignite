@@ -17,9 +17,22 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.p2p.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentMessageCountSelfTest;
+import org.apache.ignite.p2p.GridP2PClassLoadingSelfTest;
+import org.apache.ignite.p2p.GridP2PContinuousDeploymentSelfTest;
+import org.apache.ignite.p2p.GridP2PDifferentClassLoaderSelfTest;
+import org.apache.ignite.p2p.GridP2PDoubleDeploymentSelfTest;
+import org.apache.ignite.p2p.GridP2PHotRedeploymentSelfTest;
+import org.apache.ignite.p2p.GridP2PJobClassLoaderSelfTest;
+import org.apache.ignite.p2p.GridP2PLocalDeploymentSelfTest;
+import org.apache.ignite.p2p.GridP2PMissedResourceCacheSizeSelfTest;
+import org.apache.ignite.p2p.GridP2PNodeLeftSelfTest;
+import org.apache.ignite.p2p.GridP2PRecursionTaskSelfTest;
+import org.apache.ignite.p2p.GridP2PRemoteClassLoadersSelfTest;
+import org.apache.ignite.p2p.GridP2PSameClassLoaderSelfTest;
+import org.apache.ignite.p2p.GridP2PTimeoutSelfTest;
+import org.apache.ignite.p2p.GridP2PUndeploySelfTest;
 
 /**
  * P2P test suite.

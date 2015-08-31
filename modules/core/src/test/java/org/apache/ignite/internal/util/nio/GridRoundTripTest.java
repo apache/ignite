@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import junit.framework.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Random;
+import junit.framework.TestCase;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Tests pure round trip time on network.

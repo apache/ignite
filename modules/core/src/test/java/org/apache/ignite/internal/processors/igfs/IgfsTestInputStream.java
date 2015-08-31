@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Test input stream with predictable data output and zero memory usage.

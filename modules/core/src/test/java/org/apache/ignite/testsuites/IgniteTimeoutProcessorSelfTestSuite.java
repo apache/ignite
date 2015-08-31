@@ -17,8 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.timeout.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessorSelfTest;
 
 /**
  * Suite for {@link GridTimeoutProcessor} tests.

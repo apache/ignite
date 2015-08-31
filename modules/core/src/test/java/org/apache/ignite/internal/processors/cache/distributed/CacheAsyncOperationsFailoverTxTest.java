@@ -15,32 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.memory;
+package org.apache.ignite.internal.processors.cache.distributed;
+
+import org.apache.ignite.cache.CacheAtomicityMode;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
- * Interop memory manager interface.
+ *
  */
-public interface PlatformMemoryManager {
-    /**
-     * Allocates memory.
-     *
-     * @return Memory.
-     */
-    public PlatformMemory allocate();
-
-    /**
-     * Allocates memory having at least the given capacity.
-     *
-     * @param cap Minimum capacity.
-     * @return Memory.
-     */
-    public PlatformMemory allocate(int cap);
-
-    /**
-     * Gets memory from existing pointer.
-     *
-     * @param memPtr Cross-platform memory pointer.
-     * @return Memory.
-     */
-    public PlatformMemory get(long memPtr);
+public class CacheAsyncOperationsFailoverTxTest extends CacheAsyncOperationsFailoverAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
+    }
 }

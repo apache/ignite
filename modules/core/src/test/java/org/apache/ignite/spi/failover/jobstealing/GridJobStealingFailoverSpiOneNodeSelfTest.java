@@ -17,16 +17,19 @@
 
 package org.apache.ignite.spi.failover.jobstealing;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.collision.jobstealing.*;
-import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.spi.*;
-
-import java.util.*;
+import java.util.Collections;
+import java.util.UUID;
+import org.apache.ignite.GridTestJobResult;
+import org.apache.ignite.GridTestTaskSession;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi;
+import org.apache.ignite.spi.failover.GridFailoverTestContext;
+import org.apache.ignite.testframework.GridSpiTestContext;
+import org.apache.ignite.testframework.GridTestNode;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Job stealing failover SPI test for one node.

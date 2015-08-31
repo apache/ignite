@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  *

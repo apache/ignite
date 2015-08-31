@@ -17,22 +17,48 @@
 
 package org.apache.ignite.internal.cluster;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.executor.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.jetbrains.annotations.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.IgniteServices;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteComputeImpl;
+import org.apache.ignite.internal.IgniteEventsImpl;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteMessagingImpl;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.IgniteServicesImpl;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.executor.GridExecutorService;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 
 /**
  *

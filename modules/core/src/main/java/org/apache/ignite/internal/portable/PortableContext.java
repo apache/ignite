@@ -17,30 +17,58 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.portable.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
-
-import java.io.*;
-import java.math.*;
-import java.net.*;
-import java.sql.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
+import java.math.BigDecimal;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
-import java.util.concurrent.*;
-import java.util.jar.*;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableIdMapper;
+import org.apache.ignite.portable.PortableInvalidClassException;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableSerializer;
+import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Portable context.
@@ -114,10 +142,19 @@ public class PortableContext implements Externalizable {
     private String gridName;
 
     /** */
-    private PortableMarshaller marsh;
+    private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller();
 
     /** */
-    private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller();
+    private boolean convertStrings;
+
+    /** */
+    private boolean useTs;
+
+    /** */
+    private boolean metaDataEnabled;
+
+    /** */
+    private boolean keepDeserialized;
 
     /**
      * For {@link Externalizable}.
@@ -149,6 +186,8 @@ public class PortableContext implements Externalizable {
         mapTypes.put(ConcurrentHashMap.class, GridPortableMarshaller.CONC_HASH_MAP);
         mapTypes.put(ConcurrentHashMap8.class, GridPortableMarshaller.CONC_HASH_MAP);
         mapTypes.put(Properties.class, GridPortableMarshaller.PROPERTIES_MAP);
+
+        // IDs range from [0..200] is used by Java SDK API and GridGain legacy API
 
         registerPredefinedType(Byte.class, GridPortableMarshaller.BYTE);
         registerPredefinedType(Boolean.class, GridPortableMarshaller.BOOLEAN);
@@ -196,24 +235,10 @@ public class PortableContext implements Externalizable {
         registerPredefinedType(IgniteBiTuple.class, 61);
         registerPredefinedType(T2.class, 62);
 
-        registerPredefinedType(PortableObjectImpl.class, 63);
+        // IDs range [200..1000] is used by Ignite internal APIs.
 
-        registerPredefinedType(PortableMetaDataImpl.class, 64);
-
-// TODO: IGNITE-1258
-//        registerPredefinedType(DrSenderAttributes.class, 65);
-//        registerPredefinedType(DrSenderRemoteAttributes.class, 66);
-//
-//        registerPredefinedType(InteropClusterNode.class, 67);
-//        registerPredefinedType(InteropClusterMetrics.class, 68);
-//        registerPredefinedType(InteropMetadata.class, 70);
-//
-//        registerPredefinedType(InteropDotNetConfiguration.class, 71);
-//        registerPredefinedType(InteropDotNetPortableConfiguration.class, 72);
-//        registerPredefinedType(InteropDotNetPortableTypeConfiguration.class, 73);
-//        registerPredefinedType(InteropIgniteProxy.class, 74);
-//        registerPredefinedType(InteropCacheMetrics.class, 75);
-//        registerPredefinedType(InteropProductLicence.class, 78);
+        registerPredefinedType(PortableObjectImpl.class, 200);
+        registerPredefinedType(PortableMetaDataImpl.class, 201);
     }
 
     /**
@@ -224,40 +249,68 @@ public class PortableContext implements Externalizable {
         if (marsh == null)
             return;
 
-        this.marsh = marsh;
+        convertStrings = marsh.isConvertStringToBytes();
+        useTs = marsh.isUseTimestamp();
+        metaDataEnabled = marsh.isMetaDataEnabled();
+        keepDeserialized = marsh.isKeepDeserialized();
+
         marshCtx = marsh.getContext();
 
         assert marshCtx != null;
 
         optmMarsh.setContext(marshCtx);
 
-        PortableIdMapper globalIdMapper = marsh.getIdMapper();
-        PortableSerializer globalSerializer = marsh.getSerializer();
-        boolean globalUseTs = marsh.isUseTimestamp();
-        boolean globalMetaDataEnabled = marsh.isMetaDataEnabled();
-        boolean globalKeepDeserialized = marsh.isKeepDeserialized();
+        configure(
+            marsh.getIdMapper(),
+            marsh.getSerializer(),
+            marsh.isUseTimestamp(),
+            marsh.isMetaDataEnabled(),
+            marsh.isKeepDeserialized(),
+            marsh.getClassNames(),
+            marsh.getTypeConfigurations()
+        );
+    }
 
+    /**
+     * @param globalIdMapper ID mapper.
+     * @param globalSerializer Serializer.
+     * @param globalUseTs Use timestamp flag.
+     * @param globalMetaDataEnabled Metadata enabled flag.
+     * @param globalKeepDeserialized Keep deserialized flag.
+     * @param clsNames Class names.
+     * @param typeCfgs Type configurations.
+     * @throws PortableException In case of error.
+     */
+    private void configure(
+        PortableIdMapper globalIdMapper,
+        PortableSerializer globalSerializer,
+        boolean globalUseTs,
+        boolean globalMetaDataEnabled,
+        boolean globalKeepDeserialized,
+        Collection<String> clsNames,
+        Collection<PortableTypeConfiguration> typeCfgs
+    ) throws PortableException {
         TypeDescriptors descs = new TypeDescriptors();
 
-        if (marsh.getClassNames() != null) {
+        if (clsNames != null) {
             PortableIdMapper idMapper = new IdMapperWrapper(globalIdMapper);
 
-            for (String clsName : marsh.getClassNames()) {
+            for (String clsName : clsNames) {
                 if (clsName.endsWith(".*")) { // Package wildcard
                     String pkgName = clsName.substring(0, clsName.length() - 2);
 
                     for (String clsName0 : classesInPackage(pkgName))
                         descs.add(clsName0, idMapper, null, null, globalUseTs, globalMetaDataEnabled,
-                                  globalKeepDeserialized, true);
+                            globalKeepDeserialized, true);
                 }
                 else // Regular single class
                     descs.add(clsName, idMapper, null, null, globalUseTs, globalMetaDataEnabled,
-                              globalKeepDeserialized, true);
+                        globalKeepDeserialized, true);
             }
         }
 
-        if (marsh.getTypeConfigurations() != null) {
-            for (PortableTypeConfiguration typeCfg : marsh.getTypeConfigurations()) {
+        if (typeCfgs != null) {
+            for (PortableTypeConfiguration typeCfg : typeCfgs) {
                 String clsName = typeCfg.getClassName();
 
                 if (clsName == null)
@@ -286,17 +339,18 @@ public class PortableContext implements Externalizable {
 
                     for (String clsName0 : classesInPackage(pkgName))
                         descs.add(clsName0, idMapper, serializer, typeCfg.getAffinityKeyFieldName(), useTs,
-                                  metaDataEnabled, keepDeserialized, true);
+                            metaDataEnabled, keepDeserialized, true);
                 }
                 else
                     descs.add(clsName, idMapper, serializer, typeCfg.getAffinityKeyFieldName(), useTs,
-                              metaDataEnabled, keepDeserialized, false);
+                        metaDataEnabled, keepDeserialized, false);
             }
         }
 
-        for (TypeDescriptor desc : descs.descriptors())
+        for (TypeDescriptor desc : descs.descriptors()) {
             registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName, desc.useTs,
-                             desc.metadataEnabled, desc.keepDeserialized);
+                desc.metadataEnabled, desc.keepDeserialized);
+        }
     }
 
     /**
@@ -440,9 +494,9 @@ public class PortableContext implements Externalizable {
                 clsName,
                 BASIC_CLS_ID_MAPPER,
                 null,
-                marsh.isUseTimestamp(),
-                marsh.isMetaDataEnabled(),
-                marsh.isKeepDeserialized());
+                useTs,
+                metaDataEnabled,
+                keepDeserialized);
 
             PortableClassDescriptor old = descByCls.putIfAbsent(cls, desc);
 
@@ -486,9 +540,9 @@ public class PortableContext implements Externalizable {
             typeName,
             idMapper,
             null,
-            marsh.isUseTimestamp(),
-            marsh.isMetaDataEnabled(),
-            marsh.isKeepDeserialized(),
+            useTs,
+            metaDataEnabled,
+            keepDeserialized,
             registered);
 
         // perform put() instead of putIfAbsent() because "registered" flag may have been changed.
@@ -635,9 +689,9 @@ public class PortableContext implements Externalizable {
     /**
      * @param cls Class.
      * @param id Type ID.
-     * @return PortableClassDescriptor.
+     * @return GridPortableClassDescriptor.
      */
-    private PortableClassDescriptor registerPredefinedType(Class<?> cls, int id) {
+    public PortableClassDescriptor registerPredefinedType(Class<?> cls, int id) {
         PortableClassDescriptor desc = new PortableClassDescriptor(
             this,
             cls,
@@ -737,13 +791,6 @@ public class PortableContext implements Externalizable {
     }
 
     /**
-     * @return Whether meta data is globally enabled.
-     */
-    boolean isMetaDataEnabled() {
-        return marsh.isMetaDataEnabled();
-    }
-
-    /**
      * @param typeId Type ID.
      * @return Whether meta data is enabled.
      */
@@ -797,7 +844,7 @@ public class PortableContext implements Externalizable {
      * @return Use timestamp flag.
      */
     public boolean isUseTimestamp() {
-        return marsh.isUseTimestamp();
+        return useTs;
     }
 
     /**
@@ -812,7 +859,7 @@ public class PortableContext implements Externalizable {
      * @return Whether to convert string to UTF8 bytes.
      */
     public boolean isConvertString() {
-        return marsh.isConvertStringToBytes();
+        return convertStrings;
     }
 
     /**

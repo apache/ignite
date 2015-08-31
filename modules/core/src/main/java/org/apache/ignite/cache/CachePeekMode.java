@@ -17,8 +17,8 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCache;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Enumeration of all supported cache peek modes. Peek modes can be passed
