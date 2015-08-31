@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Initializes a new instance of the <see cref="PortableMarshaller"/> class.
         /// </summary>
         internal PortableMarshaller(PortableConfiguration cfg = null)
-            : this(cfg, typeof(PortableUserObject), new IgniteContext())
+            : this(cfg, new IgniteContext())
         {
             // No-op.
         }
@@ -66,7 +66,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Constructor.
         /// </summary>
         /// <param name="cfg">Configurtaion.</param>
-        /// <param name="portableObjectType">Type of the portable object.</param>
         /// <param name="igniteContext">The context.</param>
         /// <param name="defaultSerializer">The default serializer.</param>
         /// <exception cref="PortableException">
@@ -74,10 +73,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// or
         /// Assembly name cannot be empty string:  + typeCfg
         /// </exception>
-        public PortableMarshaller(PortableConfiguration cfg, Type portableObjectType, IIgniteContext igniteContext, 
+        public PortableMarshaller(PortableConfiguration cfg, IIgniteContext igniteContext, 
             IPortableSerializerEx defaultSerializer = null)
         {
-            Debug.Assert(portableObjectType != null);
             Debug.Assert(igniteContext != null);
 
             _igniteContext = igniteContext;
@@ -111,9 +109,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             AddPredefinedType(typeof(decimal), PortableUtils.TypeDecimal, PortableSystemHandlers.WriteHndDecimalTyped, PortableSystemHandlers.WriteHndDecimal);
             AddPredefinedType(typeof(DateTime), PortableUtils.TypeDate, PortableSystemHandlers.WriteHndDateTyped, PortableSystemHandlers.WriteHndDate);
             AddPredefinedType(typeof(Guid), PortableUtils.TypeGuid, PortableSystemHandlers.WriteHndGuidTyped, PortableSystemHandlers.WriteHndGuid);
-
-            AddPredefinedType(portableObjectType, PortableUtils.TypePortable, PortableSystemHandlers.WriteHndPortableTyped, 
-                PortableSystemHandlers.WriteHndPortable);
 
             AddPredefinedType(typeof(bool[]), PortableUtils.TypeArrayBool, PortableSystemHandlers.WriteHndBoolArrayTyped,
                 PortableSystemHandlers.WriteHndBoolArray);
@@ -321,7 +316,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <returns>Metadata or null.</returns>
-        public virtual IPortableMetadata GetMetadata(int typeId)
+        public IPortableMetadata GetMetadata(int typeId)
         {
             PortableMetadataHolder result;
 
@@ -536,7 +531,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="typeId">Type ID.</param>
         /// <param name="typedHandler">Typed handler.</param>
         /// <param name="untypedHandler">Untyped handler.</param>
-        private void AddPredefinedType(Type type, int typeId, object typedHandler,
+        protected void AddPredefinedType(Type type, int typeId, object typedHandler,
             PortableSystemWriteDelegate untypedHandler)
         {
             AddType(type, typeId, GetTypeName(type), false, false, false, null, null, null, null, typedHandler,

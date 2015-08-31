@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     /// <param name="ctx">Writer.</param>
     /// <param name="obj">Object.</param>
-    public delegate void PortableSystemWriteDelegate(PortableWriterImpl ctx, object obj);
+    public delegate void PortableSystemWriteDelegate(IPortableWriterEx ctx, object obj);
 
     /// <summary>
     /// Typed write delegate.
@@ -88,9 +88,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Typed write handler: Guid. */
         public static readonly PortableSystemTypedWriteDelegate<Guid?> WriteHndGuidTyped = WriteGuidTyped;
-
-        /** Typed write handler: Portable. */
-        public static readonly PortableSystemTypedWriteDelegate<IPortableUserObject> WriteHndPortableTyped = WritePortableTyped;
 
         /** Typed write handler: boolean array. */
         public static readonly PortableSystemTypedWriteDelegate<bool[]> WriteHndBoolArrayTyped = WriteBoolArrayTyped;
@@ -175,9 +172,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Write handler: Guid. */
         public static readonly PortableSystemWriteDelegate WriteHndGuid = WriteGuid;
-
-        /** Write handler: Portable. */
-        public static readonly PortableSystemWriteDelegate WriteHndPortable = WritePortable;
 
         /** Write handler: Enum. */
         public static readonly PortableSystemWriteDelegate WriteHndEnum = WriteEnum;
@@ -351,9 +345,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             // 14. Map entry.
             WriteHandlers[typeof(DictionaryEntry)] = WriteMapEntry;
             ReadHandlers[PortableUtils.TypeMapEntry] = new PortableSystemReader(ReadMapEntry);
-
-            // 15. Portable.
-            WriteHandlers[typeof(IPortableUserObject)] = WritePortable;
 
             // 16. Enum.
             ReadHandlers[PortableUtils.TypeEnum] = new PortableSystemContextReader<int>(PortableUtils.ReadEnum<int>);
@@ -1014,26 +1005,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             ctx.Stream.WriteByte(PortableUtils.TypeMapEntry);
 
             PortableUtils.WriteMapEntry(ctx, (DictionaryEntry)obj);
-        }
-
-        /**
-         * <summary>Write portable object.</summary>
-         */
-        private static void WritePortable(IPortableWriterEx ctx, object obj)
-        {
-            ctx.Stream.WriteByte(PortableUtils.TypePortable);
-
-            PortableUtils.WritePortable(ctx.Stream, (IPortableUserObject)obj);
-        }
-
-        /**
-         * <summary>Write portable object.</summary>
-         */
-        private static void WritePortableTyped(IPortableStream stream, IPortableUserObject obj)
-        {
-            stream.WriteByte(PortableUtils.TypePortable);
-
-            PortableUtils.WritePortable(stream, obj);
         }
 
         /// <summary>

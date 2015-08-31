@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Portable writer implementation.
     /// </summary>
-    public sealed class PortableWriterImpl : IPortableWriterEx
+    internal sealed class PortableWriterImpl : IPortableWriterEx
     {
         /** Marshaller. */
         private readonly PortableMarshaller _marsh;
@@ -830,7 +830,18 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                         return;
                     }
-                }                
+                }
+
+                var portableObj = obj as IPortableUserObject;
+
+                if (portableObj != null)
+                {
+                    _stream.WriteByte(PortableUtils.TypePortable);
+
+                    PortableUtils.WritePortable(_stream, portableObj);
+
+                    return;
+                }
 
                 // Try writting as well-known type.
                 if (InvokeHandler(handler, handler as PortableSystemWriteDelegate, obj))

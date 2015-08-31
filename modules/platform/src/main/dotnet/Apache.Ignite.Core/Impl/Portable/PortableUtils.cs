@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         public const byte TypeClusterMetrics = 68;
         
         /** Type: metadata. */
-        public const byte TypeMetadata = 70;
+        public const byte TypeMetadata = 201;
 
         /** Type: native job holder. */
         public const byte TypeNativeJobHolder = 77;
