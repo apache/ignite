@@ -459,7 +459,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /// <summary>
-        /// Synchronized stream read operations from underlying memory. This is required when 
+        /// Synchronized stream read operations from underlying memory. This is required when stream was passed 
+        /// to Java and something might have been written there.
         /// </summary>
         public void SynchronizeInput()
         {
