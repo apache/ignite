@@ -432,10 +432,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         ses.send(new RecoveryLastReceivedMessage(-1));
                     }
                     else {
-                        if (!hasShmemClient)
-                            // Prevents a race between incoming TCP connection and 'outgoing' shmem connection.
-                            hasShmemClient = oldFut instanceof ShmemConnectFuture;
-
                         boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
                                 new ConnectClosure(ses, recoveryDesc, rmtNode, msg0, !hasShmemClient, fut));
 
@@ -1893,11 +1889,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (isNodeStopping())
                     throw new IgniteSpiException("Node is stopping.");
 
-                Integer shmemPort = shmemPortToUse(node);
-
                 // Do not allow concurrent connects.
-                GridFutureAdapter<GridCommunicationClient> fut = shmemPort != null ? new ShmemConnectFuture() :
-                    new ConnectFuture();
+                GridFutureAdapter<GridCommunicationClient> fut = new ConnectFuture();
 
                 GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(nodeId, fut);
 
@@ -1906,7 +1899,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         GridCommunicationClient client0 = clients.get(nodeId);
 
                         if (client0 == null) {
-                            client0 = createNioClient(node, shmemPort);
+                            client0 = createNioClient(node);
 
                             if (client0 != null) {
                                 GridCommunicationClient old = clients.put(nodeId, client0);
@@ -1974,19 +1967,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     @Nullable protected GridCommunicationClient createNioClient(ClusterNode node) throws IgniteCheckedException {
         assert node != null;
 
-        return createNioClient(node, shmemPortToUse(node));
-    }
+        Integer shmemPort = node.attribute(createSpiAttributeName(ATTR_SHMEM_PORT));
 
-    /**
-     * @param node Node to create client for.
-     * @param shmemPort Shared memory port to use or {@code null} if tcp client should be created instead.
-     * @return Client.
-     */
-    @Nullable private GridCommunicationClient createNioClient(ClusterNode node, Integer shmemPort)
-        throws IgniteCheckedException {
-        assert node != null;
+        ClusterNode locNode = getSpiContext().localNode();
 
-        if (shmemPort != null) {
+        if (locNode == null)
+            throw new IgniteCheckedException("Failed to create NIO client (local node is stopping)");
+
+        // If remote node has shared memory server enabled and has the same set of MACs
+        // then we are likely to run on the same host and shared memory communication could be tried.
+        if (shmemPort != null && U.sameMacs(locNode, node)) {
             try {
                 return createShmemClient(node, shmemPort);
             }
@@ -2101,28 +2091,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             return client;
         }
-    }
-
-    /**
-     * Gets shared memory port to use for connection with {@code node}.
-     *
-     * @param node Node to open connection with.
-     * @return Shmem port or {@code null} if this kind of connection is not supported.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Integer shmemPortToUse(ClusterNode node) throws IgniteCheckedException {
-        assert node != null;
-
-        Integer shmemPort = node.attribute(createSpiAttributeName(ATTR_SHMEM_PORT));
-
-        ClusterNode locNode = getSpiContext().localNode();
-
-        if (locNode == null)
-            throw new IgniteCheckedException("Failed to create NIO client (local node is stopping)");
-
-        // If remote node has shared memory server enabled and has the same set of MACs
-        // then we are likely to run on the same host and shared memory communication could be tried.
-        return shmemPort != null && U.sameMacs(locNode, node) ? shmemPort : null;
     }
 
     /**
@@ -3111,16 +3079,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *
      */
     private static class ConnectFuture extends GridFutureAdapter<GridCommunicationClient> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        // No-op.
-    }
-
-    /**
-     *
-     */
-    private static class ShmemConnectFuture extends ConnectFuture {
         /** */
         private static final long serialVersionUID = 0L;
 
