@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.log4j2.Log4J2Logger;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**

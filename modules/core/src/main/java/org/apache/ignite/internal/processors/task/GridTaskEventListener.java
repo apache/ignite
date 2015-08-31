@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.task;
 
-import org.apache.ignite.internal.*;
-
-import java.util.*;
+import java.util.EventListener;
+import java.util.UUID;
+import org.apache.ignite.internal.GridJobSiblingImpl;
 
 /**
  * Listener for task events.

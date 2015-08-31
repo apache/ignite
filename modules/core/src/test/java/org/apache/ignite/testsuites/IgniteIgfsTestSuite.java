@@ -17,11 +17,42 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.processors.igfs.*;
-import org.apache.ignite.internal.processors.igfs.split.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.igfs.IgfsFragmentizerSelfTest;
+import org.apache.ignite.igfs.IgfsFragmentizerTopologySelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsAttributesSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsBackupsDualAsyncSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsBackupsDualSyncSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsBackupsPrimarySelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsCachePerBlockLruEvictionPolicySelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsCacheSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsClientCacheSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsDataManagerSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsDualAsyncSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsDualSyncSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsFileInfoSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsFileMapSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsGroupDataBlockKeyMapperHashSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsMetaManagerSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsMetricsSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsModeResolverSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsModesSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsOneClientNodeTest;
+import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOffheapValuesSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsPrimarySelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsProcessorSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsProcessorValidationSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsSizeSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsStartCacheTest;
+import org.apache.ignite.internal.processors.igfs.IgfsStreamsSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsTaskSelfTest;
+import org.apache.ignite.internal.processors.igfs.split.IgfsByteDelimiterRecordResolverSelfTest;
+import org.apache.ignite.internal.processors.igfs.split.IgfsFixedLengthRecordResolverSelfTest;
+import org.apache.ignite.internal.processors.igfs.split.IgfsNewLineDelimiterRecordResolverSelfTest;
+import org.apache.ignite.internal.processors.igfs.split.IgfsStringDelimiterRecordResolverSelfTest;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Test suite for Hadoop file system over Ignite cache.

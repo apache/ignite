@@ -17,10 +17,9 @@
 
 package org.apache.ignite.spi;
 
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.lang.IgniteFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This interface defines life-cycle of SPI implementation. Every SPI implementation should implement

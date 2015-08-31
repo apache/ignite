@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.testframework.*;
-
-import java.util.*;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.UUID;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *

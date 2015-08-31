@@ -17,13 +17,24 @@
 
 package org.apache.ignite.spi.deployment.local;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.deployment.*;
-import org.apache.ignite.testframework.junits.spi.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskName;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.deployment.DeploymentListener;
+import org.apache.ignite.spi.deployment.DeploymentResource;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Local deployment SPI test.

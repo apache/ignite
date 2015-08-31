@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Partition to node assignments.
@@ -70,4 +69,3 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
             "super", super.toString());
     }
 }
-

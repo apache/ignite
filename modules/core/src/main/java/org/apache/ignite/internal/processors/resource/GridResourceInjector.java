@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
 
 /**
  * Resource injector implementations contain logic and resources that

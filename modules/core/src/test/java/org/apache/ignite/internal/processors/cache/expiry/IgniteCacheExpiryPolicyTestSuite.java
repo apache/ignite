@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.expiry;
 
-import junit.framework.*;
-import org.apache.ignite.cache.store.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.cache.store.IgniteCacheExpiryStoreLoadSelfTest;
 
 /**
  *

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  *

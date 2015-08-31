@@ -17,15 +17,6 @@
 
 package org.apache.ignite.examples.java8.datagrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
-
 /**
  * This example demonstrates the simplest code that populates the distributed cache
  * and co-locates simple closure execution with each key. The goal of this particular

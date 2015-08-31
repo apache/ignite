@@ -17,10 +17,11 @@
 
 package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.*;
-import org.apache.ignite.resources.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 
 /**
  * User resource, that increases node-local counters

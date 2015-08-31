@@ -17,17 +17,23 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.h2.message.*;
-import org.h2.result.*;
-import org.h2.value.*;
-import org.jetbrains.annotations.*;
-
-import java.lang.ref.*;
-import java.sql.*;
-import java.util.concurrent.*;
+import java.lang.ref.WeakReference;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.message.DbException;
+import org.h2.result.Row;
+import org.h2.result.SearchRow;
+import org.h2.value.CompareMode;
+import org.h2.value.Value;
+import org.h2.value.ValueNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.

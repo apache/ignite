@@ -17,11 +17,15 @@
 
 package org.apache.ignite.spi.swapspace;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.IgniteSpiCloseableIterator;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides a mechanism in grid for storing data on disk. Ignite cache uses swap space to overflow

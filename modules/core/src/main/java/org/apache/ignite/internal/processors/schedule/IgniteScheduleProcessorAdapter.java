@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.schedule;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.scheduler.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.scheduler.SchedulerFuture;
 
 /**
  * Schedules cron-based execution of grid tasks and closures. Abstract class was introduced to

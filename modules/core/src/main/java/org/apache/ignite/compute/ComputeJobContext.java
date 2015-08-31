@@ -17,10 +17,10 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Context attached to every job executed on the grid. Note that unlike

@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.GridProcessor;
 
 /**
  * Platform processor.

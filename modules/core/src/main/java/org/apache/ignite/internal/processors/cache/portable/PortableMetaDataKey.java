@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.portable;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Key for portable meta data.

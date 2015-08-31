@@ -17,18 +17,31 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.balancer.*;
-import org.apache.ignite.internal.client.impl.connection.*;
-import org.apache.ignite.internal.client.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.internal.client.GridClientDataAffinity;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFuture;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridClientPredicate;
+import org.apache.ignite.internal.client.GridServerUnreachableException;
+import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
+import org.apache.ignite.internal.client.impl.connection.GridConnectionIdleClosedException;
+import org.apache.ignite.internal.client.util.GridClientUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.logging.*;
-
-import static org.apache.ignite.internal.client.util.GridClientUtils.*;
+import static org.apache.ignite.internal.client.util.GridClientUtils.applyFilter;
+import static org.apache.ignite.internal.client.util.GridClientUtils.restAvailable;
 
 /**
  * Class contains common connection-error handling logic.

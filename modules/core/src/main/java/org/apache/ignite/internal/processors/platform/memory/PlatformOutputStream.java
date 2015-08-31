@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
-import org.apache.ignite.internal.portable.streams.*;
+import org.apache.ignite.internal.portable.streams.PortableOutputStream;
 
 /**
  * Interop output stream.

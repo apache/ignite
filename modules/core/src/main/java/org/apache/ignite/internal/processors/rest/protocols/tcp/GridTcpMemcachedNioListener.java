@@ -17,25 +17,50 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.processors.rest.handlers.cache.*;
-import org.apache.ignite.internal.processors.rest.request.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.jetbrains.annotations.*;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
+import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheRestMetrics;
+import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
+import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.C2;
+import org.apache.ignite.internal.util.typedef.CIX1;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_DECREMENT;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_INCREMENT;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_ADD;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_APPEND;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PREPEND;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.QUIT;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.VERSION;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.FAILURE;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.KEY_NOT_FOUND;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.MEMCACHE_REQ_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.SUCCESS;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.LAST_FUT;
 
 /**
  * Handles memcache requests.

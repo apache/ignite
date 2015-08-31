@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.services.*;
-import org.apache.ignite.testframework.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
+import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Single node services test.

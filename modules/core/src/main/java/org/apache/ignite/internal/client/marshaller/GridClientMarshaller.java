@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.client.marshaller;
 
-import java.io.*;
-import java.nio.*;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Marshaller for binary protocol messages.

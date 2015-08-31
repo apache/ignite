@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  *

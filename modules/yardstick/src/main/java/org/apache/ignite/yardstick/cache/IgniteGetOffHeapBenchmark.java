@@ -17,8 +17,8 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMemoryMode;
 
 /**
  * Ignite benchmark that performs get operations with {@link CacheMemoryMode#OFFHEAP_TIERED OFFHEAP TIERED}

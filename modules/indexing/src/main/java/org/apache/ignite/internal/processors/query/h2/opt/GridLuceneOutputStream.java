@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.util.offheap.unsafe.*;
+import java.io.IOException;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.*;
-
-import java.io.*;
+import org.apache.lucene.store.IndexOutput;
 
 /**
  * A memory-resident {@link IndexOutput} implementation.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.events;
 
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Generator for local atomically incremented IDs for grid events.

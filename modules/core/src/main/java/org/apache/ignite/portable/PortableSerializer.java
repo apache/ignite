@@ -17,7 +17,7 @@
 
 package org.apache.ignite.portable;
 
-import org.apache.ignite.marshaller.portable.*;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
  * Interface that allows to implement custom serialization logic for portable objects.

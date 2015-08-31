@@ -17,11 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.multicast;
 
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.testframework.*;
-
-import java.net.*;
-import java.util.*;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Collections;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * GridTcpDiscoveryMulticastIpFinder test.

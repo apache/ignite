@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import static org.apache.ignite.cache.CacheMemoryMode.*;
-import static org.apache.ignite.igfs.IgfsMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 
 /**
  * Tests for PRIMARY mode and OFFHEAP_VALUES memory.

@@ -19,12 +19,9 @@ package org.apache.ignite.logger.log4j2;
 
 import java.io.File;
 import java.util.UUID;
-
 import junit.framework.TestCase;
-
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.logger.LoggerNodeIdAware;
-import org.apache.ignite.logger.log4j2.Log4J2Logger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 

@@ -17,13 +17,12 @@
 
 package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.resources.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.util.typedef.P2;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Test message listener.

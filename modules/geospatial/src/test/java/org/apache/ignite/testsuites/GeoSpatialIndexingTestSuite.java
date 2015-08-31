@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.query.h2.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.query.h2.GridH2IndexingGeoSelfTest;
 
 /**
  * Geospatial indexing tests.

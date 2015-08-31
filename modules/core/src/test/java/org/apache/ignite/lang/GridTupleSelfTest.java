@@ -17,10 +17,15 @@
 
 package org.apache.ignite.lang;
 
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.lang.GridTupleV;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  *

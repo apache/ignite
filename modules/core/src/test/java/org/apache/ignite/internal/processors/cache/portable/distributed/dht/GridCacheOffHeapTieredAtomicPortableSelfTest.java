@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.marshaller.portable.*;
-
-import java.util.*;
+import java.util.Arrays;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredAtomicSelfTest;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
  *

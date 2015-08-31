@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.*;
-
-import java.util.*;
+import java.util.Arrays;
+import org.apache.ignite.IgniteException;
 
 /**
  * Exception thrown if service is not found.

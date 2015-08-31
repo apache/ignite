@@ -17,14 +17,16 @@
 
 package org.apache.ignite.messaging;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.config.*;
-
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.Collections;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.P2;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
  * Tests for Messaging public API with disabled

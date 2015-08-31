@@ -17,18 +17,22 @@
 
 package org.apache.ignite.internal.visor.file;
 
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.*;
-import org.apache.ignite.internal.visor.log.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import java.io.File;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.log.VisorLogFile;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.LOG_FILES_COUNT_LIMIT;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.matchedFiles;
 
 /**
  * Get list files matching filter.

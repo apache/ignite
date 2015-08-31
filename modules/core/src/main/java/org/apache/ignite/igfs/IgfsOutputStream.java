@@ -17,7 +17,9 @@
 
 package org.apache.ignite.igfs;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * {@code IGFS} output stream to write data into the file system.

@@ -17,10 +17,8 @@
 
 package org.apache.ignite.igfs;
 
-import java.util.*;
-
-import static org.apache.ignite.igfs.IgfsMode.*;
-import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.*;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT;
 
 /**
  * Tests Hadoop 2.x file system in primary mode.

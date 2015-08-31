@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.portable;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portable.*;
-
-import org.jsr166.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.portable.PortableUtils;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.portable.PortableObject;
 
 /**
  *
@@ -184,4 +184,3 @@ public class CacheObjectPortableContext extends CacheObjectContext {
         return o;
     }
 }
-

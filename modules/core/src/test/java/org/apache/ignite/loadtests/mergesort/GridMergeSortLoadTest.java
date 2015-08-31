@@ -17,13 +17,16 @@
 
 package org.apache.ignite.loadtests.mergesort;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.Date;
+import java.util.Random;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.GridFileLock;
+import org.apache.ignite.testframework.GridLoadTestUtils;
 
 /**
  * Merge-sort load test.

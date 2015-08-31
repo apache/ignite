@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Restarts nodes.

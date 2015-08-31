@@ -17,7 +17,7 @@
 
 package org.apache.ignite.services;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * An instance of grid-managed service. Grid-managed services may be deployed from

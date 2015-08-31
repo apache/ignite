@@ -17,13 +17,21 @@
 
 package org.apache.ignite.internal.client.util;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.junit.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.internal.util.GridClientByteUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.util.GridClientByteUtils.*;
+import static org.apache.ignite.internal.util.GridClientByteUtils.bytesToInt;
+import static org.apache.ignite.internal.util.GridClientByteUtils.bytesToLong;
+import static org.apache.ignite.internal.util.GridClientByteUtils.bytesToShort;
+import static org.apache.ignite.internal.util.GridClientByteUtils.intToBytes;
+import static org.apache.ignite.internal.util.GridClientByteUtils.longToBytes;
+import static org.apache.ignite.internal.util.GridClientByteUtils.shortToBytes;
 
 /**
  * Test case for client's byte convertion utility.

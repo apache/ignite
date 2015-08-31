@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.io.Serializable;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-
-import static java.lang.System.*;
-import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
+import static java.lang.System.getProperty;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_HOST;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.intValue;
 
 /**
  * Create data transfer object for node REST configuration properties.

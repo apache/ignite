@@ -17,7 +17,7 @@
 
 package org.apache.ignite.stream;
 
-import java.util.*;
+import java.util.Map;
 
 /**
  * Stream tuple extractor to convert messages to Ignite key-value tuples.

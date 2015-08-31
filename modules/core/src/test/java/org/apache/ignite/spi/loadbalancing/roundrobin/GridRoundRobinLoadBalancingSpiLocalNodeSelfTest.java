@@ -17,12 +17,13 @@
 
 package org.apache.ignite.spi.loadbalancing.roundrobin;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.junits.spi.*;
-
-import java.util.*;
+import java.util.Collections;
+import org.apache.ignite.GridTestJob;
+import org.apache.ignite.GridTestTaskSession;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Tests Round Robin load balancing for single node.

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.services.*;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.services.PlatformAbstractService;
 
 /**
  * Interop .Net service.

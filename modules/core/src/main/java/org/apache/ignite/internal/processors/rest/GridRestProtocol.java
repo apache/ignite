@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * REST protocol.

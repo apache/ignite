@@ -17,27 +17,42 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.hibernate.*;
-import org.hibernate.annotations.*;
-import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cfg.*;
-import org.hibernate.service.*;
-
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import javax.cache.Cache;
-import javax.persistence.*;
-import java.util.*;
+import javax.persistence.Cacheable;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.cache.spi.access.AccessType;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.service.ServiceRegistryBuilder;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.*;
-import static org.hibernate.cfg.AvailableSettings.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.DFLT_ACCESS_TYPE_PROPERTY;
+import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.DFLT_CACHE_NAME_PROPERTY;
+import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.GRID_NAME_PROPERTY;
+import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.REGION_CACHE_PROPERTY;
+import static org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY;
+import static org.hibernate.cfg.AvailableSettings.GENERATE_STATISTICS;
+import static org.hibernate.cfg.AvailableSettings.HBM2DDL_AUTO;
+import static org.hibernate.cfg.AvailableSettings.RELEASE_CONNECTIONS;
+import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
+import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 
 /**
  * Tests Hibernate L2 cache configuration.

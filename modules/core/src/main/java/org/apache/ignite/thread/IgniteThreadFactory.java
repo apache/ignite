@@ -17,9 +17,8 @@
 
 package org.apache.ignite.thread;
 
-import org.jetbrains.annotations.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.ThreadFactory;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * This class provides implementation of {@link ThreadFactory} factory

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Exception raised when interop callback is not set in native platform.

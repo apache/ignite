@@ -17,15 +17,17 @@
 
 package org.apache.ignite.schema;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.cache.store.jdbc.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.transactions.*;
-import org.h2.jdbcx.*;
-
-import javax.cache.*;
-import javax.cache.configuration.*;
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.transactions.Transaction;
+import org.h2.jdbcx.JdbcConnectionPool;
 
 /**
  * This demo demonstrates the use of cache with {@link CacheJdbcPojoStore}

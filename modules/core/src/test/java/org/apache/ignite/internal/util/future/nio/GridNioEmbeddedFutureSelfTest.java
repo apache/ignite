@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.util.future.nio;
 
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.internal.util.nio.GridNioEmbeddedFuture;
+import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Test for NIO embedded future.

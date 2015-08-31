@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.apache.lucene.store.*;
+import java.io.EOFException;
+import java.io.IOException;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 
-import java.io.*;
-
-import static org.apache.ignite.internal.processors.query.h2.opt.GridLuceneOutputStream.*;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridLuceneOutputStream.BUFFER_SIZE;
 
 /**
  * A memory-resident {@link IndexInput} implementation.

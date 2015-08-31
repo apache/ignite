@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.continuous.*;
-import org.apache.ignite.internal.processors.platform.*;
-
-import javax.cache.event.*;
+import javax.cache.event.CacheEntryUpdatedListener;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFilterEx;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
 
 /**
  * Platform continuous query.

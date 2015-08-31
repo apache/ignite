@@ -17,9 +17,9 @@
 
 package org.apache.ignite.stream;
 
-import org.apache.ignite.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDataStreamer;
 
 /**
  * Convenience adapter for streamers. Adapters are optional components for

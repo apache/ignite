@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.client.balancer;
 
-import org.apache.ignite.internal.client.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientNode;
 
 /**
  * Interface that defines a selection logic of a server node for a particular operation.

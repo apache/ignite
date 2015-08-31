@@ -17,10 +17,13 @@
 
 package org.apache.ignite.loadtests.dsi;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.resources.*;
-import org.springframework.context.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.SpringApplicationContextResource;
+import org.springframework.context.ApplicationContext;
 
 /**
  *

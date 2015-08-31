@@ -17,8 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.resource.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.resource.GridLoggerInjectionSelfTest;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessorSelfTest;
+import org.apache.ignite.internal.processors.resource.GridServiceInjectionSelfTest;
 
 /**
  * Ignite resource injection test Suite.

@@ -17,16 +17,29 @@
 
 package org.apache.ignite.schema.ui;
 
-import javafx.beans.value.*;
-import javafx.event.*;
-import javafx.geometry.*;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.stage.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Pos;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ScrollBar;
+import javafx.scene.control.TextArea;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
-import java.util.logging.*;
-
-import static org.apache.ignite.schema.ui.Controls.*;
+import static org.apache.ignite.schema.ui.Controls.borderPane;
+import static org.apache.ignite.schema.ui.Controls.button;
+import static org.apache.ignite.schema.ui.Controls.checkBox;
+import static org.apache.ignite.schema.ui.Controls.hBox;
+import static org.apache.ignite.schema.ui.Controls.imageView;
+import static org.apache.ignite.schema.ui.Controls.paneEx;
+import static org.apache.ignite.schema.ui.Controls.scene;
 
 /**
  * Message box functionality.

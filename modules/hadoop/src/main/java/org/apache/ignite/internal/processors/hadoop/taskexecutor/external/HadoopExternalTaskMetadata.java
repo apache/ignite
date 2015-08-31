@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external;
 
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * External task metadata (classpath, JVM options) needed to start external process execution.

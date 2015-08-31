@@ -17,13 +17,13 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.internal.util.typedef.*;
-
-import javax.cache.*;
-import javax.cache.configuration.*;
-import java.io.*;
-import java.lang.reflect.*;
-import java.util.*;
+import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Map;
+import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Factory implementation that use reflection to create instance of given class.

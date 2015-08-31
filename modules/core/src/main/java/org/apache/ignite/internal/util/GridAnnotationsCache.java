@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
-
-import java.lang.annotation.*;
-import java.util.concurrent.*;
+import java.lang.annotation.Annotation;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Caches class loaders for classes.

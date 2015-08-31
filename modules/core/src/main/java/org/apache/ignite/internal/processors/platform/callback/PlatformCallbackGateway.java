@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.callback;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 
 /**
  * Gateway to all platform-dependent callbacks. Implementers might extend this class and provide additional callbacks.

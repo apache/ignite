@@ -17,14 +17,14 @@
 
 package org.apache.ignite.jvmtest;
 
-import junit.framework.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.*;
-import org.jetbrains.annotations.*;
-
-import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import junit.framework.TestCase;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * JDK read write lock test.

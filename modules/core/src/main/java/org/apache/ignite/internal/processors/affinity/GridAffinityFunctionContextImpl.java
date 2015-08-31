@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.cache.affinity.AffinityFunctionContext;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache affinity function context implementation. Simple bean that holds all required fields.

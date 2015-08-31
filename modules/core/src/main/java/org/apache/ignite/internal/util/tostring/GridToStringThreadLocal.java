@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
  * Helper wrapper containing StringBuilder and additional values. Stored as a thread-lcal variable.

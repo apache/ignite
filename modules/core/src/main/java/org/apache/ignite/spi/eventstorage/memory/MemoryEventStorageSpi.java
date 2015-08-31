@@ -17,19 +17,23 @@
 
 package org.apache.ignite.spi.eventstorage.memory;
 
-import org.apache.ignite.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.eventstorage.*;
-import org.jsr166.*;
+import java.util.Collection;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiConfiguration;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.eventstorage.EventStorageSpi;
+import org.jsr166.ConcurrentLinkedDeque8;
 
-import java.util.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
 /**
  * In-memory {@link org.apache.ignite.spi.eventstorage.EventStorageSpi} implementation. All events are

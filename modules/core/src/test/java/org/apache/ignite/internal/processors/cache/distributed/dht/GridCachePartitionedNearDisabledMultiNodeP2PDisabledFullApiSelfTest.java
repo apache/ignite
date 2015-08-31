@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeP2PDisabledFullApiSelfTest;
 
 /**
  * Multi node test for disabled near cache.

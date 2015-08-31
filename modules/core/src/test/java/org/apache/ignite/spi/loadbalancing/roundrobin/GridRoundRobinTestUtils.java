@@ -17,13 +17,14 @@
 
 package org.apache.ignite.spi.loadbalancing.roundrobin;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.GridTestJob;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTaskSession;
 
-import java.util.*;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Helper class for balancer tests.

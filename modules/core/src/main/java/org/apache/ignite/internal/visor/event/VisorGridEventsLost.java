@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.visor.event;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Special event for events lost situations.

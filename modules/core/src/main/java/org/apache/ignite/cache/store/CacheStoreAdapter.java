@@ -17,10 +17,12 @@
 
 package org.apache.ignite.cache.store;
 
-import org.apache.ignite.lang.*;
-
-import javax.cache.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import javax.cache.Cache;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  * Cache storage convenience adapter. It provides default implementation for bulk operations, such

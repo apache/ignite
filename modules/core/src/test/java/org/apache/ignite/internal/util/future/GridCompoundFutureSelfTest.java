@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.util.future;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jsr166.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Tests compound future contracts.

@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.portable.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
+import org.apache.ignite.portable.PortableObject;
 
 /**
  *

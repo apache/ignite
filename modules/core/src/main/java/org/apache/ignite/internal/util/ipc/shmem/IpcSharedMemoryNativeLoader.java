@@ -17,19 +17,26 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
+import java.net.URL;
+import java.nio.channels.FileLock;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.io.*;
-import java.net.*;
-import java.nio.channels.*;
-import java.security.*;
-import java.util.*;
-import java.util.jar.*;
-import java.util.zip.*;
-
-import static org.apache.ignite.internal.IgniteVersionUtils.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 
 /**
  * Shared memory native loader.

@@ -17,17 +17,33 @@
 
 package org.apache.ignite.internal.client.router.impl;
 
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.impl.*;
-import org.apache.ignite.internal.client.impl.connection.*;
-import org.apache.ignite.internal.client.router.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.internal.client.GridClientCompute;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientData;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridClientPredicate;
+import org.apache.ignite.internal.client.GridClientProtocol;
+import org.apache.ignite.internal.client.GridClientTopologyListener;
+import org.apache.ignite.internal.client.GridServerUnreachableException;
+import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
+import org.apache.ignite.internal.client.impl.GridClientImpl;
+import org.apache.ignite.internal.client.impl.GridClientNodeImpl;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnectionManager;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
+import org.apache.ignite.internal.client.impl.connection.GridClientTopology;
+import org.apache.ignite.internal.client.router.GridTcpRouterConfiguration;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.internal.client.util.GridClientUtils.*;
+import static org.apache.ignite.internal.client.util.GridClientUtils.applyFilter;
+import static org.apache.ignite.internal.client.util.GridClientUtils.restAvailable;
 
 /**
  * A {@link GridClient} router implementation.

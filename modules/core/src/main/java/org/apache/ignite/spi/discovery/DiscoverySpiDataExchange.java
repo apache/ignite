@@ -17,8 +17,9 @@
 
 package org.apache.ignite.spi.discovery;
 
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Handler for initial data exchange between Ignite nodes. Data exchange

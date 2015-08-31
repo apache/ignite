@@ -17,8 +17,8 @@
 
 package org.apache.ignite;
 
-import junit.framework.*;
-import org.apache.ignite.mesos.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.mesos.IgniteSchedulerSelfTest;
 
 /**
  * Apache Mesos integration tests.

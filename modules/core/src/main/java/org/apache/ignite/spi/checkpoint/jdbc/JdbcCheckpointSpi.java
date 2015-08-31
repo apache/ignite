@@ -17,16 +17,24 @@
 
 package org.apache.ignite.spi.checkpoint.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.checkpoint.*;
-
-import javax.sql.*;
-import java.sql.*;
-import java.text.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
+import java.text.MessageFormat;
+import javax.sql.DataSource;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiConfiguration;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.checkpoint.CheckpointListener;
+import org.apache.ignite.spi.checkpoint.CheckpointSpi;
 
 /**
  * This class defines JDBC checkpoint SPI implementation. All checkpoints are

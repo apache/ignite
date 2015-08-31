@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.spi.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 
 /**
  * Field query result. It is composed of

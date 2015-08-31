@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.Arrays;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * A client handshake request, containing version info and

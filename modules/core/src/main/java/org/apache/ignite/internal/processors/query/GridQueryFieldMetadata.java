@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.io.*;
+import java.io.Externalizable;
 
 /**
  * Query field descriptor. This descriptor is used to provide metadata

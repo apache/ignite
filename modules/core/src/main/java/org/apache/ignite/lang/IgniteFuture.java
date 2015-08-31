@@ -17,9 +17,9 @@
 
 package org.apache.ignite.lang;
 
-import org.apache.ignite.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 
 /**
  * Future with simplified exception handling, functional programming support

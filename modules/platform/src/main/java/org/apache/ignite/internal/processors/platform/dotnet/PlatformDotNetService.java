@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
-import org.apache.ignite.internal.processors.platform.services.*;
+import org.apache.ignite.internal.processors.platform.services.PlatformService;
 
 /**
  * Marker interface to denote a service implemented on .Net platform.

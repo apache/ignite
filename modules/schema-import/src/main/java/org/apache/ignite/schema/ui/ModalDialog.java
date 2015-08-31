@@ -17,7 +17,7 @@
 
 package org.apache.ignite.schema.ui;
 
-import javafx.stage.*;
+import javafx.stage.Stage;
 
 /**
  * Abstract base modal dialog.

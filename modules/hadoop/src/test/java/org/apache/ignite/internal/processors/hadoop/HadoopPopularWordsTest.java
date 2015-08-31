@@ -17,24 +17,28 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import com.google.common.collect.*;
-import org.apache.hadoop.conf.*;
+import com.google.common.collect.MinMaxPriorityQueue;
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.Map.Entry;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.lib.input.*;
-import org.apache.hadoop.mapreduce.lib.output.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.io.*;
-import java.util.*;
-import java.util.Map.*;
-
-import static com.google.common.collect.Maps.*;
-import static com.google.common.collect.MinMaxPriorityQueue.*;
-import static java.util.Collections.*;
+import static com.google.common.collect.Maps.immutableEntry;
+import static com.google.common.collect.MinMaxPriorityQueue.orderedBy;
+import static java.util.Collections.reverseOrder;
 
 /**
  * Hadoop-based 10 popular words example: all files in a given directory are tokenized and for each word longer than

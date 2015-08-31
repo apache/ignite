@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Hadoop serialization. Not thread safe object, must be created for each thread or correctly synchronized.
