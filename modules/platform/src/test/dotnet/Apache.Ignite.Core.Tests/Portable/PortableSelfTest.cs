@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     /// 
     /// </summary>
     [TestFixture]
-    public class GridPortableSelfTest { 
+    public class PortableSelfTest { 
         /** */
         private PortableMarshaller _marsh;
 
