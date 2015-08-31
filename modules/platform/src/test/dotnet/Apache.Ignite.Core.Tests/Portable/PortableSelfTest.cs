@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     using NUnit.Framework;
 
     /// <summary>
-    /// 
+    /// PortableObject/PortableMarshaller tests.
     /// </summary>
     [TestFixture]
     public class PortableSelfTest { 
