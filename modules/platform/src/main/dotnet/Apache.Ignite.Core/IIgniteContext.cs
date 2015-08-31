@@ -18,7 +18,9 @@
 namespace Apache.Ignite.Core
 {
     using System;
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
     /// Ignite extensibility context.
@@ -68,5 +70,30 @@ namespace Apache.Ignite.Core
         /// <returns>Portable builder.</returns>
         IPortableBuilderEx GetPortableBuilder(IPortableBuilderEx parent, IPortableUserObject obj,
             IPortableTypeDescriptor descriptor, PortableMarshaller marshaller);
+
+        /// <summary>
+        /// Creates reader for unmarshalling.
+        /// </summary>
+        /// <param name="marshaller">Marshaller.</param>
+        /// <param name="descriptors">Descriptors.</param>
+        /// <param name="stream">Stream.</param>
+        /// <param name="mode">Mode.</param>
+        /// <param name="builder">Builder.</param>
+        /// <returns>
+        /// Reader.
+        /// </returns>
+        IPortableReaderEx GetReader(PortableMarshaller marshaller,
+            IDictionary<long, IPortableTypeDescriptor> descriptors, IPortableStream stream, PortableMode mode,
+            IPortableBuilderEx builder);
+
+        /// <summary>
+        /// Creates writer for marshalling.
+        /// </summary>
+        /// <param name="marshaller">Marshaller.</param>
+        /// <param name="stream">Stream.</param>
+        /// <returns>
+        /// Writer.
+        /// </returns>
+        IPortableWriterEx GetWriter(PortableMarshaller marshaller, IPortableStream stream);
     }
 }

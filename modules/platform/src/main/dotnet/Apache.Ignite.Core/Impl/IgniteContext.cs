@@ -18,7 +18,9 @@
 namespace Apache.Ignite.Core.Impl
 {
     using System;
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
     /// Ignite extensibility context default implementation.
@@ -56,6 +58,19 @@ namespace Apache.Ignite.Core.Impl
             IPortableTypeDescriptor descriptor, PortableMarshaller marshaller)
         {
             return new PortableBuilderImpl(parent, obj, descriptor, marshaller);
+        }
+
+        /** <inheritdoc /> */
+        public IPortableReaderEx GetReader(PortableMarshaller marshaller, IDictionary<long, IPortableTypeDescriptor> descriptors,
+            IPortableStream stream, PortableMode mode, IPortableBuilderEx builder)
+        {
+            return new PortableReaderImpl(marshaller, descriptors, stream, mode, builder);
+        }
+
+        /** <inheritdoc /> */
+        public IPortableWriterEx GetWriter(PortableMarshaller marshaller, IPortableStream stream)
+        {
+            return new PortableWriterImpl(marshaller, stream);
         }
     }
 }

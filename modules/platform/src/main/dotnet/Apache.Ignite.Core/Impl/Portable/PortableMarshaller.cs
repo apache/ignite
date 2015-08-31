@@ -208,7 +208,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Writer.</returns>
         public IPortableWriterEx StartMarshal(IPortableStream stream)
         {
-            return CreateWriter(stream);
+            return IgniteContext.GetWriter(this, stream);
         }
 
         /// <summary>
@@ -289,7 +289,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </returns>
         public T Unmarshal<T>(IPortableStream stream, PortableMode mode, IPortableBuilderEx builder)
         {
-            return CreateReader(_idToDesc, stream, mode, builder).Deserialize<T>();
+            return IgniteContext.GetReader(this, _idToDesc, stream, mode, builder).Deserialize<T>();
         }
 
         /// <summary>
@@ -302,8 +302,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </returns>
         public IPortableReaderEx StartUnmarshal(IPortableStream stream, bool keepPortable)
         {
-            return CreateReader(_idToDesc, stream, keepPortable ? PortableMode.KeepPortable : PortableMode.Deserialize,
-                null);
+            return IgniteContext.GetReader(this, _idToDesc, stream,
+                keepPortable ? PortableMode.KeepPortable : PortableMode.Deserialize, null);
         }
 
         /// <summary>
@@ -314,7 +314,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Reader.</returns>
         public IPortableReaderEx StartUnmarshal(IPortableStream stream, PortableMode mode = PortableMode.Deserialize)
         {
-            return CreateReader(_idToDesc, stream, mode, null);
+            return IgniteContext.GetReader(this, _idToDesc, stream, mode, null);
         }
         /// <summary>
         /// Gets metadata for the given type ID.
@@ -601,31 +601,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             AddType(type, typeId, GetTypeName(type), false, false, false, null, null, serializer, null, null, null);
         }
-
-        /// <summary>
-        /// Creates reader for unmarshalling.
-        /// </summary>
-        /// <param name="descs">The descs.</param>
-        /// <param name="stream">The stream.</param>
-        /// <param name="mode">The mode.</param>
-        /// <param name="builder">The builder.</param>
-        /// <returns>Reader.</returns>
-        protected virtual IPortableReaderEx CreateReader(IDictionary<long, IPortableTypeDescriptor> descs,
-            IPortableStream stream, PortableMode mode, IPortableBuilderEx builder)
-        {
-            return new PortableReaderImpl(this, _idToDesc, stream, mode, builder);
-        }
-
-        /// <summary>
-        /// Creates writer for marshalling.
-        /// </summary>
-        /// <param name="stream">The stream.</param>
-        /// <returns>Writer.</returns>
-        protected virtual IPortableWriterEx CreateWriter(IPortableStream stream)
-        {
-            return new PortableWriterImpl(this, stream);
-        }
-
         /// <summary>
         /// Gets the name of the type.
         /// </summary>
