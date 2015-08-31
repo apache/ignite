@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public ICollection<IPortableMetadata> GetMetadata()
         {
-            // TODO: !!!
+            // TODO: Get from grid.
             return null;
             //return Marshaller.GetGrid().ClusterGroup.Metadata();
         }

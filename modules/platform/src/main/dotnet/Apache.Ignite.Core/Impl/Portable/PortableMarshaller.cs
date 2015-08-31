@@ -319,7 +319,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Metadata or null.</returns>
         public virtual IPortableMetadata GetMetadata(int typeId)
         {
-            // TODO:
+            PortableMetadataHolder result;
+
+            // TODO: Get from grid.
+            if (_metas.TryGetValue(typeId, out result))
+                return result.Metadata();
 
             // Empty meta:
             return new PortableMetadataImpl(PortableUtils.TypeObject, PortableTypeNames.TypeNameObject, null, null,
