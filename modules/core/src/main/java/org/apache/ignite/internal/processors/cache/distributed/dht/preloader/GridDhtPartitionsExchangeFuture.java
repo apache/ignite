@@ -1113,52 +1113,54 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
         else {
             initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                @Override public void apply(IgniteInternalFuture<Boolean> t) {
+                @Override public void apply(IgniteInternalFuture<Boolean> f) {
                     try {
-                        if (!t.get()) // Just to check if there was an error.
+                        if (!f.get())
                             return;
-
-                        ClusterNode loc = cctx.localNode();
-
-                        singleMsgs.put(nodeId, msg);
-
-                        boolean match = true;
-
-                        // Check if oldest node has changed.
-                        if (!oldestNode.get().equals(loc)) {
-                            match = false;
-
-                            synchronized (mux) {
-                                // Double check.
-                                if (oldestNode.get().equals(loc))
-                                    match = true;
-                            }
-                        }
-
-                        if (match) {
-                            boolean allReceived;
-
-                            synchronized (rcvdIds) {
-                                if (rcvdIds.add(nodeId))
-                                    updatePartitionSingleMap(msg);
-
-                                allReceived = allReceived();
-                            }
-
-                            // If got all replies, and initialization finished, and reply has not been sent yet.
-                            if (allReceived && ready.get() && replied.compareAndSet(false, true)) {
-                                spreadPartitions();
-
-                                onDone(exchId.topologyVersion());
-                            }
-                            else if (log.isDebugEnabled())
-                                log.debug("Exchange future full map is not sent [allReceived=" + allReceived() +
-                                    ", ready=" + ready + ", replied=" + replied.get() + ", init=" + init.get() +
-                                    ", fut=" + this + ']');
-                        }
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to initialize exchange future: " + this, e);
+
+                        return;
+                    }
+
+                    ClusterNode loc = cctx.localNode();
+
+                    singleMsgs.put(nodeId, msg);
+
+                    boolean match = true;
+
+                    // Check if oldest node has changed.
+                    if (!oldestNode.get().equals(loc)) {
+                        match = false;
+
+                        synchronized (mux) {
+                            // Double check.
+                            if (oldestNode.get().equals(loc))
+                                match = true;
+                        }
+                    }
+
+                    if (match) {
+                        boolean allReceived;
+
+                        synchronized (rcvdIds) {
+                            if (rcvdIds.add(nodeId))
+                                updatePartitionSingleMap(msg);
+
+                            allReceived = allReceived();
+                        }
+
+                        // If got all replies, and initialization finished, and reply has not been sent yet.
+                        if (allReceived && ready.get() && replied.compareAndSet(false, true)) {
+                            spreadPartitions();
+
+                            onDone(exchId.topologyVersion());
+                        }
+                        else if (log.isDebugEnabled())
+                            log.debug("Exchange future full map is not sent [allReceived=" + allReceived() +
+                                ", ready=" + ready + ", replied=" + replied.get() + ", init=" + init.get() +
+                                ", fut=" + this + ']');
                     }
                 }
             });
@@ -1221,7 +1223,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert exchId.topologyVersion().equals(msg.topologyVersion());
 
         initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-            @Override public void apply(IgniteInternalFuture<Boolean> t) {
+            @Override public void apply(IgniteInternalFuture<Boolean> f) {
+                try {
+                    if (!f.get())
+                        return;
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to initialize exchange future: " + this, e);
+
+                    return;
+                }
+
                 ClusterNode curOldest = oldestNode.get();
 
                 if (!nodeId.equals(curOldest.id())) {
@@ -1310,8 +1322,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         try {
             // Wait for initialization part of this future to complete.
-            initFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> f) {
+            initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+                @Override public void apply(IgniteInternalFuture<Boolean> f) {
+                    try {
+                        if (!f.get())
+                            return;
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to initialize exchange future: " + this, e);
+
+                        return;
+                    }
+
                     if (isDone())
                         return;
 

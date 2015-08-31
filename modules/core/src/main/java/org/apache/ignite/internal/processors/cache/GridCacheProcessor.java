@@ -92,6 +92,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** */
     private final Map<String, GridCacheAdapter<?, ?>> caches;
 
+    /** Caches stopped from onKernalStop callback. */
+    private final Map<String, GridCacheAdapter> stoppedCaches = new ConcurrentHashMap<>();
+
     /** Map of proxies. */
     private final Map<String, IgniteCacheProxy<?, ?>> jCacheProxies;
 
@@ -829,14 +832,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         for (String cacheName : stopSeq) {
-            GridCacheAdapter<?, ?> cache = caches.remove(maskNull(cacheName));
+            GridCacheAdapter<?, ?> cache = stoppedCaches.remove(maskNull(cacheName));
 
             if (cache != null)
                 stopCache(cache, cancel);
         }
 
-        for (GridCacheAdapter<?, ?> cache : caches.values())
-            stopCache(cache, cancel);
+        for (GridCacheAdapter<?, ?> cache : stoppedCaches.values()) {
+            if (cache == stoppedCaches.remove(maskNull(cache.name())))
+                stopCache(cache, cancel);
+        }
 
         List<? extends GridCacheSharedManager<?, ?>> mgrs = sharedCtx.managers();
 
@@ -868,15 +873,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cacheStartedLatch.countDown();
 
         for (String cacheName : stopSeq) {
-            GridCacheAdapter<?, ?> cache = caches.get(maskNull(cacheName));
+            GridCacheAdapter<?, ?> cache = caches.remove(maskNull(cacheName));
 
-            if (cache != null)
+            if (cache != null) {
+                stoppedCaches.put(maskNull(cacheName), cache);
+
                 onKernalStop(cache, cancel);
+            }
         }
 
         for (Map.Entry<String, GridCacheAdapter<?, ?>> entry : caches.entrySet()) {
-            if (!stopSeq.contains(entry.getKey()))
+            GridCacheAdapter<?, ?> cache = entry.getValue();
+
+            if (cache == caches.remove(entry.getKey())) {
+                stoppedCaches.put(entry.getKey(), cache);
+
                 onKernalStop(entry.getValue(), cancel);
+            }
         }
 
         List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();
