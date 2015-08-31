@@ -475,6 +475,9 @@ public class GridDhtPartitionDemander {
 
         final SyncFuture fut = syncFut;
 
+        if (!fut.topologyVersion().equals(topVer))
+            return;
+
         if (topologyChanged(topVer)) {
             fut.onCancel();
 

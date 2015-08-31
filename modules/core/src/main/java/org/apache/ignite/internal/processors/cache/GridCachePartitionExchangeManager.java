@@ -286,7 +286,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             return;
 
                         try {
-
                             cctx.cacheContext(m.cacheId).preloader().handleSupplyMessage(idx, id, m);
                         }
                         finally {
