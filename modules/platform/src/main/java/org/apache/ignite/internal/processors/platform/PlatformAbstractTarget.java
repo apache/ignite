@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
 import org.apache.ignite.internal.processors.platform.utils.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -195,25 +198,26 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      */
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
     protected IgniteFuture currentFutureWrapped() throws IgniteCheckedException {
-        return currentFuture().chain(new IgniteClosure<IgniteFuture, Object>() {
-            @Override public Object apply(IgniteFuture o) {
-                try {
-                    return o.get();
-                }
-                catch (RuntimeException e) {
-                    Exception converted = convertException(e);
 
-                    if (converted instanceof RuntimeException)
-                        throw (RuntimeException)converted;
-                    else {
-                        log.error("Interop future result cannot be obtained due to exception.", converted);
+        IgniteFutureImpl fut = (IgniteFutureImpl)currentFuture();
 
-                        throw new IgniteException("Interop future result cannot be obtained due to exception " +
-                            "(see log for more details).");
-                    }
+        IgniteInternalFuture internalFut = fut.internalFuture();
+
+        return new IgniteFutureImpl(internalFut) {
+            /** {@inheritDoc} */
+            @Override protected RuntimeException convertException(IgniteCheckedException e) {
+                Exception converted = PlatformAbstractTarget.this.convertException(e);
+
+                if (converted instanceof RuntimeException)
+                    throw (RuntimeException)converted;
+                else {
+                    log.error("Interop future result cannot be obtained due to exception.", converted);
+
+                    throw new IgniteException("Interop future result cannot be obtained due to exception " +
+                        "(see log for more details).", converted);
                 }
             }
-        });
+        };
     }
 
     /**
