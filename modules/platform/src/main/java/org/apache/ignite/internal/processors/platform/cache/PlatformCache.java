@@ -256,7 +256,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected int processInOp(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_PUT:
                 cache.put(reader.readObjectDetached(), reader.readObjectDetached());
@@ -343,7 +343,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 return cache.isLocalLocked(reader.readObjectDetached(), reader.readBoolean()) ? TRUE : FALSE;
 
             default:
-                throw new IgniteCheckedException("Unsupported operation type: " + type);
+                return super.processInStreamOutLong(type, reader);
         }
 
         return TRUE;
@@ -369,7 +369,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processInOpObject(int type, PortableRawReaderEx reader)
+    @Override protected Object processInStreamOutObject(int type, PortableRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_QRY_SQL:
@@ -402,7 +402,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             }
 
             default:
-                return throwUnsupported(type);
+                return super.processInStreamOutObject(type, reader);
         }
     }
 
@@ -428,81 +428,81 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutOp(int type, PortableRawWriterEx w) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_NAME:
-                w.writeObject(cache.getName());
+                writer.writeObject(cache.getName());
 
                 break;
 
             case OP_METRICS:
                 CacheMetrics metrics = cache.metrics();
 
-                w.writeLong(metrics.getCacheGets());
-                w.writeLong(metrics.getCachePuts());
-                w.writeLong(metrics.getCacheHits());
-                w.writeLong(metrics.getCacheMisses());
-                w.writeLong(metrics.getCacheTxCommits());
-                w.writeLong(metrics.getCacheTxRollbacks());
-                w.writeLong(metrics.getCacheEvictions());
-                w.writeLong(metrics.getCacheRemovals());
-                w.writeFloat(metrics.getAveragePutTime());
-                w.writeFloat(metrics.getAverageGetTime());
-                w.writeFloat(metrics.getAverageRemoveTime());
-                w.writeFloat(metrics.getAverageTxCommitTime());
-                w.writeFloat(metrics.getAverageTxRollbackTime());
-                w.writeString(metrics.name());
-                w.writeLong(metrics.getOverflowSize());
-                w.writeLong(metrics.getOffHeapEntriesCount());
-                w.writeLong(metrics.getOffHeapAllocatedSize());
-                w.writeInt(metrics.getSize());
-                w.writeInt(metrics.getKeySize());
-                w.writeBoolean(metrics.isEmpty());
-                w.writeInt(metrics.getDhtEvictQueueCurrentSize());
-                w.writeInt(metrics.getTxThreadMapSize());
-                w.writeInt(metrics.getTxXidMapSize());
-                w.writeInt(metrics.getTxCommitQueueSize());
-                w.writeInt(metrics.getTxPrepareQueueSize());
-                w.writeInt(metrics.getTxStartVersionCountsSize());
-                w.writeInt(metrics.getTxCommittedVersionsSize());
-                w.writeInt(metrics.getTxRolledbackVersionsSize());
-                w.writeInt(metrics.getTxDhtThreadMapSize());
-                w.writeInt(metrics.getTxDhtXidMapSize());
-                w.writeInt(metrics.getTxDhtCommitQueueSize());
-                w.writeInt(metrics.getTxDhtPrepareQueueSize());
-                w.writeInt(metrics.getTxDhtStartVersionCountsSize());
-                w.writeInt(metrics.getTxDhtCommittedVersionsSize());
-                w.writeInt(metrics.getTxDhtRolledbackVersionsSize());
-                w.writeBoolean(metrics.isWriteBehindEnabled());
-                w.writeInt(metrics.getWriteBehindFlushSize());
-                w.writeInt(metrics.getWriteBehindFlushThreadCount());
-                w.writeLong(metrics.getWriteBehindFlushFrequency());
-                w.writeInt(metrics.getWriteBehindStoreBatchSize());
-                w.writeInt(metrics.getWriteBehindTotalCriticalOverflowCount());
-                w.writeInt(metrics.getWriteBehindCriticalOverflowCount());
-                w.writeInt(metrics.getWriteBehindErrorRetryCount());
-                w.writeInt(metrics.getWriteBehindBufferSize());
-                w.writeString(metrics.getKeyType());
-                w.writeString(metrics.getValueType());
-                w.writeBoolean(metrics.isStoreByValue());
-                w.writeBoolean(metrics.isStatisticsEnabled());
-                w.writeBoolean(metrics.isManagementEnabled());
-                w.writeBoolean(metrics.isReadThrough());
-                w.writeBoolean(metrics.isWriteThrough());
-                w.writeFloat(metrics.getCacheHitPercentage());
-                w.writeFloat(metrics.getCacheMissPercentage());
+                writer.writeLong(metrics.getCacheGets());
+                writer.writeLong(metrics.getCachePuts());
+                writer.writeLong(metrics.getCacheHits());
+                writer.writeLong(metrics.getCacheMisses());
+                writer.writeLong(metrics.getCacheTxCommits());
+                writer.writeLong(metrics.getCacheTxRollbacks());
+                writer.writeLong(metrics.getCacheEvictions());
+                writer.writeLong(metrics.getCacheRemovals());
+                writer.writeFloat(metrics.getAveragePutTime());
+                writer.writeFloat(metrics.getAverageGetTime());
+                writer.writeFloat(metrics.getAverageRemoveTime());
+                writer.writeFloat(metrics.getAverageTxCommitTime());
+                writer.writeFloat(metrics.getAverageTxRollbackTime());
+                writer.writeString(metrics.name());
+                writer.writeLong(metrics.getOverflowSize());
+                writer.writeLong(metrics.getOffHeapEntriesCount());
+                writer.writeLong(metrics.getOffHeapAllocatedSize());
+                writer.writeInt(metrics.getSize());
+                writer.writeInt(metrics.getKeySize());
+                writer.writeBoolean(metrics.isEmpty());
+                writer.writeInt(metrics.getDhtEvictQueueCurrentSize());
+                writer.writeInt(metrics.getTxThreadMapSize());
+                writer.writeInt(metrics.getTxXidMapSize());
+                writer.writeInt(metrics.getTxCommitQueueSize());
+                writer.writeInt(metrics.getTxPrepareQueueSize());
+                writer.writeInt(metrics.getTxStartVersionCountsSize());
+                writer.writeInt(metrics.getTxCommittedVersionsSize());
+                writer.writeInt(metrics.getTxRolledbackVersionsSize());
+                writer.writeInt(metrics.getTxDhtThreadMapSize());
+                writer.writeInt(metrics.getTxDhtXidMapSize());
+                writer.writeInt(metrics.getTxDhtCommitQueueSize());
+                writer.writeInt(metrics.getTxDhtPrepareQueueSize());
+                writer.writeInt(metrics.getTxDhtStartVersionCountsSize());
+                writer.writeInt(metrics.getTxDhtCommittedVersionsSize());
+                writer.writeInt(metrics.getTxDhtRolledbackVersionsSize());
+                writer.writeBoolean(metrics.isWriteBehindEnabled());
+                writer.writeInt(metrics.getWriteBehindFlushSize());
+                writer.writeInt(metrics.getWriteBehindFlushThreadCount());
+                writer.writeLong(metrics.getWriteBehindFlushFrequency());
+                writer.writeInt(metrics.getWriteBehindStoreBatchSize());
+                writer.writeInt(metrics.getWriteBehindTotalCriticalOverflowCount());
+                writer.writeInt(metrics.getWriteBehindCriticalOverflowCount());
+                writer.writeInt(metrics.getWriteBehindErrorRetryCount());
+                writer.writeInt(metrics.getWriteBehindBufferSize());
+                writer.writeString(metrics.getKeyType());
+                writer.writeString(metrics.getValueType());
+                writer.writeBoolean(metrics.isStoreByValue());
+                writer.writeBoolean(metrics.isStatisticsEnabled());
+                writer.writeBoolean(metrics.isManagementEnabled());
+                writer.writeBoolean(metrics.isReadThrough());
+                writer.writeBoolean(metrics.isWriteThrough());
+                writer.writeFloat(metrics.getCacheHitPercentage());
+                writer.writeFloat(metrics.getCacheMissPercentage());
 
                 break;
 
             default:
-                throwUnsupported(type);
+                super.processOutStream(type, writer);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions"})
-    @Override protected void processInOutOp(int type, PortableRawReaderEx reader, PortableRawWriterEx writer,
-        Object arg) throws IgniteCheckedException {
+    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_GET: {
                 writer.writeObjectDetached(cache.get(reader.readObjectDetached()));
@@ -593,6 +593,9 @@ public class PlatformCache extends PlatformAbstractTarget {
                 writer.writeLong(registerLock(cache.lockAll(PlatformUtils.readCollection(reader))));
 
                 break;
+
+            default:
+                super.processInStreamOutStream(type, reader, writer);
         }
     }
 
