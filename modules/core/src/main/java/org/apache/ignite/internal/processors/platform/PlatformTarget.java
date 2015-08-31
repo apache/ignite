@@ -46,15 +46,6 @@ public interface PlatformTarget {
     public Object inStreamOutObject(int type, long memPtr) throws Exception;
 
     /**
-     * Operation returning result to memory stream.
-     *
-     * @param type Operation type.
-     * @param memPtr Memory pointer.
-     * @throws Exception In case of failure.
-     */
-    public void outStream(int type, long memPtr) throws Exception;
-
-    /**
      * Operation accepting one memory stream and returning result to another memory stream.
      *
      * @param type Operation type.
@@ -74,6 +65,33 @@ public interface PlatformTarget {
      * @throws Exception In case of failure.
      */
     public void inObjectStreamOutStream(int type, @Nullable Object arg, long inMemPtr, long outMemPtr) throws Exception;
+
+    /**
+     * Operation returning long result.
+     *
+     * @param type Operation type.
+     * @return Result.
+     * @throws Exception In case of failure.
+     */
+    public long outLong(int type) throws Exception;
+
+    /**
+     * Operation returning result to memory stream.
+     *
+     * @param type Operation type.
+     * @param memPtr Memory pointer.
+     * @throws Exception In case of failure.
+     */
+    public void outStream(int type, long memPtr) throws Exception;
+
+    /**
+     * Operation returning object result.
+     *
+     * @param type Operation type.
+     * @return Result.
+     * @throws Exception If failed.
+     */
+    public Object outObject(int type) throws Exception;
 
     /**
      * Start listening for the future.

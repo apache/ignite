@@ -975,6 +975,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         // Fetch local node attributes once.
         String locPreferIpV4 = locNode.attribute("java.net.preferIPv4Stack");
 
+        String locPortableProtoVer = locNode.attribute(ATTR_PORTABLE_PROTO_VER);
+
         Object locMode = locNode.attribute(ATTR_DEPLOYMENT_MODE);
 
         int locJvmMajVer = nodeJavaMajorVersion(locNode);
@@ -1019,11 +1021,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 boolean rmtP2pEnabled = n.attribute(ATTR_PEER_CLASSLOADING);
 
                 if (locP2pEnabled != rmtP2pEnabled)
-                    throw new IgniteCheckedException("Remote node has peer class loading enabled flag different from local " +
-                        "[locId8=" + U.id8(locNode.id()) + ", locPeerClassLoading=" + locP2pEnabled +
+                    throw new IgniteCheckedException("Remote node has peer class loading enabled flag different from" +
+                        " local [locId8=" + U.id8(locNode.id()) + ", locPeerClassLoading=" + locP2pEnabled +
                         ", rmtId8=" + U.id8(n.id()) + ", rmtPeerClassLoading=" + rmtP2pEnabled +
                         ", rmtAddrs=" + U.addressesAsString(n) + ']');
             }
+
+            String rmtPortableProtoVer = n.attribute(ATTR_PORTABLE_PROTO_VER);
+
+            // In order to support backward compatibility skip the check for nodes that don't have this attribute.
+            if (rmtPortableProtoVer != null && !F.eq(locPortableProtoVer, rmtPortableProtoVer))
+                throw new IgniteCheckedException("Remote node has portable protocol version different from local " +
+                    "[locVersion=" + locPortableProtoVer + ", rmtVersion=" + rmtPortableProtoVer + ']');
         }
 
         if (log.isDebugEnabled())

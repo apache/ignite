@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.*;
+import org.jetbrains.annotations.*;
 
 /**
  * No-op processor.
@@ -46,8 +46,68 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
+    @Override public void releaseStart() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void awaitStart() throws IgniteCheckedException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget cache(@Nullable String name) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget createCache(@Nullable String name) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget getOrCreateCache(@Nullable String name) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget affinity(@Nullable String name) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepPortable) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget transactions() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget projection() throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget compute(PlatformTarget grp) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget message(PlatformTarget grp) {
+        return null;
+    }
+
+    @Override
+    public PlatformTarget events(PlatformTarget grp) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget services(PlatformTarget grp) {
+        return null;
     }
 
     /** {@inheritDoc} */
