@@ -28,7 +28,7 @@ import org.h2.table.*;
 import org.h2.value.*;
 import org.jetbrains.annotations.*;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.Set;
 

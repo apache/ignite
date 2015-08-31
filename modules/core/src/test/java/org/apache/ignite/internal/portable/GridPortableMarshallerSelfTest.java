@@ -27,9 +27,6 @@ import org.apache.ignite.marshaller.portable.*;
 import org.apache.ignite.portable.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
-
-import com.sun.tools.jdi.*;
-import com.sun.tools.jdi.LinkedHashMap;
 import org.jsr166.*;
 import sun.misc.*;
 
