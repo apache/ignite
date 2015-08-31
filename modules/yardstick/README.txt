@@ -1,6 +1,6 @@
 Yardstick Ignite Benchmarks
 ===========================
-Yardstick Ignite is a set of Ignite Grid (http://ignite.incubator.apache.org/) benchmarks written on top of Yardstick framework.
+Yardstick Ignite is a set of Ignite Grid (http://ignite.apache.org/) benchmarks written on top of Yardstick framework.
 
 Yardstick Framework
 ===================

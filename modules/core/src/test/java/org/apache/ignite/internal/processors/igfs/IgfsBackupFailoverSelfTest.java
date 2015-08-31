@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.secondary.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -105,21 +106,6 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
         // Ensure all the nodes are started and discovered each other:
         checkTopology(numIgfsNodes);
-    }
-
-    /**
-     * Creates IPC configuration.
-     *
-     * @param port The port to use.
-     * @return The endpoint configuration.
-     */
-    protected IgfsIpcEndpointConfiguration createIgfsRestConfig(int port) {
-        IgfsIpcEndpointConfiguration cfg = new IgfsIpcEndpointConfiguration();
-
-        cfg.setType(IgfsIpcEndpointType.TCP);
-        cfg.setPort(port);
-
-        return cfg;
     }
 
     /**
@@ -296,8 +282,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
         final AtomicBoolean stop = new AtomicBoolean();
 
         GridTestUtils.runMultiThreadedAsync(new Callable() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 Thread.sleep(1_000); // Some delay to ensure read is in progress.
 
                 // Now stop all the nodes but the 1st:
@@ -390,7 +375,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
             final int f = f0;
 
-            int att = doWithRetries(2, new Callable<Void>() {
+            int att = doWithRetries(1, new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     IgfsOutputStream ios = os;
 
@@ -411,8 +396,124 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
                 }
             });
 
+            assert att == 1;
+
             X.println("write #2 completed: " + f0 + " in " + att + " attempts.");
         }
+
+        // Check files:
+        for (int f = 0; f < files; f++) {
+            IgfsPath path = filePath(f);
+
+            byte[] data = createChunk(fileSize, f);
+
+            // Check through 1st node:
+            checkExist(igfs0, path);
+
+            assertEquals("File length mismatch.", data.length * 2, igfs0.size(path));
+
+            checkFileContent(igfs0, path, data, data);
+
+            X.println("Read test completed: " + f);
+        }
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void testWriteFailoverWhileStoppingMultipleNodes() throws Exception {
+        final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
+
+        clear(igfs0);
+
+        IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
+
+        final IgfsOutputStream[] outStreams = new IgfsOutputStream[files];
+
+        // Create files:
+        for (int f = 0; f < files; f++) {
+            final byte[] data = createChunk(fileSize, f);
+
+            IgfsOutputStream os = null;
+
+            try {
+                os = igfs0.create(filePath(f), 256, true, null, 0, -1, null);
+
+                assert os != null;
+
+                writeFileChunks(os, data);
+            }
+            finally {
+                if (os != null)
+                    os.flush();
+            }
+
+            outStreams[f] = os;
+
+            X.println("write #1 completed: " + f);
+        }
+
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        GridTestUtils.runMultiThreadedAsync(new Callable() {
+            @Override public Object call() throws Exception {
+                Thread.sleep(10_000); // Some delay to ensure read is in progress.
+
+                // Now stop all the nodes but the 1st:
+                for (int n = 1; n < numIgfsNodes; n++) {
+                    stopGrid(n);
+
+                    X.println("#### grid " + n + " stopped.");
+                }
+
+                //Thread.sleep(10_000);
+
+                stop.set(true);
+
+                return null;
+            }
+        }, 1, "igfs-node-stopper");
+
+        // Write #2:
+        for (int f0 = 0; f0 < files; f0++) {
+            final IgfsOutputStream os = outStreams[f0];
+
+            assert os != null;
+
+            final int f = f0;
+
+            int att = doWithRetries(1, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    IgfsOutputStream ios = os;
+
+                    try {
+                        writeChunks0(igfs0, ios, f);
+                    }
+                    catch (IOException ioe) {
+                        log().warning("Attempt to append the data to existing stream failed: ", ioe);
+
+                        ios = igfs0.append(filePath(f), false);
+
+                        assert ios != null;
+
+                        writeChunks0(igfs0, ios, f);
+                    }
+
+                    return null;
+                }
+            });
+
+            assert att == 1;
+
+            X.println("write #2 completed: " + f0 + " in " + att + " attempts.");
+        }
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return stop.get();
+            }
+        }, 25_000);
 
         // Check files:
         for (int f = 0; f < files; f++) {

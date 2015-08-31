@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -32,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -44,12 +46,12 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL;
+        return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
-    @Override protected int keysCount() {
-        return 20_000;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /**
@@ -74,7 +76,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
             }
         });
 
-        int keysCnt = keysCount();
+        final int keysCnt = 20_000;
 
         try {
             for (int i = 0; i < keysCnt; i++)
@@ -90,6 +92,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     public void testExplicitTransactionRetries() throws Exception {
         final AtomicInteger idx = new AtomicInteger();
         int threads = 8;
@@ -97,8 +100,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
         final AtomicReferenceArray<Exception> err = new AtomicReferenceArray<>(threads);
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 int th = idx.getAndIncrement();
                 int base = th * FACTOR;
 

@@ -250,7 +250,7 @@ public class GridJavadocAntTask extends MatchingTask {
                 case TOKEN_CLOSE_TAG: {
                     if ("</head>".equalsIgnoreCase(val))
                         tok.update(
-                            "<link rel='shortcut icon' href='https://ignite.incubator.apache.org/favicon.ico'/>\n" +
+                            "<link rel='shortcut icon' href='https://ignite.apache.org/favicon.ico'/>\n" +
                             "<link type='text/css' rel='stylesheet' href='" + SH_URL + "/styles/shCore.css'/>\n" +
                             "<link type='text/css' rel='stylesheet' href='" + SH_URL +
                                 "/styles/shThemeDefault.css'/>\n" +

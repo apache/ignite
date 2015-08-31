@@ -227,6 +227,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
         if (topVer != null) {
             tx.topologyVersion(topVer);
 
+            cctx.mvcc().addFuture(this);
+
             prepare0(false);
 
             return;
@@ -242,6 +244,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
     private void prepareOnTopology(final boolean remap, @Nullable final Runnable c) {
         GridDhtTopologyFuture topFut = topologyReadLock();
 
+        AffinityTopologyVersion topVer = null;
+
         try {
             if (topFut == null) {
                 assert isDone();
@@ -250,52 +254,61 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
             }
 
             if (topFut.isDone()) {
-                StringBuilder invalidCaches = new StringBuilder();
-
-                boolean cacheInvalid = false;
-
-                for (GridCacheContext ctx : cctx.cacheContexts()) {
-                    if (tx.activeCacheIds().contains(ctx.cacheId()) && !topFut.isCacheTopologyValid(ctx)) {
-                        if (cacheInvalid)
-                            invalidCaches.append(", ");
-
-                        invalidCaches.append(U.maskName(ctx.name()));
-
-                        cacheInvalid = true;
-                    }
-                }
-
-                if (cacheInvalid) {
-                    onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
-                        invalidCaches.toString()));
-
-                    return;
-                }
+                topVer = topFut.topologyVersion();
 
                 if (remap)
-                    tx.onRemap(topFut.topologyVersion());
+                    tx.onRemap(topVer);
                 else
-                    tx.topologyVersion(topFut.topologyVersion());
+                    tx.topologyVersion(topVer);
 
-                prepare0(remap);
-
-                if (c != null)
-                    c.run();
-            }
-            else {
-                topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
-                        cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-                            @Override public void run() {
-                                prepareOnTopology(remap, c);
-                            }
-                        });
-                    }
-                });
+                if (!remap)
+                    cctx.mvcc().addFuture(this);
             }
         }
         finally {
             topologyReadUnlock();
+        }
+
+        if (topVer != null) {
+            StringBuilder invalidCaches = null;
+
+            for (Integer cacheId : tx.activeCacheIds()) {
+                GridCacheContext ctx = cctx.cacheContext(cacheId);
+
+                assert ctx != null : cacheId;
+
+                if (!topFut.isCacheTopologyValid(ctx)) {
+                    if (invalidCaches != null)
+                        invalidCaches.append(", ");
+                    else
+                        invalidCaches = new StringBuilder();
+
+                    invalidCaches.append(U.maskName(ctx.name()));
+                }
+            }
+
+            if (invalidCaches != null) {
+                onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
+                    invalidCaches.toString()));
+
+                return;
+            }
+
+            prepare0(remap);
+
+            if (c != null)
+                c.run();
+        }
+        else {
+            topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
+                    cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+                        @Override public void run() {
+                            prepareOnTopology(remap, c);
+                        }
+                    });
+                }
+            });
         }
     }
 
@@ -381,10 +394,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
 
                 return;
             }
-
-            // Make sure to add future before calling prepare.
-            if (!remap)
-                cctx.mvcc().addFuture(this);
 
             prepare(
                 tx.optimistic() && tx.serializable() ? tx.readEntries() : Collections.<IgniteTxEntry>emptyList(),
