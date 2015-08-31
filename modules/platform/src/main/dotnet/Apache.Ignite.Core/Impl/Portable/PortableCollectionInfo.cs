@@ -24,9 +24,9 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Reflection;
     using Apache.Ignite.Core.Impl.Common;
 
-    /**
-     * <summary>Collection info helper.</summary>
-     */
+    /// <summary>
+    /// Collection info helper.
+    /// </summary>
     internal class PortableCollectionInfo
     {
         /** Flag: none. */
@@ -60,18 +60,18 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static readonly IDictionary<Type, PortableCollectionInfo> Infos =
             new ConcurrentDictionary<Type, PortableCollectionInfo>(64, 32);
 
-        /**
-         * <summary>Get collection info for type.</summary>
-         * <param name="type">Type.</param>
-         * <returns>Collection info.</returns>
-         */
-        public static PortableCollectionInfo Info(Type type)
+        /// <summary>
+        /// Gets an instance for the specified type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns>Collection info instance.</returns>
+        public static PortableCollectionInfo GetInfo(Type type)
         {
             PortableCollectionInfo info;
 
             if (!Infos.TryGetValue(type, out info))
             {
-                info = Info0(type);
+                info = GetInfo0(type);
 
                 Infos[type] = info;
             }
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="type">Type.</param>
          * <returns>Collection info.</returns>
          */
-        private static PortableCollectionInfo Info0(Type type)
+        private static PortableCollectionInfo GetInfo0(Type type)
         {
             if (type.IsGenericType)
             {

@@ -385,7 +385,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return WriteEnum;
 
             // 3. Collection?
-            PortableCollectionInfo info = PortableCollectionInfo.Info(type);
+            PortableCollectionInfo info = PortableCollectionInfo.GetInfo(type);
 
             if (info.IsAny)
                 return info.WriteHandler;
@@ -953,7 +953,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteGenericCollection(IPortableWriterEx ctx, object obj)
         {
-            PortableCollectionInfo info = PortableCollectionInfo.Info(obj.GetType());
+            PortableCollectionInfo info = PortableCollectionInfo.GetInfo(obj.GetType());
 
             Debug.Assert(info.IsGenericCollection, "Not generic collection: " + obj.GetType().FullName);
 
@@ -977,7 +977,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void WriteGenericDictionary(IPortableWriterEx ctx, object obj)
         {
-            PortableCollectionInfo info = PortableCollectionInfo.Info(obj.GetType());
+            PortableCollectionInfo info = PortableCollectionInfo.GetInfo(obj.GetType());
 
             Debug.Assert(info.IsGenericDictionary, "Not generic dictionary: " + obj.GetType().FullName);
 
@@ -1069,7 +1069,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static object ReadCollection(IPortableReaderEx ctx, Type type)
         {
-            PortableCollectionInfo info = PortableCollectionInfo.Info(type);
+            PortableCollectionInfo info = PortableCollectionInfo.GetInfo(type);
 
             return info.IsGenericCollection 
                 ? info.ReadGeneric(ctx)
@@ -1081,7 +1081,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static object ReadDictionary(IPortableReaderEx ctx, Type type)
         {
-            PortableCollectionInfo info = PortableCollectionInfo.Info(type);
+            PortableCollectionInfo info = PortableCollectionInfo.GetInfo(type);
 
             return info.IsGenericDictionary
                 ? info.ReadGeneric(ctx)
