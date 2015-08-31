@@ -22,6 +22,8 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.testframework.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+
 /**
  *
  */
@@ -37,11 +39,6 @@ public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstract
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int keysCount() {
-        return 60_000;
+        return ATOMIC;
     }
 }
