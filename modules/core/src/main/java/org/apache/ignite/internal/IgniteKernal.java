@@ -103,7 +103,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Ignite site that is shown in log messages. */
-    static final String SITE = "ignite.incubator.apache.org";
+    static final String SITE = "ignite.apache.org";
 
     /** System line separator. */
     private static final String NL = U.nl();

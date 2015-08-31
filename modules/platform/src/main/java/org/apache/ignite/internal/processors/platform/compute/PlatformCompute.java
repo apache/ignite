@@ -67,7 +67,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected int processInOp(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_UNICAST:
                 processClosures(reader.readLong(), reader, false, false);
@@ -85,7 +85,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 return TRUE;
 
             default:
-                return throwUnsupported(type);
+                return super.processInStreamOutLong(type, reader);
         }
     }
 
@@ -162,8 +162,8 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInOutOp(int type, PortableRawReaderEx reader, PortableRawWriterEx writer,
-        Object arg) throws IgniteCheckedException {
+    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_EXEC:
                 writer.writeObjectDetached(executeJavaTask(reader, false));
@@ -174,8 +174,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 writer.writeObjectDetached(executeJavaTask(reader, true));
 
                 break;
+
             default:
-                throwUnsupported(type);
+                super.processInStreamOutStream(type, reader, writer);
         }
     }
 

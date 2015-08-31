@@ -62,7 +62,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutOp(int type, final PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, final PortableRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_BATCH: {
                 assert iter != null : "iterator() has not been called";
@@ -123,7 +123,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
             }
 
             default:
-                throwUnsupported(type);
+                super.processOutStream(type, writer);
         }
     }
 

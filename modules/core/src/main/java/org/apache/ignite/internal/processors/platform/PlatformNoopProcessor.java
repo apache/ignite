@@ -48,4 +48,9 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     @Override public void awaitStart() throws IgniteCheckedException {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget extensions() {
+        return null;
+    }
 }
