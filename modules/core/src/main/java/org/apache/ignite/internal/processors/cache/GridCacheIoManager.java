@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -117,7 +118,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (fut != null && !fut.isDone()) {
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
-                        handleMessage(nodeId, cacheMsg);
+                        cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                            @Override public void run() {
+                                handleMessage(nodeId, cacheMsg);
+                            }
+                        });
                     }
                 });
 
@@ -516,7 +521,14 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     private IgniteInternalFuture<Object> startFuture(GridCacheMessage cacheMsg) {
         int cacheId = cacheMsg.cacheId();
 
-        return cacheId != 0 ? cctx.cacheContext(cacheId).preloader().startFuture() : cctx.preloadersStartFuture();
+        if (cacheId != 0)
+            return cctx.cacheContext(cacheId).preloader().startFuture();
+        else {
+            if (F.eq(cacheMsg.topologyVersion(), AffinityTopologyVersion.NONE))
+                return new GridFinishedFuture<>();
+
+            return cctx.preloadersStartFuture(cacheMsg.topologyVersion());
+        }
     }
 
     /**

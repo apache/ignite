@@ -110,7 +110,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected int processInOp(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_PARTITION:
                 return aff.partition(reader.readObjectDetached());
@@ -155,14 +155,14 @@ public class PlatformAffinity extends PlatformAbstractTarget {
             }
 
             default:
-                return throwUnsupported(type);
+                return super.processInStreamOutLong(type, reader);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions"})
-    @Override protected void processInOutOp(int type, PortableRawReaderEx reader, PortableRawWriterEx writer,
-        Object arg) throws IgniteCheckedException {
+    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_PRIMARY_PARTITIONS: {
                 UUID nodeId = reader.readObject();
@@ -280,7 +280,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
             }
 
             default:
-                throwUnsupported(type);
+                super.processInStreamOutStream(type, reader, writer);
         }
     }
 

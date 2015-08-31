@@ -128,7 +128,8 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     /**
      * @param ignoreChildFailures Flag indicating whether compound future should ignore child futures failures.
      */
-    public void ignoreChildFailures(Class<? extends Throwable>... ignoreChildFailures) {
+    @SafeVarargs
+    public final void ignoreChildFailures(Class<? extends Throwable>... ignoreChildFailures) {
         this.ignoreChildFailures = ignoreChildFailures;
     }
 
