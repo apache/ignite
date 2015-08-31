@@ -70,7 +70,8 @@ public class GridOsCacheDrManager implements GridCacheDrManager {
         long ttl,
         long expireTime,
         GridCacheVersion ver,
-        GridDrType drType) {
+        GridDrType drType,
+        long updatePartIdx) {
         // No-op.
     }
 
