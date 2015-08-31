@@ -33,11 +33,6 @@
         </file>
 
         <file>
-            <source>DISCLAIMER.txt</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-
-        <file>
             <source>config/ignite-log4j.xml</source>
             <outputDirectory>/config</outputDirectory>
         </file>
