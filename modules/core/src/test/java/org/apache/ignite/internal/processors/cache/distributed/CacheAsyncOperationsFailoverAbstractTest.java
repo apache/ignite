@@ -60,6 +60,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
@@ -93,59 +94,91 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
      * @throws Exception If failed.
      */
     public void testAsyncFailover() throws Exception {
-        for (int i = 0; i < 3; i++) {
+        IgniteCache<TestKey, TestValue> cache = ignite(0).<TestKey, TestValue>cache(null).withAsync();
+
+        int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
+
+        log.info("Max concurrent async operations: " + ops);
+
+        assertTrue(ops > 0);
+
+        // Start/stop one node.
+        for (int i = 0; i < 2; i++) {
             log.info("Iteration: " + i);
 
             startGrid(NODE_CNT);
 
-            final IgniteCache<TestKey, TestValue> cache = ignite(0).<TestKey, TestValue>cache(null).withAsync();
-
-            int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
-
-            log.info("Max concurrent async operations: " + ops);
-
-            assertTrue(ops > 0);
-
-            final List<IgniteFuture<?>> futs = Collections.synchronizedList(new ArrayList<IgniteFuture<?>>(ops));
-
-            final AtomicInteger left = new AtomicInteger(ops);
-
-            GridTestUtils.runMultiThreaded(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    List<IgniteFuture<?>> futs0 = new ArrayList<>();
-
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-                    while (left.getAndDecrement() > 0) {
-                        TreeMap<TestKey, TestValue> map = new TreeMap<>();
-
-                        int keys = 50;
-
-                        for (int k = 0; k < keys; k++)
-                            map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(k));
-
-                        cache.putAll(map);
-
-                        IgniteFuture<?> fut = cache.future();
-
-                        assertNotNull(fut);
-
-                        futs0.add(fut);
-                    }
-
-                    futs.addAll(futs0);
-
-                    return null;
-                }
-            }, 10, "put-thread");
+            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
 
             stopGrid(NODE_CNT);
 
-            assertEquals(ops, futs.size());
+            for (IgniteFuture<?> fut : futs)
+                fut.get();
+
+            log.info("Iteration done: " + i);
+        }
+
+        // Start all nodes except one.
+        try {
+            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
+
+            for (int i = 1; i < NODE_CNT; i++)
+                stopGrid(i);
 
             for (IgniteFuture<?> fut : futs)
                 fut.get();
         }
+        finally {
+            for (int i = 1; i < NODE_CNT; i++)
+                startGrid(i);
+        }
+    }
+
+    /**
+     * @param ops Number of operations.
+     * @param cache Cache.
+     * @return Futures.
+     * @throws Exception If failed.
+     */
+    private List<IgniteFuture<?>> startAsyncOperations(final int ops, final IgniteCache<TestKey, TestValue> cache)
+        throws Exception
+    {
+        final List<IgniteFuture<?>> futs = Collections.synchronizedList(new ArrayList<IgniteFuture<?>>(ops));
+
+        final AtomicInteger left = new AtomicInteger(ops);
+
+        GridTestUtils.runMultiThreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                List<IgniteFuture<?>> futs0 = new ArrayList<>();
+
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                while (left.getAndDecrement() > 0) {
+                    TreeMap<TestKey, TestValue> map = new TreeMap<>();
+
+                    int keys = 50;
+
+                    for (int k = 0; k < keys; k++)
+                        map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(k));
+
+                    cache.putAll(map);
+
+                    IgniteFuture<?> fut = cache.future();
+
+                    assertNotNull(fut);
+
+                    futs0.add(fut);
+                }
+
+                futs.addAll(futs0);
+
+                return null;
+            }
+        }, 10, "put-thread");
+
+        assertEquals(ops, futs.size());
+
+        return futs;
     }
 
     /**

@@ -15,30 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp;
+package org.apache.ignite.internal.processors.platform.services;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.testframework.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import org.apache.ignite.*;
+import org.apache.ignite.services.*;
 
 /**
- *
+ * Base class for all platform services.
  */
-public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+public interface PlatformService extends Service {
+    /**
+     * Invokes native service method.
+     *
+     * @param mthdName Method name.
+     * @param srvKeepPortable Server keep portable flag.
+     * @param args Arguments.
+     * @return Resulting data.
+     * @throws org.apache.ignite.IgniteCheckedException If failed.
+     */
+    public Object invokeMethod(String mthdName, boolean srvKeepPortable, Object[] args) throws IgniteCheckedException;
 
-        cfg.setSslContextFactory(GridTestUtils.sslFactory());
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
+    /**
+     * Gets native pointer.
+     *
+     * @return Native pointer.
+     */
+    public long pointer();
 }

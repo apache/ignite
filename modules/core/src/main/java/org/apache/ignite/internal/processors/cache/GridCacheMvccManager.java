@@ -196,8 +196,12 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
                     cacheFut.onNodeLeft(discoEvt.eventNode().id());
 
-                    if (cacheFut.isCancelled() || cacheFut.isDone())
-                        atomicFuts.remove(cacheFut.futureId(), fut);
+                    if (cacheFut.isCancelled() || cacheFut.isDone()) {
+                        GridCacheVersion futVer = cacheFut.version();
+
+                        if (futVer != null)
+                            atomicFuts.remove(futVer, fut);
+                    }
                 }
             }
         }
@@ -344,16 +348,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             log.debug("Removed mapped version [from=" + from + ", to=" + to + ']');
 
         return to;
-    }
-
-    /**
-     * @param fut Future to check.
-     * @return {@code True} if future is registered.
-     */
-    public boolean hasFuture(GridCacheFuture<?> fut) {
-        assert fut != null;
-
-        return future(fut.version(), fut.futureId()) != null;
     }
 
     /**
@@ -565,6 +559,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param ver Version.
      * @return All futures for given lock version.
      */
+    @SuppressWarnings("unchecked")
     public <T> Collection<? extends IgniteInternalFuture<T>> futures(GridCacheVersion ver) {
         Collection c = futs.get(ver);
 
@@ -572,6 +567,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param cacheCtx Cache context.
      * @param ver Lock version to check.
      * @return {@code True} if lock had been removed.
      */
@@ -580,6 +576,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param cacheCtx Cache context.
      * @param ver Obsolete entry version.
      * @return {@code True} if added.
      */
@@ -688,27 +685,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param keys Keys.
-     * @param base Base version.
-     * @return Versions that are less than {@code base} whose keys are in the {@code keys} collection.
-     */
-    public Collection<GridCacheVersion> localDhtPendingVersions(Collection<KeyCacheObject> keys, GridCacheVersion base) {
-        Collection<GridCacheVersion> lessPending = new GridLeanSet<>(5);
-
-        for (GridCacheMvccCandidate cand : dhtLocCands) {
-            if (cand.version().isLess(base)) {
-                if (keys.contains(cand.key()))
-                    lessPending.add(cand.version());
-            }
-            else
-                break;
-        }
-
-        return lessPending;
-    }
-
-    /**
-     *
+     * @param cacheCtx Cache context.
      * @param cand Cache lock candidate to add.
      * @return {@code True} if added as a result of this operation,
      *      {@code false} if was previously added.
@@ -924,24 +901,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         X.println(">>>   finishFutsSize: " + finishFuts.size());
     }
 
-
-    /**
-     * @param nodeId Node ID.
-     * @return Filter.
-     */
-    private IgnitePredicate<GridCacheMvccCandidate> nodeIdFilter(final UUID nodeId) {
-        if (nodeId == null)
-            return F.alwaysTrue();
-
-        return new P1<GridCacheMvccCandidate>() {
-            @Override public boolean apply(GridCacheMvccCandidate c) {
-                UUID otherId = c.otherNodeId();
-
-                return c.nodeId().equals(nodeId) || (otherId != null && otherId.equals(nodeId));
-            }
-        };
-    }
-
     /**
      * @param topVer Topology version.
      * @return Future that signals when all locks for given partitions are released.
@@ -994,6 +953,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      *
      * @return Finish update future.
      */
+    @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> finishAtomicUpdates(AffinityTopologyVersion topVer) {
         GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
 

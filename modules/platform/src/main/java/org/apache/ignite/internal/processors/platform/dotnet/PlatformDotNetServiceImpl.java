@@ -15,30 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp;
+package org.apache.ignite.internal.processors.platform.dotnet;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.testframework.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import org.apache.ignite.internal.processors.platform.*;
+import org.apache.ignite.internal.processors.platform.services.*;
 
 /**
- *
+ * Interop .Net service.
  */
-public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+public class PlatformDotNetServiceImpl extends PlatformAbstractService implements PlatformDotNetService {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-        cfg.setSslContextFactory(GridTestUtils.sslFactory());
-
-        return cfg;
+    /**
+     * Default constructor for serialization.
+     */
+    public PlatformDotNetServiceImpl() {
+        // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+    /**
+     * Constructor.
+     *
+     * @param svc Service.
+     * @param ctx Context.
+     * @param srvKeepPortable Whether to keep objects portable on server if possible.
+     */
+    public PlatformDotNetServiceImpl(Object svc, PlatformContext ctx, boolean srvKeepPortable) {
+        super(svc, ctx, srvKeepPortable);
     }
 }

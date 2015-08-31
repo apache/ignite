@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.platform.cache.query.*;
 import org.apache.ignite.internal.processors.platform.callback.*;
 import org.apache.ignite.internal.processors.platform.compute.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.stream.*;
 import org.jetbrains.annotations.*;
 
@@ -260,4 +261,12 @@ public interface PlatformContext {
      * @return Stream receiver.
      */
     public StreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepPortable);
+
+    /**
+     * Create cluster node filter.
+     *
+     * @param filter Native filter.
+     * @return Cluster node filter.
+     */
+    public IgnitePredicate<ClusterNode> createClusterNodeFilter(Object filter);
 }

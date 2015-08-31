@@ -168,13 +168,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     }
 
     /** {@inheritDoc} */
-    @Override public AffinityTopologyVersion topologyVersion() {
-        return updateReq.topologyVersion();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> completeFuture(AffinityTopologyVersion topVer) {
-        if (waitForExchange && topologyVersion().compareTo(topVer) < 0)
+        if (waitForExchange && updateReq.topologyVersion().compareTo(topVer) < 0)
             return this;
 
         return null;

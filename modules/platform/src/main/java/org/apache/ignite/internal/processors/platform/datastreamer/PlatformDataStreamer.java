@@ -83,7 +83,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc}  */
-    @Override protected int processInOp(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_UPDATE:
                 int plc = reader.readInt();
@@ -132,7 +132,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 return TRUE;
 
             default:
-                return throwUnsupported(type);
+                return super.processInStreamOutLong(type, reader);
         }
     }
 

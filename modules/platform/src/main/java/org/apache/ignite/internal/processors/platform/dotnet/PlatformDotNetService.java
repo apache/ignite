@@ -15,30 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp;
+package org.apache.ignite.internal.processors.platform.dotnet;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.testframework.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import org.apache.ignite.internal.processors.platform.services.*;
 
 /**
- *
+ * Marker interface to denote a service implemented on .Net platform.
  */
-public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setSslContextFactory(GridTestUtils.sslFactory());
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
+public interface PlatformDotNetService extends PlatformService {
+    // No-op.
 }
