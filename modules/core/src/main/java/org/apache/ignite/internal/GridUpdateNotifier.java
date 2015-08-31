@@ -447,6 +447,7 @@ class GridUpdateNotifier {
         /**
          * Starts worker thread.
          */
+        @SuppressWarnings("BusyWait")
         private void startWorkerThread() {
             workerIsBusy = false;
 
@@ -454,15 +455,16 @@ class GridUpdateNotifier {
                 @Override public void run() {
                     try {
                         while(!Thread.currentThread().isInterrupted()) {
-                            Runnable cmd0 = cmd.get();
+                            Runnable cmd0 = cmd.getAndSet(null);
 
                             if (cmd0 != null) {
+                                workerIsBusy = true;
+
                                 try {
-                                    workerIsBusy = true;
-
                                     cmd0.run();
-
-                                    cmd.compareAndSet(cmd0, null); // Forget executed task.
+                                }
+                                catch (RuntimeException ignore) {
+                                    // No-op.
                                 }
                                 finally {
                                     workerIsBusy = false;
@@ -471,10 +473,6 @@ class GridUpdateNotifier {
                             else
                                 Thread.sleep(sleepMls);
                         }
-                    }
-                    catch (RuntimeException ignore) {
-                        // Restart worker thread.
-                        startWorkerThread();
                     }
                     catch (InterruptedException ignore) {
                         Thread.currentThread().interrupt();
