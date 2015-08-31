@@ -130,11 +130,12 @@ public class PlatformEvents extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected int processInOp(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_RECORD_LOCAL:
                 // TODO: GG-10244
-                break;
+                return TRUE;
 
             case OP_ENABLE_LOCAL:
 
@@ -152,15 +153,16 @@ public class PlatformEvents extends PlatformAbstractTarget {
                 events.stopRemoteListen(reader.readUuid());
 
                 return TRUE;
-        }
 
-        throw new IgniteCheckedException("Unsupported operation type: " + type);
+            default:
+                return super.processInStreamOutLong(type, reader);
+        }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions", "unchecked"})
-    @Override protected void processInOutOp(int type, PortableRawReaderEx reader, PortableRawWriterEx writer,
-        Object arg) throws IgniteCheckedException {
+    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_LOCAL_QUERY: {
                 Collection<EventAdapter> result =
@@ -242,12 +244,12 @@ public class PlatformEvents extends PlatformAbstractTarget {
             }
 
             default:
-                throw new IgniteCheckedException("Unsupported operation type: " + type);
+                super.processInStreamOutStream(type, reader, writer);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutOp(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_ENABLED_EVENTS:
                 writeEventTypes(events.enabledEvents(), writer);
@@ -255,7 +257,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
                 break;
 
             default:
-                throwUnsupported(type);
+                super.processOutStream(type, writer);
         }
     }
 

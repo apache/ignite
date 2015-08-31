@@ -227,7 +227,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutOp(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_CACHE_CONFIG_PARAMETERS:
                 TransactionConfiguration txCfg = platformCtx.kernalContext().config().getTransactionConfiguration();
@@ -249,7 +249,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
                 break;
 
             default:
-                throwUnsupported(type);
+                super.processOutStream(type, writer);
         }
     }
 }

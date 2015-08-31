@@ -118,7 +118,8 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected int processInOp(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_DOTNET_DEPLOY: {
                 ServiceConfiguration cfg = new ServiceConfiguration();
@@ -151,14 +152,15 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 return TRUE;
             }
-        }
 
-        return super.processInOp(type, reader);
+            default:
+                return super.processInStreamOutLong(type, reader);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInOutOp(int type, PortableRawReaderEx reader, PortableRawWriterEx writer,
-        Object arg) throws IgniteCheckedException {
+    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_DOTNET_SERVICES: {
                 Collection<Service> svcs = services.services(reader.readString());
@@ -179,6 +181,15 @@ public class PlatformServices extends PlatformAbstractTarget {
                 return;
             }
 
+            default:
+                super.processInStreamOutStream(type, reader, writer);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void processInObjectStreamOutStream(int type, Object arg, PortableRawReaderEx reader,
+        PortableRawWriterEx writer) throws IgniteCheckedException {
+        switch (type) {
             case OP_DOTNET_INVOKE: {
                 assert arg != null;
                 assert arg instanceof PlatformDotNetService;
@@ -207,13 +218,14 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 return;
             }
-        }
 
-        super.processInOutOp(type, reader, writer, arg);
+            default:
+                super.processInObjectStreamOutStream(type, arg, reader, writer);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutOp(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_DESCRIPTORS: {
                 Collection<ServiceDescriptor> descs = services.serviceDescriptors();
@@ -240,9 +252,10 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 return;
             }
-        }
 
-        super.processOutOp(type, writer);
+            default:
+                super.processOutStream(type, writer);
+        }
     }
 
     /** <inheritDoc /> */

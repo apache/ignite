@@ -51,4 +51,11 @@ public interface PlatformProcessor extends GridProcessor {
      * @throws IgniteCheckedException If failed.
      */
     public void awaitStart() throws IgniteCheckedException;
+
+    /**
+     * Get platform extensions. Override this method to provide any additional targets and operations you need.
+     *
+     * @return Platform extensions.
+     */
+    PlatformTarget extensions();
 }
