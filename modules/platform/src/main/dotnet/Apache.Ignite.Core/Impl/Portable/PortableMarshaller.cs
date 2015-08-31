@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             // TODO: Get from grid.
             if (_metas.TryGetValue(typeId, out result))
-                return result.Metadata();
+                return result.Metadata;
 
             // Empty meta:
             return new PortableMetadataImpl(PortableUtils.TypeObject, PortableTypeNames.TypeNameObject, null, null,
@@ -340,7 +340,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         internal ICollection<IPortableMetadata> GetAllMetadata()
         {
             // TODO: This is a workaround for tests. Remove as soon as Grid is merged to Ignite.
-            return _metas.Values.Where(x => x != null).Select(x => x.Metadata()).ToArray();
+            return _metas.Values.Where(x => x != null).Select(x => x.Metadata).ToArray();
         }
 
         /// <summary>
@@ -374,9 +374,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (holder == null) 
                 return null;
             
-            var ids = holder.FieldIds();
+            var ids = holder.GetFieldIds();
 
-            bool newType = ids.Count == 0 && !holder.Saved();
+            bool newType = ids.Count == 0 && !holder.IsSaved;
 
             return new PortableHashsetMetadataHandler(ids, newType);
         }

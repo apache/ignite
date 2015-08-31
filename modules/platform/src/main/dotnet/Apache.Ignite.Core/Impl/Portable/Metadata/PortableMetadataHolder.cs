@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         private volatile PortableMetadataImpl _meta;
 
         /** Saved flag (set if type metadata was saved at least once). */
-        private volatile bool _saved;
+        private volatile bool _isSaved;
 
         /** Ignire context. */
         private readonly IIgniteContext _context;
@@ -74,30 +74,33 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <summary>
         /// Get saved flag.
         /// </summary>
-        /// <returns>True if type metadata was saved at least once.</returns>
-        public bool Saved()
+        /// <value>True if type metadata was saved at least once.</value>
+        public bool IsSaved
         {
-            return _saved;
+            get { return _isSaved; }
         }
 
         /// <summary>
         /// Get current type metadata.
         /// </summary>
-        /// <returns>Type metadata.</returns>
-        public IPortableMetadata Metadata()
+        /// <value>Type metadata.</value>
+        public IPortableMetadata Metadata
         {
-            PortableMetadataImpl meta0 = _meta;
+            get
+            {
+                var meta0 = _meta;
 
-            return meta0 != null ? _meta : _emptyMeta;
+                return meta0 != null ? _meta : _emptyMeta;
+            }
         }
 
         /// <summary>
         /// Currently cached field IDs.
         /// </summary>
         /// <returns>Cached field IDs.</returns>
-        public ICollection<int> FieldIds()
+        public ICollection<int> GetFieldIds()
         {
-            ICollection<int> ids0 = _ids;
+            var ids0 = _ids;
 
             if (_ids == null)
             {
@@ -123,7 +126,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <param name="newMap">New field metadatas map.</param>
         public void Merge(IDictionary<int, Tuple<string, int>> newMap)
         {
-            _saved = true;
+            _isSaved = true;
 
             if (newMap == null || newMap.Count == 0)
                 return;
