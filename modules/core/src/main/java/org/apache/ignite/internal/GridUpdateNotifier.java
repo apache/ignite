@@ -31,6 +31,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static java.net.URLEncoder.*;
 
@@ -52,9 +53,6 @@ class GridUpdateNotifier {
 
     /** Site. */
     private final String url;
-
-    /** Asynchronous checked. */
-    private GridWorker checker;
 
     /** Latest version. */
     private volatile String latestVer;
@@ -85,6 +83,9 @@ class GridUpdateNotifier {
     /** */
     private long lastLog = -1;
 
+    /** */
+    private final SingleDemonThreadExecutor verCheckerExec = new SingleDemonThreadExecutor("upd-ver-checker", 1000);
+
     /**
      * Creates new notifier with default values.
      *
@@ -113,7 +114,8 @@ class GridUpdateNotifier {
 
             this.ver = ver;
 
-            url = "http://tiny.cc/updater/update_status_ignite.php";
+            //TODO: it should be  url = "http://tiny.cc/updater/update_status_ignite.php";
+            url = "http://191.191.191.191/updater/update_status_ignite.php";
 
             this.gridName = gridName == null ? "null" : gridName;
             this.gw = gw;
@@ -179,16 +181,15 @@ class GridUpdateNotifier {
     /**
      * Starts asynchronous process for retrieving latest version data.
      *
-     * @param exec Executor service.
      * @param log Logger.
      */
-    void checkForNewVersion(Executor exec, IgniteLogger log) {
+    void checkForNewVersion(IgniteLogger log) {
         assert log != null;
 
         log = log.getLogger(getClass());
 
         try {
-            exec.execute(checker = new UpdateChecker(log));
+            verCheckerExec.execute(new UpdateChecker(log));
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to schedule a thread due to execution rejection (safely ignoring): " +
@@ -206,9 +207,8 @@ class GridUpdateNotifier {
 
         log = log.getLogger(getClass());
 
-        // Don't join it to avoid any delays on update checker.
         // Checker thread will eventually exit.
-        U.cancel(checker);
+        verCheckerExec.cancelCurrentCommandIfNeeded();
 
         String latestVer = this.latestVer;
         String downloadUrl = this.downloadUrl;
@@ -299,15 +299,20 @@ class GridUpdateNotifier {
                     conn.setRequestProperty("Accept-Charset", CHARSET);
                     conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + CHARSET);
 
-                    conn.setConnectTimeout(3000);
-                    conn.setReadTimeout(3000);
+//                    TODO it should be next
+//                    conn.setConnectTimeout(3000);
+//                    conn.setReadTimeout(3000);
+                    conn.setConnectTimeout(30000);
+                    conn.setReadTimeout(30000);
 
                     Document dom = null;
 
                     try {
+                        U.debug("Start connecting");
                         try (OutputStream os = conn.getOutputStream()) {
                             os.write(postParams.getBytes(CHARSET));
                         }
+                        U.debug("Connected");
 
                         try (InputStream in = conn.getInputStream()) {
                             if (in == null)
@@ -330,6 +335,9 @@ class GridUpdateNotifier {
                         }
                     }
                     catch (IOException e) {
+                        U.debug("Exception 1");
+                        e.printStackTrace();
+
                         if (log.isDebugEnabled())
                             log.debug("Failed to connect to Ignite update server. " + e.getMessage());
                     }
@@ -342,6 +350,9 @@ class GridUpdateNotifier {
                 }
             }
             catch (Exception e) {
+                U.debug("Exception 2");
+                e.printStackTrace();
+
                 if (log.isDebugEnabled())
                     log.debug("Unexpected exception in update checker. " + e.getMessage());
             }
@@ -399,6 +410,105 @@ class GridUpdateNotifier {
          */
         @Nullable private String obtainDownloadUrlFrom(Node node) {
             return obtainMeta("downloadUrl", node);
+        }
+    }
+
+    /**
+     * Executor implementation which use only one demon thread for processing.
+     * The executor will execute only last given command, so there is no guarantee that all commands will be processed.
+     */
+    private static class SingleDemonThreadExecutor implements Executor {
+        /** Command to be executed. */
+        private final AtomicReference<Runnable> cmd = new AtomicReference<>();
+
+        /** Worker thread. */
+        private volatile Thread workerThread;
+
+        /** Worker is busy flag. */
+        private volatile boolean workerIsBusy;
+
+        /** Sleep mls. */
+        private final long sleepMls;
+
+        /** Worker thread name. */
+        private final String name;
+
+        /**
+         * @param name Demon thread name.
+         * @param sleepMls Sleep mls.
+         */
+        SingleDemonThreadExecutor(String name, final long sleepMls) {
+            this.name = name;
+            this.sleepMls = sleepMls;
+
+            startWorkerThread();
+        }
+
+        /**
+         * Starts worker thread.
+         */
+        private void startWorkerThread() {
+            workerIsBusy = false;
+
+            workerThread = new Thread(new Runnable() {
+                @Override public void run() {
+                    try {
+                        while(!Thread.currentThread().isInterrupted()) {
+                            Runnable cmd0 = cmd.get();
+
+                            if (cmd0 != null) {
+                                try {
+                                    workerIsBusy = true;
+
+                                    cmd0.run();
+
+                                    cmd.compareAndSet(cmd0, null); // Forget executed task.
+                                }
+                                finally {
+                                    workerIsBusy = false;
+                                }
+                            }
+                            else
+                                Thread.sleep(sleepMls);
+                        }
+                    }
+                    catch (RuntimeException ignore) {
+                        // Restart worker thread.
+                        startWorkerThread();
+                    }
+                    catch (InterruptedException ignore) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }, name);
+
+            workerThread.setDaemon(true);
+
+            workerThread.start();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(@NotNull Runnable cmd) {
+            this.cmd.set(cmd);
+
+            assert workerThread != null;
+            assert workerThread.isAlive();
+            assert !workerThread.isInterrupted();
+        }
+
+        /**
+         * Cancels current task if needed.
+         * If worker thread executes command, when this thread will be interrapted and
+         */
+        void cancelCurrentCommandIfNeeded() {
+            if (workerIsBusy) {
+                Thread workerThread0 = workerThread;
+
+                // Order is important.
+                startWorkerThread();
+
+                workerThread0.interrupt();
+            }
         }
     }
 }

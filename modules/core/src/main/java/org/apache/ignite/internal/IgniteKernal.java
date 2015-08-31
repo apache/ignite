@@ -702,7 +702,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             if (!first)
                                 verChecker.topologySize(cluster().nodes().size());
 
-                            verChecker.checkForNewVersion(execSvc, log);
+                            verChecker.checkForNewVersion(log);
 
                             // Just wait for 10 secs.
                             Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
