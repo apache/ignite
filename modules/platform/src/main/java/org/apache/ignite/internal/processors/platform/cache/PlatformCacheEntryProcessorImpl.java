@@ -25,7 +25,6 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.portable.PortableRawReaderEx;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
@@ -38,9 +37,9 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Interop cache entry processor. Delegates processing to native platform.
+ * Platform cache entry processor. Delegates processing to native platform.
  */
-public class PlatformCacheEntryProcessor<K, V, T> implements CacheEntryProcessor<K, V, T>, Externalizable {
+public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProcessor, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -68,7 +67,7 @@ public class PlatformCacheEntryProcessor<K, V, T> implements CacheEntryProcessor
     /**
      * {@link java.io.Externalizable} support.
      */
-    public PlatformCacheEntryProcessor() {
+    public PlatformCacheEntryProcessorImpl() {
         // No-op.
     }
 
@@ -78,13 +77,14 @@ public class PlatformCacheEntryProcessor<K, V, T> implements CacheEntryProcessor
      * @param proc Native portable processor
      * @param ptr Pointer to processor in the native platform.
      */
-    public PlatformCacheEntryProcessor(Object proc, long ptr) {
+    public PlatformCacheEntryProcessorImpl(Object proc, long ptr) {
         this.proc = proc;
         this.ptr = ptr;
     }
 
     /** {@inheritDoc} */
-    @Override public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
+    @Override public Object process(MutableEntry entry, Object... args)
+        throws EntryProcessorException {
         try {
             IgniteKernal ignite = (IgniteKernal)entry.unwrap(Ignite.class);
 
@@ -114,7 +114,7 @@ public class PlatformCacheEntryProcessor<K, V, T> implements CacheEntryProcessor
      * @return Processing result.
      * @throws org.apache.ignite.IgniteCheckedException
      */
-    private T execute0(PlatformContext ctx, MutableEntry<K, V> entry)
+    private Object execute0(PlatformContext ctx, MutableEntry entry)
         throws IgniteCheckedException {
         try (PlatformMemory outMem = ctx.memory().allocate()) {
             PlatformOutputStream out = outMem.output();
@@ -145,7 +145,7 @@ public class PlatformCacheEntryProcessor<K, V, T> implements CacheEntryProcessor
      * @param entry Entry to process.
      * @param writer Writer.
      */
-    private void writeEntryAndProcessor(MutableEntry<K, V> entry, PortableRawWriterEx writer) {
+    private void writeEntryAndProcessor(MutableEntry entry, PortableRawWriterEx writer) {
         writer.writeObject(entry.getKey());
         writer.writeObject(entry.getValue());
 
@@ -170,12 +170,12 @@ public class PlatformCacheEntryProcessor<K, V, T> implements CacheEntryProcessor
      * @throws javax.cache.processor.EntryProcessorException If processing has failed in user code.
      */
     @SuppressWarnings("unchecked")
-    private T readResultAndUpdateEntry(PlatformContext ctx, MutableEntry<K, V> entry, PortableRawReaderEx reader) {
+    private Object readResultAndUpdateEntry(PlatformContext ctx, MutableEntry entry, PortableRawReaderEx reader) {
         byte state = reader.readByte();
 
         switch (state) {
             case ENTRY_STATE_VALUE_SET:
-                entry.setValue((V)reader.readObject());
+                entry.setValue(reader.readObject());
 
                 break;
 
@@ -205,7 +205,7 @@ public class PlatformCacheEntryProcessor<K, V, T> implements CacheEntryProcessor
                 assert state == ENTRY_STATE_INTACT;
         }
 
-        return (T)reader.readObject();
+        return reader.readObject();
     }
 
     /** {@inheritDoc} */

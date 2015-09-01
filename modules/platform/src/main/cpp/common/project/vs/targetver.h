@@ -15,24 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.communication;
+#pragma once
 
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.lang.IgniteBiPredicate;
+// Including SDKDDKVer.h defines the highest available Windows platform.
 
-/**
- * Special version of bi-predicate for messaging with initialize/close callbacks.
- */
-public interface GridLifecycleAwareMessageFilter<K, V> extends IgniteBiPredicate<K, V> {
-    /**
-     * Initializes the filter.
-     *
-     * @param ctx Kernal context.
-     */
-    public void initialize(GridKernalContext ctx);
+// If you wish to build your application for a previous Windows platform, include WinSDKVer.h and
+// set the _WIN32_WINNT macro to the platform you wish to support before including SDKDDKVer.h.
 
-    /**
-     * Closes the filter.
-     */
-    public void close();
-}
+#include <SDKDDKVer.h>

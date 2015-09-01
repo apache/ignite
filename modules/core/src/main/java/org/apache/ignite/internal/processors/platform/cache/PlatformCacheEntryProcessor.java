@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.platform.cache;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.cache.CacheEntryProcessor;
 
 /**
- * Special version of bi-predicate for LoadCache with close callback.
+ * Platform cache entry processor marker interface.
  */
-public interface GridLoadCacheCloseablePredicate<K, V> extends IgniteBiPredicate<K, V> {
-    /**
-     * Callback invoked when predicate is no longer needed.
-     */
-    public void onClose();
+public interface PlatformCacheEntryProcessor extends CacheEntryProcessor {
+    // No-op.
 }

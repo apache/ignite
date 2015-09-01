@@ -15,96 +15,64 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.messaging;
+package org.apache.ignite.internal.processors.platform.cluster;
 
-import java.util.UUID;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.communication.GridLifecycleAwareMessageFilter;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
- * Interop filter. Delegates apply to native platform.
+ * Interop cluster node filter.
  */
-public class PlatformMessageFilter extends PlatformAbstractPredicate
-    implements GridLifecycleAwareMessageFilter<UUID, Object> {
+public class PlatformClusterNodeFilterImpl extends PlatformAbstractPredicate implements PlatformClusterNodeFilter {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Constructor.
+     * {@link java.io.Externalizable} support.
      */
-    public PlatformMessageFilter()
-    {
-        super();
+    public PlatformClusterNodeFilterImpl() {
+        // No-op.
     }
 
     /**
      * Constructor.
      *
      * @param pred .Net portable predicate.
-     * @param ptr Pointer to predicate in the native platform.
      * @param ctx Kernal context.
      */
-    protected PlatformMessageFilter(Object pred, long ptr, PlatformContext ctx) {
-        super(pred, ptr, ctx);
+    public PlatformClusterNodeFilterImpl(Object pred, PlatformContext ctx) {
+        super(pred, 0, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(UUID uuid, Object m) {
-        if (ptr == 0)
-            return false;  // Destroyed.
-
-        try (PlatformMemory mem = ctx.memory().allocate()) {
-            PlatformOutputStream out = mem.output();
-
-            PortableRawWriterEx writer = ctx.writer(out);
-
-            writer.writeObject(uuid);
-            writer.writeObject(m);
-
-            out.synchronize();
-
-            return ctx.gateway().messagingFilterApply(ptr, mem.pointer()) != 0;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void initialize(GridKernalContext kernalCtx) {
-        if (ptr != 0)
-            return;
-
-        ctx = PlatformUtils.platformContext(kernalCtx.grid());
-
+    @Override public boolean apply(ClusterNode clusterNode) {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
             PortableRawWriterEx writer = ctx.writer(out);
 
             writer.writeObject(pred);
+            ctx.writeNode(writer, clusterNode);
 
             out.synchronize();
 
-            ptr = ctx.gateway().messagingFilterCreate(mem.pointer());
+            return ctx.gateway().clusterNodeFilterApply(mem.pointer()) != 0;
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void close() {
-        if (ptr == 0) // Already destroyed or not initialized yet.
-            return;
-
-        try {
-            assert ctx != null;
-
-            ctx.gateway().messagingFilterDestroy(ptr);
-        }
-        finally {
-            ptr = 0;
-        }
+    /**
+     * @param ignite Ignite instance.
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    @IgniteInstanceResource
+    public void setIgniteInstance(Ignite ignite) {
+        ctx = PlatformUtils.platformContext(ignite);
     }
 }

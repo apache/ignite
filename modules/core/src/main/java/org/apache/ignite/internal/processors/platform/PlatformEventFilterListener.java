@@ -24,16 +24,16 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Special version of predicate for events with initialize/close callbacks.
+ * Platform event filter and listener.
  */
-public interface PlatformAwareEventFilter<E extends Event> extends IgnitePredicate<E>, IgniteBiPredicate<UUID, E> {
+public interface PlatformEventFilterListener extends IgnitePredicate<Event>, IgniteBiPredicate<UUID, Event> {
     /**
      * Initializes the filter.
      */
     public void initialize(GridKernalContext ctx);
 
     /**
-     * Closes the filter.
+     * Callback invoked when filter is closed.
      */
-    public void close();
+    public void onClose();
 }

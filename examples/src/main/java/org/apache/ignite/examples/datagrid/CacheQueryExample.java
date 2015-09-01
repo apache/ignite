@@ -91,8 +91,8 @@ public class CacheQueryExample {
             personCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
 
             try (
-                IgniteCache<UUID, Organization> orgCache = ignite.createCache(orgCacheCfg);
-                IgniteCache<AffinityKey<UUID>, Person> personCache = ignite.createCache(personCacheCfg)
+                IgniteCache<UUID, Organization> orgCache = ignite.getOrCreateCache(orgCacheCfg);
+                IgniteCache<AffinityKey<UUID>, Person> personCache = ignite.getOrCreateCache(personCacheCfg)
             ) {
                 // Populate cache.
                 initialize();
