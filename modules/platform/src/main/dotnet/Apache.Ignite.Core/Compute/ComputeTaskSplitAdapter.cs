@@ -12,7 +12,7 @@ namespace GridGain.Compute
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Cluster;
     using GridGain.Common;
 
@@ -57,7 +57,7 @@ namespace GridGain.Compute
         /// Map of grid jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
         /// exception will be thrown.
         /// </returns>
-        /// <exception cref="GridGain.Common.IgniteException">Split returned no jobs.</exception>
+        /// <exception cref="IgniteException">Split returned no jobs.</exception>
         override public IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, A arg)
         {
             Debug.Assert(subgrid != null && subgrid.Count > 0);

@@ -15,19 +15,17 @@ namespace GridGain.Impl.Unmanaged
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using System.Threading;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using GridGain.Cache.Event;
     using GridGain.Cluster;
-    using GridGain.Common;
     using GridGain.Impl.Cache;
     using GridGain.Impl.Cache.Query.Continuous;
     using GridGain.Impl.Cache.Store;
-    using GridGain.Impl.Common;
     using GridGain.Impl.Compute;
-    using GridGain.Impl.DataCenterReplication;
     using GridGain.Impl.Datastream;
     using GridGain.Impl.Events;
     using GridGain.Impl.Messaging;
@@ -164,9 +162,6 @@ namespace GridGain.Impl.Unmanaged
         
         private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, void* errData, int errDataLen);
 
-        private delegate long ExtensionCallbackInLongOutLongDelegate(void* target, int typ, long arg1);
-        private delegate long ExtensionCallbackInLongLongOutLongDelegate(void* target, int typ, long arg1, long arg2);
-
         /// <summary>
         /// constructor.
         /// </summary>
@@ -244,9 +239,6 @@ namespace GridGain.Impl.Unmanaged
                 onStart = CreateFunctionPointer((OnStartCallbackDelegate)OnStart),
                 onStop = CreateFunctionPointer((OnStopCallbackDelegate)OnStop),
                 error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
-
-                extensionCbInLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongOutLongDelegate)ExtensionCallbackInLongOutLong),
-                extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong)
             };
 
             cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -757,11 +749,11 @@ namespace GridGain.Impl.Unmanaged
         /// </summary>
         /// <param name="futPtr">Future pointer.</param>
         /// <param name="action">Action.</param>
-        private void ProcessFuture<T>(long futPtr, Action<IgniteFutureProxy<T>> action)
+        private void ProcessFuture<T>(long futPtr, Action<Future<T>> action)
         {
             try
             {
-                action(handleRegistry.Get<IgniteFutureProxy<T>>(futPtr, true));
+                action(handleRegistry.Get<Future<T>>(futPtr, true));
             }
             finally
             {
@@ -819,76 +811,6 @@ namespace GridGain.Impl.Unmanaged
             {
                 grid.HandleRegistry.Release(ptr);
             });
-        }
-        
-        #endregion
-
-        #region IMPLEMENTATION: EXTENSIONS
-
-        private long ExtensionCallbackInLongOutLong(void* target, int op, long arg1)
-        {
-            return SafeCall(() =>
-            {
-                switch (op)
-                {
-                    case OP_DR_ENTRY_FILTER_CREATE:
-                        var holder = new CacheDrEntryFilterHolder(arg1);
-
-                        if (grid != null)
-                            holder.Init(grid);
-                        else
-                        {
-                            lock (initActions)
-                            {
-                                if (grid != null)
-                                    holder.Init(grid);
-                                else
-                                    initActions.Add(g => holder.Init(g));
-                            }
-                        }
-
-                        return handleRegistry.AllocateCriticalSafe(holder);
-
-                    case OP_DR_ENTRY_FILTER_DESTROY:
-                        grid.HandleRegistry.Release(arg1);
-
-                        return 0;
-
-                    default:
-                        throw new InvalidOperationException("Unsupported operation type: " + op);
-                }
-            }, op == OP_DR_ENTRY_FILTER_CREATE);
-        }
-
-        private long ExtensionCallbackInLongLongOutLong(void* target, int op, long arg1, long arg2)
-        {
-            return SafeCall(() =>
-            {
-                switch (op)
-                {
-                    case OP_PREPARE_DOT_NET:
-                        var inMem = GridManager.Memory.Get(arg1);
-                        var outMem = GridManager.Memory.Get(arg2);
-                
-                        PlatformMemoryStream inStream = inMem.Stream();
-                        PlatformMemoryStream outStream = outMem.Stream();
-
-                        GridFactory.OnPrepare(inStream, outStream, handleRegistry);
-
-                        return 0;
-
-                    case OP_DR_ENTRY_FILTER_APPLY:
-                        var holder = grid.HandleRegistry.Get<CacheDrEntryFilterHolder>(arg1, false);
-
-                        if (holder == null)
-                            return 0;
-
-                        return holder.Invoke(grid.Marshaller, arg2) ? 1 : 0;
-
-                    default:
-                        throw new InvalidOperationException("Unsupported operation type: " + op);
-                }
-            }, op == OP_PREPARE_DOT_NET);
         }
         
         #endregion
@@ -1083,10 +1005,10 @@ namespace GridGain.Impl.Unmanaged
                     throw ExceptionUtils.GetJvmInitializeException(errCls, errMsg);
 
                 case ERR_JVM_ATTACH:
-                    throw new GridException("Failed to attach to JVM.");
+                    throw new IgniteException("Failed to attach to JVM.");
 
                 default:
-                    throw new GridException("Unknown exception [cls=" + errCls + ", msg=" + errMsg + ']');
+                    throw new IgniteException("Unknown exception [cls=" + errCls + ", msg=" + errMsg + ']');
             }
         }
 

@@ -15,7 +15,7 @@ namespace GridGain.Impl.Cluster
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Cluster;
     using GridGain.Common;
     using GridGain.Compute;
@@ -415,7 +415,7 @@ namespace GridGain.Impl.Cluster
         /// <param name="version">Topology version.</param>
         /// <returns>Collection of grid nodes which represented by specified topology version, 
         /// if it is present in history storage, {@code null} otherwise.</returns>
-        /// <exception cref="GridException">If underlying SPI implementation does not support 
+        /// <exception cref="IgniteException">If underlying SPI implementation does not support 
         /// topology history. Currently only {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
         /// supports topology history.</exception>
         internal ICollection<IClusterNode> Topology(long version)

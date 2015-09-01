@@ -1,6 +1,7 @@
 ﻿namespace GridGain.Impl.Transactions
 {
     using System;
+    using Apache.Ignite.Core.Common;
     using GridGain.Common;
     using GridGain.Transactions;
 

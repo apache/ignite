@@ -12,6 +12,7 @@ namespace GridGain.Impl.Unmanaged
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using GridGain.Common;
     using U = GridGain.Impl.GridUtils;
@@ -398,7 +399,7 @@ namespace GridGain.Impl.Unmanaged
             PTR = NativeMethods.LoadLibrary(path);
 
             if (PTR == IntPtr.Zero)
-                throw new GridException("Failed to load " + U.FILE_GG_JNI_DLL + ": " + Marshal.GetLastWin32Error());
+                throw new IgniteException("Failed to load " + U.FILE_GG_JNI_DLL + ": " + Marshal.GetLastWin32Error());
 
             REALLOCATE = CreateDelegate<ReallocateDelegate>(PROC_REALLOCATE);
 
@@ -1095,7 +1096,7 @@ namespace GridGain.Impl.Unmanaged
             int res = REALLOCATE(memPtr, cap);
 
             if (res != 0)
-                throw new GridException("Failed to reallocate external memory [ptr=" + memPtr + 
+                throw new IgniteException("Failed to reallocate external memory [ptr=" + memPtr + 
                     ", capacity=" + cap + ']');
         }
 
@@ -1233,7 +1234,7 @@ namespace GridGain.Impl.Unmanaged
             var procPtr = NativeMethods.GetProcAddress(PTR, procName);
 
             if (procPtr == IntPtr.Zero)
-                throw new GridException(string.Format("Unable to find native function: {0} (Error code: {1}). " +
+                throw new IgniteException(string.Format("Unable to find native function: {0} (Error code: {1}). " +
                                                       "Make sure that module.def is up to date",
                     procName, Marshal.GetLastWin32Error()));
 

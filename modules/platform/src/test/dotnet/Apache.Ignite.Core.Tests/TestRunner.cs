@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Diagnostics;
     using System.Reflection;
+    using Apache.Ignite.Core.Tests.Memory;
 
     public static class TestRunner
     {
@@ -58,7 +59,7 @@ namespace Apache.Ignite.Core.Tests
 
         private static void TestAllInAssembly()
         {
-            string[] args = { Assembly.GetAssembly(typeof(IgnitionTest)).Location };
+            string[] args = { Assembly.GetAssembly(typeof(InteropMemoryTest)).Location };
 
             int returnCode = NUnit.ConsoleRunner.Runner.Main(args);
 

@@ -15,15 +15,12 @@ namespace GridGain.Impl
     using GridGain.Cache;
     using GridGain.Cluster;
     using GridGain.Compute;
-    using GridGain.DataCenterReplication;
     using GridGain.Datastream;
     using GridGain.Events;
     using GridGain.Impl.Cluster;
     using GridGain.Impl.Portable;
     using GridGain.Portable;
-    using GridGain.Product;
     using GridGain.Services;
-    using GridGain.Security;
     using GridGain.Transactions;
 
     /// <summary>
@@ -297,12 +294,6 @@ namespace GridGain.Impl
         }
 
         /** <inheritdoc /> */
-        public ISecurity Security
-        {
-            get { return grid.Security; }
-        }
-
-        /** <inheritdoc /> */
         public IMessaging Message()
         {
             return grid.Message();
@@ -327,21 +318,9 @@ namespace GridGain.Impl
         }
 
         /** <inheritdoc /> */
-        public IProduct Product
-        {
-            get { return grid.Product; }
-        }
-
-        /** <inheritdoc /> */
         public IServices Services()
         {
             return grid.Services();
-        }
-
-        /** <inheritdoc /> */
-        public IDataCenterReplication DataCenterReplication
-        {
-            get { return grid.DataCenterReplication; }
         }
 
         /** <inheritdoc /> */

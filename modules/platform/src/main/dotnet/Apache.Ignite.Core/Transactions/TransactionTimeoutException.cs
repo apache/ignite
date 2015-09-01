@@ -11,7 +11,7 @@ namespace GridGain.Transactions
 {
     using System;
     using System.Runtime.Serialization;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Common;
 
     /// <summary>

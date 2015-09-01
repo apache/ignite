@@ -14,6 +14,7 @@ namespace GridGain.Impl.Services
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using Apache.Ignite.Core.Common;
     using GridGain.Cluster;
     using GridGain.Common;
     using GridGain.Impl.Portable;

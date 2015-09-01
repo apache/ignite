@@ -15,6 +15,8 @@ namespace GridGain.Impl.Compute
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using GridGain.Cluster;
     using GridGain.Common;
@@ -96,7 +98,7 @@ namespace GridGain.Impl.Compute
         private readonly bool resCache;
 
         /** Task future. */
-        private readonly IgniteFutureProxy<R> fut = new IgniteFutureProxy<R>();
+        private readonly Future<R> fut = new Future<R>();
                 
         /** Jobs whose results are cached. */
         private ISet<object> resJobs;
@@ -300,8 +302,8 @@ namespace GridGain.Impl.Compute
             {
                 Finish(default(R), e);
 
-                if (!(e is GridException))
-                    throw new GridException("Failed to process job result: " + e.Message, e);
+                if (!(e is IgniteException))
+                    throw new IgniteException("Failed to process job result: " + e.Message, e);
 
                 throw;
             }
@@ -320,8 +322,8 @@ namespace GridGain.Impl.Compute
             {
                 Finish(default(R), e);
 
-                if (!(e is GridException))
-                    throw new GridException("Failed to reduce task: " + e.Message, e);
+                if (!(e is IgniteException))
+                    throw new IgniteException("Failed to reduce task: " + e.Message, e);
 
                 throw;
             }
@@ -368,7 +370,7 @@ namespace GridGain.Impl.Compute
             }
             catch (Exception e)
             {
-                err = new GridException("Task completed with error, but it cannot be unmarshalled: " + e.Message, e);
+                err = new IgniteException("Task completed with error, but it cannot be unmarshalled: " + e.Message, e);
             }
 
             CompleteWithError(taskHandle, err);
@@ -441,8 +443,8 @@ namespace GridGain.Impl.Compute
             {
                 Finish(default(R), e);
 
-                if (!(e is GridException))
-                    throw new GridException("Failed to process job result: " + e.Message, e);
+                if (!(e is IgniteException))
+                    throw new IgniteException("Failed to process job result: " + e.Message, e);
 
                 throw;
             }

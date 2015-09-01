@@ -12,7 +12,7 @@ namespace GridGain.Cache
     using System;
     using System.Collections;
     using System.Collections.Generic;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Cache.Expiry;
     using GridGain.Cache.Query;
     using GridGain.Cache.Query.Continuous;

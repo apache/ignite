@@ -9,6 +9,7 @@
 
 namespace GridGain.Impl.Messaging
 {
+    using Apache.Ignite.Core.Common;
     using GridGain.Cluster;
     using GridGain.Common;
     using GridGain.Impl.Portable;

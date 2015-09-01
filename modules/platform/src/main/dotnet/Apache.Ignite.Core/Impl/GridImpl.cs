@@ -16,7 +16,6 @@ namespace GridGain.Impl
     using GridGain.Cache;
     using GridGain.Cluster;
     using GridGain.Compute;
-    using GridGain.DataCenterReplication;
     using GridGain.Datastream;
     using GridGain.Events;
     using GridGain.Impl.Cache;
@@ -26,9 +25,7 @@ namespace GridGain.Impl
     using GridGain.Impl.Transactions;
     using GridGain.Impl.Unmanaged;
     using GridGain.Portable;
-    using GridGain.Product;
     using GridGain.Services;
-    using GridGain.Security;
     using GridGain.Transactions;
 
     using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
@@ -85,15 +82,6 @@ namespace GridGain.Impl
         private readonly ConcurrentDictionary<Guid, ClusterNodeImpl> nodes = 
             new ConcurrentDictionary<Guid, ClusterNodeImpl>();
 
-        /** Product info. */
-        private readonly IProduct product;
-
-        /** Security info. */
-        private readonly Security.Security security;
-
-        /** DR. */
-        private readonly IDataCenterReplication dr;
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -124,12 +112,6 @@ namespace GridGain.Impl
             cbs.Initialize(this);
 
             txs = new TransactionsImpl(UU.ProcessorTransactions(proc), marsh, LocalNode.Id);
-
-            IUnmanagedTarget ext = UU.ProcessorExtensions(proc);
-
-            product = new Product.Product(UU.TargetOutObject(ext, OP_PRODUCT), marsh);
-            security = new Security.Security(UU.TargetOutObject(ext, OP_SECURITY), marsh, false);
-            dr = new DataCenterReplication.DataCenterReplication(UU.TargetOutObject(ext, OP_DR), marsh);
         }
 
         /// <summary>
@@ -442,12 +424,6 @@ namespace GridGain.Impl
         }
 
         /** <inheritdoc /> */
-        public ISecurity Security
-        {
-            get { return security; }
-        }
-
-        /** <inheritdoc /> */
         public IMessaging Message()
         {
             return prj.Message();
@@ -477,21 +453,9 @@ namespace GridGain.Impl
         }
 
         /** <inheritdoc /> */
-        public IProduct Product
-        {
-            get { return product; }
-        }
-
-        /** <inheritdoc /> */
         public IServices Services()
         {
             return prj.Services();
-        }
-
-        /** <inheritdoc /> */
-        public IDataCenterReplication DataCenterReplication
-        {
-            get { return dr; }
         }
 
         /// <summary>

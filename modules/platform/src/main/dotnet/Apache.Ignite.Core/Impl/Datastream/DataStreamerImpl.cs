@@ -12,7 +12,8 @@ namespace GridGain.Impl.Datastream
     using System;
     using System.Collections.Generic;
     using System.Threading;
-
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using GridGain.Common;
     using GridGain.Datastream;
     using GridGain.Impl.Common;
@@ -72,7 +73,7 @@ namespace GridGain.Impl.Datastream
         private readonly ManualResetEventSlim closedEvt = new ManualResetEventSlim(false);
 
         /** Close future. */
-        private readonly IgniteFutureProxy<object> closeFut = new IgniteFutureProxy<object>();
+        private readonly Future<object> closeFut = new Future<object>();
 
         /** GC handle to this streamer. */
         private readonly long hnd;

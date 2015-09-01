@@ -14,13 +14,10 @@ namespace GridGain
     using GridGain.Cache;
     using GridGain.Cluster;
     using GridGain.Compute;
-    using GridGain.DataCenterReplication;
     using GridGain.Datastream;
     using GridGain.Events;
     using GridGain.Portable;
-    using GridGain.Product;
     using GridGain.Services;
-    using GridGain.Security;
     using GridGain.Transactions;
 
     /// <summary>
@@ -127,11 +124,6 @@ namespace GridGain
         ITransactions Transactions { get; }
 
         /// <summary>
-        /// Gets grid security facade.
-        /// </summary>
-        ISecurity Security { get; }
-
-        /// <summary>
         /// Gets messaging facade over all cluster nodes.
         /// </summary>
         /// <returns>Messaging instance over all cluster nodes.</returns>
@@ -160,19 +152,9 @@ namespace GridGain
         IEvents Events(IClusterGroup clusterGroup);
 
         /// <summary>
-        /// Gets information about product and license management capabilities.
-        /// </summary>
-        IProduct Product { get; }
-
-        /// <summary>
         /// Gets services facade over all cluster nodes.
         /// </summary>
         /// <returns>Services facade over all cluster nodes.</returns>
         IServices Services();
-
-        /// <summary>
-        /// Gets an instance of Data Center Replication.
-        /// </summary>
-        IDataCenterReplication DataCenterReplication { get; }
     }
 }

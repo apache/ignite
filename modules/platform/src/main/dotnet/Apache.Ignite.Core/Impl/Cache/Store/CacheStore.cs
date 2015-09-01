@@ -11,6 +11,7 @@ namespace GridGain.Impl.Cache.Store
 {
     using System.Collections;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using GridGain.Cache.Store;
@@ -135,7 +136,7 @@ namespace GridGain.Impl.Cache.Store
         /// <param name="cb">Callback.</param>
         /// <param name="grid">Grid.</param>
         /// <returns>Invocation result.</returns>
-        /// <exception cref="GridException">Invalid operation type:  + opType</exception>
+        /// <exception cref="IgniteException">Invalid operation type:  + opType</exception>
         public int Invoke(IPortableStream input, IUnmanagedTarget cb, GridImpl grid)
         {
             IPortableReader reader = grid.Marshaller.StartUnmarshal(input,
@@ -210,7 +211,7 @@ namespace GridGain.Impl.Cache.Store
                         break;
 
                     default:
-                        throw new GridException("Invalid operation type: " + opType);
+                        throw new IgniteException("Invalid operation type: " + opType);
                 }
 
                 return 0;

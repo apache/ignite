@@ -13,16 +13,14 @@ namespace GridGain.Impl
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Runtime.InteropServices;
+    using System.Security;
     using System.Threading;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Cache;
     using GridGain.Cache.Store;
     using GridGain.Compute;
     using GridGain.Cluster;
-    using GridGain.Common;
     using GridGain.Impl.Portable;
-    using GridGain.Product;
-    using GridGain.Security;
     using GridGain.Transactions;
 
     using U = GridGain.Impl.GridUtils;
@@ -60,8 +58,8 @@ namespace GridGain.Impl
             EXS["java.lang.InterruptedException"] = m => new ThreadInterruptedException(m);
             
             // Generic Ignite exceptions.
-            EXS["org.apache.ignite.IgniteException"] = m => new GridException(m);
-            EXS["org.apache.ignite.IgniteCheckedException"] = m => new GridException(m);
+            EXS["org.apache.ignite.IgniteException"] = m => new IgniteException(m);
+            EXS["org.apache.ignite.IgniteCheckedException"] = m => new IgniteException(m);
 
             // Cluster exceptions.
             EXS["org.apache.ignite.cluster.ClusterGroupEmptyException"] = m => new ClusterGroupEmptyException(m);
@@ -90,9 +88,6 @@ namespace GridGain.Impl
             // Security exceptions.
             EXS["org.apache.ignite.IgniteAuthenticationException"] = m => new SecurityException(m);
             EXS["org.apache.ignite.plugin.security.GridSecurityException"] = m => new SecurityException(m);
-
-            // Product exceptions.
-            EXS["org.gridgain.grid.product.ProductLicenseException"] = m => new ProductLicenseException(m);
         }
 
         /// <summary>
@@ -109,17 +104,17 @@ namespace GridGain.Impl
                 return ctor(msg);
 
             if (CLS_NO_CLS_DEF_FOUND_ERR.Equals(clsName))
-                return new GridException("Java class is not found (did you set GRIDGAIN_HOME environment " +
+                return new IgniteException("Java class is not found (did you set GRIDGAIN_HOME environment " +
                     "variable?): " + msg);
 
             if (CLS_NO_SUCH_MTHD_ERR.Equals(clsName))
-                return new GridException("Java class method is not found (did you set GRIDGAIN_HOME environment " +
+                return new IgniteException("Java class method is not found (did you set GRIDGAIN_HOME environment " +
                     "variable?): " + msg);
 
             if (CLS_CACHE_PARTIAL_UPDATE_ERR.Equals(clsName))
                 return ProcessCachePartialUpdateException(msg, reader);
             
-            return new GridException("Java exception occurred [class=" + clsName + ", message=" + msg + ']');
+            return new IgniteException("Java exception occurred [class=" + clsName + ", message=" + msg + ']');
         }
 
         /// <summary>
@@ -131,7 +126,7 @@ namespace GridGain.Impl
         private static Exception ProcessCachePartialUpdateException(string msg, PortableReaderImpl reader)
         {
             if (reader == null)
-                return new CachePartialUpdateException(msg, new GridException("Failed keys are not available."));
+                return new CachePartialUpdateException(msg, new IgniteException("Failed keys are not available."));
             
             bool dataExists = reader.ReadBoolean();
 
@@ -172,12 +167,12 @@ namespace GridGain.Impl
         public static Exception GetJvmInitializeException(string clsName, string msg)
         {
             if (clsName != null)
-                return new GridException("Failed to initialize JVM.", GetException(clsName, msg));
+                return new IgniteException("Failed to initialize JVM.", GetException(clsName, msg));
 
             if (msg != null)
-                return new GridException("Failed to initialize JVM: " + msg);
+                return new IgniteException("Failed to initialize JVM: " + msg);
 
-            return new GridException("Failed to initialize JVM.");
+            return new IgniteException("Failed to initialize JVM.");
         }
 
         /// <summary>

@@ -13,6 +13,7 @@ namespace GridGain.Impl
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -631,8 +632,8 @@ namespace GridGain.Impl
                 GRID_FUTURE_TYPE_MAP.TryGetValue(type, out futType);
 
             var fut = convertFunc == null && futType != FutureType.Object
-                ? new IgniteFutureProxy<T>()
-                : new IgniteFutureProxy<T>(new FutureConverter<T>(marsh, keepPortable, convertFunc));
+                ? new Future<T>()
+                : new Future<T>(new FutureConverter<T>(marsh, keepPortable, convertFunc));
 
             var futHnd = marsh.Grid.HandleRegistry.Allocate(fut);
 

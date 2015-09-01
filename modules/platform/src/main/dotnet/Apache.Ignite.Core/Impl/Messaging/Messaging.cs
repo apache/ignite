@@ -14,6 +14,7 @@ namespace GridGain.Impl.Messaging
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Collections;
     using GridGain.Cluster;
     using GridGain.Common;

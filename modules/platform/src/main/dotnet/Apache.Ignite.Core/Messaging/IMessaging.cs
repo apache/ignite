@@ -11,7 +11,7 @@ namespace GridGain
 {
     using System;
     using System.Collections;
-    
+    using Apache.Ignite.Core.Common;
     using GridGain.Cluster;
     using GridGain.Common;
     using GridGain.Messaging;

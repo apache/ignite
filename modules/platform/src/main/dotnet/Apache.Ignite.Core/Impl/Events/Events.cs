@@ -14,6 +14,7 @@ namespace GridGain.Impl.Events
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using GridGain.Cluster;

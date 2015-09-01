@@ -17,6 +17,7 @@ namespace GridGain
     using System.Runtime;
     using System.Runtime.InteropServices;
     using System.Threading;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Memory;

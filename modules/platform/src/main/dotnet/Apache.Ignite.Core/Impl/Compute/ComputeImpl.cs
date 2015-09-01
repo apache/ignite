@@ -17,6 +17,7 @@ namespace GridGain.Impl.Compute
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using GridGain.Cluster;
     using GridGain.Common;
@@ -205,7 +206,7 @@ namespace GridGain.Impl.Compute
             var task0 = task as IComputeTask<A, T, R>;
 
             if (task0 == null)
-                throw new GridException("Task type doesn't implement IComputeTask: " + taskType.Name);
+                throw new IgniteException("Task type doesn't implement IComputeTask: " + taskType.Name);
 
             return Execute(task0, taskArg);
         }

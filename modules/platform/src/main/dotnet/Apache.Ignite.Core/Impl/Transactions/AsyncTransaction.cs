@@ -11,7 +11,7 @@ namespace GridGain.Impl.Transactions
 {
     using System;
     using System.Threading;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Common;
 
     /// <summary>

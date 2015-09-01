@@ -11,7 +11,8 @@ namespace GridGain.Impl.Transactions
 {
     using System;
     using System.Threading;
-
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using GridGain.Common;
     using GridGain.Impl.Common;
     using GridGain.Transactions;
@@ -412,7 +413,7 @@ namespace GridGain.Impl.Transactions
         /// </summary>
         private IFuture GetExceptionFuture()
         {
-            var fut = new IgniteFutureProxy<object>();
+            var fut = new Future<object>();
 
             fut.OnError(GetClosedException());
 

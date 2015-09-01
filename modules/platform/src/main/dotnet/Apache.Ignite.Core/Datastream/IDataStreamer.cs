@@ -11,7 +11,7 @@ namespace GridGain.Datastream
 {
     using System;
     using System.Collections.Generic;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Cache.Store;
     using GridGain.Common;
 

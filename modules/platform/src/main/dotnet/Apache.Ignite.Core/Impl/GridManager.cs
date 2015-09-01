@@ -17,9 +17,8 @@ namespace GridGain.Impl
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Memory;
-    using GridGain.Common;
-    using GridGain.Impl.Memory;
     using GridGain.Impl.Unmanaged;
     
     using U = GridGain.Impl.GridUtils;
@@ -105,7 +104,7 @@ namespace GridGain.Impl
                 {
                     CTX = ctx;
                     JVM_CFG = jvmCfg;
-                    MEM = new InteropMemoryManager(1024);
+                    MEM = new PlatformMemoryManager(1024);
                 }
 
                 return ctx;
@@ -250,12 +249,12 @@ namespace GridGain.Impl
             if (string.IsNullOrWhiteSpace(home))
                 home = Environment.GetEnvironmentVariable(ENV_GRIDGAIN_HOME);
             else if (!IsGridGainHome(new DirectoryInfo(home)))
-                throw new GridException(string.Format("GridConfiguration.GridGainHome is not valid: '{0}'", home));
+                throw new IgniteException(string.Format("GridConfiguration.GridGainHome is not valid: '{0}'", home));
 
             if (string.IsNullOrWhiteSpace(home))
                 home = ResolveGridGainHome();
             else if (!IsGridGainHome(new DirectoryInfo(home)))
-                throw new GridException(string.Format("{0} is not valid: '{1}'", ENV_GRIDGAIN_HOME, home));
+                throw new IgniteException(string.Format("{0} is not valid: '{1}'", ENV_GRIDGAIN_HOME, home));
 
             return home;
         }

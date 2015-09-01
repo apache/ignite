@@ -16,6 +16,7 @@ namespace GridGain.Impl
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Apache.Ignite.Core.Common;
     using GridGain.Cluster;
     using GridGain.Common;
     using GridGain.Impl.Cluster;
@@ -137,7 +138,7 @@ namespace GridGain.Impl
             var type = new TypeResolver().ResolveType(clsName, assemblyName);
 
             if (type == null)
-                throw new GridException("Failed to create class instance [assemblyName=" + assemblyName +
+                throw new IgniteException("Failed to create class instance [assemblyName=" + assemblyName +
                     ", className=" + clsName + ']');
 
             return Activator.CreateInstance(type);
@@ -163,7 +164,7 @@ namespace GridGain.Impl
                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
                 if (prop0 == null)
-                    throw new GridException("Property is not found [type=" + typ.Name + 
+                    throw new IgniteException("Property is not found [type=" + typ.Name + 
                         ", property=" + prop.Key + ']');
 
                 prop0.SetValue(target, prop.Value, null);
@@ -193,10 +194,10 @@ namespace GridGain.Impl
                 messages.Add(string.Format("Please specify GridConfiguration.JvmDllPath or {0}.", ENV_JAVA_HOME));
 
             if (messages.Count == 1)
-                throw new GridException(string.Format("Failed to load {0} ({1})", FILE_JVM_DLL, messages[0]));
+                throw new IgniteException(string.Format("Failed to load {0} ({1})", FILE_JVM_DLL, messages[0]));
 
             var combinedMessage = messages.Aggregate((x, y) => string.Format("{0}\n{1}", x, y));
-            throw new GridException(string.Format("Failed to load {0}:\n{1}", FILE_JVM_DLL, combinedMessage));
+            throw new IgniteException(string.Format("Failed to load {0}:\n{1}", FILE_JVM_DLL, combinedMessage));
         }
 
         /// <summary>

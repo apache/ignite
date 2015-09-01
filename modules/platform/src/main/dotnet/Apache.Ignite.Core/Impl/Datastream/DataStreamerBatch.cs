@@ -14,7 +14,8 @@ namespace GridGain.Impl.Datastream
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
-
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using GridGain.Common;
     using GridGain.Impl.Common;
     using GridGain.Impl.Portable;
@@ -41,7 +42,7 @@ namespace GridGain.Impl.Datastream
         private bool sndGuard;
 
         /** */
-        private readonly IgniteFutureProxy<object> fut = new IgniteFutureProxy<object>();
+        private readonly Future<object> fut = new Future<object>();
 
         /// <summary>
         /// Constructor.

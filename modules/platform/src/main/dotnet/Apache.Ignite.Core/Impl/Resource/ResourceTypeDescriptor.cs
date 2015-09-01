@@ -12,7 +12,7 @@ namespace GridGain.Impl.Resource
     using System;
     using System.Collections.Generic;
     using System.Reflection;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Cache.Store;
     using GridGain.Common;
     using GridGain.Compute;
@@ -148,7 +148,7 @@ namespace GridGain.Impl.Resource
                         continue;
 
                     if (!field.FieldType.IsAssignableFrom(collector.ResourceType))
-                        throw new GridException("Invalid field type for resource attribute [" + 
+                        throw new IgniteException("Invalid field type for resource attribute [" + 
                             "type=" + type.Name +
                             ", field=" + field.Name + 
                             ", fieldType=" + field.FieldType.Name + 
@@ -168,13 +168,13 @@ namespace GridGain.Impl.Resource
                         continue;
 
                     if (!prop.CanWrite)
-                        throw new GridException("Property with resource attribute is not writable [" +
+                        throw new IgniteException("Property with resource attribute is not writable [" +
                             "type=" + type.Name + 
                             ", property=" + prop.Name +
                             ", resourceType=" + collector.ResourceType.Name + ']');
 
                     if (!prop.PropertyType.IsAssignableFrom(collector.ResourceType))
-                        throw new GridException("Invalid property type for resource attribute [" + 
+                        throw new IgniteException("Invalid property type for resource attribute [" + 
                             "type=" + type.Name +
                             ", property=" + prop.Name + 
                             ", propertyType=" + prop.PropertyType.Name + 
@@ -196,13 +196,13 @@ namespace GridGain.Impl.Resource
                     ParameterInfo[] parameters = mthd.GetParameters();
 
                     if (parameters.Length != 1)
-                        throw new GridException("Method with resource attribute must have only one parameter [" + 
+                        throw new IgniteException("Method with resource attribute must have only one parameter [" + 
                             "type=" + type.Name + 
                             ", method=" + mthd.Name +
                             ", resourceType=" + collector.ResourceType.Name + ']');
 
                     if (!parameters[0].ParameterType.IsAssignableFrom(collector.ResourceType))
-                        throw new GridException("Invalid method parameter type for resource attribute [" +
+                        throw new IgniteException("Invalid method parameter type for resource attribute [" +
                             "type=" + type.Name + 
                             ", method=" + mthd.Name + 
                             ", methodParameterType=" + parameters[0].ParameterType.Name + 

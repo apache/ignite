@@ -11,6 +11,7 @@ namespace GridGain.Impl.Compute
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using GridGain.Common;
@@ -224,7 +225,7 @@ namespace GridGain.Impl.Compute
             }
             catch (Exception e)
             {
-                throw new GridException("Failed to deserialize the job [errType=" + e.GetType().Name +
+                throw new IgniteException("Failed to deserialize the job [errType=" + e.GetType().Name +
                     ", errMsg=" + e.Message + ']');
             }
         }

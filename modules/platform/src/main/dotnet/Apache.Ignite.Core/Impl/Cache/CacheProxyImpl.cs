@@ -14,7 +14,7 @@ namespace GridGain.Impl.Cache
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Cache;
     using GridGain.Cache.Expiry;
     using GridGain.Cache.Query;
