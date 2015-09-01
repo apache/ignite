@@ -55,7 +55,7 @@ public class CacheApiExample {
             cfg.setCacheMode(CacheMode.PARTITIONED);
             cfg.setName(CACHE_NAME);
 
-            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
+            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cfg)) {
                 // Demonstrate atomic map operations.
                 atomicMapOperations(cache);
             }

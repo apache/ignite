@@ -199,7 +199,7 @@ public class HibernateL2CacheExample {
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        return Ignition.ignite().createCache(ccfg);
+        return Ignition.ignite().getOrCreateCache(ccfg);
     }
 
     /**

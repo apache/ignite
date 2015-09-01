@@ -51,7 +51,7 @@ public final class CacheAffinityExample {
             cfg.setCacheMode(CacheMode.PARTITIONED);
             cfg.setName(CACHE_NAME);
 
-            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
+            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cfg)) {
                 for (int i = 0; i < KEY_CNT; i++)
                     cache.put(i, Integer.toString(i));
 
