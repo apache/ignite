@@ -738,6 +738,11 @@
                                         <exclude>src/main/dotnet/Apache.Ignite.sln</exclude>
                                         <exclude>src/main/dotnet/Apache.Ignite.sln.DotSettings</exclude>
                                         <exclude>src/test/dotnet/Apache.Ignite.Core.Tests/Apache.Ignite.Core.Tests.csproj</exclude>
+                                        <exclude>**/Makefile.am</exclude>
+                                        <exclude>**/configure.ac</exclude>
+                                        <exclude>**/*.vcsproj</exclude>
+                                        <exclude>**/*.vcsproj.filters</exclude>
+                                        <exclude>**/module.def</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
