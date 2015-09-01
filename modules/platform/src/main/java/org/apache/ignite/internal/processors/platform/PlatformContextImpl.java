@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -54,7 +53,6 @@ import org.apache.ignite.internal.processors.platform.compute.PlatformAbstractTa
 import org.apache.ignite.internal.processors.platform.compute.PlatformClosureJob;
 import org.apache.ignite.internal.processors.platform.compute.PlatformFullJob;
 import org.apache.ignite.internal.processors.platform.compute.PlatformJob;
-import org.apache.ignite.internal.processors.platform.compute.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.datastreamer.PlatformStreamReceiver;
 import org.apache.ignite.internal.processors.platform.datastreamer.PlatformStreamReceiverImpl;
 import org.apache.ignite.internal.processors.platform.events.PlatformEventFilterListenerImpl;
@@ -587,7 +585,7 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCheckedException createNativeException(Object cause) {
+    @Override public PlatformNativeException createNativeException(Object cause) {
         return new PlatformNativeException(cause);
     }
 

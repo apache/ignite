@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.compute;
+package org.apache.ignite.internal.processors.platform;
+
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.processors.platform.PlatformException;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Exception occurred on native side.
@@ -35,7 +35,7 @@ public class PlatformNativeException extends PlatformException implements Extern
     protected Object cause;
 
     /**
-     * {@link Externalizable} support.
+     * {@link java.io.Externalizable} support.
      */
     @SuppressWarnings("UnusedDeclaration")
     public PlatformNativeException() {
