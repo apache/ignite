@@ -25,7 +25,7 @@ namespace GridGain.Compute
     /// <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{T}, IList{IComputeJobResult{T}})"/>
     /// method via <see cref="IComputeJobResult{T}"/> instance. 
     /// <para />
-    /// Grid job implementation can be injected with <see cref="GridGain.IGrid"/> using 
+    /// Grid job implementation can be injected with <see cref="IIgnite"/> using 
     /// <see cref="InstanceResourceAttribute"/> attribute.
     /// </summary>
     public interface IComputeJob<out T>

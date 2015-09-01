@@ -390,7 +390,7 @@ namespace GridGain.Client.Compute
         class TestJob<T> : ComputeJobAdapter<T>
         {
             [InstanceResource]
-            private IGrid grid = null;
+            private IIgnite grid = null;
 
             /** <inheritDoc /> */
             override public T Execute()
@@ -411,7 +411,7 @@ namespace GridGain.Client.Compute
         class TestPortableJob : ComputeJobAdapter<PortableResult>
         {
             [InstanceResource]
-            private IGrid grid = null;
+            private IIgnite grid = null;
 
             /** <inheritDoc /> */
             override public PortableResult Execute()

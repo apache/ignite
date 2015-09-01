@@ -32,7 +32,7 @@ namespace GridGain.Cache.Store
         public static bool loadObjects;
 
         [InstanceResource]
-        private IGrid grid = null;
+        private IIgnite grid = null;
 
         [StoreSessionResource]
 #pragma warning disable 649

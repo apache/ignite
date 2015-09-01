@@ -89,7 +89,7 @@ namespace GridGain.Client
         /// </summary>
         /// <param name="grid">Grid.</param>
         /// <param name="arg">Task arg.</param>
-        private static void CheckTask(IGrid grid, object arg)
+        private static void CheckTask(IIgnite grid, object arg)
         {
             var jobResult = grid.Compute().Execute(new CombineStringsTask(), arg);
 

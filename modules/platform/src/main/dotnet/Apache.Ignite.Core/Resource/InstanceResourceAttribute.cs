@@ -14,7 +14,7 @@ namespace GridGain.Resource
     using GridGain.Compute;
 
     /// <summary>
-    /// Attribute which injects <see cref="GridGain.IGrid"/> instance. Can be defined inside
+    /// Attribute which injects <see cref="IIgnite"/> instance. Can be defined inside
     /// implementors of <see cref="IComputeTask{A,T,R}"/> and <see cref="IComputeJob"/> interfaces.
     /// Can be applied to non-static fields, properties and methods returning <c>void</c> and 
     /// accepting a single parameter.

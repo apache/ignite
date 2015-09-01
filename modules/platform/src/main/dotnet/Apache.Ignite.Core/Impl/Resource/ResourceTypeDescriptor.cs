@@ -30,7 +30,7 @@ namespace GridGain.Impl.Resource
         private static readonly Type TYP_ATTR_STORE_SES = typeof(StoreSessionResourceAttribute);
 
         /** Type: IGrid. */
-        private static readonly Type TYP_GRID = typeof(IGrid);
+        private static readonly Type TYP_GRID = typeof(IIgnite);
 
         /** Type: ICacheStoreSession. */
         private static readonly Type TYP_STORE_SES = typeof (ICacheStoreSession);

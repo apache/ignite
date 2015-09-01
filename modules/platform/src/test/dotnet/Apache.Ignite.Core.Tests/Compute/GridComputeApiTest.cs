@@ -98,13 +98,13 @@ namespace GridGain.Client.Compute
         private const int ECHO_TYPE_ENUM_ARRAY = 17;
 
         /** First node. */
-        private IGrid grid1;
+        private IIgnite grid1;
 
         /** Second node. */
-        private IGrid grid2;
+        private IIgnite grid2;
 
         /** Third node. */
-        private IGrid grid3;
+        private IIgnite grid3;
 
         /// <summary>
         /// Initialization routine.
@@ -1212,7 +1212,7 @@ namespace GridGain.Client.Compute
     {
         [InstanceResource]
         #pragma warning disable 649
-        private IGrid grid;
+        private IIgnite grid;
 
         public static int invokeCount;
 
@@ -1239,7 +1239,7 @@ namespace GridGain.Client.Compute
     class ComputeFunc : INestedComputeFunc, IUserInterface<int>
     {
         [InstanceResource]
-        private IGrid grid;
+        private IIgnite grid;
 
         public static int invokeCount;
 

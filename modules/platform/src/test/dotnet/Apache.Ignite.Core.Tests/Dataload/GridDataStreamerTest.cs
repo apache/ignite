@@ -36,7 +36,7 @@ namespace GridGain.Client.Dataload
         protected const string CACHE_NAME = "partitioned";
 
         /** Node. */
-        private IGrid grid;
+        private IIgnite grid;
 
         /** Cache. */
         private ICache<int, int?> cache;

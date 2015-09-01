@@ -29,13 +29,13 @@ namespace GridGain.Client
     public class GridMessagingTest
     {
         /** */
-        private IGrid grid1;
+        private IIgnite grid1;
 
         /** */
-        private IGrid grid2;
+        private IIgnite grid2;
 
         /** */
-        private IGrid grid3;
+        private IIgnite grid3;
 
         /** */
         public static int messageId;
@@ -411,7 +411,7 @@ namespace GridGain.Client
         /// <param name="remoteListen">Whether to expect remote listeners.</param>
         /// <param name="single">When true, only check one message.</param>
         /// <param name="repeatMultiplier">Expected message count multiplier.</param>
-        private void CheckSend(object topic = null, IGrid grid = null,
+        private void CheckSend(object topic = null, IIgnite grid = null,
             IMessaging msg = null, bool remoteListen = false, bool single = false, int repeatMultiplier = 1)
         {
             IClusterGroup cluster;
@@ -456,7 +456,7 @@ namespace GridGain.Client
         /// <summary>
         /// Checks that no message has arrived.
         /// </summary>
-        private void CheckNoMessage(object topic, IGrid grid = null)
+        private void CheckNoMessage(object topic, IIgnite grid = null)
         {
             // this will result in an exception in case of a message
             MessagingTestHelper.ClearReceived(0);
@@ -617,7 +617,7 @@ namespace GridGain.Client
         #pragma warning disable 649
         /** Grid. */
         [InstanceResource]
-        private IGrid grid;
+        private IIgnite grid;
         #pragma warning restore 649
 
         /// <summary>

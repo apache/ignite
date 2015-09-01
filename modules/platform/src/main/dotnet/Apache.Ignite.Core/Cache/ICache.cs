@@ -22,7 +22,7 @@ namespace GridGain.Cache
 
     /// <summary>
     /// Main entry point for all Data Grid APIs. You can get a named cache by calling
-    /// <see cref="GridGain.IGrid.Cache{K, V}(string)"/> method.
+    /// <see cref="IIgnite.Cache{K, V}(string)"/> method.
     /// <para />
     /// Cache API supports distributed transactions. All <c>Get(...)</c>, <c>Put(...)</c>, <c>Replace(...)</c>,
     /// and <c>Remove(...)</c> operations are transactional and will participate in an ongoing transaction,
@@ -54,7 +54,7 @@ namespace GridGain.Cache
         /// <summary>
         /// Grid hosting this cache.
         /// </summary>
-        IGrid Grid { get; }
+        IIgnite Grid { get; }
 
         /// <summary>
         /// Checks whether this cache contains no key-value mappings.

@@ -37,16 +37,16 @@ namespace GridGain.Client.Services
         private const int AFF_KEY = 25;
 
         /** */
-        protected IGrid grid1;
+        protected IIgnite grid1;
 
         /** */
-        protected IGrid grid2;
+        protected IIgnite grid2;
 
         /** */
-        protected IGrid grid3;
+        protected IIgnite grid3;
 
         /** */
-        protected IGrid[] grids;
+        protected IIgnite[] grids;
 
         [TestFixtureTearDown]
         public void FixtureTearDown()
@@ -530,7 +530,7 @@ namespace GridGain.Client.Services
         /// <summary>
         /// Checks that service has started on specified grid.
         /// </summary>
-        private static void CheckServiceStarted(IGrid grid, int count = 1)
+        private static void CheckServiceStarted(IIgnite grid, int count = 1)
         {
             var services = grid.Services().GetServices<TestGridServiceSerializable>(SVC_NAME);
 
@@ -635,7 +635,7 @@ namespace GridGain.Client.Services
         {
             /** */
             [InstanceResource]
-            private IGrid grid;
+            private IIgnite grid;
 
             /** <inheritdoc /> */
             public int TestProperty { get; set; }

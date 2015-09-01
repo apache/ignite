@@ -103,7 +103,7 @@ namespace GridGain.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IGrid Grid
+        public IIgnite Grid
         {
             get { return cache.Grid; }
         }

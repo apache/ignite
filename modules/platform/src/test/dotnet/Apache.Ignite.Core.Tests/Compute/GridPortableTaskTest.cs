@@ -56,7 +56,7 @@ namespace GridGain.Client.Compute
             Assert.AreEqual(400, resObj.val);
         }
 
-        private static IPortableObject ToPortable(IGrid grid, object obj)
+        private static IPortableObject ToPortable(IIgnite grid, object obj)
         {
             var cache = grid.Cache<object, object>(CACHE1_NAME).WithKeepPortable<object, object>();
 
@@ -81,11 +81,11 @@ namespace GridGain.Client.Compute
         public class TestTask : ComputeTaskAdapter<IPortableObject, IPortableObject, IPortableObject>
         {
             /** */
-            private readonly IGrid grid;
+            private readonly IIgnite grid;
 
             private readonly IPortableObject taskArgField;
 
-            public TestTask(IGrid grid, IPortableObject taskArgField)
+            public TestTask(IIgnite grid, IPortableObject taskArgField)
             {
                 this.grid = grid;
                 this.taskArgField = taskArgField;
@@ -220,7 +220,7 @@ namespace GridGain.Client.Compute
         class PortableJob : IComputeJob<IPortableObject>
         {
             [InstanceResource]
-            private IGrid grid = null;
+            private IIgnite grid = null;
             
             /** */
             public IPortableObject arg;

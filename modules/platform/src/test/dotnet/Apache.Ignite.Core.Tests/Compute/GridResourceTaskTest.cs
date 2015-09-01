@@ -155,17 +155,17 @@ namespace GridGain.Client.Compute
         {
             /** */
             [InstanceResource]
-            private static IGrid staticGrid1;
+            private static IIgnite staticGrid1;
 
             /** */
             [InstanceResource]
-            public static IGrid staticGrid2;
+            public static IIgnite staticGrid2;
 
             /// <summary>
             ///
             /// </summary>
             [InstanceResource]
-            public static IGrid StaticPropGrid1
+            public static IIgnite StaticPropGrid1
             {
                 get { return staticGrid1; }
                 set { staticGrid1 = value; }
@@ -175,7 +175,7 @@ namespace GridGain.Client.Compute
             ///
             /// </summary>
             [InstanceResource]
-            private static IGrid StaticPropGrid2
+            private static IIgnite StaticPropGrid2
             {
                 get { return staticGrid2; }
                 set { staticGrid2 = value; }
@@ -186,7 +186,7 @@ namespace GridGain.Client.Compute
             /// </summary>
             /// <param name="grid"></param>
             [InstanceResource]
-            public static void StaticMethod1(IGrid grid)
+            public static void StaticMethod1(IIgnite grid)
             {
                 staticGrid1 = grid;
             }
@@ -196,7 +196,7 @@ namespace GridGain.Client.Compute
             /// </summary>
             /// <param name="grid"></param>
             [InstanceResource]
-            private static void StaticMethod2(IGrid grid)
+            private static void StaticMethod2(IIgnite grid)
             {
                 staticGrid2 = grid;
             }
@@ -221,23 +221,23 @@ namespace GridGain.Client.Compute
 
             /** */
             [InstanceResource]
-            private readonly IGrid grid1 = null;
+            private readonly IIgnite grid1 = null;
 
             /** */
             [InstanceResource]
-            public IGrid grid2;
+            public IIgnite grid2;
 
             /** */
-            private IGrid mthdGrid1;
+            private IIgnite mthdGrid1;
 
             /** */
-            private IGrid mthdGrid2;
+            private IIgnite mthdGrid2;
 
             /// <summary>
             ///
             /// </summary>
             [InstanceResource]
-            public IGrid PropGrid1
+            public IIgnite PropGrid1
             {
                 get;
                 set;
@@ -247,7 +247,7 @@ namespace GridGain.Client.Compute
             ///
             /// </summary>
             [InstanceResource]
-            private IGrid PropGrid2
+            private IIgnite PropGrid2
             {
                 get;
                 set;
@@ -258,7 +258,7 @@ namespace GridGain.Client.Compute
             /// </summary>
             /// <param name="grid"></param>
             [InstanceResource]
-            public void Method1(IGrid grid)
+            public void Method1(IIgnite grid)
             {
                 mthdGrid1 = grid;
             }
@@ -268,7 +268,7 @@ namespace GridGain.Client.Compute
             /// </summary>
             /// <param name="grid"></param>
             [InstanceResource]
-            private void Method2(IGrid grid)
+            private void Method2(IIgnite grid)
             {
                 mthdGrid2 = grid;
             }
@@ -347,17 +347,17 @@ namespace GridGain.Client.Compute
         {
             /** */
             [InstanceResource]
-            private static IGrid staticGrid1;
+            private static IIgnite staticGrid1;
 
             /** */
             [InstanceResource]
-            public static IGrid staticGrid2;
+            public static IIgnite staticGrid2;
 
             /// <summary>
             ///
             /// </summary>
             [InstanceResource]
-            public static IGrid StaticPropGrid1
+            public static IIgnite StaticPropGrid1
             {
                 get { return staticGrid1; }
                 set { staticGrid1 = value; }
@@ -367,7 +367,7 @@ namespace GridGain.Client.Compute
             ///
             /// </summary>
             [InstanceResource]
-            private static IGrid StaticPropGrid2
+            private static IIgnite StaticPropGrid2
             {
                 get { return staticGrid2; }
                 set { staticGrid2 = value; }
@@ -378,7 +378,7 @@ namespace GridGain.Client.Compute
             /// </summary>
             /// <param name="grid"></param>
             [InstanceResource]
-            public static void StaticMethod1(IGrid grid)
+            public static void StaticMethod1(IIgnite grid)
             {
                 staticGrid1 = grid;
             }
@@ -388,7 +388,7 @@ namespace GridGain.Client.Compute
             /// </summary>
             /// <param name="grid"></param>
             [InstanceResource]
-            private static void StaticMethod2(IGrid grid)
+            private static void StaticMethod2(IIgnite grid)
             {
                 staticGrid2 = grid;
             }
@@ -413,23 +413,23 @@ namespace GridGain.Client.Compute
 
             /** */
             [InstanceResource]
-            private readonly IGrid grid1 = null;
+            private readonly IIgnite grid1 = null;
 
             /** */
             [InstanceResource]
-            public IGrid grid2;
+            public IIgnite grid2;
 
             /** */
-            private IGrid mthdGrid1;
+            private IIgnite mthdGrid1;
 
             /** */
-            private IGrid mthdGrid2;
+            private IIgnite mthdGrid2;
 
             /// <summary>
             ///
             /// </summary>
             [InstanceResource]
-            public IGrid PropGrid1
+            public IIgnite PropGrid1
             {
                 get;
                 set;
@@ -439,7 +439,7 @@ namespace GridGain.Client.Compute
             ///
             /// </summary>
             [InstanceResource]
-            private IGrid PropGrid2
+            private IIgnite PropGrid2
             {
                 get;
                 set;
@@ -450,7 +450,7 @@ namespace GridGain.Client.Compute
             /// </summary>
             /// <param name="grid"></param>
             [InstanceResource]
-            public void Method1(IGrid grid)
+            public void Method1(IIgnite grid)
             {
                 mthdGrid1 = grid;
             }
@@ -460,7 +460,7 @@ namespace GridGain.Client.Compute
             /// </summary>
             /// <param name="grid"></param>
             [InstanceResource]
-            private void Method2(IGrid grid)
+            private void Method2(IIgnite grid)
             {
                 mthdGrid2 = grid;
             }

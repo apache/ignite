@@ -59,7 +59,7 @@ namespace GridGain.Cache
         [Test]
         public void TestAffinity()
         {
-            IGrid g = GridFactory.Grid("grid-0");
+            IIgnite g = GridFactory.Grid("grid-0");
 
             ICacheAffinity aff = g.Affinity(null);
 
@@ -75,7 +75,7 @@ namespace GridGain.Cache
         [Test]
         public void TestAffinityPortable()
         {
-            IGrid g = GridFactory.Grid("grid-0");
+            IIgnite g = GridFactory.Grid("grid-0");
 
             ICacheAffinity aff = g.Affinity(null);  
 

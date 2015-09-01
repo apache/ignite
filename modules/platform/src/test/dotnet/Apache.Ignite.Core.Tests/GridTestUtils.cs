@@ -204,7 +204,7 @@ namespace GridGain.Client
         /// <returns>
         ///   <c>True</c> if topology took required size.
         /// </returns>
-        public static bool WaitTopology(this IGrid grid, int size, int timeout)
+        public static bool WaitTopology(this IIgnite grid, int size, int timeout)
         {
             int left = timeout;
 
@@ -233,7 +233,7 @@ namespace GridGain.Client
         /// </summary>
         /// <param name="timeout">Timeout, in milliseconds.</param>
         /// <param name="grids">Grids to check.</param>
-        public static void AssertHandleRegistryIsEmpty(int timeout, params IGrid[] grids)
+        public static void AssertHandleRegistryIsEmpty(int timeout, params IIgnite[] grids)
         {
             foreach (var g in grids)
                 AssertHandleRegistryIsEmpty(g, timeout);
@@ -244,7 +244,7 @@ namespace GridGain.Client
         /// </summary>
         /// <param name="grid">The grid to check.</param>
         /// <param name="timeout">Timeout, in milliseconds.</param>
-        public static void AssertHandleRegistryIsEmpty(IGrid grid, int timeout)
+        public static void AssertHandleRegistryIsEmpty(IIgnite grid, int timeout)
         {
             var handleRegistry = ((GridImpl)grid).HandleRegistry;
 

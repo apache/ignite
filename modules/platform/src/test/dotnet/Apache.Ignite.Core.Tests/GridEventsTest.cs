@@ -31,16 +31,16 @@ namespace GridGain.Client
     public class GridEventsTest
     {
         /** */
-        private IGrid grid1;
+        private IIgnite grid1;
 
         /** */
-        private IGrid grid2;
+        private IIgnite grid2;
 
         /** */
-        private IGrid grid3;
+        private IIgnite grid3;
 
         /** */
-        private IGrid[] grids;
+        private IIgnite[] grids;
         
         /** */
         public static int idGen;
@@ -632,7 +632,7 @@ namespace GridGain.Client
         /// <summary>
         /// Generates the task event.
         /// </summary>
-        private void GenerateTaskEvent(IGrid grid = null)
+        private void GenerateTaskEvent(IIgnite grid = null)
         {
             (grid ?? grid1).Compute().Broadcast(new ComputeAction());
         }
@@ -653,7 +653,7 @@ namespace GridGain.Client
         /// <summary>
         /// Generates the cache query event.
         /// </summary>
-        private static void GenerateCacheQueryEvent(IGrid g)
+        private static void GenerateCacheQueryEvent(IIgnite g)
         {
             var cache = g.Cache<int, int>(null);
 
@@ -667,7 +667,7 @@ namespace GridGain.Client
         /// <summary>
         /// Verifies the cache events.
         /// </summary>
-        private static void VerifyCacheEvents(IEnumerable<IEvent> events, IGrid grid)
+        private static void VerifyCacheEvents(IEnumerable<IEvent> events, IIgnite grid)
         {
             var e = events.Cast<CacheEvent>().ToArray();
 
@@ -937,12 +937,12 @@ namespace GridGain.Client
         /// <summary>
         /// Gets or sets the generate event action.
         /// </summary>
-        public Action<IGrid> GenerateEvent { get; set; }
+        public Action<IIgnite> GenerateEvent { get; set; }
 
         /// <summary>
         /// Gets or sets the verify events action.
         /// </summary>
-        public Action<IEnumerable<IEvent>, IGrid> VerifyEvents { get; set; }
+        public Action<IEnumerable<IEvent>, IIgnite> VerifyEvents { get; set; }
 
         /// <summary>
         /// Gets or sets the event count.

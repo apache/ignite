@@ -75,7 +75,7 @@ namespace GridGain.Client
         public void TestWithoutBeans()
         {
             // 1. Test start events.
-            IGrid grid = Start(CFG_NO_BEANS);
+            IIgnite grid = Start(CFG_NO_BEANS);
 
             Assert.AreEqual(2, beforeStartEvts.Count);
             CheckEvent(beforeStartEvts[0], null, null, 0, null);
@@ -107,7 +107,7 @@ namespace GridGain.Client
         public void TestWithBeans()
         {
             // 1. Test .Net start events.
-            IGrid grid = Start(CFG_BEANS);
+            IIgnite grid = Start(CFG_BEANS);
 
             Assert.AreEqual(4, beforeStartEvts.Count);
             CheckEvent(beforeStartEvts[0], null, null, 0, null);
@@ -158,7 +158,7 @@ namespace GridGain.Client
 
             try
             {
-                IGrid grid = Start(CFG_NO_BEANS);
+                IIgnite grid = Start(CFG_NO_BEANS);
 
                 Assert.Fail("Should not reach this place.");
             }
@@ -173,7 +173,7 @@ namespace GridGain.Client
         /// </summary>
         /// <param name="cfgPath">Spring configuration path.</param>
         /// <returns>Grid.</returns>
-        private static IGrid Start(string cfgPath)
+        private static IIgnite Start(string cfgPath)
         {
             GridTestUtils.JVM_DEBUG = true;
 
@@ -196,7 +196,7 @@ namespace GridGain.Client
         /// <param name="expGrid2">Expected grid 2.</param>
         /// <param name="expProp1">Expected property 1.</param>
         /// <param name="expProp2">Expected property 2.</param>
-        private static void CheckEvent(Event evt, IGrid expGrid1, IGrid expGrid2, int expProp1, string expProp2)
+        private static void CheckEvent(Event evt, IIgnite expGrid1, IIgnite expGrid2, int expProp1, string expProp2)
         {
             if (evt.grid1 != null && evt.grid1 is GridProxy)
                 evt.grid1 = (evt.grid1 as GridProxy).Target;
@@ -214,7 +214,7 @@ namespace GridGain.Client
     public abstract class AbstractBean
     {
         [InstanceResource]
-        public IGrid grid1;
+        public IIgnite grid1;
 
         public int Property1
         {
@@ -226,7 +226,7 @@ namespace GridGain.Client
     public class Bean : AbstractBean, ILifecycleBean
     {
         [InstanceResource]
-        public IGrid grid2;
+        public IIgnite grid2;
 
         public string Property2
         {
@@ -274,8 +274,8 @@ namespace GridGain.Client
 
     public class Event
     {
-        public IGrid grid1;
-        public IGrid grid2;
+        public IIgnite grid1;
+        public IIgnite grid2;
         public int prop1;
         public string prop2;
     }

@@ -69,7 +69,7 @@ namespace GridGain.Cache
         }
 
         /** <inheritDoc /> */
-        public IGrid Grid
+        public IIgnite Grid
         {
             get { return cache.Grid; }
         }

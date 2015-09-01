@@ -358,7 +358,7 @@ namespace GridGain.Cache
             Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
         }
 
-        public IGrid Grid(int idx)
+        public IIgnite Grid(int idx)
         {
             return GridFactory.Grid("grid-" + idx);
         }

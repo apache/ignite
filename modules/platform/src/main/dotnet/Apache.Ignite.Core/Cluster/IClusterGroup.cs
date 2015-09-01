@@ -47,7 +47,7 @@ namespace GridGain.Cluster
         /// <summary>
         /// Instance of grid.
         /// </summary>
-        IGrid Grid
+        IIgnite Grid
         {
             get;
         }

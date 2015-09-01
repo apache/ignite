@@ -204,7 +204,7 @@ namespace GridGain.Client
         /// <summary>
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
-        private static void TestPartialUpdateException<K>(bool async, Func<int, IGrid, K> keyFunc)
+        private static void TestPartialUpdateException<K>(bool async, Func<int, IIgnite, K> keyFunc)
         {
             using (var grid = StartGrid())
             {
@@ -263,7 +263,7 @@ namespace GridGain.Client
         /// <summary>
         /// Starts the grid.
         /// </summary>
-        private static IGrid StartGrid(string gridName = null)
+        private static IIgnite StartGrid(string gridName = null)
         {
             return GridFactory.Start(new GridConfigurationEx
             {

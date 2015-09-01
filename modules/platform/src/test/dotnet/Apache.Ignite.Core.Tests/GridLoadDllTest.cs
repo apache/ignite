@@ -57,7 +57,7 @@ namespace GridGain.Client
             cfg.Assemblies = new List<string> { "System.Data.Linq,Culture=neutral,Version=1.0.0.0,PublicKeyToken=b77a5c561934e089" };
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IGrid grid = GridFactory.Start(cfg);
+            IIgnite grid = GridFactory.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -80,7 +80,7 @@ namespace GridGain.Client
             cfg.Assemblies = new List<string> { "testDll.dll" };
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IGrid grid = GridFactory.Start(cfg);
+            IIgnite grid = GridFactory.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -108,7 +108,7 @@ namespace GridGain.Client
             cfg.Assemblies = new List<string> { dirInfo.FullName };
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IGrid grid = GridFactory.Start(cfg);
+            IIgnite grid = GridFactory.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -132,7 +132,7 @@ namespace GridGain.Client
             cfg.Assemblies = new List<string> { "testDllByName" };
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IGrid grid = GridFactory.Start(cfg);
+            IIgnite grid = GridFactory.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -156,7 +156,7 @@ namespace GridGain.Client
             cfg.Assemblies = new List<string> { dllPath };
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IGrid grid = GridFactory.Start(cfg);
+            IIgnite grid = GridFactory.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -177,7 +177,7 @@ namespace GridGain.Client
 
             try
             {
-                IGrid grid = GridFactory.Start(cfg);
+                IIgnite grid = GridFactory.Start(cfg);
 
                 Assert.Fail("Grid has been started with broken configuration.");
             }

@@ -59,10 +59,10 @@ namespace GridGain.Client.Cache.Query.Continuous
         public static BlockingCollection<FilterEvent> FILTER_EVTS = new BlockingCollection<FilterEvent>();
 
         /** First node. */
-        private IGrid grid1;
+        private IIgnite grid1;
 
         /** Second node. */
-        private IGrid grid2;
+        private IIgnite grid2;
 
         /** Cache on the first node. */
         private ICache<int, PortableEntry> cache1;
@@ -991,7 +991,7 @@ namespace GridGain.Client.Cache.Query.Continuous
 
             /** Grid. */
             [InstanceResource]
-            public IGrid grid;
+            public IIgnite grid;
 
             /** <inheritDoc /> */
             public bool Evaluate(ICacheEntryEvent<int, V> evt)
@@ -1081,7 +1081,7 @@ namespace GridGain.Client.Cache.Query.Continuous
         public class Listener<V> : ICacheEntryEventListener<int, V>
         {
             [InstanceResource]
-            public IGrid grid;
+            public IIgnite grid;
             
             /** <inheritDoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<int, V>> evts)
@@ -1125,7 +1125,7 @@ namespace GridGain.Client.Cache.Query.Continuous
         public class FilterEvent
         {
             /** Grid. */
-            public IGrid grid;
+            public IIgnite grid;
 
             /** Entry. */
             public ICacheEntryEvent<object, object> entry;
@@ -1135,7 +1135,7 @@ namespace GridGain.Client.Cache.Query.Continuous
             /// </summary>
             /// <param name="grid">Grid.</param>
             /// <param name="entry">Entry.</param>
-            public FilterEvent(IGrid grid, ICacheEntryEvent<object, object> entry)
+            public FilterEvent(IIgnite grid, ICacheEntryEvent<object, object> entry)
             {
                 this.grid = grid;
                 this.entry = entry;

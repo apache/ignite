@@ -27,11 +27,11 @@ namespace GridGain.Impl
     /// Grid proxy with fake serialization.
     /// </summary>
     [Serializable]
-    internal class GridProxy : IGrid, IClusterGroupEx, IPortableWriteAware, ICluster
+    internal class GridProxy : IIgnite, IClusterGroupEx, IPortableWriteAware, ICluster
     {
         /** */
         [NonSerialized]
-        private readonly IGrid grid;
+        private readonly IIgnite grid;
 
         /// <summary>
         /// Default ctor for marshalling.
@@ -45,7 +45,7 @@ namespace GridGain.Impl
         /// Constructor.
         /// </summary>
         /// <param name="grid">Grid.</param>
-        public GridProxy(IGrid grid)
+        public GridProxy(IIgnite grid)
         {
             this.grid = grid;
         }
@@ -66,7 +66,7 @@ namespace GridGain.Impl
         }
 
         /** <inheritdoc /> */
-        public IGrid Grid
+        public IIgnite Grid
         {
             get
             {
@@ -332,7 +332,7 @@ namespace GridGain.Impl
         /// <summary>
         /// Target grid.
         /// </summary>
-        internal IGrid Target
+        internal IIgnite Target
         {
             get
             {

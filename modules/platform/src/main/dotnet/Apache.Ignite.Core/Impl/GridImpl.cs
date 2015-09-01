@@ -34,7 +34,7 @@ namespace GridGain.Impl
     /// <summary>
     /// Native grid wrapper.
     /// </summary>
-    internal class GridImpl : IGrid, IClusterGroupEx, ICluster
+    internal class GridImpl : IIgnite, IClusterGroupEx, ICluster
     {
         /** Operation: product. */
         private static readonly int OP_PRODUCT = 1;
@@ -151,7 +151,7 @@ namespace GridGain.Impl
         }
 
         /** <inheritdoc /> */
-        public IGrid Grid
+        public IIgnite Grid
         {
             get
             {

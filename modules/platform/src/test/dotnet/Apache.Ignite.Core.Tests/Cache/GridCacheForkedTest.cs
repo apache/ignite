@@ -20,7 +20,7 @@ namespace GridGain.Cache
     public class GridCacheForkedTest
     {
         /** */
-        private IGrid grid;
+        private IIgnite grid;
 
         /// <summary>
         /// Set up.

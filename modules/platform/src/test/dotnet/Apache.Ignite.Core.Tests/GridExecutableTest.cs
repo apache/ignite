@@ -39,7 +39,7 @@ namespace GridGain.Client
         private const string MAX_MEM_TASK = "org.gridgain.interop.GridInteropMaxMemoryTask";
 
         /** Grid. */
-        private IGrid grid;
+        private IIgnite grid;
 
         /// <summary>
         /// Test fixture set-up routine.
@@ -346,7 +346,7 @@ namespace GridGain.Client
 
             /** Grid. */
             [InstanceResource]
-            private IGrid grid;
+            private IIgnite grid;
 
 #pragma warning restore 0649
 

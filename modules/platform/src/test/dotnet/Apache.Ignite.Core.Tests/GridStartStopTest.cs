@@ -53,7 +53,7 @@ namespace GridGain.Client
 
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IGrid grid = GridFactory.Start(cfg);
+            IIgnite grid = GridFactory.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -71,7 +71,7 @@ namespace GridGain.Client
             cfg.SpringConfigUrl = "config/default-config.xml";
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IGrid grid = GridFactory.Start(cfg);
+            IIgnite grid = GridFactory.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -92,19 +92,19 @@ namespace GridGain.Client
             cfg.JvmOptions = GridTestUtils.TestJavaOptions();
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IGrid grid1 = GridFactory.Start(cfg);
+            IIgnite grid1 = GridFactory.Start(cfg);
 
             Assert.AreEqual("grid1", grid1.Name);
 
             cfg.SpringConfigUrl = cfgs[1];
 
-            IGrid grid2 = GridFactory.Start(cfg);
+            IIgnite grid2 = GridFactory.Start(cfg);
 
             Assert.AreEqual("grid2", grid2.Name);
 
             cfg.SpringConfigUrl = cfgs[2];
 
-            IGrid grid3 = GridFactory.Start(cfg);
+            IIgnite grid3 = GridFactory.Start(cfg);
 
             Assert.IsNull(grid3.Name);
 
@@ -222,7 +222,7 @@ namespace GridGain.Client
             cfg.JvmOptions = GridTestUtils.TestJavaOptions();
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IGrid grid1 = GridFactory.Start(cfg);
+            IIgnite grid1 = GridFactory.Start(cfg);
 
             Assert.AreEqual("grid1", grid1.Name);
 
@@ -250,7 +250,7 @@ namespace GridGain.Client
             cfg.JvmOptions = GridTestUtils.TestJavaOptions();
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IGrid grid = GridFactory.Start(cfg);
+            IIgnite grid = GridFactory.Start(cfg);
 
             Assert.IsNotNull(grid.Cache<int, int>("cache1"));
 
@@ -284,7 +284,7 @@ namespace GridGain.Client
             {
                 Console.WriteLine("Iteration: " + i);
 
-                IGrid grid = GridFactory.Start(cfg);
+                IIgnite grid = GridFactory.Start(cfg);
 
                 UseGrid(grid);
 
@@ -347,7 +347,7 @@ namespace GridGain.Client
         ///
         /// </summary>
         /// <param name="grid"></param>
-        private void UseGrid(IGrid grid)
+        private void UseGrid(IIgnite grid)
         {
             // Create objects holding references to java objects.
 

@@ -16,7 +16,7 @@ namespace GridGain.Cache
     /// <summary>
     /// Provides affinity information to detect which node is primary and which nodes are
     /// backups for a partitioned cache. You can get an instance of this interface by calling
-    /// <see cref="IGrid.Affinity(string)"/> method.
+    /// <see cref="IIgnite.Affinity(string)"/> method.
     /// <para />
     /// Mapping of a key to a node is a three-step operation. First step will get an affinity key for 
     /// given key using <c>CacheAffinityKeyMapper</c>. If mapper is not specified, the original key 

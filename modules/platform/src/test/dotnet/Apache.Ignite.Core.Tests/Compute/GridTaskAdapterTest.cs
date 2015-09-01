@@ -175,7 +175,7 @@ namespace GridGain.Client.Compute
         public class NodeIdJob : IComputeJob<Guid>
         {
             [InstanceResource]
-            private IGrid grid = null;
+            private IIgnite grid = null;
 
             /** <inheritDoc /> */
             public Guid Execute()
@@ -199,7 +199,7 @@ namespace GridGain.Client.Compute
         public class SerializableJob : ComputeJobAdapter<bool>
         {
             [InstanceResource]
-            private IGrid grid = null;
+            private IIgnite grid = null;
 
             public SerializableJob(params object[] args) : base(args)
             { 
@@ -235,7 +235,7 @@ namespace GridGain.Client.Compute
         public class PortableJob : ComputeJobAdapter<bool>
         {
             [InstanceResource]
-            private IGrid grid = null;
+            private IIgnite grid = null;
 
             public PortableJob(params object[] args) : base(args)
             {

@@ -145,7 +145,7 @@ namespace GridGain.Impl.Cluster
         }
 
         /** <inheritDoc /> */
-        public IGrid Grid
+        public IIgnite Grid
         {
             get { return grid; }
         }

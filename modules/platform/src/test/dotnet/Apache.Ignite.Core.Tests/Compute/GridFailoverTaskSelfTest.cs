@@ -165,7 +165,7 @@ namespace GridGain.Client.Compute
         class TestClosure : IComputeFunc<int>
         {
             [InstanceResource]
-            private IGrid grid = null;
+            private IIgnite grid = null;
 
             /** <inheritDoc /> */
             public int Invoke()
@@ -181,7 +181,7 @@ namespace GridGain.Client.Compute
         class TestSerializableJob : IComputeJob<int>
         {
             [InstanceResource]
-            private IGrid grid = null;
+            private IIgnite grid = null;
 
             /** <inheritDoc /> */
             public int Execute()
@@ -202,7 +202,7 @@ namespace GridGain.Client.Compute
         class TestPortableJob : IComputeJob<int>
         {
             [InstanceResource]
-            private IGrid grid = null;
+            private IIgnite grid = null;
 
             /** <inheritDoc /> */
             public int Execute()
@@ -219,7 +219,7 @@ namespace GridGain.Client.Compute
         /// <summary>
         /// Throws GridComputeJobFailoverException on first call.
         /// </summary>
-        private static int FailoverJob(IGrid grid)
+        private static int FailoverJob(IIgnite grid)
         {
             Assert.NotNull(grid);
 

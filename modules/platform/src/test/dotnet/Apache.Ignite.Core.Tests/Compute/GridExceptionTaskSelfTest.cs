@@ -391,7 +391,7 @@ namespace GridGain.Client.Compute
         {
             /** Grid. */
             [InstanceResource]
-            private IGrid grid = null;
+            private IIgnite grid = null;
 
             /** Result. */
             private int res;

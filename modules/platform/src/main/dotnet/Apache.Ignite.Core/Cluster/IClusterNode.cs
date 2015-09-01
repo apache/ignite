@@ -16,7 +16,7 @@ namespace GridGain.Cluster
     /// Interface representing a single cluster node. Use <see cref="IClusterNode.Attribute{T}(string)"/> or
     /// <see cref="IClusterNode.Metrics()"/> to get static and dynamic information about remote nodes.
     /// You can get a list of all nodes in grid by calling <see cref="IClusterGroup.Nodes()"/> 
-    /// on <see cref="IGrid"/> instance.
+    /// on <see cref="IIgnite"/> instance.
     /// <para />
     /// You can use grid node attributes to provide static information about a node.
     /// This information is initialized once within grid, during node startup, and

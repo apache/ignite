@@ -41,15 +41,15 @@ namespace GridGain.Client.Compute
 
         /** First node. */
         [NonSerialized]
-        protected IGrid grid1;
+        protected IIgnite grid1;
 
         /** Second node. */
         [NonSerialized]
-        private IGrid grid2;
+        private IIgnite grid2;
 
         /** Third node. */
         [NonSerialized]
-        private IGrid grid3;
+        private IIgnite grid3;
 
         /** Second process. */
         [NonSerialized]

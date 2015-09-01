@@ -116,7 +116,7 @@ namespace GridGain.Cache.Query
         /// </summary>
         /// <param name="idx"></param>
         /// <returns></returns>
-        public IGrid Grid(int idx)
+        public IIgnite Grid(int idx)
         {
             return GridFactory.Grid("grid-" + idx);
         }

@@ -93,7 +93,7 @@ namespace GridGain.Impl.Compute
         /// Injects the grid.
         /// </summary>
         [InstanceResource]
-        public void InjectGrid(IGrid grid)
+        public void InjectGrid(IIgnite grid)
         {
             // Propagate injection
             ResourceProcessor.Inject(func, (GridProxy)grid);

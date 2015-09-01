@@ -159,7 +159,7 @@ namespace GridGain
         /// configuration file. If such file is not found, then all system defaults will be used.
         /// </summary>
         /// <returns>Started grid.</returns>
-        public static IGrid Start()
+        public static IIgnite Start()
         {
             return Start(new GridConfiguration());
         }
@@ -173,7 +173,7 @@ namespace GridGain
         /// absolute or relative to GRIDGAIN_HOME.</param>
         /// <returns>Started grid. If Spring configuration contains multiple grid instances, then the 1st
         /// found instance is returned.</returns>
-        public static IGrid Start(string springCfgPath)
+        public static IIgnite Start(string springCfgPath)
         {
             return Start(new GridConfiguration {SpringConfigUrl = springCfgPath});
         }
@@ -182,7 +182,7 @@ namespace GridGain
         /// Starts grid with given configuration.
         /// </summary>
         /// <returns>Started grid.</returns>
-        public unsafe static IGrid Start(GridConfiguration cfg)
+        public unsafe static IIgnite Start(GridConfiguration cfg)
         {
             A.NotNull(cfg, "cfg");
 
@@ -581,7 +581,7 @@ namespace GridGain
         /// then grid instance belonging to a default no-name grid will be returned.
         /// </param>
         /// <returns>An instance of named grid.</returns>
-        public static IGrid Grid(string name)
+        public static IIgnite Grid(string name)
         {
             lock (MUX)
             {
@@ -600,7 +600,7 @@ namespace GridGain
         /// instance every time.
         /// </summary>
         /// <returns>An instance of default no-name grid.</returns>
-        public static IGrid Grid()
+        public static IIgnite Grid()
         {
             return Grid(null);
         }
