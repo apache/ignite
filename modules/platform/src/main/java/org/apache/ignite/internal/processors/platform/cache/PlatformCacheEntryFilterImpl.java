@@ -29,8 +29,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 /**
  * Interop filter. Delegates apply to native platform.
  */
-public class PlatformCacheEntryFilterImpl<K, V> extends PlatformAbstractPredicate
-    implements PlatformCacheEntryFilter<K, V> {
+public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate implements PlatformCacheEntryFilter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -55,7 +54,7 @@ public class PlatformCacheEntryFilterImpl<K, V> extends PlatformAbstractPredicat
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(K k, V v) {
+    @Override public boolean apply(Object k, Object v) {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 

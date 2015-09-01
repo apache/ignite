@@ -22,7 +22,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 /**
  * Platform cache entry filter interface.
  */
-public interface PlatformCacheEntryFilter<K, V> extends IgniteBiPredicate<K, V> {
+public interface PlatformCacheEntryFilter extends IgniteBiPredicate {
     /**
      * Callback invoked when filter is no longer needed.
      */
