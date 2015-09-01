@@ -7,17 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Compute
+namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.Serialization;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cluster;
-    using GridGain.Common;
-    using GridGain.Compute;
-    using GridGain.Resource;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>

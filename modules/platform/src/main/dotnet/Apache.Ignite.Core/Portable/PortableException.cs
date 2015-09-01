@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Portable 
+namespace Apache.Ignite.Core.Portable 
 {
     using System;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Common;
-    using GridGain.Common;
 
     /// <summary>
     /// Indicates an error during portable marshalling.

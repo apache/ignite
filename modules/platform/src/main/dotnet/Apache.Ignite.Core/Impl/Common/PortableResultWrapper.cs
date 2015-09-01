@@ -7,10 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Common
+namespace Apache.Ignite.Core.Impl.Common
 {
-    using GridGain.Impl.Portable;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Simple wrapper over result to handle marshalling properly.

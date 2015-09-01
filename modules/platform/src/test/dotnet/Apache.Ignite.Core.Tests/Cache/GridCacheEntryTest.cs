@@ -7,10 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache
+namespace Apache.Ignite.Core.Tests.Cache
 {
     using System.Collections.Generic;
-    using GridGain.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache;
     using NUnit.Framework;
 
     /// <summary>

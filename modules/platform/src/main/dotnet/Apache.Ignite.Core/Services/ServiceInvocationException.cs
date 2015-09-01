@@ -7,13 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Services
+namespace Apache.Ignite.Core.Services
 {
     using System;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Common;
-    using GridGain.Common;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Indicates an error during Grid Services invocation.

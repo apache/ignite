@@ -7,13 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Resource
+namespace Apache.Ignite.Core.Impl.Resource
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-
-    using GridGain.Cache.Store;
+    using Apache.Ignite.Core.Cache.Store;
 
     /// <summary>
     /// Resource processor.

@@ -7,10 +7,8 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Cache
+namespace Apache.Ignite.Core.Tests.Cache
 {
-    using GridGain.Cache;
-
     public class GridCacheLocalTest : GridCacheAbstractTest
     {
         protected override int CachePartitions()

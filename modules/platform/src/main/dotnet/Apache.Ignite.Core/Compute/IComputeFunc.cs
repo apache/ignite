@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Compute
+namespace Apache.Ignite.Core.Compute
 {
     /// <summary>
     /// Defines function having a single argument.

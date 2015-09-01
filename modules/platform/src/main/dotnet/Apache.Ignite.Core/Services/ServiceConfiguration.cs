@@ -7,9 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Services
+namespace Apache.Ignite.Core.Services
 {
-    using GridGain.Cluster;
+    using Apache.Ignite.Core.Cluster;
 
     /// <summary>
     /// Service configuration.

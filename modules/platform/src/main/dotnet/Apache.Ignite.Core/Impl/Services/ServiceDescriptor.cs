@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Services
+namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Collections;
-    using GridGain.Impl.Portable;
-    using GridGain.Services;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Services;
 
     /// <summary>
     /// Service descriptor.

@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache
+namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Impl.Common;
-    using GridGain.Impl.Portable;
 
     /// <summary>
     /// Manages cache entry processing result in non-generic form.

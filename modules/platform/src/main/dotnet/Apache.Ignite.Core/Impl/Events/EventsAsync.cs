@@ -7,20 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Events
+namespace Apache.Ignite.Core.Impl.Events
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cluster;
-    using GridGain.Common;
-    using GridGain.Events;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Unmanaged;
-
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
+    using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Async grid events.

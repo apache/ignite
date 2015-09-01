@@ -7,10 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Portable
+namespace Apache.Ignite.Core.Portable
 {
     using System.Collections.Generic;
-    
+
     /// <summary>
     /// Portable type metadata.
     /// </summary>

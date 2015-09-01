@@ -7,22 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache.Store
+namespace Apache.Ignite.Core.Impl.Cache.Store
 {
     using System.Collections;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Cache.Store;
-    using GridGain.Common;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Resource;
-    using GridGain.Impl.Unmanaged;
-    using GridGain.Portable;
-
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
-    using U = GridGain.Impl.GridUtils;
+    using Apache.Ignite.Core.Impl.Resource;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Interop cache store.

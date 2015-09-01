@@ -7,19 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache
+namespace Apache.Ignite.Core.Impl.Cache
 {
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Expiry;
+    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cache;
-    using GridGain.Cache.Expiry;
-    using GridGain.Cache.Query;
-    using GridGain.Cache.Query.Continuous;
-    using GridGain.Common;
 
     /// <summary>
     /// Cache proxy.

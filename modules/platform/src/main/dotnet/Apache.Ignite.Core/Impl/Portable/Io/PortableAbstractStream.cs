@@ -7,14 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Portable.IO
+namespace Apache.Ignite.Core.Impl.Portable.IO
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Reflection;
     using System.Text;
-    using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
     /// Base class for managed and unmanaged data streams.

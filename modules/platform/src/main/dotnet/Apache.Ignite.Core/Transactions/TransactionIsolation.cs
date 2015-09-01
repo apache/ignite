@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Transactions
+namespace Apache.Ignite.Core.Transactions
 {
     /// <summary>
     /// Defines different cache transaction isolation levels. See <see cref="ITransaction"/>

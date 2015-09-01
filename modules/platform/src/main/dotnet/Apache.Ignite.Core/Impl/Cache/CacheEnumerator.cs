@@ -7,15 +7,15 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache
+namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Cache;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Unmanaged;
+    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Real cache enumerator communicating with Java.

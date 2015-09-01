@@ -7,12 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain
+namespace Apache.Ignite.Core
 {
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
-    using GridGain.Lifecycle;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Grid configuration.

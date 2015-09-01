@@ -7,11 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache.Store
+namespace Apache.Ignite.Core.Impl.Cache.Store
 {
     using System.Collections.Generic;
-    
-    using GridGain.Cache.Store;
+    using Apache.Ignite.Core.Cache.Store;
 
     /// <summary>
     /// Store session implementation.

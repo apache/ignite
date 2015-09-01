@@ -7,11 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
-
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Surrogate type descriptor. Used in cases when type if identified by name and is not provided in configuration.

@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache.Store
+namespace Apache.Ignite.Core.Cache.Store
 {
     using System;
     using System.Collections;
-
-    using GridGain.Transactions;
+    using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// API for cache persistent storage for read-through and write-through behavior.

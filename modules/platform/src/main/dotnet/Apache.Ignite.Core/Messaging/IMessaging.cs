@@ -7,14 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain
+namespace Apache.Ignite.Core.Messaging
 {
     using System;
     using System.Collections;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cluster;
-    using GridGain.Common;
-    using GridGain.Messaging;
 
     /// <summary>
     /// Provides functionality for topic-based message exchange among nodes defined by <see cref="IClusterGroup"/>.

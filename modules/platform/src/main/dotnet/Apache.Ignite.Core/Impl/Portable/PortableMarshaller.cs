@@ -7,22 +7,22 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Compute;
+    using Apache.Ignite.Core.Impl.Compute.Closure;
+    using Apache.Ignite.Core.Impl.Datastream;
+    using Apache.Ignite.Core.Impl.Interop;
+    using Apache.Ignite.Core.Impl.Messaging;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Compute;
-    using GridGain.Impl.Cache;
-    using GridGain.Impl.Cache.Query.Continuous;
-    using GridGain.Impl.Common;
-    using GridGain.Impl.Compute;
-    using GridGain.Impl.Datastream;
-    using GridGain.Impl.Java;
-    using GridGain.Impl.Messaging;
-    using GridGain.Impl.Portable.IO;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Impl.Portable.Metadata;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Portable marshaller implementation.

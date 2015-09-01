@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Portable.IO
+namespace Apache.Ignite.Core.Impl.Portable.IO
 {
     using System;
     using System.IO;

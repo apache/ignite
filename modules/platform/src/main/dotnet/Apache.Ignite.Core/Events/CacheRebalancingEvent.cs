@@ -7,12 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Events
+namespace Apache.Ignite.Core.Events
 {
-    using GridGain.Cluster;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Portable;
 
-	/// <summary>
+    /// <summary>
     /// In-memory database (cache) rebalancing event. Rebalance event happens every time there is a change
     /// </summary>
     public sealed class CacheRebalancingEvent : EventBase

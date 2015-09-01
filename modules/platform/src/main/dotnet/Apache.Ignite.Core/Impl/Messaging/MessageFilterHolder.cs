@@ -9,17 +9,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Messaging
+namespace Apache.Ignite.Core.Impl.Messaging
 {
     using System;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Impl.Common;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Resource;
-    using GridGain.Messaging;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Impl.Resource;
+    using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Non-generic portable filter wrapper.

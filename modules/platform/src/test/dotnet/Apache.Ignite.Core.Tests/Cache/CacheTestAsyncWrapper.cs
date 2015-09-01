@@ -7,16 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache
+namespace Apache.Ignite.Core.Tests.Cache
 {
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Expiry;
+    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cache.Expiry;
-    using GridGain.Cache.Query;
-    using GridGain.Common;
-    using GridGain.Cache.Query.Continuous;
 
     /// <summary>
     /// Wraps IGridCache implementation to simplify async mode testing.

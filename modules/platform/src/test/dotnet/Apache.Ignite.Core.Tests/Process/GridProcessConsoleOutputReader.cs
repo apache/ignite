@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Process
+namespace Apache.Ignite.Core.Tests.Process
 {
     using System;
     using System.Diagnostics;

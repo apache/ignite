@@ -7,10 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache.Query
+namespace Apache.Ignite.Core.Cache.Query
 {
-    using GridGain.Impl.Cache;
-    using GridGain.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
     /// Scan query over cache entries. Will accept all the entries if no predicate was set.

@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cluster
+namespace Apache.Ignite.Core.Cluster
 {
     /// <summary>
     /// Represents cluster node filter.

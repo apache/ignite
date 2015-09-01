@@ -8,9 +8,9 @@
  */
 
 
-namespace GridGain.Lifecycle
+namespace Apache.Ignite.Core.Lifecycle
 {
-    using GridGain.Resource;
+    using Apache.Ignite.Core.Resource;
 
     /// <summary>
     /// A bean that reacts to grid lifecycle events defined in <see cref="LifecycleEventType"/>.

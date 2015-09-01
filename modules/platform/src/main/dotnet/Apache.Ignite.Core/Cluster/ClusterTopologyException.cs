@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cluster
+namespace Apache.Ignite.Core.Cluster
 {
     using System;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Common;
-    using GridGain.Common;
 
     /// <summary>
     /// Indicates an error with grid topology (e.g., crashed node, etc.)

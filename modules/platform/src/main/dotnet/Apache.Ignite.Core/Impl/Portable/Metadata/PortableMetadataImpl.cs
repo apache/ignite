@@ -7,11 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Portable.Metadata
 {
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Portable metadata implementation.

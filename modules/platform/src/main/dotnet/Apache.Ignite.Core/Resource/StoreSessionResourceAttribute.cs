@@ -7,11 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Resource
+namespace Apache.Ignite.Core.Resource
 {
     using System;
-
-    using GridGain.Cache.Store;
+    using Apache.Ignite.Core.Cache.Store;
 
     /// <summary>
     /// Annotates a field or a setter method for injection of current <see cref="ICacheStoreSession"/>

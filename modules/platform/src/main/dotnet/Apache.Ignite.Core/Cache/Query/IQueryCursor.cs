@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache.Query
+namespace Apache.Ignite.Core.Cache.Query
 {
     using System;
     using System.Collections.Generic;

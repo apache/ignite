@@ -7,13 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Datastream
+namespace Apache.Ignite.Core.Datastream
 {
     using System;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cache.Store;
-    using GridGain.Common;
 
     /// <summary>
     /// Data streamer is responsible for loading external data into cache. It achieves it by

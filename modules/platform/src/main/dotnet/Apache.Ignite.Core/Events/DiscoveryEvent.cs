@@ -7,15 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Events
+namespace Apache.Ignite.Core.Events
 {
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-
-    using GridGain.Cluster;
-    using GridGain.Portable;
-
-    using U = GridGain.Impl.GridUtils;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Portable;
+    using U = Apache.Ignite.Core.Impl.GridUtils;
 
 	/// <summary>
     /// Grid discovery event.

@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cluster 
-{   
+namespace Apache.Ignite.Core.Cluster 
+{
     using System;
     using System.Collections.Generic;
-
-    using GridGain.Compute;
-    using GridGain.Events;
-    using GridGain.Services;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Services;
 
     /// <summary>
     /// Defines grid projection which represents a common functionality over a group of nodes.

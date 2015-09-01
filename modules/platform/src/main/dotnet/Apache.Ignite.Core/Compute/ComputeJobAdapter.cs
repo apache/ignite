@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Compute
+namespace Apache.Ignite.Core.Compute
 {
     using System;
 
@@ -15,12 +15,12 @@ namespace GridGain.Compute
     /// Convenience adapter for <see cref="IComputeJob{T}"/> implementations. It provides the following functionality:
     /// <ul>
     /// <li>
-    ///      Default implementation of <see cref="GridGain.Compute.IComputeJob{T}.Cancel()"/> method and ability
-    ///      to check whether cancellation occurred with <see cref="GridGain.Compute.ComputeJobAdapter{T}.IsCancelled()"/> method.
+    ///      Default implementation of <see cref="IComputeJob{T}.Cancel()"/> method and ability
+    ///      to check whether cancellation occurred with <see cref="ComputeJobAdapter{T}.IsCancelled()"/> method.
     /// </li>
     /// <li>
-    ///      Ability to set and get job arguments via <see cref="GridGain.Compute.ComputeJobAdapter{T}.SetArguments(object[])"/>
-    ///      and <see cref="GridGain.Compute.ComputeJobAdapter{T}.Argument{T}(int)"/> methods.
+    ///      Ability to set and get job arguments via <see cref="ComputeJobAdapter{T}.SetArguments(object[])"/>
+    ///      and <see cref="ComputeJobAdapter{T}.Argument{T}(int)"/> methods.
     /// </li>
     /// </ul>
     /// </summary>
@@ -89,9 +89,9 @@ namespace GridGain.Compute
         /// This method tests whether or not this job was cancelled. This method
         /// is thread-safe and can be called without extra synchronization.
         /// <p/>
-        /// This method can be periodically called in <see cref="GridGain.Compute.IComputeJob{T}.Execute()"/> method
+        /// This method can be periodically called in <see cref="IComputeJob{T}.Execute()"/> method
         /// implementation to check whether or not this job cancelled. Note that system
-        /// calls <see cref="GridGain.Compute.IComputeJob{T}.Cancel()"/> method only as a hint and this is a responsibility of
+        /// calls <see cref="IComputeJob{T}.Cancel()"/> method only as a hint and this is a responsibility of
         /// the implementation of the job to properly cancel its execution.
         /// </summary>
         /// <returns><c>True</c> if this job was cancelled, <c>false</c> otherwise.</returns>

@@ -7,17 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Compute
+namespace Apache.Ignite.Core.Impl.Compute
 {
     using System;
     using System.Reflection;
-
-    using GridGain.Compute;
-    using GridGain.Impl.Common;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Resource;
-    using GridGain.Portable;
-    using GridGain.Resource;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Resource;
+    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Resource;
 
     /// <summary>
     /// Non-generic version of IComputeFunc{T}.

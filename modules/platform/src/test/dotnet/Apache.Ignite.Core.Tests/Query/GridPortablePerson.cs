@@ -7,11 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Query
+namespace Apache.Ignite.Core.Tests.Query
 {
     using System;
-
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /**
      * 

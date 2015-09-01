@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Process
+namespace Apache.Ignite.Core.Tests.Process
 {
     using System;
     using System.Diagnostics;
@@ -15,8 +15,7 @@ namespace GridGain.Client.Process
     using System.Linq;
     using System.Text;
     using System.Threading;
-
-    using GridGain.Impl;
+    using Apache.Ignite.Core.Impl;
 
     /// <summary>
     /// Defines forked GridGain node.

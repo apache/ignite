@@ -7,28 +7,27 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Compute
+namespace Apache.Ignite.Core.Compute
 {
     using System;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cluster;
-    using GridGain.Common;
 
     /// <summary>
-    /// Convenience adapter for <see cref="GridGain.Compute.IComputeTask{A, T, R}"/> interface
+    /// Convenience adapter for <see cref="IComputeTask{A,T,R}"/> interface
     /// </summary>
     public abstract class ComputeTaskAdapter<A, T, R> : IComputeTask<A, T, R>
     {
         /// <summary>
         /// Default implementation which will wait for all jobs to complete before
-        /// calling <see cref="GridGain.Compute.IComputeTask{A, T, R}.Reduce"/> method.
+        /// calling <see cref="IComputeTask{A,T,R}.Reduce"/> method.
         /// <p/>
-        /// If remote job resulted in exception <see cref="GridGain.Compute.IComputeJobResult{T}.Exception()"/> 
+        /// If remote job resulted in exception <see cref="IComputeJobResult{T}.Exception()"/> 
         /// is not <c>null</c>),
-        /// then <see cref="GridGain.Compute.ComputeJobResultPolicy.FAILOVER"/>  policy will be returned if 
+        /// then <see cref="ComputeJobResultPolicy.FAILOVER"/>  policy will be returned if 
         /// the exception is instance of <see cref="ClusterTopologyException"/> 
-        /// or <see cref="GridGain.Compute.ComputeExecutionRejectedException"/>, which means that
+        /// or <see cref="ComputeExecutionRejectedException"/>, which means that
         /// remote node either failed or job execution was rejected before it got a chance to start. In all
         /// other cases the exception will be rethrown which will ultimately cause task to fail.
         /// </summary>

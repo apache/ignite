@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections;
@@ -17,7 +17,7 @@ namespace GridGain.Impl.Portable
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Portable reader implementation. 

@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Services
+namespace Apache.Ignite.Core.Services
 {
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cluster;
-    using GridGain.Common;
 
     /// <summary>
     /// Defines functionality to deploy distributed services on the grid.

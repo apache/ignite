@@ -11,16 +11,15 @@
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedParameter.Local
 // ReSharper disable UnusedAutoPropertyAccessor.Local
-namespace GridGain.Client.Compute
+namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.Serialization;
-    using GridGain.Cluster;
-    using GridGain.Compute;
-    using GridGain.Resource;
-
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>

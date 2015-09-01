@@ -7,10 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache
+namespace Apache.Ignite.Core.Impl.Cache
 {
-    using GridGain.Cache;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Cache metrics used to obtain statistics on cache.

@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cluster
+namespace Apache.Ignite.Core.Impl.Cluster
 {
     using System;
     using System.Collections.Generic;
@@ -15,23 +15,23 @@ namespace GridGain.Impl.Cluster
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cluster;
-    using GridGain.Common;
-    using GridGain.Compute;
-    using GridGain.Events;
-    using GridGain.Impl.Compute;
-    using GridGain.Impl.Events;
-    using GridGain.Impl.Messaging;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Services;
-    using GridGain.Impl.Unmanaged;
-    using GridGain.Portable;
-    using GridGain.Services;
-
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Compute;
+    using Apache.Ignite.Core.Impl.Events;
+    using Apache.Ignite.Core.Impl.Messaging;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Portable.Metadata;
+    using Apache.Ignite.Core.Impl.Services;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Services;
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
-    using U = GridGain.Impl.GridUtils;
+    using U = Apache.Ignite.Core.Impl.GridUtils;
 
     /// <summary>
     /// Grid projection implementation.

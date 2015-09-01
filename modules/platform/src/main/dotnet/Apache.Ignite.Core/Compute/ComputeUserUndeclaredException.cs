@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Compute 
+namespace Apache.Ignite.Core.Compute 
 {
     using System;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Common;
-    using GridGain.Common;
 
     /// <summary>
     /// This exception is thrown when user's code throws undeclared runtime exception. By user core it is

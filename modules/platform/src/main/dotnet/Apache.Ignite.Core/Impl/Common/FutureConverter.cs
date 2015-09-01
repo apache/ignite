@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Common
+namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
-    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Impl.Portable;
 
     /// <summary>
     /// Marshals and converts future value.

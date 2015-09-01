@@ -7,18 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Portable
 {
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
-    using System.Text;
     using System.Runtime.CompilerServices;
+    using System.Text;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Impl.Portable.IO;
-    using GridGain.Portable;
-    using GridGain.Common;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// User portable object.

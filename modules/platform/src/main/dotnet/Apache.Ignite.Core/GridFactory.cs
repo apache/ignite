@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain 
+namespace Apache.Ignite.Core 
 {
     using System;
     using System.Collections.Generic;
@@ -18,21 +18,19 @@ namespace GridGain
     using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Interop;
     using Apache.Ignite.Core.Impl.Memory;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Common;
-    using GridGain.Impl;
-    using GridGain.Impl.Java;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Unmanaged;
-    using GridGain.Lifecycle;
-
-    using U = GridGain.Impl.GridUtils;
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Lifecycle;
+    using U = Apache.Ignite.Core.Impl.GridUtils;
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
-    using PU = GridGain.Impl.Portable.PortableUtils;
+    using PU = Apache.Ignite.Core.Impl.Portable.PortableUtils;
     
     /// <summary>
     /// This class defines a factory for the main GridGain API.

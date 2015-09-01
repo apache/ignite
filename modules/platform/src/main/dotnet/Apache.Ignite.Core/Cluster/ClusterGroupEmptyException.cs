@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cluster 
+namespace Apache.Ignite.Core.Cluster 
 {
     using System;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Common;
-    using GridGain.Common;
 
     /// <summary>
     /// Indicates an illegal call on empty projection. Thrown by projection when operation

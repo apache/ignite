@@ -7,9 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Portable
 {
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Represents an object that can write itself to a portable writer.

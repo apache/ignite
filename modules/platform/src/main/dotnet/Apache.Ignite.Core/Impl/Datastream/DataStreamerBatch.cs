@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Datastream
+namespace Apache.Ignite.Core.Impl.Datastream
 {
     using System;
     using System.Collections.Concurrent;
@@ -16,9 +16,7 @@ namespace GridGain.Impl.Datastream
     using System.Threading;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
-    using GridGain.Common;
-    using GridGain.Impl.Common;
-    using GridGain.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
     /// Data streamer batch.

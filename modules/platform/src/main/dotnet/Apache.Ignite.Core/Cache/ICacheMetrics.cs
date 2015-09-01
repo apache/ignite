@@ -1,4 +1,4 @@
-/*
+﻿/*
  *  Copyright (C) GridGain Systems. All Rights Reserved.
  *  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache
+namespace Apache.Ignite.Core.Cache
 {
     /// <summary>
     /// Cache metrics used to obtain statistics on cache itself.

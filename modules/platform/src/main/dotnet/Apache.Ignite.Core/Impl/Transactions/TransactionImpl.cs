@@ -7,15 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Transactions
+namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
     using System.Threading;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
-    using GridGain.Common;
-    using GridGain.Impl.Common;
-    using GridGain.Transactions;
+    using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Grid cache transaction implementation.

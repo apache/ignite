@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache.Query.Continuous
+namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 {
     using System;
-
-    using GridGain.Impl.Portable;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Continuous query remote filter holder. Wraps real filter into portable object,

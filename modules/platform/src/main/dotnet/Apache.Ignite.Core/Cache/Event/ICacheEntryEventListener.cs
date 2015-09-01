@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache.Event
+namespace Apache.Ignite.Core.Cache.Event
 {
     using System.Collections.Generic;
 

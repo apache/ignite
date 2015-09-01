@@ -7,13 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Portable
+namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
     using System.Reflection;
-
-    using GridGain.Impl.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Portable serializer which reflectively writes all fields except of ones with 

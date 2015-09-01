@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Compute
+namespace Apache.Ignite.Core.Compute
 {
     using System;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Common;
-    using GridGain.Common;
 
     /// <summary>
     /// This runtime exception can be thrown from <see cref="IComputeJob{T}.Execute()"/>

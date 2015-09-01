@@ -7,10 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache
+namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
-    using GridGain.Cache;
+    using Apache.Ignite.Core.Cache;
 
     /// <summary>
     /// Represents a result of <see cref="ICacheEntryProcessor{K, V, A, R}"/> invocation.

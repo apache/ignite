@@ -7,11 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache.Query.Continuous
+namespace Apache.Ignite.Core.Cache.Query.Continuous
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
-    using GridGain.Cache.Event;
+    using Apache.Ignite.Core.Cache.Event;
 
     /// <summary>
     /// API for configuring continuous cache queries.
@@ -26,7 +26,7 @@ namespace GridGain.Cache.Query.Continuous
     /// during discovery process before it actually joins topology, so no updates will be missed.
     /// <para />
     /// To execute the query use method 
-    /// <see cref="ICache{K,V}.QueryContinuous(GridGain.Cache.Query.Continuous.ContinuousQuery{K,V})"/>.
+    /// <see cref="ICache{K,V}.QueryContinuous(ContinuousQuery{K,V})"/>.
     /// </summary>
     public class ContinuousQuery<K, V>
     {

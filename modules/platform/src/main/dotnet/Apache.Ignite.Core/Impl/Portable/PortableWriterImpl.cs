@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections;
@@ -15,7 +15,8 @@ namespace GridGain.Impl.Portable
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Impl.Portable.Metadata;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Portable writer implementation.

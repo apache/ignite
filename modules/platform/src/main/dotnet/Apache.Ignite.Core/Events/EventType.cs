@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Events
+namespace Apache.Ignite.Core.Events
 {
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;

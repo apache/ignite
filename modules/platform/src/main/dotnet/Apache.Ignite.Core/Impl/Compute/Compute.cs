@@ -7,17 +7,15 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Compute
+namespace Apache.Ignite.Core.Impl.Compute
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cluster;
-    using GridGain.Common;
-    using GridGain.Compute;
-
-    using U = GridGain.Impl.GridUtils;
+    using Apache.Ignite.Core.Compute;
+    using U = Apache.Ignite.Core.Impl.GridUtils;
 
     /// <summary>
     /// Synchronous Compute facade.

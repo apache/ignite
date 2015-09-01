@@ -7,13 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache.Store
+namespace Apache.Ignite.Core.Tests.Cache.Store
 {
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Cache.Store;
 
     /// <summary>
     /// Test cache store with parallel load.

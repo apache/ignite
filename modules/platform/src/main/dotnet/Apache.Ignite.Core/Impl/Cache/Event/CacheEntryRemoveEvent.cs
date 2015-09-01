@@ -7,10 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache.Event
+namespace Apache.Ignite.Core.Impl.Cache.Event
 {
-    using GridGain.Cache;
-    using GridGain.Cache.Event;
+    using Apache.Ignite.Core.Cache.Event;
 
     /// <summary>
     /// Cache entry remove event.

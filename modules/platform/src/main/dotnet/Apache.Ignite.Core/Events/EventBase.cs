@@ -7,14 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Events
+namespace Apache.Ignite.Core.Events
 {
     using System;
-
-    using GridGain.Cluster;
-    using GridGain.Common;
-    using GridGain.Impl.Portable;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Base event implementation.

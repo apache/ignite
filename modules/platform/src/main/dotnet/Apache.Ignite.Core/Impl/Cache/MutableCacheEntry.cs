@@ -7,11 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache
+namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.Common;
-    using GridGain.Cache;
 
     /// <summary>
     /// Represents a cache entry.

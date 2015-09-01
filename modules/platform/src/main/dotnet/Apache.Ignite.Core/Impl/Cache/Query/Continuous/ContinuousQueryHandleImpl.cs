@@ -7,22 +7,19 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache.Query.Continuous
+namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 {
     using System;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Cache;
-    using GridGain.Cache.Event;
-    using GridGain.Cache.Query;
-    using GridGain.Cache.Query.Continuous;
-    using GridGain.Impl;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Resource;
-    using GridGain.Impl.Unmanaged;
-    
-    using U = GridGain.Impl.GridUtils;
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
+    using Apache.Ignite.Core.Impl.Resource;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
     using CQU = ContinuousQueryUtils;
 
     /// <summary>

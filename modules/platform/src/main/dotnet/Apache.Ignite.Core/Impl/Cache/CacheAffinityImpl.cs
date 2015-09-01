@@ -7,20 +7,19 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache
+namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Cache;
-    using GridGain.Cluster;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Unmanaged;
-
+    using Apache.Ignite.Core.Impl.Unmanaged;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
-    using U = GridGain.Impl.GridUtils;
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
+    using U = Apache.Ignite.Core.Impl.GridUtils;
 
     /// <summary>
     /// Cache affinity implementation.

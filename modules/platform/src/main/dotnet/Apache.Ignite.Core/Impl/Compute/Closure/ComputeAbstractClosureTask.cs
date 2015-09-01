@@ -7,13 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Compute
+namespace Apache.Ignite.Core.Impl.Compute.Closure
 {
     using System;
     using System.Collections.Generic;
-
-    using GridGain.Cluster;
-    using GridGain.Compute;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Compute;
 
     /// <summary>
     /// Base class for all tasks working with closures.

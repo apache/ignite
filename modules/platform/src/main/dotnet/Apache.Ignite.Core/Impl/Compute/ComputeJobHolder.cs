@@ -7,19 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Compute
+namespace Apache.Ignite.Core.Impl.Compute
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Cluster;
+    using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Memory;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Common;
-    using GridGain.Compute;
-    using GridGain.Impl.Cluster;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Resource;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Impl.Resource;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Holder for user-provided compute job.

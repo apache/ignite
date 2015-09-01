@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Cache.Query.Continuous
+namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
     /// <summary>
     /// Continuous query tests for ATOMIC cache with backups.

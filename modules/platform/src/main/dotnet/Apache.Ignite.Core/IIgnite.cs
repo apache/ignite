@@ -7,18 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain
+namespace Apache.Ignite.Core
 {
     using System;
-
-    using GridGain.Cache;
-    using GridGain.Cluster;
-    using GridGain.Compute;
-    using GridGain.Datastream;
-    using GridGain.Events;
-    using GridGain.Portable;
-    using GridGain.Services;
-    using GridGain.Transactions;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Services;
+    using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Main entry point for all GridGain APIs.

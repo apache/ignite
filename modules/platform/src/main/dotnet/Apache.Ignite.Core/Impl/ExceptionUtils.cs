@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl
+namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
@@ -15,15 +15,13 @@ namespace GridGain.Impl
     using System.Runtime.InteropServices;
     using System.Security;
     using System.Threading;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cache;
-    using GridGain.Cache.Store;
-    using GridGain.Compute;
-    using GridGain.Cluster;
-    using GridGain.Impl.Portable;
-    using GridGain.Transactions;
-
-    using U = GridGain.Impl.GridUtils;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Managed environment. Acts as a gateway for native code.

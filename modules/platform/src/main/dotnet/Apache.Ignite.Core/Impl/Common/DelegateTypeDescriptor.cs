@@ -7,19 +7,18 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Common
+namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
-    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Cache;
-    using GridGain.Compute;
-    using GridGain.Datastream;
-    using GridGain.Events;
-    using GridGain.Impl.Cache;
-    using GridGain.Impl.Datastream;
-    using GridGain.Impl.Unmanaged;
-    using GridGain.Messaging;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Messaging;
 
     /// <summary>
     /// Type descriptor with precompiled delegates for known methods.

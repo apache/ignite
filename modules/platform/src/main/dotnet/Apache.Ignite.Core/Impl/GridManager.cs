@@ -7,22 +7,20 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl
+namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
-    using System.Linq;
     using System.IO;
+    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Memory;
-    using GridGain.Impl.Unmanaged;
-    
-    using U = GridGain.Impl.GridUtils;
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Native interface manager.

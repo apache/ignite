@@ -7,11 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Resource
+namespace Apache.Ignite.Core.Resource
 {
     using System;
-
-    using GridGain.Compute;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Compute;
 
     /// <summary>
     /// Attribute which injects <see cref="IIgnite"/> instance. Can be defined inside

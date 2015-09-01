@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Compute
+namespace Apache.Ignite.Core.Impl.Compute
 {
     using System;
     using System.Collections.Generic;
@@ -15,19 +15,15 @@ namespace GridGain.Impl.Compute
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Memory;
-    using GridGain.Cluster;
-    using GridGain.Common;
-    using GridGain.Compute;
-    using GridGain.Impl;
-    using GridGain.Impl.Cluster;
-    using GridGain.Impl.Common;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Resource;
-
-    using U = GridGain.Impl.GridUtils;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Resource;
 
     /// <summary>
     /// Compute task holder interface used to avoid generics.

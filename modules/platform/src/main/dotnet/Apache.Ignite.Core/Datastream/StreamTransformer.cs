@@ -7,14 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Datastream
+namespace Apache.Ignite.Core.Datastream
 {
     using System.Collections.Generic;
-
-    using GridGain.Cache;
-    using GridGain.Impl.Datastream;
-    using GridGain.Impl.Portable;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.Datastream;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Portable;
     using AC = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>

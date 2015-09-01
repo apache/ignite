@@ -7,21 +7,20 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache
+namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
-
-    using GridGain.Cache;
-    using GridGain.Impl.Common;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Resource;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Resource;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Portable wrapper for the <see cref="ICacheEntryProcessor{K, V, A, R}"/> and it's argument.
+    /// Portable wrapper for the <see cref="ICacheEntryProcessor{K,V,A,R}"/> and it's argument.
     /// Marshals and executes wrapped processor with a non-generic interface.
     /// </summary>
     internal class CacheEntryProcessorHolder : IPortableWriteAware

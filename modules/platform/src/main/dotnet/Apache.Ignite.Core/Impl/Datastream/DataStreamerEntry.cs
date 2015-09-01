@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Datastream
+namespace Apache.Ignite.Core.Impl.Datastream
 {
     /// <summary>
     /// Data streamer entry.

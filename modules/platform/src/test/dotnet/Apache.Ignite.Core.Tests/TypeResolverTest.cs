@@ -7,15 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client
+namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Tests.TestDll;
-    using GridGain.Impl.Portable;
-
     using NUnit.Framework;
 
     /// <summary>

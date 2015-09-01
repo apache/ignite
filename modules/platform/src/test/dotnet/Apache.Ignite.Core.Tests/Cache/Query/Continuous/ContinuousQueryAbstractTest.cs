@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Cache.Query.Continuous
+namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
     using System;
     using System.Collections.Concurrent;
@@ -16,21 +16,17 @@ namespace GridGain.Client.Cache.Query.Continuous
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cache;
-    using GridGain.Cache.Event;
-    using GridGain.Cache.Query;
-    using GridGain.Cache.Query.Continuous;
-    using GridGain.Client;
-    using GridGain.Cluster;
-    using GridGain.Common;
-    using GridGain.Impl;
-    using GridGain.Portable;
-    using GridGain.Resource;
-
+    using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
-
-    using CQU = GridGain.Impl.Cache.Query.Continuous.ContinuousQueryUtils;
+    using CQU = Apache.Ignite.Core.Impl.Cache.Query.Continuous.ContinuousQueryUtils;
 
     /// <summary>
     /// Tests for continuous query.

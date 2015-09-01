@@ -7,15 +7,15 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Events
+namespace Apache.Ignite.Core.Impl.Events
 {
     using System;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Events;
-    using GridGain.Impl.Common;
-    using GridGain.Impl.Portable;
-    
+
     /// <summary>
     /// Event filter/listener holder for RemoteListen.
     /// </summary>

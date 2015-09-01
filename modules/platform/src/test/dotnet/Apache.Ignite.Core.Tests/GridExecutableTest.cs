@@ -8,20 +8,17 @@
  */
 
 // ReSharper disable UnusedVariable
-namespace GridGain.Client
+namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
-
-    using GridGain.Client.Process;
-    using GridGain.Compute;
-    using GridGain.Impl;
-    using GridGain.Portable;
-    using GridGain.Resource;    
-
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Resource;
+    using Apache.Ignite.Core.Tests.Process;
     using Microsoft.CSharp;
-
     using NUnit.Framework;
 
     /// <summary>

@@ -7,28 +7,28 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl
+namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cluster;
+    using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.Handle;
-    using GridGain.Cache;
-    using GridGain.Cluster;
-    using GridGain.Compute;
-    using GridGain.Datastream;
-    using GridGain.Events;
-    using GridGain.Impl.Cache;
-    using GridGain.Impl.Cluster;
-    using GridGain.Impl.Datastream;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Transactions;
-    using GridGain.Impl.Unmanaged;
-    using GridGain.Portable;
-    using GridGain.Services;
-    using GridGain.Transactions;
-
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Transactions;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Services;
+    using Apache.Ignite.Core.Transactions;
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>

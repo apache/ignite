@@ -7,21 +7,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Datastream
+namespace Apache.Ignite.Core.Impl.Datastream
 {
     using System;
     using System.Collections.Generic;
     using System.Threading;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Common;
-    using GridGain.Common;
-    using GridGain.Datastream;
-    using GridGain.Impl.Common;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Unmanaged;
-
-    using U = GridUtils;
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>

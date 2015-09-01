@@ -7,11 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Portable.IO
+namespace Apache.Ignite.Core.Impl.Portable.IO
 {
     using System;
     using System.IO;
-    using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
     /// Adapter providing .Net streaming functionality over the portable stream.

@@ -7,12 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl
+namespace Apache.Ignite.Core.Impl
 {
-    using GridGain.Impl.Resource;
-    using GridGain.Lifecycle;
-
-    using U = GridGain.Impl.GridUtils;
+    using Apache.Ignite.Core.Impl.Resource;
+    using Apache.Ignite.Core.Lifecycle;
 
     /// <summary>
     /// Lifecycle bean holder.

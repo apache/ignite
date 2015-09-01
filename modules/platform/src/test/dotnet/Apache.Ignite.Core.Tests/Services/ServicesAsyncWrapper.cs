@@ -7,14 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Services
+namespace Apache.Ignite.Core.Tests.Services
 {
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cluster;
-    using GridGain.Common;
-    using GridGain.Services;
+    using Apache.Ignite.Core.Services;
 
     /// <summary>
     /// Services async wrapper to simplify testing.

@@ -7,14 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache.Query.Continuous
+namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 {
+    using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Cache.Event;
-    using GridGain.Impl.Resource;
-
+    using Apache.Ignite.Core.Impl.Resource;
     using CQU = ContinuousQueryUtils;
-    using U = GridGain.Impl.GridUtils;
 
     /// <summary>
     /// Continuous query filter interface. Required to hide generic nature of underliyng real filter.

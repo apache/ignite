@@ -7,11 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Compute
+namespace Apache.Ignite.Core.Compute
 {
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
-    using GridGain.Cluster;
+    using Apache.Ignite.Core.Cluster;
 
     /// <summary>
     /// Grid task interface defines a task that can be executed on the grid. Grid task

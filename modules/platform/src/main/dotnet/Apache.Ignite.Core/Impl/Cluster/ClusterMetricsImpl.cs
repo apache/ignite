@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cluster
+namespace Apache.Ignite.Core.Impl.Cluster
 {
     using System;
-
-    using GridGain.Cluster;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Cluster metrics implementation.

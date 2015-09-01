@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Compute
+namespace Apache.Ignite.Core.Impl.Compute
 {
     using System;
     using System.Collections;
@@ -17,17 +17,15 @@ namespace GridGain.Impl.Compute
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Cluster;
+    using Apache.Ignite.Core.Impl.Compute.Closure;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Cluster;
-    using GridGain.Common;
-    using GridGain.Compute;
-    using GridGain.Impl.Cluster;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Unmanaged;
-
-    using U = GridUtils;
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
     using AC = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>

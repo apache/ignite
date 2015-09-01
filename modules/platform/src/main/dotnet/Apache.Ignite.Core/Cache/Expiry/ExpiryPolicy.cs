@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache.Expiry
+namespace Apache.Ignite.Core.Cache.Expiry
 {
     using System;
 

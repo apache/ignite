@@ -7,11 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Events
+namespace Apache.Ignite.Core.Events
 {
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Portable;
 
-	/// <summary>
+    /// <summary>
     /// Grid checkpoint event.
     /// </summary>
     public sealed class CheckpointEvent : EventBase

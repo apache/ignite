@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Unmanaged
+namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
     using System.Collections.Generic;
@@ -15,27 +15,25 @@ namespace GridGain.Impl.Unmanaged
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using System.Threading;
+    using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Impl.Cache.Store;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Compute;
+    using Apache.Ignite.Core.Impl.Datastream;
+    using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Memory;
+    using Apache.Ignite.Core.Impl.Messaging;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Cache.Event;
-    using GridGain.Cluster;
-    using GridGain.Impl.Cache;
-    using GridGain.Impl.Cache.Query.Continuous;
-    using GridGain.Impl.Cache.Store;
-    using GridGain.Impl.Compute;
-    using GridGain.Impl.Datastream;
-    using GridGain.Impl.Events;
-    using GridGain.Impl.Messaging;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Resource;
-    using GridGain.Impl.Services;
-    using GridGain.Lifecycle;
-    using GridGain.Services;
-    using EU = ExceptionUtils;
-    using PU = GridGain.Impl.Portable.PortableUtils;
+    using Apache.Ignite.Core.Impl.Resource;
+    using Apache.Ignite.Core.Impl.Services;
+    using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Services;
     using U = GridUtils;
     using UU = UnmanagedUtils;
 

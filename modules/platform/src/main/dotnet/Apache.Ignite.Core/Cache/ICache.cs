@@ -7,18 +7,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache
+namespace Apache.Ignite.Core.Cache
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Cache.Expiry;
+    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cache.Expiry;
-    using GridGain.Cache.Query;
-    using GridGain.Cache.Query.Continuous;
-    using GridGain.Cache.Store;
-    using GridGain.Common;
-    using GridGain.Transactions;
+    using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Main entry point for all Data Grid APIs. You can get a named cache by calling

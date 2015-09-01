@@ -7,15 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Unmanaged
+namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
-    using GridGain.Common;
-    using U = GridGain.Impl.GridUtils;
+    using U = Apache.Ignite.Core.Impl.GridUtils;
 
     /// <summary>
     /// Unmanaged utility classes.

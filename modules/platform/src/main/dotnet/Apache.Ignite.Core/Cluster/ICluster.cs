@@ -7,12 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cluster
+namespace Apache.Ignite.Core.Cluster
 {
     using System;
     using System.Collections.Generic;
-
-    using GridGain.Common;
 
     /// <summary>
     /// Represents whole cluster (group of all nodes in a cluster).

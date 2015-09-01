@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Transactions
+namespace Apache.Ignite.Core.Transactions
 {
     using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Common;
-    using GridGain.Common;
 
     /// <summary>
     /// Grid cache transaction. 

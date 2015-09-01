@@ -7,11 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache
+namespace Apache.Ignite.Core.Cache
 {
     using System.Collections.Generic;
-
-    using GridGain.Cluster;
+    using Apache.Ignite.Core.Cluster;
 
     /// <summary>
     /// Provides affinity information to detect which node is primary and which nodes are

@@ -7,9 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Services
+namespace Apache.Ignite.Core.Tests.Services
 {
-    using GridGain.Services;
+    using Apache.Ignite.Core.Services;
 
     /// <summary>
     /// Services async tests.

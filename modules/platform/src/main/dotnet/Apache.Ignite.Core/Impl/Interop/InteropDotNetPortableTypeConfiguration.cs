@@ -8,12 +8,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Java
+namespace Apache.Ignite.Core.Impl.Interop
 {
     using System;
     using System.Reflection;
-    using GridGain.Impl.Portable;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// .Net portable configuration type as defined in Java configuration.

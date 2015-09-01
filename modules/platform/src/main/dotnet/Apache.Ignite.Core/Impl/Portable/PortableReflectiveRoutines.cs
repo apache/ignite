@@ -8,7 +8,7 @@
  */
 
 
-namespace GridGain.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections;
@@ -17,8 +17,7 @@ namespace GridGain.Impl.Portable
     using System.Reflection;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
-    using GridGain.Common;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Write action delegate.

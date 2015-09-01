@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Transactions
+namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
     using System.Threading;
     using Apache.Ignite.Core.Common;
-    using GridGain.Common;
 
     /// <summary>
     /// Grid async transaction facade.

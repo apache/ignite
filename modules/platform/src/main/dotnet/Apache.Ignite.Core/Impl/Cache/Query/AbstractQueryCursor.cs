@@ -7,18 +7,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache.Query
+namespace Apache.Ignite.Core.Impl.Cache.Query
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Cache.Query;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Unmanaged;
-    
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Abstract query cursor implementation.

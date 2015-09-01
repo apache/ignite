@@ -8,19 +8,18 @@
  */
 
 // ReSharper disable SpecifyACultureInStringConversionExplicitly
-namespace GridGain.Client.Compute
+namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cluster;
-    using GridGain.Common;
-    using GridGain.Compute;
-    using GridGain.Impl;
-    using GridGain.Portable;
-    using GridGain.Resource;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>

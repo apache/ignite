@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Resource
+namespace Apache.Ignite.Core.Impl.Resource
 {
     /// <summary>
     /// Resource injector interface.

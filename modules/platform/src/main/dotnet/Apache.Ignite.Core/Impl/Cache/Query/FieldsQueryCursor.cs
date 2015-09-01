@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache.Query
+namespace Apache.Ignite.Core.Impl.Cache.Query
 {
     using System.Collections;
-
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Unmanaged;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Cursor for entry-based queries.

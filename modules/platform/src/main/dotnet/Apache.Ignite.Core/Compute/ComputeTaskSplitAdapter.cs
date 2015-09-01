@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Compute
+namespace Apache.Ignite.Core.Compute
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cluster;
-    using GridGain.Common;
+    using Apache.Ignite.Core.Impl.Compute;
 
     /// <summary>
     /// This class defines simplified adapter for <see cref="IComputeTask{A,T,R}"/>. This adapter can be used
@@ -33,7 +33,7 @@ namespace GridGain.Compute
         /// This is a simplified version of <see cref="IComputeTask{A,T,R}.Map"/> method.
         /// <p/>
         /// This method basically takes given argument and splits it into a collection
-        /// of <see cref="GridGain.Compute.IComputeJob"/> using provided grid size as indication of how many node are
+        /// of <see cref="IComputeJob"/> using provided grid size as indication of how many node are
         /// available. These jobs will be randomly mapped to available grid nodes. Note that
         /// if number of jobs is greater than number of grid nodes (i.e, grid size), the grid
         /// nodes will be reused and some jobs will end up on the same grid nodes.

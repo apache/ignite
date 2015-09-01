@@ -7,12 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Compute
+namespace Apache.Ignite.Core.Compute
 {
     using System.Collections.Generic;
-
-    using GridGain.Cluster;
-    using GridGain.Resource;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Resource;
 
     /// <summary>
     /// Defines executable unit for <see cref="IComputeTask{A,T,R}"/>. Grid task gets split into jobs

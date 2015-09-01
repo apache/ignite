@@ -7,14 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cluster
+namespace Apache.Ignite.Core.Impl.Cluster
 {
     using System;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Collections;
-    using GridGain.Cluster;
-    using GridGain.Portable;
-
+    using Apache.Ignite.Core.Portable;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>

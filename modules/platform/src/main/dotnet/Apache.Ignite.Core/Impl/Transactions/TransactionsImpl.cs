@@ -7,18 +7,15 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Transactions
+namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
     using Apache.Ignite.Core.Common;
-    using GridGain.Common;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Unmanaged;
-    using GridGain.Portable;
-    using GridGain.Transactions;
-
-    using U = GridUtils;
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Transactions;
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Transactions facade.

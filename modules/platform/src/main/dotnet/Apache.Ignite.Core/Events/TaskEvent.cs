@@ -7,14 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Events
+namespace Apache.Ignite.Core.Events
 {
     using System;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Portable;
 
-    using GridGain.Common;
-    using GridGain.Portable;
-
-	/// <summary>
+    /// <summary>
     /// Grid task event.
     /// </summary>
     public sealed class TaskEvent : EventBase

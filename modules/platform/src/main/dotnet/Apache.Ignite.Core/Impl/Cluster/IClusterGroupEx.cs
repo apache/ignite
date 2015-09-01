@@ -8,10 +8,10 @@
  */
 
 
-namespace GridGain.Impl.Cluster
+namespace Apache.Ignite.Core.Impl.Cluster
 {
-    using GridGain.Cluster;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// 

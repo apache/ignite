@@ -7,13 +7,12 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Events
+namespace Apache.Ignite.Core.Events
 {
     using System;
+    using Apache.Ignite.Core.Portable;
 
-    using GridGain.Portable;
-
-	/// <summary>
+    /// <summary>
     /// Grid license event.
     /// </summary>
     public sealed class LicenseEvent : EventBase

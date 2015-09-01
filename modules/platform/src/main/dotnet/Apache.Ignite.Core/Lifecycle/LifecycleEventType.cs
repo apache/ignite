@@ -8,7 +8,7 @@
  */
 
 
-namespace GridGain.Lifecycle
+namespace Apache.Ignite.Core.Lifecycle
 {
     /// <summary>
     /// Grid lifecycle event types. These events are used to notify lifecycle beans

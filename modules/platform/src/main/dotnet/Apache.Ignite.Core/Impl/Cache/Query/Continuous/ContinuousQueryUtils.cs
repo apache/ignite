@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache.Query.Continuous
+namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 {
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Impl.Cache.Event;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Cache.Event;
-    using GridGain.Impl.Cache.Event;
-    using GridGain.Impl.Portable;
 
     /// <summary>
     /// Utility methods for continuous queries.

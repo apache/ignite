@@ -8,10 +8,10 @@
  */
 
 
-namespace GridGain.Impl.Compute
+namespace Apache.Ignite.Core.Impl.Compute.Closure
 {
     using System.Collections.Generic;
-    using GridGain.Compute;
+    using Apache.Ignite.Core.Compute;
 
     /// <summary>
     /// Closure-based task producing multiple jobs and returning a collection of job results.

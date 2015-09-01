@@ -7,19 +7,19 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Datastream
+namespace Apache.Ignite.Core.Impl.Datastream
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Cache;
-    using GridGain.Datastream;
-    using GridGain.Impl.Cache;
-    using GridGain.Impl.Common;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Unmanaged;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Portable wrapper for <see cref="IStreamReceiver{K,V}"/>.

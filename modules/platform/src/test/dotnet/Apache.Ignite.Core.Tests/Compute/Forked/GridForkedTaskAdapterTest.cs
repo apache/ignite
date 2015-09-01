@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Client.Compute
+namespace Apache.Ignite.Core.Tests.Compute.Forked
 {
     /// <summary>
     /// Forked task adapter test.

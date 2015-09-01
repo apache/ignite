@@ -7,14 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl
+namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Runtime.Serialization.Formatters.Binary;
-
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Portable.IO;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Holder of exception which must be serialized to Java and then backwards to the native platform.

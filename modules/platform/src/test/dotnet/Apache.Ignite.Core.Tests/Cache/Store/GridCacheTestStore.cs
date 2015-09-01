@@ -7,18 +7,17 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache.Store
+namespace Apache.Ignite.Core.Tests.Cache.Store
 {
     using System;
     using System.Collections;
     using System.Collections.Concurrent;
-    using System.Threading;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    
-    using GridGain.Client;
-    using GridGain.Resource;
+    using System.Threading;
+    using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Resource;
 
     [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
     public class GridCacheTestStore : ICacheStore

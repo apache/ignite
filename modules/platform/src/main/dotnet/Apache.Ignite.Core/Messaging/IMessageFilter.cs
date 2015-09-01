@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Messaging
+namespace Apache.Ignite.Core.Messaging
 {
     using System;
 

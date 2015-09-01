@@ -1,11 +1,9 @@
-﻿namespace GridGain.Impl.Transactions
+﻿namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
     using Apache.Ignite.Core.Common;
-    using GridGain.Common;
-    using GridGain.Transactions;
-
-    using U = GridGain.Impl.GridUtils;
+    using Apache.Ignite.Core.Transactions;
+    using U = Apache.Ignite.Core.Impl.GridUtils;
 
     /// <summary>
     /// Grid transaction facade.

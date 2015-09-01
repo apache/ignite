@@ -7,11 +7,11 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Transactions
+namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
-    using GridGain.Portable;
-    using GridGain.Transactions;
+    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Transaction metrics.

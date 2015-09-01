@@ -7,14 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache
+namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
-
-    using GridGain.Cache;
+    using Apache.Ignite.Core.Cache;
 
     /// <summary>
     /// Cache enumerator proxy. Required to support reset and early native iterator cleanup.

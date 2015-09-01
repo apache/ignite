@@ -7,29 +7,28 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Cache
+namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Expiry;
+    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Cache.Query;
+    using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
-    using GridGain.Cache;
-    using GridGain.Cache.Expiry;
-    using GridGain.Cache.Query;
-    using GridGain.Common;
-    using GridGain.Cache.Query.Continuous;
-    using GridGain.Impl.Cache.Query;
-    using GridGain.Impl.Cache.Query.Continuous;
-    using GridGain.Impl.Common;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Unmanaged;
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Portable;
     using U = GridUtils;
     using AC = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Native cache wrapper.

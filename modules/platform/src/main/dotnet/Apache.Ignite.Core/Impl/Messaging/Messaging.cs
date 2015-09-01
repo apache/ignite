@@ -7,24 +7,22 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Messaging
+namespace Apache.Ignite.Core.Impl.Messaging
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Collections;
-    using GridGain.Cluster;
-    using GridGain.Common;
-    using GridGain.Impl.Portable;
-    using GridGain.Impl.Resource;
-    using GridGain.Impl.Unmanaged;
-    using GridGain.Messaging;
-
-    using U = GridGain.Impl.GridUtils;
-    using UU = GridGain.Impl.Unmanaged.UnmanagedUtils;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Resource;
+    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Messaging;
+    using U = Apache.Ignite.Core.Impl.GridUtils;
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>

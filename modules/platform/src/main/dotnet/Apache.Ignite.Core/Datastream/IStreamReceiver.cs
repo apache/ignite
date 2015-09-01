@@ -7,10 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Datastream
+namespace Apache.Ignite.Core.Datastream
 {
     using System.Collections.Generic;
-    using GridGain.Cache;
+    using Apache.Ignite.Core.Cache;
 
     /// <summary>
     /// Updates cache with batch of entries. 

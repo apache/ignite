@@ -7,15 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Events
+namespace Apache.Ignite.Core.Events
 {
     using System;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Portable;
 
-    using GridGain.Cluster;
-    using GridGain.Common;
-    using GridGain.Portable;
-
-	/// <summary>
+    /// <summary>
     /// Grid job event.
     /// </summary>
     public sealed class JobEvent : EventBase

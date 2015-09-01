@@ -1,4 +1,4 @@
-/*
+﻿/*
  *  Copyright (C) GridGain Systems. All Rights Reserved.
  *  _________        _____ __________________        _____
  *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
@@ -7,14 +7,13 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Events
+namespace Apache.Ignite.Core.Events
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using GridGain.Cluster;
-    using GridGain.Common;
 
     /// <summary>
     /// Provides functionality for local and remote event notifications on nodes defined by <see cref="ClusterGroup"/>.

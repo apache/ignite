@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Portable 
+namespace Apache.Ignite.Core.Portable 
 {
     using System;
     using System.Collections;

@@ -7,11 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Cache
+namespace Apache.Ignite.Core.Cache.Query.Continuous
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
-    using GridGain.Cache.Query;
 
     /// <summary>
     /// Represents a continuous query handle.
