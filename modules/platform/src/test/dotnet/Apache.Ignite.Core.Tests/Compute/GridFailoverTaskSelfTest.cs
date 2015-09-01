@@ -1,0 +1,240 @@
+﻿/*
+ *  Copyright (C) GridGain Systems. All Rights Reserved.
+ *  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+namespace GridGain.Client.Compute
+{
+    using System;
+    using System.Collections.Generic;
+    using GridGain.Cluster;
+    using GridGain.Compute;
+    using GridGain.Portable;
+    using GridGain.Resource;
+
+    using NUnit.Framework;
+
+    /// <summary>
+    /// Test for task and job adapter.
+    /// </summary>
+    public class GridFailoverTaskSelfTest : GridAbstractTaskTest
+    {
+        /** */
+        static volatile string gridName;
+
+        /** */
+        static volatile int cnt;
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public GridFailoverTaskSelfTest() : base(false) { }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="fork">Fork flag.</param>
+        protected GridFailoverTaskSelfTest(bool fork) : base(fork) { }
+
+        /// <summary>
+        /// Test for GridComputeJobFailoverException.
+        /// </summary>
+        [Test]
+        public void TestClosureFailoverException()
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                int res = grid1.Compute().Call(new TestClosure());
+
+                Assert.AreEqual(2, res);
+
+                Cleanup();
+            }
+        }
+
+        /// <summary>
+        /// Test for GridComputeJobFailoverException with serializable job.
+        /// </summary>
+        [Test]
+        public void TestTaskAdapterFailoverExceptionSerializable()
+        {
+            TestTaskAdapterFailoverException(true);
+        }
+
+        /// <summary>
+        /// Test for GridComputeJobFailoverException with portable job.
+        /// </summary>
+        [Test]
+        public void TestTaskAdapterFailoverExceptionPortable()
+        {
+            TestTaskAdapterFailoverException(false);
+        }
+
+        /// <summary>
+        /// Test for GridComputeJobFailoverException.
+        /// </summary>
+        private void TestTaskAdapterFailoverException(bool serializable)
+        {
+            int res = grid1.Compute().Execute(new TestTask(),
+                new Tuple<bool, bool>(serializable, true));
+
+            Assert.AreEqual(2, res);
+
+            Cleanup();
+
+            res = grid1.Compute().Execute(new TestTask(),
+                new Tuple<bool, bool>(serializable, false));
+
+            Assert.AreEqual(2, res);
+        }
+
+        /// <summary>
+        /// Cleanup.
+        /// </summary>
+        [TearDown]
+        public void Cleanup()
+        {
+            cnt = 0;
+
+            gridName = null;
+        }
+
+        /** <inheritDoc /> */
+        override protected void PortableTypeConfigurations(ICollection<PortableTypeConfiguration> portTypeCfgs)
+        {
+            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(TestPortableJob)));
+        }
+
+        /// <summary>
+        /// Test task.
+        /// </summary>
+        public class TestTask : ComputeTaskAdapter<Tuple<bool, bool>, int, int>
+        {
+            /** <inheritDoc /> */
+            override public IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid, Tuple<bool, bool> arg)
+            {
+                Assert.AreEqual(3, subgrid.Count);
+
+                Tuple<bool, bool> t = arg;
+
+                bool serializable = t.Item1;
+                bool local = t.Item2;
+
+                IDictionary<IComputeJob<int>, IClusterNode> jobs = new Dictionary<IComputeJob<int>, IClusterNode>();
+
+                IComputeJob<int> job;
+
+                if (serializable)
+                    job = new TestSerializableJob();
+                else
+                    job = new TestPortableJob();
+
+                foreach (IClusterNode node in subgrid) {
+                    bool add = local ? node.IsLocal : !node.IsLocal;
+
+                    if (add)
+                    {
+                        jobs.Add(job, node);
+
+                        break;
+                    }
+                }
+
+                Assert.AreEqual(1, jobs.Count);
+
+                return jobs;
+            }
+
+            /** <inheritDoc /> */
+            override public int Reduce(IList<IComputeJobResult<int>> results)
+            {
+                Assert.AreEqual(1, results.Count);
+
+                return results[0].Data();
+            }
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        [Serializable]
+        class TestClosure : IComputeFunc<int>
+        {
+            [InstanceResource]
+            private IGrid grid = null;
+
+            /** <inheritDoc /> */
+            public int Invoke()
+            {
+                return FailoverJob(grid);
+            }
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        [Serializable]
+        class TestSerializableJob : IComputeJob<int>
+        {
+            [InstanceResource]
+            private IGrid grid = null;
+
+            /** <inheritDoc /> */
+            public int Execute()
+            {
+                return FailoverJob(grid);
+            }
+
+            /** <inheritDoc /> */
+            public void Cancel()
+            {
+                // No-op.
+            }
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        class TestPortableJob : IComputeJob<int>
+        {
+            [InstanceResource]
+            private IGrid grid = null;
+
+            /** <inheritDoc /> */
+            public int Execute()
+            {
+                return FailoverJob(grid);
+            }
+
+            public void Cancel()
+            {
+                // No-op.
+            }
+        }
+
+        /// <summary>
+        /// Throws GridComputeJobFailoverException on first call.
+        /// </summary>
+        private static int FailoverJob(IGrid grid)
+        {
+            Assert.NotNull(grid);
+
+            cnt++;
+
+            if (gridName == null)
+            {
+                gridName = grid.Name;
+
+                throw new ComputeJobFailoverException("Test error.");
+            }
+            else
+                Assert.AreNotEqual(gridName, grid.Name);
+
+            return cnt;
+        }
+    }
+}

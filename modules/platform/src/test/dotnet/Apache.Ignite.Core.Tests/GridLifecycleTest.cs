@@ -1,0 +1,282 @@
+﻿/*
+ *  Copyright (C) GridGain Systems. All Rights Reserved.
+ *  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+namespace GridGain.Client
+{
+    using System;
+    using System.Collections.Generic;
+
+    using GridGain.Common;
+    using GridGain.Impl;
+    using GridGain.Lifecycle;
+    using GridGain.Resource;
+
+    using NUnit.Framework;
+
+    /// <summary>
+    /// Lifecycle beans test.
+    /// </summary>
+    public class GridLifecycleTest
+    {
+        /** Configuration: without Java beans. */
+        private const string CFG_NO_BEANS = "config//lifecycle//lifecycle-no-beans.xml";
+
+        /** Configuration: with Java beans. */
+        private const string CFG_BEANS = "config//lifecycle//lifecycle-beans.xml";
+
+        /** Whether to throw an error on lifecycle event. */
+        internal static bool throwErr;
+
+        /** Events: before start. */
+        internal static IList<Event> beforeStartEvts;
+
+        /** Events: after start. */
+        internal static IList<Event> afterStartEvts;
+
+        /** Events: before stop. */
+        internal static IList<Event> beforeStopEvts;
+
+        /** Events: after stop. */
+        internal static IList<Event> afterStopEvts;
+
+        /// <summary>
+        /// Set up routine.
+        /// </summary>
+        [SetUp]
+        public void SetUp()
+        {
+            throwErr = false;
+
+            beforeStartEvts = new List<Event>();
+            afterStartEvts = new List<Event>();
+            beforeStopEvts = new List<Event>();
+            afterStopEvts = new List<Event>();
+        }
+
+        /// <summary>
+        /// Tear down routine.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            GridFactory.StopAll(true);
+        }
+        
+        /// <summary>
+        /// Test without Java beans.
+        /// </summary>
+        [Test]
+        public void TestWithoutBeans()
+        {
+            // 1. Test start events.
+            IGrid grid = Start(CFG_NO_BEANS);
+
+            Assert.AreEqual(2, beforeStartEvts.Count);
+            CheckEvent(beforeStartEvts[0], null, null, 0, null);
+            CheckEvent(beforeStartEvts[1], null, null, 0, null);
+
+            Assert.AreEqual(2, afterStartEvts.Count);
+            CheckEvent(afterStartEvts[0], grid, grid, 0, null);
+            CheckEvent(afterStartEvts[1], grid, grid, 0, null);
+
+            // 2. Test stop events.
+            GridFactory.Stop(grid.Name, false);
+
+            Assert.AreEqual(2, beforeStartEvts.Count);
+            Assert.AreEqual(2, afterStartEvts.Count);
+
+            Assert.AreEqual(2, beforeStopEvts.Count);
+            CheckEvent(beforeStopEvts[0], grid, grid, 0, null);
+            CheckEvent(beforeStopEvts[1], grid, grid, 0, null);
+
+            Assert.AreEqual(2, afterStopEvts.Count);
+            CheckEvent(afterStopEvts[0], grid, grid, 0, null);
+            CheckEvent(afterStopEvts[1], grid, grid, 0, null);
+        }
+
+        /// <summary>
+        /// Test with Java beans.
+        /// </summary>
+        [Test]
+        public void TestWithBeans()
+        {
+            // 1. Test .Net start events.
+            IGrid grid = Start(CFG_BEANS);
+
+            Assert.AreEqual(4, beforeStartEvts.Count);
+            CheckEvent(beforeStartEvts[0], null, null, 0, null);
+            CheckEvent(beforeStartEvts[1], null, null, 1, "1");
+            CheckEvent(beforeStartEvts[2], null, null, 0, null);
+            CheckEvent(beforeStartEvts[3], null, null, 0, null);
+
+            Assert.AreEqual(4, afterStartEvts.Count);
+            CheckEvent(afterStartEvts[0], grid, grid, 0, null);
+            CheckEvent(afterStartEvts[1], grid, grid, 1, "1");
+            CheckEvent(afterStartEvts[2], grid, grid, 0, null);
+            CheckEvent(afterStartEvts[3], grid, grid, 0, null);
+
+            // 2. Test Java start events.
+            IList<int> res = grid.Compute().ExecuteJavaTask<IList<int>>(
+                "org.gridgain.interop.lifecycle.GridInteropJavaLifecycleTask", null);
+
+            Assert.AreEqual(2, res.Count);
+            Assert.AreEqual(3, res[0]);
+            Assert.AreEqual(3, res[1]);
+
+            // 3. Test .Net stop events.
+            GridFactory.Stop(grid.Name, false);
+
+            Assert.AreEqual(4, beforeStartEvts.Count);
+            Assert.AreEqual(4, afterStartEvts.Count);
+
+            Assert.AreEqual(4, beforeStopEvts.Count);
+            CheckEvent(beforeStopEvts[0], grid, grid, 0, null);
+            CheckEvent(beforeStopEvts[1], grid, grid, 1, "1");
+            CheckEvent(beforeStopEvts[2], grid, grid, 0, null);
+            CheckEvent(beforeStopEvts[3], grid, grid, 0, null);
+
+            Assert.AreEqual(4, afterStopEvts.Count);
+            CheckEvent(afterStopEvts[0], grid, grid, 0, null);
+            CheckEvent(afterStopEvts[1], grid, grid, 1, "1");
+            CheckEvent(afterStopEvts[2], grid, grid, 0, null);
+            CheckEvent(afterStopEvts[3], grid, grid, 0, null);
+        }
+
+        /// <summary>
+        /// Test behavior when error is thrown from lifecycle beans.
+        /// </summary>
+        [Test]
+        public void TestError()
+        {
+            throwErr = true;
+
+            try
+            {
+                IGrid grid = Start(CFG_NO_BEANS);
+
+                Assert.Fail("Should not reach this place.");
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(typeof(GridException), e.GetType());
+            }
+        }
+
+        /// <summary>
+        /// Start grid.
+        /// </summary>
+        /// <param name="cfgPath">Spring configuration path.</param>
+        /// <returns>Grid.</returns>
+        private static IGrid Start(string cfgPath)
+        {
+            GridTestUtils.JVM_DEBUG = true;
+
+            GridConfiguration cfg = new GridConfiguration();
+
+            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
+            cfg.JvmOptions = GridTestUtils.TestJavaOptions();
+            cfg.SpringConfigUrl = cfgPath;
+
+            cfg.LifecycleBeans = new List<ILifecycleBean>() { new Bean(), new Bean() };
+
+            return GridFactory.Start(cfg);
+        }
+
+        /// <summary>
+        /// Check event.
+        /// </summary>
+        /// <param name="evt">Event.</param>
+        /// <param name="expGrid1">Expected grid 1.</param>
+        /// <param name="expGrid2">Expected grid 2.</param>
+        /// <param name="expProp1">Expected property 1.</param>
+        /// <param name="expProp2">Expected property 2.</param>
+        private static void CheckEvent(Event evt, IGrid expGrid1, IGrid expGrid2, int expProp1, string expProp2)
+        {
+            if (evt.grid1 != null && evt.grid1 is GridProxy)
+                evt.grid1 = (evt.grid1 as GridProxy).Target;
+
+            if (evt.grid2 != null && evt.grid2 is GridProxy)
+                evt.grid2 = (evt.grid2 as GridProxy).Target;
+
+            Assert.AreEqual(expGrid1, evt.grid1);
+            Assert.AreEqual(expGrid2, evt.grid2);
+            Assert.AreEqual(expProp1, evt.prop1);
+            Assert.AreEqual(expProp2, evt.prop2);
+        }
+    }
+
+    public abstract class AbstractBean
+    {
+        [InstanceResource]
+        public IGrid grid1;
+
+        public int Property1
+        {
+            get;
+            set;
+        }
+    }
+
+    public class Bean : AbstractBean, ILifecycleBean
+    {
+        [InstanceResource]
+        public IGrid grid2;
+
+        public string Property2
+        {
+            get;
+            set;
+        }
+
+        /** <inheritDoc /> */
+        public void OnLifecycleEvent(LifecycleEventType evtType)
+        {
+            if (GridLifecycleTest.throwErr)
+                throw new Exception("Lifecycle exception.");
+
+            Event evt = new Event();
+
+            evt.grid1 = grid1;
+            evt.grid2 = grid2;
+            evt.prop1 = Property1;
+            evt.prop2 = Property2;
+
+            switch (evtType)
+            {
+                case LifecycleEventType.BEFORE_GRID_START:
+                    GridLifecycleTest.beforeStartEvts.Add(evt);
+
+                    break;
+
+                case LifecycleEventType.AFTER_GRID_START:
+                    GridLifecycleTest.afterStartEvts.Add(evt);
+
+                    break;
+
+                case LifecycleEventType.BEFORE_GRID_STOP:
+                    GridLifecycleTest.beforeStopEvts.Add(evt);
+
+                    break;
+
+                case LifecycleEventType.AFTER_GRID_STOP:
+                    GridLifecycleTest.afterStopEvts.Add(evt);
+
+                    break;
+            }
+        }
+    }
+
+    public class Event
+    {
+        public IGrid grid1;
+        public IGrid grid2;
+        public int prop1;
+        public string prop2;
+    }
+}

@@ -1,0 +1,429 @@
+/*
+ *  Copyright (C) GridGain Systems. All Rights Reserved.
+ *  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+namespace GridGain.Client.Compute
+{
+    using System;
+    using System.Collections.Generic;
+    using GridGain.Cluster;
+    using GridGain.Compute;
+    using GridGain.Portable;
+    using GridGain.Resource;
+    using NUnit.Framework;
+
+    /// <summary>
+    /// Tests task result.
+    /// </summary>
+    public class GridTaskResultTest : GridAbstractTaskTest
+    {
+        /** Grid name. */
+        private static volatile string gridName;
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public GridTaskResultTest() : base(false) { }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="forked">Fork flag.</param>
+        protected GridTaskResultTest(bool forked) : base(forked) { }
+
+        /// <summary>
+        /// Test for task result.
+        /// </summary>
+        [Test]
+        public void TestTaskResultInt()
+        {
+            TestTask<int> task = new TestTask<int>();
+
+            int res = grid1.Compute().Execute(task, new Tuple<bool, int>(true, 10));
+
+            Assert.AreEqual(10, res);
+
+            res = grid1.Compute().Execute(task, new Tuple<bool, int>(false, 11));
+
+            Assert.AreEqual(11, res);
+        }
+
+        /// <summary>
+        /// Test for task result.
+        /// </summary>
+        [Test]
+        public void TestTaskResultLong()
+        {
+            TestTask<long> task = new TestTask<long>();
+
+            long res = grid1.Compute().Execute(task, new Tuple<bool, long>(true, 10000000000));
+
+            Assert.AreEqual(10000000000, res);
+
+            res = grid1.Compute().Execute(task, new Tuple<bool, long>(false, 10000000001));
+
+            Assert.AreEqual(10000000001, res);
+        }
+
+        /// <summary>
+        /// Test for task result.
+        /// </summary>
+        [Test]
+        public void TestTaskResultFloat()
+        {
+            TestTask<float> task = new TestTask<float>();
+
+            float res = grid1.Compute().Execute(task, new Tuple<bool, float>(true, 1.1f));
+
+            Assert.AreEqual(1.1f, res);
+
+            res = grid1.Compute().Execute(task, new Tuple<bool, float>(false, -1.1f));
+
+            Assert.AreEqual(-1.1f, res);
+        }
+
+        /// <summary>
+        /// Test for task result.
+        /// </summary>
+        [Test]
+        public void TestTaskResultPortable()
+        {
+            TestTask<PortableResult> task = new TestTask<PortableResult>();
+
+            PortableResult val = new PortableResult(100);
+
+            PortableResult res = grid1.Compute().Execute(task, new Tuple<bool, PortableResult>(true, val));
+
+            Assert.AreEqual(val.val, res.val);
+
+            val.val = 101;
+
+            res = grid1.Compute().Execute(task, new Tuple<bool, PortableResult>(false, val));
+
+            Assert.AreEqual(val.val, res.val);
+        }
+
+        /// <summary>
+        /// Test for task result.
+        /// </summary>
+        [Test]
+        public void TestTaskResultSerializable()
+        {
+            TestTask<SerializableResult> task = new TestTask<SerializableResult>();
+
+            SerializableResult val = new SerializableResult(100);
+
+            SerializableResult res = grid1.Compute().Execute(task, new Tuple<bool, SerializableResult>(true, val));
+
+            Assert.AreEqual(val.val, res.val);
+
+            val.val = 101;
+
+            res = grid1.Compute().Execute(task, new Tuple<bool, SerializableResult>(false, val));
+
+            Assert.AreEqual(val.val, res.val);
+        }
+
+        /// <summary>
+        /// Test for task result.
+        /// </summary>
+        [Test]
+        public void TestTaskResultLarge()
+        {
+            TestTask<byte[]> task = new TestTask<byte[]>();
+
+            byte[] res = grid1.Compute().Execute(task,
+                new Tuple<bool, byte[]>(true, new byte[100 * 1024]));
+
+            Assert.AreEqual(100 * 1024, res.Length);
+
+            res = grid1.Compute().Execute(task, new Tuple<bool, byte[]>(false, new byte[101 * 1024]));
+
+            Assert.AreEqual(101 * 1024, res.Length);
+        }
+
+        /** <inheritDoc /> */
+        override protected void PortableTypeConfigurations(ICollection<PortableTypeConfiguration> portTypeCfgs)
+        {
+            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableResult)));
+            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(TestPortableJob)));
+            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableOutFunc)));
+            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableFunc)));
+        }
+
+        [Test]
+        public void TestOutFuncResultPrimitive1()
+        {
+            ICollection<int> res = grid1.Compute().Broadcast(new PortableOutFunc());
+
+            Assert.AreEqual(3, res.Count);
+
+            foreach (int r in res)
+                Assert.AreEqual(10, r);
+        }
+
+        [Test]
+        public void TestOutFuncResultPrimitive2()
+        {
+            ICollection<int> res = grid1.Compute().Broadcast(new SerializableOutFunc());
+
+            Assert.AreEqual(3, res.Count);
+
+            foreach (int r in res)
+                Assert.AreEqual(10, r);
+        }
+
+        [Test]
+        public void TestFuncResultPrimitive1()
+        {
+            ICollection<int> res = grid1.Compute().Broadcast(new PortableFunc(), 10);
+
+            Assert.AreEqual(3, res.Count);
+
+            foreach (int r in res)
+                Assert.AreEqual(11, r);
+        }
+
+        [Test]
+        public void TestFuncResultPrimitive2()
+        {
+            ICollection<int> res = grid1.Compute().Broadcast(new SerializableFunc(), 10);
+
+            Assert.AreEqual(3, res.Count);
+
+            foreach (int r in res)
+                Assert.AreEqual(11, r);
+        }
+
+        interface IUserInterface<in T, out R>
+        {
+            R Invoke(T arg);
+        }
+
+        /// <summary>
+        /// Test function.
+        /// </summary>
+        public class PortableFunc : IComputeFunc<int, int>, IUserInterface<int, int>
+        {
+            int IComputeFunc<int, int>.Invoke(int arg)
+            {
+                return arg + 1;
+            }
+
+            int IUserInterface<int, int>.Invoke(int arg)
+            {
+                // Same signature as IComputeFunc<int, int>, but from different interface
+                throw new Exception("Invalid method");
+            }
+
+            public int Invoke(int arg)
+            {
+                // Same signature as IComputeFunc<int, int>, 
+                // but due to explicit interface implementation this is a wrong method
+                throw new Exception("Invalid method");
+            }
+        }
+
+        /// <summary>
+        /// Test function.
+        /// </summary>
+        [Serializable]
+        public class SerializableFunc : IComputeFunc<int, int>
+        {
+            public int Invoke(int arg)
+            {
+                return arg + 1;
+            }
+        }
+
+        /// <summary>
+        /// Test function.
+        /// </summary>
+        public class PortableOutFunc : IComputeFunc<int>
+        {
+            public int Invoke()
+            {
+                return 10;
+            }
+        }
+
+        /// <summary>
+        /// Test function.
+        /// </summary>
+        [Serializable]
+        public class SerializableOutFunc : IComputeFunc<int>
+        {
+            public int Invoke()
+            {
+                return 10;
+            }
+        }
+
+        /// <summary>
+        /// Test task.
+        /// </summary>
+        public class TestTask<T> : ComputeTaskAdapter<Tuple<bool, T>, T, T>
+        {
+            /** <inheritDoc /> */
+            override public IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, Tuple<bool, T> arg)
+            {
+                gridName = null;
+
+                Assert.AreEqual(3, subgrid.Count);
+
+                bool local = arg.Item1;
+                T res = arg.Item2;
+
+                var jobs = new Dictionary<IComputeJob<T>, IClusterNode>();
+
+                IComputeJob<T> job;
+
+                if (res is PortableResult)
+                {
+                    TestPortableJob job0 = new TestPortableJob();
+
+                    job0.SetArguments(res);
+
+                    job = (IComputeJob<T>) job0;
+                }
+                else
+                {
+                    TestJob<T> job0 = new TestJob<T>();
+
+                    job0.SetArguments(res);
+
+                    job = job0;
+                }
+
+                foreach (IClusterNode node in subgrid)
+                {
+                    bool add = local ? node.IsLocal : !node.IsLocal;
+
+                    if (add)
+                    {
+                        jobs.Add(job, node);
+
+                        break;
+                    }
+                }
+
+                Assert.AreEqual(1, jobs.Count);
+
+                return jobs;
+            }
+
+            /** <inheritDoc /> */
+            override public T Reduce(IList<IComputeJobResult<T>> results)
+            {
+                Assert.AreEqual(1, results.Count);
+
+                var res = results[0];
+
+                Assert.IsNull(res.Exception());
+
+                Assert.IsFalse(res.Cancelled);
+
+                Assert.IsNotNull(gridName);
+
+                Assert.AreEqual(GridId(gridName), res.NodeId);
+
+                var job = res.Job();
+
+                Assert.IsNotNull(job);
+
+                return res.Data();
+            }
+        }
+
+        private static Guid GridId(string gridName)
+        {
+            if (gridName.Equals(GRID1_NAME))
+                return GridFactory.Grid(GRID1_NAME).Cluster.LocalNode.Id;
+            if (gridName.Equals(GRID2_NAME))
+                return GridFactory.Grid(GRID2_NAME).Cluster.LocalNode.Id;
+            if (gridName.Equals(GRID3_NAME))
+                return GridFactory.Grid(GRID3_NAME).Cluster.LocalNode.Id;
+
+            Assert.Fail("Failed to find grid " + gridName);
+
+            return new Guid();
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        class PortableResult
+        {
+            /** */
+            public int val;
+
+            public PortableResult(int val)
+            {
+                this.val = val;
+            }
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        [Serializable]
+        class SerializableResult
+        {
+            /** */
+            public int val;
+
+            public SerializableResult(int val)
+            {
+                this.val = val;
+            }
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        [Serializable]
+        class TestJob<T> : ComputeJobAdapter<T>
+        {
+            [InstanceResource]
+            private IGrid grid = null;
+
+            /** <inheritDoc /> */
+            override public T Execute()
+            {
+                Assert.IsNotNull(grid);
+
+                gridName = grid.Name;
+
+                T res = Argument<T>(0);
+
+                return res;
+            }
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        class TestPortableJob : ComputeJobAdapter<PortableResult>
+        {
+            [InstanceResource]
+            private IGrid grid = null;
+
+            /** <inheritDoc /> */
+            override public PortableResult Execute()
+            {
+                Assert.IsNotNull(grid);
+
+                gridName = grid.Name;
+
+                PortableResult res = Argument<PortableResult>(0);
+
+                return res;
+            }
+        }
+    }
+}
