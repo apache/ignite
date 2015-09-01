@@ -85,7 +85,12 @@
     <Compile Include="Impl\Portable\IO\IPortableStream.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\cpp\common\project\vs\common.vcxproj">
+      <Project>{4f7e4917-4612-4b96-9838-025711ade391}</Project>
+      <Name>common</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
