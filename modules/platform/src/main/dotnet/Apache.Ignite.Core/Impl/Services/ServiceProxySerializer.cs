@@ -1,0 +1,132 @@
+/*
+ *  Copyright (C) GridGain Systems. All Rights Reserved.
+ *  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+namespace GridGain.Impl.Services
+{
+    using System;
+    using System.Diagnostics;
+    using System.Reflection;
+    using Apache.Ignite.Core.Impl.Portable.IO;
+    using GridGain.Impl.Portable;
+    using GridGain.Portable;
+    using GridGain.Services;
+
+    /// <summary>
+    /// Static proxy methods.
+    /// </summary>
+    internal static class ServiceProxySerializer
+    {
+        /// <summary>
+        /// Writes proxy method invocation data to the specified writer.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="method">Method.</param>
+        /// <param name="arguments">Arguments.</param>
+        public static void WriteProxyMethod(PortableWriterImpl writer, MethodBase method, object[] arguments)
+        {
+            Debug.Assert(writer != null);
+            Debug.Assert(method != null);
+
+            writer.WriteString(method.Name);
+
+            if (arguments != null)
+            {
+                writer.WriteBoolean(true);
+                writer.WriteInt(arguments.Length);
+
+                foreach (var arg in arguments)
+                    writer.WriteObject(arg);
+            }
+            else
+                writer.WriteBoolean(false);
+        }
+
+        /// <summary>
+        /// Reads proxy method invocation data from the specified reader.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="marsh">Marshaller.</param>
+        /// <param name="mthdName">Method name.</param>
+        /// <param name="mthdArgs">Method arguments.</param>
+        public static void ReadProxyMethod(IPortableStream stream, PortableMarshaller marsh, 
+            out string mthdName, out object[] mthdArgs)
+        {
+            var reader = marsh.StartUnmarshal(stream);
+
+            var srvKeepPortable = reader.ReadBoolean();
+
+            mthdName = reader.ReadString();
+
+            if (reader.ReadBoolean())
+            {
+                mthdArgs = new object[reader.ReadInt()];
+
+                if (srvKeepPortable)
+                    reader = marsh.StartUnmarshal(stream, true);
+
+                for (var i = 0; i < mthdArgs.Length; i++)
+                    mthdArgs[i] = reader.ReadObject<object>();
+            }
+            else
+                mthdArgs = null;
+        }
+
+        /// <summary>
+        /// Writes method invocation result.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="marsh">Marshaller.</param>
+        /// <param name="methodResult">Method result.</param>
+        /// <param name="invocationError">Method invocation error.</param>
+        public static void WriteInvocationResult(IPortableStream stream, PortableMarshaller marsh, object methodResult,
+            Exception invocationError)
+        {
+            Debug.Assert(stream != null);
+            Debug.Assert(marsh != null);
+
+            var writer = marsh.StartMarshal(stream);
+
+            PortableUtils.WriteInvocationResult(writer, invocationError == null, invocationError ?? methodResult);
+        }
+
+        /// <summary>
+        /// Reads method invocation result.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="marsh">Marshaller.</param>
+        /// <param name="keepPortable">Portable flag.</param>
+        /// <returns>
+        /// Method invocation result, or exception in case of error.
+        /// </returns>
+        public static object ReadInvocationResult(IPortableStream stream, PortableMarshaller marsh, bool keepPortable)
+        {
+            Debug.Assert(stream != null);
+            Debug.Assert(marsh != null);
+
+            var mode = keepPortable ? PortableMode.FORCE_PORTABLE : PortableMode.DESERIALIZE;
+
+            var reader = marsh.StartUnmarshal(stream, mode);
+
+            object err;
+
+            var res = PortableUtils.ReadInvocationResult(reader, out err);
+
+            if (err == null)
+                return res;
+
+            var portErr = err as IPortableObject;
+
+            throw portErr != null
+                ? new ServiceInvocationException("Proxy method invocation failed with a portable error. " +
+                                                 "Examine PortableCause for details.", portErr)
+                : new ServiceInvocationException("Proxy method invocation failed with an exception. " +
+                                                 "Examine InnerException for details.", (Exception) err);
+        }
+    }
+}

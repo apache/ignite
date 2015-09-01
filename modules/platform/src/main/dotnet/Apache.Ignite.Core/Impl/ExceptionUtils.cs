@@ -1,0 +1,203 @@
+﻿﻿/*
+ *  Copyright (C) GridGain Systems. All Rights Reserved.
+ *  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+namespace GridGain.Impl
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Runtime.InteropServices;
+    using System.Threading;
+
+    using GridGain.Cache;
+    using GridGain.Cache.Store;
+    using GridGain.Compute;
+    using GridGain.Cluster;
+    using GridGain.Common;
+    using GridGain.Impl.Portable;
+    using GridGain.Product;
+    using GridGain.Security;
+    using GridGain.Transactions;
+
+    using U = GridGain.Impl.GridUtils;
+
+    /// <summary>
+    /// Managed environment. Acts as a gateway for native code.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal static class ExceptionUtils
+    {
+        /** NoClassDefFoundError fully-qualified class name which is important during startup phase. */
+        private const string CLS_NO_CLS_DEF_FOUND_ERR = "java.lang.NoClassDefFoundError";
+
+        /** NoSuchMethodError fully-qualified class name which is important during startup phase. */
+        private const string CLS_NO_SUCH_MTHD_ERR = "java.lang.NoSuchMethodError";
+
+        /** InteropCachePartialUpdateException. */
+        private const string CLS_CACHE_PARTIAL_UPDATE_ERR = "org.apache.ignite.internal.processors.platform.cache.PlatformCachePartialUpdateException";
+        
+        /** Map with predefined exceptions. */
+        private static readonly IDictionary<string, ExceptionFactoryDelegate> EXS = new Dictionary<string, ExceptionFactoryDelegate>();
+
+        /** Exception factory delegate. */
+        private delegate Exception ExceptionFactoryDelegate(string msg);
+        
+        /// <summary>
+        /// Static initializer.
+        /// </summary>
+        static ExceptionUtils()
+        {
+            // Common Java exceptions mapped to common .Net exceptions.
+            EXS["java.lang.IllegalArgumentException"] = m => new ArgumentException(m);
+            EXS["java.lang.IllegalStateException"] = m => new InvalidOperationException(m);
+            EXS["java.lang.UnsupportedOperationException"] = m => new NotImplementedException(m);
+            EXS["java.lang.InterruptedException"] = m => new ThreadInterruptedException(m);
+            
+            // Generic Ignite exceptions.
+            EXS["org.apache.ignite.IgniteException"] = m => new GridException(m);
+            EXS["org.apache.ignite.IgniteCheckedException"] = m => new GridException(m);
+
+            // Cluster exceptions.
+            EXS["org.apache.ignite.cluster.ClusterGroupEmptyException"] = m => new ClusterGroupEmptyException(m);
+            EXS["org.apache.ignite.cluster.ClusterTopologyException"] = m => new ClusterTopologyException(m);
+
+            // Compute exceptions.
+            EXS["org.apache.ignite.compute.ComputeExecutionRejectedException"] = m => new ComputeExecutionRejectedException(m);
+            EXS["org.apache.ignite.compute.ComputeJobFailoverException"] = m => new ComputeJobFailoverException(m);
+            EXS["org.apache.ignite.compute.ComputeTaskCancelledException"] = m => new ComputeTaskCancelledException(m);
+            EXS["org.apache.ignite.compute.ComputeTaskTimeoutException"] = m => new ComputeTaskTimeoutException(m);
+            EXS["org.apache.ignite.compute.ComputeUserUndeclaredException"] = m => new ComputeUserUndeclaredException(m);
+
+            // Cache exceptions.
+            EXS["javax.cache.CacheException"] = m => new CacheException(m);
+            EXS["javax.cache.integration.CacheLoaderException"] = m => new CacheStoreException(m);
+            EXS["javax.cache.integration.CacheWriterException"] = m => new CacheStoreException(m);
+            EXS["javax.cache.processor.EntryProcessorException"] = m => new CacheEntryProcessorException(m);
+            EXS["org.apache.ignite.cache.CacheAtomicUpdateTimeoutException"] = m => new CacheAtomicUpdateTimeoutException(m);
+            
+            // Transaction exceptions.
+            EXS["org.apache.ignite.transactions.TransactionOptimisticException"] = m => new TransactionOptimisticException(m);
+            EXS["org.apache.ignite.transactions.TransactionTimeoutException"] = m => new TransactionTimeoutException(m);
+            EXS["org.apache.ignite.transactions.TransactionRollbackException"] = m => new TransactionRollbackException(m);
+            EXS["org.apache.ignite.transactions.TransactionHeuristicException"] = m => new TransactionHeuristicException(m);
+
+            // Security exceptions.
+            EXS["org.apache.ignite.IgniteAuthenticationException"] = m => new SecurityException(m);
+            EXS["org.apache.ignite.plugin.security.GridSecurityException"] = m => new SecurityException(m);
+
+            // Product exceptions.
+            EXS["org.gridgain.grid.product.ProductLicenseException"] = m => new ProductLicenseException(m);
+        }
+
+        /// <summary>
+        /// Creates exception according to native code class and message.
+        /// </summary>
+        /// <param name="clsName">Exception class name.</param>
+        /// <param name="msg">Exception message.</param>
+        /// <param name="reader">Error data reader.</param>
+        public static Exception GetException(string clsName, string msg, PortableReaderImpl reader = null)
+        {
+            ExceptionFactoryDelegate ctor;
+
+            if (EXS.TryGetValue(clsName, out ctor))
+                return ctor(msg);
+
+            if (CLS_NO_CLS_DEF_FOUND_ERR.Equals(clsName))
+                return new GridException("Java class is not found (did you set GRIDGAIN_HOME environment " +
+                    "variable?): " + msg);
+
+            if (CLS_NO_SUCH_MTHD_ERR.Equals(clsName))
+                return new GridException("Java class method is not found (did you set GRIDGAIN_HOME environment " +
+                    "variable?): " + msg);
+
+            if (CLS_CACHE_PARTIAL_UPDATE_ERR.Equals(clsName))
+                return ProcessCachePartialUpdateException(msg, reader);
+            
+            return new GridException("Java exception occurred [class=" + clsName + ", message=" + msg + ']');
+        }
+
+        /// <summary>
+        /// Process cache partial update exception.
+        /// </summary>
+        /// <param name="msg">Message.</param>
+        /// <param name="reader">Reader.</param>
+        /// <returns></returns>
+        private static Exception ProcessCachePartialUpdateException(string msg, PortableReaderImpl reader)
+        {
+            if (reader == null)
+                return new CachePartialUpdateException(msg, new GridException("Failed keys are not available."));
+            
+            bool dataExists = reader.ReadBoolean();
+
+            Debug.Assert(dataExists);
+
+            if (reader.ReadBoolean())
+            {
+                bool keepPortable = reader.ReadBoolean();
+
+                PortableReaderImpl keysReader = reader.Marshaller.StartUnmarshal(reader.Stream, keepPortable);
+
+                try
+                {
+                    return new CachePartialUpdateException(msg, ReadNullableList(keysReader));
+                }
+                catch (Exception e)
+                {
+                    // Failed to deserialize data.
+                    return new CachePartialUpdateException(msg, e);
+                }
+            }
+            
+            // Was not able to write keys.
+            string innerErrCls = reader.ReadString();
+            string innerErrMsg = reader.ReadString();
+
+            Exception innerErr = GetException(innerErrCls, innerErrMsg);
+
+            return new CachePartialUpdateException(msg, innerErr);
+        }
+
+        /// <summary>
+        /// Create JVM initialization exception.
+        /// </summary>
+        /// <param name="clsName">Class name.</param>
+        /// <param name="msg">Message.</param>
+        /// <returns>Exception.</returns>
+        public static Exception GetJvmInitializeException(string clsName, string msg)
+        {
+            if (clsName != null)
+                return new GridException("Failed to initialize JVM.", GetException(clsName, msg));
+
+            if (msg != null)
+                return new GridException("Failed to initialize JVM: " + msg);
+
+            return new GridException("Failed to initialize JVM.");
+        }
+
+        /// <summary>
+        /// Reads nullable list.
+        /// </summary>
+        /// <param name="reader">Reader.</param>
+        /// <returns>List.</returns>
+        private static List<object> ReadNullableList(PortableReaderImpl reader)
+        {
+            if (!reader.ReadBoolean()) 
+                return null;
+
+            var size = reader.ReadInt();
+
+            var list = new List<object>(size);
+
+            for (int i = 0; i < size; i++)
+                list.Add(reader.ReadObject<object>());
+
+            return list;
+        }
+    }
+}

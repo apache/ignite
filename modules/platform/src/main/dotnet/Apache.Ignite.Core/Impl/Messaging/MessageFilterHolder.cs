@@ -1,0 +1,173 @@
+﻿/*
+ *  Copyright (C) GridGain Systems. All Rights Reserved.
+ *
+ *
+ *  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+namespace GridGain.Impl.Messaging
+{
+    using System;
+    using System.Diagnostics;
+    using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Portable.IO;
+    using GridGain.Impl.Common;
+    using GridGain.Impl.Portable;
+    using GridGain.Impl.Resource;
+    using GridGain.Messaging;
+    using GridGain.Portable;
+
+    /// <summary>
+    /// Non-generic portable filter wrapper.
+    /// </summary>
+    internal class MessageFilterHolder : IPortableWriteAware, IHandle
+    {
+        /** Invoker function that takes key and value and invokes wrapped IMessageFilter */
+        private readonly Func<Guid, object, bool> invoker;
+
+        /** Current grid instance. */
+        private readonly GridImpl grid;
+        
+        /** Underlying filter. */
+        private readonly object filter;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MessageFilterHolder" /> class.
+        /// </summary>
+        /// <param name="grid">Grid.</param>
+        /// <param name="filter">The <see cref="IMessageFilter{T}" /> to wrap.</param>
+        /// <param name="invoker">The invoker func that takes key and value and invokes wrapped IMessageFilter.</param>
+        private MessageFilterHolder(GridImpl grid, object filter, Func<Guid, object, bool> invoker)
+        {
+            Debug.Assert(filter != null);
+            Debug.Assert(invoker != null);
+
+            this.invoker = invoker;
+
+            this.filter = filter;
+
+            // 1. Set fields.
+            Debug.Assert(grid != null);
+
+            this.grid = grid;
+            this.invoker = invoker;
+
+            // 2. Perform injections.
+            ResourceProcessor.Inject(filter, grid);
+        }
+
+        /// <summary>
+        /// Invoke the filter.
+        /// </summary>
+        /// <param name="input">Input.</param>
+        /// <returns></returns>
+        public int Invoke(IPortableStream input)
+        {
+            var rawReader = grid.Marshaller.StartUnmarshal(input).RawReader();
+
+            var nodeId = rawReader.ReadGuid();
+
+            Debug.Assert(nodeId != null);
+
+            return invoker(nodeId.Value, rawReader.ReadObject<object>()) ? 1 : 0;
+        }
+
+        /// <summary>
+        /// Wrapped <see cref="IMessageFilter{T}" />.
+        /// </summary>
+        public object Filter
+        {
+            get { return filter; }
+        }
+
+        /// <summary>
+        /// Destroy callback.
+        /// </summary>
+        public Action DestroyAction { private get; set; }
+
+        /** <inheritDoc /> */
+        public void Release()
+        {
+            if (DestroyAction != null)
+                DestroyAction();
+        }
+
+        /** <inheritDoc /> */
+        public bool Released
+        {
+            get { return false; } // Multiple releases are allowed.
+        }
+
+        /// <summary>
+        /// Creates local holder instance.
+        /// </summary>
+        /// <param name="grid">Grid instance.</param>
+        /// <param name="filter">Filter.</param>
+        /// <returns>
+        /// New instance of <see cref="MessageFilterHolder" />
+        /// </returns>
+        public static MessageFilterHolder CreateLocal<T>(GridImpl grid, IMessageFilter<T> filter)
+        {
+            Debug.Assert(filter != null);
+
+            return new MessageFilterHolder(grid, filter, (id, msg) => filter.Invoke(id, (T)msg));
+        }
+
+        /// <summary>
+        /// Creates remote holder instance.
+        /// </summary>
+        /// <param name="grid">Grid.</param>
+        /// <param name="memPtr">Memory pointer.</param>
+        /// <returns>Deserialized instance of <see cref="MessageFilterHolder"/></returns>
+        public static MessageFilterHolder CreateRemote(GridImpl grid, long memPtr)
+        {
+            Debug.Assert(grid != null);
+            
+            var stream = GridManager.Memory.Get(memPtr).Stream();
+
+            var holder = grid.Marshaller.Unmarshal<MessageFilterHolder>(stream);
+
+            return holder;
+        }
+
+        /// <summary>
+        /// Gets the invoker func.
+        /// </summary>
+        private static Func<Guid, object, bool> GetInvoker(object pred)
+        {
+            var func = DelegateTypeDescriptor.GetMessageFilter(pred.GetType());
+
+            return (id, msg) => func(pred, id, msg);
+        }
+
+        /** <inheritdoc /> */
+        public void WritePortable(IPortableWriter writer)
+        {
+            var writer0 = (PortableWriterImpl)writer.RawWriter();
+
+            writer0.DetachNext();
+            PortableUtils.WritePortableOrSerializable(writer0, Filter);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MessageFilterHolder"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        public MessageFilterHolder(IPortableReader reader)
+        {
+            var reader0 = (PortableReaderImpl)reader.RawReader();
+
+            filter = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+
+            invoker = GetInvoker(filter);
+
+            grid = reader0.Marshaller.Grid;
+
+            ResourceProcessor.Inject(filter, grid);
+        }
+    }
+}

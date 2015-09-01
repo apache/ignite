@@ -1,0 +1,267 @@
+﻿/*
+ *  Copyright (C) GridGain Systems. All Rights Reserved.
+ *  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+namespace GridGain.Compute
+{
+    using System;
+    using System.Collections.Generic;
+
+    using GridGain.Cluster;
+    using GridGain.Common;
+
+    /// <summary>
+    /// Defines compute grid functionality for executing tasks and closures over nodes
+    /// in the <see cref="IClusterGroup"/>. Instance of <see cref="ICompute"/>
+    /// is obtained from grid projection using <see cref="IClusterGroup.Compute()"/> method.
+    /// <para />
+    /// Note that if attempt is made to execute a computation over an empty projection (i.e. projection that does
+    /// not have any alive nodes), <c>ClusterGroupEmptyException</c> will be thrown out of result future.
+    /// <para />
+    /// GridGain must select a node for a computation to be executed. The node will be selected based on the
+    /// underlying <c>GridLoadBalancingSpi</c>, which by default sequentially picks next available node from
+    /// grid projection. Other load balancing policies, such as <c>random</c> or <c>adaptive</c>, can be
+    /// configured as well by selecting different load balancing SPI in grid configuration. If your logic requires
+    /// some custom load balancing behavior, consider implementing <c>ComputeTask</c> in Java directly.
+    /// <para />
+    /// GridGain guarantees that as long as there is at least one grid node standing, every job will be
+    /// executed. Jobs will automatically failover to another node if a remote node crashed or has rejected
+    /// execution due to lack of resources. By default, in case of failover, next load balanced node will be
+    /// picked for job execution. Also jobs will never be re-routed to the nodes they have failed on. This
+    /// behavior can be changed by configuring any of the existing or a custom <c>GridFailoverSpi</c> in grid
+    /// configuration.
+    /// <para/>
+    /// All members are thread-safe and may be used concurrently from multiple threads.
+    /// </summary>
+    public interface ICompute : IAsyncSupport<ICompute>
+    {
+        /// <summary>
+        /// Grid projection to which this compute instance belongs.
+        /// </summary>
+        IClusterGroup ClusterGroup
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Sets no-failover flag for the next executed task on this projection in the current thread.
+        /// If flag is set, job will be never failed over even if remote node crashes or rejects execution.
+        /// When task starts execution, the no-failover flag is reset, so all other task will use default
+        /// failover policy, unless this flag is set again.
+        /// </summary>
+        /// <returns>This compute instance for chaining calls.</returns>
+        ICompute WithNoFailover();
+
+        /// <summary>
+        /// Sets task timeout for the next executed task on this projection in the current thread.
+        /// When task starts execution, the timeout is reset, so one timeout is used only once.
+        /// </summary>
+        /// <param name="timeout">Computation timeout in milliseconds.</param>
+        /// <returns>This compute instance for chaining calls.</returns>
+        ICompute WithTimeout(long timeout);
+
+        /// <summary>
+        /// Sets keep-portable flag for the next executed Java task on this projection in the current
+        /// thread so that task argument passed to Java and returned task results will not be
+        /// deserialized.
+        /// </summary>
+        /// <returns>This compute instance for chaining calls.</returns>
+        ICompute WithKeepPortable();
+
+        /// <summary>
+        /// Executes given Java task on the grid projection. If task for given name has not been deployed yet,
+        /// then 'taskName' will be used as task class name to auto-deploy the task.
+        /// </summary>
+        /// <param name="taskName">Java task name</param>
+        /// <param name="taskArg">Optional argument of task execution, can be null.</param>
+        /// <returns>Task result.</returns>
+        /// <typeparam name="T">Type of task result.</typeparam>
+        T ExecuteJavaTask<T>(string taskName, object taskArg);
+
+        /// <summary>
+        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
+        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
+        /// </summary>
+        /// <param name="task">Task to execute.</param>
+        /// <param name="taskArg">Optional task argument.</param>
+        /// <returns>Task result.</returns>
+        /// <typeparam name="A">Argument type.</typeparam>
+        /// <typeparam name="T">Type of job result.</typeparam>
+        /// <typeparam name="R">Type of reduce result.</typeparam>
+        [AsyncSupported]
+        R Execute<A, T, R>(IComputeTask<A, T, R> task, A taskArg);
+        
+        /// <summary>
+        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
+        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
+        /// </summary>
+        /// <param name="task">Task to execute.</param>
+        /// <returns>Task result.</returns>
+        /// <typeparam name="T">Type of job result.</typeparam>
+        /// <typeparam name="R">Type of reduce result.</typeparam>
+        [AsyncSupported]
+        R Execute<T, R>(IComputeTask<T, R> task);
+
+        /// <summary>
+        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
+        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
+        /// </summary>
+        /// <param name="taskType">Task type.</param>
+        /// <param name="taskArg">Optional task argument.</param>
+        /// <returns>Task result.</returns>
+        /// <typeparam name="A">Argument type.</typeparam>
+        /// <typeparam name="T">Type of job result.</typeparam>
+        /// <typeparam name="R">Type of reduce result.</typeparam>
+        [AsyncSupported]
+        R Execute<A, T, R>(Type taskType, A taskArg);
+        
+        /// <summary>
+        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
+        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
+        /// </summary>
+        /// <param name="taskType">Task type.</param>
+        /// <returns>Task result.</returns>
+        /// <typeparam name="T">Type of job result.</typeparam>
+        /// <typeparam name="R">Type of reduce result.</typeparam>
+        [AsyncSupported]
+        R Execute<T, R>(Type taskType);
+
+        /// <summary>
+        /// Executes provided job on a node in this grid projection. The result of the
+        /// job execution is returned from the result closure.
+        /// </summary>
+        /// <param name="clo">Job to execute.</param>
+        /// <returns>Job result for this execution.</returns>
+        /// <typeparam name="R">Type of job result.</typeparam>
+        [AsyncSupported]
+        R Call<R>(IComputeFunc<R> clo);
+
+        /// <summary>
+        /// Executes given job on the node where data for provided affinity key is located 
+        /// (a.k.a. affinity co-location).
+        /// </summary>
+        /// <param name="cacheName">Name of the cache to use for affinity co-location.</param>
+        /// <param name="affinityKey">Affinity key.</param>
+        /// <param name="clo">Job to execute.</param>
+        /// <returns>Job result for this execution.</returns>
+        /// <typeparam name="R">Type of job result.</typeparam>
+        [AsyncSupported]
+        R AffinityCall<R>(string cacheName, object affinityKey, IComputeFunc<R> clo);
+
+        /// <summary>
+        /// Executes collection of jobs on nodes within this grid projection.
+        /// </summary>
+        /// <param name="clos">Collection of jobs to execute.</param>
+        /// <param name="rdc">Reducer to reduce all job results into one individual return value.</param>
+        /// <returns>Reduced job result for this execution.</returns>
+        /// <typeparam name="R1">Type of job result.</typeparam>
+        /// <typeparam name="R2">Type of reduced result.</typeparam>
+        [AsyncSupported]
+        R2 Call<R1, R2>(IEnumerable<IComputeFunc<R1>> clos, IComputeReducer<R1, R2> rdc);
+        
+        /// <summary>
+        /// Executes collection of jobs on nodes within this grid projection.
+        /// </summary>
+        /// <param name="clos">Collection of jobs to execute.</param>
+        /// <returns>Collection of job results for this execution.</returns>
+        /// <typeparam name="R">Type of job result.</typeparam>
+        [AsyncSupported]
+        ICollection<R> Call<R>(IEnumerable<IComputeFunc<R>> clos);
+
+        /// <summary>
+        /// Broadcasts given job to all nodes in grid projection. Every participating node will return a job result. 
+        /// </summary>
+        /// <param name="clo">Job to broadcast to all projection nodes.</param>
+        /// <returns>Collection of results for this execution.</returns>
+        [AsyncSupported]
+        ICollection<R> Broadcast<R>(IComputeFunc<R> clo);
+
+        /// <summary>
+        /// Broadcasts given closure job with passed in argument to all nodes in grid projection.
+        /// Every participating node will return a job result.
+        /// </summary>
+        /// <param name="clo">Job to broadcast to all projection nodes.</param>
+        /// <param name="arg">Job closure argument.</param>
+        /// <returns>Collection of results for this execution.</returns>
+        /// <typeparam name="T">Type of argument.</typeparam>
+        /// <typeparam name="R">Type of job result.</typeparam>
+        [AsyncSupported]
+        ICollection<R> Broadcast<T, R>(IComputeFunc<T, R> clo, T arg);
+
+        /// <summary>
+        /// Broadcasts given job to all nodes in grid projection.
+        /// </summary>
+        /// <param name="action">Job to broadcast to all projection nodes.</param>
+        [AsyncSupported]
+        void Broadcast(IComputeAction action);
+
+        /// <summary>
+        /// Executes provided job on a node in this grid projection.
+        /// </summary>
+        /// <param name="action">Job to execute.</param>
+        [AsyncSupported]
+        void Run(IComputeAction action);
+
+        /// <summary>
+        /// Executes given job on the node where data for provided affinity key is located
+        /// (a.k.a. affinity co-location).
+        /// </summary>
+        /// <param name="cacheName">Name of the cache to use for affinity co-location.</param>
+        /// <param name="affinityKey">Affinity key.</param>
+        /// <param name="action">Job to execute.</param>
+        [AsyncSupported]
+        void AffinityRun(string cacheName, object affinityKey, IComputeAction action);
+
+        /// <summary>
+        /// Executes collection of jobs on grid nodes within this grid projection.
+        /// </summary>
+        /// <param name="actions">Jobs to execute.</param>
+        [AsyncSupported]
+        void Run(IEnumerable<IComputeAction> actions);
+
+        /// <summary>
+        /// Executes provided closure job on a node in this grid projection.
+        /// </summary>
+        /// <param name="clo">Job to run.</param>
+        /// <param name="arg">Job argument.</param>
+        /// <returns>Job result for this execution.</returns>
+        /// <typeparam name="T">Type of argument.</typeparam>
+        /// <typeparam name="R">Type of job result.</typeparam>
+        [AsyncSupported]
+        R Apply<T, R>(IComputeFunc<T, R> clo, T arg);
+
+        /// <summary>
+        /// Executes provided closure job on nodes within this grid projection. A new job is executed for
+        /// every argument in the passed in collection. The number of actual job executions will be
+        /// equal to size of the job arguments collection.
+        /// </summary>
+        /// <param name="clo">Job to run.</param>
+        /// <param name="args">Job arguments.</param>
+        /// <returns>Сollection of job results.</returns>
+        /// <typeparam name="T">Type of argument.</typeparam>
+        /// <typeparam name="R">Type of job result.</typeparam>
+        [AsyncSupported]
+        ICollection<R> Apply<T, R>(IComputeFunc<T, R> clo, IEnumerable<T> args);
+
+        /// <summary>
+        /// Executes provided closure job on nodes within this grid projection. A new job is executed for
+        /// every argument in the passed in collection. The number of actual job executions will be
+        /// equal to size of the job arguments collection. The returned job results will be reduced
+        /// into an individual result by provided reducer.
+        /// </summary>
+        /// <param name="clo">Job to run.</param>
+        /// <param name="args">Job arguments.</param>
+        /// <param name="rdc">Reducer to reduce all job results into one individual return value.</param>
+        /// <returns>Reduced job result for this execution.</returns>
+        /// <typeparam name="T">Type of argument.</typeparam>
+        /// <typeparam name="R1">Type of job result.</typeparam>
+        /// <typeparam name="R2">Type of reduced result.</typeparam>
+        [AsyncSupported]
+        R2 Apply<T, R1, R2>(IComputeFunc<T, R1> clo, IEnumerable<T> args, IComputeReducer<R1, R2> rdc);
+    }
+}
