@@ -40,6 +40,10 @@
         </repository>
     </repositories>
 
+    <properties>
+        <ignite.update.notifier.product>apache-ignite</ignite.update.notifier.product>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>javax.cache</groupId>
@@ -310,7 +314,7 @@
 
                                         <replaceregexp file="${props.file}" byline="true">
                                             <regexp pattern="ignite.update.status.params=.*" />
-                                            <substitution expression="ignite.update.status.params=ver=${project.version}" />
+                                            <substitution expression="ignite.update.status.params=ver=${project.version}&amp;product=${ignite.update.notifier.product}" />
                                         </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">

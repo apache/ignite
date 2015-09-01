@@ -17,28 +17,28 @@
 
 package org.apache.ignite.internal.processors.platform.messaging;
 
-import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.communication.GridLifecycleAwareMessageFilter;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
+import java.util.UUID;
+
 /**
- * Interop filter. Delegates apply to native platform.
+ * Platform message filter. Delegates apply to native platform.
  */
-public class PlatformMessageFilter extends PlatformAbstractPredicate
-    implements GridLifecycleAwareMessageFilter<UUID, Object> {
+public class PlatformMessageFilterImpl extends PlatformAbstractPredicate implements PlatformMessageFilter {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Constructor.
      */
-    public PlatformMessageFilter()
+    public PlatformMessageFilterImpl()
     {
         super();
     }
@@ -50,7 +50,7 @@ public class PlatformMessageFilter extends PlatformAbstractPredicate
      * @param ptr Pointer to predicate in the native platform.
      * @param ctx Kernal context.
      */
-    protected PlatformMessageFilter(Object pred, long ptr, PlatformContext ctx) {
+    protected PlatformMessageFilterImpl(Object pred, long ptr, PlatformContext ctx) {
         super(pred, ptr, ctx);
     }
 
@@ -94,7 +94,7 @@ public class PlatformMessageFilter extends PlatformAbstractPredicate
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override public void onClose() {
         if (ptr == 0) // Already destroyed or not initialized yet.
             return;
 

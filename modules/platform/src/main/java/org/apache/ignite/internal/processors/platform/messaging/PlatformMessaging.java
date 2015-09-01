@@ -17,16 +17,17 @@
 
 package org.apache.ignite.internal.processors.platform.messaging;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.internal.managers.communication.GridLifecycleAwareMessageFilter;
 import org.apache.ignite.internal.portable.PortableRawReaderEx;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.lang.IgniteFuture;
+
+import java.util.UUID;
 
 /**
  * Interop messaging.
@@ -144,7 +145,7 @@ public class PlatformMessaging extends PlatformAbstractTarget {
 
                 Object topic = reader.readObjectDetached();
 
-                GridLifecycleAwareMessageFilter filter = platformCtx.createRemoteMessageFilter(nativeFilter, ptr);
+                PlatformMessageFilter filter = platformCtx.createRemoteMessageFilter(nativeFilter, ptr);
 
                 UUID listenId = messaging.remoteListen(topic, filter);
 
