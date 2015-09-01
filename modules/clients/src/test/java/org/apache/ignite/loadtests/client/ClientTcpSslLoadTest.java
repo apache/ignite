@@ -17,9 +17,9 @@
 
 package org.apache.ignite.loadtests.client;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.client.ClientTcpSslMultiThreadedSelfTest;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Makes a long run to ensure stability and absence of memory leaks.

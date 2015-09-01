@@ -17,11 +17,12 @@
 
 package org.apache.ignite.loadtests.mapper;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Continuous mapper load test.

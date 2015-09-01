@@ -17,13 +17,21 @@
 
 package org.apache.ignite.yarn;
 
-import org.apache.hadoop.fs.*;
-import org.apache.ignite.yarn.utils.*;
-
-import java.io.*;
-import java.net.*;
-import java.nio.channels.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.ignite.yarn.utils.IgniteYarnUtils;
 
 /**
  * Downloads and stores Ignite.

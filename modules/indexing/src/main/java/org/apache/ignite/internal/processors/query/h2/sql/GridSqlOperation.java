@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import java.util.*;
+import java.util.ArrayList;
 
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.*;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IN;
 
 /**
  * Unary or binary operation.

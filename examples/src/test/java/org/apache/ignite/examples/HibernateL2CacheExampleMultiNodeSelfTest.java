@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.datagrid.hibernate.*;
+import org.apache.ignite.examples.datagrid.hibernate.HibernateL2CacheExample;
 
 /**
  * Multi-node test for {@link HibernateL2CacheExample}.

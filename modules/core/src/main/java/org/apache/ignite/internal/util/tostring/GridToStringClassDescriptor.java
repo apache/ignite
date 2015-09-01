@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Simple class descriptor containing simple and fully qualified class names as well as

@@ -17,7 +17,14 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.*;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.POOL_HDR_OFF_MEM_1;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.POOL_HDR_OFF_MEM_2;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.POOL_HDR_OFF_MEM_3;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.allocatePool;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.allocatePooled;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.allocateUnpooled;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.reallocatePooled;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.releasePooled;
 
 /**
  * Memory pool associated with a thread.

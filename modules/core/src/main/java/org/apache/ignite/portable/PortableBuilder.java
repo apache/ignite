@@ -17,9 +17,8 @@
 
 package org.apache.ignite.portable;
 
-import org.apache.ignite.*;
-
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgnitePortables;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Portable object builder. Provides ability to build portable objects dynamically without having class definitions.

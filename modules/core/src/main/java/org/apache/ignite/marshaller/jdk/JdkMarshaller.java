@@ -17,12 +17,16 @@
 
 package org.apache.ignite.marshaller.jdk;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.AbstractMarshaller;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link org.apache.ignite.marshaller.Marshaller} based on JDK serialization mechanism.
@@ -55,7 +59,7 @@ import java.io.*;
  * &lt;/bean&gt;
  * </pre>
  *  <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */

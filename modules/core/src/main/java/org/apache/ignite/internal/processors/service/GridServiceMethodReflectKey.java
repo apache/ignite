@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.util.*;
+import java.util.Arrays;
 
 /**
  * Method reflection key.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.typedef.internal;
 
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
  * Defines internal {@code typedef} for {@link IgniteUtils}. Since Java doesn't provide type aliases

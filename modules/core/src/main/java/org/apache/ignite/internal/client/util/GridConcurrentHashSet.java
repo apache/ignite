@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.client.util;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.AbstractSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Wrapper around concurrent map.

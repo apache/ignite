@@ -17,12 +17,15 @@
 
 package org.apache.ignite.examples.datagrid.hibernate;
 
-import org.hibernate.annotations.*;
-
+import java.util.HashSet;
+import java.util.Set;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
-import javax.persistence.*;
-import java.util.*;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import org.hibernate.annotations.NaturalId;
 
 /**
  * A user entity class. Represents a user of some public service,

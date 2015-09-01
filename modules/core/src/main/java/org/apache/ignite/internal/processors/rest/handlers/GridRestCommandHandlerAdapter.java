@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.handlers;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 
 /**
  * Abstract command handler.

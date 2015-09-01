@@ -17,10 +17,10 @@
 
 package org.apache.ignite.plugin.security;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Security permission set for authorized security subjects. Permission set

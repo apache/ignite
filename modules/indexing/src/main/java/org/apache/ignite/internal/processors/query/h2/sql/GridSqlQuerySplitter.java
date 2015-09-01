@@ -17,17 +17,24 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.processors.query.h2.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.h2.jdbc.*;
-import org.jetbrains.annotations.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Set;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.typedef.F;
+import org.h2.jdbc.JdbcPreparedStatement;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.*;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlPlaceholder.*;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CAST;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.COUNT;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.SUM;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlPlaceholder.EMPTY;
 
 /**
  * Splits a single SQL query into two step map-reduce query.

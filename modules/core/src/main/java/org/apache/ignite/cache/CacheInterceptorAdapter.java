@@ -17,10 +17,9 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
+import javax.cache.Cache;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache interceptor convenience adapter. It provides no-op implementations for all

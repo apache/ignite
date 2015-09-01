@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.client.integration;
 
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.testframework.*;
+import org.apache.ignite.internal.client.GridClientProtocol;
+import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Tests binary tcp protocol with SSL on multiple nodes.

@@ -17,45 +17,83 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.secondary.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.datastreamer.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.thread.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.io.DataInput;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.igfs.IgfsBlockLocation;
+import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsOutOfSpaceException;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.CX1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
-import javax.cache.processor.*;
-import java.io.*;
-import java.nio.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
-
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.GridTopic.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Cache based file's data container.
@@ -320,58 +358,6 @@ public class IgfsDataManager extends IgfsManager {
         ldr.receiver(DataStreamerCacheUpdaters.<IgfsBlockKey, byte[]>batchedSorted());
 
         return ldr;
-    }
-
-    /**
-     * Get list of local data blocks of the given file.
-     *
-     * @param fileInfo File info.
-     * @return List of local data block indices.
-     * @throws IgniteCheckedException If failed.
-     */
-    public List<Long> listLocalDataBlocks(IgfsFileInfo fileInfo)
-        throws IgniteCheckedException {
-        assert fileInfo != null;
-
-        int prevGrpIdx = 0; // Block index within affinity group.
-
-        boolean prevPrimaryFlag = false; // Whether previous block was primary.
-
-        List<Long> res = new ArrayList<>();
-
-        for (long i = 0; i < fileInfo.blocksCount(); i++) {
-            // Determine group index.
-            int grpIdx = (int)(i % grpSize);
-
-            if (prevGrpIdx < grpIdx) {
-                // Reuse existing affinity result.
-                if (prevPrimaryFlag)
-                    res.add(i);
-            }
-            else {
-                // Re-calculate affinity result.
-                IgfsBlockKey key = new IgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(),
-                    fileInfo.evictExclude(), i);
-
-                Collection<ClusterNode> affNodes = dataCache.affinity().mapKeyToPrimaryAndBackups(key);
-
-                assert affNodes != null && !affNodes.isEmpty();
-
-                ClusterNode primaryNode = affNodes.iterator().next();
-
-                if (primaryNode.id().equals(igfsCtx.kernalContext().localNodeId())) {
-                    res.add(i);
-
-                    prevPrimaryFlag = true;
-                }
-                else
-                    prevPrimaryFlag = false;
-            }
-
-            prevGrpIdx = grpIdx;
-        }
-
-        return res;
     }
 
     /**
@@ -1764,6 +1750,19 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
+     * Allows output stream to await for all current acks.
+     *
+     * @param fileId File ID.
+     * @throws IgniteInterruptedCheckedException In case of interrupt.
+     */
+    void awaitAllAcksReceived(IgniteUuid fileId) throws IgniteInterruptedCheckedException {
+        WriteCompletionFuture fut = pendingWrites.get(fileId);
+
+        if (fut != null)
+            fut.awaitAllAcksReceived();
+    }
+
+    /**
      * Future that is completed when all participating
      */
     private class WriteCompletionFuture extends GridFutureAdapter<Boolean> {
@@ -1771,10 +1770,16 @@ public class IgfsDataManager extends IgfsManager {
         private static final long serialVersionUID = 0L;
 
         /** File id to remove future from map. */
-        private IgniteUuid fileId;
+        private final IgniteUuid fileId;
 
         /** Pending acks. */
-        private ConcurrentMap<UUID, Set<Long>> pendingAcks = new ConcurrentHashMap8<>();
+        private final ConcurrentMap<Long, UUID> ackMap = new ConcurrentHashMap8<>();
+
+        /** Lock for map-related conditions. */
+        private final Lock lock = new ReentrantLock();
+
+        /** Condition to wait for empty map. */
+        private final Condition allAcksRcvCond = lock.newCondition();
 
         /** Flag indicating future is waiting for last ack. */
         private volatile boolean awaitingLast;
@@ -1786,6 +1791,23 @@ public class IgfsDataManager extends IgfsManager {
             assert fileId != null;
 
             this.fileId = fileId;
+        }
+
+        /**
+         * Await all pending data blockes to be acked.
+         *
+         * @throws IgniteInterruptedCheckedException In case of interrupt.
+         */
+        public void awaitAllAcksReceived() throws IgniteInterruptedCheckedException {
+            lock.lock();
+
+            try {
+                while (!ackMap.isEmpty())
+                    U.await(allAcksRcvCond);
+            }
+            finally {
+                lock.unlock();
+            }
         }
 
         /** {@inheritDoc} */
@@ -1808,13 +1830,26 @@ public class IgfsDataManager extends IgfsManager {
          */
         private void onWriteRequest(UUID nodeId, long batchId) {
             if (!isDone()) {
-                Set<Long> reqIds = pendingAcks.get(nodeId);
+                UUID pushedOut = ackMap.putIfAbsent(batchId, nodeId);
 
-                if (reqIds == null)
-                    reqIds = F.addIfAbsent(pendingAcks, nodeId, new GridConcurrentHashSet<Long>());
-
-                reqIds.add(batchId);
+                assert pushedOut == null;
             }
+        }
+
+        /**
+         * Answers if there are some batches for the specified node we're currently waiting acks for.
+         *
+         * @param nodeId The node Id.
+         * @return If there are acks awaited from this node.
+         */
+        private boolean hasPendingAcks(UUID nodeId) {
+            assert nodeId != null;
+
+            for (Map.Entry<Long, UUID> e : ackMap.entrySet())
+                if (nodeId.equals(e.getValue()))
+                    return true;
+
+            return false;
         }
 
         /**
@@ -1824,10 +1859,12 @@ public class IgfsDataManager extends IgfsManager {
          * @param e Caught exception.
          */
         private void onError(UUID nodeId, IgniteCheckedException e) {
-            Set<Long> reqIds = pendingAcks.get(nodeId);
-
             // If waiting for ack from this node.
-            if (reqIds != null && !reqIds.isEmpty()) {
+            if (hasPendingAcks(nodeId)) {
+                ackMap.clear();
+
+                signalNoAcks();
+
                 if (e.hasCause(IgfsOutOfSpaceException.class))
                     onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " + nodeId, e));
                 else
@@ -1844,18 +1881,31 @@ public class IgfsDataManager extends IgfsManager {
          */
         private void onWriteAck(UUID nodeId, long batchId) {
             if (!isDone()) {
-                Set<Long> reqIds = pendingAcks.get(nodeId);
-
-                assert reqIds != null : "Received acknowledgement message for not registered node [nodeId=" +
-                    nodeId + ", batchId=" + batchId + ']';
-
-                boolean rmv = reqIds.remove(batchId);
+                boolean rmv = ackMap.remove(batchId, nodeId);
 
                 assert rmv : "Received acknowledgement message for not registered batch [nodeId=" +
                     nodeId + ", batchId=" + batchId + ']';
 
-                if (awaitingLast && checkCompleted())
-                    onDone(true);
+                if (ackMap.isEmpty()) {
+                    signalNoAcks();
+
+                    if (awaitingLast)
+                        onDone(true);
+                }
+            }
+        }
+
+        /**
+         * Signal that currenlty there are no more pending acks.
+         */
+        private void signalNoAcks() {
+            lock.lock();
+
+            try {
+                allAcksRcvCond.signalAll();
+            }
+            finally {
+                lock.unlock();
             }
         }
 
@@ -1868,24 +1918,8 @@ public class IgfsDataManager extends IgfsManager {
             if (log.isDebugEnabled())
                 log.debug("Marked write completion future as awaiting last ack: " + fileId);
 
-            if (checkCompleted())
+            if (ackMap.isEmpty())
                 onDone(true);
-        }
-
-        /**
-         * @return True if received all request acknowledgements after {@link #markWaitingLastAck()} was called.
-         */
-        private boolean checkCompleted() {
-            for (Map.Entry<UUID, Set<Long>> entry : pendingAcks.entrySet()) {
-                Set<Long> reqIds = entry.getValue();
-
-                // If still waiting for some acks.
-                if (!reqIds.isEmpty())
-                    return false;
-            }
-
-            // Got match for each entry in sent map.
-            return true;
         }
     }
 }

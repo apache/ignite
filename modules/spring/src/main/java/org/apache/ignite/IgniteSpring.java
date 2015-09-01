@@ -17,13 +17,12 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.resource.*;
-import org.jetbrains.annotations.*;
-import org.springframework.context.*;
-
-import java.net.*;
+import java.net.URL;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContextImpl;
+import org.jetbrains.annotations.Nullable;
+import org.springframework.context.ApplicationContext;
 
 /**
  * Factory methods to start Ignite with optional Spring application context, this context can be injected into

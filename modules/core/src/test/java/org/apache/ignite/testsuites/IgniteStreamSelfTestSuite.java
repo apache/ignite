@@ -17,9 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.stream.socket.*;
-
-import junit.framework.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.stream.socket.SocketStreamerSelfTest;
 
 /**
  * Stream test suite.

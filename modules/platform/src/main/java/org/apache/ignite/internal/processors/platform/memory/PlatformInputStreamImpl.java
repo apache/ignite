@@ -17,9 +17,17 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
 
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.*;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.BOOLEAN_ARR_OFF;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.BYTE_ARR_OFF;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.CHAR_ARR_OFF;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.DOUBLE_ARR_OFF;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.FLOAT_ARR_OFF;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.INT_ARR_OFF;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.LONG_ARR_OFF;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.SHORT_ARR_OFF;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.UNSAFE;
 
 /**
  * Interop input stream implementation.

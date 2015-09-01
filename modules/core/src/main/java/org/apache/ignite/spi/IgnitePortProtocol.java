@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Protocols supported by port processor.

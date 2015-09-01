@@ -17,9 +17,10 @@
 
 package org.apache.ignite.spring;
 
-import org.springframework.cache.annotation.*;
-
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 
 /**
  * Test service.

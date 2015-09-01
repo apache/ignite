@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.*;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.isAcquired;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.isPooled;
 
 /**
  * Interop pooled memory chunk.

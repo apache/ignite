@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * IGFS ad-hoc thread.

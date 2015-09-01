@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-
-import java.lang.reflect.*;
-import java.util.concurrent.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteClosure;
 
 /**
  * Collection of utility methods used in package for classes reflection.

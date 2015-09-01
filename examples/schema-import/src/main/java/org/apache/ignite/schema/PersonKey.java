@@ -35,4 +35,3 @@ public class PersonKey {
         throw new IllegalStateException("Please run Ignite Schema Import Utility as described in README.txt");
     }
 }
-

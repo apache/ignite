@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data transfer object for configuration of atomic data structures.

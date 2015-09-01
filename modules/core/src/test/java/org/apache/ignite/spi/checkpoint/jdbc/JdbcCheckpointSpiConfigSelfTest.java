@@ -17,12 +17,17 @@
 
 package org.apache.ignite.spi.checkpoint.jdbc;
 
-import org.apache.ignite.testframework.junits.spi.*;
-import org.hsqldb.jdbc.*;
+import javax.sql.DataSource;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.hsqldb.jdbc.jdbcDataSource;
 
-import javax.sql.*;
-
-import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.*;
+import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.DFLT_CHECKPOINT_TABLE_NAME;
+import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.DFLT_EXPIRE_DATE_FIELD_NAME;
+import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.DFLT_KEY_FIELD_NAME;
+import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.DFLT_KEY_FIELD_TYPE;
+import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.DFLT_VALUE_FIELD_NAME;
+import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.DFLT_VALUE_FIELD_TYPE;
 
 /**
  * Grid jdbc checkpoint SPI config self test.

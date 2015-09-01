@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.portable.streams;
 
-import static org.apache.ignite.internal.portable.PortableThreadLocalMemoryAllocator.*;
+import static org.apache.ignite.internal.portable.PortableThreadLocalMemoryAllocator.DFLT_ALLOC;
+import static org.apache.ignite.internal.portable.PortableThreadLocalMemoryAllocator.THREAD_LOCAL_ALLOC;
 
 /**
  * Portable heap output stream.

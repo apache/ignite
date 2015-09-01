@@ -17,11 +17,10 @@
 
 package org.apache.ignite.igfs.mapreduce.records;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.nio.charset.*;
+import java.io.Externalizable;
+import java.nio.charset.Charset;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Record resolver based on delimiters represented as strings. Works in the same way as

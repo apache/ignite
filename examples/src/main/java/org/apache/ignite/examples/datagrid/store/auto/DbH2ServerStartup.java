@@ -17,12 +17,13 @@
 
 package org.apache.ignite.examples.datagrid.store.auto;
 
-import org.apache.ignite.*;
-import org.h2.jdbcx.*;
-import org.h2.tools.*;
-
-import java.io.*;
-import java.sql.*;
+import java.io.IOException;
+import java.io.StringReader;
+import java.sql.SQLException;
+import org.apache.ignite.IgniteException;
+import org.h2.jdbcx.JdbcConnectionPool;
+import org.h2.tools.RunScript;
+import org.h2.tools.Server;
 
 /**
  * Start H2 database TCP server in order to access sample in-memory database from other processes.

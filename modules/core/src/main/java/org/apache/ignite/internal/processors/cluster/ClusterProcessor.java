@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cluster.IgniteClusterImpl;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  *

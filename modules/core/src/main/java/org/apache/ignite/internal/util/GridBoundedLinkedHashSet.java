@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.ConcurrentModificationException;
+import java.util.HashMap;
+import java.util.Iterator;
 
 /**
  * Hash table and linked list implementation of the {@code Set} interface,

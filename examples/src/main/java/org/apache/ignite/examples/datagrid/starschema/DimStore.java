@@ -17,8 +17,8 @@
 
 package org.apache.ignite.examples.datagrid.starschema;
 
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
  * Represents a physical store location. In our {@code snowflake} schema a {@code store}

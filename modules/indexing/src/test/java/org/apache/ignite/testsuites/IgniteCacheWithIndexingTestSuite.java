@@ -17,9 +17,24 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.ttl.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffHeapAndSwapSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvictTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexGetSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheSwapSelfTest;
+import org.apache.ignite.internal.processors.cache.GridIndexingWithNoopSwapSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimitiveTypesSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOffheapAtomicLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOffheapAtomicPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOffheapTransactionalLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOffheapTransactionalPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOnheapAtomicLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOnheapAtomicPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOnheapTransactionalLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOnheapTransactionalPartitionedSelfTest;
 
 /**
  * Cache tests using indexing.

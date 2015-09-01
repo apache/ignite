@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.managers.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.managers.GridNoopManagerSelfTest;
 
 /**
  * Grid SPI test suite.

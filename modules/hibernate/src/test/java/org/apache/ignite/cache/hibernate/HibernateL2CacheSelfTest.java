@@ -17,34 +17,58 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.hibernate.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.hibernate.ObjectNotFoundException;
 import org.hibernate.Query;
-import org.hibernate.annotations.*;
-import org.hibernate.cache.spi.*;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.StaleObjectStateException;
+import org.hibernate.Transaction;
+import org.hibernate.annotations.NaturalId;
+import org.hibernate.annotations.NaturalIdCache;
+import org.hibernate.cache.spi.GeneralDataRegion;
+import org.hibernate.cache.spi.TransactionalDataRegion;
 import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cfg.*;
-import org.hibernate.exception.*;
-import org.hibernate.service.*;
-import org.hibernate.stat.*;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.service.ServiceRegistryBuilder;
+import org.hibernate.stat.NaturalIdCacheStatistics;
+import org.hibernate.stat.SecondLevelCacheStatistics;
 
-import javax.persistence.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.*;
-import static org.hibernate.cfg.Environment.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.DFLT_ACCESS_TYPE_PROPERTY;
+import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.GRID_NAME_PROPERTY;
+import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.REGION_CACHE_PROPERTY;
+import static org.hibernate.cfg.Environment.CACHE_REGION_FACTORY;
+import static org.hibernate.cfg.Environment.GENERATE_STATISTICS;
+import static org.hibernate.cfg.Environment.HBM2DDL_AUTO;
+import static org.hibernate.cfg.Environment.RELEASE_CONNECTIONS;
+import static org.hibernate.cfg.Environment.USE_QUERY_CACHE;
+import static org.hibernate.cfg.Environment.USE_SECOND_LEVEL_CACHE;
 
 /**
  *

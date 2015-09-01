@@ -17,12 +17,11 @@
 
 package org.apache.ignite.cache.jta.reflect;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.jta.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import javax.transaction.*;
-import java.lang.reflect.*;
+import java.lang.reflect.InvocationTargetException;
+import javax.transaction.TransactionManager;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.jta.CacheTmLookup;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Implementation of {@link org.apache.ignite.cache.jta.CacheTmLookup} interface that attempts to obtain

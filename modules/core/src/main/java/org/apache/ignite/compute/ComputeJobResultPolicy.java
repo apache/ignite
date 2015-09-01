@@ -17,9 +17,8 @@
 
 package org.apache.ignite.compute;
 
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This enumeration provides different types of actions following the last

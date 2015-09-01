@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import junit.framework.*;
-import org.apache.hadoop.mapreduce.*;
+import junit.framework.TestCase;
+import org.apache.hadoop.mapreduce.Job;
 
 /**
  *

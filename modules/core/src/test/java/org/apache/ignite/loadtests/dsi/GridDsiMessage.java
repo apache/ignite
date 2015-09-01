@@ -17,8 +17,8 @@
 
 package org.apache.ignite.loadtests.dsi;
 
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.UUID;
 
 /**
  *

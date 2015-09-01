@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.lifecycle;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.platform.callback.*;
-import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
 
 /**
  * Lifecycle aware bean for interop.

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.datagrid.hibernate.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.examples.datagrid.hibernate.HibernateL2CacheExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * Tests the {@link HibernateL2CacheExample}.

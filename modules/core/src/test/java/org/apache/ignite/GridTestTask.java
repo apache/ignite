@@ -17,10 +17,13 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.resources.LoggerResource;
 
 /**
  * Test task.

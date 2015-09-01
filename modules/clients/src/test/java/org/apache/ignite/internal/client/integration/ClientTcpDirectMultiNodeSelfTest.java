@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.client.integration;
 
-import org.apache.ignite.internal.client.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientProtocol;
 
 /**
  *

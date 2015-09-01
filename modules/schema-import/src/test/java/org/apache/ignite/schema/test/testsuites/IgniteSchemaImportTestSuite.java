@@ -17,9 +17,10 @@
 
 package org.apache.ignite.schema.test.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.schema.test.generator.*;
-import org.apache.ignite.schema.test.parser.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.schema.test.generator.CodeGeneratorTest;
+import org.apache.ignite.schema.test.generator.XmlGeneratorTest;
+import org.apache.ignite.schema.test.parser.DbMetadataParserTest;
 
 /**
  * Ignite Schema Import Utility Tests.

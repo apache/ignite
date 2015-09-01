@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.*;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.reallocateUnpooled;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.releaseUnpooled;
 
 /**
  * Interop un-pooled memory chunk.
@@ -48,4 +49,3 @@ public class PlatformUnpooledMemory extends PlatformAbstractMemory {
         releaseUnpooled(memPtr);
     }
 }
-

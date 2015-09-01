@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.client.router;
 
-import java.util.*;
+import java.util.UUID;
 
 /**
  * TCP router interface.

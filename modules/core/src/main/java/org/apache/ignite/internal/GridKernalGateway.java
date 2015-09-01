@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This interface guards access to implementations of public methods that access kernal
@@ -124,4 +124,3 @@ public interface GridKernalGateway {
      */
     public void onReconnected();
 }
-

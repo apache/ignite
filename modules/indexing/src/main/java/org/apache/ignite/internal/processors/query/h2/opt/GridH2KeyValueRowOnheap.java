@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 
-import org.apache.ignite.*;
-import org.h2.value.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Onheap row.

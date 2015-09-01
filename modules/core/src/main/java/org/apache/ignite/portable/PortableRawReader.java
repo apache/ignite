@@ -17,12 +17,13 @@
 
 package org.apache.ignite.portable;
 
-import org.jetbrains.annotations.*;
-
-import java.math.*;
-import java.sql.*;
-import java.util.*;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
+import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Raw reader for portable objects. Raw reader does not use field name hash codes, therefore,

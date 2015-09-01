@@ -17,7 +17,8 @@
 
 package org.apache.ignite.igfs;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * {@code IGFS} input stream to read data from the file system.

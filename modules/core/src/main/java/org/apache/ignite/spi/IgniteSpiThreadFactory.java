@@ -17,9 +17,8 @@
 
 package org.apache.ignite.spi;
 
-import org.apache.ignite.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.ThreadFactory;
+import org.apache.ignite.IgniteLogger;
 
 /**
  * This class provides implementation of {@link ThreadFactory}  factory

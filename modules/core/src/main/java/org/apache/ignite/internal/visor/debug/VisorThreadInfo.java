@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.visor.debug;
 
-import java.io.*;
-import java.lang.management.*;
+import java.io.Serializable;
+import java.lang.management.ThreadInfo;
 
 /**
  * Data transfer object for Visor {@link ThreadInfo}.

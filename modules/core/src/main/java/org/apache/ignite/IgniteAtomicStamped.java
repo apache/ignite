@@ -17,9 +17,8 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.lang.*;
-
-import java.io.*;
+import java.io.Closeable;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * This interface provides a rich API for working with distributed atomic stamped value.

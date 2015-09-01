@@ -17,7 +17,8 @@
 
 package org.apache.ignite.marshaller.jdk;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Wrapper for {@link OutputStream}.
