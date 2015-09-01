@@ -24,10 +24,10 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.portable.PortableRawReaderEx;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFilterEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryProcessor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
+import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterNodeFilter;
 import org.apache.ignite.internal.processors.platform.compute.PlatformJob;
@@ -166,7 +166,7 @@ public interface PlatformContext {
      * @param filter Native filter.
      * @return Filter.
      */
-    public CacheContinuousQueryFilterEx createContinuousQueryFilter(Object filter);
+    public PlatformContinuousQueryFilter createContinuousQueryFilter(Object filter);
 
     /**
      * Create remote message filter.
