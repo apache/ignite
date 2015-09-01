@@ -17,7 +17,8 @@
 
 package org.apache.ignite.spi.deployment.uri.scanners;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileFilter;
 
 /**
  * Helper class that recursively goes through the list of

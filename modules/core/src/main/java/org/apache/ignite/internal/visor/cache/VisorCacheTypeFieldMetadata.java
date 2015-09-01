@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.cache.CacheTypeFieldMetadata;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Data transfer object for {@link CacheTypeFieldMetadata}.

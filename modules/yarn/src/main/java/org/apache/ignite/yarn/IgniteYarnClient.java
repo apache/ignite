@@ -17,19 +17,30 @@
 
 package org.apache.ignite.yarn;
 
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.yarn.api.records.*;
-import org.apache.hadoop.yarn.client.api.*;
-import org.apache.hadoop.yarn.conf.*;
-import org.apache.hadoop.yarn.util.*;
-import org.apache.ignite.yarn.utils.*;
+import java.io.File;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.api.records.ApplicationReport;
+import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
+import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
+import org.apache.hadoop.yarn.api.records.LocalResource;
+import org.apache.hadoop.yarn.api.records.LocalResourceType;
+import org.apache.hadoop.yarn.api.records.Resource;
+import org.apache.hadoop.yarn.api.records.YarnApplicationState;
+import org.apache.hadoop.yarn.client.api.YarnClient;
+import org.apache.hadoop.yarn.client.api.YarnClientApplication;
+import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.util.Apps;
+import org.apache.hadoop.yarn.util.Records;
+import org.apache.ignite.yarn.utils.IgniteYarnUtils;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.logging.*;
-
-import static org.apache.hadoop.yarn.api.ApplicationConstants.*;
+import static org.apache.hadoop.yarn.api.ApplicationConstants.Environment;
 
 /**
  * Ignite yarn client.

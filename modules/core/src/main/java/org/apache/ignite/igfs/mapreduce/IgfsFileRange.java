@@ -17,8 +17,8 @@
 
 package org.apache.ignite.igfs.mapreduce;
 
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Entity representing part of IGFS file identified by file path, start position, and length.

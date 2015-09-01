@@ -17,10 +17,9 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.spi.*;
-
-import java.io.*;
+import java.io.File;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.spi.IgniteSpiException;
 
 /**
  * Class loader helper that could load class from the file using certain

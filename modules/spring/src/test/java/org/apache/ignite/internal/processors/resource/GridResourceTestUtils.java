@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import java.util.*;
+import java.util.Map;
 
 /**
  * Resource test utilities.

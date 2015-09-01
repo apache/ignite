@@ -17,11 +17,16 @@
 
 package org.apache.ignite.util.mbeans;
 
-import org.apache.ignite.internal.mxbean.*;
-import org.apache.ignite.mxbean.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import javax.management.*;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanInfo;
+import javax.management.MBeanOperationInfo;
+import javax.management.MBeanParameterInfo;
+import javax.management.StandardMBean;
+import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
+import org.apache.ignite.mxbean.MXBeanParametersNames;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * MBean test.

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.lang.*;
-
-import java.io.*;
+import java.io.OutputStream;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Descriptor of an output stream opened to the secondary file system.

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.cluster.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
+import org.apache.ignite.cluster.ClusterNode;
 
 /**
  * Topology validator.

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
-import org.apache.ignite.internal.util.ipc.*;
-import org.apache.ignite.logger.java.*;
+import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
+import org.apache.ignite.logger.java.JavaLogger;
 
 /**
  *

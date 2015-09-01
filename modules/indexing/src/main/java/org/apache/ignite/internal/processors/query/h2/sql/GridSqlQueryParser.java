@@ -17,22 +17,72 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.apache.ignite.*;
-import org.h2.command.*;
-import org.h2.command.dml.*;
-import org.h2.engine.*;
-import org.h2.expression.*;
-import org.h2.jdbc.*;
-import org.h2.result.*;
-import org.h2.table.*;
-import org.h2.value.*;
-import org.jetbrains.annotations.*;
-
-import java.lang.reflect.*;
-import java.util.*;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Set;
+import org.apache.ignite.IgniteException;
+import org.h2.command.Command;
+import org.h2.command.Prepared;
+import org.h2.command.dml.Explain;
+import org.h2.command.dml.Query;
+import org.h2.command.dml.Select;
+import org.h2.command.dml.SelectUnion;
+import org.h2.engine.FunctionAlias;
+import org.h2.expression.Aggregate;
+import org.h2.expression.Alias;
+import org.h2.expression.CompareLike;
+import org.h2.expression.Comparison;
+import org.h2.expression.ConditionAndOr;
+import org.h2.expression.ConditionIn;
+import org.h2.expression.ConditionInConstantSet;
+import org.h2.expression.ConditionInSelect;
+import org.h2.expression.ConditionNot;
+import org.h2.expression.Expression;
+import org.h2.expression.ExpressionColumn;
+import org.h2.expression.Function;
+import org.h2.expression.JavaFunction;
+import org.h2.expression.Operation;
+import org.h2.expression.Parameter;
+import org.h2.expression.Subquery;
+import org.h2.expression.ValueExpression;
+import org.h2.jdbc.JdbcPreparedStatement;
+import org.h2.result.SortOrder;
+import org.h2.table.Column;
+import org.h2.table.FunctionTable;
+import org.h2.table.RangeTable;
+import org.h2.table.Table;
+import org.h2.table.TableBase;
+import org.h2.table.TableFilter;
+import org.h2.table.TableView;
+import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.*;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.BIGGER;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.BIGGER_EQUAL;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.CONCAT;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.DIVIDE;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL_NULL_SAFE;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IN;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IS_NOT_NULL;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IS_NULL;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.LIKE;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.MINUS;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.MODULUS;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.MULTIPLY;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.NOT;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.NOT_EQUAL;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.NOT_EQUAL_NULL_SAFE;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.OR;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.PLUS;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.REGEXP;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.SMALLER;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.SMALLER_EQUAL;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.SPATIAL_INTERSECTS;
 
 /**
  * H2 Query parser.

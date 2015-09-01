@@ -17,13 +17,12 @@
 
 package org.apache.ignite.logger.java;
 
-import junit.framework.*;
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.logger.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.UUID;
+import junit.framework.TestCase;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Java logger test.

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.compute;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This exception indicates that task execution timed out. It is thrown from

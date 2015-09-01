@@ -17,7 +17,7 @@
 
 package org.apache.ignite.lifecycle;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
 
 /**
  * All components provided in Ignite configuration can implement this interface.

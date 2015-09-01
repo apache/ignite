@@ -17,26 +17,27 @@
 
 package org.apache.ignite.internal.processors.platform.cluster;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.memory.*;
-import org.apache.ignite.internal.processors.platform.utils.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Interop cluster node filter.
  */
-public class PlatformClusterNodeFilter extends PlatformAbstractPredicate implements IgnitePredicate<ClusterNode> {
+public class PlatformClusterNodeFilterImpl extends PlatformAbstractPredicate implements PlatformClusterNodeFilter {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * {@link java.io.Externalizable} support.
      */
-    public PlatformClusterNodeFilter() {
+    public PlatformClusterNodeFilterImpl() {
         // No-op.
     }
 
@@ -46,7 +47,7 @@ public class PlatformClusterNodeFilter extends PlatformAbstractPredicate impleme
      * @param pred .Net portable predicate.
      * @param ctx Kernal context.
      */
-    public PlatformClusterNodeFilter(Object pred, PlatformContext ctx) {
+    public PlatformClusterNodeFilterImpl(Object pred, PlatformContext ctx) {
         super(pred, 0, ctx);
     }
 

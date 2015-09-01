@@ -17,9 +17,8 @@
 
 package org.apache.ignite;
 
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.EventListener;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Listener for gird state change notifications. Use

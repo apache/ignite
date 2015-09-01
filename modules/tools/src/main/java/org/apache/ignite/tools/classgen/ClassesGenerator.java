@@ -17,12 +17,25 @@
 
 package org.apache.ignite.tools.classgen;
 
-import java.io.*;
-import java.lang.reflect.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.locks.*;
-import java.util.jar.*;
+import java.io.BufferedInputStream;
+import java.io.Externalizable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
+import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.TreeSet;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 
 /**
  * Serialized classes generator.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.igfs;
 
-import static org.apache.ignite.igfs.IgfsMode.*;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 
 /**
  * IGFS Hadoop file system IPC shmem self test in PRIMARY mode.

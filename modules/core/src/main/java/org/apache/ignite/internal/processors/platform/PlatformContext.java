@@ -17,24 +17,29 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.cache.query.continuous.*;
-import org.apache.ignite.internal.processors.platform.cache.*;
-import org.apache.ignite.internal.processors.platform.cache.query.*;
-import org.apache.ignite.internal.processors.platform.callback.*;
-import org.apache.ignite.internal.processors.platform.compute.*;
-import org.apache.ignite.internal.processors.platform.memory.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.stream.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.portable.PortableRawReaderEx;
+import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryProcessor;
+import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
+import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
+import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
+import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterNodeFilter;
+import org.apache.ignite.internal.processors.platform.compute.PlatformJob;
+import org.apache.ignite.internal.processors.platform.datastreamer.PlatformStreamReceiver;
+import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManager;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Collection;
 
 /**
  * Platform context. Acts as an entry point for platform operations.
@@ -161,7 +166,7 @@ public interface PlatformContext {
      * @param filter Native filter.
      * @return Filter.
      */
-    public CacheContinuousQueryFilterEx createContinuousQueryFilter(Object filter);
+    public PlatformContinuousQueryFilter createContinuousQueryFilter(Object filter);
 
     /**
      * Create remote message filter.
@@ -170,7 +175,7 @@ public interface PlatformContext {
      * @param ptr Pointer of deployed native filter.
      * @return Filter.
      */
-    public GridLifecycleAwareMessageFilter<UUID, Object> createRemoteMessageFilter(Object filter, long ptr);
+    public PlatformMessageFilter createRemoteMessageFilter(Object filter, long ptr);
 
     /**
      * Check whether the given event type is supported.
@@ -184,9 +189,9 @@ public interface PlatformContext {
      * Write event.
      *
      * @param writer Writer.
-     * @param event Event.
+     * @param evt Event.
      */
-    public void writeEvent(PortableRawWriterEx writer, EventAdapter event);
+    public void writeEvent(PortableRawWriterEx writer, Event evt);
 
     /**
      * Create local event filter.
@@ -194,7 +199,7 @@ public interface PlatformContext {
      * @param hnd Native handle.
      * @return Filter.
      */
-    public <E extends Event> PlatformAwareEventFilter<E> createLocalEventFilter(long hnd);
+    public PlatformEventFilterListener createLocalEventFilter(long hnd);
 
     /**
      * Create remote event filter.
@@ -203,7 +208,7 @@ public interface PlatformContext {
      * @param types Event types.
      * @return Filter.
      */
-    public <E extends Event> PlatformAwareEventFilter<E> createRemoteEventFilter(Object pred, final int... types);
+    public PlatformEventFilterListener createRemoteEventFilter(Object pred, final int... types);
 
     /**
      * Create native exception.
@@ -241,7 +246,7 @@ public interface PlatformContext {
      * @param ptr Pointer.
      * @return Entry processor.
      */
-    public CacheEntryProcessor createCacheEntryProcessor(Object proc, long ptr);
+    public PlatformCacheEntryProcessor createCacheEntryProcessor(Object proc, long ptr);
 
     /**
      * Create cache entry filter.
@@ -260,7 +265,7 @@ public interface PlatformContext {
      * @param keepPortable Keep portable flag.
      * @return Stream receiver.
      */
-    public StreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepPortable);
+    public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepPortable);
 
     /**
      * Create cluster node filter.
@@ -268,5 +273,5 @@ public interface PlatformContext {
      * @param filter Native filter.
      * @return Cluster node filter.
      */
-    public IgnitePredicate<ClusterNode> createClusterNodeFilter(Object filter);
+    public PlatformClusterNodeFilter createClusterNodeFilter(Object filter);
 }

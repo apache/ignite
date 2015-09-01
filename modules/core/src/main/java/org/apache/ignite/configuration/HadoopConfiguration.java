@@ -17,8 +17,8 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.internal.processors.hadoop.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlanner;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Ignite Hadoop Accelerator configuration.

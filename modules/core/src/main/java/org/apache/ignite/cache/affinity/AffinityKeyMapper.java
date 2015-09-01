@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.affinity;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Affinity mapper which maps cache key to an affinity key. Affinity key is a key which will be

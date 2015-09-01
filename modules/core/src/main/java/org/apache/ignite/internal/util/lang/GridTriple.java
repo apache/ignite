@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Simple extension over {@link GridTuple3} for three objects of the same type.

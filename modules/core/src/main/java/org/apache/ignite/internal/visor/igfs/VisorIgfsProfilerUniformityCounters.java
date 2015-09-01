@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.visor.igfs;
 
-import org.apache.ignite.internal.util.typedef.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import org.apache.ignite.internal.util.typedef.F;
 
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.visor.igfs.VisorIgfsProfiler.*;
+import static org.apache.ignite.internal.visor.igfs.VisorIgfsProfiler.UNIFORMITY_BLOCKS;
+import static org.apache.ignite.internal.visor.igfs.VisorIgfsProfiler.UNIFORMITY_DFLT_BLOCK_SIZE;
 
 /**
  * Class to support uniformity calculation.

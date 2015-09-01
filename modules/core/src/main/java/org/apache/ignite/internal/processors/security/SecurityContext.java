@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
  * Security context.

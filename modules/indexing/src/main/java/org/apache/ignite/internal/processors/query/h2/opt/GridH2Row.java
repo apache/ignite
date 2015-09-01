@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.h2.result.*;
-import org.h2.value.*;
+import org.h2.result.Row;
+import org.h2.value.Value;
 
 /**
  * Row with locking support needed for unique key conflicts resolution.

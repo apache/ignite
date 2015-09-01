@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import junit.framework.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.impl.connection.*;
-import org.apache.ignite.internal.processors.rest.handlers.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import junit.framework.TestCase;
+import org.apache.ignite.internal.client.GridClientCacheFlag;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
+import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
+import org.apache.ignite.internal.util.typedef.F;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.client.GridClientCacheFlag.*;
+import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_PORTABLES;
 
 /**
  * Tests conversions between GridClientCacheFlag.

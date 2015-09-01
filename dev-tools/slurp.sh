@@ -56,7 +56,7 @@ echo "<"$(date + "%D - %H:%M:%S")"> Starting task triggering"
 echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 
 # Useful settings
-#cd /home/teamcity/jobs/incubator-ignite/
+#cd /home/teamcity/jobs/ignite/
 #
 #export JAVA_HOME=<java_home>
 #export PATH=$PATH:<gradle_path>

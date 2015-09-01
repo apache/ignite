@@ -17,9 +17,8 @@
 
 package org.apache.ignite.loadtests.h2indexing;
 
-import org.apache.ignite.cache.query.annotations.*;
-
-import java.util.*;
+import java.util.Date;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
  * Test entity.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.portable;
 
-import org.apache.ignite.marshaller.portable.*;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
  * Type and field ID mapper for portable objects. Ignite never writes full

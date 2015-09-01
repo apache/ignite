@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.internal.util.typedef.*;
-
-import javax.cache.*;
-import java.io.*;
+import java.io.IOException;
+import javax.cache.CacheException;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Checks behavior on exception while unmarshalling key.

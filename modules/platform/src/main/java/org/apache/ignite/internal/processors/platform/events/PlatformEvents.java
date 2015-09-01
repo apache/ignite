@@ -17,16 +17,23 @@
 
 package org.apache.ignite.internal.processors.platform.events;
 
-import org.apache.ignite.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.utils.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventAdapter;
+import org.apache.ignite.internal.portable.PortableRawReaderEx;
+import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
+import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interop events.
@@ -130,11 +137,12 @@ public class PlatformEvents extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected int processInOp(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_RECORD_LOCAL:
                 // TODO: GG-10244
-                break;
+                return TRUE;
 
             case OP_ENABLE_LOCAL:
 
@@ -152,15 +160,16 @@ public class PlatformEvents extends PlatformAbstractTarget {
                 events.stopRemoteListen(reader.readUuid());
 
                 return TRUE;
-        }
 
-        throw new IgniteCheckedException("Unsupported operation type: " + type);
+            default:
+                return super.processInStreamOutLong(type, reader);
+        }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions", "unchecked"})
-    @Override protected void processInOutOp(int type, PortableRawReaderEx reader, PortableRawWriterEx writer,
-        Object arg) throws IgniteCheckedException {
+    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_LOCAL_QUERY: {
                 Collection<EventAdapter> result =
@@ -197,14 +206,14 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
                 boolean hasLocFilter = reader.readBoolean();
 
-                PlatformAwareEventFilter locFilter = hasLocFilter ? localFilter(reader.readLong()) : null;
+                PlatformEventFilterListener locFilter = hasLocFilter ? localFilter(reader.readLong()) : null;
 
                 boolean hasRmtFilter = reader.readBoolean();
 
                 UUID listenId;
 
                 if (hasRmtFilter) {
-                    PlatformAwareEventFilter rmtFilter = platformCtx.createRemoteEventFilter(
+                    PlatformEventFilterListener rmtFilter = platformCtx.createRemoteEventFilter(
                         reader.readObjectDetached(), readEventTypes(reader));
 
                     listenId = events.remoteListen(bufSize, interval, autoUnsubscribe, locFilter, rmtFilter);
@@ -225,16 +234,16 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
                 int[] types = readEventTypes(reader);
 
-                PlatformAwareEventFilter filter = platformCtx.createRemoteEventFilter(pred, types);
+                PlatformEventFilterListener filter = platformCtx.createRemoteEventFilter(pred, types);
 
-                Collection<EventAdapter> result = events.remoteQuery(filter, timeout);
+                Collection<Event> result = events.remoteQuery(filter, timeout);
 
                 if (result == null)
                     writer.writeInt(-1);
                 else {
                     writer.writeInt(result.size());
 
-                    for (EventAdapter e : result)
+                    for (Event e : result)
                         platformCtx.writeEvent(writer, e);
                 }
 
@@ -242,12 +251,12 @@ public class PlatformEvents extends PlatformAbstractTarget {
             }
 
             default:
-                throw new IgniteCheckedException("Unsupported operation type: " + type);
+                super.processInStreamOutStream(type, reader, writer);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutOp(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_ENABLED_EVENTS:
                 writeEventTypes(events.enabledEvents(), writer);
@@ -255,7 +264,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
                 break;
 
             default:
-                throwUnsupported(type);
+                super.processOutStream(type, writer);
         }
     }
 
@@ -317,7 +326,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @param hnd Handle.
      * @return Interop filter.
      */
-    private PlatformAwareEventFilter localFilter(long hnd) {
+    private PlatformEventFilterListener localFilter(long hnd) {
         return platformCtx.createLocalEventFilter(hnd);
     }
 
@@ -385,4 +394,3 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
     }
 }
-

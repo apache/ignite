@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cluster;
 
-import org.apache.ignite.cluster.*;
+import org.apache.ignite.cluster.ClusterStartNodeResult;
 
 /**
  * Implementation for cluster start node result. 

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi;
 
-import org.apache.ignite.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /**
  * Kind of exception that is used when failure detection timeout is enabled for {@link TcpDiscoverySpi} or

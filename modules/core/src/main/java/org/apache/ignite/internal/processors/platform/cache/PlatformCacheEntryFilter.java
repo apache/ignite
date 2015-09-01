@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.platform.cache;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  * Platform cache entry filter interface.
  */
-public interface PlatformCacheEntryFilter<K, V> extends GridLoadCacheCloseablePredicate<K, V>,
-    CacheQueryCloseableScanBiPredicate<K, V> {
-    // No-op.
+public interface PlatformCacheEntryFilter extends IgniteBiPredicate {
+    /**
+     * Callback invoked when filter is no longer needed.
+     */
+    public void onClose();
 }

@@ -17,9 +17,15 @@
 
 package org.apache.ignite.internal.util;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.locks.*;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Provides locked wrappers around given maps and collections. Since {@link ReentrantLock}

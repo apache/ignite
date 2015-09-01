@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Represents any class that needs to maintain or carry on peer deployment information.

@@ -17,22 +17,49 @@
 
 package org.apache.ignite.internal.processors.hadoop.igfs;
 
-import org.apache.commons.logging.*;
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.igfs.common.*;
-import org.apache.ignite.internal.processors.igfs.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+import org.apache.commons.logging.Log;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.igfs.IgfsBlockLocation;
+import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.IgfsPathSummary;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.igfs.common.IgfsControlResponse;
+import org.apache.ignite.internal.igfs.common.IgfsHandshakeRequest;
+import org.apache.ignite.internal.igfs.common.IgfsMessage;
+import org.apache.ignite.internal.igfs.common.IgfsPathControlRequest;
+import org.apache.ignite.internal.igfs.common.IgfsStatusRequest;
+import org.apache.ignite.internal.igfs.common.IgfsStreamControlRequest;
+import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
+import org.apache.ignite.internal.processors.igfs.IgfsInputStreamDescriptor;
+import org.apache.ignite.internal.processors.igfs.IgfsStatus;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.lang.IgniteClosure;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.*;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.AFFINITY;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.CLOSE;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.DELETE;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.INFO;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.LIST_FILES;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.LIST_PATHS;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.MAKE_DIRECTORIES;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.OPEN_APPEND;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.OPEN_CREATE;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.OPEN_READ;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.PATH_SUMMARY;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.READ_BLOCK;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.RENAME;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.SET_TIMES;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.UPDATE;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.WRITE_BLOCK;
 
 /**
  * Communication with external process (TCP or shmem).

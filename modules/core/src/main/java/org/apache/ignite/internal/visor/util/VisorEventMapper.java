@@ -17,13 +17,21 @@
 
 package org.apache.ignite.internal.visor.util;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.visor.event.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DeploymentEvent;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.JobEvent;
+import org.apache.ignite.events.TaskEvent;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.event.VisorGridDeploymentEvent;
+import org.apache.ignite.internal.visor.event.VisorGridDiscoveryEvent;
+import org.apache.ignite.internal.visor.event.VisorGridEvent;
+import org.apache.ignite.internal.visor.event.VisorGridJobEvent;
+import org.apache.ignite.internal.visor.event.VisorGridTaskEvent;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Mapper from grid event to Visor data transfer object.

@@ -17,22 +17,31 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.*;
-import org.apache.ignite.internal.visor.util.*;
-import org.apache.ignite.lang.*;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
+import org.apache.ignite.lang.IgniteBiTuple;
 
-import javax.cache.*;
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.internal.visor.query.VisorQueryUtils.*;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.RMV_DELAY;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_COL_NAMES;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_QRY_NAME;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SQL_QRY_NAME;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.fetchScanQueryRows;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.fetchSqlQueryRows;
 
 /**
  * Job for execute SCAN or SQL query and get first page of results.

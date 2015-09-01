@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.jdbc;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.List;
 
 /**
  * JDBC result set metadata implementation.

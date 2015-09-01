@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.hadoop.mapred.*;
-import org.apache.ignite.internal.processors.hadoop.examples.*;
-import org.apache.ignite.internal.processors.hadoop.v2.*;
+import java.io.IOException;
+import java.util.UUID;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.ignite.internal.processors.hadoop.examples.HadoopWordCount1;
+import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2Job;
 
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.processors.hadoop.HadoopUtils.*;
+import static org.apache.ignite.internal.processors.hadoop.HadoopUtils.createJobInfo;
 
 /**
  * Tests of Map, Combine and Reduce task executions via running of job of hadoop API v1.

@@ -17,10 +17,10 @@
 
 package org.test.gridify;
 
-import org.apache.ignite.compute.gridify.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+import org.apache.ignite.compute.gridify.Gridify;
 
 /**
  * AOP target.

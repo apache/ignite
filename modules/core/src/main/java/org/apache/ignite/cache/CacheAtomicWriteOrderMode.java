@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache write ordering mode. This enumeration is taken into account only in {@link CacheAtomicityMode#ATOMIC}

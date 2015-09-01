@@ -15,16 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query;
+package org.apache.ignite.internal.processors.platform.message;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.lang.IgniteBiPredicate;
+
+import java.util.UUID;
 
 /**
- * Special version of bi-predicate for cache scan queries with close callback.
+ * Platform message filter.
  */
-public interface CacheQueryCloseableScanBiPredicate<K, V> extends IgniteBiPredicate<K, V> {
+public interface PlatformMessageFilter extends IgniteBiPredicate<UUID, Object> {
     /**
-     * Callback invoked when predicate is not longer needed.
+     * Initializes the filter.
+     *
+     * @param ctx Kernal context.
+     */
+    public void initialize(GridKernalContext ctx);
+
+    /**
+     * Closes the filter.
      */
     public void onClose();
 }

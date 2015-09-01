@@ -17,8 +17,8 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.util.typedef.X;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * General grid exception. This exception is used to indicate any error condition

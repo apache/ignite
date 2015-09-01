@@ -49,7 +49,7 @@
     <version>1</version>
     <packaging>pom</packaging>
 
-    <url>http://ignite.incubator.apache.org</url>
+    <url>http://ignite.apache.org</url>
 
     <description>Java-based middleware for in-memory processing of big data in a distributed environment.</description>
 
@@ -63,10 +63,10 @@
     <mailingLists>
         <mailingList>
             <name>Ignite Dev List</name>
-            <subscribe>dev-subscribe@ignite.incubator.apache.org</subscribe>
-            <unsubscribe>dev-unsubscribe@ignite.incubator.apache.org</unsubscribe>
-            <post>dev@ignite.incubator.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/incubator-ignite-dev</archive>
+            <subscribe>dev-subscribe@ignite.apache.org</subscribe>
+            <unsubscribe>dev-unsubscribe@ignite.apache.org</unsubscribe>
+            <post>dev@ignite.apache.org</post>
+            <archive>http://mail-archives.apache.org/mod_mbox/ignite-dev</archive>
         </mailingList>
     </mailingLists>
 
@@ -356,7 +356,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
+                                                            <a target=_blank href="https://apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -738,6 +738,12 @@
                                         <exclude>src/main/dotnet/Apache.Ignite.sln</exclude>
                                         <exclude>src/main/dotnet/Apache.Ignite.sln.DotSettings</exclude>
                                         <exclude>src/test/dotnet/Apache.Ignite.Core.Tests/Apache.Ignite.Core.Tests.csproj</exclude>
+                                        <exclude>**/Makefile.am</exclude>
+                                        <exclude>**/configure.ac</exclude>
+                                        <exclude>**/*.vcsproj</exclude>
+                                        <exclude>**/*.vcsproj.filters</exclude>
+                                        <exclude>**/module.def</exclude>
+                                        <exclude>**/ignite-common.pc.in</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>

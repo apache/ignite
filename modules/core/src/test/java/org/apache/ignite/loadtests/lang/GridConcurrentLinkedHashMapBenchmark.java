@@ -17,11 +17,13 @@
 
 package org.apache.ignite.loadtests.lang;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.jsr166.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import org.apache.ignite.internal.util.typedef.C2;
+import org.jsr166.ConcurrentLinkedHashMap;
 
 /**
  * Benchmark for different accessors in {@link org.jsr166.ConcurrentLinkedHashMap}.
@@ -235,4 +237,3 @@ public class GridConcurrentLinkedHashMapBenchmark {
         }
     }
 }
-

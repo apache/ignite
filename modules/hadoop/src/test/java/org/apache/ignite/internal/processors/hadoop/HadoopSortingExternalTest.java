@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.marshaller.jdk.*;
+import org.apache.ignite.configuration.HadoopConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
  * External test for sorting.

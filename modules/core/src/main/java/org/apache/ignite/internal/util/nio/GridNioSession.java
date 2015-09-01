@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.jetbrains.annotations.*;
-
-import java.net.*;
+import java.net.InetSocketAddress;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This interface represents established or closed connection between nio server and remote client.

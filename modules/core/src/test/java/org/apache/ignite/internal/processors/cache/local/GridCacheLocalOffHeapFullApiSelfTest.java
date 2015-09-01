@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheMemoryMode;
 
 /**
  * Tests local cache with values being stored offheap.
