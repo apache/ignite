@@ -15,25 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+package org.apache.ignite.internal.processors.platform.cache.query;
 
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 
 /**
- * Special version of predicate for events with initialize/close callbacks.
+ * Platform continuous query filter.
  */
-public interface PlatformAwareEventFilter<E extends Event> extends IgnitePredicate<E>, IgniteBiPredicate<UUID, E> {
+public interface PlatformContinuousQueryFilter extends CacheEntryEventSerializableFilter {
     /**
-     * Initializes the filter.
+     * Callback for query unregister event.
      */
-    public void initialize(GridKernalContext ctx);
-
-    /**
-     * Closes the filter.
-     */
-    public void close();
+    public void onQueryUnregister();
 }

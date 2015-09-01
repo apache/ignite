@@ -17,7 +17,7 @@
 
 package org.apache.ignite.compute.gridify;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Gridify task argument created by the system for task execution. It contains

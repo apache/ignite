@@ -17,9 +17,8 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import org.apache.ignite.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.IgniteCache;
 
 /**
  * Ignite benchmark that performs get operations.

@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import org.apache.ignite.internal.util.*;
-
-import javax.cache.*;
-import java.math.*;
-import java.net.*;
-import java.util.*;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import javax.cache.Cache;
+import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
  * Contains utility methods for Visor query tasks and jobs.

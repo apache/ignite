@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Tests for replicated distributed cache query metrics.

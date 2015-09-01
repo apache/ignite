@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.*;
+import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.UNSAFE;
 
 /**
  * Interop output stream implementation working with BIG ENDIAN architecture.
@@ -159,4 +159,3 @@ public class PlatformBigEndianOutputStreamImpl extends PlatformOutputStreamImpl 
         shift(cnt);
     }
 }
-

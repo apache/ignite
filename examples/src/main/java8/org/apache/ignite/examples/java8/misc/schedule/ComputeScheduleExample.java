@@ -17,9 +17,11 @@
 
 package org.apache.ignite.examples.java8.misc.schedule;
 
-import org.apache.ignite.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.scheduler.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.scheduler.SchedulerFuture;
 
 /**
  * Demonstrates a cron-based {@link Runnable} execution scheduling.

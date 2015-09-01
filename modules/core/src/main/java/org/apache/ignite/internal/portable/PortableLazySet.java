@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Set;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *

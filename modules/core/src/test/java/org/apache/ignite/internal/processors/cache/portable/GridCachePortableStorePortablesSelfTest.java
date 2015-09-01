@@ -16,9 +16,8 @@
  */
 package org.apache.ignite.internal.processors.cache.portable;
 
-import org.apache.ignite.portable.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.portable.PortableObject;
 
 /**
  * Tests for cache store with portables.

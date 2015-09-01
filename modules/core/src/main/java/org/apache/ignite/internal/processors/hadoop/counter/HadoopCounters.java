@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.counter;
 
-import java.util.*;
+import java.util.Collection;
 
 /**
  * Counters store.

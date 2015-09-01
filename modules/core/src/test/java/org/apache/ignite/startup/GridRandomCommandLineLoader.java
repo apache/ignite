@@ -17,26 +17,38 @@
 
 package org.apache.ignite.startup;
 
-import org.apache.commons.cli.*;
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.logger.*;
-import org.apache.log4j.*;
-import org.apache.log4j.varia.*;
-import org.jetbrains.annotations.*;
-import org.springframework.beans.*;
-import org.springframework.context.*;
-import org.springframework.context.support.*;
+import java.io.File;
+import java.net.MalformedURLException;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.PosixParser;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteState;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.IgnitionListener;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.log4j.Appender;
+import org.apache.log4j.Logger;
+import org.apache.log4j.varia.NullAppender;
+import org.jetbrains.annotations.Nullable;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.FileSystemXmlApplicationContext;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.IgniteState.*;
+import static org.apache.ignite.IgniteState.STOPPED;
 
 /**
  * This class defines random command-line Ignite loader. This loader can be used

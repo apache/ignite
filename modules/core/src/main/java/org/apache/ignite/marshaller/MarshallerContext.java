@@ -17,7 +17,7 @@
 
 package org.apache.ignite.marshaller;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Marshaller context.

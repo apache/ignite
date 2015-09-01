@@ -16,9 +16,13 @@
  */
 package org.apache.ignite.marshaller.optimized;
 
-import org.apache.ignite.marshaller.*;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamField;
+import java.io.Serializable;
+import org.apache.ignite.marshaller.GridMarshallerAbstractTest;
+import org.apache.ignite.marshaller.Marshaller;
 
 /**
  * Test that Optimized Marshaller works with classes with serialPersistentFields.

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.mesos.resource;
 
-import org.eclipse.jetty.server.*;
-
-import java.net.*;
+import java.net.InetSocketAddress;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
 
 /**
  * Embedded jetty server.

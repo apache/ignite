@@ -17,11 +17,10 @@
 
 package org.apache.ignite.cache.affinity;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Node hash resolver which uses {@link ClusterNode#consistentId()} as alternate hash value.

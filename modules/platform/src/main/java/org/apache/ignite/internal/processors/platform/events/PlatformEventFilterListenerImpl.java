@@ -17,19 +17,21 @@
 
 package org.apache.ignite.internal.processors.platform.events;
 
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.memory.*;
-import org.apache.ignite.internal.processors.platform.utils.*;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
-import java.util.*;
+import java.util.UUID;
 
 /**
  * Platform event filter. Delegates apply to native platform.
  */
-public class PlatformEventFilter<E extends Event> implements PlatformAwareEventFilter<E>, PlatformLocalEventListener
+public class PlatformEventFilterListenerImpl implements PlatformEventFilterListener
 {
     /** */
     private static final long serialVersionUID = 0L;
@@ -52,7 +54,7 @@ public class PlatformEventFilter<E extends Event> implements PlatformAwareEventF
      * @param hnd Handle in the native platform.
      * @param ctx Context.
      */
-    public PlatformEventFilter(long hnd, PlatformContext ctx) {
+    public PlatformEventFilterListenerImpl(long hnd, PlatformContext ctx) {
         assert ctx != null;
         assert hnd != 0;
 
@@ -68,7 +70,7 @@ public class PlatformEventFilter<E extends Event> implements PlatformAwareEventF
      *
      * @param pred .Net portable predicate.
      */
-    public PlatformEventFilter(Object pred, final int... types) {
+    public PlatformEventFilterListenerImpl(Object pred, final int... types) {
         assert pred != null;
 
         this.pred = pred;
@@ -76,12 +78,12 @@ public class PlatformEventFilter<E extends Event> implements PlatformAwareEventF
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(E evt) {
+    @Override public boolean apply(Event evt) {
         return apply0(null, evt);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(UUID uuid, E evt) {
+    @Override public boolean apply(UUID uuid, Event evt) {
         return apply0(uuid, evt);
     }
 
@@ -91,7 +93,7 @@ public class PlatformEventFilter<E extends Event> implements PlatformAwareEventF
      * @param evt Event.
      * @return Result.
      */
-    private boolean apply0(final UUID uuid, final E evt) {
+    private boolean apply0(final UUID uuid, final Event evt) {
         if (!ctx.isEventTypeSupported(evt.type()))
             return false;
 
@@ -114,7 +116,7 @@ public class PlatformEventFilter<E extends Event> implements PlatformAwareEventF
 
             PortableRawWriterEx writer = ctx.writer(out);
 
-            ctx.writeEvent(writer, (EventAdapter)evt);
+            ctx.writeEvent(writer, evt);
 
             writer.writeUuid(uuid);
 
@@ -127,7 +129,7 @@ public class PlatformEventFilter<E extends Event> implements PlatformAwareEventF
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override public void onClose() {
         ctx.gateway().eventFilterDestroy(hnd);
     }
 
@@ -150,8 +152,8 @@ public class PlatformEventFilter<E extends Event> implements PlatformAwareEventF
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        return this == o || o != null && o instanceof PlatformEventFilter &&
-            hnd == ((PlatformEventFilter)o).hnd;
+        return this == o || o != null && o instanceof PlatformEventFilterListenerImpl &&
+            hnd == ((PlatformEventFilterListenerImpl)o).hnd;
     }
 
     /** {@inheritDoc} */

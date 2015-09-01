@@ -17,11 +17,11 @@
 
 package org.apache.ignite.spi.discovery;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Listener for grid node discovery events. See

@@ -17,26 +17,69 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.commons.compress.archivers.tar.*;
-import org.apache.commons.compress.compressors.gzip.*;
-import org.apache.ignite.*;
-import org.apache.ignite.client.hadoop.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.processors.hadoop.*;
-import org.apache.ignite.internal.processors.hadoop.shuffle.collections.*;
-import org.apache.ignite.internal.processors.hadoop.shuffle.streams.*;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.*;
-import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.file.Files;
+import java.util.List;
+import junit.framework.TestSuite;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.client.hadoop.HadoopClientProtocolEmbeddedSelfTest;
+import org.apache.ignite.client.hadoop.HadoopClientProtocolSelfTest;
+import org.apache.ignite.igfs.Hadoop1OverIgfsDualAsyncTest;
+import org.apache.ignite.igfs.Hadoop1OverIgfsDualSyncTest;
+import org.apache.ignite.igfs.HadoopIgfs20FileSystemLoopbackPrimarySelfTest;
+import org.apache.ignite.igfs.HadoopIgfsDualAsyncSelfTest;
+import org.apache.ignite.igfs.HadoopIgfsDualSyncSelfTest;
+import org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest;
+import org.apache.ignite.igfs.IgfsEventsTestSuite;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemClientSelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemHandshakeSelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemLoggerSelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemLoggerStateSelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackEmbeddedPrimarySelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackEmbeddedSecondarySelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalDualAsyncSelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalDualSyncSelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalPrimarySelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalSecondarySelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemSecondaryModeSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommandLineTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopDefaultMapReducePlannerSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopFileSystemsTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopGroupingTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobTrackerSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceEmbeddedSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopSerializationWrapperSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopSortingExternalTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopSortingTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopSplitWrapperSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopTaskExecutionSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopTasksV1Test;
+import org.apache.ignite.internal.processors.hadoop.HadoopTasksV2Test;
+import org.apache.ignite.internal.processors.hadoop.HadoopV2JobSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopValidationSelfTest;
+import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimapSelftest;
+import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopHashMapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipListSelfTest;
+import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataStreamSelfTest;
+import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopExternalTaskExecutionSelfTest;
+import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.HadoopExternalCommunicationSelfTest;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.io.*;
-import java.net.*;
-import java.nio.file.*;
-import java.util.*;
-
-import static org.apache.ignite.testframework.GridTestUtils.*;
+import static org.apache.ignite.testframework.GridTestUtils.modeToPermissionSet;
 
 /**
  * Test suite for Hadoop Map Reduce engine.

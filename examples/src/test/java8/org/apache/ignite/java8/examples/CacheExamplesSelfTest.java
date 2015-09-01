@@ -18,10 +18,10 @@
 package org.apache.ignite.java8.examples;
 
 import org.apache.ignite.examples.java8.datagrid.*;
+
 //import org.apache.ignite.examples.java8.datagrid.starschema.*;
 //import org.apache.ignite.examples.java8.datagrid.store.dummy.*;
 //import org.apache.ignite.examples.java8.datastructures.*;
-import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Cache examples self test.

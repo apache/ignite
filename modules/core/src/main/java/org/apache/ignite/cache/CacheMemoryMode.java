@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
 
 /**
  * Defines set of memory modes. Memory modes help control whether cache entries are

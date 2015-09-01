@@ -17,14 +17,31 @@
 
 package org.apache.ignite.examples.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.mapreduce.*;
-import org.apache.ignite.igfs.mapreduce.records.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.TreeSet;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.igfs.IgfsOutputStream;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.mapreduce.IgfsFileRange;
+import org.apache.ignite.igfs.mapreduce.IgfsInputStreamJobAdapter;
+import org.apache.ignite.igfs.mapreduce.IgfsJob;
+import org.apache.ignite.igfs.mapreduce.IgfsRangeInputStream;
+import org.apache.ignite.igfs.mapreduce.IgfsTask;
+import org.apache.ignite.igfs.mapreduce.IgfsTaskArgs;
+import org.apache.ignite.igfs.mapreduce.records.IgfsNewLineRecordResolver;
 
 /**
  * Example that shows how to use {@link org.apache.ignite.igfs.mapreduce.IgfsTask} to find lines matching particular pattern in the file in pretty

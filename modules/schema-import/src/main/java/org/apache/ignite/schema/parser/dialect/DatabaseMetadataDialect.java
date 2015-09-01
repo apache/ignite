@@ -17,10 +17,16 @@
 
 package org.apache.ignite.schema.parser.dialect;
 
-import org.apache.ignite.schema.parser.*;
-
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.schema.parser.DbColumn;
+import org.apache.ignite.schema.parser.DbTable;
 
 /**
  * Base class for database metadata dialect.

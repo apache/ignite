@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.hadoop.conf.*;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.G;
 
 /**
  * Hadoop node startup.

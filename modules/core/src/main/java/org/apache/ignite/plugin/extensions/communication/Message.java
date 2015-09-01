@@ -17,8 +17,8 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import java.io.*;
-import java.nio.*;
+import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 /**
  * Base class for all communication messages.

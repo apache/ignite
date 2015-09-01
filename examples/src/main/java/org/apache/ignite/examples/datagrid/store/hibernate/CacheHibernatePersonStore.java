@@ -17,14 +17,18 @@
 
 package org.apache.ignite.examples.datagrid.store.hibernate;
 
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.examples.datagrid.store.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.hibernate.*;
-
-import javax.cache.integration.*;
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cache.store.CacheStoreSession;
+import org.apache.ignite.examples.datagrid.store.Person;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.resources.CacheStoreSessionResource;
+import org.hibernate.HibernateException;
+import org.hibernate.Session;
 
 /**
  * Example of {@link CacheStore} implementation that uses Hibernate

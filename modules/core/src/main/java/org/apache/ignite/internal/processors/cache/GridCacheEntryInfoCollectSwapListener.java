@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.jsr166.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.IgniteLogger;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  *

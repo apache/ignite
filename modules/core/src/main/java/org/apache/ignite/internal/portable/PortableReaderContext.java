@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.portable.PortableObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Reader context.

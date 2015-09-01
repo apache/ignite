@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder;
 
-import org.apache.ignite.spi.*;
-
-import java.net.*;
-import java.util.*;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import org.apache.ignite.spi.IgniteSpiContext;
+import org.apache.ignite.spi.IgniteSpiException;
 
 /**
  * IP finder interface for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.

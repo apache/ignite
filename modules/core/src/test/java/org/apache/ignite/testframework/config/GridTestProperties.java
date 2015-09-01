@@ -17,14 +17,20 @@
 
 package org.apache.ignite.testframework.config;
 
-import org.apache.ignite.testframework.*;
-import org.apache.log4j.xml.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.Map.*;
-import java.util.regex.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.log4j.xml.DOMConfigurator;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Loads test properties from {@code config} folder under tests.

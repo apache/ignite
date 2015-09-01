@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.cache;
 
-import javax.cache.*;
+import javax.cache.CacheException;
 
 /**
  * Exception thrown when all data nodes left the grid.

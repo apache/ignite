@@ -17,19 +17,26 @@
 
 package org.apache.ignite.cache.eviction.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.igfs.*;
-import org.jsr166.*;
-import org.jsr166.ConcurrentLinkedDeque8.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
-import java.util.regex.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.processors.cache.CacheEvictableEntryImpl;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.ConcurrentLinkedDeque8.Node;
+import org.jsr166.LongAdder8;
 
 /**
  * IGFS eviction policy which evicts particular blocks.

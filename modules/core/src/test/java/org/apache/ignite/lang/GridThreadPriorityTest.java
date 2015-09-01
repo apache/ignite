@@ -17,7 +17,7 @@
 
 package org.apache.ignite.lang;
 
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Run with: -server -XX:+UseThreadPriorities -XX:ThreadPriorityPolicy=42

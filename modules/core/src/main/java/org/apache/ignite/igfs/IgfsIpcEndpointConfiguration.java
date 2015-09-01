@@ -17,10 +17,12 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.igfs.IgfsIpcEndpointType.*;
+import static org.apache.ignite.igfs.IgfsIpcEndpointType.SHMEM;
+import static org.apache.ignite.igfs.IgfsIpcEndpointType.TCP;
 
 /**
  * IGFS IPC endpoint configuration.

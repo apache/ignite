@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.portable.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallerContextAdapter;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *

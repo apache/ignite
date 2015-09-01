@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interop target abstraction.
@@ -26,54 +26,72 @@ import org.jetbrains.annotations.*;
 @SuppressWarnings("UnusedDeclaration")
 public interface PlatformTarget {
     /**
-     * Synchronous IN operation.
+     * Operation accepting memory stream and returning long value.
      *
      * @param type Operation type.
      * @param memPtr Memory pointer.
-     * @return Value specific for the given operation otherwise.
-     * @throws Exception If failed.
-     */
-    public int inOp(int type, long memPtr) throws Exception;
-
-    /**
-     * Synchronous IN operation which returns managed object as result.
-     *
-     * @param type Operation type.
-     * @param memPtr Memory pointer.
-     * @return Managed result.
+     * @return Result.
      * @throws Exception If case of failure.
      */
-    public Object inOpObject(int type, long memPtr) throws Exception;
+    public long inStreamOutLong(int type, long memPtr) throws Exception;
 
     /**
-     * Synchronous OUT operation.
+     * Operation accepting memory stream and returning object.
+     *
+     * @param type Operation type.
+     * @param memPtr Memory pointer.
+     * @return Result.
+     * @throws Exception If case of failure.
+     */
+    public Object inStreamOutObject(int type, long memPtr) throws Exception;
+
+    /**
+     * Operation accepting one memory stream and returning result to another memory stream.
+     *
+     * @param type Operation type.
+     * @param inMemPtr Input memory pointer.
+     * @param outMemPtr Output memory pointer.
+     * @throws Exception In case of failure.
+     */
+    public void inStreamOutStream(int type, long inMemPtr, long outMemPtr) throws Exception;
+
+    /**
+     * Operation accepting an object and a memory stream and returning result to another memory stream.
+     *
+     * @param type Operation type.
+     * @param arg Argument (optional).
+     * @param inMemPtr Input memory pointer.
+     * @param outMemPtr Output memory pointer.
+     * @throws Exception In case of failure.
+     */
+    public void inObjectStreamOutStream(int type, @Nullable Object arg, long inMemPtr, long outMemPtr) throws Exception;
+
+    /**
+     * Operation returning long result.
+     *
+     * @param type Operation type.
+     * @return Result.
+     * @throws Exception In case of failure.
+     */
+    public long outLong(int type) throws Exception;
+
+    /**
+     * Operation returning result to memory stream.
      *
      * @param type Operation type.
      * @param memPtr Memory pointer.
      * @throws Exception In case of failure.
      */
-    public void outOp(int type, long memPtr) throws Exception;
+    public void outStream(int type, long memPtr) throws Exception;
 
     /**
-     * Synchronous IN-OUT operation.
+     * Operation returning object result.
      *
      * @param type Operation type.
-     * @param inMemPtr Input memory pointer.
-     * @param outMemPtr Output memory pointer.
-     * @throws Exception In case of failure.
+     * @return Result.
+     * @throws Exception If failed.
      */
-    public void inOutOp(int type, long inMemPtr, long outMemPtr) throws Exception;
-
-    /**
-     * Synchronous IN-OUT operation with optional argument.
-     *
-     * @param type Operation type.
-     * @param inMemPtr Input memory pointer.
-     * @param outMemPtr Output memory pointer.
-     * @param arg Argument (optional).
-     * @throws Exception In case of failure.
-     */
-    public void inOutOp(int type, long inMemPtr, long outMemPtr, @Nullable Object arg) throws Exception;
+    public Object outObject(int type) throws Exception;
 
     /**
      * Start listening for the future.

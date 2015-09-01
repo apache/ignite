@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.util.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import org.h2.util.StatementBuilder;
+import org.h2.util.StringUtils;
 
 /**
  * Select query.

@@ -15,24 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.communication;
+package org.apache.ignite.internal.processors.platform.datastreamer;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.stream.StreamReceiver;
 
 /**
- * Special version of bi-predicate for messaging with initialize/close callbacks.
+ * Platform data streamer filter marker interface.
  */
-public interface GridLifecycleAwareMessageFilter<K, V> extends IgniteBiPredicate<K, V> {
-    /**
-     * Initializes the filter.
-     *
-     * @param ctx Kernal context.
-     */
-    public void initialize(GridKernalContext ctx);
-
-    /**
-     * Closes the filter.
-     */
-    public void close();
+public interface PlatformStreamReceiver extends StreamReceiver<Object, Object> {
+    // No-op.
 }

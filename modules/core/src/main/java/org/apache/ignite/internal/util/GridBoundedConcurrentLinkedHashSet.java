@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedHashMap;
 
-import java.util.concurrent.*;
-
-import static org.jsr166.ConcurrentLinkedHashMap.*;
-import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jsr166.ConcurrentLinkedHashMap.DFLT_CONCUR_LVL;
+import static org.jsr166.ConcurrentLinkedHashMap.DFLT_INIT_CAP;
+import static org.jsr166.ConcurrentLinkedHashMap.DFLT_LOAD_FACTOR;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.SINGLE_Q;
 
 /**
  * Concurrent set with an upper bound. Once set reaches its maximum capacity,

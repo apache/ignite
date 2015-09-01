@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.client.balancer;
 
-import org.apache.ignite.internal.client.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
+import org.apache.ignite.internal.client.GridClientNode;
 
 /**
  * Simple balancer that relies on random node selection from a given collection. This implementation

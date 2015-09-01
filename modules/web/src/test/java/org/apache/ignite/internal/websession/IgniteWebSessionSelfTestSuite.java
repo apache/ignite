@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.websession;
 
-import junit.framework.*;
-import org.apache.ignite.testframework.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Test suite for web sessions caching functionality.

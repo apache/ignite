@@ -17,10 +17,9 @@
 
 package org.apache.ignite.yardstick.cache.store.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.yardstick.cache.model.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.yardstick.cache.model.SampleKey;
 
 /**
  * Ignite JDBC cache store benchmark that performs get operations.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteFileSystem;
 
 /**
  * Tests coordinator transfer from one node to other.

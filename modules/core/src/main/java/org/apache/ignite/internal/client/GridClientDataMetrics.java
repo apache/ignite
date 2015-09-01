@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.client;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Cache metrics used to obtain statistics on cache itself or any of its entries.

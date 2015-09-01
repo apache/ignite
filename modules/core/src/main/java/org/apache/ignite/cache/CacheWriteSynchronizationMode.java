@@ -17,8 +17,8 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Mode indicating how Ignite should wait for write replies from other nodes. Default

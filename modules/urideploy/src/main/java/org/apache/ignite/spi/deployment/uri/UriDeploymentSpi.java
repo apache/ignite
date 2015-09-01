@@ -17,24 +17,52 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.deployment.*;
-import org.apache.ignite.spi.deployment.uri.scanners.*;
-import org.apache.ignite.spi.deployment.uri.scanners.file.*;
-import org.apache.ignite.spi.deployment.uri.scanners.http.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.util.Map.*;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskName;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiConfiguration;
+import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.deployment.DeploymentListener;
+import org.apache.ignite.spi.deployment.DeploymentResource;
+import org.apache.ignite.spi.deployment.DeploymentResourceAdapter;
+import org.apache.ignite.spi.deployment.DeploymentSpi;
+import org.apache.ignite.spi.deployment.uri.scanners.GridUriDeploymentScannerListener;
+import org.apache.ignite.spi.deployment.uri.scanners.UriDeploymentScanner;
+import org.apache.ignite.spi.deployment.uri.scanners.UriDeploymentScannerManager;
+import org.apache.ignite.spi.deployment.uri.scanners.file.UriDeploymentFileScanner;
+import org.apache.ignite.spi.deployment.uri.scanners.http.UriDeploymentHttpScanner;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link org.apache.ignite.spi.deployment.DeploymentSpi} which can deploy tasks from
@@ -250,7 +278,7 @@ import java.util.Map.*;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.deployment.DeploymentSpi

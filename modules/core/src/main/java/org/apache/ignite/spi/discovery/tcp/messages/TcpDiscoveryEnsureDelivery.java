@@ -17,7 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Message classes with this annotation attached are processed in a special way to

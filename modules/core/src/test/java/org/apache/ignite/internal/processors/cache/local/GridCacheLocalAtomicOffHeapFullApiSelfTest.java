@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  * Tests local cache in atomic mode with values being stored offheap.

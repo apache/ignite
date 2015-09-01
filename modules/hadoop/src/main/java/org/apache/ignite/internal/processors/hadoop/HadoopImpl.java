@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.HadoopConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
-import org.apache.ignite.internal.util.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Hadoop facade implementation.

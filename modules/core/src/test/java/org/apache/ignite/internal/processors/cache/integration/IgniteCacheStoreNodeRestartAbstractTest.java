@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.integration;
 
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 
 /**
  *

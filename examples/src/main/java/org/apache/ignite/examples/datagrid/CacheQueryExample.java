@@ -17,18 +17,25 @@
 
 package org.apache.ignite.examples.datagrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
-
-import javax.cache.*;
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.List;
+import java.util.UUID;
+import javax.cache.Cache;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.TextQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.query.annotations.QueryTextField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  * Cache queries example. This example demonstrates SQL, TEXT, and FULL SCAN
@@ -84,8 +91,8 @@ public class CacheQueryExample {
             personCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
 
             try (
-                IgniteCache<UUID, Organization> orgCache = ignite.createCache(orgCacheCfg);
-                IgniteCache<AffinityKey<UUID>, Person> personCache = ignite.createCache(personCacheCfg)
+                IgniteCache<UUID, Organization> orgCache = ignite.getOrCreateCache(orgCacheCfg);
+                IgniteCache<AffinityKey<UUID>, Person> personCache = ignite.getOrCreateCache(personCacheCfg)
             ) {
                 // Populate cache.
                 initialize();

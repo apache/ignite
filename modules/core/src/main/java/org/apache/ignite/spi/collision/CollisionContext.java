@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.collision;
 
-import java.util.*;
+import java.util.Collection;
 
 /**
  * Context for resolving collisions. This context contains collections of

@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.portable.*;
-
-import java.sql.*;
+import java.sql.Timestamp;
 import java.util.Date;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.portable.PortableException;
 
-import static java.nio.charset.StandardCharsets.*;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.*;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
 
 /**
  *

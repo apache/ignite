@@ -17,9 +17,10 @@
 
 package org.apache.ignite.util;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.internal.util.GridStringBuilderFactory;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * String builder factory test.

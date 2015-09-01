@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  * Tests expire events when {@link CacheConfiguration#isEagerTtl()} is disabled.

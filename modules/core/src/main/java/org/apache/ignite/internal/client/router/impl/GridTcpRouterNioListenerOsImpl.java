@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.client.router.impl;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteLogger;
 
 /**
  * Router NIO listener.

@@ -17,8 +17,12 @@
 
 package org.apache.ignite.cache.affinity;
 
-import java.lang.annotation.*;
-import java.util.concurrent.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.concurrent.Callable;
 
 /**
  * Optional annotation to specify custom key-to-node affinity. Affinity key is a key

@@ -17,11 +17,10 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import org.apache.ignite.mxbean.*;
-import org.apache.ignite.spi.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Map;
+import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.spi.IgniteSpiManagementMBean;
 
 /**
  * Management MBean for job stealing based collision SPI.

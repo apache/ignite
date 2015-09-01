@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.query.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**
  * Metadata-aware interface.

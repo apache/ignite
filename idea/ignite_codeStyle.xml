@@ -14,21 +14,14 @@
     </value>
   </option>
   <option name="PREFER_LONGER_NAMES" value="false" />
-  <option name="USE_SINGLE_CLASS_IMPORTS" value="false" />
-  <option name="CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND" value="0" />
-  <option name="NAMES_COUNT_TO_USE_IMPORT_ON_DEMAND" value="0" />
+  <option name="CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND" value="1000" />
+  <option name="NAMES_COUNT_TO_USE_IMPORT_ON_DEMAND" value="1000" />
   <option name="PACKAGES_TO_USE_IMPORT_ON_DEMAND">
     <value />
   </option>
   <option name="IMPORT_LAYOUT_TABLE">
     <value>
-      <package name="org.apache" withSubpackages="true" static="false" />
-      <package name="import org.gridgain" withSubpackages="true" static="false" />
-      <emptyLine />
       <package name="" withSubpackages="true" static="false" />
-      <emptyLine />
-      <package name="javax" withSubpackages="true" static="false" />
-      <package name="java" withSubpackages="true" static="false" />
       <emptyLine />
       <package name="" withSubpackages="true" static="true" />
     </value>

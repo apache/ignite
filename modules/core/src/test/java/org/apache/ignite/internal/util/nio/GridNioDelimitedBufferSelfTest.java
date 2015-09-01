@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import junit.framework.TestCase;
-
-import java.nio.*;
-import java.util.*;
 
 /**
  * Tests for {@link GridNioDelimitedBuffer}.

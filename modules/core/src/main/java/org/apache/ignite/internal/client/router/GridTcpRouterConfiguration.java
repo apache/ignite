@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.client.router;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.security.*;
-import org.jetbrains.annotations.*;
-
-import java.net.*;
-import java.util.*;
+import java.net.Socket;
+import java.util.Collection;
+import java.util.Collections;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class defines runtime configuration for TCP router.

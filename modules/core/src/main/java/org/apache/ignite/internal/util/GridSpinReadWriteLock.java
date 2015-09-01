@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import sun.misc.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import sun.misc.Unsafe;
 
 /**
  *

@@ -18,7 +18,6 @@
 package org.apache.ignite.java8.examples;
 
 //import org.apache.ignite.examples.java8.datagrid.hibernate.*;
-import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Tests the {@link org.apache.ignite.examples.java8.datagrid.hibernate.HibernateL2CacheExample}.

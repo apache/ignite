@@ -17,8 +17,9 @@
 
 package org.apache.ignite.util;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Grid log throttle test. To verify correctness, you need to run this test

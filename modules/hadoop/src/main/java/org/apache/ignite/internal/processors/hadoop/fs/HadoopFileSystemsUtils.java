@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.fs;
 
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.fs.*;
-import org.jetbrains.annotations.*;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FsConstants;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utilities for configuring file systems to support the separate working directory per each thread.

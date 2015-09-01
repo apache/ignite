@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Supported commands.

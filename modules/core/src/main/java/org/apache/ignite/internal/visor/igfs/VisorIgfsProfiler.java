@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.visor.igfs;
 
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.typedef.*;
-
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Various global constants for IGFS profiler.

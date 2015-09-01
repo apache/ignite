@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.platform.cache;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.utils.*;
+import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformException;
+import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
-import java.util.*;
+import java.util.Collection;
 
 /**
  * Interop cache partial update exception.
@@ -44,7 +46,7 @@ public class PlatformCachePartialUpdateException extends PlatformException imple
      * @param ctx Context.
      * @param keepPortable Keep portable flag.
      */
-    public PlatformCachePartialUpdateException(CachePartialUpdateException cause, PlatformContext ctx,
+    public PlatformCachePartialUpdateException(CachePartialUpdateCheckedException cause, PlatformContext ctx,
         boolean keepPortable) {
         super(cause);
 
@@ -59,7 +61,7 @@ public class PlatformCachePartialUpdateException extends PlatformException imple
 
     /** {@inheritDoc} */
     @Override public void writeData(PortableRawWriterEx writer) {
-        Collection keys = ((CachePartialUpdateException)getCause()).failedKeys();
+        Collection keys = ((CachePartialUpdateCheckedException)getCause()).failedKeys();
 
         writer.writeBoolean(keepPortable);
 

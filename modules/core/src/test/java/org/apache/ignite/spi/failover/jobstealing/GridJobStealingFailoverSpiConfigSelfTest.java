@@ -17,7 +17,8 @@
 
 package org.apache.ignite.spi.failover.jobstealing;
 
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Job stealing failover SPI config test.

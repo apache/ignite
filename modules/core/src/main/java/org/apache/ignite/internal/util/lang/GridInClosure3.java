@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.C3;
+import org.apache.ignite.internal.util.typedef.CI3;
 
 /**
  * Defines a convenient {@code side-effect only} closure, i.e. the closure that has {@code void} return type.

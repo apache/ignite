@@ -17,9 +17,8 @@
 
 package org.apache.ignite.spi.discovery;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Message to send across ring.

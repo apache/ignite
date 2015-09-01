@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.*;
+import java.util.AbstractSet;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  *

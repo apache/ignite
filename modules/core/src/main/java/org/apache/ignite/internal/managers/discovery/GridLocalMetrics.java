@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * This class represents runtime information available for current VM.

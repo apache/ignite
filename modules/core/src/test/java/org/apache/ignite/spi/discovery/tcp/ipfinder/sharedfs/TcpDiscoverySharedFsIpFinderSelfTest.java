@@ -17,10 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs;
 
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.util.UUID;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 
 /**
  * GridTcpDiscoverySharedFsIpFinder test.

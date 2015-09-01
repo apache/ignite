@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.h2.store.*;
-import org.h2.value.*;
-import org.jetbrains.annotations.*;
-
-import java.util.concurrent.locks.*;
+import java.util.concurrent.locks.Lock;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.GridStripedLock;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.h2.store.Data;
+import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Offheap row.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Makes {@link Iterable} as {@link Serializable} and is

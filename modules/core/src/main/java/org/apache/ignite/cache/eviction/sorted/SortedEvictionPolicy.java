@@ -17,19 +17,27 @@
 
 package org.apache.ignite.cache.eviction.sorted;
 
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.LongAdder8;
 
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static java.lang.Math.*;
-import static org.apache.ignite.configuration.CacheConfiguration.*;
+import static java.lang.Math.abs;
+import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE;
 
 /**
  * Cache eviction policy which will select the minimum cache entry for eviction.

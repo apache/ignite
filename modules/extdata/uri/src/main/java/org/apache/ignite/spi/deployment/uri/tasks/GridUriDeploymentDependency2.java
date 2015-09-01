@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.deployment.uri.tasks;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * This class used by {@link GridUriDeploymentTestTask2} which loaded from GAR file.
