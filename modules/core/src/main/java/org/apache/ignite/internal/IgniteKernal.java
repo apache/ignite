@@ -3197,11 +3197,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     @Override
     public Collection<String> cacheNames() {
-        List<String> cacheNames = new ArrayList<String>();
         GridCacheProcessor cacheProcessor = ctx.cache();
-        for(IgniteCacheProxy cache:cacheProcessor.publicCaches()){
-            cacheNames.add(cache.getName());
-        }
-        return cacheNames;
+        return cacheProcessor.publicCacheNames();
     }
 }
