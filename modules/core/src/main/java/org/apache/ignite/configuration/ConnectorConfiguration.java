@@ -17,15 +17,13 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.ssl.*;
-
-import org.jetbrains.annotations.*;
-
-import javax.cache.configuration.*;
-import javax.net.ssl.*;
-import java.net.*;
+import java.net.Socket;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.ssl.SslContextFactory;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * REST access configuration.

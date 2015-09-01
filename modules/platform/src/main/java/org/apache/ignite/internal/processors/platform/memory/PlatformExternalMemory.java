@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.platform.callback.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interop external memory chunk.

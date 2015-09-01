@@ -17,8 +17,11 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.GridCacheJtaConfigurationValidationSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheJtaSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheReplicatedJtaSelfTest;
+import org.apache.ignite.internal.processors.cache.GridTmLookupLifecycleAwareSelfTest;
 
 /**
  * JTA integration tests.

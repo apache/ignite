@@ -17,8 +17,8 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.lang.IgniteFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception thrown from Ignite API when client node disconnected from cluster.

@@ -17,13 +17,16 @@
 
 package org.apache.ignite.schema.test.parser;
 
-import org.apache.ignite.schema.test.*;
-import org.apache.ignite.schema.model.*;
-
-import java.math.*;
+import java.math.BigDecimal;
 import java.sql.Date;
-import java.sql.*;
-import java.util.*;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.ignite.schema.model.PojoDescriptor;
+import org.apache.ignite.schema.model.PojoField;
+import org.apache.ignite.schema.test.AbstractSchemaImportTest;
 
 /**
  * Tests for metadata parsing.

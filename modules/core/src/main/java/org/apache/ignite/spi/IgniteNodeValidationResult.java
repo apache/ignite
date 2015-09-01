@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi;
 
-import java.util.*;
+import java.util.UUID;
 
 /**
  * Result of joining node validation.

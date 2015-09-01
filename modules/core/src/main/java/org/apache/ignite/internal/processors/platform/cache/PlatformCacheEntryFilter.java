@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.cache;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cache.GridLoadCacheCloseablePredicate;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryCloseableScanBiPredicate;
 
 /**
  * Platform cache entry filter interface.

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.thread;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
-
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.worker.GridWorker;
 
 /**
  * This class adds some necessary plumbing on top of the {@link Thread} class.

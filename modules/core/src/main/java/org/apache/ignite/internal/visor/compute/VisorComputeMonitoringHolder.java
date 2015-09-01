@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.visor.compute;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-import java.util.*;
-
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VISOR_TASK_EVTS;
 
 /**
  * Holder class to store information in node local map between data collector task executions.

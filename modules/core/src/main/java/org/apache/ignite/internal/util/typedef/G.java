@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.typedef;
 
-import org.apache.ignite.*;
+import org.apache.ignite.Ignition;
 
 /**
  * Defines {@code alias} for {@link org.apache.ignite.Ignition} by extending it. Since Java doesn't provide type aliases

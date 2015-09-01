@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.lang.IgniteAsyncSupport;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Adapter for {@link org.apache.ignite.lang.IgniteAsyncSupport}.

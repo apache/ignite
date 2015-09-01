@@ -17,11 +17,11 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Configuration for atomic data structures.

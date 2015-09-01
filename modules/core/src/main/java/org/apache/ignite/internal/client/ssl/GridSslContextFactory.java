@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.client.ssl;
 
-import javax.cache.configuration.*;
-import javax.net.ssl.*;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 
 /**
  * This interface provides creation of SSL context both for server and client use.

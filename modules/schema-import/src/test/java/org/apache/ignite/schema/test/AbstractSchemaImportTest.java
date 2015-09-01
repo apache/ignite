@@ -17,17 +17,25 @@
 
 package org.apache.ignite.schema.test;
 
-import junit.framework.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.schema.model.*;
-import org.apache.ignite.schema.parser.*;
-import org.apache.ignite.schema.ui.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import junit.framework.TestCase;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.schema.model.PojoDescriptor;
+import org.apache.ignite.schema.parser.DatabaseMetadataParser;
+import org.apache.ignite.schema.ui.ConfirmCallable;
+import org.apache.ignite.schema.ui.MessageBox;
 
-import java.io.*;
-import java.sql.*;
-import java.util.*;
-
-import static org.apache.ignite.schema.ui.MessageBox.Result.*;
+import static org.apache.ignite.schema.ui.MessageBox.Result.YES_TO_ALL;
 
 /**
  * Base functional for Ignite Schema Import utility tests.

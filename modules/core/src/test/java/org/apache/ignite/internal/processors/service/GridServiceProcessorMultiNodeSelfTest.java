@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import junit.framework.*;
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import junit.framework.TestCase;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteServices;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Single node services test.

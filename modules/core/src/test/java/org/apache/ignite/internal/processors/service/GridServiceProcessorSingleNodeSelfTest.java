@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 
 /**
  * Single node services test.

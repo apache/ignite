@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.util;
 
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.AbstractCollection;
+import java.util.AbstractSet;
 
 /**
  * Makes {@link AbstractSet} as {@link Serializable} and is

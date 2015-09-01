@@ -17,7 +17,7 @@
 
 package org.apache.ignite.gridify.hierarchy;
 
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Gridify hierarchy test.

@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.*;
-import org.jsr166.*;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.IgniteSystemProperties;
+import org.jsr166.ConcurrentHashMap8;
 
-import java.util.concurrent.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAP_CONCURRENCY_LEVEL;
 
 /**
  * Concurrent map factory.

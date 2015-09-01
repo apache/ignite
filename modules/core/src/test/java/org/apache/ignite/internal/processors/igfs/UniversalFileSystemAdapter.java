@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Map;
 
 /**
  * Universal interface to an underlying filesystem.

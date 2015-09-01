@@ -17,12 +17,12 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.hibernate.cache.*;
-import org.hibernate.cache.spi.*;
-
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.hibernate.cache.CacheException;
+import org.hibernate.cache.spi.Region;
 
 /**
  * Implementation of {@link Region}. This interface defines base contract for all L2 cache regions.

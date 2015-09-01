@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.store;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.marshaller.portable.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
  * Default store manager implementation.

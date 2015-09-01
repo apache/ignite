@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.portable.*;
+import org.apache.ignite.internal.portable.PortableObjectImpl;
+import org.apache.ignite.internal.portable.PortableObjectOffheapImpl;
+import org.apache.ignite.internal.portable.PortableWriterExImpl;
+import org.apache.ignite.portable.PortableObject;
 
 /**
  *

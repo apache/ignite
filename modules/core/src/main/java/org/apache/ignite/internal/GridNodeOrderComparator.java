@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.cluster.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Comparator;
+import org.apache.ignite.cluster.ClusterNode;
 
 /**
  * Node order comparator.

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.portable.builder;
 
 import org.apache.ignite.internal.portable.*;
 
-import java.util.*;
+import java.util.Map;
 
 /**
  *

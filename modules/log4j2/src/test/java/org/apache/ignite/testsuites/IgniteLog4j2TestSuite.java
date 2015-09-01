@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.logger.log4j2.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.logger.log4j2.Log4j2LoggerSelfTest;
 
 /**
  * Log4j2 logging tests.

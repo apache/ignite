@@ -17,8 +17,11 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.util.ipc.shmem.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryCrashDetectionSelfTest;
+import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoaderSelfTest;
+import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemorySpaceSelfTest;
+import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryUtilsSelfTest;
 
 /**
  * Shared memory test suite.

@@ -17,18 +17,19 @@
 
 package org.apache.ignite.examples.datagrid.store.auto;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.cache.store.jdbc.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.examples.datagrid.store.*;
-import org.h2.jdbcx.*;
+import java.sql.Types;
+import java.util.Arrays;
+import java.util.Collections;
+import javax.cache.configuration.Factory;
+import org.apache.ignite.cache.CacheTypeFieldMetadata;
+import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.datagrid.store.Person;
+import org.h2.jdbcx.JdbcConnectionPool;
 
-import javax.cache.configuration.*;
-import java.sql.*;
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Predefined configuration for examples with {@link CacheJdbcPojoStore}.

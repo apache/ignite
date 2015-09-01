@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal;
 
-import java.util.*;
+import java.util.EventListener;
 
 /**
  * Interception listener is notified about method apply. For each intercepted method

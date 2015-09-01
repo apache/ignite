@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.portable.streams;
 
-import org.apache.ignite.internal.util.*;
-
-import sun.misc.*;
+import org.apache.ignite.internal.util.GridUnsafe;
+import sun.misc.Unsafe;
 
 /**
  * Naive implementation of portable memory allocator.

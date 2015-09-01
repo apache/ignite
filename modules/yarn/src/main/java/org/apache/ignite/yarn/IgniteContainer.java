@@ -17,7 +17,8 @@
 
 package org.apache.ignite.yarn;
 
-import org.apache.hadoop.yarn.api.records.*;
+import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.NodeId;
 
 /**
  * Information about launched task.

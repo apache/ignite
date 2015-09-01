@@ -17,28 +17,52 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.portable.builder.*;
-import org.apache.ignite.internal.portable.mutabletest.*;
-import org.apache.ignite.internal.processors.cache.portable.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.portable.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import com.google.common.collect.*;
-import org.junit.*;
-
-import java.lang.reflect.*;
-import java.math.*;
-import java.sql.*;
-import java.util.*;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.portable.builder.PortableBuilderEnum;
+import org.apache.ignite.internal.portable.builder.PortableBuilderImpl;
+import org.apache.ignite.internal.portable.mutabletest.GridPortableMarshalerAwareTestClass;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.processors.cache.portable.IgnitePortablesImpl;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.portable.PortableBuilder;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.*;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.Address;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.AddressBook;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.Company;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectAllTypes;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectArrayList;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectContainer;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectEnum;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectInner;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectOuter;
 
 /**
  *

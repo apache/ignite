@@ -19,9 +19,13 @@ package org.apache.ignite.internal.portable.builder;
 
 import org.apache.ignite.internal.portable.*;
 
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *

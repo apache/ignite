@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.lang.*;
-
-import javax.cache.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import javax.cache.Cache;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.lang.IgniteBiInClosure;
 
 /**
  * Simple HashMap based cache store emulation.

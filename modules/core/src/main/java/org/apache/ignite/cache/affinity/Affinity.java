@@ -17,10 +17,10 @@
 
 package org.apache.ignite.cache.affinity;
 
-import org.apache.ignite.cluster.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides affinity information to detect which node is primary and which nodes are

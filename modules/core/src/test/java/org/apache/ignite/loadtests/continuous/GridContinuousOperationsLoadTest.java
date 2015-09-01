@@ -17,26 +17,44 @@
 
 package org.apache.ignite.loadtests.continuous;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.query.continuous.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryUpdatedListener;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.PX1;
+import org.apache.ignite.internal.util.typedef.PX2;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ThreadLocalRandom8;
 
-import javax.cache.event.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.loadtests.util.GridLoadTestArgs.*;
-import static org.apache.ignite.testframework.GridLoadTestUtils.*;
-import static org.apache.ignite.testframework.GridTestUtils.*;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.apache.ignite.loadtests.util.GridLoadTestArgs.CACHE_NAME;
+import static org.apache.ignite.loadtests.util.GridLoadTestArgs.TEST_DUR_SEC;
+import static org.apache.ignite.loadtests.util.GridLoadTestArgs.THREADS_CNT;
+import static org.apache.ignite.loadtests.util.GridLoadTestArgs.VALUE_SIZE;
+import static org.apache.ignite.loadtests.util.GridLoadTestArgs.dumpProperties;
+import static org.apache.ignite.loadtests.util.GridLoadTestArgs.getBooleanProperty;
+import static org.apache.ignite.loadtests.util.GridLoadTestArgs.getIntProperty;
+import static org.apache.ignite.loadtests.util.GridLoadTestArgs.getLongProperty;
+import static org.apache.ignite.loadtests.util.GridLoadTestArgs.getStringProperty;
+import static org.apache.ignite.testframework.GridLoadTestUtils.startDaemon;
+import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
  */

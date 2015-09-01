@@ -17,15 +17,14 @@
 
 package org.apache.ignite.util;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jsr166.*;
-import org.jsr166.ConcurrentLinkedDeque8.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.ConcurrentLinkedDeque8.Node;
 
 /**
  * Test for {@link org.jsr166.ConcurrentLinkedDeque8}.

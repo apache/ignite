@@ -17,8 +17,8 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.plugin.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.plugin.Extension;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Factory for communication messages.

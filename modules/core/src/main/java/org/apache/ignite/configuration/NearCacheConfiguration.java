@@ -17,13 +17,12 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import javax.cache.configuration.MutableConfiguration;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-import javax.cache.configuration.*;
-
-import static org.apache.ignite.configuration.CacheConfiguration.*;
+import static org.apache.ignite.configuration.CacheConfiguration.DFLT_NEAR_START_SIZE;
 
 /**
  * Client cache configuration.

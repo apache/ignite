@@ -17,10 +17,15 @@
 
 package org.apache.ignite.yarn;
 
-import java.io.*;
-import java.util.*;
-import java.util.logging.*;
-import java.util.regex.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Cluster settings.

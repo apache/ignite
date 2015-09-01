@@ -17,8 +17,15 @@
 
 package org.apache.ignite.jdbc.suite;
 
-import junit.framework.*;
-import org.apache.ignite.jdbc.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.jdbc.JdbcComplexQuerySelfTest;
+import org.apache.ignite.jdbc.JdbcConnectionSelfTest;
+import org.apache.ignite.jdbc.JdbcEmptyCacheSelfTest;
+import org.apache.ignite.jdbc.JdbcLocalCachesSelfTest;
+import org.apache.ignite.jdbc.JdbcMetadataSelfTest;
+import org.apache.ignite.jdbc.JdbcPreparedStatementSelfTest;
+import org.apache.ignite.jdbc.JdbcResultSetSelfTest;
+import org.apache.ignite.jdbc.JdbcStatementSelfTest;
 
 /**
  * JDBC driver test suite.

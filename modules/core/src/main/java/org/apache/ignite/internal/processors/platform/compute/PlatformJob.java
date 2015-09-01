@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.compute;
 
-import org.apache.ignite.compute.*;
+import org.apache.ignite.compute.ComputeJob;
 
 /**
  * Platform closure job interface.

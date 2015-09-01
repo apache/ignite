@@ -17,23 +17,70 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.portable.streams.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.lang.reflect.*;
-import java.math.*;
-import java.sql.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.Timestamp;
+import java.util.Collection;
 import java.util.Date;
-import java.util.concurrent.*;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
+import org.apache.ignite.internal.portable.streams.PortableOutputStream;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableRawWriter;
+import org.apache.ignite.portable.PortableWriter;
+import org.jetbrains.annotations.Nullable;
 
-import static java.nio.charset.StandardCharsets.*;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.*;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.OPTM_MARSH;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.RAW_DATA_OFF_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TOTAL_LEN_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_ARR;
 
  /**
  * Portable writer implementation.

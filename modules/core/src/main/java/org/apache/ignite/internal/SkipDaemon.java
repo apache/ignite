@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import java.lang.annotation.*;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Lifecycle callbacks will not be called for grid components marked with this annotation.

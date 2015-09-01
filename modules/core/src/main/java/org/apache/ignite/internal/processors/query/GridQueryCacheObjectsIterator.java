@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Deserializes portable objects if needed.

@@ -17,11 +17,10 @@
 
 package org.apache.ignite.schema.test.generator;
 
-import org.apache.ignite.schema.generator.CodeGenerator;
-import org.apache.ignite.schema.test.AbstractSchemaImportTest;
-import org.apache.ignite.schema.model.PojoDescriptor;
-
 import java.io.File;
+import org.apache.ignite.schema.generator.CodeGenerator;
+import org.apache.ignite.schema.model.PojoDescriptor;
+import org.apache.ignite.schema.test.AbstractSchemaImportTest;
 
 /**
  * Tests for POJO generator.

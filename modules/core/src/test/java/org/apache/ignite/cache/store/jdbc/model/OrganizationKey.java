@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.store.jdbc.model;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * OrganizationKey definition.
@@ -94,4 +94,3 @@ public class OrganizationKey implements Serializable {
             "]";
     }
 }
-

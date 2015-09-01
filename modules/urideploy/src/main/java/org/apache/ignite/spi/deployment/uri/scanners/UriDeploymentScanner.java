@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.deployment.uri.scanners;
 
-import java.net.*;
+import java.net.URI;
 
 /**
  * URI deployment scanner.

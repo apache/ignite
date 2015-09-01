@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.cache.portable.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.portable.PortableWriterExImpl;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *

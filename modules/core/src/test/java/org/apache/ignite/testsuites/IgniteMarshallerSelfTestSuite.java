@@ -17,13 +17,17 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.util.io.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.testframework.*;
-
-import java.util.*;
+import java.util.Set;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTest;
+import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshallerNodeFailoverTest;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshallerSelfTest;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshallerSerialPersistentFieldsSelfTest;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshallerTest;
+import org.apache.ignite.marshaller.optimized.OptimizedObjectStreamSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test suite for all marshallers.
