@@ -35,7 +35,8 @@
 
 package org.apache.ignite.internal.util.snaptree;
 
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /** Provides an implementation of the behavior of an {@link Epoch}. */
 @SuppressWarnings("ALL")

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.lang;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Closure with one in-parameter and void return type.

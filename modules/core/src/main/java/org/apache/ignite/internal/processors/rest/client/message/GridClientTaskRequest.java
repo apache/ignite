@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * {@code Task} command request.

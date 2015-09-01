@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.lang.IgniteRunnable;
 
 /**
  * Defines a convenient absolute, i.e. {@code no-arg} and {@code no return value} closure. This closure

@@ -17,16 +17,19 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.fs.*;
-import org.apache.ignite.hadoop.fs.*;
-import org.apache.ignite.igfs.secondary.*;
-import org.apache.ignite.internal.processors.igfs.*;
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
 
-import java.io.*;
-
-import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.*;
-import static org.apache.ignite.igfs.IgfsMode.*;
+import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.IGFS_SCHEME;
+import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.SECONDARY_CFG_PATH;
+import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.configuration;
+import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.mkUri;
+import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.writeConfiguration;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 
 /**
  * Abstract test for Hadoop 1.0 file system stack.

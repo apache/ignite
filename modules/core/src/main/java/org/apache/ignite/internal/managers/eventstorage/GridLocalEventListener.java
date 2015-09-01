@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.managers.eventstorage;
 
-import org.apache.ignite.events.*;
-
-import java.util.*;
+import java.util.EventListener;
+import org.apache.ignite.events.Event;
 
 /**
  * Listener for asynchronous local node grid events. You can subscribe for local node grid

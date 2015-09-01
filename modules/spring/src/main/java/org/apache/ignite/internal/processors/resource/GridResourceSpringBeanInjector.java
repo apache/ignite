@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.springframework.context.*;
-
-import java.io.*;
-import java.lang.reflect.*;
+import java.io.Serializable;
+import java.lang.reflect.Modifier;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.resources.SpringResource;
+import org.springframework.context.ApplicationContext;
 
 /**
  * Spring bean injector implementation works with resources provided

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.igfs;
 
-import org.apache.ignite.internal.util.future.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * IGFS client future that holds response parse closure.

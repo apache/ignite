@@ -17,8 +17,12 @@
 
 package org.apache.ignite.schema.parser.dialect;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * MySQL specific metadata dialect.

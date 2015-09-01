@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * This interface defines the general element in transformation chain between the nio server and

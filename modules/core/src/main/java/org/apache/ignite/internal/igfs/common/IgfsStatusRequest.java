@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.igfs.common;
 
-import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.*;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.STATUS;
 
 /**
  * IGFS status (total/used/free space) request.

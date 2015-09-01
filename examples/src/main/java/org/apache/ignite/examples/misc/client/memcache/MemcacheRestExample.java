@@ -17,12 +17,15 @@
 
 package org.apache.ignite.examples.misc.client.memcache;
 
-import net.spy.memcached.*;
-import org.apache.ignite.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import net.spy.memcached.BinaryConnectionFactory;
+import net.spy.memcached.MemcachedClient;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicLong;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 
 /**
  * This example shows how to use Memcache client for manipulating Ignite cache.

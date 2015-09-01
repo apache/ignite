@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.message;
 
-import java.io.*;
+import java.io.Externalizable;
 
 /**
  * Marker interface for all hadoop messages.

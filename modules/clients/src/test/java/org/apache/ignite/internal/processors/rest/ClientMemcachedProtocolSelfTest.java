@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import net.spy.memcached.*;
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.junit.*;
+import java.io.Serializable;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.Date;
+import java.util.Map;
+import net.spy.memcached.BinaryConnectionFactory;
+import net.spy.memcached.MemcachedClient;
+import net.spy.memcached.MemcachedClientIF;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Assert;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Tests for TCP binary protocol.

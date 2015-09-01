@@ -17,9 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.util.*;
+import org.h2.util.StringUtils;
 
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.*;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.COUNT;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.COUNT_ALL;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.GROUP_CONCAT;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.MAX;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.MIN;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.SUM;
 
 /**
  * Aggregate function.

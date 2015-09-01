@@ -17,16 +17,16 @@
 
 package org.apache.ignite.marshaller.optimized;
 
-import org.apache.ignite.compute.gridify.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.compute.gridify.Gridify;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 
 /**
  * Test use GridOptimizedMarshaller and AspectJ AOP.

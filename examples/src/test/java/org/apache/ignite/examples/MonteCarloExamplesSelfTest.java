@@ -17,8 +17,8 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.computegrid.montecarlo.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.examples.computegrid.montecarlo.CreditRiskExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * Ignite examples self test. Excludes Ignite Spring tests.

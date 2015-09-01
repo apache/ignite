@@ -17,10 +17,13 @@
 
 package org.apache.ignite.compute.gridify.aop.spring;
 
-import org.apache.ignite.compute.gridify.*;
-import org.springframework.aop.*;
-
-import java.lang.reflect.*;
+import java.lang.reflect.Method;
+import org.apache.ignite.compute.gridify.Gridify;
+import org.apache.ignite.compute.gridify.GridifySetToSet;
+import org.apache.ignite.compute.gridify.GridifySetToValue;
+import org.springframework.aop.ClassFilter;
+import org.springframework.aop.MethodMatcher;
+import org.springframework.aop.Pointcut;
 
 /**
  * Pointcut used by gridified aspects to find methods

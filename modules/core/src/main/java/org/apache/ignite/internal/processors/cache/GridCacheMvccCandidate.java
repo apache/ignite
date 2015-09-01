@@ -17,20 +17,37 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate.Mask.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate.Mask.DHT_LOCAL;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate.Mask.LOCAL;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate.Mask.NEAR_LOCAL;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate.Mask.OWNER;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate.Mask.READY;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate.Mask.REENTRY;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate.Mask.REMOVED;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate.Mask.SINGLE_IMPLICIT;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate.Mask.TX;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate.Mask.USED;
 
 /**
  * Lock candidate.

@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.util.*;
+import org.h2.util.StatementBuilder;
+import org.h2.util.StringUtils;
 
 /**
  * Operation type.

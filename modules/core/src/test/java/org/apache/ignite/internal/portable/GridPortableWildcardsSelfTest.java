@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.portable.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.portable.PortableIdMapper;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Wildcards test.

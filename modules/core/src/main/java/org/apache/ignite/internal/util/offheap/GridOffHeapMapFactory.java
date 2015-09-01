@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.util.offheap;
 
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMap;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafePartitionedMap;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Factory for off-heap maps.

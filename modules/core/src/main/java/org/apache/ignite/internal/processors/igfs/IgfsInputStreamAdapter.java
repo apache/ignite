@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.secondary.*;
-
-import java.io.*;
+import java.io.IOException;
+import org.apache.ignite.igfs.IgfsInputStream;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 
 /**
  * Implementation adapter providing necessary methods.

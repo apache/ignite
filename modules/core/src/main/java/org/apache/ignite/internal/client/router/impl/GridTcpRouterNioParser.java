@@ -17,17 +17,21 @@
 
 package org.apache.ignite.internal.client.router.impl;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.marshaller.*;
-import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridRouterRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridRouterResponse;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestParser;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.io.*;
-import java.nio.*;
-
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.IGNITE_REQ_FLAG;
 
 /**
  *

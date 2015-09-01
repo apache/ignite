@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.direct;
 
-import java.util.*;
+import java.util.Arrays;
 
 /**
  * Writer state.

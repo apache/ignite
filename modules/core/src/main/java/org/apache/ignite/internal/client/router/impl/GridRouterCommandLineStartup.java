@@ -17,20 +17,22 @@
 
 package org.apache.ignite.internal.client.router.impl;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.router.*;
-import org.apache.ignite.internal.util.spring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
+import java.net.URL;
+import java.util.Collection;
+import java.util.Map;
+import java.util.logging.Handler;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.client.router.GridTcpRouterConfiguration;
+import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lifecycle.LifecycleAware;
 
-import java.net.*;
-import java.util.*;
-import java.util.logging.*;
-
-import static org.apache.ignite.internal.IgniteComponentType.*;
-import static org.apache.ignite.internal.IgniteVersionUtils.*;
+import static org.apache.ignite.internal.IgniteComponentType.SPRING;
+import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
+import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 
 /**
  * Loader class for router.

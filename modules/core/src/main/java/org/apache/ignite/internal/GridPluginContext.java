@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.plugin.*;
-import org.apache.ignite.spi.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.spi.IgnitePortProtocol;
 
 /**
  *

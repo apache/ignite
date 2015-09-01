@@ -17,14 +17,15 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.config.*;
-import org.apache.ignite.testframework.junits.spi.*;
-import org.apache.ignite.util.antgar.*;
-import org.apache.tools.ant.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask;
+import org.apache.tools.ant.Project;
 
 /**
  *

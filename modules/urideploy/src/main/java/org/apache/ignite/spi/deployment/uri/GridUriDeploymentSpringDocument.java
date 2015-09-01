@@ -17,13 +17,14 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.*;
-import org.springframework.beans.*;
-import org.springframework.beans.factory.xml.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.xml.XmlBeanFactory;
 
 /**
  * Helper class which helps to read deployer and tasks information from

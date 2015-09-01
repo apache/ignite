@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.h2.value.*;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.value.Value;
+import org.h2.value.ValueDouble;
+import org.h2.value.ValueLong;
 
 /**
  * SQL Data type based on H2.

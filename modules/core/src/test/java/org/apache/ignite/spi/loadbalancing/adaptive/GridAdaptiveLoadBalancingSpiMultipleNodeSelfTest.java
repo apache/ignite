@@ -17,13 +17,19 @@
 
 package org.apache.ignite.spi.loadbalancing.adaptive;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.spi.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.GridTestJob;
+import org.apache.ignite.GridTestTaskSession;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.testframework.GridSpiTestContext;
+import org.apache.ignite.testframework.GridTestNode;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 
 /**
  * Tests adaptive load balancing SPI.

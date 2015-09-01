@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.collision;
 
-import org.apache.ignite.compute.*;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeTaskSession;
 
 /**
  * This interface defines set of operations that collision SPI implementation can perform on

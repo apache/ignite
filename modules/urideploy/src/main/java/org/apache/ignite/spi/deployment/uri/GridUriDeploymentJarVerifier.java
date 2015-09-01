@@ -17,14 +17,24 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
-import java.security.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.CodeSigner;
+import java.security.PublicKey;
 import java.security.cert.Certificate;
-import java.util.*;
-import java.util.jar.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.jar.Attributes;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.jar.JarInputStream;
+import java.util.jar.Manifest;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Helper class that verifies either JAR file or JAR file input stream

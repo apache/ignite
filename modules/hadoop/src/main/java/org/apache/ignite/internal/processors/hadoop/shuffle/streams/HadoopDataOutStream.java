@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle.streams;
 
-import org.apache.ignite.internal.util.offheap.unsafe.*;
+import java.io.DataOutput;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 
-import java.io.*;
-import java.nio.charset.*;
-
-import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.*;
+import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.BYTE_ARR_OFF;
+import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.UNSAFE;
 
 /**
  * Data output stream.

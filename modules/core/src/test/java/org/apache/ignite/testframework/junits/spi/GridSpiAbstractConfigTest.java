@@ -17,11 +17,12 @@
 
 package org.apache.ignite.testframework.junits.spi;
 
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.*;
-import org.jetbrains.annotations.*;
-
-import java.lang.reflect.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for SPI configuration tests.

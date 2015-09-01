@@ -17,25 +17,47 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.nodestart.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import java.io.File;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.nio.file.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.CFG;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.DFLT_TIMEOUT;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.IGNITE_HOME;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.KEY;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.NODES;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.PASSWD;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.SCRIPT;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.UNAME;
 
 /**
  * Tests for {@code startNodes(..)}, {@code stopNodes(..)}

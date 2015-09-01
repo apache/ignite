@@ -17,8 +17,8 @@
 
 package org.apache.ignite.plugin.security;
 
-import org.apache.ignite.cluster.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Supported security subject types. Subject type can be retrieved form {@link SecuritySubject#type()} method.

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.resource;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
-import org.springframework.aop.framework.*;
-import org.springframework.context.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
+import org.springframework.aop.framework.Advised;
+import org.springframework.context.ApplicationContext;
 
 /**
  * Implementation of {@link GridSpringResourceContext}.

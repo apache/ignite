@@ -17,15 +17,25 @@
 
 package org.apache.ignite.internal.processors.platform.services;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.dotnet.*;
-import org.apache.ignite.internal.processors.platform.utils.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.services.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteServices;
+import org.apache.ignite.internal.portable.PortableRawReaderEx;
+import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetService;
+import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
+import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceDescriptor;
 
 /**
  * Interop services.

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.spi.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 
 /**
  * Wrapper used to covert {@link org.apache.ignite.spi.IgniteSpiCloseableIterator} to {@link GridCloseableIterator}.

@@ -17,14 +17,31 @@
 
 package org.apache.ignite.internal.util.gridify;
 
-import org.apache.ignite.compute.gridify.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.lang.annotation.*;
-import java.lang.reflect.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.Set;
+import org.apache.ignite.compute.gridify.GridifyInput;
+import org.apache.ignite.compute.gridify.GridifySetToSet;
+import org.apache.ignite.compute.gridify.GridifySetToValue;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility class with common methods used in gridify annotations.

@@ -17,13 +17,15 @@
 
 package org.apache.ignite.spi.deployment.uri.scanners;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.*;
-
-import java.io.*;
-import java.net.*;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.net.URI;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiThread;
 
 /**
  * URI deployment scanner manager.

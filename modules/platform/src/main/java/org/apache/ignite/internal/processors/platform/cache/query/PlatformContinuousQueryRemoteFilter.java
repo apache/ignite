@@ -17,18 +17,23 @@
 
 package org.apache.ignite.internal.processors.platform.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.cache.query.continuous.*;
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.memory.*;
-import org.apache.ignite.internal.processors.platform.utils.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-
-import javax.cache.event.*;
-import java.io.*;
-import java.util.concurrent.locks.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFilterEx;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Continuous query filter deployed on remote nodes.

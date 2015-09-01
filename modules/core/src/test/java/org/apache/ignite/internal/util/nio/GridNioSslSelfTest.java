@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.nio.ssl.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.*;
-
-import javax.net.ssl.*;
-import java.net.*;
-import java.nio.*;
+import java.net.Socket;
+import java.nio.ByteOrder;
+import javax.net.ssl.SSLContext;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Tests for new NIO server with SSL enabled.

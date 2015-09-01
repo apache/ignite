@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated.preloader;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-
-import javax.swing.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import javax.swing.JOptionPane;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Test for replicated cache preloader and concurrent undeploys.

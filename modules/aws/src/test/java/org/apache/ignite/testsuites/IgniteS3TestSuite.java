@@ -17,9 +17,13 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.spi.checkpoint.s3.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.spi.checkpoint.s3.S3CheckpointManagerSelfTest;
+import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiConfigSelfTest;
+import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiSelfTest;
+import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiStartStopSelfTest;
+import org.apache.ignite.spi.checkpoint.s3.S3SessionCheckpointSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderSelfTest;
 
 /**
  * S3 integration tests.

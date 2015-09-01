@@ -17,25 +17,43 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.h2.api.*;
-import org.h2.command.ddl.*;
-import org.h2.engine.*;
-import org.h2.index.*;
-import org.h2.message.*;
-import org.h2.result.*;
-import org.h2.schema.*;
-import org.h2.table.*;
-import org.h2.value.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
-
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.h2.api.TableEngine;
+import org.h2.command.ddl.CreateTableData;
+import org.h2.engine.Constants;
+import org.h2.engine.Database;
+import org.h2.engine.DbObject;
+import org.h2.engine.Session;
+import org.h2.index.Cursor;
+import org.h2.index.Index;
+import org.h2.index.IndexType;
+import org.h2.message.DbException;
+import org.h2.result.Row;
+import org.h2.result.SearchRow;
+import org.h2.result.SortOrder;
+import org.h2.schema.Schema;
+import org.h2.table.Column;
+import org.h2.table.IndexColumn;
+import org.h2.table.Table;
+import org.h2.table.TableBase;
+import org.h2.table.TableFilter;
+import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * H2 Table implementation.

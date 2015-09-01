@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.internal.client.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.internal.client.util.GridClientConsistentHash;
+import org.apache.ignite.internal.client.util.GridClientUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Affinity function for partitioned cache. This function supports the following

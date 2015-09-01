@@ -17,12 +17,11 @@
 
 package org.apache.ignite.cache.affinity;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Affinity function context. This context is passed to {@link AffinityFunction} for

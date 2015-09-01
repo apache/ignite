@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.util.typedef;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.lang.GridFunc;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * Defines {@code alias} for <tt>GridPredicate&lt;GridNode&gt;</tt> by extending

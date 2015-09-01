@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Partition states.

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class encapsulates argument check (null and range) for public facing APIs. Unlike asserts

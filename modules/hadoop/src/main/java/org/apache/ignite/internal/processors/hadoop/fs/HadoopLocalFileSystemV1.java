@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.fs;
 
-import org.apache.hadoop.fs.*;
-
-import java.io.*;
+import java.io.File;
+import org.apache.hadoop.fs.LocalFileSystem;
+import org.apache.hadoop.fs.Path;
 
 /**
  * Local file system replacement for Hadoop jobs.

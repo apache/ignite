@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.lang.*;
-
-import java.text.*;
-import java.util.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 /**
  * Ignite version utils.

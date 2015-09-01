@@ -17,8 +17,8 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.internal.util.tostring.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This interface defines basic logging functionality used throughout the system. We had to

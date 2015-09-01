@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.schedule;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.scheduler.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.scheduler.SchedulerFuture;
 
 /**
  * No-op implementation of {@link IgniteScheduleProcessorAdapter}, throws exception on usage attempt.

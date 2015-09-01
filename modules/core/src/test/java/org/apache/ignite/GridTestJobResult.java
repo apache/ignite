@@ -17,10 +17,11 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeJobResult;
 
 /**
  * Test job result.

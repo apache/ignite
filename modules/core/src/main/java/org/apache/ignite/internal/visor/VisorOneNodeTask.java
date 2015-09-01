@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.visor;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for Visor tasks intended to query data from a single node.

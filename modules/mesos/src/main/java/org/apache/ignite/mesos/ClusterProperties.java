@@ -17,11 +17,18 @@
 
 package org.apache.ignite.mesos;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.util.logging.*;
-import java.util.regex.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Cluster settings.

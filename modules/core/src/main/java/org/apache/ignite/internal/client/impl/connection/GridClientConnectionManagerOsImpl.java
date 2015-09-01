@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.client.impl.connection;
 
-import org.apache.ignite.internal.client.*;
-
-import javax.net.ssl.*;
-import java.net.*;
-import java.util.*;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.UUID;
+import javax.net.ssl.SSLContext;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientException;
 
 /**
  * Open source version of connection manager.

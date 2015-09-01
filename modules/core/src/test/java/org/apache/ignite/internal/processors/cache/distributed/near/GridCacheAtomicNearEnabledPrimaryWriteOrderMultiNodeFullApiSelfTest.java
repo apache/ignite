@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
 /**
  * Multi-node tests for atomic cache with primary write order mode and near cache enabled.

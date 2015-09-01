@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.util.ipc.loopback;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.ipc.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.ipc.IpcEndpoint;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Loopback IPC endpoint based on socket.

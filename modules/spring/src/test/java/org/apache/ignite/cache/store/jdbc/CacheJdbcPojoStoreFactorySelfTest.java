@@ -17,17 +17,19 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.store.jdbc.dialect.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.h2.jdbcx.*;
-
-import javax.cache.*;
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
+import org.apache.ignite.cache.store.jdbc.dialect.JdbcDialect;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.h2.jdbcx.JdbcDataSource;
 
 /**
  * Test for Cache jdbc blob store factory.

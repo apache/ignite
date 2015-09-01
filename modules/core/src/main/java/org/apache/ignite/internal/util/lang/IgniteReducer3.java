@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines generic {@code for-all} or {@code reduce} type of closure. Unlike {@code for-each} type of closure

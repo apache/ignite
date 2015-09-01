@@ -17,36 +17,69 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReadWriteLock;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.affinity.AffinityCentralizedFunction;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAssignmentFetchFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
-
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.events.DiscoveryCustomEvent.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
  * Future for exchanging partition maps.
@@ -1113,52 +1146,54 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
         else {
             initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                @Override public void apply(IgniteInternalFuture<Boolean> t) {
+                @Override public void apply(IgniteInternalFuture<Boolean> f) {
                     try {
-                        if (!t.get()) // Just to check if there was an error.
+                        if (!f.get())
                             return;
-
-                        ClusterNode loc = cctx.localNode();
-
-                        singleMsgs.put(nodeId, msg);
-
-                        boolean match = true;
-
-                        // Check if oldest node has changed.
-                        if (!oldestNode.get().equals(loc)) {
-                            match = false;
-
-                            synchronized (mux) {
-                                // Double check.
-                                if (oldestNode.get().equals(loc))
-                                    match = true;
-                            }
-                        }
-
-                        if (match) {
-                            boolean allReceived;
-
-                            synchronized (rcvdIds) {
-                                if (rcvdIds.add(nodeId))
-                                    updatePartitionSingleMap(msg);
-
-                                allReceived = allReceived();
-                            }
-
-                            // If got all replies, and initialization finished, and reply has not been sent yet.
-                            if (allReceived && ready.get() && replied.compareAndSet(false, true)) {
-                                spreadPartitions();
-
-                                onDone(exchId.topologyVersion());
-                            }
-                            else if (log.isDebugEnabled())
-                                log.debug("Exchange future full map is not sent [allReceived=" + allReceived() +
-                                    ", ready=" + ready + ", replied=" + replied.get() + ", init=" + init.get() +
-                                    ", fut=" + this + ']');
-                        }
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to initialize exchange future: " + this, e);
+
+                        return;
+                    }
+
+                    ClusterNode loc = cctx.localNode();
+
+                    singleMsgs.put(nodeId, msg);
+
+                    boolean match = true;
+
+                    // Check if oldest node has changed.
+                    if (!oldestNode.get().equals(loc)) {
+                        match = false;
+
+                        synchronized (mux) {
+                            // Double check.
+                            if (oldestNode.get().equals(loc))
+                                match = true;
+                        }
+                    }
+
+                    if (match) {
+                        boolean allReceived;
+
+                        synchronized (rcvdIds) {
+                            if (rcvdIds.add(nodeId))
+                                updatePartitionSingleMap(msg);
+
+                            allReceived = allReceived();
+                        }
+
+                        // If got all replies, and initialization finished, and reply has not been sent yet.
+                        if (allReceived && ready.get() && replied.compareAndSet(false, true)) {
+                            spreadPartitions();
+
+                            onDone(exchId.topologyVersion());
+                        }
+                        else if (log.isDebugEnabled())
+                            log.debug("Exchange future full map is not sent [allReceived=" + allReceived() +
+                                ", ready=" + ready + ", replied=" + replied.get() + ", init=" + init.get() +
+                                ", fut=" + this + ']');
                     }
                 }
             });
@@ -1221,7 +1256,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert exchId.topologyVersion().equals(msg.topologyVersion());
 
         initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-            @Override public void apply(IgniteInternalFuture<Boolean> t) {
+            @Override public void apply(IgniteInternalFuture<Boolean> f) {
+                try {
+                    if (!f.get())
+                        return;
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to initialize exchange future: " + this, e);
+
+                    return;
+                }
+
                 ClusterNode curOldest = oldestNode.get();
 
                 if (!nodeId.equals(curOldest.id())) {
@@ -1310,8 +1355,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         try {
             // Wait for initialization part of this future to complete.
-            initFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> f) {
+            initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+                @Override public void apply(IgniteInternalFuture<Boolean> f) {
+                    try {
+                        if (!f.get())
+                            return;
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to initialize exchange future: " + this, e);
+
+                        return;
+                    }
+
                     if (isDone())
                         return;
 

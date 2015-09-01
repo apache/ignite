@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.typedef.internal;
 
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 
 /**
  * Defines internal {@code typedef} for {@link GridCacheUtils}. Since Java doesn't provide type aliases

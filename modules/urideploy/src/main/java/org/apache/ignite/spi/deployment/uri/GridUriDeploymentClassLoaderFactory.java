@@ -17,12 +17,14 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.*;
-import org.apache.ignite.spi.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.spi.IgniteSpiException;
 
 /**
  * Factory class to create class loader that loads classes and resources from

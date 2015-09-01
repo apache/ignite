@@ -17,8 +17,8 @@
 
 package org.apache.ignite.cache.store.jdbc.dialect;
 
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
 
 /**
  * Represents a dialect of SQL implemented by a particular RDBMS.

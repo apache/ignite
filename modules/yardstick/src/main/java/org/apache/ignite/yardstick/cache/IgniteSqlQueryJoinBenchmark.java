@@ -17,15 +17,18 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.yardstick.cache.model.*;
-import org.yardstickframework.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.yardstick.cache.model.Organization;
+import org.apache.ignite.yardstick.cache.model.Person;
+import org.yardstickframework.BenchmarkConfiguration;
 
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.yardstickframework.BenchmarkUtils.*;
+import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
  * Ignite benchmark that performs query operations with joins.
