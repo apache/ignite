@@ -620,13 +620,16 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Exception convertException(Exception e) {
+    @Override public Exception convertException(Exception e) {
         if (e instanceof CachePartialUpdateException)
             return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e.getCause(),
                 platformCtx, keepPortable);
 
         if (e instanceof CachePartialUpdateCheckedException)
             return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e, platformCtx, keepPortable);
+
+        if (e.getCause() instanceof EntryProcessorException)
+            return (EntryProcessorException) e.getCause();
 
         return super.convertException(e);
     }
@@ -798,7 +801,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             public Object apply(IgniteFuture fut) {
                 return null;
             }
-        }), futId, PlatformFutureUtils.TYP_OBJ);
+        }), futId, PlatformFutureUtils.TYP_OBJ, this);
     }
 
     /**

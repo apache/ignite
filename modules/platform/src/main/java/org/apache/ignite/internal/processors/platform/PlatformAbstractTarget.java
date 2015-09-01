@@ -173,7 +173,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param e Exception to convert.
      * @return Converted exception.
      */
-    protected Exception convertException(Exception e) {
+    public Exception convertException(Exception e) {
         return e;
     }
 
@@ -186,12 +186,12 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
     /** {@inheritDoc} */
     @Override public void listenFuture(final long futId, int typ) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, null);
+        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, null, this);
     }
 
     /** {@inheritDoc} */
     @Override public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, futureWriter(opId));
+        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, futureWriter(opId), this);
     }
 
     /**
@@ -202,7 +202,11 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      */
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
     protected IgniteInternalFuture currentFutureWrapped() throws IgniteCheckedException {
+        IgniteFutureImpl fut = (IgniteFutureImpl)currentFuture();
 
+        return fut.internalFuture();
+
+        /*
         IgniteFutureImpl fut = (IgniteFutureImpl)currentFuture();
 
         IgniteInternalFuture internalFut = fut.internalFuture();
@@ -225,7 +229,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
                     }
                 }
             }
-        });
+        });*/
 
         /*return new IgniteFutureImpl(internalFut) {
             @Override protected RuntimeException convertException(IgniteCheckedException e) {
