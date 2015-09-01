@@ -743,6 +743,7 @@
                                         <exclude>**/*.vcsproj</exclude>
                                         <exclude>**/*.vcsproj.filters</exclude>
                                         <exclude>**/module.def</exclude>
+                                        <exclude>**/ignite-common.pc.in</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
