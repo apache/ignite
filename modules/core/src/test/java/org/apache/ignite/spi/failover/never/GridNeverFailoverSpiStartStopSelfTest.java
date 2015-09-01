@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi.failover.never;
 
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.spi.GridSpiStartStopAbstractTest;
+import org.apache.ignite.spi.failover.FailoverSpi;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Never-failover SPI start-stop test.

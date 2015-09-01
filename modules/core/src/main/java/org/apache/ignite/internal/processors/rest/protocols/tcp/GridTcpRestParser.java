@@ -17,23 +17,49 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.marshaller.*;
-import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.jetbrains.annotations.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.Date;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
+import org.apache.ignite.internal.processors.rest.client.message.GridRouterRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridRouterResponse;
+import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.GridClientByteUtils;
+import org.apache.ignite.internal.util.nio.GridNioParser;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.nio.*;
-import java.nio.charset.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BOOLEAN_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BYTE_ARR_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BYTE_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.DATE_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.DOUBLE_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.FLAGS_LENGTH;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.FLOAT_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.HDR_LEN;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.IGNITE_HANDSHAKE_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.IGNITE_HANDSHAKE_RES_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.IGNITE_REQ_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.INT_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.LONG_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.MEMCACHE_REQ_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.MEMCACHE_RES_FLAG;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.SERIALIZED_FLAG;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALLER;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.PARSER_STATE;
 
 /**
  * Parser for extended memcache protocol. Handles parsing and encoding activity.

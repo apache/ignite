@@ -17,9 +17,8 @@
 
 package org.apache.ignite.spi;
 
-import org.apache.ignite.mxbean.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.mxbean.MXBeanDescription;
 
 /**
  * This interface defines basic MBean for all SPI implementations. Every SPI implementation

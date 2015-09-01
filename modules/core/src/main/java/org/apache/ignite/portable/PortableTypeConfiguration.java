@@ -17,11 +17,10 @@
 
 package org.apache.ignite.portable;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.portable.*;
-
-import java.sql.*;
-import java.util.*;
+import java.sql.Timestamp;
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
  * Defines configuration properties for a specific portable type. Providing per-type

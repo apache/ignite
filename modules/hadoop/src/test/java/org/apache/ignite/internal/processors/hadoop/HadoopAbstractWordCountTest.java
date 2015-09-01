@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import com.google.common.base.*;
-import org.apache.hadoop.conf.*;
+import com.google.common.base.Joiner;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.processors.igfs.*;
-
-import java.io.*;
-import java.util.*;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.processors.igfs.IgfsEx;
 
 /**
  * Abstract class for tests based on WordCount test job.

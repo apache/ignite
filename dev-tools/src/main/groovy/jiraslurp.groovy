@@ -136,7 +136,7 @@ def sendGetRequest = { urlString, user, pwd->
  * Parsing a special filter from Apache Ignite JIRA and picking up latest by ID
  * attachments to process.
  */
-final GIT_REPO = "https://git1-us-west.apache.org/repos/asf/incubator-ignite.git"
+final GIT_REPO = "https://git1-us-west.apache.org/repos/asf/ignite.git"
 final JIRA_URL = "https://issues.apache.org"
 final ATTACHMENT_URL = "$JIRA_URL/jira/secure/attachment"
 final HISTORY_FILE = "${System.getProperty("user.home")}/validated-jira.txt"

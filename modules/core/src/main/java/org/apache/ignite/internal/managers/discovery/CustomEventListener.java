@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import org.apache.ignite.cluster.*;
+import org.apache.ignite.cluster.ClusterNode;
 
 /**
  * Listener interface.

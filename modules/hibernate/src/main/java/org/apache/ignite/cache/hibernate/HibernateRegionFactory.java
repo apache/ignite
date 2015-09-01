@@ -17,19 +17,28 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.hibernate.cache.*;
-import org.hibernate.cache.spi.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.typedef.G;
+import org.hibernate.cache.CacheException;
+import org.hibernate.cache.spi.CacheDataDescription;
+import org.hibernate.cache.spi.CollectionRegion;
+import org.hibernate.cache.spi.EntityRegion;
+import org.hibernate.cache.spi.NaturalIdRegion;
+import org.hibernate.cache.spi.QueryResultsRegion;
 import org.hibernate.cache.spi.RegionFactory;
+import org.hibernate.cache.spi.TimestampsRegion;
 import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cfg.*;
+import org.hibernate.cfg.Settings;
 
-import java.util.*;
-
-import static org.hibernate.cache.spi.access.AccessType.*;
+import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
 
 /**
  * Hibernate L2 cache region factory.

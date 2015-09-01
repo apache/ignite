@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  *

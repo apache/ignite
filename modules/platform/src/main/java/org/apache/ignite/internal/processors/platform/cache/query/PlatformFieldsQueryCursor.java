@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.cache.query;
 
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.processors.platform.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
 
 /**
  * Interop cursor for fields query.

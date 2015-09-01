@@ -17,11 +17,10 @@
 
 package org.apache.ignite;
 
-import org.jetbrains.annotations.*;
-
-import javax.net.ssl.*;
-import java.lang.management.*;
-import java.util.*;
+import java.lang.management.RuntimeMXBean;
+import java.util.Properties;
+import javax.net.ssl.HostnameVerifier;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Contains constants for all system properties and environmental variables in Ignite.

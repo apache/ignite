@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.portable.streams;
 
-import org.apache.ignite.internal.util.*;
-
-import sun.misc.*;
-
-import java.nio.*;
+import java.nio.ByteOrder;
+import org.apache.ignite.internal.util.GridUnsafe;
+import sun.misc.Unsafe;
 
 /**
  * Portable abstract stream.

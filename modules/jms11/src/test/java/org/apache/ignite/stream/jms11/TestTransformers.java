@@ -17,9 +17,14 @@
 
 package org.apache.ignite.stream.jms11;
 
-import javax.jms.*;
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import javax.jms.JMSException;
+import javax.jms.ObjectMessage;
+import javax.jms.TextMessage;
 
 /**
  * Test transformers for JmsStreamer tests.

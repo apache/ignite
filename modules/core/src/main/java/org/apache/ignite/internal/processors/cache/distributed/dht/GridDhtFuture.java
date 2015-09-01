@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.internal.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.internal.IgniteInternalFuture;
 
 /**
  * Keys to retry.

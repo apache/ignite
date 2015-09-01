@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
+import java.util.UUID;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * Special version of predicate for events with initialize/close callbacks.
  */
-public interface PlatformAwareEventFilter<E extends Event> extends IgnitePredicate<E> {
+public interface PlatformAwareEventFilter<E extends Event> extends IgnitePredicate<E>, IgniteBiPredicate<UUID, E> {
     /**
      * Initializes the filter.
      */

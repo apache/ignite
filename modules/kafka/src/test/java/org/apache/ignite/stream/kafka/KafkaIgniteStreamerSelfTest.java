@@ -17,22 +17,30 @@
 
 package org.apache.ignite.stream.kafka;
 
-import org.apache.ignite.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeoutException;
+import kafka.consumer.ConsumerConfig;
+import kafka.producer.KeyedMessage;
+import kafka.producer.Producer;
+import kafka.serializer.StringDecoder;
+import kafka.utils.VerifiableProperties;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import kafka.consumer.*;
-import kafka.producer.*;
-import kafka.serializer.*;
-import kafka.utils.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.stream.kafka.KafkaEmbeddedBroker.*;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.apache.ignite.stream.kafka.KafkaEmbeddedBroker.getZKAddress;
 
 /**
  * Tests {@link KafkaStreamer}.

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.testframework.config.*;
-
-import junit.framework.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
  * Cache full API suite with portable marshaller.

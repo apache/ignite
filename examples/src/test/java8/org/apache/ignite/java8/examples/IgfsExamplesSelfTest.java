@@ -19,7 +19,6 @@ package org.apache.ignite.java8.examples;
 
 //import org.apache.ignite.examples.java8.igfs.*;
 //import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * IGFS examples self test.

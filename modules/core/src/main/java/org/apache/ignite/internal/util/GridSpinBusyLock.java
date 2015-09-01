@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 
 /**
  * Synchronization aid to track "busy" state of a subsystem that owns it.

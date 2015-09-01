@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Result for cache query tasks.

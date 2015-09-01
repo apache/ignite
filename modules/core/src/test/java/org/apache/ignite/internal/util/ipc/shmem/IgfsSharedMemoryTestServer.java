@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.ipc.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.*;
-
-import java.io.*;
+import java.io.InputStream;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.GridJavaProcess;
+import org.apache.ignite.internal.util.ipc.IpcEndpoint;
+import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.IgniteTestResources;
 
 /**
  * Test-purposed app launching {@link IpcSharedMemoryServerEndpoint} and designed

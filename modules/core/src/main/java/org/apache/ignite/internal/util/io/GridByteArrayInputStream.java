@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.util.io;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * This class defines input stream backed by byte array.

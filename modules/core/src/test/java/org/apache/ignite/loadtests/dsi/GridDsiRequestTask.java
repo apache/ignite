@@ -17,10 +17,13 @@
 
 package org.apache.ignite.loadtests.dsi;
 
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.typedef.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.internal.util.typedef.T3;
 
 /**
  *

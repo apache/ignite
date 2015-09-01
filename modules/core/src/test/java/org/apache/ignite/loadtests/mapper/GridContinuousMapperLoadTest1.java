@@ -17,8 +17,10 @@
 
 package org.apache.ignite.loadtests.mapper;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Continuous mapper load test.

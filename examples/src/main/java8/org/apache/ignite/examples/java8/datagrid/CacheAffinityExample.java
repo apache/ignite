@@ -17,15 +17,6 @@
 
 package org.apache.ignite.examples.java8.datagrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
-
 /**
  * This example demonstrates the simplest code that populates the distributed cache
  * and co-locates simple closure execution with each key. The goal of this particular
@@ -60,7 +51,7 @@ public final class CacheAffinityExample {
             cfg.setCacheMode(CacheMode.PARTITIONED);
             cfg.setName(CACHE_NAME);
 
-            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
+            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cfg)) {
                 for (int i = 0; i < KEY_CNT; i++)
                     cache.put(i, Integer.toString(i));
 

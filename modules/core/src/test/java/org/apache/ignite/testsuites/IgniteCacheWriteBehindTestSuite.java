@@ -17,9 +17,16 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.store.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionedWritesTest;
+import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStoreLocalTest;
+import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStoreMultithreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStorePartitionedMultiNodeSelfTest;
+import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStorePartitionedTest;
+import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStoreReplicatedTest;
+import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBehindStoreAtomicTest;
+import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBehindStoreTxTest;
 
 /**
  * Test suite that contains all tests for {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore}.

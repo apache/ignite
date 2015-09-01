@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheMemoryMode;
 
-import static org.apache.ignite.cache.CacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 
 /**
  * Tests replicated cache with values being stored off-heap.

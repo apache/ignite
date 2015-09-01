@@ -17,9 +17,9 @@
 
 package org.apache.ignite.plugin.security;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.Serializable;
+import java.net.InetSocketAddress;
+import java.util.UUID;
 
 /**
  * Security subject representing authenticated node with a set of permissions.

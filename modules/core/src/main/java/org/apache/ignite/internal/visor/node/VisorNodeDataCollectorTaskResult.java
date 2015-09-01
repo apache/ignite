@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.apache.ignite.internal.visor.cache.*;
-import org.apache.ignite.internal.visor.event.*;
-import org.apache.ignite.internal.visor.igfs.*;
-import org.apache.ignite.internal.visor.util.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.internal.visor.cache.VisorCache;
+import org.apache.ignite.internal.visor.event.VisorGridEvent;
+import org.apache.ignite.internal.visor.igfs.VisorIgfs;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsEndpoint;
+import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 
 /**
  * Data collector task result.

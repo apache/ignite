@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFuture;
+import org.apache.ignite.internal.client.GridClientFutureTimeoutException;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Grid client future implementation self test.

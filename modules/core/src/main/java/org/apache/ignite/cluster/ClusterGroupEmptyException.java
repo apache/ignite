@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cluster;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This exception defines illegal call on empty cluster group. Thrown by cluster group when operation

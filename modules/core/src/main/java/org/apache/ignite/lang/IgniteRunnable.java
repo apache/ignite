@@ -17,7 +17,7 @@
 
 package org.apache.ignite.lang;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Grid-aware adapter for {@link Runnable} implementations. It adds {@link Serializable} interface

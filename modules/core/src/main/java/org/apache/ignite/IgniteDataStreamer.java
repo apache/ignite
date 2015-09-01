@@ -17,12 +17,13 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.stream.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import javax.cache.CacheException;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.stream.StreamReceiver;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Data streamer is responsible for streaming external data into cache. It achieves it by

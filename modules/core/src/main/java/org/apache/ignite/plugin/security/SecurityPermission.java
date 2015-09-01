@@ -17,7 +17,7 @@
 
 package org.apache.ignite.plugin.security;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Supported security permissions within grid. Permissions

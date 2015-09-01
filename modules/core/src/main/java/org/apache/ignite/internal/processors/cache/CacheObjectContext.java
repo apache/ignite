@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cacheobject.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 
 /**
  *

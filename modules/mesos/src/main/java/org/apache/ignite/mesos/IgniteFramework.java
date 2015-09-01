@@ -17,12 +17,17 @@
 
 package org.apache.ignite.mesos;
 
-import com.google.protobuf.*;
-import org.apache.ignite.mesos.resource.*;
-import org.apache.mesos.*;
-
-import java.net.*;
-import java.util.logging.*;
+import com.google.protobuf.ByteString;
+import java.net.InetSocketAddress;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.ignite.mesos.resource.IgniteProvider;
+import org.apache.ignite.mesos.resource.JettyServer;
+import org.apache.ignite.mesos.resource.ResourceHandler;
+import org.apache.ignite.mesos.resource.ResourceProvider;
+import org.apache.mesos.MesosSchedulerDriver;
+import org.apache.mesos.Protos;
+import org.apache.mesos.Scheduler;
 
 /**
  * Ignite mesos framework.

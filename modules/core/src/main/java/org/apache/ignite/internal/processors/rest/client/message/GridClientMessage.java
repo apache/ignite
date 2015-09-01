@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * Interface for all client messages.

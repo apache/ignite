@@ -17,22 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.*;
-import org.jetbrains.annotations.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
@@ -60,6 +66,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
@@ -93,59 +100,91 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
      * @throws Exception If failed.
      */
     public void testAsyncFailover() throws Exception {
-        for (int i = 0; i < 3; i++) {
+        IgniteCache<TestKey, TestValue> cache = ignite(0).<TestKey, TestValue>cache(null).withAsync();
+
+        int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
+
+        log.info("Max concurrent async operations: " + ops);
+
+        assertTrue(ops > 0);
+
+        // Start/stop one node.
+        for (int i = 0; i < 2; i++) {
             log.info("Iteration: " + i);
 
             startGrid(NODE_CNT);
 
-            final IgniteCache<TestKey, TestValue> cache = ignite(0).<TestKey, TestValue>cache(null).withAsync();
-
-            int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
-
-            log.info("Max concurrent async operations: " + ops);
-
-            assertTrue(ops > 0);
-
-            final List<IgniteFuture<?>> futs = Collections.synchronizedList(new ArrayList<IgniteFuture<?>>(ops));
-
-            final AtomicInteger left = new AtomicInteger(ops);
-
-            GridTestUtils.runMultiThreaded(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    List<IgniteFuture<?>> futs0 = new ArrayList<>();
-
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-                    while (left.getAndDecrement() > 0) {
-                        TreeMap<TestKey, TestValue> map = new TreeMap<>();
-
-                        int keys = 50;
-
-                        for (int k = 0; k < keys; k++)
-                            map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(k));
-
-                        cache.putAll(map);
-
-                        IgniteFuture<?> fut = cache.future();
-
-                        assertNotNull(fut);
-
-                        futs0.add(fut);
-                    }
-
-                    futs.addAll(futs0);
-
-                    return null;
-                }
-            }, 10, "put-thread");
+            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
 
             stopGrid(NODE_CNT);
 
-            assertEquals(ops, futs.size());
+            for (IgniteFuture<?> fut : futs)
+                fut.get();
+
+            log.info("Iteration done: " + i);
+        }
+
+        // Start all nodes except one.
+        try {
+            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
+
+            for (int i = 1; i < NODE_CNT; i++)
+                stopGrid(i);
 
             for (IgniteFuture<?> fut : futs)
                 fut.get();
         }
+        finally {
+            for (int i = 1; i < NODE_CNT; i++)
+                startGrid(i);
+        }
+    }
+
+    /**
+     * @param ops Number of operations.
+     * @param cache Cache.
+     * @return Futures.
+     * @throws Exception If failed.
+     */
+    private List<IgniteFuture<?>> startAsyncOperations(final int ops, final IgniteCache<TestKey, TestValue> cache)
+        throws Exception
+    {
+        final List<IgniteFuture<?>> futs = Collections.synchronizedList(new ArrayList<IgniteFuture<?>>(ops));
+
+        final AtomicInteger left = new AtomicInteger(ops);
+
+        GridTestUtils.runMultiThreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                List<IgniteFuture<?>> futs0 = new ArrayList<>();
+
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                while (left.getAndDecrement() > 0) {
+                    TreeMap<TestKey, TestValue> map = new TreeMap<>();
+
+                    int keys = 50;
+
+                    for (int k = 0; k < keys; k++)
+                        map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(k));
+
+                    cache.putAll(map);
+
+                    IgniteFuture<?> fut = cache.future();
+
+                    assertNotNull(fut);
+
+                    futs0.add(fut);
+                }
+
+                futs.addAll(futs0);
+
+                return null;
+            }
+        }, 10, "put-thread");
+
+        assertEquals(ops, futs.size());
+
+        return futs;
     }
 
     /**

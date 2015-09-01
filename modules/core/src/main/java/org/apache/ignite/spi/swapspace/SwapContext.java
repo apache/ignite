@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.swapspace;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Context for swap operations.

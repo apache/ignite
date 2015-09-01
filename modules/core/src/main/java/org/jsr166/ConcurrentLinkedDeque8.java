@@ -15,12 +15,18 @@
 
 package org.jsr166;
 
-import sun.misc.*;
-
-import java.lang.reflect.*;
-import java.security.*;
-import java.util.*;
+import java.lang.reflect.Field;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.util.AbstractCollection;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Queue;
+import sun.misc.Unsafe;
 
 
 /**

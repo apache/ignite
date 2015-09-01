@@ -17,8 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.spi.deployment.local.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.spi.deployment.local.GridLocalDeploymentSpiSelfTest;
+import org.apache.ignite.spi.deployment.local.GridLocalDeploymentSpiStartStopSelfTest;
 
 /**
  * Test suit for deployment SPIs.

@@ -17,7 +17,8 @@
 
 package org.apache.ignite.examples.computegrid.montecarlo;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Random;
 
 /**
  * This class abstracts out the calculation of risk for a credit portfolio.

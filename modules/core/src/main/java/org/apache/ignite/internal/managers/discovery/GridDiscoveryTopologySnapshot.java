@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Topology snapshot managed by discovery manager.

@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.igfs.common;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInput;
 
 /**
  * Data input stream implementing object input but throwing exceptions on object methods.

@@ -17,14 +17,33 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.cache.portable.*;
-import org.apache.ignite.internal.processors.cache.portable.datastreaming.*;
-import org.apache.ignite.internal.processors.cache.portable.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.portable.distributed.replicated.*;
-import org.apache.ignite.internal.processors.cache.portable.local.*;
-
-import junit.framework.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.portable.GridPortableAffinityKeySelfTest;
+import org.apache.ignite.internal.portable.GridPortableBuilderAdditionalSelfTest;
+import org.apache.ignite.internal.portable.GridPortableBuilderSelfTest;
+import org.apache.ignite.internal.portable.GridPortableBuilderStringAsCharsAdditionalSelfTest;
+import org.apache.ignite.internal.portable.GridPortableBuilderStringAsCharsSelfTest;
+import org.apache.ignite.internal.portable.GridPortableMarshallerCtxDisabledSelfTest;
+import org.apache.ignite.internal.portable.GridPortableMarshallerSelfTest;
+import org.apache.ignite.internal.portable.GridPortableMetaDataDisabledSelfTest;
+import org.apache.ignite.internal.portable.GridPortableMetaDataSelfTest;
+import org.apache.ignite.internal.portable.GridPortableWildcardsSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodePortableMetadataMultinodeTest;
+import org.apache.ignite.internal.processors.cache.portable.GridCacheClientNodePortableMetadataTest;
+import org.apache.ignite.internal.processors.cache.portable.GridCachePortableStoreObjectsSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.GridCachePortableStorePortablesSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsAtomicNearDisabledOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsAtomicNearDisabledSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsAtomicOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsPartitionedNearDisabledOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsPartitionedNearDisabledSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsPartitionedOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.dht.GridCachePortableObjectsPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.distributed.replicated.GridCachePortableObjectsReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.local.GridCachePortableObjectsAtomicLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.local.GridCachePortableObjectsLocalOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.local.GridCachePortableObjectsLocalSelfTest;
 
 /**
  * Test for portable objects stored in cache.
@@ -71,4 +90,3 @@ public class IgnitePortableObjectsTestSuite extends TestSuite {
         return suite;
     }
 }
-

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.h2.value.*;
-
-import java.sql.*;
-import java.util.*;
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import org.h2.value.ValueTimestamp;
 
 /**
  *

@@ -17,10 +17,14 @@
 
 package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.compute.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 
 /**
  * Test task for P2P deployment tests.

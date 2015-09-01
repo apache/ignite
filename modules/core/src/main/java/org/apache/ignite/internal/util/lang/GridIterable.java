@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import java.util.*;
+import java.util.Iterator;
 
 /**
  * Defines "rich" iterable interface that is also acts as lambda function and iterator.

@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.log4j2.Log4J2Logger;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
@@ -38,7 +37,7 @@ public class GridLog4j2InitializedTest extends TestCase {
      */
     @Override
     protected void setUp() throws Exception {
-  
+
     }
 
     /** */
@@ -48,8 +47,8 @@ public class GridLog4j2InitializedTest extends TestCase {
 
         cfg.setGridName("grid" + 1);
         cfg.setNodeId(new UUID(1, 1));
-        // cfg.setIgniteHome("/home/glutters/Documenti/apache-ignite/ignite-master/incubator-ignite/");
-       
+        // cfg.setIgniteHome("/home/glutters/Documenti/apache-ignite/ignite-master/ignite/");
+
         URL xml = U.resolveIgniteUrl("config/ignite-log4j2.xml");
         IgniteLogger log;
         try {

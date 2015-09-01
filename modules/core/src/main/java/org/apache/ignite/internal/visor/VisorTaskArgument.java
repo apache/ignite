@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.visor;
 
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.UUID;
 
 /**
  * Visor tasks argument.

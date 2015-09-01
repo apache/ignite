@@ -17,8 +17,8 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.resources.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.resources.JobContextResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Convenience adapter for {@link ComputeJob} implementations. It provides the

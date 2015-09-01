@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Input stream wrapper which allows to read exactly expected number of bytes.

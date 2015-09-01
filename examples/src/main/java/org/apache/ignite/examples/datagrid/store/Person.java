@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.datagrid.store;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Person definition.
@@ -152,4 +152,3 @@ public class Person implements Serializable {
             "]";
     }
 }
-

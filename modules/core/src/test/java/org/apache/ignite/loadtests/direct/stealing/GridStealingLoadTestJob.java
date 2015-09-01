@@ -17,12 +17,15 @@
 
 package org.apache.ignite.loadtests.direct.stealing;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.JobContextResource;
+import org.apache.ignite.resources.LoggerResource;
 
 /**
  * Stealing load test.

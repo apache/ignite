@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.lang.*;
-
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * Extended version of {@link AtomicLong}.

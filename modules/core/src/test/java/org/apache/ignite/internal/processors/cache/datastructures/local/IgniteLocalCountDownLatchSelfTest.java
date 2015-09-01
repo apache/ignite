@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.local;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
-import org.apache.ignite.testframework.*;
-import org.jetbrains.annotations.*;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteCountDownLatchAbstractSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.concurrent.*;
-
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  *

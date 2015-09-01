@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc;
 
-import com.mchange.v2.c3p0.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 
 /**
  * JDBC IP finder self test.

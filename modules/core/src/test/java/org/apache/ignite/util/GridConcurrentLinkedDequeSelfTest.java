@@ -17,12 +17,11 @@
 
 package org.apache.ignite.util;
 
-import org.apache.ignite.testframework.junits.common.*;
-import org.jsr166.*;
+import java.util.Iterator;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ConcurrentLinkedDeque8;
 
-import java.util.*;
-
-import static org.jsr166.ConcurrentLinkedDeque8.*;
+import static org.jsr166.ConcurrentLinkedDeque8.Node;
 
 /**
  * Tests for {@link org.jsr166.ConcurrentLinkedDeque8}.

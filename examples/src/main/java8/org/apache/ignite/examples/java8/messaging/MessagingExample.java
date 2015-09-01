@@ -17,12 +17,6 @@
 
 package org.apache.ignite.examples.java8.messaging;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.examples.*;
-
-import java.util.concurrent.*;
-
 /**
  * Example that demonstrates how to exchange messages between nodes. Use such
  * functionality for cases when you need to communicate to other nodes outside

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.offheap;
 
-import java.util.*;
+import java.util.Arrays;
 
 /**
  * Array wrapper for correct equals and hash code.

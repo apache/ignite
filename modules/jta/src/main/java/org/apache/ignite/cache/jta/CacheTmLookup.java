@@ -17,11 +17,10 @@
 
 package org.apache.ignite.cache.jta;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.jetbrains.annotations.*;
-
-import javax.transaction.*;
+import javax.transaction.TransactionManager;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Allows grid to use different transactional systems. Implement this interface

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.C3;
 
 /**
  * Defines generic {@code for-each} type of closure. Closure is a first-class function that is defined with

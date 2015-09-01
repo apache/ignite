@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Kernal life cycle states.
