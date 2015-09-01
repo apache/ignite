@@ -14,7 +14,7 @@ namespace GridGain.Cache.Query
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Text;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Client;
     using GridGain.Common;
     using GridGain.Impl;
@@ -594,7 +594,7 @@ namespace GridGain.Cache.Query
 
             foreach (var qry in queries)
             {
-                var err = Assert.Throws<GridException>(() => cache.Query(qry));
+                var err = Assert.Throws<IgniteException>(() => cache.Query(qry));
 
                 Assert.AreEqual("Indexing is disabled for cache: nonindexed_cache. " +
                     "Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.", err.Message);
@@ -630,7 +630,7 @@ namespace GridGain.Cache.Query
             exp = PopulateCache(cache, loc, cnt, x => x < 50);
             qry = new ScanQuery<int, V>(new ScanQueryFilter<V> {ThrowErr = true});
             
-            var ex = Assert.Throws<GridException>(() => ValidateQueryResults(cache, qry, exp, keepPortable));
+            var ex = Assert.Throws<IgniteException>(() => ValidateQueryResults(cache, qry, exp, keepPortable));
             Assert.AreEqual(ScanQueryFilter<V>.ERR_MESSAGE, ex.Message);
         }
 

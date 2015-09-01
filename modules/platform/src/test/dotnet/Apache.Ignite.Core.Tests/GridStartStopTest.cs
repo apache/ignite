@@ -12,7 +12,7 @@ namespace GridGain.Client
     using System;
     using System.Collections.Generic;
     using System.Threading;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Cluster;
     using GridGain.Common;
     using GridGain.Compute;
@@ -118,7 +118,7 @@ namespace GridGain.Client
             {
                 GridFactory.Grid("invalid_name");
             }
-            catch (GridException e)
+            catch (IgniteException e)
             {
                 Console.WriteLine("Expected exception: " + e);
             }
@@ -129,7 +129,7 @@ namespace GridGain.Client
             {
                 GridFactory.Grid("grid1");
             }
-            catch (GridException e)
+            catch (IgniteException e)
             {
                 Console.WriteLine("Expected exception: " + e);
             }
@@ -140,7 +140,7 @@ namespace GridGain.Client
             {
                 GridFactory.Grid("grid2");
             }
-            catch (GridException e)
+            catch (IgniteException e)
             {
                 Console.WriteLine("Expected exception: " + e);
             }
@@ -151,7 +151,7 @@ namespace GridGain.Client
             {
                 GridFactory.Grid(null);
             }
-            catch (GridException e)
+            catch (IgniteException e)
             {
                 Console.WriteLine("Expected exception: " + e);
             }
@@ -175,7 +175,7 @@ namespace GridGain.Client
                 {
                     GridFactory.Grid(gridName);
                 }
-                catch (GridException e)
+                catch (IgniteException e)
                 {
                     Console.WriteLine("Expected exception: " + e);
                 }
@@ -199,7 +199,7 @@ namespace GridGain.Client
 
                 Assert.Fail("Start should fail.");
             }
-            catch (GridException e)
+            catch (IgniteException e)
             {
                 Console.WriteLine("Expected exception: " + e);
             }
@@ -232,7 +232,7 @@ namespace GridGain.Client
 
                 Assert.Fail("Start should fail.");
             }
-            catch (GridException e)
+            catch (IgniteException e)
             {
                 Console.WriteLine("Expected exception: " + e);
             }

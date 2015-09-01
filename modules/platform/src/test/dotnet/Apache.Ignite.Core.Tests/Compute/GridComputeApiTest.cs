@@ -14,7 +14,7 @@ namespace GridGain.Client.Compute
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Cluster;
     using GridGain.Common;
     using GridGain.Compute;
@@ -737,7 +737,7 @@ namespace GridGain.Client.Compute
 
                 Assert.Fail();
             }
-            catch (GridException)
+            catch (IgniteException)
             {
                 // No-op.
             }

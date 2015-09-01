@@ -13,7 +13,7 @@ namespace GridGain.Client.Compute
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.Serialization;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Cluster;
     using GridGain.Common;
     using GridGain.Compute;
@@ -23,7 +23,7 @@ namespace GridGain.Client.Compute
     /// <summary>
     /// Tests for exception handling on various task execution stages.
     /// </summary>
-    public class GridExceptionTaskSelfTest : GridAbstractTaskTest
+    public class IgniteExceptionTaskSelfTest : GridAbstractTaskTest
     {
         /** Error mode. */
         public static ErrorMode MODE;
@@ -34,13 +34,13 @@ namespace GridGain.Client.Compute
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GridExceptionTaskSelfTest() : base(false) { }
+        public IgniteExceptionTaskSelfTest() : base(false) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="fork">Fork flag.</param>
-        protected GridExceptionTaskSelfTest(bool fork) : base(fork) { }
+        protected IgniteExceptionTaskSelfTest(bool fork) : base(fork) { }
 
         /// <summary>
         /// Test error occurred during map step.
@@ -168,8 +168,8 @@ namespace GridGain.Client.Compute
 
             Assert.AreEqual(2, JOB_ERRS.Count());
 
-            Assert.IsNotNull(JOB_ERRS.ElementAt(0) as GridException);
-            Assert.IsNotNull(JOB_ERRS.ElementAt(1) as GridException);
+            Assert.IsNotNull(JOB_ERRS.ElementAt(0) as IgniteException);
+            Assert.IsNotNull(JOB_ERRS.ElementAt(1) as IgniteException);
         }
 
         /// <summary>
@@ -186,8 +186,8 @@ namespace GridGain.Client.Compute
 
             Assert.AreEqual(2, JOB_ERRS.Count);
 
-            Assert.IsNotNull(JOB_ERRS.ElementAt(0) as GridException);
-            Assert.IsNotNull(JOB_ERRS.ElementAt(1) as GridException);
+            Assert.IsNotNull(JOB_ERRS.ElementAt(0) as IgniteException);
+            Assert.IsNotNull(JOB_ERRS.ElementAt(1) as IgniteException);
         }
 
         /// <summary>

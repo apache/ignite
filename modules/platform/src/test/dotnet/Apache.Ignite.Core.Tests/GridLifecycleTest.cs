@@ -11,7 +11,7 @@ namespace GridGain.Client
 {
     using System;
     using System.Collections.Generic;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Common;
     using GridGain.Impl;
     using GridGain.Lifecycle;
@@ -164,7 +164,7 @@ namespace GridGain.Client
             }
             catch (Exception e)
             {
-                Assert.AreEqual(typeof(GridException), e.GetType());
+                Assert.AreEqual(typeof(IgniteException), e.GetType());
             }
         }
 

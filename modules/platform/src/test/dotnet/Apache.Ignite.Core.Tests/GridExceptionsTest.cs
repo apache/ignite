@@ -14,6 +14,7 @@ namespace GridGain.Client
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Common;
     using GridGain.Cache;
     using GridGain.Cluster;
     using GridGain.Common;
@@ -24,7 +25,7 @@ namespace GridGain.Client
     /// <summary>
     /// Tests grid exceptions propagation.
     /// </summary>
-    public class GridExceptionsTest
+    public class IgniteExceptionsTest
     {
         /// <summary>
         /// Before test.
@@ -121,7 +122,7 @@ namespace GridGain.Client
         {
             // Inner exception
             TestPartialUpdateExceptionSerialization(new CachePartialUpdateException("Msg",
-                new GridException("Inner msg")));
+                new IgniteException("Inner msg")));
 
             // Primitive keys
             TestPartialUpdateExceptionSerialization(new CachePartialUpdateException("Msg", new object[] {1, 2, 3}));
@@ -160,7 +161,7 @@ namespace GridGain.Client
             }
             catch (Exception e)
             {
-                if (typeof (GridException) != e.GetType())
+                if (typeof (IgniteException) != e.GetType())
                     throw;
             }
 

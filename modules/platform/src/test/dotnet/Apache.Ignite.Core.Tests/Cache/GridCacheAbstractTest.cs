@@ -17,7 +17,7 @@ namespace GridGain.Cache
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Cache.Expiry;
     using GridGain.Client;
     using GridGain.Client.Query;
@@ -2292,7 +2292,7 @@ namespace GridGain.Cache
 
                 Assert.Fail("Commit must fail.");
             }
-            catch (GridException e)
+            catch (IgniteException e)
             {
                 Console.WriteLine("Expected exception: " + e);
             }
@@ -3111,7 +3111,7 @@ namespace GridGain.Cache
             Assert.AreEqual(10, cache.Get(1));
 
             // Can't create again
-            Assert.Throws<GridException>(() => Grid(0).CreateCache<int, int>(randomName));
+            Assert.Throws<IgniteException>(() => Grid(0).CreateCache<int, int>(randomName));
 
             var cache0 = Grid(0).Cache<int, int>(randomName);
 

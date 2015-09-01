@@ -13,6 +13,7 @@ namespace GridGain.Client.Services
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Common;
     using GridGain.Cluster;
     using GridGain.Common;
     using GridGain.Portable;
@@ -430,7 +431,7 @@ namespace GridGain.Client.Services
         {
             var svc = new TestGridServiceSerializable { ThrowInit = true };
 
-            var ex = Assert.Throws<GridException>(() => Services.DeployMultiple(SVC_NAME, svc, grids.Length, 1));
+            var ex = Assert.Throws<IgniteException>(() => Services.DeployMultiple(SVC_NAME, svc, grids.Length, 1));
             Assert.AreEqual("Expected exception", ex.Message);
 
             var svc0 = Services.GetService<TestGridServiceSerializable>(SVC_NAME);
@@ -479,7 +480,7 @@ namespace GridGain.Client.Services
         {
             var svc = new TestGridServicePortableErr();
 
-            var ex = Assert.Throws<GridException>(() => Services.DeployMultiple(SVC_NAME, svc, grids.Length, 1));
+            var ex = Assert.Throws<IgniteException>(() => Services.DeployMultiple(SVC_NAME, svc, grids.Length, 1));
             Assert.AreEqual("Expected exception", ex.Message);
 
             var svc0 = Services.GetService<TestGridServiceSerializable>(SVC_NAME);

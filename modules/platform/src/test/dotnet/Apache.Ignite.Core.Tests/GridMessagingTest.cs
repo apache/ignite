@@ -16,7 +16,7 @@ namespace GridGain.Client
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Cluster;
     using GridGain.Common;
     using GridGain.Messaging;
@@ -112,7 +112,7 @@ namespace GridGain.Client
             CheckSend(topic); // back to 1 listener
 
             // Test message type mismatch
-            var ex = Assert.Throws<GridException>(() => messaging.Send(1.1, topic));
+            var ex = Assert.Throws<IgniteException>(() => messaging.Send(1.1, topic));
             Assert.AreEqual("Unable to cast object of type 'System.Double' to type 'System.String'.", ex.Message);
 
             // Test end listen
@@ -310,7 +310,7 @@ namespace GridGain.Client
             CheckSend(topic, msg: messaging, remoteListen: true); // back to normal after unsubscription
 
             // Test message type mismatch
-            var ex = Assert.Throws<GridException>(() => messaging.Send(1.1, topic));
+            var ex = Assert.Throws<IgniteException>(() => messaging.Send(1.1, topic));
             Assert.AreEqual("Unable to cast object of type 'System.Double' to type 'System.String'.", ex.Message);
 
             // Test end listen

@@ -16,7 +16,7 @@ namespace GridGain.Client.Cache.Query.Continuous
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Cache;
     using GridGain.Cache.Event;
     using GridGain.Cache.Query;
@@ -383,7 +383,7 @@ namespace GridGain.Client.Cache.Query.Continuous
 
                     Assert.Fail("Should not reach this place.");
                 }
-                catch (GridException)
+                catch (IgniteException)
                 {
                     // No-op.
                 }
@@ -399,7 +399,7 @@ namespace GridGain.Client.Cache.Query.Continuous
 
                     Assert.Fail("Should not reach this place.");
                 }
-                catch (GridException)
+                catch (IgniteException)
                 {
                     // No-op.
                 }
@@ -545,7 +545,7 @@ namespace GridGain.Client.Cache.Query.Continuous
 
                     Assert.Fail("Should not reach this place.");
                 }
-                catch (GridException)
+                catch (IgniteException)
                 {
                     // No-op.
                 }
@@ -755,7 +755,7 @@ namespace GridGain.Client.Cache.Query.Continuous
             TestInitialQuery(new TextQuery(typeof(PortableEntry), "1*"), cur => cur.ToList());
 
             // Test exception: invalid initial query
-            var ex = Assert.Throws<GridException>(
+            var ex = Assert.Throws<IgniteException>(
                 () => TestInitialQuery(new TextQuery(typeof (PortableEntry), "*"), cur => cur.GetAll()));
 
             Assert.AreEqual("Cannot parse '*': '*' or '?' not allowed as first character in WildcardQuery", ex.Message);

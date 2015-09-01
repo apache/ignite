@@ -14,7 +14,7 @@ namespace GridGain.Client
     using System.Collections.Generic;
     using System.IO;
     using System.Reflection;
-
+    using Apache.Ignite.Core.Common;
     using GridGain.Common;
     using Microsoft.CSharp;
 
@@ -181,7 +181,7 @@ namespace GridGain.Client
 
                 Assert.Fail("Grid has been started with broken configuration.");
             }
-            catch (GridException)
+            catch (IgniteException)
             {
 
             }

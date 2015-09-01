@@ -9,6 +9,7 @@
 
 namespace GridGain.Client
 {
+    using Apache.Ignite.Core.Common;
     using GridGain.Common;
     using NUnit.Framework;
 
@@ -57,7 +58,7 @@ namespace GridGain.Client
         [Test]
         public void TestInvalidMarshaller()
         {
-            Assert.Throws<GridException>(() => GridFactory.Start("config\\marshaller-invalid.xml"));
+            Assert.Throws<IgniteException>(() => GridFactory.Start("config\\marshaller-invalid.xml"));
         }
     }
 }
