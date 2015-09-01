@@ -335,10 +335,10 @@ public class PlatformFutureUtils {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public void listen(final IgniteBiInClosure<Object, Throwable> lsnr) {
-            fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+            fut.listen(new IgniteInClosure<IgniteFuture>() {
                 private static final long serialVersionUID = 0L;
 
-                @Override public void apply(IgniteInternalFuture fut0) {
+                @Override public void apply(IgniteFuture fut0) {
                     try {
                         lsnr.apply(fut0.get(), null);
                     }
