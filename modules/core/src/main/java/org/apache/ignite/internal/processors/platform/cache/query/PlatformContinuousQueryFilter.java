@@ -15,24 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.communication;
+package org.apache.ignite.internal.processors.platform.cache.query;
 
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 
 /**
- * Special version of bi-predicate for messaging with initialize/close callbacks.
+ * Platform continuous query filter.
  */
-public interface GridLifecycleAwareMessageFilter<K, V> extends IgniteBiPredicate<K, V> {
+public interface PlatformContinuousQueryFilter extends CacheEntryEventSerializableFilter {
     /**
-     * Initializes the filter.
-     *
-     * @param ctx Kernal context.
+     * Callback for query unregister event.
      */
-    public void initialize(GridKernalContext ctx);
-
-    /**
-     * Closes the filter.
-     */
-    public void close();
+    public void onQueryUnregister();
 }

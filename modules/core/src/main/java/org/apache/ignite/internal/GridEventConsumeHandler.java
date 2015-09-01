@@ -38,8 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
-import org.apache.ignite.internal.processors.platform.PlatformAwareEventFilter;
-import org.apache.ignite.internal.processors.platform.PlatformLocalEventListener;
+import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -139,8 +138,8 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         if (filter != null)
             ctx.resource().injectGeneric(filter);
 
-        if (filter instanceof PlatformAwareEventFilter)
-            ((PlatformAwareEventFilter)filter).initialize(ctx);
+        if (filter instanceof PlatformEventFilterListener)
+            ((PlatformEventFilterListener)filter).initialize(ctx);
 
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
@@ -260,16 +259,16 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         RuntimeException err = null;
 
         try {
-            if (filter instanceof PlatformAwareEventFilter)
-                ((PlatformAwareEventFilter)filter).close();
+            if (filter instanceof PlatformEventFilterListener)
+                ((PlatformEventFilterListener)filter).onClose();
         }
         catch(RuntimeException ex) {
             err = ex;
         }
 
         try {
-            if (cb instanceof PlatformLocalEventListener)
-                ((PlatformLocalEventListener)cb).close();
+            if (cb instanceof PlatformEventFilterListener)
+                ((PlatformEventFilterListener)cb).onClose();
         }
         catch (RuntimeException ex) {
             if (err == null)
