@@ -29,6 +29,7 @@ import org.apache.ignite.internal.portable.PortableRawReaderEx;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFilterEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryProcessor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterNodeFilter;
@@ -248,7 +249,7 @@ public interface PlatformContext {
      * @param ptr Pointer.
      * @return Entry processor.
      */
-    public CacheEntryProcessor createCacheEntryProcessor(Object proc, long ptr);
+    public PlatformCacheEntryProcessor createCacheEntryProcessor(Object proc, long ptr);
 
     /**
      * Create cache entry filter.
