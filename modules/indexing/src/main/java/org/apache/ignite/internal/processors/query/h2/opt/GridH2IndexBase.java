@@ -27,17 +27,9 @@ import org.h2.index.BaseIndex;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
+import org.h2.result.SortOrder;
+import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
-import org.h2.engine.*;
-import org.h2.index.*;
-import org.h2.message.*;
-import org.h2.result.*;
-import org.h2.value.*;
-import org.jetbrains.annotations.*;
 
 /**
  * Index base.
