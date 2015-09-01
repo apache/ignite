@@ -1683,7 +1683,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheIoManager ioMgr = new GridCacheIoManager();
 
         CacheJtaManagerAdapter jta = JTA.createOptional();
-        
+
         return new GridCacheSharedContext(
             kernalCtx,
             tm,
@@ -2875,7 +2875,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Cancel all user operations.
      */
     public void cancelUserOperations() {
-        for (GridCacheAdapter<?, ?> cache : caches.values())
+        for (GridCacheAdapter<?, ?> cache : stoppedCaches.values())
             cache.ctx.mvcc().cancelClientFutures();
     }
 
