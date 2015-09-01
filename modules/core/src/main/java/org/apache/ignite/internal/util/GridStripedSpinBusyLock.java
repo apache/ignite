@@ -31,15 +31,15 @@ public class GridStripedSpinBusyLock {
     /** Default amount of stripes. */
     private static final int DFLT_STRIPE_CNT = Runtime.getRuntime().availableProcessors() * 4;
 
-    /** States; they are not subjects to false-sharing because actual values are located far from each other. */
-    private final AtomicInteger[] states;
-
     /** Thread index. */
-    private static ThreadLocal<Integer> threadIdx = new ThreadLocal<Integer>() {
+    private static ThreadLocal<Integer> THREAD_IDX = new ThreadLocal<Integer>() {
         @Override protected Integer initialValue() {
             return new Random().nextInt(Integer.MAX_VALUE);
         }
     };
+
+    /** States; they are not subjects to false-sharing because actual values are located far from each other. */
+    private final AtomicInteger[] states;
 
     /**
      * Default constructor.
@@ -120,6 +120,6 @@ public class GridStripedSpinBusyLock {
      * @return State.
      */
     private AtomicInteger state() {
-        return states[threadIdx.get() % states.length];
+        return states[THREAD_IDX.get() % states.length];
     }
 }
