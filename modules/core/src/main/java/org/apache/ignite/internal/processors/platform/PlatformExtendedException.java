@@ -22,18 +22,36 @@ import org.apache.ignite.internal.portable.PortableRawWriterEx;
 /**
  * Denotes an exception which has some data to be written in a special manner.
  */
-public interface PlatformExtendedException {
+public abstract class PlatformExtendedException extends PlatformException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Platform context. */
+    protected final PlatformContext ctx;
+
     /**
-     * Gets platform context.
+     * Constructor.
      *
+     * @param cause Root cause.
+     * @param ctx Platform context.
+     */
+    protected PlatformExtendedException(Throwable cause, PlatformContext ctx) {
+        super(cause);
+
+        this.ctx = ctx;
+    }
+
+    /**
      * @return Platform context.
      */
-    public PlatformContext context();
+    public PlatformContext context() {
+        return ctx;
+    }
 
     /**
      * Write data.
      *
      * @param writer Writer.
      */
-    public void writeData(PortableRawWriterEx writer);
+    public abstract void writeData(PortableRawWriterEx writer);
 }
