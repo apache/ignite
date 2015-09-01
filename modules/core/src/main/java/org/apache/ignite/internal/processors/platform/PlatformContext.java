@@ -18,13 +18,10 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventAdapter;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.communication.GridLifecycleAwareMessageFilter;
 import org.apache.ignite.internal.portable.PortableRawReaderEx;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFilterEx;
@@ -39,10 +36,10 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManager;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
-import java.util.UUID;
 
 /**
  * Platform context. Acts as an entry point for platform operations.
@@ -178,7 +175,7 @@ public interface PlatformContext {
      * @param ptr Pointer of deployed native filter.
      * @return Filter.
      */
-    public GridLifecycleAwareMessageFilter<UUID, Object> createRemoteMessageFilter(Object filter, long ptr);
+    public PlatformMessageFilter createRemoteMessageFilter(Object filter, long ptr);
 
     /**
      * Check whether the given event type is supported.
@@ -192,9 +189,9 @@ public interface PlatformContext {
      * Write event.
      *
      * @param writer Writer.
-     * @param event Event.
+     * @param evt Event.
      */
-    public void writeEvent(PortableRawWriterEx writer, EventAdapter event);
+    public void writeEvent(PortableRawWriterEx writer, Event evt);
 
     /**
      * Create local event filter.
@@ -202,7 +199,7 @@ public interface PlatformContext {
      * @param hnd Native handle.
      * @return Filter.
      */
-    public <E extends Event> PlatformAwareEventFilter<E> createLocalEventFilter(long hnd);
+    public PlatformEventFilterListener createLocalEventFilter(long hnd);
 
     /**
      * Create remote event filter.
@@ -211,7 +208,7 @@ public interface PlatformContext {
      * @param types Event types.
      * @return Filter.
      */
-    public <E extends Event> PlatformAwareEventFilter<E> createRemoteEventFilter(Object pred, final int... types);
+    public PlatformEventFilterListener createRemoteEventFilter(Object pred, final int... types);
 
     /**
      * Create native exception.

@@ -17,18 +17,19 @@
 
 package org.apache.ignite.internal.processors.platform.messaging;
 
-import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.communication.GridLifecycleAwareMessageFilter;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
+
+import java.util.UUID;
 
 /**
  * Interop local filter. Delegates apply to native platform, uses id to identify native target.
  */
-public class PlatformMessageLocalFilter implements GridLifecycleAwareMessageFilter<UUID, Object> {
+public class PlatformMessageLocalFilter implements PlatformMessageFilter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -71,7 +72,7 @@ public class PlatformMessageLocalFilter implements GridLifecycleAwareMessageFilt
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override public void onClose() {
         platformCtx.gateway().messagingFilterDestroy(hnd);
     }
 

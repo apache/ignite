@@ -47,8 +47,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.processors.platform.PlatformAwareEventFilter;
-import org.apache.ignite.internal.processors.platform.PlatformLocalEventListener;
+import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -681,8 +680,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         {
             IgnitePredicate p = ((UserListenerWrapper)lsnr).listener();
 
-            if (p instanceof PlatformLocalEventListener)
-                ((PlatformLocalEventListener)p).close();
+            if (p instanceof PlatformEventFilterListener)
+                ((PlatformEventFilterListener)p).onClose();
         }
 
         return found;
@@ -784,19 +783,20 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param p Grid event predicate.
      * @return Collection of grid events.
      */
+    @SuppressWarnings("unchecked")
     public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) {
         assert p != null;
 
-        if (p instanceof PlatformAwareEventFilter) {
-            PlatformAwareEventFilter p0 = (PlatformAwareEventFilter)p;
+        if (p instanceof PlatformEventFilterListener) {
+            PlatformEventFilterListener p0 = (PlatformEventFilterListener)p;
 
             p0.initialize(ctx);
 
             try {
-                return getSpi().localEvents(p0);
+                return (Collection<T>)getSpi().localEvents(p0);
             }
             finally {
-                p0.close();
+                p0.onClose();
             }
         }
         else

@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.communication;
+package org.apache.ignite.internal.processors.platform;
 
+import java.util.UUID;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Special version of bi-predicate for messaging with initialize/close callbacks.
+ * Platform event filter and listener.
  */
-public interface GridLifecycleAwareMessageFilter<K, V> extends IgniteBiPredicate<K, V> {
+public interface PlatformEventFilterListener extends IgnitePredicate<Event>, IgniteBiPredicate<UUID, Event> {
     /**
      * Initializes the filter.
-     *
-     * @param ctx Kernal context.
      */
     public void initialize(GridKernalContext ctx);
 
     /**
-     * Closes the filter.
+     * Callback invoked when filter is closed.
      */
-    public void close();
+    public void onClose();
 }
