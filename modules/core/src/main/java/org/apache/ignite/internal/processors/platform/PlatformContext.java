@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import java.util.Collection;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -33,14 +31,17 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
+import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterNodeFilter;
 import org.apache.ignite.internal.processors.platform.compute.PlatformJob;
+import org.apache.ignite.internal.processors.platform.datastreamer.PlatformStreamReceiver;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManager;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collection;
+import java.util.UUID;
 
 /**
  * Platform context. Acts as an entry point for platform operations.
@@ -266,7 +267,7 @@ public interface PlatformContext {
      * @param keepPortable Keep portable flag.
      * @return Stream receiver.
      */
-    public StreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepPortable);
+    public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepPortable);
 
     /**
      * Create cluster node filter.
@@ -274,5 +275,5 @@ public interface PlatformContext {
      * @param filter Native filter.
      * @return Cluster node filter.
      */
-    public IgnitePredicate<ClusterNode> createClusterNodeFilter(Object filter);
+    public PlatformClusterNodeFilter createClusterNodeFilter(Object filter);
 }

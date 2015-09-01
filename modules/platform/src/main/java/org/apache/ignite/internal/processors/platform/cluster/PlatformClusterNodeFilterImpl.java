@@ -15,82 +15,55 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.datastreamer;
+package org.apache.ignite.internal.processors.platform.cluster;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Collection;
-import java.util.Map;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.stream.StreamReceiver;
 
 /**
- * Interop receiver.
+ * Interop cluster node filter.
  */
-public class PlatformStreamReceiver<K, V> extends PlatformAbstractPredicate implements StreamReceiver<K, V> {
+public class PlatformClusterNodeFilterImpl extends PlatformAbstractPredicate implements PlatformClusterNodeFilter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private boolean keepPortable;
-
     /**
-     * Constructor.
+     * {@link java.io.Externalizable} support.
      */
-    public PlatformStreamReceiver()
-    {
-        super();
+    public PlatformClusterNodeFilterImpl() {
+        // No-op.
     }
 
     /**
      * Constructor.
      *
-     * @param pred .Net portable receiver.
-     * @param ptr Pointer to receiver in the native platform.
+     * @param pred .Net portable predicate.
      * @param ctx Kernal context.
      */
-    public PlatformStreamReceiver(Object pred, long ptr, boolean keepPortable, PlatformContext ctx) {
-        super(pred, ptr, ctx);
-
-        assert pred != null;
-
-        this.keepPortable = keepPortable;
+    public PlatformClusterNodeFilterImpl(Object pred, PlatformContext ctx) {
+        super(pred, 0, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> collection)
-        throws IgniteException {
-        assert ctx != null;
-
+    @Override public boolean apply(ClusterNode clusterNode) {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
             PortableRawWriterEx writer = ctx.writer(out);
 
             writer.writeObject(pred);
-
-            writer.writeInt(collection.size());
-
-            for (Map.Entry<K, V> e : collection) {
-                writer.writeObject(e.getKey());
-                writer.writeObject(e.getValue());
-            }
+            ctx.writeNode(writer, clusterNode);
 
             out.synchronize();
 
-            ctx.gateway().dataStreamerStreamReceiverInvoke(ptr,
-                new PlatformCache(ctx, cache, keepPortable), mem.pointer(), keepPortable);
+            return ctx.gateway().clusterNodeFilterApply(mem.pointer()) != 0;
         }
     }
 
@@ -102,19 +75,4 @@ public class PlatformStreamReceiver<K, V> extends PlatformAbstractPredicate impl
     public void setIgniteInstance(Ignite ignite) {
         ctx = PlatformUtils.platformContext(ignite);
     }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeBoolean(keepPortable);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        keepPortable = in.readBoolean();
-    }
-
 }
