@@ -88,18 +88,20 @@ public class GridStripedSpinBusyLock {
      * Block.
      */
     public void block() {
-        boolean interrupt = false;
-
+        // 1. CAS-loop to set a writer bit.
         for (AtomicInteger state : states) {
-            // 1. CAS-loop to set a writer bit.
             while (true) {
                 int oldVal = state.get();
 
                 if (state.compareAndSet(oldVal, oldVal | WRITER_MASK))
                     break;
             }
+        }
 
-            // 2. Wait until all readers are out.
+        // 2. Wait until all readers are out.
+        boolean interrupt = false;
+
+        for (AtomicInteger state : states) {
             while (state.get() != WRITER_MASK) {
                 try {
                     Thread.sleep(10);
