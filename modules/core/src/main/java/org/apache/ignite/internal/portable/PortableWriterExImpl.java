@@ -591,6 +591,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(val))
+                return;
+
             doWriteByte(BYTE_ARR);
             doWriteInt(val.length);
 
@@ -605,6 +608,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(val))
+                return;
+
             doWriteByte(SHORT_ARR);
             doWriteInt(val.length);
 
@@ -619,6 +625,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(val))
+                return;
+
             doWriteByte(INT_ARR);
             doWriteInt(val.length);
 
@@ -633,6 +642,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(val))
+                return;
+
             doWriteByte(LONG_ARR);
             doWriteInt(val.length);
 
@@ -647,6 +659,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(val))
+                return;
+
             doWriteByte(FLOAT_ARR);
             doWriteInt(val.length);
 
@@ -661,6 +676,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(val))
+                return;
+
             doWriteByte(DOUBLE_ARR);
             doWriteInt(val.length);
 
@@ -675,6 +693,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(val))
+                return;
+
             doWriteByte(CHAR_ARR);
             doWriteInt(val.length);
 
@@ -689,6 +710,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(val))
+                return;
+
             doWriteByte(BOOLEAN_ARR);
             doWriteInt(val.length);
 
@@ -703,6 +727,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(val))
+                return;
+
             doWriteByte(DECIMAL_ARR);
             doWriteInt(val.length);
 
@@ -718,6 +745,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(val))
+                return;
+
             doWriteByte(STRING_ARR);
             doWriteInt(val.length);
 
@@ -733,6 +763,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(val))
+                return;
+
             doWriteByte(UUID_ARR);
             doWriteInt(val.length);
 
@@ -748,6 +781,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(val))
+                return;
+
             doWriteByte(DATE_ARR);
             doWriteInt(val.length);
 
@@ -764,6 +800,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(val))
+                return;
+
             PortableContext.Type type = ctx.typeId(val.getClass().getComponentType());
 
             doWriteByte(OBJ_ARR);
@@ -790,6 +829,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (col == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(col))
+                return;
+
             doWriteByte(COL);
             doWriteInt(col.size());
             doWriteByte(ctx.collectionType(col.getClass()));
@@ -807,6 +849,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (map == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(map))
+                return;
+
             doWriteByte(MAP);
             doWriteInt(map.size());
             doWriteByte(ctx.mapType(map.getClass()));
@@ -826,6 +871,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (e == null)
             doWriteByte(NULL);
         else {
+            if (tryWriteAsHandle(e))
+                return;
+
             doWriteByte(MAP_ENTRY);
             doWriteObject(e.getKey(), false);
             doWriteObject(e.getValue(), false);
@@ -1106,64 +1154,88 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param val Value.
      */
     void writeByteArrayField(@Nullable byte[] val) {
-        doWriteInt(val != null ? 5 + val.length : 1);
+        int lenPos = reserveAndMark(4);
+
         doWriteByteArray(val);
+
+        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeShortArrayField(@Nullable short[] val) {
-        doWriteInt(val != null ? 5 + (val.length << 1) : 1);
+        int lenPos = reserveAndMark(4);
+
         doWriteShortArray(val);
+
+        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeIntArrayField(@Nullable int[] val) {
-        doWriteInt(val != null ? 5 + (val.length << 2) : 1);
+        int lenPos = reserveAndMark(4);
+
         doWriteIntArray(val);
+
+        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeLongArrayField(@Nullable long[] val) {
-        doWriteInt(val != null ? 5 + (val.length << 3) : 1);
+        int lenPos = reserveAndMark(4);
+
         doWriteLongArray(val);
+
+        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeFloatArrayField(@Nullable float[] val) {
-        doWriteInt(val != null ? 5 + (val.length << 2) : 1);
+        int lenPos = reserveAndMark(4);
+
         doWriteFloatArray(val);
+
+        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeDoubleArrayField(@Nullable double[] val) {
-        doWriteInt(val != null ? 5 + (val.length << 3) : 1);
+        int lenPos = reserveAndMark(4);
+
         doWriteDoubleArray(val);
+
+        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeCharArrayField(@Nullable char[] val) {
-        doWriteInt(val != null ? 5 + (val.length << 1) : 1);
+        int lenPos = reserveAndMark(4);
+
         doWriteCharArray(val);
+
+        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeBooleanArrayField(@Nullable boolean[] val) {
-        doWriteInt(val != null ? 5 + val.length : 1);
+        int lenPos = reserveAndMark(4);
+
         doWriteBooleanArray(val);
+
+        writeDelta(lenPos);
     }
 
     /**
@@ -1738,6 +1810,25 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
         doWriteInt(id);
     }
+
+     /**
+      * Attempts to write the object as a handle.
+      *
+      * @param obj Object to write.
+      * @return {@code true} if the object has been written as a handle.
+      */
+     boolean tryWriteAsHandle(Object obj) {
+         int handle = handle(obj);
+
+         if (handle >= 0) {
+             doWriteByte(GridPortableMarshaller.HANDLE);
+             doWriteInt(handle);
+
+             return true;
+         }
+
+         return false;
+     }
 
     /**
      * Create new writer with same context.

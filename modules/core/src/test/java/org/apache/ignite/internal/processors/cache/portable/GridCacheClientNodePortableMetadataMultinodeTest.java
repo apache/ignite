@@ -31,6 +31,7 @@ import org.apache.ignite.IgnitePortables;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.portable.PortableBuilder;

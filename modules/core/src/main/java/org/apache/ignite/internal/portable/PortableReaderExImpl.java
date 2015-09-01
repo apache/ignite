@@ -1059,6 +1059,14 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         rCtx.setObjectHandler(start, obj);
     }
 
+    /**
+     * @param obj Object.
+     * @param pos Position.
+     */
+    void setHandler(Object obj, int pos) {
+        rCtx.setObjectHandler(pos, obj);
+    }
+
     /** {@inheritDoc} */
     @Override public byte readByte(String fieldName) throws PortableException {
         Byte val = readByte(fieldId(fieldName));
@@ -1676,7 +1684,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 else
                     po = in.offheapPointer() > 0
                         ? new PortableObjectOffheapImpl(ctx, in.offheapPointer(), start,
-                                                            in.remaining() + in.position())
+                        in.remaining() + in.position())
                         : new PortableObjectImpl(ctx, in.array(), start);
 
                 rCtx.setPortableHandler(start, po);
@@ -1804,7 +1812,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                     off += len;
 
                 return obj;
-
 
             default:
                 throw new PortableException("Invalid flag value: " + flag);
@@ -2307,10 +2314,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private byte[] doReadByteArray(boolean raw) {
         int len = doReadInt(raw);
+        int hPos = (raw ? rawOff : off) - 1;
 
         in.position(raw ? rawOff : off);
 
         byte[] arr = in.readByteArray(len);
+
+        setHandler(arr, hPos);
 
         if (raw)
             rawOff += len;
@@ -2326,10 +2336,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private short[] doReadShortArray(boolean raw) {
         int len = doReadInt(raw);
+        int hPos = (raw ? rawOff : off) - 1;
 
         in.position(raw ? rawOff : off);
 
         short[] arr = in.readShortArray(len);
+
+        setHandler(arr, hPos);
 
         int bytes = len << 1;
 
@@ -2347,10 +2360,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private int[] doReadIntArray(boolean raw) {
         int len = doReadInt(raw);
+        int hPos = (raw ? rawOff : off) - 1;
 
         in.position(raw ? rawOff : off);
 
         int[] arr = in.readIntArray(len);
+
+        setHandler(arr, hPos);
 
         int bytes = len << 2;
 
@@ -2368,10 +2384,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private long[] doReadLongArray(boolean raw) {
         int len = doReadInt(raw);
+        int hPos = (raw ? rawOff : off) - 1;
 
         in.position(raw ? rawOff : off);
 
         long[] arr = in.readLongArray(len);
+
+        setHandler(arr, hPos);
 
         int bytes = len << 3;
 
@@ -2389,10 +2408,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private float[] doReadFloatArray(boolean raw) {
         int len = doReadInt(raw);
+        int hPos = (raw ? rawOff : off) - 1;
 
         in.position(raw ? rawOff : off);
 
         float[] arr = in.readFloatArray(len);
+
+        setHandler(arr, hPos);
 
         int bytes = len << 2;
 
@@ -2410,10 +2432,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private double[] doReadDoubleArray(boolean raw) {
         int len = doReadInt(raw);
+        int hPos = (raw ? rawOff : off) - 1;
 
         in.position(raw ? rawOff : off);
 
         double[] arr = in.readDoubleArray(len);
+
+        setHandler(arr, hPos);
 
         int bytes = len << 3;
 
@@ -2431,10 +2456,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private char[] doReadCharArray(boolean raw) {
         int len = doReadInt(raw);
+        int hPos = (raw ? rawOff : off) - 1;
 
         in.position(raw ? rawOff : off);
 
         char[] arr = in.readCharArray(len);
+
+        setHandler(arr, hPos);
 
         int bytes = len << 1;
 
@@ -2452,10 +2480,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private boolean[] doReadBooleanArray(boolean raw) {
         int len = doReadInt(raw);
+        int hPos = (raw ? rawOff : off) - 1;
 
         in.position(raw ? rawOff : off);
 
         boolean[] arr = in.readBooleanArray(len);
+
+        setHandler(arr, hPos);
 
         if (raw)
             rawOff += len;
@@ -2472,8 +2503,11 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private BigDecimal[] doReadDecimalArray(boolean raw) throws PortableException {
         int len = doReadInt(raw);
+        int hPos = (raw ? rawOff : off) - 1;
 
         BigDecimal[] arr = new BigDecimal[len];
+
+        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
             byte flag = doReadByte(raw);
@@ -2498,8 +2532,11 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private String[] doReadStringArray(boolean raw) throws PortableException {
         int len = doReadInt(raw);
+        int hPos = (raw ? rawOff : off) - 1;
 
         String[] arr = new String[len];
+
+        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
             byte flag = doReadByte(raw);
@@ -2524,8 +2561,11 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private UUID[] doReadUuidArray(boolean raw) throws PortableException {
         int len = doReadInt(raw);
+        int hPos = (raw ? rawOff : off) - 1;
 
         UUID[] arr = new UUID[len];
+
+        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
             byte flag = doReadByte(raw);
@@ -2550,8 +2590,11 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private Date[] doReadDateArray(boolean raw) throws PortableException {
         int len = doReadInt(raw);
+        int hPos = (raw ? rawOff : off) - 1;
 
         Date[] arr = new Date[len];
+
+        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
             byte flag = doReadByte(raw);
@@ -2576,11 +2619,15 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     private Object[] doReadObjectArray(boolean raw, boolean deep) throws PortableException {
+        int hPos = (raw ? rawOff : off) - 1;
+
         Class compType = doReadClass(raw);
 
         int len = doReadInt(raw);
 
         Object[] arr = deep ? (Object[])Array.newInstance(compType, len) : new Object[len];
+
+        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++)
             arr[i] = deep ? doReadObject(raw) : unmarshal(raw);
@@ -2598,6 +2645,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     @SuppressWarnings("unchecked")
     private Collection<?> doReadCollection(boolean raw, boolean deep, @Nullable Class<? extends Collection> cls)
         throws PortableException {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int size = doReadInt(raw);
 
         assert size >= 0;
@@ -2667,6 +2716,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             }
         }
 
+        setHandler(col, hPos);
+
         for (int i = 0; i < size; i++)
             col.add(deep ? doReadObject(raw) : unmarshal(raw));
 
@@ -2683,6 +2734,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     @SuppressWarnings("unchecked")
     private Map<?, ?> doReadMap(boolean raw, boolean deep, @Nullable Class<? extends Map> cls)
         throws PortableException {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int size = doReadInt(raw);
 
         assert size >= 0;
@@ -2742,6 +2795,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             }
         }
 
+        setHandler(map, hPos);
+
         for (int i = 0; i < size; i++)
             map.put(deep ? doReadObject(raw) : unmarshal(raw), deep ? doReadObject(raw) : unmarshal(raw));
 
@@ -2755,10 +2810,16 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     private Map.Entry<?, ?> doReadMapEntry(boolean raw, boolean deep) throws PortableException {
+        int hPos = (raw ? rawOff : off) - 1;
+
         Object val1 = deep ? doReadObject(raw) : unmarshal(raw);
         Object val2 = deep ? doReadObject(raw) : unmarshal(raw);
 
-        return new GridMapEntry<>(val1, val2);
+        GridMapEntry entry = new GridMapEntry<>(val1, val2);
+
+        setHandler(entry, hPos);
+
+        return entry;
     }
 
     /**
