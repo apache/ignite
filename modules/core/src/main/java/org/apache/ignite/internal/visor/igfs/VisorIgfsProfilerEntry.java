@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.visor.igfs;
 
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Comparator;
+import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Visor IGFS profiler information about one file.

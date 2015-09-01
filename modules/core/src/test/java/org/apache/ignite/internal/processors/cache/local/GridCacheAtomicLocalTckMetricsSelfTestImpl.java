@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.apache.ignite.*;
-
-import javax.cache.processor.*;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.IgniteCache;
 
 /**
  * Local atomic cache metrics test with tck specific.

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.communication.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.communication.CommunicationSpi;
 
 /**
  *

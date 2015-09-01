@@ -17,10 +17,10 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.*;
-
-import javax.cache.*;
-import javax.cache.integration.*;
+import javax.cache.Cache;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheWriter;
+import org.apache.ignite.IgniteCache;
 
 /**
  * Cache metrics used to obtain statistics on cache itself.

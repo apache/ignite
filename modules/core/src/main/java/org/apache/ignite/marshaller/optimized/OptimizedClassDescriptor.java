@@ -17,19 +17,76 @@
 
 package org.apache.ignite.marshaller.optimized;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import sun.misc.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.NotSerializableException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamField;
+import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerExclusions;
+import sun.misc.Unsafe;
 
-import java.io.*;
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static java.lang.reflect.Modifier.*;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
+import static java.lang.reflect.Modifier.isFinal;
+import static java.lang.reflect.Modifier.isPrivate;
+import static java.lang.reflect.Modifier.isStatic;
+import static java.lang.reflect.Modifier.isTransient;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.ARRAY_LIST;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.BOOLEAN;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.BOOLEAN_ARR;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.BYTE;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.BYTE_ARR;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.CHAR;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.CHAR_ARR;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.CLS;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.DATE;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.DOUBLE;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.DOUBLE_ARR;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.ENUM;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.EXTERNALIZABLE;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.FLOAT;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.FLOAT_ARR;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.HASH_MAP;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.HASH_SET;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.HASH_SET_MAP_OFF;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.INT;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.INT_ARR;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.LINKED_HASH_MAP;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.LINKED_HASH_SET;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.LINKED_LIST;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.LONG;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.LONG_ARR;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.OBJ_ARR;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.PROPS;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.SERIALIZABLE;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.SHORT;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.SHORT_ARR;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.STR;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.UUID;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.classDescriptor;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.computeSerialVersionUid;
 
 /**
  * Class descriptor.

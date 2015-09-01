@@ -15,16 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query;
+#pragma once
 
-import org.apache.ignite.lang.*;
+// Including SDKDDKVer.h defines the highest available Windows platform.
 
-/**
- * Special version of bi-predicate for cache scan queries with close callback.
- */
-public interface CacheQueryCloseableScanBiPredicate<K, V> extends IgniteBiPredicate<K, V> {
-    /**
-     * Callback invoked when predicate is not longer needed.
-     */
-    public void onClose();
-}
+// If you wish to build your application for a previous Windows platform, include WinSDKVer.h and
+// set the _WIN32_WINNT macro to the platform you wish to support before including SDKDDKVer.h.
+
+#include <SDKDDKVer.h>

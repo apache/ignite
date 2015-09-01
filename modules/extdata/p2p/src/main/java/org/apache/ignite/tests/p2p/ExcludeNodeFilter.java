@@ -17,11 +17,10 @@
 
 package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * This node filter excludes the node with the given UUID

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.igfs;
 
-import org.apache.hadoop.fs.*;
-import org.apache.ignite.internal.igfs.common.*;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.PositionedReadable;
+import org.apache.hadoop.fs.Seekable;
+import org.apache.ignite.internal.igfs.common.IgfsLogger;
 
 /**
  * Secondary Hadoop file system input stream wrapper.

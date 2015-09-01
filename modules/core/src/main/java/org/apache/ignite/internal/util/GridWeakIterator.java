@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.lang.*;
-
-import java.lang.ref.*;
-import java.util.*;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
+import java.util.Iterator;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 
 /**
  * Weak iterator.

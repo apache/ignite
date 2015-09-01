@@ -17,11 +17,11 @@
 
 package org.apache.ignite.spi.eventstorage;
 
-import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.IgniteSpiException;
 
 /**
  * This SPI provides local node events storage. SPI allows for recording local

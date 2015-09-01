@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.port;
 
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.testframework.junits.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.spi.IgnitePortProtocol.*;
+import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
+import static org.apache.ignite.spi.IgnitePortProtocol.UDP;
 
 /**
  *

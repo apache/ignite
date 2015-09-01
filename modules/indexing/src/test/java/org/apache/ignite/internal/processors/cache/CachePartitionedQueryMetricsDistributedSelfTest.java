@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests for partitioned distributed cache query metrics.

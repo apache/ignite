@@ -17,7 +17,7 @@
 
 package org.apache.ignite.gridify.hierarchy;
 
-import org.apache.ignite.compute.gridify.*;
+import org.apache.ignite.compute.gridify.Gridify;
 
 /**
  * Target base class.

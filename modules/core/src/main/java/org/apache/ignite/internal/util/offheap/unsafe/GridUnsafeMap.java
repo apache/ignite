@@ -17,19 +17,27 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.offheap.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.offheap.GridOffHeapEventListener;
+import org.apache.ignite.internal.util.offheap.GridOffHeapEvictListener;
+import org.apache.ignite.internal.util.offheap.GridOffHeapMap;
+import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.CX2;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.LongAdder8;
 
-import java.util.*;
-import java.util.concurrent.locks.*;
-
-import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.*;
+import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.REHASH;
 
 /**
  * Off-heap map based on {@code Unsafe} implementation.

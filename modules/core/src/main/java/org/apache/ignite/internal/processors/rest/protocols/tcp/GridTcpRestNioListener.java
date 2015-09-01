@@ -17,24 +17,69 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.client.marshaller.*;
-import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.processors.rest.handlers.cache.*;
-import org.apache.ignite.internal.processors.rest.request.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
+import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthenticationRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientTopologyRequest;
+import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheRestMetrics;
+import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
-import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_APPEND;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CAS;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PREPEND;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOGY;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.APPEND;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.CAS;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.GET;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.GET_ALL;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.METRICS;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.PREPEND;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.PUT;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.PUT_ALL;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.REPLACE;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.RMV;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.RMV_ALL;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALLER;
 
 /**
  * Listener for nio server that handles incoming tcp rest packets.

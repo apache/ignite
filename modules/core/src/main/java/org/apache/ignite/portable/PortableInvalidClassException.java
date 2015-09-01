@@ -17,7 +17,7 @@
 
 package org.apache.ignite.portable;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception indicating that class needed for deserialization of portable object does not exist.

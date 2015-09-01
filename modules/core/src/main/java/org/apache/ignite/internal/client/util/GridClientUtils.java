@@ -17,13 +17,19 @@
 
 package org.apache.ignite.internal.client.util;
 
-import org.apache.ignite.internal.client.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.logging.*;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridClientPredicate;
+import org.apache.ignite.internal.client.GridClientProtocol;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Java client utils.

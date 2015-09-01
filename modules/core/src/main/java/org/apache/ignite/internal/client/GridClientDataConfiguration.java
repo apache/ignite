@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.internal.client.balancer.*;
+import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
+import org.apache.ignite.internal.client.balancer.GridClientRandomBalancer;
 
 /**
  * Java client data configuration.

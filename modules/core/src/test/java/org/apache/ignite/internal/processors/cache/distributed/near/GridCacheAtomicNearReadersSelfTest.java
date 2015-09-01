@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  * Checks that readers are properly handled for atomic cache.

@@ -17,9 +17,11 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Path summary: total files count, total directories count, total length.

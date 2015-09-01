@@ -17,15 +17,20 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
-
-import java.lang.reflect.*;
-import java.math.*;
-import java.sql.*;
-import java.util.*;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableRawWriter;
+import org.apache.ignite.portable.PortableWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Writer for meta data collection.

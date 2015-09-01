@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.RX1;
+import org.apache.ignite.lang.IgniteReducer;
 
 /**
  * Convenient reducer subclass that allows for thrown grid exception. This class

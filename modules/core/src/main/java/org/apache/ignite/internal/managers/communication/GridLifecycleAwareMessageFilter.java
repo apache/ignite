@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  * Special version of bi-predicate for messaging with initialize/close callbacks.

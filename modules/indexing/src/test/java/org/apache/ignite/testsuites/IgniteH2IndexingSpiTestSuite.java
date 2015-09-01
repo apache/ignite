@@ -17,9 +17,11 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.query.h2.*;
-import org.apache.ignite.internal.processors.query.h2.opt.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.query.h2.GridH2IndexRebuildTest;
+import org.apache.ignite.internal.processors.query.h2.GridH2IndexingInMemSelfTest;
+import org.apache.ignite.internal.processors.query.h2.GridH2IndexingOffheapSelfTest;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2TableSelfTest;
 
 /**
  * H2 indexing SPI tests.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.plugin.*;
+import org.apache.ignite.plugin.Extension;
 
 /**
  * Provides a custom format for communication messages.

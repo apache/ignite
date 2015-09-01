@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.portable.mutabletest;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portable.*;
-import org.apache.ignite.testframework.*;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableMarshalAware;
+import org.apache.ignite.portable.PortableRawReader;
+import org.apache.ignite.portable.PortableRawWriter;
+import org.apache.ignite.portable.PortableReader;
+import org.apache.ignite.portable.PortableWriter;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *

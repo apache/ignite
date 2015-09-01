@@ -17,10 +17,14 @@
 
 package org.apache.ignite.gridify;
 
-import org.apache.ignite.compute.gridify.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.ignite.compute.gridify.GridifySetToValue;
 
 /**
  * Test set-to-value target.

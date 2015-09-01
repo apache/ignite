@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.jsr166.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentMap;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * For tests.

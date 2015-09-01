@@ -17,21 +17,30 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.apache.ignite.internal.util.snaptree.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.indexing.*;
-import org.h2.engine.*;
-import org.h2.index.*;
-import org.h2.result.*;
-import org.h2.table.*;
-import org.h2.value.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Closeable;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.NavigableMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import org.apache.ignite.internal.util.GridEmptyIterator;
+import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
+import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.h2.engine.Session;
+import org.h2.index.Cursor;
+import org.h2.index.IndexType;
+import org.h2.index.SingleRowCursor;
+import org.h2.result.Row;
+import org.h2.result.SearchRow;
+import org.h2.result.SortOrder;
+import org.h2.table.IndexColumn;
+import org.h2.table.TableFilter;
+import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for snapshotable tree indexes.

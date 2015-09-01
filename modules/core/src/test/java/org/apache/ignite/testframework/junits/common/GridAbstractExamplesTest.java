@@ -17,10 +17,9 @@
 
 package org.apache.ignite.testframework.junits.common;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.FileReader;
+import java.util.Properties;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Base class for examples test.

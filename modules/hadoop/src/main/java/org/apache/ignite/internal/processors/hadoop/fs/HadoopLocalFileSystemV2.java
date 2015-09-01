@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.hadoop.fs;
 
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.local.*;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.ChecksumFs;
+import org.apache.hadoop.fs.DelegateToFileSystem;
+import org.apache.hadoop.fs.FsServerDefaults;
+import org.apache.hadoop.fs.local.LocalConfigKeys;
 
-import java.io.*;
-import java.net.*;
-
-import static org.apache.hadoop.fs.FsConstants.*;
+import static org.apache.hadoop.fs.FsConstants.LOCAL_FS_URI;
 
 /**
  * Local file system replacement for Hadoop jobs.

@@ -17,18 +17,22 @@
 
 package org.apache.ignite.examples.datagrid.store.spring;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.cache.store.jdbc.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.examples.datagrid.store.*;
-import org.apache.ignite.transactions.*;
+import java.util.UUID;
+import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.store.CacheStoreSessionListener;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.ExamplesUtils;
+import org.apache.ignite.examples.datagrid.store.Person;
+import org.apache.ignite.transactions.Transaction;
 
-import javax.cache.configuration.*;
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Demonstrates usage of cache with underlying persistent store configured.

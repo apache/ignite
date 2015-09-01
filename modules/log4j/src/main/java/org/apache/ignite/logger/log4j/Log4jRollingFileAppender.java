@@ -17,11 +17,11 @@
 
 package org.apache.ignite.logger.log4j;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.log4j.*;
-
-import java.io.*;
+import java.io.IOException;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.log4j.Layout;
+import org.apache.log4j.RollingFileAppender;
 
 /**
  * Log4J {@link RollingFileAppender} with added support for grid node IDs.

@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.igfs.IgfsIpcEndpointType;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Tests for {@link IgfsServer} that checks all IPC endpoint registration types

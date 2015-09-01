@@ -17,9 +17,12 @@
 
 package org.apache.ignite.gridify;
 
-import org.apache.ignite.compute.gridify.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.ignite.compute.gridify.GridifySetToSet;
 
 /**
  * Test set-to-set target interface.

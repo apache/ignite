@@ -17,9 +17,9 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.yardstick.*;
-import org.yardstickframework.*;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Abstract class for Ignite benchmarks which use cache.

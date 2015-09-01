@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.command.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collections;
+import org.h2.command.Parser;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Table with optional schema.

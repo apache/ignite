@@ -17,13 +17,13 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 
-import com.amazonaws.auth.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.testsuites.*;
-
-import java.net.*;
-import java.util.*;
+import com.amazonaws.auth.BasicAWSCredentials;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
+import org.apache.ignite.testsuites.IgniteS3TestSuite;
 
 /**
  * TcpDiscoveryS3IpFinder test.

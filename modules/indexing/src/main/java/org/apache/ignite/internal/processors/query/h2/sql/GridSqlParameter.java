@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import java.util.*;
+import java.util.Collections;
 
 /**
  * Query parameter.

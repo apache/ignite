@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cacheobject.*;
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.portable.PortableBuilder;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Extended cache object processor interface with additional methods for portables.

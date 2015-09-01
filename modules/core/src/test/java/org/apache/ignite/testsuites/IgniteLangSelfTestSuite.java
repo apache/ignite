@@ -17,13 +17,31 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.future.nio.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lang.utils.*;
-import org.apache.ignite.util.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.util.future.GridCompoundFutureSelfTest;
+import org.apache.ignite.internal.util.future.GridEmbeddedFutureSelfTest;
+import org.apache.ignite.internal.util.future.GridFutureAdapterSelfTest;
+import org.apache.ignite.internal.util.future.IgniteFutureImplTest;
+import org.apache.ignite.internal.util.future.nio.GridNioEmbeddedFutureSelfTest;
+import org.apache.ignite.internal.util.future.nio.GridNioFutureSelfTest;
+import org.apache.ignite.lang.GridByteArrayListSelfTest;
+import org.apache.ignite.lang.GridMetadataAwareAdapterSelfTest;
+import org.apache.ignite.lang.GridSetWrapperSelfTest;
+import org.apache.ignite.lang.GridTupleSelfTest;
+import org.apache.ignite.lang.GridXSelfTest;
+import org.apache.ignite.lang.IgniteUuidSelfTest;
+import org.apache.ignite.lang.utils.GridBoundedConcurrentLinkedHashMapSelfTest;
+import org.apache.ignite.lang.utils.GridBoundedConcurrentOrderedMapSelfTest;
+import org.apache.ignite.lang.utils.GridCircularBufferSelfTest;
+import org.apache.ignite.lang.utils.GridConcurrentLinkedHashMapSelfTest;
+import org.apache.ignite.lang.utils.GridConcurrentWeakHashSetSelfTest;
+import org.apache.ignite.lang.utils.GridConsistentHashSelfTest;
+import org.apache.ignite.lang.utils.GridLeanIdentitySetSelfTest;
+import org.apache.ignite.lang.utils.GridLeanMapSelfTest;
+import org.apache.ignite.lang.utils.GridListSetSelfTest;
+import org.apache.ignite.lang.utils.GridStripedLockSelfTest;
+import org.apache.ignite.util.GridConcurrentLinkedDequeSelfTest;
+import org.apache.ignite.util.GridConcurrentLinkedHashMapMultiThreadedSelfTest;
 
 /**
  * Ignite language test suite.

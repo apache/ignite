@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.loadbalancing.adaptive;
 
-import org.apache.ignite.cluster.*;
+import org.apache.ignite.cluster.ClusterNode;
 
 /**
  * Pluggable implementation of node load probing. Implementations

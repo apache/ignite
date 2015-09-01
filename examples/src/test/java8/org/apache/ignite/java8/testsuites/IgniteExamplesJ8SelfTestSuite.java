@@ -17,11 +17,9 @@
 
 package org.apache.ignite.java8.testsuites;
 
-import junit.framework.*;
 import org.apache.ignite.java8.examples.*;
-import org.apache.ignite.testframework.*;
 
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Examples test suite.

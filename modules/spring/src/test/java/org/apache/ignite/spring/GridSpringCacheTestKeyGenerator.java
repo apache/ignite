@@ -17,9 +17,8 @@
 
 package org.apache.ignite.spring;
 
-import org.springframework.cache.interceptor.*;
-
-import java.lang.reflect.*;
+import java.lang.reflect.Method;
+import org.springframework.cache.interceptor.KeyGenerator;
 
 /**
  * Key generator.

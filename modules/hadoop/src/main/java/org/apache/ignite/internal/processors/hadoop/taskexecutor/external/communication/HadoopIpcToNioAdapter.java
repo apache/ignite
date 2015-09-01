@@ -17,14 +17,23 @@
 
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.ipc.*;
-import org.apache.ignite.internal.util.nio.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.ipc.IpcEndpoint;
+import org.apache.ignite.internal.util.nio.GridNioFilter;
+import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
+import org.apache.ignite.internal.util.nio.GridNioFilterChain;
+import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.nio.GridNioServerListener;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridNioSessionImpl;
 
 /**
  * Allows to re-use existing {@link GridNioFilter}s on IPC (specifically shared memory IPC)

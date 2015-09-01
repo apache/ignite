@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Test class deployment.

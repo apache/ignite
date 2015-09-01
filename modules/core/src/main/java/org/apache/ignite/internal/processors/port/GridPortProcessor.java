@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal.processors.port;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.TreeSet;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.spi.IgnitePortProtocol;
 
 /**
  * Registers and deregisters all ports used by SPI and Manager.

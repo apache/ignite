@@ -17,7 +17,11 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * This annotation disables job stealing if corresponding feature is configured.

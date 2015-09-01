@@ -17,10 +17,12 @@
 
 package org.apache.ignite.cache.store.hibernate;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.integration.*;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.cache.integration.IgniteCacheStoreNodeRestartAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 

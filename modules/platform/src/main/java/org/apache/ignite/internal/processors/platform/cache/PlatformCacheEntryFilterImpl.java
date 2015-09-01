@@ -17,18 +17,19 @@
 
 package org.apache.ignite.internal.processors.platform.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.memory.*;
-import org.apache.ignite.internal.processors.platform.utils.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Interop filter. Delegates apply to native platform.
  */
-public class PlatformCacheEntryFilterImpl<K, V> extends PlatformAbstractPredicate
-    implements PlatformCacheEntryFilter<K, V> {
+public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate implements PlatformCacheEntryFilter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,7 +54,7 @@ public class PlatformCacheEntryFilterImpl<K, V> extends PlatformAbstractPredicat
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(K k, V v) {
+    @Override public boolean apply(Object k, Object v) {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 

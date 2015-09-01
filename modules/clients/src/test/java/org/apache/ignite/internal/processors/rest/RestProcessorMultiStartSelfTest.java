@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Rest processor test.

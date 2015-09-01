@@ -17,11 +17,10 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-
-import javax.cache.*;
-import javax.cache.event.*;
+import javax.cache.Cache;
+import javax.cache.event.CacheEntryUpdatedListener;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 
 /**
  * API for configuring continuous cache queries.

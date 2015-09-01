@@ -17,10 +17,9 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterTopologyException;
 
 /**
  * Convenience adapter for {@link ComputeTask} interface. Here is an example of

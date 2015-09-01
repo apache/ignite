@@ -17,16 +17,21 @@
 
 package org.apache.ignite.cache.eviction.lru;
 
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Collections;
+import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.ConcurrentLinkedDeque8.Node;
+import org.jsr166.LongAdder8;
 
-import org.jsr166.*;
-import org.jsr166.ConcurrentLinkedDeque8.*;
-
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.configuration.CacheConfiguration.*;
+import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE;
 
 /**
  * Eviction policy based on {@code Least Recently Used (LRU)} algorithm and supports batch eviction.

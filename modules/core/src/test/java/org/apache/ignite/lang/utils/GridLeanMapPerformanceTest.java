@@ -17,10 +17,9 @@
 
 package org.apache.ignite.lang.utils;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.internal.util.GridLeanMap;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Performance test for {@link GridLeanMap}.

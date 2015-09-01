@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.client;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.UUID;
 
 /**
  * Ignite Java client API.

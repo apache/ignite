@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.store.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.configuration.*;
-import javax.cache.integration.*;
+import javax.cache.configuration.Factory;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheWriter;
+import org.apache.ignite.cache.store.CacheStore;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *

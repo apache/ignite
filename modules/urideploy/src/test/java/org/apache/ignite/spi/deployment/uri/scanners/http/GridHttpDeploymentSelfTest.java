@@ -17,18 +17,21 @@
 
 package org.apache.ignite.spi.deployment.uri.scanners.http;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.deployment.uri.*;
-import org.apache.ignite.testframework.config.*;
-import org.apache.ignite.testframework.junits.spi.*;
-import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.server.handler.*;
-import org.eclipse.jetty.util.resource.*;
+import java.util.Collections;
+import java.util.List;
+import javax.servlet.http.HttpServletResponse;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.deployment.uri.GridUriDeploymentAbstractSelfTest;
+import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
+import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.util.resource.Resource;
 
-import javax.servlet.http.*;
-import java.util.*;
-
-import static org.eclipse.jetty.http.HttpHeader.*;
+import static org.eclipse.jetty.http.HttpHeader.LAST_MODIFIED;
 
 /**
  * Test http scanner.

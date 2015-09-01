@@ -17,8 +17,8 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.cache.affinity.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache rebalance mode. When rebalancing is enabled (i.e. has value other than {@link #NONE}), distributed caches

@@ -17,10 +17,11 @@
 
 package org.apache.ignite.spi.checkpoint.s3;
 
-import com.amazonaws.auth.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.managers.checkpoint.*;
-import org.apache.ignite.testsuites.*;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManagerAbstractSelfTest;
+import org.apache.ignite.testsuites.IgniteS3TestSuite;
 
 /**
  * Checkpoint manager test using {@link S3CheckpointSpi}.

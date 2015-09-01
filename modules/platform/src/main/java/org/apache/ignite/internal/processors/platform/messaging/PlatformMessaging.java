@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.platform.messaging;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.utils.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.internal.managers.communication.GridLifecycleAwareMessageFilter;
+import org.apache.ignite.internal.portable.PortableRawReaderEx;
+import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Interop messaging.

@@ -17,20 +17,34 @@
 
 package org.apache.ignite.internal.util.nio.ssl;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.nio.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.locks.ReentrantLock;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLSession;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.nio.GridNioEmbeddedFuture;
+import org.apache.ignite.internal.util.nio.GridNioException;
+import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import javax.net.ssl.*;
-import java.nio.*;
-import java.util.*;
-import java.util.concurrent.locks.*;
-
-import static javax.net.ssl.SSLEngineResult.*;
-import static javax.net.ssl.SSLEngineResult.HandshakeStatus.*;
-import static javax.net.ssl.SSLEngineResult.Status.*;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
-import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.*;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_TASK;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_UNWRAP;
+import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
+import static javax.net.ssl.SSLEngineResult.Status;
+import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
+import static javax.net.ssl.SSLEngineResult.Status.CLOSED;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_ENGINE;
+import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.HANDSHAKE_FUT_META_KEY;
 
 /**
  * Class that encapsulate the per-session SSL state, encoding and decoding logic.

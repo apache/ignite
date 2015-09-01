@@ -17,10 +17,12 @@
 
 package org.apache.ignite.examples.servicegrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.services.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceContext;
 
 /**
  * Simple service which utilizes Ignite cache as a mechanism to provide

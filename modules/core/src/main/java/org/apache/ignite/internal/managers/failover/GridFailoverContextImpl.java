@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.managers.failover;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.loadbalancer.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.failover.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.internal.GridTaskSessionImpl;
+import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.failover.FailoverContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * GridFailoverContext implementation.

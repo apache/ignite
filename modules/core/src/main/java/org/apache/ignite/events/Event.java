@@ -17,11 +17,10 @@
 
 package org.apache.ignite.events;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid events are used for notification about what happens within the grid. Note that by

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.util.Collection;
 
 /**
  * Ignite index descriptor.

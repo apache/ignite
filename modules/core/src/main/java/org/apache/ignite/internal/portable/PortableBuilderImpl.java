@@ -17,16 +17,28 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.processors.cache.portable.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portable.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.util.GridArgumentCheck;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.portable.PortableBuilder;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableInvalidClassException;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableObject;
+import org.jetbrains.annotations.Nullable;
 
-import org.jetbrains.annotations.*;
-
-import java.util.*;
-
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.*;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLS_NAME_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_CODE_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.RAW_DATA_OFF_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TOTAL_LEN_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TYPE_ID_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
 
 /**
  *

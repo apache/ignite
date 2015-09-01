@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * OS conflict resolver manager.

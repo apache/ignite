@@ -17,11 +17,11 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import javax.cache.*;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Query for Lucene based fulltext search.
