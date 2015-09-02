@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl
         private const string EvnPlatformVal = "dotnet";
 
         /** Environment variable: whether to set test classpath or not. */
-        private const string EnvGridgainNativeTestClasspath = "GRIDGAIN_NATIVE_TEST_CLASSPATH";
+        private const string EnvIgniteNativeTestClasspath = "IGNITE_NATIVE_TEST_CLASSPATH";
         
         /** Classpath prefix. */
         private const string ClasspathPrefix = "-Djava.class.path=";
@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Impl
                 throw new IgniteException(string.Format("IgniteConfiguration.IgniteHome is not valid: '{0}'", home));
 
             if (string.IsNullOrWhiteSpace(home))
-                home = ResolveGridGainHome();
+                home = ResolveIgniteHome();
             else if (!IsIgniteHome(new DirectoryInfo(home)))
                 throw new IgniteException(string.Format("{0} is not valid: '{1}'", EnvIgniteHome, home));
 
@@ -265,10 +265,10 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Automatically resolve GridGain home directory.
+        /// Automatically resolve Ignite home directory.
         /// </summary>
         /// <returns>GridGain home directory.</returns>
-        private static string ResolveGridGainHome()
+        private static string ResolveIgniteHome()
         {
             var probeDirs = new[]
             {
@@ -306,7 +306,7 @@ namespace Apache.Ignite.Core.Impl
         /// Creates classpath from the given configuration, or default classpath if given config is null.
         /// </summary>
         /// <param name="cfg">The configuration.</param>
-        /// <param name="forceTestClasspath">Append test directories even if <see cref="EnvGridgainNativeTestClasspath" /> is not set.</param>
+        /// <param name="forceTestClasspath">Append test directories even if <see cref="EnvIgniteNativeTestClasspath" /> is not set.</param>
         /// <returns>
         /// Classpath string.
         /// </returns>
@@ -321,7 +321,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="ggHome">The home dir.</param>
         /// <param name="cfg">The configuration.</param>
         /// <param name="forceTestClasspath">Append test directories even if
-        ///     <see cref="EnvGridgainNativeTestClasspath" /> is not set.</param>
+        ///     <see cref="EnvIgniteNativeTestClasspath" /> is not set.</param>
         /// <returns>
         /// Classpath string.
         /// </returns>
@@ -348,12 +348,12 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="ggHome">The home dir.</param>
         /// <param name="forceTestClasspath">Append test directories even if
-        ///     <see cref="EnvGridgainNativeTestClasspath"/> is not set.</param>
+        ///     <see cref="EnvIgniteNativeTestClasspath"/> is not set.</param>
         /// <param name="cpStr">The classpath string.</param>
         private static void AppendHomeClasspath(string ggHome, bool forceTestClasspath, StringBuilder cpStr)
         {
             // Append test directories (if needed) first, because otherwise build *.jar will be picked first.
-            if (forceTestClasspath || "true".Equals(Environment.GetEnvironmentVariable(EnvGridgainNativeTestClasspath)))
+            if (forceTestClasspath || "true".Equals(Environment.GetEnvironmentVariable(EnvIgniteNativeTestClasspath)))
             {
                 AppendTestClasses(ggHome + "\\examples", cpStr);
                 AppendTestClasses(ggHome + "\\modules", cpStr);
