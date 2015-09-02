@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
     /// Base class for managed and unmanaged data streams.
     /// </summary>
     [CLSCompliant(false)]
-    public unsafe abstract class PortableAbstractStream : IPortableStream
+    internal unsafe abstract class PortableAbstractStream : IPortableStream
     {
         /// <summary>
         /// Array copy delegate.

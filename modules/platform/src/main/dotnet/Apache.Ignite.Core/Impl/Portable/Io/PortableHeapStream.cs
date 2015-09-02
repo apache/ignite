@@ -24,8 +24,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
     /// <summary>
     /// Portable onheap stream.
     /// </summary>
-    [CLSCompliant(false)]
-    public unsafe class PortableHeapStream : PortableAbstractStream
+    internal unsafe class PortableHeapStream : PortableAbstractStream
     {
         /** Data array. */
         protected byte[] data;
