@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -377,7 +379,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     private void checkBackup() {
         assert mappings.size() <= 1;
 
-        for (UUID nodeId : mappings.keySet()) {
+        for (Map.Entry<UUID, GridDistributedTxMapping> entry : mappings.entrySet()) {
+            UUID nodeId = entry.getKey();
+            GridDistributedTxMapping mapping = entry.getValue();
+
             Collection<UUID> backups = tx.transactionNodes().get(nodeId);
 
             if (!F.isEmpty(backups)) {
@@ -391,16 +396,19 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (backup == null)
                     return;
 
-                MiniFuture mini = new MiniFuture(backup);
+                MiniFuture mini = new MiniFuture(backup, mapping);
 
                 add(mini);
 
                 if (backup.isLocal()) {
-                    if (cctx.tm().txHandler().checkDhtRemoteTxCommitted(tx.xidVersion()))
+                    if (cctx.tm().txHandler().checkDhtRemoteTxCommitted(tx.xidVersion())) {
+                        readyNearMappingFromBackup(mapping);
+
                         mini.onDone(tx);
+                    }
                     else
                         mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
-                        "(transaction has been rolled back on backup node): " + tx.xidVersion()));
+                            "(transaction has been rolled back on backup node): " + tx.xidVersion()));
                 }
                 else {
                     GridDhtTxFinishRequest finishReq = new GridDhtTxFinishRequest(
@@ -440,6 +448,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     }
                 }
             }
+            else
+                readyNearMappingFromBackup(mapping);
         }
     }
 
@@ -447,14 +457,22 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      *
      */
     private boolean needFinishOnePhase() {
+        if (F.isEmpty(tx.mappings()))
+            return false;
+
+        boolean finish = false;
+
         for (Integer cacheId : tx.activeCacheIds()) {
             GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-            if (cacheCtx.isNear())
-                return true;
+            if (cacheCtx.isNear()) {
+                finish = true;
+
+                break;
+            }
         }
 
-        return false;
+        return finish;
     }
 
     /**
@@ -471,6 +489,20 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (fut != null)
                     add(fut);
             }
+        }
+    }
+
+    /**
+     * @param mapping Mapping to finish.
+     */
+    private void readyNearMappingFromBackup(GridDistributedTxMapping mapping) {
+        if (mapping.near()) {
+            GridCacheVersion xidVer = tx.xidVersion();
+
+            mapping.dhtVersion(xidVer, xidVer);
+
+            tx.readyNearLocks(mapping, Collections.<GridCacheVersion>emptyList(), Collections.<GridCacheVersion>emptyList(),
+                Collections.<GridCacheVersion>emptyList());
         }
     }
 
@@ -599,9 +631,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         /**
          * @param backup Backup to check.
+         * @param m Mapping associated with the backup.
          */
-        MiniFuture(ClusterNode backup) {
+        MiniFuture(ClusterNode backup, GridDistributedTxMapping m) {
             this.backup = backup;
+            this.m = m;
         }
 
         /**
@@ -617,7 +651,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         public ClusterNode node() {
             assert m != null || backup != null;
 
-            return m != null ? m.node() : backup;
+            return backup != null ? backup : m.node();
         }
 
         /**
@@ -645,8 +679,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will fail): " + this);
 
-            // Complete future with tx.
-            onDone(tx);
+            if (backup != null) {
+                readyNearMappingFromBackup(m);
+
+                onDone(e);
+            }
+            else
+                // Complete future with tx.
+                onDone(tx);
         }
 
         /**
@@ -667,9 +707,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         void onResult(GridDhtTxFinishResponse res) {
             assert backup != null;
 
-            if (res.checkCommittedError() != null) {
+            readyNearMappingFromBackup(m);
+
+            if (res.checkCommittedError() != null)
                 onDone(res.checkCommittedError());
-            }
             else
                 onDone(tx);
         }

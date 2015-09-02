@@ -519,8 +519,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
                 GridDistributedTxMapping m = mappings.get(n.id());
 
-                if (m == null)
+                if (m == null) {
                     m = F.addIfAbsent(mappings, n.id(), new GridDistributedTxMapping(n));
+
+                    m.near(map.near());
+
+                    if (map.explicitLock())
+                        m.markExplicitLock();
+                }
 
                 assert m != null;
 

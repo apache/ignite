@@ -17,33 +17,47 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionRollbackException;
 
-import javax.cache.*;
-import java.util.*;
-import java.util.concurrent.*;
+import javax.cache.CacheException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Tests one-phase commit transactions when some of the nodes fail in the middle of the transaction.
  */
+@SuppressWarnings("unchecked")
 public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @return Grid count.
@@ -56,17 +70,25 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+
+        cfg.setCommunicationSpi(new BanningCommunicationSpi());
+
+        return cfg;
+    }
+
+    /**
+     * @param gridName Grid name.
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration cacheConfiguration(String gridName) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setBackups(1);
 
-        cfg.setCacheConfiguration(ccfg);
-
-        cfg.setCommunicationSpi(new BanningCommunicationSpi());
-
-        return cfg;
+        return ccfg;
     }
 
     /**
@@ -174,6 +196,10 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
             final int key = generateKey(ignite, backup);
 
+            IgniteEx backupNode = (IgniteEx)backupNode(key, null);
+
+            assertNotNull(backupNode);
+
             final CountDownLatch commitLatch = new CountDownLatch(1);
 
             if (!commit) {
@@ -263,10 +289,57 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
             fut.get();
 
             // Check there are no hanging transactions.
-            assertEquals(0, ((IgniteEx)ignite).context().cache().context().tm().idMapSize());
+            assertEquals(0, ((IgniteEx)ignite(0)).context().cache().context().tm().idMapSize());
+            assertEquals(0, ((IgniteEx)ignite(2)).context().cache().context().tm().idMapSize());
+            assertEquals(0, ((IgniteEx)ignite(3)).context().cache().context().tm().idMapSize());
+
+            dataCheck((IgniteKernal)ignite(0), (IgniteKernal)backupNode, key, commit);
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /**
+     * @param orig Originating cache.
+     * @param backup Backup cache.
+     * @param key Key being committed and checked.
+     * @param commit Commit or rollback flag.
+     * @throws Exception If check failed.
+     */
+    private void dataCheck(IgniteKernal orig, IgniteKernal backup, int key, boolean commit) throws Exception {
+        GridNearCacheEntry nearEntry = null;
+
+        GridCacheAdapter origCache = orig.internalCache(null);
+
+        if (origCache.isNear())
+            nearEntry = (GridNearCacheEntry)origCache.peekEx(key);
+
+        GridCacheAdapter backupCache = backup.internalCache(null);
+
+        if (backupCache.isNear())
+            backupCache = backupCache.context().near().dht();
+
+        GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)backupCache.peekEx(key);
+
+        if (commit) {
+            assertNotNull(dhtEntry);
+            assertTrue("dhtEntry=" + dhtEntry, dhtEntry.remoteMvccSnapshot().isEmpty());
+            assertTrue("dhtEntry=" + dhtEntry, dhtEntry.localCandidates().isEmpty());
+            assertEquals(key, backupCache.localPeek(key, null, null));
+
+            if (nearEntry != null) {
+                assertTrue("near=" + nearEntry, nearEntry.remoteMvccSnapshot().isEmpty());
+                assertTrue("near=" + nearEntry, nearEntry.localCandidates().isEmpty());
+
+                // Near peek wil be null since primary node has changed.
+                assertNull("near=" + nearEntry, origCache.localPeek(key, null, null));
+            }
+        }
+        else {
+            assertTrue("near=" + nearEntry + ", hc=" + System.identityHashCode(nearEntry), nearEntry == null);
+            assertTrue("Invalid backup cache entry: " + dhtEntry,
+                dhtEntry == null || dhtEntry.rawGetOrUnmarshal(false) == null);
         }
     }
 
@@ -321,8 +394,6 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
             if (!bannedClasses.contains(ioMsg.message().getClass())) {
                 super.sendMessage(node, msg, ackClosure);
-
-                U.debug(">>> Sending message: " + msg);
             }
         }
     }
