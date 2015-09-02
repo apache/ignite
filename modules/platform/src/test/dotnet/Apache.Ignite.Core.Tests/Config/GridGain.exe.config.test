@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+    Copyright (C) GridGain Systems. All Rights Reserved.
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+-->
+
+<!--
+    GridGain .Net startup application configuration file.
+-->
+
+<configuration>
+    <startup>
+        <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.0"/>
+    </startup>
+
+    <runtime>
+        <gcServer enabled="true" />
+    </runtime>
+
+    <appSettings>
+        <add key="GridGain.SpringConfigUrl" value="config\compute\compute-standalone.xml" />
+        <add key="GridGain.Assembly.1" value="test-1.dll" />
+        <add key="GridGain.Assembly.2" value="test-2.dll" />
+        <add key="GridGain.JvmOption.1" value="-DOPT1" />
+        <add key="GridGain.JvmOption.2" value="-DOPT2" />
+        <add key="GridGain.JvmOption.3" value="-Xms601m" />
+        <add key="GridGain.JvmOption.4" value="-Xmx702m" />
+        <add key="GridGain.JvmInitialMemoryMB" value="601" />
+        <add key="GridGain.JvmMaxMemoryMB" value="702" />
+    </appSettings>
+
+</configuration>

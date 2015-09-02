@@ -1,0 +1,150 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Copyright (C) GridGain Systems. All Rights Reserved.
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+-->
+
+<!--
+    GridGain Spring configuration file to startup grid cache.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd">
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="localHost" value="127.0.0.1"/>
+        <property name="connectorConfiguration"><null/></property>
+
+        <property name="includeEventTypes">
+            <util:constant static-field="org.apache.ignite.events.EventType.EVTS_CACHE"/>
+        </property>
+
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="portable_store"/>
+                    <property name="cacheMode" value="LOCAL"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeThrough" value="true"/>
+                    <property name="readThrough" value="true"/>
+
+                    <property name="cacheStoreFactory">
+                        <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetCacheStoreFactory">
+                            <property name="assemblyName" value="GridGainTest"/>
+                            <property name="className" value="GridGain.Cache.Store.GridCacheTestStore"/>
+                        </bean>
+                    </property>
+                    
+                    <property name="pluginConfigurations">
+                        <list>
+                            <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration" />
+                        </list>
+                    </property>
+                </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="object_store"/>
+                    <property name="cacheMode" value="LOCAL"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeThrough" value="true"/>
+                    <property name="readThrough" value="true"/>
+
+                    <property name="cacheStoreFactory">
+                        <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetCacheStoreFactory">
+                            <property name="assemblyName" value="GridGainTest"/>
+                            <property name="className" value="GridGain.Cache.Store.GridCacheTestStore"/>
+                        </bean>
+                    </property>
+                    <property name="pluginConfigurations">
+                        <list>
+                            <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration">
+                                <property name="keepPortableInStore" value="false"/>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="template_store*"/>
+                    <property name="cacheMode" value="LOCAL"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeThrough" value="true"/>
+                    <property name="readThrough" value="true"/>
+
+                    <property name="cacheStoreFactory">
+                        <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetCacheStoreFactory">
+                            <property name="assemblyName" value="GridGainTest"/>
+                            <property name="className" value="GridGain.Cache.Store.GridCacheTestStore"/>
+                        </bean>
+                    </property>
+                    <property name="pluginConfigurations">
+                        <list>
+                            <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration">
+                                <property name="keepPortableInStore" value="false"/>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="custom_store"/>
+                    <property name="cacheMode" value="LOCAL"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeThrough" value="true"/>
+                    <property name="readThrough" value="true"/>
+                    
+                    <property name="pluginConfigurations">
+                        <list>
+                            <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration" />
+                        </list>
+                    </property>
+
+                    <property name="cacheStoreFactory">
+                        <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetCacheStoreFactory">
+                            <property name="assemblyName" value="GridGainTest"/>
+                            <property name="className" value="GridGain.Cache.Store.GridCacheTestStore"/>
+                            <property name="properties">
+                                <map>
+                                    <entry key="IntProperty">
+                                        <value type="java.lang.Integer">42</value>
+                                    </entry>
+                                    <entry key="StringProperty" value="String value"/>
+                                </map>
+                            </property>
+                        </bean>
+                    </property>
+                </bean>
+            </list>
+        </property>
+
+        <property name="pluginConfigurations">
+            <list>
+                <bean class="org.gridgain.grid.configuration.GridGainConfiguration"/>
+            </list>
+        </property>
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <!-- In distributed environment, replace with actual host IP address. -->
+                                <value>127.0.0.1:47500..47501</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+</beans>

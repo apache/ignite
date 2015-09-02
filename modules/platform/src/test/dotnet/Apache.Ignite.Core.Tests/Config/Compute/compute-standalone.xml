@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Copyright (C) GridGain Systems. All Rights Reserved.
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+-->
+
+<!--
+    GridGain Spring configuration.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="localHost" value="127.0.0.1"/>
+        <property name="connectorConfiguration"><null/></property>
+
+        <property name="metricsLogFrequency" value="0"/>
+
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration" />
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache1"/>
+                </bean>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache2"/>
+                </bean>
+            </list>
+        </property>
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>127.0.0.1:47500..47502</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
+        <property name="pluginConfigurations">
+            <list>
+                <bean class="org.gridgain.grid.configuration.GridGainConfiguration">
+                    <property name="interopConfiguration">
+                        <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetConfiguration">
+                            <property name="portableConfiguration">
+                                <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetPortableConfiguration">
+                                    <property name="types">
+                                        <list>
+                                            <value>GridGain.Client.GridExecutableTest+RemoteConfiguration</value>
+                                            <value>GridGain.Client.GridExecutableTest+RemoteConfigurationClosure</value>
+                                            <value>GridGain.Client.Compute.GridTaskAdapterTest+PortableJob</value>
+                                            <value>GridGain.Client.Compute.GridPortableClosureTaskTest+PortableOutFunc</value>
+                                            <value>GridGain.Client.Compute.GridPortableClosureTaskTest+PortableFunc</value>
+                                            <value>GridGain.Client.Compute.GridPortableClosureTaskTest+PortableResult</value>
+                                            <value>GridGain.Client.Compute.GridPortableClosureTaskTest+PortableException</value>
+                                        </list>
+                                    </property>
+                                    <property name="typesConfiguration">
+                                        <list>
+                                            <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetPortableTypeConfiguration">
+                                                <property name="typeName" value="org.gridgain.interop.GridInteropComputePortable"/>
+                                            </bean>
+                                            <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetPortableTypeConfiguration">
+                                                <property name="typeName" value="org.gridgain.interop.GridInteropComputeJavaPortable"/>
+                                            </bean>
+                                        </list>
+                                    </property>
+                                </bean>
+                            </property>
+                        </bean>
+                    </property>
+                </bean>
+            </list>
+        </property>
+    </bean>
+</beans>

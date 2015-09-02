@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Copyright (C) GridGain Systems. All Rights Reserved.
+    _________        _____ __________________        _____
+    __  ____/___________(_)______  /__  ____/______ ____(_)_______
+    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+-->
+
+<!--
+    GridGain Spring configuration.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="localHost" value="127.0.0.1"/>
+        <property name="connectorConfiguration">
+            <null/>
+        </property>
+
+        <property name="gridName" value="grid-dr-sender"/>
+
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="drCache"/>
+                    <property name="startSize" value="2000"/>
+                    
+                    <property name="pluginConfigurations">
+                        <list>
+                            <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration">
+                                <property name="drSenderConfiguration">
+                                    <bean class="org.gridgain.grid.cache.dr.CacheDrSenderConfiguration">
+                                        <property name="batchSendSize" value="100" />
+                                        <property name="entryFilter">
+                                            <bean class="org.gridgain.grid.internal.interop.dotnet.InteropDotNetCacheDrEntryFilter">
+                                                <property name="assemblyName" value="GridGainTest"/>
+                                                <property name="className" value="GridGain.Client.DataCenterReplication.TestCacheDrEntryFilter"/>
+                                                <property name="properties">
+                                                    <map>
+                                                        <entry key="TestProperty">
+                                                            <value type="java.lang.String">Test Property Value 1</value>
+                                                        </entry>
+                                                    </map>
+                                                </property>
+                                            </bean>
+                                        </property>
+                                    </bean>
+                                </property>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+            </list>
+        </property>
+
+        <property name="pluginConfigurations">
+            <list>
+                <bean class="org.gridgain.grid.configuration.GridGainConfiguration">
+                    <property name="dataCenterId" value="1"/>
+
+                    <property name="drSenderConfiguration">
+                        <bean class="org.gridgain.grid.configuration.DrSenderConfiguration">
+                            <property name="cacheNames">
+                                <list>
+                                    <value>drCache</value>
+                                </list>
+                            </property>
+
+                            <property name="connectionConfiguration">
+                                <list>
+                                    <bean class="org.gridgain.grid.dr.DrSenderConnectionConfiguration">
+                                        <property name="dataCenterId" value="2"/>
+
+                                        <property name="receiverAddresses">
+                                            <list>
+                                                <value>127.0.0.1:49020</value>
+                                            </list>
+                                        </property>
+                                    </bean>
+                                </list>
+                            </property>
+                        </bean>
+                    </property>
+                </bean>
+            </list>
+        </property>
+        
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>127.0.0.1:47500</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+</beans>
