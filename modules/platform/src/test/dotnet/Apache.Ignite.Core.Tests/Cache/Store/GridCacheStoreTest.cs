@@ -1,0 +1,510 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+namespace Apache.Ignite.Core.Tests.Cache.Store
+{
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Portable;
+    using NUnit.Framework;
+
+    /// <summary>
+    ///
+    /// </summary>
+    class Key
+    {
+        private readonly int idx;
+
+        public Key(int idx)
+        {
+            this.idx = idx;
+        }
+
+        public int Index()
+        {
+            return idx;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null || obj.GetType() != GetType())
+                return false;
+
+            Key key = (Key)obj;
+
+            return key.idx == idx;
+        }
+
+        public override int GetHashCode()
+        {
+            return idx;
+        }
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    class Value
+    {
+        private int idx;
+
+        public Value(int idx)
+        {
+            this.idx = idx;
+        }
+
+        public int Index()
+        {
+            return idx;
+        }
+    }
+
+    /// <summary>
+    /// Cache entry predicate.
+    /// </summary>
+    [Serializable]
+    public class CacheEntryFilter : ICacheEntryFilter<int, string>
+    {
+        /** <inheritdoc /> */
+        public bool Invoke(ICacheEntry<int, string> entry)
+        {
+            return entry.Key >= 105;
+        }
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    public class GridCacheStoreTest
+    {
+        /** */
+        private const string PORTABLE_STORE_CACHE_NAME = "portable_store";
+
+        /** */
+        private const string OBJECT_STORE_CACHE_NAME = "object_store";
+
+        /** */
+        private const string CUSTOM_STORE_CACHE_NAME = "custom_store";
+
+        /** */
+        private const string TEMPLATE_STORE_CACHE_NAME = "template_store*";
+
+        /// <summary>
+        ///
+        /// </summary>
+        [TestFixtureSetUp]
+        public void BeforeTests()
+        {
+            //GridTestUtils.JVM_DEBUG = true;
+
+            GridTestUtils.KillProcesses();
+
+            GridTestUtils.JVM_DEBUG = true;
+
+            GridConfigurationEx cfg = new GridConfigurationEx();
+
+            cfg.GridName = GridName();
+            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
+            cfg.JvmOptions = GridTestUtils.TestJavaOptions();
+            cfg.SpringConfigUrl = "config\\native-client-test-cache-store.xml";
+
+            PortableConfiguration portCfg = new PortableConfiguration();
+
+            portCfg.Types = new List<string>() { typeof(Key).FullName, typeof(Value).FullName };
+
+            cfg.PortableConfiguration = portCfg;
+
+            GridFactory.Start(cfg);
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        [TestFixtureTearDown]
+        public virtual void AfterTests()
+        {
+            GridFactory.StopAll(true);
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        [SetUp]
+        public void BeforeTest()
+        {
+            Console.WriteLine("Test started: " + TestContext.CurrentContext.Test.Name);
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        [TearDown]
+        public void AfterTest()
+        {
+            var cache = Cache();
+
+            cache.Clear();
+
+            Assert.IsTrue(cache.IsEmpty, "Cache is not empty: " + cache.Size());
+
+            GridCacheTestStore.Reset();
+
+            Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
+        }
+
+        [Test]
+        public void TestLoadCache()
+        {
+            var cache = Cache();
+
+            Assert.AreEqual(0, cache.Size());
+
+            cache.LoadCache(new CacheEntryFilter(), 100, 10);
+
+            Assert.AreEqual(5, cache.Size());
+
+            for (int i = 105; i < 110; i++)
+                Assert.AreEqual("val_" + i, cache.Get(i));
+        }
+
+        [Test]
+        public void TestLocalLoadCache()
+        {
+            var cache = Cache();
+
+            Assert.AreEqual(0, cache.Size());
+
+            cache.LocalLoadCache(new CacheEntryFilter(), 100, 10);
+
+            Assert.AreEqual(5, cache.Size());
+
+            for (int i = 105; i < 110; i++)
+                Assert.AreEqual("val_" + i, cache.Get(i));
+        }
+
+        [Test]
+        public void TestLoadCacheMetadata()
+        {
+            GridCacheTestStore.loadObjects = true;
+
+            var cache = Cache();
+
+            Assert.AreEqual(0, cache.Size());
+
+            cache.LocalLoadCache(null, 0, 3);
+
+            Assert.AreEqual(3, cache.Size());
+
+            var meta = cache.WithKeepPortable<Key, IPortableObject>().Get(new Key(0)).Metadata();
+
+            Assert.NotNull(meta);
+
+            Assert.AreEqual("Value", meta.TypeName);
+        }
+
+        [Test]
+        public void TestLoadCacheAsync()
+        {
+            var cache = Cache().WithAsync();
+
+            Assert.AreEqual(0, cache.Size());
+
+            cache.LocalLoadCache(new CacheEntryFilter(), 100, 10);
+
+            var fut = cache.GetFuture<object>();
+
+            fut.Get();
+
+            Assert.IsTrue(fut.IsDone);
+
+            cache.Size();
+            Assert.AreEqual(5, cache.GetFuture<int>().ToTask().Result);
+
+            for (int i = 105; i < 110; i++)
+            {
+                cache.Get(i);
+
+                Assert.AreEqual("val_" + i, cache.GetFuture<string>().ToTask().Result);
+            }
+        }
+
+        [Test]
+        public void TestPutLoad()
+        {
+            var cache = Cache();
+
+            cache.Put(1, "val");
+
+            IDictionary map = StoreMap();
+
+            Assert.AreEqual(1, map.Count);
+
+            cache.LocalEvict(new[] { 1 });
+
+            Assert.AreEqual(0, cache.Size());
+
+            Assert.AreEqual("val", cache.Get(1));
+
+            Assert.AreEqual(1, cache.Size());
+        }
+
+        [Test]
+        public void TestPutLoadPortables()
+        {
+            var cache = PortableStoreCache<int, Value>();
+
+            cache.Put(1, new Value(1));
+
+            IDictionary map = StoreMap();
+
+            Assert.AreEqual(1, map.Count);
+
+            IPortableObject v = (IPortableObject)map[1];
+
+            Assert.AreEqual(1, v.Field<int>("idx"));
+
+            cache.LocalEvict(new[] { 1 });
+
+            Assert.AreEqual(0, cache.Size());
+
+            Assert.AreEqual(1, cache.Get(1).Index());
+
+            Assert.AreEqual(1, cache.Size());
+        }
+
+        [Test]
+        public void TestPutLoadObjects()
+        {
+            var cache = ObjectStoreCache<int, Value>();
+
+            cache.Put(1, new Value(1));
+
+            IDictionary map = StoreMap();
+
+            Assert.AreEqual(1, map.Count);
+
+            Value v = (Value)map[1];
+
+            Assert.AreEqual(1, v.Index());
+
+            cache.LocalEvict(new[] { 1 });
+
+            Assert.AreEqual(0, cache.Size());
+
+            Assert.AreEqual(1, cache.Get(1).Index());
+
+            Assert.AreEqual(1, cache.Size());
+        }
+
+        [Test]
+        public void TestPutLoadAll()
+        {
+            var putMap = new Dictionary<int, string>();
+
+            for (int i = 0; i < 10; i++)
+                putMap.Add(i, "val_" + i);
+
+            var cache = Cache();
+
+            cache.PutAll(putMap);
+
+            IDictionary map = StoreMap();
+
+            Assert.AreEqual(10, map.Count);
+
+            for (int i = 0; i < 10; i++)
+                Assert.AreEqual("val_" + i, map[i]);
+
+            cache.Clear();
+
+            Assert.AreEqual(0, cache.Size());
+
+            ICollection<int> keys = new List<int>();
+
+            for (int i = 0; i < 10; i++)
+                keys.Add(i);
+
+            IDictionary<int, string> loaded = cache.GetAll(keys);
+
+            Assert.AreEqual(10, loaded.Count);
+
+            for (int i = 0; i < 10; i++)
+                Assert.AreEqual("val_" + i, loaded[i]);
+
+            Assert.AreEqual(10, cache.Size());
+        }
+
+        [Test]
+        public void TestRemove()
+        {
+            var cache = Cache();
+
+            for (int i = 0; i < 10; i++)
+                cache.Put(i, "val_" + i);
+
+            IDictionary map = StoreMap();
+
+            Assert.AreEqual(10, map.Count);
+
+            for (int i = 0; i < 5; i++)
+                cache.Remove(i);
+
+            Assert.AreEqual(5, map.Count);
+
+            for (int i = 5; i < 10; i++)
+                Assert.AreEqual("val_" + i, map[i]);
+        }
+
+        [Test]
+        public void TestRemoveAll()
+        {
+            var cache = Cache();
+
+            for (int i = 0; i < 10; i++)
+                cache.Put(i, "val_" + i);
+
+            IDictionary map = StoreMap();
+
+            Assert.AreEqual(10, map.Count);
+
+            cache.RemoveAll(new List<int>() { 0, 1, 2, 3, 4 });
+
+            Assert.AreEqual(5, map.Count);
+
+            for (int i = 5; i < 10; i++)
+                Assert.AreEqual("val_" + i, map[i]);
+        }
+
+        [Test]
+        public void TestTx()
+        {
+            var cache = Cache();
+
+            using (var tx = cache.Grid.Transactions.TxStart())
+            {
+                GridCacheTestStore.expCommit = true;
+
+                tx.AddMeta("meta", 100);
+
+                cache.Put(1, "val");
+
+                tx.Commit();
+            }
+
+            IDictionary map = StoreMap();
+
+            Assert.AreEqual(1, map.Count);
+
+            Assert.AreEqual("val", map[1]);
+        }
+
+        [Test]
+        public void TestLoadCacheMultithreaded()
+        {
+            GridCacheTestStore.loadMultithreaded = true;
+
+            var cache = Cache();
+
+            Assert.AreEqual(0, cache.Size());
+
+            cache.LocalLoadCache(null, 0, null);
+
+            Assert.AreEqual(1000, cache.Size());
+
+            for (int i = 0; i < 1000; i++)
+                Assert.AreEqual("val_" + i, cache.Get(i));
+        }
+
+        [Test]
+        public void TestCustomStoreProperties()
+        {
+            var cache = CustomStoreCache();
+            Assert.IsNotNull(cache);
+
+            Assert.AreEqual(42, GridCacheTestStore.intProperty);
+            Assert.AreEqual("String value", GridCacheTestStore.stringProperty);
+        }
+
+        [Test]
+        public void TestDynamicStoreStart()
+        {
+            var cache = TemplateStoreCache();
+
+            Assert.IsNotNull(cache);
+
+            cache.Put(1, cache.Name);
+
+            Assert.AreEqual(cache.Name, GridCacheTestStore.MAP[1]);
+        }
+
+        /// <summary>
+        /// Get's grid name for this test.
+        /// </summary>
+        /// <returns>Grid name.</returns>
+        protected virtual String GridName()
+        {
+            return null;
+        }
+
+        private IDictionary StoreMap()
+        {
+            return GridCacheTestStore.MAP;
+        }
+
+        private ICache<int, string> Cache()
+        {
+            return PortableStoreCache<int, string>();
+        }
+
+        private ICache<K, V> PortableStoreCache<K, V>()
+        {
+            return GridFactory.Grid(GridName()).Cache<K, V>(PORTABLE_STORE_CACHE_NAME);
+        }
+
+        private ICache<K, V> ObjectStoreCache<K, V>()
+        {
+            return GridFactory.Grid(GridName()).Cache<K, V>(OBJECT_STORE_CACHE_NAME);
+        }
+
+        private ICache<int, string> CustomStoreCache()
+        {
+            return GridFactory.Grid(GridName()).Cache<int, string>(CUSTOM_STORE_CACHE_NAME);
+        }
+
+        private ICache<int, string> TemplateStoreCache()
+        {
+            var cacheName = TEMPLATE_STORE_CACHE_NAME.Replace("*", Guid.NewGuid().ToString());
+            
+            return GridFactory.Grid(GridName()).GetOrCreateCache<int, string>(cacheName);
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public class GridNamedNodeCacheStoreTest : GridCacheStoreTest
+    {
+        /** <inheritDoc /> */
+        protected override string GridName()
+        {
+            return "name";
+        }
+    }
+}

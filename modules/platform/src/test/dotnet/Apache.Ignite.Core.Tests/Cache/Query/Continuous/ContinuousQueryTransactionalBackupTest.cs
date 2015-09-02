@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,9 +15,20 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core
+namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
-    public class Ignition
+    /// <summary>
+    /// Continuous query tests for TRANSACTIONAL cache with backups.
+    /// </summary>
+    public class ContinuousQueryTransactionalBackupTest : ContinuousQueryAbstractTest
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public ContinuousQueryTransactionalBackupTest()
+            : base(CACHE_TX_BACKUP)
+        {
+            // No-op.
+        }
     }
 }

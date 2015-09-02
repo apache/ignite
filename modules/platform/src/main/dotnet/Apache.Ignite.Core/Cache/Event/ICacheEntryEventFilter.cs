@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests
+namespace Apache.Ignite.Core.Cache.Event
 {
-    using NUnit.Framework;
-
-    public class IgnitionTest
+    /// <summary>
+    /// Cache entry event filter.
+    /// </summary>
+    public interface ICacheEntryEventFilter<K, V>
     {
-        [Test]
-        public void Test()
-        {
-            Assert.IsNotNull(new Ignition());
-        }
+        /// <summary>
+        /// Evaluates cache entry event.
+        /// </summary>
+        /// <param name="evt">Event.</param>
+        bool Evaluate(ICacheEntryEvent<K, V> evt);
     }
 }

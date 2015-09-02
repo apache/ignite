@@ -1,0 +1,214 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+namespace Apache.Ignite.Core.Impl.Compute
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Compute;
+    using U = Apache.Ignite.Core.Impl.GridUtils;
+
+    /// <summary>
+    /// Synchronous Compute facade.
+    /// </summary>
+    internal class Compute : ICompute
+    {
+        /** */
+        private readonly ComputeImpl compute;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Compute"/> class.
+        /// </summary>
+        /// <param name="computeImpl">The compute implementation.</param>
+        public Compute(ComputeImpl computeImpl)
+        {
+            Debug.Assert(computeImpl != null);
+
+            compute = computeImpl;
+        }
+
+        /** <inheritDoc /> */
+        public ICompute WithAsync()
+        {
+            return new ComputeAsync(compute);
+        }
+
+        /** <inheritDoc /> */
+        public bool IsAsync
+        {
+            get { return false; }
+        }
+
+        /** <inheritDoc /> */
+        public IFuture GetFuture()
+        {
+            throw U.GetAsyncModeDisabledException();
+        }
+
+        /** <inheritDoc /> */
+        public IFuture<TResult> GetFuture<TResult>()
+        {
+            throw U.GetAsyncModeDisabledException();
+        }
+
+        /** <inheritDoc /> */
+        public IClusterGroup ClusterGroup
+        {
+            get { return compute.ClusterGroup; }
+        }
+
+        /** <inheritDoc /> */
+        public ICompute WithNoFailover()
+        {
+            compute.WithNoFailover();
+
+            return this;
+        }
+
+        /** <inheritDoc /> */
+        public ICompute WithTimeout(long timeout)
+        {
+            compute.WithTimeout(timeout);
+
+            return this;
+        }
+
+        /** <inheritDoc /> */
+        public ICompute WithKeepPortable()
+        {
+            compute.WithKeepPortable();
+
+            return this;
+        }
+
+        /** <inheritDoc /> */
+        public T ExecuteJavaTask<T>(string taskName, object taskArg)
+        {
+            return compute.ExecuteJavaTask<T>(taskName, taskArg);
+        }
+
+        /** <inheritDoc /> */
+        public R Execute<A, T, R>(IComputeTask<A, T, R> task, A taskArg)
+        {
+            return compute.Execute(task, taskArg).Get();
+        }
+
+        /** <inheritDoc /> */
+        public R Execute<T, R>(IComputeTask<T, R> task)
+        {
+            return compute.Execute(task, null).Get();
+        }
+
+        /** <inheritDoc /> */
+        public R Execute<A, T, R>(Type taskType, A taskArg)
+        {
+            return compute.Execute<A, T, R>(taskType, taskArg).Get();
+        }
+
+        public R Execute<T, R>(Type taskType)
+        {
+            return compute.Execute<object, T, R>(taskType, null).Get();
+        }
+
+        /** <inheritDoc /> */
+        public R Call<R>(IComputeFunc<R> clo)
+        {
+            return compute.Execute(clo).Get();
+        }
+
+        /** <inheritDoc /> */
+        public R AffinityCall<R>(string cacheName, object affinityKey, IComputeFunc<R> clo)
+        {
+            return compute.AffinityCall(cacheName, affinityKey, clo).Get();
+        }
+
+        /** <inheritDoc /> */
+        public R Call<R>(Func<R> func)
+        {
+            return compute.Execute(func).Get();
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<R> Call<R>(IEnumerable<IComputeFunc<R>> clos)
+        {
+            return compute.Execute(clos).Get();
+        }
+
+        /** <inheritDoc /> */
+        public R2 Call<R1, R2>(IEnumerable<IComputeFunc<R1>> clos, IComputeReducer<R1, R2> rdc)
+        {
+            return compute.Execute(clos, rdc).Get();
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<R> Broadcast<R>(IComputeFunc<R> clo)
+        {
+            return compute.Broadcast(clo).Get();
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<R> Broadcast<T, R>(IComputeFunc<T, R> clo, T arg)
+        {
+            return compute.Broadcast(clo, arg).Get();
+        }
+
+        /** <inheritDoc /> */
+        public void Broadcast(IComputeAction action)
+        {
+            compute.Broadcast(action).Get();
+        }
+
+        /** <inheritDoc /> */
+        public void Run(IComputeAction action)
+        {
+            compute.Run(action).Get();
+        }
+
+        /** <inheritDoc /> */
+        public void AffinityRun(string cacheName, object affinityKey, IComputeAction action)
+        {
+            compute.AffinityRun(cacheName, affinityKey, action).Get();
+        }
+
+        /** <inheritDoc /> */
+        public void Run(IEnumerable<IComputeAction> actions)
+        {
+            compute.Run(actions).Get();
+        }
+
+        /** <inheritDoc /> */
+        public R Apply<T, R>(IComputeFunc<T, R> clo, T arg)
+        {
+            return compute.Apply(clo, arg).Get();
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<R> Apply<T, R>(IComputeFunc<T, R> clo, IEnumerable<T> args)
+        {
+            return compute.Apply(clo, args).Get();
+        }
+
+        /** <inheritDoc /> */
+        public R2 Apply<T, R1, R2>(IComputeFunc<T, R1> clo, IEnumerable<T> args, IComputeReducer<R1, R2> rdc)
+        {
+            return compute.Apply(clo, args, rdc).Get();
+        }
+    }
+}

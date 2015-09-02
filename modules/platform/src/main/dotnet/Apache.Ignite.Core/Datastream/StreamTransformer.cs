@@ -1,0 +1,73 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+namespace Apache.Ignite.Core.Datastream
+{
+    using System.Collections.Generic;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.Datastream;
+    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Portable;
+    using AC = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
+
+    /// <summary>
+    /// Convenience adapter to transform update existing values in streaming cache 
+    /// based on the previously cached value.
+    /// </summary>
+    /// <typeparam name="K">The type of the cache key.</typeparam>
+    /// <typeparam name="V">The type of the cache value.</typeparam>
+    /// <typeparam name="A">The type of the processor argument.</typeparam>
+    /// <typeparam name="R">The type of the processor result.</typeparam>
+    public sealed class StreamTransformer<K, V, A, R> : IStreamReceiver<K, V>, 
+        IPortableWriteAware
+    {
+        /** Entry processor. */
+        private readonly ICacheEntryProcessor<K, V, A, R> proc;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StreamTransformer{K, V, A, R}"/> class.
+        /// </summary>
+        /// <param name="proc">Entry processor.</param>
+        public StreamTransformer(ICacheEntryProcessor<K, V, A, R> proc)
+        {
+            AC.NotNull(proc, "proc");
+
+            this.proc = proc;
+        }
+
+        /** <inheritdoc /> */
+        public void Receive(ICache<K, V> cache, ICollection<ICacheEntry<K, V>> entries)
+        {
+            var keys = new List<K>(entries.Count);
+
+            foreach (var entry in entries)
+                keys.Add(entry.Key);
+
+            cache.InvokeAll(keys, proc, default(A));
+        }
+
+        /** <inheritdoc /> */
+        void IPortableWriteAware.WritePortable(IPortableWriter writer)
+        {
+            var w = (PortableWriterImpl)writer;
+
+            w.WriteByte(StreamReceiverHolder.RCV_TRANSFORMER);
+
+            PortableUtils.WritePortableOrSerializable(w, proc);
+        }
+    }
+}
