@@ -55,7 +55,7 @@ public class MessagingPingPongExample {
             System.out.println(">>> Messaging ping-pong example started.");
 
             // Pick random remote node as a partner.
-            ClusterGroup nodeB = ignite.cluster().forRemotes().forRandom();
+            final ClusterGroup nodeB = ignite.cluster().forRemotes().forRandom();
 
             // Note that both nodeA and nodeB will always point to
             // same nodes regardless of whether they were implicitly
@@ -87,14 +87,14 @@ public class MessagingPingPongExample {
                     System.out.println("Received message [msg=" + rcvMsg + ", sender=" + nodeId + ']');
 
                     if (cnt.getCount() == 1) {
-                        ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "STOP");
+                        ignite.message(nodeB).send(null, "STOP");
 
                         cnt.countDown();
 
                         return false; // Stop listening.
                     }
                     else if ("PONG".equals(rcvMsg))
-                        ignite.message(ignite.cluster().forNodeId(nodeId)).send(null, "PING");
+                        ignite.message(nodeB).send(null, "PING");
                     else
                         throw new IgniteException("Received unexpected message: " + rcvMsg);
 
