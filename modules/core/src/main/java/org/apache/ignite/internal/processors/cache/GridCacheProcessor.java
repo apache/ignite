@@ -1871,7 +1871,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (!sysCache) {
                         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
 
-                        if (desc != null && !desc.cancelled() && desc.deploymentId().equals(req.deploymentId())) {
+                        if (desc != null && desc.deploymentId().equals(req.deploymentId())) {
                             Map<UUID, Boolean> nodes = batch.clientNodes().get(name);
 
                             assert nodes != null : req;
