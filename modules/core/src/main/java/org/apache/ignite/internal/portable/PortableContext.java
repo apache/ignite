@@ -549,9 +549,6 @@ public class PortableContext implements Externalizable {
         userTypes.put(typeId, desc);
         descByCls.put(cls, desc);
 
-        if (isMetaDataEnabled(typeId))
-            metaHnd.addMeta(typeId, new PortableMetaDataImpl(typeName, desc.fieldsMeta(), null));
-
         return desc;
     }
 
