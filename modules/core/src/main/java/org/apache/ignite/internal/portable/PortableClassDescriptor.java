@@ -313,7 +313,7 @@ class PortableClassDescriptor {
     /**
      * @return Whether typeId has been successfully registered by MarshallerContext or not.
      */
-    public boolean isRegistered() {
+    public boolean registered() {
         return registered;
     }
 

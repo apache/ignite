@@ -115,6 +115,9 @@ public class PortableContext implements Externalizable {
     private final Set<Class> predefinedClasses = new HashSet<>();
 
     /** */
+    private final Map<String, Integer> predefinedTypeNames = new HashMap<>();
+
+    /** */
     private final Map<Class<? extends Collection>, Byte> colTypes = new HashMap<>();
 
     /** */
@@ -432,7 +435,7 @@ public class PortableContext implements Externalizable {
 
         PortableClassDescriptor desc = descByCls.get(cls);
 
-        if (desc == null || !desc.isRegistered())
+        if (desc == null || !desc.registered())
             desc = registerClassDescriptor(cls);
 
         return desc;
@@ -447,7 +450,16 @@ public class PortableContext implements Externalizable {
     public PortableClassDescriptor descriptorForTypeId(boolean userType, int typeId, ClassLoader ldr) {
         assert typeId != GridPortableMarshaller.UNREGISTERED_TYPE_ID;
 
-        PortableClassDescriptor desc = userType ? userTypes.get(typeId) : predefinedTypes.get(typeId);
+        //TODO: IGNITE-1358 (uncomment when fixed)
+        //PortableClassDescriptor desc = userType ? userTypes.get(typeId) : predefinedTypes.get(typeId);
+
+        // As a workaround for IGNITE-1358 we always check the predefined map before.
+        PortableClassDescriptor desc = predefinedTypes.get(typeId);
+
+        if (desc != null)
+            return desc;
+
+        desc = userTypes.get(typeId);
 
         if (desc != null)
             return desc;
@@ -529,7 +541,8 @@ public class PortableContext implements Externalizable {
         try {
             registered = marshCtx.registerClass(typeId, cls);
 
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new PortableException("Failed to register class.", e);
         }
 
@@ -584,18 +597,17 @@ public class PortableContext implements Externalizable {
      * @return Type ID.
      */
     public int typeId(String typeName) {
-        int id;
+        String shortTypeName = typeName(typeName);
+
+        Integer id = predefinedTypeNames.get(shortTypeName);
+
+        if (id != null)
+            return id;
 
         if (marshCtx.isSystemType(typeName))
-            id = typeName.hashCode();
+            return typeName.hashCode();
 
-        else {
-            typeName = typeName(typeName);
-
-            id = idMapper(typeName).typeId(typeName);
-        }
-
-        return id;
+        return idMapper(shortTypeName).typeId(shortTypeName);
     }
 
     /**
@@ -606,21 +618,21 @@ public class PortableContext implements Externalizable {
     public Type typeId(Class cls) throws PortableException {
         String clsName = cls.getName();
 
+        if (predefinedClasses.contains(cls))
+            return new Type(descByCls.get(cls).typeId(), true);
+
         if (marshCtx.isSystemType(clsName))
             return new Type(clsName.hashCode(), true);
 
-        if (predefinedClasses.contains(cls))
-            return new Type(DFLT_ID_MAPPER.typeId(typeName(clsName)), true);
-
         PortableClassDescriptor desc = descByCls.get(cls);
 
-        boolean registered = desc != null && desc.isRegistered();
+        boolean registered = desc != null && desc.registered();
 
         if (!registered)
             // forces to register the class and fill up all required data structures
             desc = registerUserClassDescriptor(cls);
 
-        return new Type(desc.typeId(), desc.isRegistered());
+        return new Type(desc.typeId(), desc.registered());
     }
 
     /**
@@ -692,12 +704,14 @@ public class PortableContext implements Externalizable {
      * @return GridPortableClassDescriptor.
      */
     public PortableClassDescriptor registerPredefinedType(Class<?> cls, int id) {
+        String typeName = typeName(cls.getName());
+
         PortableClassDescriptor desc = new PortableClassDescriptor(
             this,
             cls,
             false,
             id,
-            typeName(cls.getName()),
+            typeName,
             DFLT_ID_MAPPER,
             null,
             false,
@@ -706,8 +720,9 @@ public class PortableContext implements Externalizable {
         );
 
         predefinedClasses.add(cls);
-
+        predefinedTypeNames.put(typeName, id);
         predefinedTypes.put(id, desc);
+
         descByCls.put(cls, desc);
 
         return desc;
@@ -744,6 +759,10 @@ public class PortableContext implements Externalizable {
         }
 
         int id = idMapper.typeId(clsName);
+
+        //Workaround for IGNITE-1358
+        if (predefinedTypes.get(id) != null)
+            throw new PortableException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
 
         if (mappers.put(id, idMapper) != null)
             throw new PortableException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
@@ -977,6 +996,7 @@ public class PortableContext implements Externalizable {
             return lowerCaseHashCode(fieldName);
         }
     }
+
     /**
      * Type descriptors.
      */
@@ -1113,21 +1133,27 @@ public class PortableContext implements Externalizable {
      * Type id wrapper.
      */
     static class Type {
-        /** Type id*/
-        private int id;
+        /** Type id */
+        private final int id;
 
         /** Whether the following type is registered in a cache or not */
-        private boolean registered;
+        private final boolean registered;
 
         public Type(int id, boolean registered) {
             this.id = id;
             this.registered = registered;
         }
 
+        /**
+         * @return Type ID.
+         */
         public int id() {
             return id;
         }
 
+        /**
+         * @return Registered flag value.
+         */
         public boolean registered() {
             return registered;
         }

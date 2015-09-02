@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.portable;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -33,6 +34,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -68,6 +70,7 @@ import sun.misc.Unsafe;
 
 import static org.apache.ignite.internal.portable.PortableThreadLocalMemoryAllocator.THREAD_LOCAL_ALLOC;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Portable marshaller tests.
@@ -1183,7 +1186,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         customType1.setIdMapper(new PortableIdMapper() {
             @Override public int typeId(String clsName) {
-                return 100;
+                return 300;
             }
 
             @Override public int fieldId(int typeId, String fieldName) {
@@ -1195,7 +1198,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         customType2.setIdMapper(new PortableIdMapper() {
             @Override public int typeId(String clsName) {
-                return 200;
+                return 400;
             }
 
             @Override public int fieldId(int typeId, String fieldName) {
@@ -1207,7 +1210,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         customType3.setIdMapper(new PortableIdMapper() {
             @Override public int typeId(String clsName) {
-                return 300;
+                return 500;
             }
 
             @Override public int fieldId(int typeId, String fieldName) {
@@ -1243,9 +1246,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals("key".hashCode(), ctx.typeId("Key"));
         assertEquals("nonexistentclass3".hashCode(), ctx.typeId("NonExistentClass3"));
         assertEquals("nonexistentclass4".hashCode(), ctx.typeId("NonExistentClass4"));
-        assertEquals(100, ctx.typeId(getClass().getSimpleName() + "$Value"));
-        assertEquals(200, ctx.typeId("NonExistentClass1"));
-        assertEquals(300, ctx.typeId("NonExistentClass2"));
+        assertEquals(300, ctx.typeId(getClass().getSimpleName() + "$Value"));
+        assertEquals(400, ctx.typeId("NonExistentClass1"));
+        assertEquals(500, ctx.typeId("NonExistentClass2"));
         assertEquals("nonexistentclass5".hashCode(), ctx.typeId("NonExistentClass5"));
     }
 
@@ -1259,16 +1262,16 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         customType1.setIdMapper(new PortableIdMapper() {
             @Override public int typeId(String clsName) {
-                return 100;
+                return 300;
             }
 
             @Override public int fieldId(int typeId, String fieldName) {
                 switch (fieldName) {
                     case "val1":
-                        return 101;
+                        return 301;
 
                     case "val2":
-                        return 102;
+                        return 302;
 
                     default:
                         return 0;
@@ -1280,16 +1283,16 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         customType2.setIdMapper(new PortableIdMapper() {
             @Override public int typeId(String clsName) {
-                return 200;
+                return 400;
             }
 
             @Override public int fieldId(int typeId, String fieldName) {
                 switch (fieldName) {
                     case "val1":
-                        return 201;
+                        return 401;
 
                     case "val2":
-                        return 202;
+                        return 402;
 
                     default:
                         return 0;
@@ -1307,12 +1310,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals("val".hashCode(), ctx.fieldId("key".hashCode(), "val"));
         assertEquals("val".hashCode(), ctx.fieldId("nonexistentclass2".hashCode(), "val"));
         assertEquals("val".hashCode(), ctx.fieldId("notconfiguredclass".hashCode(), "val"));
-        assertEquals(101, ctx.fieldId(100, "val1"));
-        assertEquals(102, ctx.fieldId(100, "val2"));
-        assertEquals("val3".hashCode(), ctx.fieldId(100, "val3"));
-        assertEquals(201, ctx.fieldId(200, "val1"));
-        assertEquals(202, ctx.fieldId(200, "val2"));
-        assertEquals("val3".hashCode(), ctx.fieldId(200, "val3"));
+        assertEquals(301, ctx.fieldId(300, "val1"));
+        assertEquals(302, ctx.fieldId(300, "val2"));
+        assertEquals("val3".hashCode(), ctx.fieldId(300, "val3"));
+        assertEquals(401, ctx.fieldId(400, "val1"));
+        assertEquals(402, ctx.fieldId(400, "val2"));
+        assertEquals("val3".hashCode(), ctx.fieldId(400, "val3"));
     }
 
     /**
@@ -1547,11 +1550,11 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         PortableObject copy = copy(po, F.<String, Object>asMap("bArr", new byte[]{1, 2, 3}));
 
-        assertArrayEquals(new byte[]{1, 2, 3}, copy.<byte[]>field("bArr"));
+        assertArrayEquals(new byte[] {1, 2, 3}, copy.<byte[]>field("bArr"));
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertArrayEquals(new byte[]{1, 2, 3}, obj0.bArr);
+        assertArrayEquals(new byte[] {1, 2, 3}, obj0.bArr);
     }
 
     /**
@@ -1796,7 +1799,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals("str555", obj0.str);
         assertEquals(newObj, obj0.inner);
-        assertArrayEquals(new byte[]{6, 7, 9}, obj0.bArr);
+        assertArrayEquals(new byte[] {6, 7, 9}, obj0.bArr);
     }
 
     /**
@@ -1832,7 +1835,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals("str555", copy.<String>field("str"));
         assertEquals(newObj, copy.<PortableObject>field("inner").deserialize());
         assertEquals((short)2323, copy.<Short>field("s").shortValue());
-        assertArrayEquals(new byte[]{6, 7, 9}, copy.<byte[]>field("bArr"));
+        assertArrayEquals(new byte[] {6, 7, 9}, copy.<byte[]>field("bArr"));
         assertEquals((byte)111, copy.<Byte>field("b").byteValue());
 
         SimpleObject obj0 = copy.deserialize();
@@ -1841,7 +1844,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals("str555", obj0.str);
         assertEquals(newObj, obj0.inner);
         assertEquals((short)2323, obj0.s);
-        assertArrayEquals(new byte[]{6, 7, 9}, obj0.bArr);
+        assertArrayEquals(new byte[] {6, 7, 9}, obj0.bArr);
         assertEquals((byte)111, obj0.b);
     }
 
@@ -2236,6 +2239,31 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(testAddr.str1, testAddr2.str1);
         assertEquals(testAddr.obj.c, testAddr2.obj.c);
         assertEquals(testAddr.obj.date, testAddr2.obj.date);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPredefinedTypeIds() throws Exception {
+        PortableMarshaller marsh = new PortableMarshaller();
+
+        PortableContext pCtx = initPortableContext(marsh);
+
+        Field field = pCtx.getClass().getDeclaredField("predefinedClasses");
+
+        field.setAccessible(true);
+
+        Set<Class> value = (Set<Class>)field.get(pCtx);
+
+        assertTrue(value.size() > 0);
+
+        for (Class pCls : value) {
+            PortableClassDescriptor desc = pCtx.descriptorForClass(pCls);
+
+            assertEquals(desc.typeId(), pCtx.typeId(pCls).id());
+            assertEquals(desc.typeId(), pCtx.typeId(pCls.getName()));
+            assertEquals(desc.typeId(), pCtx.typeId(pCtx.typeName(pCls.getName())));
+        }
     }
 
     /**
