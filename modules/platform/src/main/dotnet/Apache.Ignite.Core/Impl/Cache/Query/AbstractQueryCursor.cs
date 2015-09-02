@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         protected AbstractQueryCursor(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable) : 
             base(target, marsh)
         {
-            this._keepPortable = keepPortable;
+            _keepPortable = keepPortable;
         }
 
         #region Public methods

@@ -89,11 +89,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         public CacheImpl(Ignite grid, IUnmanagedTarget target, PortableMarshaller marsh,
             bool flagSkipStore, bool flagKeepPortable, bool flagAsync, bool flagNoRetries) : base(target, marsh)
         {
-            this._grid = grid;
-            this._flagSkipStore = flagSkipStore;
-            this._flagKeepPortable = flagKeepPortable;
-            this._flagAsync = flagAsync;
-            this._flagNoRetries = flagNoRetries;
+            _grid = grid;
+            _flagSkipStore = flagSkipStore;
+            _flagKeepPortable = flagKeepPortable;
+            _flagAsync = flagAsync;
+            _flagNoRetries = flagNoRetries;
         }
 
         /** <inheritDoc /> */

@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="target">Target bean.</param>
         public LifecycleBeanHolder(ILifecycleBean target)
         {
-            this._target = target;
+            _target = target;
         }
 
         /** <inheritDoc /> */

@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <param name="action">Action.</param>
         public ComputeActionJob(IComputeAction action)
         {
-            this._action = action;
+            _action = action;
         }
 
         /** <inheritDoc /> */

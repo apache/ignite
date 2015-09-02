@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Services
         public ServiceInvocationException(string message, IPortableObject portableCause)
             :base(message)
         {
-            this._portableCause = portableCause;
+            _portableCause = portableCause;
         }
 
         /// <summary>

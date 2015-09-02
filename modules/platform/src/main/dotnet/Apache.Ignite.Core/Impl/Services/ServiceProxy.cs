@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             Debug.Assert(invokeAction != null);
 
-            this._invokeAction = invokeAction;
+            _invokeAction = invokeAction;
         }
 
         /** <inheritdoc /> */

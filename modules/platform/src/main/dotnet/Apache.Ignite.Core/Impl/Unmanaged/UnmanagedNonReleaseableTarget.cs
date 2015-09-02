@@ -37,8 +37,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <param name="target">Target.</param>
         public UnmanagedNonReleaseableTarget(void* ctx, void* target)
         {
-            this._ctx = ctx;
-            this._target = target;
+            _ctx = ctx;
+            _target = target;
         }
 
         /** <inheritdoc /> */

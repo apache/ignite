@@ -250,8 +250,8 @@ namespace Apache.Ignite.Core.Impl.Resource
             /// <param name="resType">Resource type.</param>
             public Collector(Type attrType, Type resType)
             {
-                this._attrType = attrType;
-                this._resType = resType;
+                _attrType = attrType;
+                _resType = resType;
             }
 
             /// <summary>

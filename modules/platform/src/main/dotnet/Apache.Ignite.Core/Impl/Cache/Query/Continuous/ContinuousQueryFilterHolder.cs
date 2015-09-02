@@ -48,10 +48,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="keepPortable">Keep portable flag.</param>
         public ContinuousQueryFilterHolder(Type keyTyp, Type valTyp, object filter, bool keepPortable)
         {
-            this._keyTyp = keyTyp;
-            this._valTyp = valTyp;
-            this._filter = filter;
-            this._keepPortable = keepPortable;
+            _keyTyp = keyTyp;
+            _valTyp = valTyp;
+            _filter = filter;
+            _keepPortable = keepPortable;
         }
 
         /// <summary>

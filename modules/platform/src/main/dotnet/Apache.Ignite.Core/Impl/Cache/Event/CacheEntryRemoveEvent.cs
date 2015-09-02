@@ -37,8 +37,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
         /// <param name="oldVal">Old value.</param>
         public CacheEntryRemoveEvent(TK key, TV oldVal)
         {
-            this._key = key;
-            this._oldVal = oldVal;
+            _key = key;
+            _oldVal = oldVal;
         }
 
         /** <inheritdoc /> */

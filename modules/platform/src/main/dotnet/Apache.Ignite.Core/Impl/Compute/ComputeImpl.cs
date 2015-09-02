@@ -73,9 +73,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         public ComputeImpl(IUnmanagedTarget target, PortableMarshaller marsh, ClusterGroupImpl prj, bool keepPortable)
             : base(target, marsh)
         {
-            this._prj = prj;
+            _prj = prj;
 
-            this._keepPortable.Value = keepPortable;
+            _keepPortable.Value = keepPortable;
         }
 
         /// <summary>

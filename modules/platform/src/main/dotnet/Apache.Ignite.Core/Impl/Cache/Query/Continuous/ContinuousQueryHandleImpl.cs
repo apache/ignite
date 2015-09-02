@@ -81,8 +81,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="keepPortable">Keep portable flag.</param>
         public ContinuousQueryHandleImpl(ContinuousQuery<TK, TV> qry, PortableMarshaller marsh, bool keepPortable)
         {
-            this._marsh = marsh;
-            this._keepPortable = keepPortable;
+            _marsh = marsh;
+            _keepPortable = keepPortable;
 
             _lsnr = qry.Listener;
             _filter = qry.Filter;

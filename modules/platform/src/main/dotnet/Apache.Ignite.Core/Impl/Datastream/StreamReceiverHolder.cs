@@ -82,8 +82,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
             Debug.Assert(rcv != null);
             Debug.Assert(invoke != null);
 
-            this._rcv = rcv;
-            this._invoke = invoke;
+            _rcv = rcv;
+            _invoke = invoke;
         }
 
         /** <inheritdoc /> */

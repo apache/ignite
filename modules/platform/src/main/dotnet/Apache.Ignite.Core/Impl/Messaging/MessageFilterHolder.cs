@@ -52,15 +52,15 @@ namespace Apache.Ignite.Core.Impl.Messaging
             Debug.Assert(filter != null);
             Debug.Assert(invoker != null);
 
-            this._invoker = invoker;
+            _invoker = invoker;
 
-            this._filter = filter;
+            _filter = filter;
 
             // 1. Set fields.
             Debug.Assert(grid != null);
 
-            this._grid = grid;
-            this._invoker = invoker;
+            _grid = grid;
+            _invoker = invoker;
 
             // 2. Perform injections.
             ResourceProcessor.Inject(filter, grid);

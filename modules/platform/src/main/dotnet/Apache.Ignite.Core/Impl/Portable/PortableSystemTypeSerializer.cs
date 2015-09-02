@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             Debug.Assert(ctor != null);
 
-            this._ctor = ctor;
+            _ctor = ctor;
         }
 
         /** <inheritdoc /> */

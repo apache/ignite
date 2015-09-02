@@ -41,9 +41,9 @@ namespace Apache.Ignite.Core.Cache.Expiry
         /// <param name="access">Expiry for access.</param>
         public ExpiryPolicy(TimeSpan? create, TimeSpan? update, TimeSpan? access)
         {
-            this._create = create;
-            this._update = update;
-            this._access = access;
+            _create = create;
+            _update = update;
+            _access = access;
         }
 
         /// <summary>

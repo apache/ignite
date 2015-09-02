@@ -55,9 +55,9 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         public PortableMetadataHolder(int typeId, string typeName, string affKeyFieldName)
         {
-            this._typeId = typeId;
-            this._typeName = typeName;
-            this._affKeyFieldName = affKeyFieldName;
+            _typeId = typeId;
+            _typeName = typeName;
+            _affKeyFieldName = affKeyFieldName;
 
             _emptyMeta = new PortableMetadataImpl(typeId, typeName, null, affKeyFieldName);
         }

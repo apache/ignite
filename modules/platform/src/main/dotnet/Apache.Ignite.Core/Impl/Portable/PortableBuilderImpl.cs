@@ -130,10 +130,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         public PortableBuilderImpl(PortablesImpl portables, PortableBuilderImpl parent, 
             PortableUserObject obj, IPortableTypeDescriptor desc)
         {
-            this._portables = portables;
-            this._parent = parent ?? this;
-            this._obj = obj;
-            this._desc = desc;
+            _portables = portables;
+            _parent = parent ?? this;
+            _obj = obj;
+            _desc = desc;
 
             _hashCode = obj.GetHashCode();
         }
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableBuilder HashCode(int hashCode)
         {
-            this._hashCode = hashCode;
+            _hashCode = hashCode;
 
             return this;
         }
@@ -840,7 +840,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <param name="writer">Writer</param>
             public Context(PortableWriterImpl writer)
             {
-                this._writer = writer;
+                _writer = writer;
             }
 
             /// <summary>
@@ -849,7 +849,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <param name="parent">Parent context.</param>
             public Context(Context parent)
             {
-                this._parent = parent;
+                _parent = parent;
                 
                 _writer = parent._writer;
 

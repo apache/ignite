@@ -56,9 +56,9 @@ namespace Apache.Ignite.Core.Impl.Compute
             Debug.Assert(func != null);
             Debug.Assert(invoker != null);
 
-            this._func = func;
+            _func = func;
 
-            this._invoker = target => invoker();
+            _invoker = target => invoker();
         }
 
         /** <inheritDoc /> */

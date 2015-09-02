@@ -1240,7 +1240,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 Debug.Assert(readDelegate != null);
 
-                this._readDelegate = readDelegate;
+                _readDelegate = readDelegate;
             }
 
             /** <inheritdoc /> */
@@ -1266,7 +1266,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 Debug.Assert(readDelegate != null);
 
-                this._readDelegate = readDelegate;
+                _readDelegate = readDelegate;
             }
 
             /** <inheritdoc /> */
@@ -1308,8 +1308,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 Debug.Assert(readDelegate1 != null);
                 Debug.Assert(readDelegate2 != null);
 
-                this._readDelegate1 = readDelegate1;
-                this._readDelegate2 = readDelegate2;
+                _readDelegate1 = readDelegate1;
+                _readDelegate2 = readDelegate2;
             }
 
             /** <inheritdoc /> */

@@ -19,7 +19,7 @@
         /// <param name="tx">The tx to wrap.</param>
         public Transaction(TransactionImpl tx)
         {
-            this.Tx = tx;
+            Tx = tx;
         }
 
         /** <inheritDoc /> */

@@ -367,7 +367,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="err">Error.</param>
             public Reducer(bool err)
             {
-                this._err = err;
+                _err = err;
             }
 
             /** <inheritDoc /> */

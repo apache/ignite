@@ -38,8 +38,8 @@ namespace Apache.Ignite.Core.Common
         /// <param name="localId">The local id.</param>
         public GridGuid(Guid globalId, long localId)
         {
-            this._globalId = globalId;
-            this._localId = localId;
+            _globalId = globalId;
+            _localId = localId;
         }
 
         /// <summary>

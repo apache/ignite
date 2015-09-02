@@ -494,7 +494,7 @@ namespace Apache.Ignite.Core.Tests.Portable
          */
         [Test]
         public void TestWriteDate() {
-            DateTime time = System.DateTime.Now.ToUniversalTime();
+            DateTime time = DateTime.Now.ToUniversalTime();
 
             Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(time)), time);
         }

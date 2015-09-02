@@ -66,11 +66,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         public ComputeJobWrapper(object job, Func<object, object> execute, Action<object> cancel)
         {
-            this._job = job;
+            _job = job;
 
-            this._execute = execute;
+            _execute = execute;
 
-            this._cancel = cancel;
+            _cancel = cancel;
         }
 
         /** <inheritDoc /> */

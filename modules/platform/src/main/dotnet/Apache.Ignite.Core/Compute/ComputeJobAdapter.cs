@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="args">Optional job arguments.</param>
         protected ComputeJobAdapter(params object[] args)
         {
-            this.Args = args;
+            Args = args;
         }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="args">Optional job arguments to set.</param>
         public void SetArguments(params object[] args)
         {
-            this.Args = args;
+            Args = args;
         }
 
         /// <summary>

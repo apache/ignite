@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public UnmanagedTarget(UnmanagedContext ctx, void* target)
             : base(IntPtr.Zero)
         {
-            this._ctx = ctx;
+            _ctx = ctx;
             
             SetHandle(new IntPtr(target));
         }

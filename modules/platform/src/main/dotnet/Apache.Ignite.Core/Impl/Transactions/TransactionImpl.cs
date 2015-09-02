@@ -74,12 +74,12 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <param name="nodeId">The originating node identifier.</param>
         public TransactionImpl(long id, TransactionsImpl txs, TransactionConcurrency concurrency,
             TransactionIsolation isolation, TimeSpan timeout, Guid nodeId) {
-            this._id = id;
-            this._txs = txs;
-            this._concurrency = concurrency;
-            this._isolation = isolation;
-            this._timeout = timeout;
-            this._nodeId = nodeId;
+            _id = id;
+            _txs = txs;
+            _concurrency = concurrency;
+            _isolation = isolation;
+            _timeout = timeout;
+            _nodeId = nodeId;
 
             _startTime = DateTime.Now;
 
@@ -474,7 +474,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             /// <param name="state">State.</param>
             public StateHolder(TransactionState state)
             {
-                this._state = state;
+                _state = state;
             }
 
             /// <summary>

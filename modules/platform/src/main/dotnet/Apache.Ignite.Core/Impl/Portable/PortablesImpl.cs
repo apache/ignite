@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="marsh">Marshaller.</param>
         internal PortablesImpl(PortableMarshaller marsh)
         {
-            this._marsh = marsh;
+            _marsh = marsh;
         }
 
         /** <inheritDoc /> */

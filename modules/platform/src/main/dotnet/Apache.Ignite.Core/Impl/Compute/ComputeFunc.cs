@@ -52,9 +52,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="invoker">The function invoker.</param>
         public ComputeFuncWrapper(object func, Func<object, object> invoker)
         {
-            this._func = func;
+            _func = func;
 
-            this._invoker = (target, arg) => invoker(arg);
+            _invoker = (target, arg) => invoker(arg);
         }
 
         /** <inheritDoc /> */

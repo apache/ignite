@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="err"></param>
             public SerializableOutFunc(bool err)
             {
-                this._err = err;
+                _err = err;
             }
 
             /** <inheritDoc /> */
@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="err"></param>
             public SerializableFunc(bool err)
             {
-                this._err = err;
+                _err = err;
             }
 
             /** <inheritDoc /> */
@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="msg"></param>
             public SerializableException(string msg) : this()
             {
-                this.Msg = msg;
+                Msg = msg;
             }
             /// <summary>
             ///
@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="res"></param>
             public SerializableResult(int res)
             {
-                this.Res = res;
+                Res = res;
             }
         }
     }

@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="stream">Stream.</param>
         public PortableStreamAdapter(IPortableStream stream)
         {
-            this._stream = stream;
+            _stream = stream;
         }
 
         /** <inheritDoc /> */

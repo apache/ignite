@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="err"></param>
             public PortableOutFunc(bool err)
             {
-                this._err = err;
+                _err = err;
             }
             
             /** <inheritDoc /> */
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="err"></param>
             public PortableFunc(bool err)
             {
-                this._err = err;
+                _err = err;
             }
             
             /** <inheritDoc /> */
@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="msg"></param>
             public PortableException(string msg) : this()
             {
-                this.Msg = msg;
+                Msg = msg;
             }
 
             /** <inheritDoc /> */
@@ -213,7 +213,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="res"></param>
             public PortableResult(int res)
             {
-                this.Res = res;
+                Res = res;
             }
         }
     }

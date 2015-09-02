@@ -62,9 +62,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="peekModes">Peek modes.</param>
         private CacheEnumerable(CacheImpl<TK, TV> cache, bool loc, int peekModes)
         {
-            this._cache = cache;
-            this._loc = loc;
-            this._peekModes = peekModes;
+            _cache = cache;
+            _loc = loc;
+            _peekModes = peekModes;
         }
 
         /** <inheritdoc /> */

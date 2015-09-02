@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public Key(int idx)
         {
-            this._idx = idx;
+            _idx = idx;
         }
 
         public int Index()
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public Value(int idx)
         {
-            this._idx = idx;
+            _idx = idx;
         }
 
         public int Index()

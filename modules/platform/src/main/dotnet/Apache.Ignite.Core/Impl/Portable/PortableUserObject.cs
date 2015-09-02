@@ -62,13 +62,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="hashCode">Hash code.</param>
         public PortableUserObject(PortableMarshaller marsh, byte[] data, int offset, int typeId, int hashCode)
         {
-            this._marsh = marsh;
+            _marsh = marsh;
 
-            this._data = data;
-            this._offset = offset;
+            _data = data;
+            _offset = offset;
 
-            this._typeId = typeId;
-            this._hashCode = hashCode;
+            _typeId = typeId;
+            _hashCode = hashCode;
         }
 
         /** <inheritdoc /> */

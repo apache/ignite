@@ -137,9 +137,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
             Ignite grid, Func<IClusterNode, bool> pred)
             : base(target, marsh)
         {
-            this._proc = proc;
-            this._grid = grid;
-            this._pred = pred;
+            _proc = proc;
+            _grid = grid;
+            _pred = pred;
 
             _comp = new Lazy<Compute>(() => 
                 new Compute(new ComputeImpl(UU.ProcessorCompute(proc, target), marsh, this, false)));

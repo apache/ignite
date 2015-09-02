@@ -1099,7 +1099,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             Debug.Assert(grid != null);
 
-            this._grid = grid;
+            _grid = grid;
 
             lock (_initActions)
             {

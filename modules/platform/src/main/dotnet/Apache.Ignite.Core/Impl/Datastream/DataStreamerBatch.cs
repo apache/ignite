@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="prev">Previous batch.</param>
         public DataStreamerBatch(DataStreamerBatch<TK, TV> prev)
         {
-            this._prev = prev;
+            _prev = prev;
 
             if (prev != null)
                 Thread.MemoryBarrier(); // Prevent "prev" field escape.

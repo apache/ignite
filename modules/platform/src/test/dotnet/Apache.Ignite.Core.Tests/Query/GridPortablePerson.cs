@@ -29,8 +29,8 @@ namespace Apache.Ignite.Core.Tests.Query
          */
         public GridPortablePerson(String _name, int _age) 
         {
-            this.Name = _name;
-            this.Age = _age;
+            Name = _name;
+            Age = _age;
         }
 
         /**
@@ -38,9 +38,9 @@ namespace Apache.Ignite.Core.Tests.Query
          */
         public GridPortablePerson(String _name, int _age, String _address)
         {
-            this.Name = _name;
-            this.Address = _address;
-            this.Age = _age;
+            Name = _name;
+            Address = _address;
+            Age = _age;
         }
 
         /**

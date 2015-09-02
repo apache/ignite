@@ -117,8 +117,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             /// <param name="affKey">Affinity key.</param>
             public AffinityTestKey(int id, int affKey)
             {
-                this._id = id;
-                this._affKey = affKey;
+                _id = id;
+                _affKey = affKey;
             }
 
             /** <inheritdoc /> */

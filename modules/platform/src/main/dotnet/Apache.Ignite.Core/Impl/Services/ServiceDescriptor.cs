@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Services
             Debug.Assert(services != null);
             Debug.Assert(!string.IsNullOrEmpty(name));
 
-            this._services = services;
+            _services = services;
             Name = name;
 
             CacheName = reader.ReadString();

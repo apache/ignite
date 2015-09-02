@@ -76,8 +76,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="keepPortable">Keep portable flag.</param>
         public ContinuousQueryFilter(ICacheEntryEventFilter<TK, TV> filter, bool keepPortable)
         {
-            this._filter = filter;
-            this._keepPortable = keepPortable;
+            _filter = filter;
+            _keepPortable = keepPortable;
         }
 
         /** <inheritDoc /> */
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** <inheritDoc /> */
         public void Inject(Ignite grid)
         {
-            this._grid = grid;
+            _grid = grid;
 
             ResourceProcessor.Inject(_filter, grid);
         }

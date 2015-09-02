@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Tests
 
 #pragma warning restore 0618
 
-            System.CodeDom.Compiler.CompilerParameters parameters = new CompilerParameters();
+            CompilerParameters parameters = new CompilerParameters();
             parameters.GenerateExecutable = false;
             parameters.OutputAssembly = outputPath;
 

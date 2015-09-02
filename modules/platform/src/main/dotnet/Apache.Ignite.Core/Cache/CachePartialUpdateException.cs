@@ -93,8 +93,8 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="failedKeysException">Exception occurred during failed keys read/write.</param>
         private CachePartialUpdateException(string msg, IList<object> failedKeys, Exception failedKeysException) : base(msg)
         {
-            this._failedKeys = failedKeys;
-            this._failedKeysException = failedKeysException;
+            _failedKeys = failedKeys;
+            _failedKeysException = failedKeysException;
         }
 
         /// <summary>

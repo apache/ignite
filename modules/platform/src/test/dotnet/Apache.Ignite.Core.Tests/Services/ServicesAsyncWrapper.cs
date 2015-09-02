@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <param name="services">Services to wrap.</param>
         public ServicesAsyncWrapper(IServices services)
         {
-            this._services = services.WithAsync();
+            _services = services.WithAsync();
         }
 
         /** <inheritDoc /> */

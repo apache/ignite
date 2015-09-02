@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="grid">Grid.</param>
         public GridProxy(IIgnite grid)
         {
-            this._grid = grid;
+            _grid = grid;
         }
 
         /** <inheritdoc /> */

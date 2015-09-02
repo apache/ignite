@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         public MutableCacheEntry(TK key, TV value)
         {
             Key = key;
-            this._value = value;
+            _value = value;
             Exists = true;
         }
 
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             get { return _value; }
             set
             {
-                this._value = value;
+                _value = value;
                 Exists = true;
                 State = MutableCacheEntryState.ValueSet;
             }

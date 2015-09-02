@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (cfg.DefaultSerializer == null)
                 cfg.DefaultSerializer = dfltSerializer;
 
-            this._cfg = cfg;
+            _cfg = cfg;
         }
 
         /// <summary>

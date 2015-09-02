@@ -44,8 +44,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Value.</param>
         public PortableBuilderField(Type typ, object val)
         {
-            this._typ = typ;
-            this._val = val;
+            _typ = typ;
+            _val = val;
         }
 
         /// <summary>

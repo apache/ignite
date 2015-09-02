@@ -42,8 +42,8 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="filter">The filter.</param>
         public RemoteListenEventFilter(Ignite grid, Func<Guid, IEvent, bool> filter)
         {
-            this._grid = grid;
-            this._filter = filter;
+            _grid = grid;
+            _filter = filter;
         }
 
         /** <inheritdoc /> */

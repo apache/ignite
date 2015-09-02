@@ -44,9 +44,9 @@ namespace Apache.Ignite.Core.Impl.Common
         public FutureConverter(PortableMarshaller marsh, bool keepPortable,
             Func<PortableReaderImpl, T> func = null)
         {
-            this._marsh = marsh;
-            this._keepPortable = keepPortable;
-            this._func = func ?? (reader => reader.ReadObject<T>());
+            _marsh = marsh;
+            _keepPortable = keepPortable;
+            _func = func ?? (reader => reader.ReadObject<T>());
         }
 
         /// <summary>

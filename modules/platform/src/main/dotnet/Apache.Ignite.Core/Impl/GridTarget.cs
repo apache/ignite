@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl
         protected GridTarget(IUnmanagedTarget target, PortableMarshaller marsh)
         {
             this.target = target;
-            this.Marsh = marsh;
+            Marsh = marsh;
         }
 
         /// <summary>

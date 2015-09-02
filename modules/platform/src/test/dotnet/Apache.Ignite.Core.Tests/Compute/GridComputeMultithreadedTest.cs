@@ -177,7 +177,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <param name="s"></param>
         public MyNoArgClosure(string s)
         {
-            this._s = s;
+            _s = s;
         }
 
         /** <inheritDoc /> */
@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <param name="s"></param>
         public StringLengthEmptyJob(string s)
         {
-            this._s = s;
+            _s = s;
         }
 
         /** <inheritDoc /> */
@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         public bool Collect(int res)
         {
-            this._res += res;
+            _res += res;
             return true;
         }
 

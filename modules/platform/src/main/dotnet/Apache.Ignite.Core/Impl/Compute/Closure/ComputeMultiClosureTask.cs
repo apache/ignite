@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /** <inheritDoc /> */
         protected override ComputeJobResultPolicy Result0(IComputeJobResult<T> res)
         {
-            this._res.Add(res.Data());
+            _res.Add(res.Data());
 
             return ComputeJobResultPolicy.Wait;
         }

@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <param name="rdc">Reducer.</param>
         public ComputeReducingClosureTask(IComputeReducer<T, TR> rdc)
         {
-            this._rdc = rdc;
+            _rdc = rdc;
         }
 
         /** <inheritDoc /> */

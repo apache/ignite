@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Datastream
         {
             AC.NotNull(proc, "proc");
 
-            this._proc = proc;
+            _proc = proc;
         }
 
         /** <inheritdoc /> */

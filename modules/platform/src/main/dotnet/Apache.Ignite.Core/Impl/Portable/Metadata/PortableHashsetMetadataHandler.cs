@@ -43,8 +43,8 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <param name="newType">True is metadata for type is not saved.</param>
         public PortableHashsetMetadataHandler(ICollection<int> ids, bool newType)
         {
-            this._ids = ids;
-            this._newType = newType;
+            _ids = ids;
+            _newType = newType;
         }
 
         /** <inheritdoc /> */

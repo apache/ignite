@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /// <param name="portables">The portables.</param>
             public TestGridService(IPortables portables)
             {
-                this._portables = portables;
+                _portables = portables;
             }
 
             /** <inheritdoc /> */

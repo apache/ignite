@@ -37,8 +37,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
         /// <param name="val">Value.</param>
         public CacheEntryCreateEvent(TK key, TV val)
         {
-            this._key = key;
-            this._val = val;
+            _key = key;
+            _val = val;
         }
 
         /** <inheritdoc /> */

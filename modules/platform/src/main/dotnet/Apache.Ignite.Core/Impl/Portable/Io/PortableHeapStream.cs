@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data array.</param>
         public PortableHeapStream(byte[] data)
         {
-            this.Data = data;
+            Data = data;
         }
 
         /** <inheritdoc /> */

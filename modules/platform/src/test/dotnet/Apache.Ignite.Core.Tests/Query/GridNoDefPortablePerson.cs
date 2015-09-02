@@ -27,8 +27,8 @@ namespace Apache.Ignite.Core.Tests.Query
          * 
          */
         public GridNoDefPortablePerson(String _name, int _age) {
-            this.Name = _name;
-            this.Age = _age;
+            Name = _name;
+            Age = _age;
         }
 
         /**

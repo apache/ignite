@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         public TestReferenceObject(TestReferenceObject obj)
         {
-            this.Obj = obj;
+            Obj = obj;
         }
     }
 

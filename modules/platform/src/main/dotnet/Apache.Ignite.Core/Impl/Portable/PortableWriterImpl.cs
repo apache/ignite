@@ -738,9 +738,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Previous builder.</returns>
         internal PortableBuilderImpl Builder(PortableBuilderImpl builder)
         {
-            PortableBuilderImpl ret = this._builder;
+            PortableBuilderImpl ret = _builder;
 
-            this._builder = builder;
+            _builder = builder;
 
             return ret;
         }
@@ -752,8 +752,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="stream">Stream.</param>
         internal PortableWriterImpl(PortableMarshaller marsh, IPortableStream stream)
         {
-            this._marsh = marsh;
-            this._stream = stream;
+            _marsh = marsh;
+            _stream = stream;
         }
 
         /// <summary>

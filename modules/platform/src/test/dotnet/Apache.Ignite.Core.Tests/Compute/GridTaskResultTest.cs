@@ -372,7 +372,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public PortableResult(int val)
             {
-                this.Val = val;
+                Val = val;
             }
         }
 
@@ -387,7 +387,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public SerializableResult(int val)
             {
-                this.Val = val;
+                Val = val;
             }
         }
 

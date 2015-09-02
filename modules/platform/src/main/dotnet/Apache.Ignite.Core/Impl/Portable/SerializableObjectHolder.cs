@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="item">The item to wrap.</param>
         public SerializableObjectHolder(object item)
         {
-            this._item = item;
+            _item = item;
         }
 
         /// <summary>

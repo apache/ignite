@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         public TransactionsImpl(IUnmanagedTarget target, PortableMarshaller marsh,
             Guid localNodeId) : base(target, marsh)
         {
-            this._localNodeId = localNodeId;
+            _localNodeId = localNodeId;
 
             TransactionConcurrency concurrency = default(TransactionConcurrency);
             TransactionIsolation isolation = default(TransactionIsolation);

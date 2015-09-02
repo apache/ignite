@@ -116,8 +116,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         public DataStreamerImpl(IUnmanagedTarget target, PortableMarshaller marsh, string cacheName, bool keepPortable)
             : base(target, marsh)
         {
-            this._cacheName = cacheName;
-            this._keepPortable = keepPortable;
+            _cacheName = cacheName;
+            _keepPortable = keepPortable;
 
             // Create empty batch.
             _batch = new DataStreamerBatch<TK, TV>();
@@ -563,10 +563,10 @@ namespace Apache.Ignite.Core.Impl.Datastream
             {
                 ThrowIfDisposed();
 
-                if (this._topVer < topVer)
+                if (_topVer < topVer)
                 {
-                    this._topVer = topVer;
-                    this._topSize = topSize;
+                    _topVer = topVer;
+                    _topSize = topSize;
 
                     _bufSndSize = topSize * UU.DataStreamerPerNodeBufferSizeGet(target);
                 }
@@ -686,7 +686,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             /// <param name="ldrRef">Data streamer weak reference..</param>
             public Flusher(WeakReference ldrRef)
             {
-                this._ldrRef = ldrRef;
+                _ldrRef = ldrRef;
 
                 lock (this)
                 {

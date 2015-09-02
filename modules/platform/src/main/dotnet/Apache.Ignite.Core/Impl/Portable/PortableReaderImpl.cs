@@ -83,10 +83,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             PortableMode mode,
             PortableBuilderImpl builder)
         {
-            this._marsh = marsh;
-            this._descs = descs;
-            this._mode = mode;
-            this._builder = builder;
+            _marsh = marsh;
+            _descs = descs;
+            _mode = mode;
+            _builder = builder;
 
             Stream = stream;
         }

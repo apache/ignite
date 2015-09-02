@@ -62,8 +62,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="job">Job.</param>
         public ComputeJobHolder(Ignite grid, IComputeJob job)
         {
-            this._grid = grid;
-            this._job = job;
+            _grid = grid;
+            _job = job;
         }
 
         /// <summary>

@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
             TypeId = typeId;
             TypeName = typeName;
             AffinityKeyFieldName = affKeyFieldName;
-            this._fields = fields;
+            _fields = fields;
         }
 
         /// <summary>

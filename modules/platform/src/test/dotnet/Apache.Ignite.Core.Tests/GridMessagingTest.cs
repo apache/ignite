@@ -633,7 +633,7 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="invoke">The invoke delegate.</param>
         public MessageFilter(Func<Guid, T, bool> invoke)
         {
-            this._invoke = invoke;
+            _invoke = invoke;
         }
 
         /** <inheritdoc /> */

@@ -92,8 +92,8 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public TestTask(IIgnite grid, IPortableObject taskArgField)
             {
-                this._grid = grid;
-                this._taskArgField = taskArgField;
+                _grid = grid;
+                _taskArgField = taskArgField;
             }
 
             /** <inheritDoc /> */
@@ -173,7 +173,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public PortableJobArgument(int val)
             {
-                this.Val = val;
+                Val = val;
             }
         }
 
@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public PortableJobResult(int val)
             {
-                this.Val = val;
+                Val = val;
             }
         }
 
@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public PortableTaskArgument(int val)
             {
-                this.Val = val;
+                Val = val;
             }
         }
 
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public PortableTaskResult(int val)
             {
-                this.Val = val;
+                Val = val;
             }
         }
 

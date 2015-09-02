@@ -59,10 +59,10 @@ namespace Apache.Ignite.Core.Impl.Cache
             Debug.Assert(invoker != null);
             Debug.Assert(marsh != null);
 
-            this._pred = pred;
-            this._invoker = invoker;
-            this._marsh = marsh;
-            this._keepPortable = keepPortable;
+            _pred = pred;
+            _invoker = invoker;
+            _marsh = marsh;
+            _keepPortable = keepPortable;
 
             _handle = marsh.Grid.HandleRegistry.Allocate(this);
         }

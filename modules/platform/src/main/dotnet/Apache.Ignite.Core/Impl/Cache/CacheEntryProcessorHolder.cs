@@ -59,11 +59,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             Debug.Assert(proc != null);
             Debug.Assert(processFunc != null);
 
-            this._proc = proc;
-            this._arg = arg;
-            this._processFunc = processFunc;
+            _proc = proc;
+            _arg = arg;
+            _processFunc = processFunc;
 
-            this._processFunc = GetProcessFunc(this._proc);
+            _processFunc = GetProcessFunc(_proc);
 
             _entryCtor = MutableCacheEntry.GetCtor(keyType, valType);
         }

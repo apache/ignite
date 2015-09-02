@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="err">Error.</param>
         public InteropExceptionHolder(Exception err)
         {
-            this._err = err;
+            _err = err;
         }
 
         /// <summary>

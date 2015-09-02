@@ -79,8 +79,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         {
             Debug.Assert(store != null);
 
-            this._store = store;
-            this._convertPortable = convertPortable;
+            _store = store;
+            _convertPortable = convertPortable;
 
             _sesProxy = new CacheStoreSessionProxy();
 

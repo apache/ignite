@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="key">Key.</param>
         public DataStreamerRemoveEntry(TK key)
         {
-            this._key = key;
+            _key = key;
         }
 
         /// <summary>

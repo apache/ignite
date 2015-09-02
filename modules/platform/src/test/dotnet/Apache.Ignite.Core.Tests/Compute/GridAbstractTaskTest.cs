@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <param name="fork">Fork flag.</param>
         protected GridAbstractTaskTest(bool fork)
         {
-            this._fork = fork;
+            _fork = fork;
         }
 
         /// <summary>

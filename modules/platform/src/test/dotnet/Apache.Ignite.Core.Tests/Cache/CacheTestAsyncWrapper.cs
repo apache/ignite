@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             Debug.Assert(cache.IsAsync, "GridCacheTestAsyncWrapper only works with async caches.");
 
-            this._cache = cache;
+            _cache = cache;
         }
 
         /** <inheritDoc /> */

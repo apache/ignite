@@ -308,7 +308,7 @@ namespace Apache.Ignite.Core.Tests
             /// <param name="val">Value.</param>
             public PortableEntry(int val)
             {
-                this._val = val;
+                _val = val;
             }
 
             /** <inheritDoc /> */
@@ -339,7 +339,7 @@ namespace Apache.Ignite.Core.Tests
             /// <param name="val">Value.</param>
             public SerializableEntry(int val)
             {
-                this._val = val;
+                _val = val;
             }
 
             /** <inheritDoc /> */

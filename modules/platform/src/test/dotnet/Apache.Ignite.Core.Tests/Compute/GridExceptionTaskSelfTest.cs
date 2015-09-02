@@ -468,7 +468,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                         }
                     }
 
-                    this._res += 1;
+                    _res += 1;
                 }
 
                 return ComputeJobResultPolicy.Wait;
@@ -508,7 +508,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="rmt"></param>
             public GoodJob(bool rmt)
             {
-                this._rmt = rmt;
+                _rmt = rmt;
             }
 
             /// <summary>
@@ -604,7 +604,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="rmt"></param>
             public GoodJobResult(bool rmt)
             {
-                this.Rmt = rmt;
+                Rmt = rmt;
             }
 
             /// <summary>
@@ -638,7 +638,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="rmt"></param>
             public BadJobResult(bool rmt)
             {
-                this.Rmt = rmt;
+                Rmt = rmt;
             }
         }
 
@@ -657,7 +657,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="res"></param>
             public GoodTaskResult(int res)
             {
-                this.Res = res;
+                Res = res;
             }
 
             /// <summary>
@@ -691,7 +691,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="res"></param>
             public BadTaskResult(int res)
             {
-                this.Res = res;
+                Res = res;
             }
         }
 
@@ -710,7 +710,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="mode"></param>
             public GoodException(ErrorMode mode)
             {
-                this.Mode = mode;
+                Mode = mode;
             }
 
             /// <summary>
@@ -746,7 +746,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="mode"></param>
             public BadException(ErrorMode mode)
             {
-                this.Mode = mode;
+                Mode = mode;
             }
         }
     }

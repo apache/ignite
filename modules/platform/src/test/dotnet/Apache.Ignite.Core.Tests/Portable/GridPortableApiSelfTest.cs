@@ -1620,7 +1620,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public CompositeOuter(CompositeInner inner)
         {
-            this.Inner = inner;
+            Inner = inner;
         }
     }
 
@@ -1638,7 +1638,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public CompositeInner(int val)
         {
-            this.Val = val;
+            Val = val;
         }
     }
 
@@ -1651,7 +1651,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public ToPortable(int val)
         {
-            this.Val = val;
+            Val = val;
         }
     }
 
@@ -1664,7 +1664,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public ToPortableNoMeta(int val)
         {
-            this.Val = val;
+            Val = val;
         }
     }
 
@@ -1691,7 +1691,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         /// <param name="val"></param>
         public RemoveInner(int val)
         {
-            this.Val = val;
+            Val = val;
         }
     }
 
@@ -1730,7 +1730,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         /// <param name="col"></param>
         public BuilderCollection(ICollection<BuilderCollectionItem> col)
         {
-            this.Col = col;
+            Col = col;
         }
     }
 
@@ -1748,7 +1748,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         /// <param name="val"></param>
         public BuilderCollectionItem(int val)
         {
-            this.Val = val;
+            Val = val;
         }
     }
 

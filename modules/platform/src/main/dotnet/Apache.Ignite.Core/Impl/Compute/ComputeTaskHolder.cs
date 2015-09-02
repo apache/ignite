@@ -122,9 +122,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="arg">Argument.</param>
         public ComputeTaskHolder(Ignite grid, ComputeImpl compute, IComputeTask<TA, T, TR> task, TA arg)
         {
-            this._compute = compute;
-            this._arg = arg;
-            this._task = task;
+            _compute = compute;
+            _arg = arg;
+            _task = task;
 
             ResourceTypeDescriptor resDesc = ResourceProcessor.Descriptor(task.GetType());
 
@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                             writer.WriteGuid(node.Id);
                         }
 
-                        this._jobHandles = jobHandles;
+                        _jobHandles = jobHandles;
                     }
                 }
                 else
@@ -394,7 +394,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="jobHandles">Job handles.</param>
         internal void JobHandles(List<long> jobHandles)
         {
-            this._jobHandles = jobHandles;
+            _jobHandles = jobHandles;
         }
 
         /// <summary>

@@ -93,11 +93,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             Ignite grid)
             : base(target, marsh)
         {
-            this._keepPortable = keepPortable;
+            _keepPortable = keepPortable;
 
             Debug.Assert(grid != null);
             
-            this._grid = grid;
+            _grid = grid;
         }
 
         /** <inheritDoc /> */

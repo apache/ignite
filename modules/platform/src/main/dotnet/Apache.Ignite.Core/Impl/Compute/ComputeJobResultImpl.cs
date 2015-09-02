@@ -50,11 +50,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="cancelled">Cancel flag.</param>
         public ComputeJobResultImpl(object data, Exception err, IComputeJob job, Guid nodeId, bool cancelled)
         {
-            this._data = data;
-            this._err = err;
-            this._job = job;
-            this._nodeId = nodeId;
-            this._cancelled = cancelled;
+            _data = data;
+            _err = err;
+            _job = job;
+            _nodeId = nodeId;
+            _cancelled = cancelled;
         }
 
         /** <inheritDoc /> */

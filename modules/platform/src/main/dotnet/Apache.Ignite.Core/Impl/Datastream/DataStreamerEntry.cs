@@ -35,8 +35,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="val">Value.</param>
         public DataStreamerEntry(TK key, TV val)
         {
-            this._key = key;
-            this._val = val;
+            _key = key;
+            _val = val;
         }
 
         /// <summary>

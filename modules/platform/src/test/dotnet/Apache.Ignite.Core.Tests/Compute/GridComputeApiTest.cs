@@ -605,7 +605,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="attrVal">Required attribute value.</param>
             public NotAttributePredicate(string attrVal)
             {
-                this._attrVal = attrVal;
+                _attrVal = attrVal;
             }
 
             /** <inhreitDoc /> */
@@ -1187,7 +1187,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         public NetSimpleJobArgument(int arg)
         {
-            this.Arg = arg;
+            Arg = arg;
         }
     }
 
@@ -1198,7 +1198,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         public NetSimpleTaskResult(int res)
         {
-            this.Res = res;
+            Res = res;
         }
     }
 
@@ -1209,7 +1209,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         public NetSimpleJobResult(int res)
         {
-            this.Res = res;
+            Res = res;
         }
     }
 

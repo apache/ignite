@@ -40,8 +40,8 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <param name="arg">Argument.</param>
         public ComputeFuncJob(IComputeFunc clo, object arg)
         {
-            this._clo = clo;
-            this._arg = arg;
+            _clo = clo;
+            _arg = arg;
         }
 
         /** <inheritDoc /> */

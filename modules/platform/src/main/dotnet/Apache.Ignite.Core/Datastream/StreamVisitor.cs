@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Datastream
         {
             A.NotNull(action, "action");
 
-            this._action = action;
+            _action = action;
         }
 
         /** <inheritdoc /> */

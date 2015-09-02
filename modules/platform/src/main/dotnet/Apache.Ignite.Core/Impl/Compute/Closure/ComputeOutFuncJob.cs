@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <param name="clo">Closure.</param>
         public ComputeOutFuncJob(IComputeOutFunc clo)
         {
-            this._clo = clo;
+            _clo = clo;
         }
 
         /** <inheritDoc /> */

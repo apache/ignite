@@ -74,8 +74,8 @@ namespace Apache.Ignite.Core.Impl.Services
             Debug.Assert(clusterGroup  != null);
 
             this.clusterGroup = clusterGroup;
-            this.KeepPortable = keepPortable;
-            this.SrvKeepPortable = srvKeepPortable;
+            KeepPortable = keepPortable;
+            SrvKeepPortable = srvKeepPortable;
         }
 
         /** <inheritDoc /> */

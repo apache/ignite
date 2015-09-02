@@ -853,7 +853,7 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="invoke">The invoke delegate.</param>
         public EventFilter(Func<Guid, T, bool> invoke)
         {
-            this._invoke = invoke;
+            _invoke = invoke;
         }
 
         /** <inheritdoc /> */
@@ -880,7 +880,7 @@ namespace Apache.Ignite.Core.Tests
 
         public RemoteEventFilter(int type)
         {
-            this._type = type;
+            _type = type;
         }
 
         /** <inheritdoc /> */
@@ -904,7 +904,7 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="type">The event type.</param>
         public RemoteEventPortableFilter(int type)
         {
-            this._type = type;
+            _type = type;
         }
 
         /** <inheritdoc /> */

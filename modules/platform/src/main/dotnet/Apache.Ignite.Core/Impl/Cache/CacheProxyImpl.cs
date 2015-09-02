@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             Debug.Assert(cache != null);
 
-            this._cache = cache;
+            _cache = cache;
         }
 
         /** <inheritDoc /> */
