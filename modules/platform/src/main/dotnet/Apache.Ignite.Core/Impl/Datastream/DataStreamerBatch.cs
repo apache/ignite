@@ -30,25 +30,25 @@ namespace Apache.Ignite.Core.Impl.Datastream
     /// Data streamer batch.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
-    internal class DataStreamerBatch<K, V>
+    internal class DataStreamerBatch<TK, TV>
     {
         /** Queue. */
-        private readonly ConcurrentQueue<object> queue = new ConcurrentQueue<object>();
+        private readonly ConcurrentQueue<object> _queue = new ConcurrentQueue<object>();
 
         /** Lock for concurrency. */
-        private readonly ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();
+        private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
 
         /** Previous batch. */
-        private volatile DataStreamerBatch<K, V> prev;
+        private volatile DataStreamerBatch<TK, TV> _prev;
 
         /** Current queue size.*/
-        private volatile int size;
+        private volatile int _size;
         
         /** Send guard. */
-        private bool sndGuard;
+        private bool _sndGuard;
 
         /** */
-        private readonly Future<object> fut = new Future<object>();
+        private readonly Future<object> _fut = new Future<object>();
 
         /// <summary>
         /// Constructor.
@@ -62,14 +62,14 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// Constructor.
         /// </summary>
         /// <param name="prev">Previous batch.</param>
-        public DataStreamerBatch(DataStreamerBatch<K, V> prev)
+        public DataStreamerBatch(DataStreamerBatch<TK, TV> prev)
         {
-            this.prev = prev;
+            this._prev = prev;
 
             if (prev != null)
                 Thread.MemoryBarrier(); // Prevent "prev" field escape.
 
-            fut.Listen(() => ParentsCompleted());
+            _fut.Listen(() => ParentsCompleted());
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// </summary>
         public IFuture Future
         {
-            get { return fut; }
+            get { return _fut; }
         }
 
         /// <summary>
@@ -89,27 +89,27 @@ namespace Apache.Ignite.Core.Impl.Datastream
         public int Add(Object val, int cnt)
         {
             // If we cannot enter read-lock immediately, then send is scheduled and batch is definetely blocked.
-            if (!rwLock.TryEnterReadLock(0))
+            if (!_rwLock.TryEnterReadLock(0))
                 return -1;
 
             try 
             {
                 // 1. Ensure additions are possible
-                if (sndGuard)
+                if (_sndGuard)
                     return -1;
 
                 // 2. Add data and increase size.
-                queue.Enqueue(val);
+                _queue.Enqueue(val);
 
 #pragma warning disable 0420
-                int newSize = Interlocked.Add(ref size, cnt);
+                int newSize = Interlocked.Add(ref _size, cnt);
 #pragma warning restore 0420
 
                 return newSize;
             }
             finally
             {
-                rwLock.ExitReadLock();
+                _rwLock.ExitReadLock();
             }
         }
 
@@ -118,27 +118,27 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// </summary>
         /// <param name="ldr">streamer.</param>
         /// <param name="plc">Policy.</param>
-        public void Send(DataStreamerImpl<K, V> ldr, int plc)
+        public void Send(DataStreamerImpl<TK, TV> ldr, int plc)
         {
             // 1. Delegate to the previous batch first.
-            DataStreamerBatch<K, V> prev0 = prev;
+            DataStreamerBatch<TK, TV> prev0 = _prev;
 
             if (prev0 != null)
-                prev0.Send(ldr, DataStreamerImpl<K, V>.PLC_CONTINUE);
+                prev0.Send(ldr, DataStreamerImpl<TK, TV>.PlcContinue);
 
             // 2. Set guard.
-            rwLock.EnterWriteLock();
+            _rwLock.EnterWriteLock();
 
             try
             {
-                if (sndGuard)
+                if (_sndGuard)
                     return;
                 else
-                    sndGuard = true;
+                    _sndGuard = true;
             }
             finally
             {
-                rwLock.ExitWriteLock();
+                _rwLock.ExitWriteLock();
             }
 
             var handleRegistry = ldr.Marshaller.Grid.HandleRegistry;
@@ -150,9 +150,9 @@ namespace Apache.Ignite.Core.Impl.Datastream
             {
                 writer.WriteInt(plc);
 
-                if (plc != DataStreamerImpl<K, V>.PLC_CANCEL_CLOSE)
+                if (plc != DataStreamerImpl<TK, TV>.PlcCancelClose)
                 {
-                    futHnd = handleRegistry.Allocate(fut);
+                    futHnd = handleRegistry.Allocate(_fut);
 
                     try
                     {
@@ -169,9 +169,9 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 }
             });
 
-            if (plc == DataStreamerImpl<K, V>.PLC_CANCEL_CLOSE || size == 0)
+            if (plc == DataStreamerImpl<TK, TV>.PlcCancelClose || _size == 0)
             {
-                fut.OnNullResult();
+                _fut.OnNullResult();
                 
                 handleRegistry.Release(futHnd);
             }
@@ -183,20 +183,20 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// </summary>
         public void AwaitCompletion()
         {
-            DataStreamerBatch<K, V> curBatch = this;
+            DataStreamerBatch<TK, TV> curBatch = this;
 
             while (curBatch != null)
             {
                 try
                 {
-                    curBatch.fut.Get();
+                    curBatch._fut.Get();
                 }
                 catch (Exception)
                 {
                     // Ignore.
                 }
 
-                curBatch = curBatch.prev;
+                curBatch = curBatch._prev;
             }
         }
 
@@ -206,18 +206,18 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="writer">Portable writer.</param>
         private void WriteTo(PortableWriterImpl writer)
         {
-            writer.WriteInt(size);
+            writer.WriteInt(_size);
 
             object val;
 
-            while (queue.TryDequeue(out val))
+            while (_queue.TryDequeue(out val))
             {
                 // 1. Is it a collection?
-                ICollection<KeyValuePair<K, V>> entries = val as ICollection<KeyValuePair<K, V>>;
+                ICollection<KeyValuePair<TK, TV>> entries = val as ICollection<KeyValuePair<TK, TV>>;
 
                 if (entries != null)
                 {
-                    foreach (KeyValuePair<K, V> item in entries)
+                    foreach (KeyValuePair<TK, TV> item in entries)
                     {
                         writer.Write(item.Key);
                         writer.Write(item.Value);
@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 }
 
                 // 2. Is it a single entry?
-                DataStreamerEntry<K, V> entry = val as DataStreamerEntry<K, V>;
+                DataStreamerEntry<TK, TV> entry = val as DataStreamerEntry<TK, TV>;
 
                 if (entry != null) {
                     writer.Write(entry.Key);
@@ -237,7 +237,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 }
 
                 // 3. Is it remove merker?
-                DataStreamerRemoveEntry<K> rmvEntry = val as DataStreamerRemoveEntry<K>;
+                DataStreamerRemoveEntry<TK> rmvEntry = val as DataStreamerRemoveEntry<TK>;
 
                 if (rmvEntry != null)
                 {
@@ -253,17 +253,17 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <returns></returns>
         private bool ParentsCompleted()
         {
-            DataStreamerBatch<K, V> prev0 = prev;
+            DataStreamerBatch<TK, TV> prev0 = _prev;
 
             if (prev0 != null)
             {
                 if (prev0.ParentsCompleted())
-                    prev = null;
+                    _prev = null;
                 else
                     return false;
             }
 
-            return fut.IsDone;
+            return _fut.IsDone;
         }
     }
 }

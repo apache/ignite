@@ -30,16 +30,16 @@ namespace Apache.Ignite.Core.Compute
         /// Wait for results if any are still expected. If all results have been received -
         /// it will start reducing results.
         /// </summary>
-        WAIT = 0,
+        Wait = 0,
 
         /// <summary>
         /// Ignore all not yet received results and start reducing results.
         /// </summary>
-        REDUCE = 1,
+        Reduce = 1,
 
         /// <summary>
         /// Fail-over job to execute on another node.
         /// </summary>
-        FAILOVER = 2
+        Failover = 2
     }
 }

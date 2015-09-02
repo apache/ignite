@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     internal class ComputeOutFuncJob : IComputeJob, IComputeResourceInjector, IPortableWriteAware
     {
         /** Closure. */
-        private readonly IComputeOutFunc clo;
+        private readonly IComputeOutFunc _clo;
 
         /// <summary>
         /// Constructor.
@@ -36,13 +36,13 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <param name="clo">Closure.</param>
         public ComputeOutFuncJob(IComputeOutFunc clo)
         {
-            this.clo = clo;
+            this._clo = clo;
         }
 
         /** <inheritDoc /> */
         public object Execute()
         {
-            return clo.Invoke();
+            return _clo.Invoke();
         }
 
         /** <inheritDoc /> */
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /** <inheritDoc /> */
         public void Inject(Ignite grid)
         {
-            ResourceProcessor.Inject(clo, grid);
+            ResourceProcessor.Inject(_clo, grid);
         }
 
         /** <inheritDoc /> */
@@ -63,14 +63,14 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
             var writer0 = (PortableWriterImpl) writer.RawWriter();
 
             writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, clo);
+            PortableUtils.WritePortableOrSerializable(writer0, _clo);
         }
 
         public ComputeOutFuncJob(IPortableReader reader)
         {
             var reader0 = (PortableReaderImpl) reader.RawReader();
 
-            clo = PortableUtils.ReadPortableOrSerializable<IComputeOutFunc>(reader0);
+            _clo = PortableUtils.ReadPortableOrSerializable<IComputeOutFunc>(reader0);
         }
     }
 }

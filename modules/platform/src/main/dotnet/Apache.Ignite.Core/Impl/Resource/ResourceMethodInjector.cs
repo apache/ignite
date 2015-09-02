@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Resource
     internal class ResourceMethodInjector : IResourceInjector
     {
         /** */
-        private readonly Action<object, object> inject;
+        private readonly Action<object, object> _inject;
 
         /// <summary>
         /// Constructor.
@@ -35,14 +35,14 @@ namespace Apache.Ignite.Core.Impl.Resource
         /// <param name="mthd">Method.</param>
         public ResourceMethodInjector(MethodInfo mthd)
         {
-            inject = DelegateConverter.CompileFunc<Action<object, object>>(mthd.DeclaringType, mthd,
+            _inject = DelegateConverter.CompileFunc<Action<object, object>>(mthd.DeclaringType, mthd,
                 new[] {mthd.GetParameters()[0].ParameterType}, new[] {true, false});
         }
 
         /** <inheritDoc /> */
         public void Inject(object target, object val)
         {
-            inject(target, val);
+            _inject(target, val);
         }
     }
 }

@@ -29,34 +29,34 @@ namespace Apache.Ignite.Core.Impl.Transactions
     internal sealed class TransactionImpl
     {
         /** Metadatas. */
-        private object[] metas;
+        private object[] _metas;
 
         /** Unique  transaction ID.*/
-        private readonly long id;
+        private readonly long _id;
 
         /** Cache. */
-        private readonly TransactionsImpl txs;
+        private readonly TransactionsImpl _txs;
 
         /** TX concurrency. */
-        private readonly TransactionConcurrency concurrency;
+        private readonly TransactionConcurrency _concurrency;
 
         /** TX isolation. */
-        private readonly TransactionIsolation isolation;
+        private readonly TransactionIsolation _isolation;
 
         /** Timeout. */
-        private readonly TimeSpan timeout;
+        private readonly TimeSpan _timeout;
 
         /** Start time. */
-        private readonly DateTime startTime;
+        private readonly DateTime _startTime;
 
         /** Owning thread ID. */
-        private readonly int threadId;
+        private readonly int _threadId;
 
         /** Originating node ID. */
-        private readonly Guid nodeId;
+        private readonly Guid _nodeId;
 
         /** State holder. */
-        private StateHolder state;
+        private StateHolder _state;
 
         // ReSharper disable once InconsistentNaming
         /** Transaction for this thread. */
@@ -74,16 +74,16 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <param name="nodeId">The originating node identifier.</param>
         public TransactionImpl(long id, TransactionsImpl txs, TransactionConcurrency concurrency,
             TransactionIsolation isolation, TimeSpan timeout, Guid nodeId) {
-            this.id = id;
-            this.txs = txs;
-            this.concurrency = concurrency;
-            this.isolation = isolation;
-            this.timeout = timeout;
-            this.nodeId = nodeId;
+            this._id = id;
+            this._txs = txs;
+            this._concurrency = concurrency;
+            this._isolation = isolation;
+            this._timeout = timeout;
+            this._nodeId = nodeId;
 
-            startTime = DateTime.Now;
+            _startTime = DateTime.Now;
 
-            threadId = Thread.CurrentThread.ManagedThreadId;
+            _threadId = Thread.CurrentThread.ManagedThreadId;
 
             THREAD_TX = this;
         }    
@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 ThrowIfClosed();
 
-                state = new StateHolder(txs.TxCommit(this));
+                _state = new StateHolder(_txs.TxCommit(this));
             }
         }
 
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 ThrowIfClosed();
 
-                state = new StateHolder(txs.TxRollback(this));
+                _state = new StateHolder(_txs.TxRollback(this));
             }
         }
 
@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 ThrowIfClosed();
 
-                return txs.TxSetRollbackOnly(this);
+                return _txs.TxSetRollbackOnly(this);
             }
         }
 
@@ -159,11 +159,11 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 lock (this)
                 {
-                    var state0 = state == null ? State : state.State;
+                    var state0 = _state == null ? State : _state.State;
 
-                    return state0 == TransactionState.MARKED_ROLLBACK ||
-                           state0 == TransactionState.ROLLING_BACK ||
-                           state0 == TransactionState.ROLLED_BACK;
+                    return state0 == TransactionState.MarkedRollback ||
+                           state0 == TransactionState.RollingBack ||
+                           state0 == TransactionState.RolledBack;
                 }
             }
         }
@@ -177,7 +177,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 lock (this)
                 {
-                    return state != null ? state.State : txs.TxState(this);
+                    return _state != null ? _state.State : _txs.TxState(this);
                 }
             }
         }
@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         public TransactionIsolation Isolation
         {
-            get { return isolation; }
+            get { return _isolation; }
         }
 
         /// <summary>
@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         public TransactionConcurrency Concurrency
         {
-            get { return concurrency; }
+            get { return _concurrency; }
         }
 
         /// <summary>
@@ -203,7 +203,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         public TimeSpan Timeout
         {
-            get { return timeout; }
+            get { return _timeout; }
         }
 
         /// <summary>
@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         public DateTime StartTime
         {
-            get { return startTime; }
+            get { return _startTime; }
         }
 
 
@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         public Guid NodeId
         {
-            get { return nodeId; }
+            get { return _nodeId; }
         }
 
         /// <summary>
@@ -228,32 +228,32 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         public long ThreadId
         {
-            get { return threadId; }
+            get { return _threadId; }
         }
 
         /// <summary>
         /// Adds a new metadata.
         /// </summary>
-        public void AddMeta<V>(string name, V val)
+        public void AddMeta<TV>(string name, TV val)
         {
             if (name == null)
                 throw new ArgumentException("Meta name cannot be null.");
 
             lock (this)
             {
-                if (metas != null)
+                if (_metas != null)
                 {
                     int putIdx = -1;
 
-                    for (int i = 0; i < metas.Length; i += 2)
+                    for (int i = 0; i < _metas.Length; i += 2)
                     {
-                        if (name.Equals(metas[i]))
+                        if (name.Equals(_metas[i]))
                         {
-                            metas[i + 1] = val;
+                            _metas[i + 1] = val;
 
                             return;
                         }
-                        else if (metas[i] == null && putIdx == -1)
+                        else if (_metas[i] == null && putIdx == -1)
                             // Preserve empty space index.
                             putIdx = i;
                     }
@@ -262,73 +262,73 @@ namespace Apache.Ignite.Core.Impl.Transactions
                     if (putIdx == -1)
                     {
                         // Extend array.
-                        putIdx = metas.Length;
+                        putIdx = _metas.Length;
 
                         object[] metas0 = new object[putIdx + 2];
 
-                        Array.Copy(metas, metas0, putIdx);
+                        Array.Copy(_metas, metas0, putIdx);
 
-                        metas = metas0;
+                        _metas = metas0;
                     }
                     
-                    metas[putIdx] = name;
-                    metas[putIdx + 1] = val;
+                    _metas[putIdx] = name;
+                    _metas[putIdx + 1] = val;
                 }
                 else
-                    metas = new object[] { name, val };
+                    _metas = new object[] { name, val };
             }
         }
 
         /// <summary>
         /// Gets metadata by name.
         /// </summary>
-        public V Meta<V>(string name)
+        public TV Meta<TV>(string name)
         {
             if (name == null)
                 throw new ArgumentException("Meta name cannot be null.");
 
             lock (this)
             {
-                if (metas != null)
+                if (_metas != null)
                 {
-                    for (int i = 0; i < metas.Length; i += 2)
+                    for (int i = 0; i < _metas.Length; i += 2)
                     {
-                        if (name.Equals(metas[i]))
-                            return (V)metas[i + 1];
+                        if (name.Equals(_metas[i]))
+                            return (TV)_metas[i + 1];
                     }
                 }
 
-                return default(V);
+                return default(TV);
             }
         }
 
         /// <summary>
         /// Removes metadata by name.
         /// </summary>
-        public V RemoveMeta<V>(string name)
+        public TV RemoveMeta<TV>(string name)
         {
             if (name == null)
                 throw new ArgumentException("Meta name cannot be null.");
 
             lock (this)
             {
-                if (metas != null)
+                if (_metas != null)
                 {
-                    for (int i = 0; i < metas.Length; i += 2)
+                    for (int i = 0; i < _metas.Length; i += 2)
                     {
-                        if (name.Equals(metas[i]))
+                        if (name.Equals(_metas[i]))
                         {
-                            V val = (V)metas[i + 1];
+                            TV val = (TV)_metas[i + 1];
 
-                            metas[i] = null;
-                            metas[i + 1] = null;
+                            _metas[i] = null;
+                            _metas[i + 1] = null;
 
                             return val;
                         }
                     }
                 }
 
-                return default(V);
+                return default(TV);
             }
         }
 
@@ -341,7 +341,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 ThrowIfClosed();
 
-                var fut = txs.CommitAsync(this);
+                var fut = _txs.CommitAsync(this);
 
                 CloseWhenComplete(fut);
 
@@ -358,7 +358,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 ThrowIfClosed();
 
-                var fut = txs.RollbackAsync(this);
+                var fut = _txs.RollbackAsync(this);
 
                 CloseWhenComplete(fut);
 
@@ -371,7 +371,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal long Id
         {
-            get { return id; }
+            get { return _id; }
         }
 
         /** <inheritdoc /> */
@@ -392,7 +392,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal bool IsClosed
         {
-            get { return state != null; }
+            get { return _state != null; }
         }
 
         /// <summary>
@@ -433,7 +433,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         {
             lock (this)
             {
-                state = state ?? new StateHolder((TransactionState) txs.TxClose(this));
+                _state = _state ?? new StateHolder((TransactionState) _txs.TxClose(this));
             }
         }
 
@@ -466,7 +466,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         private class StateHolder
         {
             /** Current state. */
-            private readonly TransactionState state;
+            private readonly TransactionState _state;
 
             /// <summary>
             /// Constructor.
@@ -474,7 +474,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             /// <param name="state">State.</param>
             public StateHolder(TransactionState state)
             {
-                this.state = state;
+                this._state = state;
             }
 
             /// <summary>
@@ -482,7 +482,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             /// </summary>
             public TransactionState State
             {
-                get { return state; }
+                get { return _state; }
             }
         }
     }

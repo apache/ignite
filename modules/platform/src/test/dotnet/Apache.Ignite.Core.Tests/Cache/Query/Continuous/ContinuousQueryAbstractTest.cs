@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         public void SetUp()
         {
             GC.Collect();
-            GridTestUtils.JVM_DEBUG = true;
+            GridTestUtils.JvmDebug = true;
 
             GridConfigurationEx cfg = new GridConfigurationEx();
 

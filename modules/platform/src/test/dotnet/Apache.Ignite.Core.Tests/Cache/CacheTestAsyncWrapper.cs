@@ -29,23 +29,23 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Wraps IGridCache implementation to simplify async mode testing.
     /// </summary>
-    internal class CacheTestAsyncWrapper<K, V> : ICache<K, V>
+    internal class CacheTestAsyncWrapper<TK, TV> : ICache<TK, TV>
     {
-        private readonly ICache<K, V> cache;
+        private readonly ICache<TK, TV> _cache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheTestAsyncWrapper{K, V}"/> class.
         /// </summary>
         /// <param name="cache">The cache to be wrapped.</param>
-        public CacheTestAsyncWrapper(ICache<K, V> cache)
+        public CacheTestAsyncWrapper(ICache<TK, TV> cache)
         {
             Debug.Assert(cache.IsAsync, "GridCacheTestAsyncWrapper only works with async caches.");
 
-            this.cache = cache;
+            this._cache = cache;
         }
 
         /** <inheritDoc /> */
-        public ICache<K, V> WithAsync()
+        public ICache<TK, TV> WithAsync()
         {
             return this;
         }
@@ -73,328 +73,328 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public string Name
         {
-            get { return cache.Name; }
+            get { return _cache.Name; }
         }
 
         /** <inheritDoc /> */
         public IIgnite Grid
         {
-            get { return cache.Grid; }
+            get { return _cache.Grid; }
         }
 
         /** <inheritDoc /> */
         public bool IsEmpty
         {
-            get { return cache.IsEmpty; }
+            get { return _cache.IsEmpty; }
         }
 
         /** <inheritDoc /> */
         public bool KeepPortable
         {
-            get { return cache.KeepPortable; }
+            get { return _cache.KeepPortable; }
         }
 
         /** <inheritDoc /> */
-        public ICache<K, V> WithSkipStore()
+        public ICache<TK, TV> WithSkipStore()
         {
-            return cache.WithSkipStore().WrapAsync();
+            return _cache.WithSkipStore().WrapAsync();
         }
 
         /** <inheritDoc /> */
-        public ICache<K, V> WithExpiryPolicy(IExpiryPolicy plc)
+        public ICache<TK, TV> WithExpiryPolicy(IExpiryPolicy plc)
         {
-            return cache.WithExpiryPolicy(plc).WrapAsync();
+            return _cache.WithExpiryPolicy(plc).WrapAsync();
         }
 
         /** <inheritDoc /> */
-        public ICache<K1, V1> WithKeepPortable<K1, V1>()
+        public ICache<TK1, TV1> WithKeepPortable<TK1, TV1>()
         {
-            return cache.WithKeepPortable<K1, V1>().WrapAsync();
+            return _cache.WithKeepPortable<TK1, TV1>().WrapAsync();
         }
         
         /** <inheritDoc /> */
-        public void LoadCache(ICacheEntryFilter<K, V> p, params object[] args)
+        public void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            cache.LoadCache(p, args);
+            _cache.LoadCache(p, args);
             WaitResult();
         }
 
         /** <inheritDoc /> */
-        public void LocalLoadCache(ICacheEntryFilter<K, V> p, params object[] args)
+        public void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            cache.LocalLoadCache(p, args);
+            _cache.LocalLoadCache(p, args);
             WaitResult();
         }
 
         /** <inheritDoc /> */
-        public bool ContainsKey(K key)
+        public bool ContainsKey(TK key)
         {
-            cache.ContainsKey(key);
+            _cache.ContainsKey(key);
             return GetResult<bool>();
         }
 
         /** <inheritDoc /> */
-        public bool ContainsKeys(IEnumerable<K> keys)
+        public bool ContainsKeys(IEnumerable<TK> keys)
         {
-            cache.ContainsKeys(keys);
+            _cache.ContainsKeys(keys);
             return GetResult<bool>();
         }
 
         /** <inheritDoc /> */
-        public V LocalPeek(K key, params CachePeekMode[] modes)
+        public TV LocalPeek(TK key, params CachePeekMode[] modes)
         {
-            cache.LocalPeek(key, modes);
-            return GetResult<V>();
+            _cache.LocalPeek(key, modes);
+            return GetResult<TV>();
         }
 
         /** <inheritDoc /> */
-        public V Get(K key)
+        public TV Get(TK key)
         {
-            cache.Get(key);
-            return GetResult<V>();
+            _cache.Get(key);
+            return GetResult<TV>();
         }
 
         /** <inheritDoc /> */
-        public IDictionary<K, V> GetAll(IEnumerable<K> keys)
+        public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
         {
-            cache.GetAll(keys);
-            return GetResult<IDictionary<K, V>>();
+            _cache.GetAll(keys);
+            return GetResult<IDictionary<TK, TV>>();
         }
 
         /** <inheritDoc /> */
-        public void Put(K key, V val)
+        public void Put(TK key, TV val)
         {
-            cache.Put(key, val);
+            _cache.Put(key, val);
             WaitResult();
         }
 
         /** <inheritDoc /> */
-        public V GetAndPut(K key, V val)
+        public TV GetAndPut(TK key, TV val)
         {
-            cache.GetAndPut(key, val);
-            return GetResult<V>();
+            _cache.GetAndPut(key, val);
+            return GetResult<TV>();
         }
 
         /** <inheritDoc /> */
-        public V GetAndReplace(K key, V val)
+        public TV GetAndReplace(TK key, TV val)
         {
-            cache.GetAndReplace(key, val);
-            return GetResult<V>();
+            _cache.GetAndReplace(key, val);
+            return GetResult<TV>();
         }
 
         /** <inheritDoc /> */
-        public V GetAndRemove(K key)
+        public TV GetAndRemove(TK key)
         {
-            cache.GetAndRemove(key);
-            return GetResult<V>();
+            _cache.GetAndRemove(key);
+            return GetResult<TV>();
         }
 
         /** <inheritDoc /> */
-        public bool PutIfAbsent(K key, V val)
+        public bool PutIfAbsent(TK key, TV val)
         {
-            cache.PutIfAbsent(key, val);
+            _cache.PutIfAbsent(key, val);
             return GetResult<bool>();
         }
 
         /** <inheritDoc /> */
-        public V GetAndPutIfAbsent(K key, V val)
+        public TV GetAndPutIfAbsent(TK key, TV val)
         {
-            cache.GetAndPutIfAbsent(key, val);
-            return GetResult<V>();
+            _cache.GetAndPutIfAbsent(key, val);
+            return GetResult<TV>();
         }
 
         /** <inheritDoc /> */
-        public bool Replace(K key, V val)
+        public bool Replace(TK key, TV val)
         {
-            cache.Replace(key, val);
+            _cache.Replace(key, val);
             return GetResult<bool>();
         }
 
         /** <inheritDoc /> */
-        public bool Replace(K key, V oldVal, V newVal)
+        public bool Replace(TK key, TV oldVal, TV newVal)
         {
-            cache.Replace(key, oldVal, newVal);
+            _cache.Replace(key, oldVal, newVal);
             return GetResult<bool>();
         }
 
         /** <inheritDoc /> */
-        public void PutAll(IDictionary<K, V> vals)
+        public void PutAll(IDictionary<TK, TV> vals)
         {
-            cache.PutAll(vals);
+            _cache.PutAll(vals);
             WaitResult();
         }
 
         /** <inheritDoc /> */
-        public void LocalEvict(IEnumerable<K> keys)
+        public void LocalEvict(IEnumerable<TK> keys)
         {
-            cache.LocalEvict(keys);
+            _cache.LocalEvict(keys);
         }
 
         /** <inheritDoc /> */
         public void Clear()
         {
-            cache.Clear();
+            _cache.Clear();
             WaitResult();
         }
 
         /** <inheritDoc /> */
-        public void Clear(K key)
+        public void Clear(TK key)
         {
-            cache.Clear(key);
+            _cache.Clear(key);
         }
 
         /** <inheritDoc /> */
-        public void ClearAll(IEnumerable<K> keys)
+        public void ClearAll(IEnumerable<TK> keys)
         {
-            cache.ClearAll(keys);
+            _cache.ClearAll(keys);
         }
 
         /** <inheritDoc /> */
-        public void LocalClear(K key)
+        public void LocalClear(TK key)
         {
-            cache.LocalClear(key);
+            _cache.LocalClear(key);
         }
 
         /** <inheritDoc /> */
-        public void LocalClearAll(IEnumerable<K> keys)
+        public void LocalClearAll(IEnumerable<TK> keys)
         {
-            cache.LocalClearAll(keys);
+            _cache.LocalClearAll(keys);
         }
 
         /** <inheritDoc /> */
-        public bool Remove(K key)
+        public bool Remove(TK key)
         {
-            cache.Remove(key);
+            _cache.Remove(key);
             return GetResult<bool>();
         }
 
         /** <inheritDoc /> */
-        public bool Remove(K key, V val)
+        public bool Remove(TK key, TV val)
         {
-            cache.Remove(key, val);
+            _cache.Remove(key, val);
             return GetResult<bool>();
         }
 
         /** <inheritDoc /> */
-        public void RemoveAll(IEnumerable<K> keys)
+        public void RemoveAll(IEnumerable<TK> keys)
         {
-            cache.RemoveAll(keys);
+            _cache.RemoveAll(keys);
             WaitResult();
         }
 
         /** <inheritDoc /> */
         public void RemoveAll()
         {
-            cache.RemoveAll();
+            _cache.RemoveAll();
             WaitResult();
         }
 
         /** <inheritDoc /> */
         public int LocalSize(params CachePeekMode[] modes)
         {
-            return cache.LocalSize(modes);
+            return _cache.LocalSize(modes);
         }
 
         /** <inheritDoc /> */
         public int Size(params CachePeekMode[] modes)
         {
-            cache.Size(modes);
+            _cache.Size(modes);
             return GetResult<int>();
         }
 
         /** <inheritDoc /> */
-        public void LocalPromote(IEnumerable<K> keys)
+        public void LocalPromote(IEnumerable<TK> keys)
         {
-            cache.LocalPromote(keys);
+            _cache.LocalPromote(keys);
         }
         
         /** <inheritDoc /> */
-        public IQueryCursor<ICacheEntry<K, V>> Query(QueryBase qry)
+        public IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry)
         {
-            return cache.Query(qry);
+            return _cache.Query(qry);
         }
 
         /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
-            return cache.QueryFields(qry);
+            return _cache.QueryFields(qry);
         }
 
         /** <inheritDoc /> */
-        IContinuousQueryHandle ICache<K, V>.QueryContinuous(ContinuousQuery<K, V> qry)
+        IContinuousQueryHandle ICache<TK, TV>.QueryContinuous(ContinuousQuery<TK, TV> qry)
         {
-            return cache.QueryContinuous(qry);
+            return _cache.QueryContinuous(qry);
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandle<ICacheEntry<K, V>> QueryContinuous(ContinuousQuery<K, V> qry, QueryBase initialQry)
+        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, QueryBase initialQry)
         {
-            return cache.QueryContinuous(qry, initialQry);
+            return _cache.QueryContinuous(qry, initialQry);
         }
 
         /** <inheritDoc /> */
-        public IEnumerable<ICacheEntry<K, V>> GetLocalEntries(params CachePeekMode[] peekModes)
+        public IEnumerable<ICacheEntry<TK, TV>> GetLocalEntries(params CachePeekMode[] peekModes)
         {
-            return cache.GetLocalEntries(peekModes);
+            return _cache.GetLocalEntries(peekModes);
         }
 
         /** <inheritDoc /> */
-        public R Invoke<R, A>(K key, ICacheEntryProcessor<K, V, A, R> processor, A arg)
+        public TR Invoke<TR, TA>(TK key, ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
         {
-            cache.Invoke(key, processor, arg);
+            _cache.Invoke(key, processor, arg);
             
-            return GetResult<R>();
+            return GetResult<TR>();
         }
 
         /** <inheritDoc /> */
-        public IDictionary<K, ICacheEntryProcessorResult<R>> InvokeAll<R, A>(IEnumerable<K> keys, 
-            ICacheEntryProcessor<K, V, A, R> processor, A arg)
+        public IDictionary<TK, ICacheEntryProcessorResult<TR>> InvokeAll<TR, TA>(IEnumerable<TK> keys, 
+            ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
         {
-            cache.InvokeAll(keys, processor, arg);
+            _cache.InvokeAll(keys, processor, arg);
 
-            return GetResult<IDictionary<K, ICacheEntryProcessorResult<R>>>();
+            return GetResult<IDictionary<TK, ICacheEntryProcessorResult<TR>>>();
         }
 
         /** <inheritDoc /> */
-        public ICacheLock Lock(K key)
+        public ICacheLock Lock(TK key)
         {
-            return cache.Lock(key);
+            return _cache.Lock(key);
         }
 
         /** <inheritDoc /> */
-        public ICacheLock LockAll(IEnumerable<K> keys)
+        public ICacheLock LockAll(IEnumerable<TK> keys)
         {
-            return cache.LockAll(keys);
+            return _cache.LockAll(keys);
         }
 
         /** <inheritDoc /> */
-        public bool IsLocalLocked(K key, bool byCurrentThread)
+        public bool IsLocalLocked(TK key, bool byCurrentThread)
         {
-            return cache.IsLocalLocked(key, byCurrentThread);
+            return _cache.IsLocalLocked(key, byCurrentThread);
         }
 
         /** <inheritDoc /> */
         public ICacheMetrics GetMetrics()
         {
-            return cache.GetMetrics();
+            return _cache.GetMetrics();
         }
 
         /** <inheritDoc /> */
         public IFuture Rebalance()
         {
-            return cache.Rebalance();
+            return _cache.Rebalance();
         }
 
         /** <inheritDoc /> */
-        public ICache<K, V> WithNoRetries()
+        public ICache<TK, TV> WithNoRetries()
         {
-            return cache.WithNoRetries();
+            return _cache.WithNoRetries();
         }
 
         /** <inheritDoc /> */
-        public IEnumerator<ICacheEntry<K, V>> GetEnumerator()
+        public IEnumerator<ICacheEntry<TK, TV>> GetEnumerator()
         {
-            return cache.GetEnumerator();
+            return _cache.GetEnumerator();
         }
 
         /** <inheritDoc /> */
@@ -416,7 +416,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// </summary>
         private T GetResult<T>()
         {
-            return cache.GetFuture<T>().Get();
+            return _cache.GetFuture<T>().Get();
         }
     }
 
@@ -428,9 +428,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Wraps specified instance into GridCacheTestAsyncWrapper.
         /// </summary>
-        public static ICache<K, V> WrapAsync<K, V>(this ICache<K, V> cache)
+        public static ICache<TK, TV> WrapAsync<TK, TV>(this ICache<TK, TV> cache)
         {
-            return new CacheTestAsyncWrapper<K, V>(cache);
+            return new CacheTestAsyncWrapper<TK, TV>(cache);
         }
     }
 }

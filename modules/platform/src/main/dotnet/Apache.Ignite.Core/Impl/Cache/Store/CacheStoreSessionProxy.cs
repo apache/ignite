@@ -29,18 +29,18 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
     internal class CacheStoreSessionProxy : ICacheStoreSession
     {
         /** Session. */
-        private readonly ThreadLocal<CacheStoreSession> target = new ThreadLocal<CacheStoreSession>();
+        private readonly ThreadLocal<CacheStoreSession> _target = new ThreadLocal<CacheStoreSession>();
 
         /** <inheritdoc /> */ 
         public string CacheName
         {
-            get { return target.Value.CacheName; }
+            get { return _target.Value.CacheName; }
         }
 
         /** <inheritdoc /> */ 
         public IDictionary<object, object> Properties
         {
-            get { return target.Value.Properties; }
+            get { return _target.Value.Properties; }
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// <param name="ses">Session.</param>
         internal void SetSession(CacheStoreSession ses)
         {
-            target.Value = ses;
+            _target.Value = ses;
         }
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// </summary>
         internal void ClearSession()
         {
-            target.Value = null;
+            _target.Value = null;
         }
     }
 }

@@ -28,10 +28,10 @@ namespace Apache.Ignite.Core.Tests.Compute
     public abstract class GridClosureTaskTest : GridAbstractTaskTest
     {
         /** Amount of multiple clousres. */
-        private const int MULTI_CLO_CNT = 5;
+        private const int MultiCloCnt = 5;
 
         /** */
-        protected const string ERR_MSG = "An error has occurred.";
+        protected const string ErrMsg = "An error has occurred.";
 
         /// <summary>
         /// Constructor.
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExecuteSingle()
         {
-            var res = grid1.Compute().Call(OutFunc(false));
+            var res = Grid1.Compute().Call(OutFunc(false));
 
             CheckResult(res);
         }
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             try
             {
-                grid1.Compute().Call(OutFunc(true));
+                Grid1.Compute().Call(OutFunc(true));
 
                 Assert.Fail();
             }
@@ -74,12 +74,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExecuteMultiple()
         {
-            var clos = new List<IComputeFunc<object>>(MULTI_CLO_CNT);
+            var clos = new List<IComputeFunc<object>>(MultiCloCnt);
 
-            for (int i = 0; i < MULTI_CLO_CNT; i++)
+            for (int i = 0; i < MultiCloCnt; i++)
                 clos.Add(OutFunc(false));
 
-            ICollection<object> ress = grid1.Compute().Call(clos);
+            ICollection<object> ress = Grid1.Compute().Call(clos);
 
             foreach (object res in ress)
                 CheckResult(res);
@@ -91,12 +91,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExecuteMultipleReduced()
         {
-            var clos = new List<IComputeFunc<object>>(MULTI_CLO_CNT);
+            var clos = new List<IComputeFunc<object>>(MultiCloCnt);
 
-            for (int i = 0; i < MULTI_CLO_CNT; i++)
+            for (int i = 0; i < MultiCloCnt; i++)
                 clos.Add(OutFunc(false));
 
-            ICollection<object> ress = grid1.Compute().Call(clos, new Reducer(false));
+            ICollection<object> ress = Grid1.Compute().Call(clos, new Reducer(false));
 
             foreach (object res in ress)
                 CheckResult(res);
@@ -108,14 +108,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExecuteMultipleException()
         {
-            var clos = new List<IComputeFunc<object>>(MULTI_CLO_CNT);
+            var clos = new List<IComputeFunc<object>>(MultiCloCnt);
 
-            for (int i = 0; i < MULTI_CLO_CNT; i++)
+            for (int i = 0; i < MultiCloCnt; i++)
                 clos.Add(OutFunc(i % 2 == 0)); // Some closures will be faulty.
 
             try
             {
-                grid1.Compute().Call(clos);
+                Grid1.Compute().Call(clos);
 
                 Assert.Fail();
             }
@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastOut()
         {
-            ICollection<object> ress = grid1.Compute().Broadcast(OutFunc(false));
+            ICollection<object> ress = Grid1.Compute().Broadcast(OutFunc(false));
 
             foreach (object res in ress)
                 CheckResult(res);
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             try
             {
-                grid1.Compute().Broadcast(OutFunc(true));
+                Grid1.Compute().Broadcast(OutFunc(true));
 
                 Assert.Fail();
             }
@@ -161,7 +161,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastInOut()
         {
-            ICollection<object> ress = grid1.Compute().Broadcast(Func(false), 1);
+            ICollection<object> ress = Grid1.Compute().Broadcast(Func(false), 1);
 
             foreach (object res in ress)
                 CheckResult(res);
@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             try
             {
-                grid1.Compute().Broadcast(Func(true), 1);
+                Grid1.Compute().Broadcast(Func(true), 1);
 
                 Assert.Fail();
             }
@@ -191,7 +191,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApply()
         {
-            object res = grid1.Compute().Apply(Func(false), 1);
+            object res = Grid1.Compute().Apply(Func(false), 1);
 
             CheckResult(res);
         }
@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             try
             {
-                grid1.Compute().Apply(Func(true), 1);
+                Grid1.Compute().Apply(Func(true), 1);
 
                 Assert.Fail();
             }
@@ -220,14 +220,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApplyMultiple()
         {
-            var args = new List<object>(MULTI_CLO_CNT);
+            var args = new List<object>(MultiCloCnt);
 
-            for (int i = 0; i < MULTI_CLO_CNT; i++)
+            for (int i = 0; i < MultiCloCnt; i++)
                 args.Add(1);
 
             Console.WriteLine("START TASK");
 
-            var ress = grid1.Compute().Apply(Func(false), args);
+            var ress = Grid1.Compute().Apply(Func(false), args);
 
             Console.WriteLine("END TASK.");
 
@@ -241,14 +241,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApplyMultipleException()
         {
-            ICollection<int> args = new List<int>(MULTI_CLO_CNT);
+            ICollection<int> args = new List<int>(MultiCloCnt);
 
-            for (int i = 0; i < MULTI_CLO_CNT; i++)
+            for (int i = 0; i < MultiCloCnt; i++)
                 args.Add(1);
 
             try
             {
-                grid1.Compute().Apply(Func(true), args);
+                Grid1.Compute().Apply(Func(true), args);
 
                 Assert.Fail();
             }
@@ -264,13 +264,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApplyMultipleReducer()
         {
-            var args = new List<object>(MULTI_CLO_CNT);
+            var args = new List<object>(MultiCloCnt);
 
-            for (int i = 0; i < MULTI_CLO_CNT; i++)
+            for (int i = 0; i < MultiCloCnt; i++)
                 args.Add(1);
 
             ICollection<object> ress =
-                grid1.Compute().Apply(Func(false), args, new Reducer(false));
+                Grid1.Compute().Apply(Func(false), args, new Reducer(false));
 
             foreach (object res in ress)
                 CheckResult(res);
@@ -282,14 +282,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestAppylMultipleReducerJobException()
         {
-            List<object> args = new List<object>(MULTI_CLO_CNT);
+            List<object> args = new List<object>(MultiCloCnt);
 
-            for (int i = 0; i < MULTI_CLO_CNT; i++)
+            for (int i = 0; i < MultiCloCnt; i++)
                 args.Add(1);
 
             try
             {
-                grid1.Compute().Apply(Func(true), args, new Reducer(false));
+                Grid1.Compute().Apply(Func(true), args, new Reducer(false));
 
                 Assert.Fail();
             }
@@ -305,14 +305,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestAppylMultipleReducerReduceException()
         {
-            var args = new List<object>(MULTI_CLO_CNT);
+            var args = new List<object>(MultiCloCnt);
 
-            for (int i = 0; i < MULTI_CLO_CNT; i++)
+            for (int i = 0; i < MultiCloCnt; i++)
                 args.Add(1);
 
             try
             {
-                grid1.Compute().Apply(Func(false), args, new Reducer(true));
+                Grid1.Compute().Apply(Func(false), args, new Reducer(true));
 
                 Assert.Fail();
             }
@@ -320,7 +320,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 Assert.AreEqual(typeof(Exception), e.GetType());
 
-                Assert.AreEqual(ERR_MSG, e.Message);
+                Assert.AreEqual(ErrMsg, e.Message);
             }
         }
 
@@ -356,10 +356,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         public class Reducer : IComputeReducer<object, ICollection<object>>
         {
             /** Whether to throw an error on reduce. */
-            private readonly bool err;
+            private readonly bool _err;
 
             /** Results. */
-            private readonly ICollection<object> ress = new List<object>();
+            private readonly ICollection<object> _ress = new List<object>();
 
             /// <summary>
             /// Constructor.
@@ -367,13 +367,13 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="err">Error.</param>
             public Reducer(bool err)
             {
-                this.err = err;
+                this._err = err;
             }
 
             /** <inheritDoc /> */
             public bool Collect(object res)
             {
-                ress.Add(res);
+                _ress.Add(res);
 
                 return true;
             }
@@ -381,9 +381,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             /** <inheritDoc /> */
             public ICollection<object> Reduce()
             {
-                if (err)
-                    throw new Exception(ERR_MSG);
-                return ress;
+                if (_err)
+                    throw new Exception(ErrMsg);
+                return _ress;
             }
         }
     }

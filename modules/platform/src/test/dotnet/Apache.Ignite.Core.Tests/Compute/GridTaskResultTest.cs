@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class GridTaskResultTest : GridAbstractTaskTest
     {
         /** Grid name. */
-        private static volatile string gridName;
+        private static volatile string _gridName;
 
         /// <summary>
         /// Constructor.
@@ -52,11 +52,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             TestTask<int> task = new TestTask<int>();
 
-            int res = grid1.Compute().Execute(task, new Tuple<bool, int>(true, 10));
+            int res = Grid1.Compute().Execute(task, new Tuple<bool, int>(true, 10));
 
             Assert.AreEqual(10, res);
 
-            res = grid1.Compute().Execute(task, new Tuple<bool, int>(false, 11));
+            res = Grid1.Compute().Execute(task, new Tuple<bool, int>(false, 11));
 
             Assert.AreEqual(11, res);
         }
@@ -69,11 +69,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             TestTask<long> task = new TestTask<long>();
 
-            long res = grid1.Compute().Execute(task, new Tuple<bool, long>(true, 10000000000));
+            long res = Grid1.Compute().Execute(task, new Tuple<bool, long>(true, 10000000000));
 
             Assert.AreEqual(10000000000, res);
 
-            res = grid1.Compute().Execute(task, new Tuple<bool, long>(false, 10000000001));
+            res = Grid1.Compute().Execute(task, new Tuple<bool, long>(false, 10000000001));
 
             Assert.AreEqual(10000000001, res);
         }
@@ -86,11 +86,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             TestTask<float> task = new TestTask<float>();
 
-            float res = grid1.Compute().Execute(task, new Tuple<bool, float>(true, 1.1f));
+            float res = Grid1.Compute().Execute(task, new Tuple<bool, float>(true, 1.1f));
 
             Assert.AreEqual(1.1f, res);
 
-            res = grid1.Compute().Execute(task, new Tuple<bool, float>(false, -1.1f));
+            res = Grid1.Compute().Execute(task, new Tuple<bool, float>(false, -1.1f));
 
             Assert.AreEqual(-1.1f, res);
         }
@@ -105,15 +105,15 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             PortableResult val = new PortableResult(100);
 
-            PortableResult res = grid1.Compute().Execute(task, new Tuple<bool, PortableResult>(true, val));
+            PortableResult res = Grid1.Compute().Execute(task, new Tuple<bool, PortableResult>(true, val));
 
-            Assert.AreEqual(val.val, res.val);
+            Assert.AreEqual(val.Val, res.Val);
 
-            val.val = 101;
+            val.Val = 101;
 
-            res = grid1.Compute().Execute(task, new Tuple<bool, PortableResult>(false, val));
+            res = Grid1.Compute().Execute(task, new Tuple<bool, PortableResult>(false, val));
 
-            Assert.AreEqual(val.val, res.val);
+            Assert.AreEqual(val.Val, res.Val);
         }
 
         /// <summary>
@@ -126,15 +126,15 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             SerializableResult val = new SerializableResult(100);
 
-            SerializableResult res = grid1.Compute().Execute(task, new Tuple<bool, SerializableResult>(true, val));
+            SerializableResult res = Grid1.Compute().Execute(task, new Tuple<bool, SerializableResult>(true, val));
 
-            Assert.AreEqual(val.val, res.val);
+            Assert.AreEqual(val.Val, res.Val);
 
-            val.val = 101;
+            val.Val = 101;
 
-            res = grid1.Compute().Execute(task, new Tuple<bool, SerializableResult>(false, val));
+            res = Grid1.Compute().Execute(task, new Tuple<bool, SerializableResult>(false, val));
 
-            Assert.AreEqual(val.val, res.val);
+            Assert.AreEqual(val.Val, res.Val);
         }
 
         /// <summary>
@@ -145,12 +145,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             TestTask<byte[]> task = new TestTask<byte[]>();
 
-            byte[] res = grid1.Compute().Execute(task,
+            byte[] res = Grid1.Compute().Execute(task,
                 new Tuple<bool, byte[]>(true, new byte[100 * 1024]));
 
             Assert.AreEqual(100 * 1024, res.Length);
 
-            res = grid1.Compute().Execute(task, new Tuple<bool, byte[]>(false, new byte[101 * 1024]));
+            res = Grid1.Compute().Execute(task, new Tuple<bool, byte[]>(false, new byte[101 * 1024]));
 
             Assert.AreEqual(101 * 1024, res.Length);
         }
@@ -167,7 +167,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestOutFuncResultPrimitive1()
         {
-            ICollection<int> res = grid1.Compute().Broadcast(new PortableOutFunc());
+            ICollection<int> res = Grid1.Compute().Broadcast(new PortableOutFunc());
 
             Assert.AreEqual(3, res.Count);
 
@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestOutFuncResultPrimitive2()
         {
-            ICollection<int> res = grid1.Compute().Broadcast(new SerializableOutFunc());
+            ICollection<int> res = Grid1.Compute().Broadcast(new SerializableOutFunc());
 
             Assert.AreEqual(3, res.Count);
 
@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestFuncResultPrimitive1()
         {
-            ICollection<int> res = grid1.Compute().Broadcast(new PortableFunc(), 10);
+            ICollection<int> res = Grid1.Compute().Broadcast(new PortableFunc(), 10);
 
             Assert.AreEqual(3, res.Count);
 
@@ -200,7 +200,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestFuncResultPrimitive2()
         {
-            ICollection<int> res = grid1.Compute().Broadcast(new SerializableFunc(), 10);
+            ICollection<int> res = Grid1.Compute().Broadcast(new SerializableFunc(), 10);
 
             Assert.AreEqual(3, res.Count);
 
@@ -208,9 +208,9 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.AreEqual(11, r);
         }
 
-        interface IUserInterface<in T, out R>
+        interface IUserInterface<in T, out TR>
         {
-            R Invoke(T arg);
+            TR Invoke(T arg);
         }
 
         /// <summary>
@@ -280,7 +280,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /** <inheritDoc /> */
             override public IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, Tuple<bool, T> arg)
             {
-                gridName = null;
+                _gridName = null;
 
                 Assert.AreEqual(3, subgrid.Count);
 
@@ -336,9 +336,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.IsFalse(res.Cancelled);
 
-                Assert.IsNotNull(gridName);
+                Assert.IsNotNull(_gridName);
 
-                Assert.AreEqual(GridId(gridName), res.NodeId);
+                Assert.AreEqual(GridId(_gridName), res.NodeId);
 
                 var job = res.Job();
 
@@ -350,12 +350,12 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         private static Guid GridId(string gridName)
         {
-            if (gridName.Equals(GRID1_NAME))
-                return Ignition.Grid(GRID1_NAME).Cluster.LocalNode.Id;
-            if (gridName.Equals(GRID2_NAME))
-                return Ignition.Grid(GRID2_NAME).Cluster.LocalNode.Id;
-            if (gridName.Equals(GRID3_NAME))
-                return Ignition.Grid(GRID3_NAME).Cluster.LocalNode.Id;
+            if (gridName.Equals(Grid1Name))
+                return Ignition.Grid(Grid1Name).Cluster.LocalNode.Id;
+            if (gridName.Equals(Grid2Name))
+                return Ignition.Grid(Grid2Name).Cluster.LocalNode.Id;
+            if (gridName.Equals(Grid3Name))
+                return Ignition.Grid(Grid3Name).Cluster.LocalNode.Id;
 
             Assert.Fail("Failed to find grid " + gridName);
 
@@ -368,11 +368,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         class PortableResult
         {
             /** */
-            public int val;
+            public int Val;
 
             public PortableResult(int val)
             {
-                this.val = val;
+                this.Val = val;
             }
         }
 
@@ -383,11 +383,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         class SerializableResult
         {
             /** */
-            public int val;
+            public int Val;
 
             public SerializableResult(int val)
             {
-                this.val = val;
+                this.Val = val;
             }
         }
 
@@ -398,14 +398,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         class TestJob<T> : ComputeJobAdapter<T>
         {
             [InstanceResource]
-            private IIgnite grid = null;
+            private IIgnite _grid = null;
 
             /** <inheritDoc /> */
             override public T Execute()
             {
-                Assert.IsNotNull(grid);
+                Assert.IsNotNull(_grid);
 
-                gridName = grid.Name;
+                _gridName = _grid.Name;
 
                 T res = Argument<T>(0);
 
@@ -419,14 +419,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         class TestPortableJob : ComputeJobAdapter<PortableResult>
         {
             [InstanceResource]
-            private IIgnite grid = null;
+            private IIgnite _grid = null;
 
             /** <inheritDoc /> */
             override public PortableResult Execute()
             {
-                Assert.IsNotNull(grid);
+                Assert.IsNotNull(_grid);
 
-                gridName = grid.Name;
+                _gridName = _grid.Name;
 
                 PortableResult res = Argument<PortableResult>(0);
 

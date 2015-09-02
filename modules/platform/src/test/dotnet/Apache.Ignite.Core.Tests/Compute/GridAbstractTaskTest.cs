@@ -30,39 +30,39 @@ namespace Apache.Ignite.Core.Tests.Compute
     public abstract class GridAbstractTaskTest
     {
         /** */
-        protected const string GRID1_NAME = "grid1";
+        protected const string Grid1Name = "grid1";
 
         /** */
-        protected const string GRID2_NAME = "grid2";
+        protected const string Grid2Name = "grid2";
 
         /** */
-        protected const string GRID3_NAME = "grid3";
+        protected const string Grid3Name = "grid3";
 
         /** */
-        protected const string CACHE1_NAME = "cache1";
+        protected const string Cache1Name = "cache1";
 
         /** Whether this is a test with forked JVMs. */
-        private readonly bool fork;
+        private readonly bool _fork;
 
         /** First node. */
         [NonSerialized]
-        protected IIgnite grid1;
+        protected IIgnite Grid1;
 
         /** Second node. */
         [NonSerialized]
-        private IIgnite grid2;
+        private IIgnite _grid2;
 
         /** Third node. */
         [NonSerialized]
-        private IIgnite grid3;
+        private IIgnite _grid3;
 
         /** Second process. */
         [NonSerialized]
-        private GridProcess proc2;
+        private GridProcess _proc2;
 
         /** Third process. */
         [NonSerialized]
-        private GridProcess proc3;
+        private GridProcess _proc3;
 
         /// <summary>
         /// Constructor.
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <param name="fork">Fork flag.</param>
         protected GridAbstractTaskTest(bool fork)
         {
-            this.fork = fork;
+            this._fork = fork;
         }
 
         /// <summary>
@@ -81,31 +81,31 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             GridTestUtils.KillProcesses();
 
-            if (fork)
+            if (_fork)
             {
-                grid1 = Ignition.Start(Configuration("config\\compute\\compute-standalone.xml"));
+                Grid1 = Ignition.Start(Configuration("config\\compute\\compute-standalone.xml"));
 
-                proc2 = Fork("config\\compute\\compute-standalone.xml");
+                _proc2 = Fork("config\\compute\\compute-standalone.xml");
 
                 while (true)
                 {
-                    if (!proc2.Alive)
-                        throw new Exception("Process 2 died unexpectedly: " + proc2.Join());
+                    if (!_proc2.Alive)
+                        throw new Exception("Process 2 died unexpectedly: " + _proc2.Join());
 
-                    if (grid1.Cluster.Nodes().Count < 2)
+                    if (Grid1.Cluster.Nodes().Count < 2)
                         Thread.Sleep(100);
                     else
                         break;
                 }
 
-                proc3 = Fork("config\\compute\\compute-standalone.xml");
+                _proc3 = Fork("config\\compute\\compute-standalone.xml");
 
                 while (true)
                 {
-                    if (!proc3.Alive)
-                        throw new Exception("Process 3 died unexpectedly: " + proc3.Join());
+                    if (!_proc3.Alive)
+                        throw new Exception("Process 3 died unexpectedly: " + _proc3.Join());
 
-                    if (grid1.Cluster.Nodes().Count < 3)
+                    if (Grid1.Cluster.Nodes().Count < 3)
                         Thread.Sleep(100);
                     else
                         break;
@@ -113,9 +113,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
             else
             {
-                grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-                grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-                grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+                Grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
+                _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+                _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
             }
         }
 
@@ -128,31 +128,31 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureTearDown]
         public void StopClient()
         {
-            if (grid1 != null)
-                Ignition.Stop(grid1.Name, true);
+            if (Grid1 != null)
+                Ignition.Stop(Grid1.Name, true);
 
-            if (fork)
+            if (_fork)
             {
-                if (proc2 != null) {
-                    proc2.Kill();
+                if (_proc2 != null) {
+                    _proc2.Kill();
 
-                    proc2.Join();
+                    _proc2.Join();
                 }
 
-                if (proc3 != null)
+                if (_proc3 != null)
                 {
-                    proc3.Kill();
+                    _proc3.Kill();
 
-                    proc3.Join();
+                    _proc3.Join();
                 }
             }
             else
             {
-                if (grid2 != null)
-                    Ignition.Stop(grid2.Name, true);
+                if (_grid2 != null)
+                    Ignition.Stop(_grid2.Name, true);
 
-                if (grid3 != null)
-                    Ignition.Stop(grid3.Name, true);
+                if (_grid3 != null)
+                    Ignition.Stop(_grid3.Name, true);
             }
         }
 
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             GridConfiguration cfg = new GridConfiguration();
 
-            if (!fork)
+            if (!_fork)
             {
                 PortableConfiguration portCfg = new PortableConfiguration();
 

@@ -33,13 +33,13 @@ namespace Apache.Ignite.Core.Impl.Messaging
     internal class MessageFilterHolder : IPortableWriteAware, IHandle
     {
         /** Invoker function that takes key and value and invokes wrapped IMessageFilter */
-        private readonly Func<Guid, object, bool> invoker;
+        private readonly Func<Guid, object, bool> _invoker;
 
         /** Current grid instance. */
-        private readonly Ignite grid;
+        private readonly Ignite _grid;
         
         /** Underlying filter. */
-        private readonly object filter;
+        private readonly object _filter;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MessageFilterHolder" /> class.
@@ -52,15 +52,15 @@ namespace Apache.Ignite.Core.Impl.Messaging
             Debug.Assert(filter != null);
             Debug.Assert(invoker != null);
 
-            this.invoker = invoker;
+            this._invoker = invoker;
 
-            this.filter = filter;
+            this._filter = filter;
 
             // 1. Set fields.
             Debug.Assert(grid != null);
 
-            this.grid = grid;
-            this.invoker = invoker;
+            this._grid = grid;
+            this._invoker = invoker;
 
             // 2. Perform injections.
             ResourceProcessor.Inject(filter, grid);
@@ -73,13 +73,13 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <returns></returns>
         public int Invoke(IPortableStream input)
         {
-            var rawReader = grid.Marshaller.StartUnmarshal(input).RawReader();
+            var rawReader = _grid.Marshaller.StartUnmarshal(input).RawReader();
 
             var nodeId = rawReader.ReadGuid();
 
             Debug.Assert(nodeId != null);
 
-            return invoker(nodeId.Value, rawReader.ReadObject<object>()) ? 1 : 0;
+            return _invoker(nodeId.Value, rawReader.ReadObject<object>()) ? 1 : 0;
         }
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// </summary>
         public object Filter
         {
-            get { return filter; }
+            get { return _filter; }
         }
 
         /// <summary>
@@ -167,13 +167,13 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             var reader0 = (PortableReaderImpl)reader.RawReader();
 
-            filter = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _filter = PortableUtils.ReadPortableOrSerializable<object>(reader0);
 
-            invoker = GetInvoker(filter);
+            _invoker = GetInvoker(_filter);
 
-            grid = reader0.Marshaller.Grid;
+            _grid = reader0.Marshaller.Grid;
 
-            ResourceProcessor.Inject(filter, grid);
+            ResourceProcessor.Inject(_filter, _grid);
         }
     }
 }

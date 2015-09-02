@@ -29,13 +29,13 @@ namespace Apache.Ignite.Core.Events
     public sealed class DiscoveryEvent : EventBase
 	{
         /** */
-        private readonly IClusterNode eventNode;
+        private readonly IClusterNode _eventNode;
 
         /** */
-        private readonly long topologyVersion;
+        private readonly long _topologyVersion;
 
         /** */
-        private readonly ReadOnlyCollection<IClusterNode> topologyNodes;
+        private readonly ReadOnlyCollection<IClusterNode> _topologyNodes;
 
         /// <summary>
         /// Constructor.
@@ -43,12 +43,12 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         internal DiscoveryEvent(IPortableRawReader r) : base(r)
         {
-            eventNode = ReadNode(r);
-            topologyVersion = r.ReadLong();
+            _eventNode = ReadNode(r);
+            _topologyVersion = r.ReadLong();
 
             var nodes = U.ReadNodes(r);
 
-            topologyNodes = nodes == null ? null : new ReadOnlyCollection<IClusterNode>(nodes);
+            _topologyNodes = nodes == null ? null : new ReadOnlyCollection<IClusterNode>(nodes);
         }
 
         /// <summary>
@@ -56,19 +56,19 @@ namespace Apache.Ignite.Core.Events
         /// event was recorded. For example, node A locally recorded the event that a remote node B joined the topology. 
         /// In this case this method will return ID of B. 
         /// </summary>
-        public IClusterNode EventNode { get { return eventNode; } }
+        public IClusterNode EventNode { get { return _eventNode; } }
 
         /// <summary>
         /// Gets topology version if this event is raised on topology change and configured discovery
         /// SPI implementation supports topology versioning.
         /// </summary>
-        public long TopologyVersion { get { return topologyVersion; } }
+        public long TopologyVersion { get { return _topologyVersion; } }
 
         /// <summary>
         /// Gets topology nodes from topology snapshot. If SPI implementation does not support versioning, the best 
         /// effort snapshot will be captured. 
         /// </summary>
-        public ICollection<IClusterNode> TopologyNodes { get { return topologyNodes; } }
+        public ICollection<IClusterNode> TopologyNodes { get { return _topologyNodes; } }
 
         /** <inheritDoc /> */
 	    public override string ToShortString()

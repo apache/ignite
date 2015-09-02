@@ -27,10 +27,10 @@ namespace Apache.Ignite.Core.Impl.Cache
     internal class CacheEntryProcessorResult<T> : ICacheEntryProcessorResult<T>
     {
         // Result
-        private readonly T res;
+        private readonly T _res;
 
         // Error
-        private readonly Exception err;
+        private readonly Exception _err;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntryProcessorResult{T}"/> class.
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="result">The result.</param>
         public CacheEntryProcessorResult(T result)
         {
-            res = result;
+            _res = result;
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="error">The error.</param>
         public CacheEntryProcessorResult(Exception error)
         {
-            err = error;
+            _err = error;
         }
 
         /** <inheritdoc /> */
@@ -55,10 +55,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             get
             {
-                if (err != null)
-                    throw err as CacheEntryProcessorException ?? new CacheEntryProcessorException(err);
+                if (_err != null)
+                    throw _err as CacheEntryProcessorException ?? new CacheEntryProcessorException(_err);
 
-                return res;
+                return _res;
             }
         }
     }

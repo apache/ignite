@@ -36,321 +36,321 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// Built-in event type: checkpoint was saved.
         /// </summary>
-        public static readonly int EVT_CHECKPOINT_SAVED = 1;
+        public static readonly int EvtCheckpointSaved = 1;
 
         /// <summary>
         /// Built-in event type: checkpoint was loaded.
         /// </summary>
-        public static readonly int EVT_CHECKPOINT_LOADED = 2;
+        public static readonly int EvtCheckpointLoaded = 2;
 
         /// <summary>
         /// Built-in event type: checkpoint was removed. Reasons are: timeout expired, or or it was manually removed, 
         /// or it was automatically removed by the task session.
         /// </summary>
-        public static readonly int EVT_CHECKPOINT_REMOVED = 3;
+        public static readonly int EvtCheckpointRemoved = 3;
 
         /// <summary>
         /// Built-in event type: node joined topology. New node has been discovered and joined grid topology. Note that 
         /// even though a node has been discovered there could be a number of warnings in the log. In certain 
         /// situations Ignite doesn't prevent a node from joining but prints warning messages into the log.
         /// </summary>
-        public static readonly int EVT_NODE_JOINED = 10;
+        public static readonly int EvtNodeJoined = 10;
 
         /// <summary>
         /// Built-in event type: node has normally left topology.
         /// </summary>
-        public static readonly int EVT_NODE_LEFT = 11;
+        public static readonly int EvtNodeLeft = 11;
 
         /// <summary>
         /// Built-in event type: node failed. Ignite detected that node has presumably crashed and is considered 
         /// failed.
         /// </summary>
-        public static readonly int EVT_NODE_FAILED = 12;
+        public static readonly int EvtNodeFailed = 12;
 
         /// <summary>
         /// Built-in event type: node metrics updated. Generated when node's metrics are updated. In most cases this 
         /// callback is invoked with every heartbeat received from a node (including local node).
         /// </summary>
-        public static readonly int EVT_NODE_METRICS_UPDATED = 13;
+        public static readonly int EvtNodeMetricsUpdated = 13;
 
         /// <summary>
         /// Built-in event type: local node segmented. Generated when node determines that it runs in invalid network 
         /// segment.
         /// </summary>
-        public static readonly int EVT_NODE_SEGMENTED = 14;
+        public static readonly int EvtNodeSegmented = 14;
 
         /// <summary>
         /// Built-in event type: client node disconnected.
         /// </summary>
-        public static readonly int EVT_CLIENT_NODE_DISCONNECTED = 16;
+        public static readonly int EvtClientNodeDisconnected = 16;
 
         /// <summary>
         /// Built-in event type: client node reconnected.
         /// </summary>
-        public static readonly int EVT_CLIENT_NODE_RECONNECTED = 17;
+        public static readonly int EvtClientNodeReconnected = 17;
 
         /// <summary>
         /// Built-in event type: task started.
         /// </summary>
-        public static readonly int EVT_TASK_STARTED = 20;
+        public static readonly int EvtTaskStarted = 20;
 
         /// <summary>
         /// Built-in event type: task finished. Task got finished. This event is triggered every time a task finished 
         /// without exception.
         /// </summary>
-        public static readonly int EVT_TASK_FINISHED = 21;
+        public static readonly int EvtTaskFinished = 21;
 
         /// <summary>
         /// Built-in event type: task failed. Task failed. This event is triggered every time a task finished with an 
         /// exception. Note that prior to this event, there could be other events recorded specific to the failure.
         /// </summary>
-        public static readonly int EVT_TASK_FAILED = 22;
+        public static readonly int EvtTaskFailed = 22;
 
         /// <summary>
         /// Built-in event type: task timed out.
         /// </summary>
-        public static readonly int EVT_TASK_TIMEDOUT = 23;
+        public static readonly int EvtTaskTimedout = 23;
 
         /// <summary>
         /// Built-in event type: task session attribute set.
         /// </summary>
-        public static readonly int EVT_TASK_SESSION_ATTR_SET = 24;
+        public static readonly int EvtTaskSessionAttrSet = 24;
 
         /// <summary>
         /// Built-in event type: task reduced.
         /// </summary>
-        public static readonly int EVT_TASK_REDUCED = 25;
+        public static readonly int EvtTaskReduced = 25;
 
         /// <summary>
         /// Built-in event type: grid job was mapped in {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} 
         /// method.
         /// </summary>
-        public static readonly int EVT_JOB_MAPPED = 40;
+        public static readonly int EvtJobMapped = 40;
 
         /// <summary>
         /// Built-in event type: grid job result was received by {@link 
         /// org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method.
         /// </summary>
-        public static readonly int EVT_JOB_RESULTED = 41;
+        public static readonly int EvtJobResulted = 41;
 
         /// <summary>
         /// Built-in event type: grid job failed over.
         /// </summary>
-        public static readonly int EVT_JOB_FAILED_OVER = 43;
+        public static readonly int EvtJobFailedOver = 43;
 
         /// <summary>
         /// Built-in event type: grid job started.
         /// </summary>
-        public static readonly int EVT_JOB_STARTED = 44;
+        public static readonly int EvtJobStarted = 44;
 
         /// <summary>
         /// Built-in event type: grid job finished. Job has successfully completed and produced a result which from the 
         /// user perspective can still be either negative or positive.
         /// </summary>
-        public static readonly int EVT_JOB_FINISHED = 45;
+        public static readonly int EvtJobFinished = 45;
 
         /// <summary>
         /// Built-in event type: grid job timed out.
         /// </summary>
-        public static readonly int EVT_JOB_TIMEDOUT = 46;
+        public static readonly int EvtJobTimedout = 46;
 
         /// <summary>
         /// Built-in event type: grid job rejected during collision resolution.
         /// </summary>
-        public static readonly int EVT_JOB_REJECTED = 47;
+        public static readonly int EvtJobRejected = 47;
 
         /// <summary>
         /// Built-in event type: grid job failed. Job has failed. This means that there was some error event during job 
         /// execution and job did not produce a result.
         /// </summary>
-        public static readonly int EVT_JOB_FAILED = 48;
+        public static readonly int EvtJobFailed = 48;
 
         /// <summary>
         /// Built-in event type: grid job queued. Job arrived for execution and has been queued (added to passive queue 
         /// during collision resolution).
         /// </summary>
-        public static readonly int EVT_JOB_QUEUED = 49;
+        public static readonly int EvtJobQueued = 49;
 
         /// <summary>
         /// Built-in event type: grid job cancelled.
         /// </summary>
-        public static readonly int EVT_JOB_CANCELLED = 50;
+        public static readonly int EvtJobCancelled = 50;
 
         /// <summary>
         /// Built-in event type: entry created.
         /// </summary>
-        public static readonly int EVT_CACHE_ENTRY_CREATED = 60;
+        public static readonly int EvtCacheEntryCreated = 60;
 
         /// <summary>
         /// Built-in event type: entry destroyed.
         /// </summary>
-        public static readonly int EVT_CACHE_ENTRY_DESTROYED = 61;
+        public static readonly int EvtCacheEntryDestroyed = 61;
 
         /// <summary>
         /// Built-in event type: entry evicted.
         /// </summary>
-        public static readonly int EVT_CACHE_ENTRY_EVICTED = 62;
+        public static readonly int EvtCacheEntryEvicted = 62;
 
         /// <summary>
         /// Built-in event type: object put.
         /// </summary>
-        public static readonly int EVT_CACHE_OBJECT_PUT = 63;
+        public static readonly int EvtCacheObjectPut = 63;
 
         /// <summary>
         /// Built-in event type: object read.
         /// </summary>
-        public static readonly int EVT_CACHE_OBJECT_READ = 64;
+        public static readonly int EvtCacheObjectRead = 64;
 
         /// <summary>
         /// Built-in event type: object removed.
         /// </summary>
-        public static readonly int EVT_CACHE_OBJECT_REMOVED = 65;
+        public static readonly int EvtCacheObjectRemoved = 65;
 
         /// <summary>
         /// Built-in event type: object locked.
         /// </summary>
-        public static readonly int EVT_CACHE_OBJECT_LOCKED = 66;
+        public static readonly int EvtCacheObjectLocked = 66;
 
         /// <summary>
         /// Built-in event type: object unlocked.
         /// </summary>
-        public static readonly int EVT_CACHE_OBJECT_UNLOCKED = 67;
+        public static readonly int EvtCacheObjectUnlocked = 67;
 
         /// <summary>
         /// Built-in event type: cache object swapped from swap storage.
         /// </summary>
-        public static readonly int EVT_CACHE_OBJECT_SWAPPED = 68;
+        public static readonly int EvtCacheObjectSwapped = 68;
 
         /// <summary>
         /// Built-in event type: cache object unswapped from swap storage.
         /// </summary>
-        public static readonly int EVT_CACHE_OBJECT_UNSWAPPED = 69;
+        public static readonly int EvtCacheObjectUnswapped = 69;
 
         /// <summary>
         /// Built-in event type: cache object was expired when reading it.
         /// </summary>
-        public static readonly int EVT_CACHE_OBJECT_EXPIRED = 70;
+        public static readonly int EvtCacheObjectExpired = 70;
 
         /// <summary>
         /// Built-in event type: swap space data read.
         /// </summary>
-        public static readonly int EVT_SWAP_SPACE_DATA_READ = 71;
+        public static readonly int EvtSwapSpaceDataRead = 71;
 
         /// <summary>
         /// Built-in event type: swap space data stored.
         /// </summary>
-        public static readonly int EVT_SWAP_SPACE_DATA_STORED = 72;
+        public static readonly int EvtSwapSpaceDataStored = 72;
 
         /// <summary>
         /// Built-in event type: swap space data removed.
         /// </summary>
-        public static readonly int EVT_SWAP_SPACE_DATA_REMOVED = 73;
+        public static readonly int EvtSwapSpaceDataRemoved = 73;
 
         /// <summary>
         /// Built-in event type: swap space cleared.
         /// </summary>
-        public static readonly int EVT_SWAP_SPACE_CLEARED = 74;
+        public static readonly int EvtSwapSpaceCleared = 74;
 
         /// <summary>
         /// Built-in event type: swap space data evicted.
         /// </summary>
-        public static readonly int EVT_SWAP_SPACE_DATA_EVICTED = 75;
+        public static readonly int EvtSwapSpaceDataEvicted = 75;
 
         /// <summary>
         /// Built-in event type: cache object stored in off-heap storage.
         /// </summary>
-        public static readonly int EVT_CACHE_OBJECT_TO_OFFHEAP = 76;
+        public static readonly int EvtCacheObjectToOffheap = 76;
 
         /// <summary>
         /// Built-in event type: cache object moved from off-heap storage back into memory.
         /// </summary>
-        public static readonly int EVT_CACHE_OBJECT_FROM_OFFHEAP = 77;
+        public static readonly int EvtCacheObjectFromOffheap = 77;
 
         /// <summary>
         /// Built-in event type: cache rebalance started.
         /// </summary>
-        public static readonly int EVT_CACHE_REBALANCE_STARTED = 80;
+        public static readonly int EvtCacheRebalanceStarted = 80;
 
         /// <summary>
         /// Built-in event type: cache rebalance stopped.
         /// </summary>
-        public static readonly int EVT_CACHE_REBALANCE_STOPPED = 81;
+        public static readonly int EvtCacheRebalanceStopped = 81;
 
         /// <summary>
         /// Built-in event type: cache partition loaded.
         /// </summary>
-        public static readonly int EVT_CACHE_REBALANCE_PART_LOADED = 82;
+        public static readonly int EvtCacheRebalancePartLoaded = 82;
 
         /// <summary>
         /// Built-in event type: cache partition unloaded.
         /// </summary>
-        public static readonly int EVT_CACHE_REBALANCE_PART_UNLOADED = 83;
+        public static readonly int EvtCacheRebalancePartUnloaded = 83;
 
         /// <summary>
         /// Built-in event type: cache entry rebalanced.
         /// </summary>
-        public static readonly int EVT_CACHE_REBALANCE_OBJECT_LOADED = 84;
+        public static readonly int EvtCacheRebalanceObjectLoaded = 84;
 
         /// <summary>
         /// Built-in event type: cache entry unloaded.
         /// </summary>
-        public static readonly int EVT_CACHE_REBALANCE_OBJECT_UNLOADED = 85;
+        public static readonly int EvtCacheRebalanceObjectUnloaded = 85;
 
         /// <summary>
         /// Built-in event type: all nodes that hold partition left topology.
         /// </summary>
-        public static readonly int EVT_CACHE_REBALANCE_PART_DATA_LOST = 86;
+        public static readonly int EvtCacheRebalancePartDataLost = 86;
 
         /// <summary>
         /// Built-in event type: query executed.
         /// </summary>
-        public static readonly int EVT_CACHE_QUERY_EXECUTED = 96;
+        public static readonly int EvtCacheQueryExecuted = 96;
 
         /// <summary>
         /// Built-in event type: query entry read.
         /// </summary>
-        public static readonly int EVT_CACHE_QUERY_OBJECT_READ = 97;
+        public static readonly int EvtCacheQueryObjectRead = 97;
 
         /// <summary>
         /// Built-in event type: cache started.
         /// </summary>
-        public static readonly int EVT_CACHE_STARTED = 98;
+        public static readonly int EvtCacheStarted = 98;
 
         /// <summary>
         /// Built-in event type: cache started.
         /// </summary>
-        public static readonly int EVT_CACHE_STOPPED = 99;
+        public static readonly int EvtCacheStopped = 99;
 
         /// <summary>
         /// Built-in event type: cache nodes left.
         /// </summary>
-        public static readonly int EVT_CACHE_NODES_LEFT = 100;
+        public static readonly int EvtCacheNodesLeft = 100;
 
         /// <summary>
         /// Built-in event type: license violation detected.
         /// </summary>
-        public static readonly int EVT_LIC_VIOLATION = 1008;
+        public static readonly int EvtLicViolation = 1008;
 
         /// <summary>
         /// Built-in event type: license violation cleared.
         /// </summary>
-        public static readonly int EVT_LIC_CLEARED = 1009;
+        public static readonly int EvtLicCleared = 1009;
 
         /// <summary>
         /// Built-in event type: license violation grace period is expired.
         /// </summary>
-        public static readonly int EVT_LIC_GRACE_EXPIRED = 1010;
+        public static readonly int EvtLicGraceExpired = 1010;
 
         /// <summary>
         /// Built-in event type: license violation detected.
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_LICENSE =
+        public static readonly int[] EvtsLicense =
         {
-            EVT_LIC_CLEARED,
-            EVT_LIC_VIOLATION,
-            EVT_LIC_GRACE_EXPIRED
+            EvtLicCleared,
+            EvtLicViolation,
+            EvtLicGraceExpired
         };
 
         /// <summary>
@@ -358,11 +358,11 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_CHECKPOINT =
+        public static readonly int[] EvtsCheckpoint =
         {
-            EVT_CHECKPOINT_SAVED,
-            EVT_CHECKPOINT_LOADED,
-            EVT_CHECKPOINT_REMOVED
+            EvtCheckpointSaved,
+            EvtCheckpointLoaded,
+            EvtCheckpointRemoved
         };
 
         /// <summary>
@@ -371,35 +371,35 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_ERROR =
+        public static readonly int[] EvtsError =
         {
-            EVT_JOB_TIMEDOUT,
-            EVT_JOB_FAILED,
-            EVT_JOB_FAILED_OVER,
-            EVT_JOB_REJECTED,
-            EVT_JOB_CANCELLED,
-            EVT_TASK_TIMEDOUT,
-            EVT_TASK_FAILED,
-            EVT_CACHE_REBALANCE_STARTED,
-            EVT_CACHE_REBALANCE_STOPPED
+            EvtJobTimedout,
+            EvtJobFailed,
+            EvtJobFailedOver,
+            EvtJobRejected,
+            EvtJobCancelled,
+            EvtTaskTimedout,
+            EvtTaskFailed,
+            EvtCacheRebalanceStarted,
+            EvtCacheRebalanceStopped
         };
 
         /// <summary>
-        /// All discovery events except for <see cref="EVT_NODE_METRICS_UPDATED" />. Subscription to <see 
-        /// cref="EVT_NODE_METRICS_UPDATED" /> can generate massive amount of event processing in most cases is not 
+        /// All discovery events except for <see cref="EvtNodeMetricsUpdated" />. Subscription to <see 
+        /// cref="EvtNodeMetricsUpdated" /> can generate massive amount of event processing in most cases is not 
         /// necessary. If this event is indeed required you can subscribe to it individually or use <see 
-        /// cref="EVTS_DISCOVERY_ALL" /> array.
+        /// cref="EvtsDiscoveryAll" /> array.
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_DISCOVERY =
+        public static readonly int[] EvtsDiscovery =
         {
-            EVT_NODE_JOINED,
-            EVT_NODE_LEFT,
-            EVT_NODE_FAILED,
-            EVT_NODE_SEGMENTED,
-            EVT_CLIENT_NODE_DISCONNECTED,
-            EVT_CLIENT_NODE_RECONNECTED
+            EvtNodeJoined,
+            EvtNodeLeft,
+            EvtNodeFailed,
+            EvtNodeSegmented,
+            EvtClientNodeDisconnected,
+            EvtClientNodeReconnected
         };
 
         /// <summary>
@@ -407,15 +407,15 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_DISCOVERY_ALL =
+        public static readonly int[] EvtsDiscoveryAll =
         {
-            EVT_NODE_JOINED,
-            EVT_NODE_LEFT,
-            EVT_NODE_FAILED,
-            EVT_NODE_SEGMENTED,
-            EVT_NODE_METRICS_UPDATED,
-            EVT_CLIENT_NODE_DISCONNECTED,
-            EVT_CLIENT_NODE_RECONNECTED
+            EvtNodeJoined,
+            EvtNodeLeft,
+            EvtNodeFailed,
+            EvtNodeSegmented,
+            EvtNodeMetricsUpdated,
+            EvtClientNodeDisconnected,
+            EvtClientNodeReconnected
         };
 
         /// <summary>
@@ -423,18 +423,18 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_JOB_EXECUTION =
+        public static readonly int[] EvtsJobExecution =
         {
-            EVT_JOB_MAPPED,
-            EVT_JOB_RESULTED,
-            EVT_JOB_FAILED_OVER,
-            EVT_JOB_STARTED,
-            EVT_JOB_FINISHED,
-            EVT_JOB_TIMEDOUT,
-            EVT_JOB_REJECTED,
-            EVT_JOB_FAILED,
-            EVT_JOB_QUEUED,
-            EVT_JOB_CANCELLED
+            EvtJobMapped,
+            EvtJobResulted,
+            EvtJobFailedOver,
+            EvtJobStarted,
+            EvtJobFinished,
+            EvtJobTimedout,
+            EvtJobRejected,
+            EvtJobFailed,
+            EvtJobQueued,
+            EvtJobCancelled
         };
 
         /// <summary>
@@ -442,14 +442,14 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_TASK_EXECUTION =
+        public static readonly int[] EvtsTaskExecution =
         {
-            EVT_TASK_STARTED,
-            EVT_TASK_FINISHED,
-            EVT_TASK_FAILED,
-            EVT_TASK_TIMEDOUT,
-            EVT_TASK_SESSION_ATTR_SET,
-            EVT_TASK_REDUCED
+            EvtTaskStarted,
+            EvtTaskFinished,
+            EvtTaskFailed,
+            EvtTaskTimedout,
+            EvtTaskSessionAttrSet,
+            EvtTaskReduced
         };
 
         /// <summary>
@@ -457,18 +457,18 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_CACHE =
+        public static readonly int[] EvtsCache =
         {
-            EVT_CACHE_ENTRY_CREATED,
-            EVT_CACHE_ENTRY_DESTROYED,
-            EVT_CACHE_OBJECT_PUT,
-            EVT_CACHE_OBJECT_READ,
-            EVT_CACHE_OBJECT_REMOVED,
-            EVT_CACHE_OBJECT_LOCKED,
-            EVT_CACHE_OBJECT_UNLOCKED,
-            EVT_CACHE_OBJECT_SWAPPED,
-            EVT_CACHE_OBJECT_UNSWAPPED,
-            EVT_CACHE_OBJECT_EXPIRED
+            EvtCacheEntryCreated,
+            EvtCacheEntryDestroyed,
+            EvtCacheObjectPut,
+            EvtCacheObjectRead,
+            EvtCacheObjectRemoved,
+            EvtCacheObjectLocked,
+            EvtCacheObjectUnlocked,
+            EvtCacheObjectSwapped,
+            EvtCacheObjectUnswapped,
+            EvtCacheObjectExpired
         };
 
         /// <summary>
@@ -476,15 +476,15 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_CACHE_REBALANCE =
+        public static readonly int[] EvtsCacheRebalance =
         {
-            EVT_CACHE_REBALANCE_STARTED,
-            EVT_CACHE_REBALANCE_STOPPED,
-            EVT_CACHE_REBALANCE_PART_LOADED,
-            EVT_CACHE_REBALANCE_PART_UNLOADED,
-            EVT_CACHE_REBALANCE_OBJECT_LOADED,
-            EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-            EVT_CACHE_REBALANCE_PART_DATA_LOST
+            EvtCacheRebalanceStarted,
+            EvtCacheRebalanceStopped,
+            EvtCacheRebalancePartLoaded,
+            EvtCacheRebalancePartUnloaded,
+            EvtCacheRebalanceObjectLoaded,
+            EvtCacheRebalanceObjectUnloaded,
+            EvtCacheRebalancePartDataLost
         };
 
         /// <summary>
@@ -492,11 +492,11 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_CACHE_LIFECYCLE =
+        public static readonly int[] EvtsCacheLifecycle =
         {
-            EVT_CACHE_STARTED,
-            EVT_CACHE_STOPPED,
-            EVT_CACHE_NODES_LEFT
+            EvtCacheStarted,
+            EvtCacheStopped,
+            EvtCacheNodesLeft
         };
 
         /// <summary>
@@ -504,10 +504,10 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_CACHE_QUERY =
+        public static readonly int[] EvtsCacheQuery =
         {
-            EVT_CACHE_QUERY_EXECUTED,
-            EVT_CACHE_QUERY_OBJECT_READ
+            EvtCacheQueryExecuted,
+            EvtCacheQueryObjectRead
         };
 
         /// <summary>
@@ -515,13 +515,13 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_SWAPSPACE =
+        public static readonly int[] EvtsSwapspace =
         {
-            EVT_SWAP_SPACE_CLEARED,
-            EVT_SWAP_SPACE_DATA_REMOVED,
-            EVT_SWAP_SPACE_DATA_READ,
-            EVT_SWAP_SPACE_DATA_STORED,
-            EVT_SWAP_SPACE_DATA_EVICTED
+            EvtSwapSpaceCleared,
+            EvtSwapSpaceDataRemoved,
+            EvtSwapSpaceDataRead,
+            EvtSwapSpaceDataStored,
+            EvtSwapSpaceDataEvicted
         };
 
         /// <summary>
@@ -529,15 +529,15 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_ALL = GetAllEvents();
+        public static readonly int[] EvtsAll = GetAllEvents();
 
         /// <summary>
         /// All grid events (<b>excluding</b> metric update event).
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EVTS_ALL_MINUS_METRIC_UPDATE =
-            EVTS_ALL.Where(x => x != EVT_NODE_METRICS_UPDATED).ToArray();
+        public static readonly int[] EvtsAllMinusMetricUpdate =
+            EvtsAll.Where(x => x != EvtNodeMetricsUpdated).ToArray();
 
         /// <summary>
         /// Gets all the events.

@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /** <inheritDoc /> */
         internal override CacheOp OpId
         {
-            get { return CacheOp.QRY_SQL; }
+            get { return CacheOp.QrySql; }
         }
     }
 }

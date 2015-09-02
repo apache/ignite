@@ -38,22 +38,22 @@ namespace Apache.Ignite.Core.Impl.Portable
     internal class PortableMarshaller
     {
         /** Portable configuration. */
-        private readonly PortableConfiguration cfg;
+        private readonly PortableConfiguration _cfg;
 
         /** Type to descriptor map. */
-        private readonly IDictionary<Type, IPortableTypeDescriptor> typeToDesc =
+        private readonly IDictionary<Type, IPortableTypeDescriptor> _typeToDesc =
             new Dictionary<Type, IPortableTypeDescriptor>();
 
         /** Type name to descriptor map. */
-        private readonly IDictionary<string, IPortableTypeDescriptor> typeNameToDesc =
+        private readonly IDictionary<string, IPortableTypeDescriptor> _typeNameToDesc =
             new Dictionary<string, IPortableTypeDescriptor>();
 
         /** ID to descriptor map. */
-        private readonly IDictionary<long, IPortableTypeDescriptor> idToDesc =
+        private readonly IDictionary<long, IPortableTypeDescriptor> _idToDesc =
             new Dictionary<long, IPortableTypeDescriptor>();
 
         /** Cached metadatas. */
-        private volatile IDictionary<int, PortableMetadataHolder> metas =
+        private volatile IDictionary<int, PortableMetadataHolder> _metas =
             new Dictionary<int, PortableMetadataHolder>();
 
         /// <summary>
@@ -79,46 +79,46 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             // Define predefined types.
-            AddPredefinedType(typeof(bool), PortableUtils.TYPE_BOOL, PortableSystemHandlers.WRITE_HND_BOOL_TYPED, PortableSystemHandlers.WRITE_HND_BOOL);
-            AddPredefinedType(typeof(byte), PortableUtils.TYPE_BYTE, PortableSystemHandlers.WRITE_HND_BYTE_TYPED, PortableSystemHandlers.WRITE_HND_BYTE);
-            AddPredefinedType(typeof(short), PortableUtils.TYPE_SHORT, PortableSystemHandlers.WRITE_HND_SHORT_TYPED, PortableSystemHandlers.WRITE_HND_SHORT);
-            AddPredefinedType(typeof(char), PortableUtils.TYPE_CHAR, PortableSystemHandlers.WRITE_HND_CHAR_TYPED, PortableSystemHandlers.WRITE_HND_CHAR);
-            AddPredefinedType(typeof(int), PortableUtils.TYPE_INT, PortableSystemHandlers.WRITE_HND_INT_TYPED, PortableSystemHandlers.WRITE_HND_INT);
-            AddPredefinedType(typeof(long), PortableUtils.TYPE_LONG, PortableSystemHandlers.WRITE_HND_LONG_TYPED, PortableSystemHandlers.WRITE_HND_LONG);
-            AddPredefinedType(typeof(float), PortableUtils.TYPE_FLOAT, PortableSystemHandlers.WRITE_HND_FLOAT_TYPED, PortableSystemHandlers.WRITE_HND_FLOAT);
-            AddPredefinedType(typeof(double), PortableUtils.TYPE_DOUBLE, PortableSystemHandlers.WRITE_HND_DOUBLE_TYPED, PortableSystemHandlers.WRITE_HND_DOUBLE);
-            AddPredefinedType(typeof(string), PortableUtils.TYPE_STRING, PortableSystemHandlers.WRITE_HND_STRING_TYPED, PortableSystemHandlers.WRITE_HND_STRING);
-            AddPredefinedType(typeof(decimal), PortableUtils.TYPE_DECIMAL, PortableSystemHandlers.WRITE_HND_DECIMAL_TYPED, PortableSystemHandlers.WRITE_HND_DECIMAL);
-            AddPredefinedType(typeof(DateTime), PortableUtils.TYPE_DATE, PortableSystemHandlers.WRITE_HND_DATE_TYPED, PortableSystemHandlers.WRITE_HND_DATE);
-            AddPredefinedType(typeof(Guid), PortableUtils.TYPE_GUID, PortableSystemHandlers.WRITE_HND_GUID_TYPED, PortableSystemHandlers.WRITE_HND_GUID);
+            AddPredefinedType(typeof(bool), PortableUtils.TypeBool, PortableSystemHandlers.WriteHndBoolTyped, PortableSystemHandlers.WriteHndBool);
+            AddPredefinedType(typeof(byte), PortableUtils.TypeByte, PortableSystemHandlers.WriteHndByteTyped, PortableSystemHandlers.WriteHndByte);
+            AddPredefinedType(typeof(short), PortableUtils.TypeShort, PortableSystemHandlers.WriteHndShortTyped, PortableSystemHandlers.WriteHndShort);
+            AddPredefinedType(typeof(char), PortableUtils.TypeChar, PortableSystemHandlers.WriteHndCharTyped, PortableSystemHandlers.WriteHndChar);
+            AddPredefinedType(typeof(int), PortableUtils.TypeInt, PortableSystemHandlers.WriteHndIntTyped, PortableSystemHandlers.WriteHndInt);
+            AddPredefinedType(typeof(long), PortableUtils.TypeLong, PortableSystemHandlers.WriteHndLongTyped, PortableSystemHandlers.WriteHndLong);
+            AddPredefinedType(typeof(float), PortableUtils.TypeFloat, PortableSystemHandlers.WriteHndFloatTyped, PortableSystemHandlers.WriteHndFloat);
+            AddPredefinedType(typeof(double), PortableUtils.TypeDouble, PortableSystemHandlers.WriteHndDoubleTyped, PortableSystemHandlers.WriteHndDouble);
+            AddPredefinedType(typeof(string), PortableUtils.TypeString, PortableSystemHandlers.WriteHndStringTyped, PortableSystemHandlers.WriteHndString);
+            AddPredefinedType(typeof(decimal), PortableUtils.TypeDecimal, PortableSystemHandlers.WriteHndDecimalTyped, PortableSystemHandlers.WriteHndDecimal);
+            AddPredefinedType(typeof(DateTime), PortableUtils.TypeDate, PortableSystemHandlers.WriteHndDateTyped, PortableSystemHandlers.WriteHndDate);
+            AddPredefinedType(typeof(Guid), PortableUtils.TypeGuid, PortableSystemHandlers.WriteHndGuidTyped, PortableSystemHandlers.WriteHndGuid);
 
-            AddPredefinedType(typeof(PortableUserObject), PortableUtils.TYPE_PORTABLE, PortableSystemHandlers.WRITE_HND_PORTABLE_TYPED, 
-                PortableSystemHandlers.WRITE_HND_PORTABLE);
+            AddPredefinedType(typeof(PortableUserObject), PortableUtils.TypePortable, PortableSystemHandlers.WriteHndPortableTyped, 
+                PortableSystemHandlers.WriteHndPortable);
 
-            AddPredefinedType(typeof(bool[]), PortableUtils.TYPE_ARRAY_BOOL, PortableSystemHandlers.WRITE_HND_BOOL_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_BOOL_ARRAY);
-            AddPredefinedType(typeof(byte[]), PortableUtils.TYPE_ARRAY_BYTE, PortableSystemHandlers.WRITE_HND_BYTE_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_BYTE_ARRAY);
-            AddPredefinedType(typeof(short[]), PortableUtils.TYPE_ARRAY_SHORT, PortableSystemHandlers.WRITE_HND_SHORT_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_SHORT_ARRAY);
-            AddPredefinedType(typeof(char[]), PortableUtils.TYPE_ARRAY_CHAR, PortableSystemHandlers.WRITE_HND_CHAR_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_CHAR_ARRAY);
-            AddPredefinedType(typeof(int[]), PortableUtils.TYPE_ARRAY_INT, PortableSystemHandlers.WRITE_HND_INT_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_INT_ARRAY);
-            AddPredefinedType(typeof(long[]), PortableUtils.TYPE_ARRAY_LONG, PortableSystemHandlers.WRITE_HND_LONG_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_LONG_ARRAY);
-            AddPredefinedType(typeof(float[]), PortableUtils.TYPE_ARRAY_FLOAT, PortableSystemHandlers.WRITE_HND_FLOAT_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_FLOAT_ARRAY);
-            AddPredefinedType(typeof(double[]), PortableUtils.TYPE_ARRAY_DOUBLE, PortableSystemHandlers.WRITE_HND_DOUBLE_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_DOUBLE_ARRAY);
-            AddPredefinedType(typeof(decimal[]), PortableUtils.TYPE_ARRAY_DECIMAL, PortableSystemHandlers.WRITE_HND_DECIMAL_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_DECIMAL_ARRAY);
-            AddPredefinedType(typeof(string[]), PortableUtils.TYPE_ARRAY_STRING, PortableSystemHandlers.WRITE_HND_STRING_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_STRING_ARRAY);
-            AddPredefinedType(typeof(DateTime?[]), PortableUtils.TYPE_ARRAY_DATE, PortableSystemHandlers.WRITE_HND_DATE_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_DATE_ARRAY);
-            AddPredefinedType(typeof(Guid?[]), PortableUtils.TYPE_ARRAY_GUID, PortableSystemHandlers.WRITE_HND_GUID_ARRAY_TYPED,
-                PortableSystemHandlers.WRITE_HND_GUID_ARRAY);
+            AddPredefinedType(typeof(bool[]), PortableUtils.TypeArrayBool, PortableSystemHandlers.WriteHndBoolArrayTyped,
+                PortableSystemHandlers.WriteHndBoolArray);
+            AddPredefinedType(typeof(byte[]), PortableUtils.TypeArrayByte, PortableSystemHandlers.WriteHndByteArrayTyped,
+                PortableSystemHandlers.WriteHndByteArray);
+            AddPredefinedType(typeof(short[]), PortableUtils.TypeArrayShort, PortableSystemHandlers.WriteHndShortArrayTyped,
+                PortableSystemHandlers.WriteHndShortArray);
+            AddPredefinedType(typeof(char[]), PortableUtils.TypeArrayChar, PortableSystemHandlers.WriteHndCharArrayTyped,
+                PortableSystemHandlers.WriteHndCharArray);
+            AddPredefinedType(typeof(int[]), PortableUtils.TypeArrayInt, PortableSystemHandlers.WriteHndIntArrayTyped,
+                PortableSystemHandlers.WriteHndIntArray);
+            AddPredefinedType(typeof(long[]), PortableUtils.TypeArrayLong, PortableSystemHandlers.WriteHndLongArrayTyped,
+                PortableSystemHandlers.WriteHndLongArray);
+            AddPredefinedType(typeof(float[]), PortableUtils.TypeArrayFloat, PortableSystemHandlers.WriteHndFloatArrayTyped,
+                PortableSystemHandlers.WriteHndFloatArray);
+            AddPredefinedType(typeof(double[]), PortableUtils.TypeArrayDouble, PortableSystemHandlers.WriteHndDoubleArrayTyped,
+                PortableSystemHandlers.WriteHndDoubleArray);
+            AddPredefinedType(typeof(decimal[]), PortableUtils.TypeArrayDecimal, PortableSystemHandlers.WriteHndDecimalArrayTyped,
+                PortableSystemHandlers.WriteHndDecimalArray);
+            AddPredefinedType(typeof(string[]), PortableUtils.TypeArrayString, PortableSystemHandlers.WriteHndStringArrayTyped,
+                PortableSystemHandlers.WriteHndStringArray);
+            AddPredefinedType(typeof(DateTime?[]), PortableUtils.TypeArrayDate, PortableSystemHandlers.WriteHndDateArrayTyped,
+                PortableSystemHandlers.WriteHndDateArray);
+            AddPredefinedType(typeof(Guid?[]), PortableUtils.TypeArrayGuid, PortableSystemHandlers.WriteHndGuidArrayTyped,
+                PortableSystemHandlers.WriteHndGuidArray);
 
             // Define system types. They use internal reflective stuff, so configuration doesn't affect them.
             AddSystemTypes();
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (cfg.DefaultSerializer == null)
                 cfg.DefaultSerializer = dfltSerializer;
 
-            this.cfg = cfg;
+            this._cfg = cfg;
         }
 
         /// <summary>
@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>
         /// Object.
         /// </returns>
-        public T Unmarshal<T>(byte[] data, PortableMode mode = PortableMode.DESERIALIZE)
+        public T Unmarshal<T>(byte[] data, PortableMode mode = PortableMode.Deserialize)
         {
             return Unmarshal<T>(new PortableHeapStream(data), mode);
         }
@@ -242,7 +242,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </returns>
         public T Unmarshal<T>(IPortableStream stream, bool keepPortable)
         {
-            return Unmarshal<T>(stream, keepPortable ? PortableMode.KEEP_PORTABLE : PortableMode.DESERIALIZE, null);
+            return Unmarshal<T>(stream, keepPortable ? PortableMode.KeepPortable : PortableMode.Deserialize, null);
         }
 
         /// <summary>
@@ -253,7 +253,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>
         /// Object.
         /// </returns>
-        public T Unmarshal<T>(IPortableStream stream, PortableMode mode = PortableMode.DESERIALIZE)
+        public T Unmarshal<T>(IPortableStream stream, PortableMode mode = PortableMode.Deserialize)
         {
             return Unmarshal<T>(stream, mode, null);
         }
@@ -269,7 +269,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </returns>
         public T Unmarshal<T>(IPortableStream stream, PortableMode mode, PortableBuilderImpl builder)
         {
-            return new PortableReaderImpl(this, idToDesc, stream, mode, builder).Deserialize<T>();
+            return new PortableReaderImpl(this, _idToDesc, stream, mode, builder).Deserialize<T>();
         }
 
         /// <summary>
@@ -282,8 +282,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </returns>
         public PortableReaderImpl StartUnmarshal(IPortableStream stream, bool keepPortable)
         {
-            return new PortableReaderImpl(this, idToDesc, stream,
-                keepPortable ? PortableMode.KEEP_PORTABLE : PortableMode.DESERIALIZE, null);
+            return new PortableReaderImpl(this, _idToDesc, stream,
+                keepPortable ? PortableMode.KeepPortable : PortableMode.Deserialize, null);
         }
 
         /// <summary>
@@ -292,9 +292,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="stream">Stream.</param>
         /// <param name="mode">The mode.</param>
         /// <returns>Reader.</returns>
-        public PortableReaderImpl StartUnmarshal(IPortableStream stream, PortableMode mode = PortableMode.DESERIALIZE)
+        public PortableReaderImpl StartUnmarshal(IPortableStream stream, PortableMode mode = PortableMode.Deserialize)
         {
-            return new PortableReaderImpl(this, idToDesc, stream, mode, null);
+            return new PortableReaderImpl(this, _idToDesc, stream, mode, null);
         }
         
         /// <summary>
@@ -312,7 +312,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     return meta;
             }
 
-            return PortableMetadataImpl.EMPTY_META;
+            return PortableMetadataImpl.EmptyMeta;
         }
 
         /// <summary>
@@ -324,21 +324,21 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             PortableMetadataHolder holder;
 
-            if (!metas.TryGetValue(desc.TypeId, out holder))
+            if (!_metas.TryGetValue(desc.TypeId, out holder))
             {
                 lock (this)
                 {
-                    if (!metas.TryGetValue(desc.TypeId, out holder))
+                    if (!_metas.TryGetValue(desc.TypeId, out holder))
                     {
                         IDictionary<int, PortableMetadataHolder> metas0 =
-                            new Dictionary<int, PortableMetadataHolder>(metas);
+                            new Dictionary<int, PortableMetadataHolder>(_metas);
 
                         holder = desc.MetadataEnabled ? new PortableMetadataHolder(desc.TypeId,
                             desc.TypeName, desc.AffinityKeyFieldName) : null;
 
                         metas0[desc.TypeId] = holder;
 
-                        metas = metas0;
+                        _metas = metas0;
                     }
                 }
             }
@@ -375,7 +375,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     mergeInfo[fieldId] = new Tuple<string, int>(fieldMeta.Key, fieldMeta.Value);
                 }
 
-                metas[metaEntry.Key].Merge(mergeInfo);
+                _metas[metaEntry.Key].Merge(mergeInfo);
             }
         }
         
@@ -388,7 +388,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IPortableTypeDescriptor desc;
 
-            typeToDesc.TryGetValue(type, out desc);
+            _typeToDesc.TryGetValue(type, out desc);
 
             return desc;
         }
@@ -402,8 +402,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IPortableTypeDescriptor desc;
 
-            return typeNameToDesc.TryGetValue(typeName, out desc) ? desc : 
-                new PortableSurrogateTypeDescriptor(cfg, typeName);
+            return _typeNameToDesc.TryGetValue(typeName, out desc) ? desc : 
+                new PortableSurrogateTypeDescriptor(_cfg, typeName);
         }
 
         /// <summary>
@@ -416,8 +416,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IPortableTypeDescriptor desc;
 
-            return idToDesc.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc) ? desc :
-                userType ? new PortableSurrogateTypeDescriptor(cfg, typeId) : null;
+            return _idToDesc.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc) ? desc :
+                userType ? new PortableSurrogateTypeDescriptor(_cfg, typeId) : null;
         }
 
         /// <summary>
@@ -480,7 +480,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static IPortableSerializer GetPortableMarshalAwareSerializer(Type type)
         {
             return type.GetInterfaces().Contains(typeof (IPortableMarshalAware)) 
-                ? PortableMarshalAwareSerializer.INSTANCE 
+                ? PortableMarshalAwareSerializer.Instance 
                 : null;
         }
 
@@ -520,16 +520,16 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             long typeKey = PortableUtils.TypeKey(userType, typeId);
 
-            if (idToDesc.ContainsKey(typeKey))
+            if (_idToDesc.ContainsKey(typeKey))
             {
-                string type1 = idToDesc[typeKey].Type != null ? idToDesc[typeKey].Type.AssemblyQualifiedName : null;
+                string type1 = _idToDesc[typeKey].Type != null ? _idToDesc[typeKey].Type.AssemblyQualifiedName : null;
                 string type2 = type != null ? type.AssemblyQualifiedName : null;
 
                 throw new PortableException("Conflicting type IDs [type1=" + type1 + ", type2=" + type2 +
                     ", typeId=" + typeId + ']');
             }
 
-            if (userType && typeNameToDesc.ContainsKey(typeName))
+            if (userType && _typeNameToDesc.ContainsKey(typeName))
                 throw new PortableException("Conflicting type name: " + typeName);
 
             IPortableTypeDescriptor descriptor =
@@ -537,12 +537,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                     metaEnabled, keepDeserialized, affKeyFieldName, typedHandler, untypedHandler);
 
             if (type != null)
-                typeToDesc[type] = descriptor;
+                _typeToDesc[type] = descriptor;
 
             if (userType)
-                typeNameToDesc[typeName] = descriptor;
+                _typeNameToDesc[typeName] = descriptor;
 
-            idToDesc[typeKey] = descriptor;            
+            _idToDesc[typeKey] = descriptor;            
         }
 
         /// <summary>
@@ -562,25 +562,25 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private void AddSystemTypes()
         {
-            AddSystemType(PortableUtils.TYPE_NATIVE_JOB_HOLDER, w => new ComputeJobHolder(w));
-            AddSystemType(PortableUtils.TYPE_COMPUTE_JOB_WRAPPER, w => new ComputeJobWrapper(w));
-            AddSystemType(PortableUtils.TYPE_PORTABLE_JOB_RES_HOLDER, w => new PortableResultWrapper(w));
-            AddSystemType(PortableUtils.TYPE_DOT_NET_CFG, w => new InteropDotNetConfiguration(w));
-            AddSystemType(PortableUtils.TYPE_DOT_NET_PORTABLE_CFG, w => new InteropDotNetPortableConfiguration(w));
-            AddSystemType(PortableUtils.TYPE_DOT_NET_PORTABLE_TYP_CFG, w => new InteropDotNetPortableTypeConfiguration(w));
-            AddSystemType(PortableUtils.TYPE_GRID_PROXY, w => new GridProxy());
-            AddSystemType(PortableUtils.TYPE_COMPUTE_OUT_FUNC_JOB, w => new ComputeOutFuncJob(w));
-            AddSystemType(PortableUtils.TYPE_COMPUTE_OUT_FUNC_WRAPPER, w => new ComputeOutFuncWrapper(w));
-            AddSystemType(PortableUtils.TYPE_COMPUTE_FUNC_WRAPPER, w => new ComputeFuncWrapper(w));
-            AddSystemType(PortableUtils.TYPE_COMPUTE_FUNC_JOB, w => new ComputeFuncJob(w));
-            AddSystemType(PortableUtils.TYPE_COMPUTE_ACTION_JOB, w => new ComputeActionJob(w));
-            AddSystemType(PortableUtils.TYPE_CONTINUOUS_QUERY_REMOTE_FILTER_HOLDER, w => new ContinuousQueryFilterHolder(w));
-            AddSystemType(PortableUtils.TYPE_SERIALIZABLE_HOLDER, w => new SerializableObjectHolder(w));
-            AddSystemType(PortableUtils.TYPE_CACHE_ENTRY_PROCESSOR_HOLDER, w => new CacheEntryProcessorHolder(w));
-            AddSystemType(PortableUtils.TYPE_CACHE_ENTRY_PREDICATE_HOLDER, w => new CacheEntryFilterHolder(w));
-            AddSystemType(PortableUtils.TYPE_MESSAGE_FILTER_HOLDER, w => new MessageFilterHolder(w));
-            AddSystemType(PortableUtils.TYPE_PORTABLE_OR_SERIALIZABLE_HOLDER, w => new PortableOrSerializableObjectHolder(w));
-            AddSystemType(PortableUtils.TYPE_STREAM_RECEIVER_HOLDER, w => new StreamReceiverHolder(w));
+            AddSystemType(PortableUtils.TypeNativeJobHolder, w => new ComputeJobHolder(w));
+            AddSystemType(PortableUtils.TypeComputeJobWrapper, w => new ComputeJobWrapper(w));
+            AddSystemType(PortableUtils.TypePortableJobResHolder, w => new PortableResultWrapper(w));
+            AddSystemType(PortableUtils.TypeDotNetCfg, w => new InteropDotNetConfiguration(w));
+            AddSystemType(PortableUtils.TypeDotNetPortableCfg, w => new InteropDotNetPortableConfiguration(w));
+            AddSystemType(PortableUtils.TypeDotNetPortableTypCfg, w => new InteropDotNetPortableTypeConfiguration(w));
+            AddSystemType(PortableUtils.TypeGridProxy, w => new GridProxy());
+            AddSystemType(PortableUtils.TypeComputeOutFuncJob, w => new ComputeOutFuncJob(w));
+            AddSystemType(PortableUtils.TypeComputeOutFuncWrapper, w => new ComputeOutFuncWrapper(w));
+            AddSystemType(PortableUtils.TypeComputeFuncWrapper, w => new ComputeFuncWrapper(w));
+            AddSystemType(PortableUtils.TypeComputeFuncJob, w => new ComputeFuncJob(w));
+            AddSystemType(PortableUtils.TypeComputeActionJob, w => new ComputeActionJob(w));
+            AddSystemType(PortableUtils.TypeContinuousQueryRemoteFilterHolder, w => new ContinuousQueryFilterHolder(w));
+            AddSystemType(PortableUtils.TypeSerializableHolder, w => new SerializableObjectHolder(w));
+            AddSystemType(PortableUtils.TypeCacheEntryProcessorHolder, w => new CacheEntryProcessorHolder(w));
+            AddSystemType(PortableUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));
+            AddSystemType(PortableUtils.TypeMessageFilterHolder, w => new MessageFilterHolder(w));
+            AddSystemType(PortableUtils.TypePortableOrSerializableHolder, w => new PortableOrSerializableObjectHolder(w));
+            AddSystemType(PortableUtils.TypeStreamReceiverHolder, w => new StreamReceiverHolder(w));
         }
 
         /// <summary>

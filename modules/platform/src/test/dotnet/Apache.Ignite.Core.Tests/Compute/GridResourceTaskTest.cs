@@ -48,9 +48,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestTaskGridInjection()
         {
-            int res = grid1.Compute().Execute(new InjectionTask(), 0);
+            int res = Grid1.Compute().Execute(new InjectionTask(), 0);
 
-            Assert.AreEqual(grid1.Cluster.Nodes().Count, res);
+            Assert.AreEqual(Grid1.Cluster.Nodes().Count, res);
         }
 
         /// <summary>
@@ -59,9 +59,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestClosureGridInjection()
         {
-            var res = grid1.Compute().Broadcast(new InjectionClosure(), 1);
+            var res = Grid1.Compute().Broadcast(new InjectionClosure(), 1);
 
-            Assert.AreEqual(grid1.Cluster.Nodes().Count, res.Sum());
+            Assert.AreEqual(Grid1.Cluster.Nodes().Count, res.Sum());
         }
 
         /// <summary>
@@ -70,9 +70,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestReducerGridInjection()
         {
-            int res = grid1.Compute().Apply(new InjectionClosure(), new List<int> { 1, 1, 1 }, new InjectionReducer());
+            int res = Grid1.Compute().Apply(new InjectionClosure(), new List<int> { 1, 1, 1 }, new InjectionReducer());
 
-            Assert.AreEqual(grid1.Cluster.Nodes().Count, res);
+            Assert.AreEqual(Grid1.Cluster.Nodes().Count, res);
         }
 
         /// <summary>
@@ -81,9 +81,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestNoResultCache()
         {
-            int res = grid1.Compute().Execute(new NoResultCacheTask(), 0);
+            int res = Grid1.Compute().Execute(new NoResultCacheTask(), 0);
 
-            Assert.AreEqual(grid1.Cluster.Nodes().Count, res);
+            Assert.AreEqual(Grid1.Cluster.Nodes().Count, res);
         }
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /** <inheritDoc /> */
             public ComputeJobResultPolicy Result(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
             {
-                return ComputeJobResultPolicy.WAIT;
+                return ComputeJobResultPolicy.Wait;
             }
 
             /** <inheritDoc /> */
@@ -158,11 +158,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             /** */
             [InstanceResource]
-            private static IIgnite staticGrid1;
+            private static IIgnite _staticGrid1;
 
             /** */
             [InstanceResource]
-            public static IIgnite staticGrid2;
+            public static IIgnite StaticGrid2;
 
             /// <summary>
             ///
@@ -170,8 +170,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             [InstanceResource]
             public static IIgnite StaticPropGrid1
             {
-                get { return staticGrid1; }
-                set { staticGrid1 = value; }
+                get { return _staticGrid1; }
+                set { _staticGrid1 = value; }
             }
 
             /// <summary>
@@ -180,8 +180,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             [InstanceResource]
             private static IIgnite StaticPropGrid2
             {
-                get { return staticGrid2; }
-                set { staticGrid2 = value; }
+                get { return StaticGrid2; }
+                set { StaticGrid2 = value; }
             }
 
             /// <summary>
@@ -191,7 +191,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             [InstanceResource]
             public static void StaticMethod1(IIgnite grid)
             {
-                staticGrid1 = grid;
+                _staticGrid1 = grid;
             }
 
             /// <summary>
@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             [InstanceResource]
             private static void StaticMethod2(IIgnite grid)
             {
-                staticGrid2 = grid;
+                StaticGrid2 = grid;
             }
 
             /// <summary>
@@ -224,17 +224,17 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             /** */
             [InstanceResource]
-            private readonly IIgnite grid1 = null;
+            private readonly IIgnite _grid1 = null;
 
             /** */
             [InstanceResource]
-            public IIgnite grid2;
+            public IIgnite Grid2;
 
             /** */
-            private IIgnite mthdGrid1;
+            private IIgnite _mthdGrid1;
 
             /** */
-            private IIgnite mthdGrid2;
+            private IIgnite _mthdGrid2;
 
             /// <summary>
             ///
@@ -263,7 +263,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             [InstanceResource]
             public void Method1(IIgnite grid)
             {
-                mthdGrid1 = grid;
+                _mthdGrid1 = grid;
             }
 
             /// <summary>
@@ -273,7 +273,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             [InstanceResource]
             private void Method2(IIgnite grid)
             {
-                mthdGrid2 = grid;
+                _mthdGrid2 = grid;
             }
 
             /// <summary>
@@ -281,17 +281,17 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// </summary>
             protected void CheckInjection()
             {
-                Assert.IsTrue(staticGrid1 == null);
-                Assert.IsTrue(staticGrid2 == null);
+                Assert.IsTrue(_staticGrid1 == null);
+                Assert.IsTrue(StaticGrid2 == null);
 
-                Assert.IsTrue(grid1 != null);
-                Assert.IsTrue(grid2 == grid1);
+                Assert.IsTrue(_grid1 != null);
+                Assert.IsTrue(Grid2 == _grid1);
 
-                Assert.IsTrue(PropGrid1 == grid1);
-                Assert.IsTrue(PropGrid2 == grid1);
+                Assert.IsTrue(PropGrid1 == _grid1);
+                Assert.IsTrue(PropGrid2 == _grid1);
 
-                Assert.IsTrue(mthdGrid1 == grid1);
-                Assert.IsTrue(mthdGrid2 == grid1);
+                Assert.IsTrue(_mthdGrid1 == _grid1);
+                Assert.IsTrue(_mthdGrid2 == _grid1);
             }
 
             /** <inheritDoc /> */
@@ -315,16 +315,16 @@ namespace Apache.Ignite.Core.Tests.Compute
         public class InjectionReducer : Injectee, IComputeReducer<int, int>
         {
             /** Collected results. */
-            private readonly ICollection<int> ress = new List<int>();
+            private readonly ICollection<int> _ress = new List<int>();
 
             /** <inheritDoc /> */
             public bool Collect(int res)
             {
                 CheckInjection();
 
-                lock (ress)
+                lock (_ress)
                 {
-                    ress.Add(res);
+                    _ress.Add(res);
                 }
 
                 return true;
@@ -335,9 +335,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 CheckInjection();
 
-                lock (ress)
+                lock (_ress)
                 {
-                    return ress.Sum();
+                    return _ress.Sum();
                 }
             }
         }
@@ -350,11 +350,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             /** */
             [InstanceResource]
-            private static IIgnite staticGrid1;
+            private static IIgnite _staticGrid1;
 
             /** */
             [InstanceResource]
-            public static IIgnite staticGrid2;
+            public static IIgnite StaticGrid2;
 
             /// <summary>
             ///
@@ -362,8 +362,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             [InstanceResource]
             public static IIgnite StaticPropGrid1
             {
-                get { return staticGrid1; }
-                set { staticGrid1 = value; }
+                get { return _staticGrid1; }
+                set { _staticGrid1 = value; }
             }
 
             /// <summary>
@@ -372,8 +372,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             [InstanceResource]
             private static IIgnite StaticPropGrid2
             {
-                get { return staticGrid2; }
-                set { staticGrid2 = value; }
+                get { return StaticGrid2; }
+                set { StaticGrid2 = value; }
             }
 
             /// <summary>
@@ -383,7 +383,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             [InstanceResource]
             public static void StaticMethod1(IIgnite grid)
             {
-                staticGrid1 = grid;
+                _staticGrid1 = grid;
             }
 
             /// <summary>
@@ -393,7 +393,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             [InstanceResource]
             private static void StaticMethod2(IIgnite grid)
             {
-                staticGrid2 = grid;
+                StaticGrid2 = grid;
             }
 
             /// <summary>
@@ -416,17 +416,17 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             /** */
             [InstanceResource]
-            private readonly IIgnite grid1 = null;
+            private readonly IIgnite _grid1 = null;
 
             /** */
             [InstanceResource]
-            public IIgnite grid2;
+            public IIgnite Grid2;
 
             /** */
-            private IIgnite mthdGrid1;
+            private IIgnite _mthdGrid1;
 
             /** */
-            private IIgnite mthdGrid2;
+            private IIgnite _mthdGrid2;
 
             /// <summary>
             ///
@@ -455,7 +455,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             [InstanceResource]
             public void Method1(IIgnite grid)
             {
-                mthdGrid1 = grid;
+                _mthdGrid1 = grid;
             }
 
             /// <summary>
@@ -465,7 +465,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             [InstanceResource]
             private void Method2(IIgnite grid)
             {
-                mthdGrid2 = grid;
+                _mthdGrid2 = grid;
             }
 
             /// <summary>
@@ -473,17 +473,17 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// </summary>
             protected void CheckInjection()
             {
-                Assert.IsTrue(staticGrid1 == null);
-                Assert.IsTrue(staticGrid2 == null);
+                Assert.IsTrue(_staticGrid1 == null);
+                Assert.IsTrue(StaticGrid2 == null);
 
-                Assert.IsTrue(grid1 != null);
-                Assert.IsTrue(grid2 == grid1);
+                Assert.IsTrue(_grid1 != null);
+                Assert.IsTrue(Grid2 == _grid1);
 
-                Assert.IsTrue(PropGrid1 == grid1);
-                Assert.IsTrue(PropGrid2 == grid1);
+                Assert.IsTrue(PropGrid1 == _grid1);
+                Assert.IsTrue(PropGrid2 == _grid1);
 
-                Assert.IsTrue(mthdGrid1 == grid1);
-                Assert.IsTrue(mthdGrid2 == grid1);
+                Assert.IsTrue(_mthdGrid1 == _grid1);
+                Assert.IsTrue(_mthdGrid2 == _grid1);
             }
 
             /** <inheritDoc /> */
@@ -500,7 +500,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         public class NoResultCacheTask : IComputeTask<int, int, int>
         {
             /** Sum. */
-            private int sum;
+            private int _sum;
 
             /** <inheritDoc /> */
             public IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid, int arg)
@@ -514,9 +514,9 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.IsTrue(rcvd != null);
                 Assert.IsTrue(rcvd.Count == 0);
 
-                sum += res.Data();
+                _sum += res.Data();
 
-                return ComputeJobResultPolicy.WAIT;
+                return ComputeJobResultPolicy.Wait;
             }
 
             /** <inheritDoc /> */
@@ -525,7 +525,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.IsTrue(results != null);
                 Assert.IsTrue(results.Count == 0);
 
-                return sum;
+                return _sum;
             }
         }
 

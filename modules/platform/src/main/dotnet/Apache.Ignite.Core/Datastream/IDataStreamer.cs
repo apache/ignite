@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Datastream
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
-    public interface IDataStreamer<K, V> : IDisposable
+    public interface IDataStreamer<TK, TV> : IDisposable
     {
         /// <summary>
         /// Name of the cache to load data to.
@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Datastream
         /// <summary>
         /// Gets or sets custom stream receiver.
         /// </summary>
-        IStreamReceiver<K, V> Receiver { get; set; }
+        IStreamReceiver<TK, TV> Receiver { get; set; }
 
         /// <summary>
         /// Adds single key-value pair for loading. Passing <c>null</c> as value will be 
@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Datastream
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
         /// <returns>Future for this operation.</returns>
-        IFuture AddData(K key, V val);
+        IFuture AddData(TK key, TV val);
 
         /// <summary>
         /// Adds single key-value pair for loading. Passing <c>null</c> as pair's value will 
@@ -155,21 +155,21 @@ namespace Apache.Ignite.Core.Datastream
         /// </summary>
         /// <param name="pair">Key-value pair.</param>
         /// <returns>Future for this operation.</returns>
-        IFuture AddData(KeyValuePair<K, V> pair);
+        IFuture AddData(KeyValuePair<TK, TV> pair);
 
         /// <summary>
         /// Adds collection of key-value pairs for loading. 
         /// </summary>
         /// <param name="entries">Entries.</param>
         /// <returns>Future for this operation.</returns>
-        IFuture AddData(ICollection<KeyValuePair<K, V>> entries);
+        IFuture AddData(ICollection<KeyValuePair<TK, TV>> entries);
 
         /// <summary>
         /// Adds key for removal.
         /// </summary>
         /// <param name="key">Key.</param>
         /// <returns>Future for this operation.</returns>
-        IFuture RemoveData(K key);
+        IFuture RemoveData(TK key);
 
         /// <summary>
         /// Makes an attempt to load remaining data. This method is mostly similar to 
@@ -201,6 +201,6 @@ namespace Apache.Ignite.Core.Datastream
         /// <typeparam name="K1">Key type in portable mode.</typeparam>
         /// <typeparam name="V1">Value type in protable mode.</typeparam>
         /// <returns>Streamer instance with portable mode enabled.</returns>
-        IDataStreamer<K1, V1> WithKeepPortable<K1, V1>();
+        IDataStreamer<TK1, TV1> WithKeepPortable<TK1, TV1>();
     }
 }

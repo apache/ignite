@@ -25,16 +25,16 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
     internal class PortableHashsetMetadataHandler : IPortableMetadataHandler
     {
         /** Empty fields collection. */
-        private static readonly IDictionary<string, int> EMPTY_FIELDS = new Dictionary<string, int>();
+        private static readonly IDictionary<string, int> EmptyFields = new Dictionary<string, int>();
 
         /** IDs known when serialization starts. */
-        private readonly ICollection<int> ids;
+        private readonly ICollection<int> _ids;
 
         /** New fields. */
-        private IDictionary<string, int> fieldMap;
+        private IDictionary<string, int> _fieldMap;
 
         /** */
-        private readonly bool newType;
+        private readonly bool _newType;
 
         /// <summary>
         /// Constructor.
@@ -43,27 +43,27 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <param name="newType">True is metadata for type is not saved.</param>
         public PortableHashsetMetadataHandler(ICollection<int> ids, bool newType)
         {
-            this.ids = ids;
-            this.newType = newType;
+            this._ids = ids;
+            this._newType = newType;
         }
 
         /** <inheritdoc /> */
         public void OnFieldWrite(int fieldId, string fieldName, int typeId)
         {
-            if (!ids.Contains(fieldId))
+            if (!_ids.Contains(fieldId))
             {
-                if (fieldMap == null)
-                    fieldMap = new Dictionary<string, int>();
+                if (_fieldMap == null)
+                    _fieldMap = new Dictionary<string, int>();
 
-                if (!fieldMap.ContainsKey(fieldName))
-                    fieldMap[fieldName] = typeId;
+                if (!_fieldMap.ContainsKey(fieldName))
+                    _fieldMap[fieldName] = typeId;
             }
         }
 
         /** <inheritdoc /> */
         public IDictionary<string, int> OnObjectWriteFinished()
         {
-            return fieldMap ?? (newType ? EMPTY_FIELDS : null);
+            return _fieldMap ?? (_newType ? EmptyFields : null);
         }
     }
 }

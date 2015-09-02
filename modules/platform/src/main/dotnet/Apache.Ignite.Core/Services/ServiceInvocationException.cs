@@ -29,10 +29,10 @@ namespace Apache.Ignite.Core.Services
     public class ServiceInvocationException : IgniteException
     {
         /** Serializer key. */
-        private const string KEY_PORTABLE_CAUSE = "PortableCause";
+        private const string KeyPortableCause = "PortableCause";
 
         /** Cause. */
-        private readonly IPortableObject portableCause;
+        private readonly IPortableObject _portableCause;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceInvocationException"/> class.
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Services
         public ServiceInvocationException(string message, IPortableObject portableCause)
             :base(message)
         {
-            this.portableCause = portableCause;
+            this._portableCause = portableCause;
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Services
         protected ServiceInvocationException(SerializationInfo info, StreamingContext ctx)
             : base(info, ctx)
         {
-            portableCause = (IPortableObject) info.GetValue(KEY_PORTABLE_CAUSE, typeof (IPortableObject));
+            _portableCause = (IPortableObject) info.GetValue(KeyPortableCause, typeof (IPortableObject));
         }
 
         /// <summary>
@@ -87,13 +87,13 @@ namespace Apache.Ignite.Core.Services
         /// </summary>
         public IPortableObject PortableCause
         {
-            get { return portableCause; }
+            get { return _portableCause; }
         }
 
         /** <inheritdoc /> */
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue(KEY_PORTABLE_CAUSE, portableCause);
+            info.AddValue(KeyPortableCause, _portableCause);
 
             base.GetObjectData(info, context);
         }

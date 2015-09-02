@@ -36,16 +36,16 @@ namespace Apache.Ignite.Core.Tests
     public class GridMessagingTest
     {
         /** */
-        private IIgnite grid1;
+        private IIgnite _grid1;
 
         /** */
-        private IIgnite grid2;
+        private IIgnite _grid2;
 
         /** */
-        private IIgnite grid3;
+        private IIgnite _grid3;
 
         /** */
-        public static int messageId;
+        public static int MessageId;
 
         /// <summary>
         /// Executes before each test.
@@ -53,9 +53,9 @@ namespace Apache.Ignite.Core.Tests
         [SetUp]
         public void SetUp()
         {
-            grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
+            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests
         {
             try
             {
-                GridTestUtils.AssertHandleRegistryIsEmpty(1000, grid1, grid2, grid3);
+                GridTestUtils.AssertHandleRegistryIsEmpty(1000, _grid1, _grid2, _grid3);
 
                 MessagingTestHelper.AssertFailures();
             }
@@ -94,18 +94,18 @@ namespace Apache.Ignite.Core.Tests
         [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
         public void TestLocalListen(object topic)
         {
-            var messaging = grid1.Message();
+            var messaging = _grid1.Message();
             var listener = MessagingTestHelper.GetListener();
             messaging.LocalListen(listener, topic);
 
             // Test sending
             CheckSend(topic);
-            CheckSend(topic, grid2);
-            CheckSend(topic, grid3);
+            CheckSend(topic, _grid2);
+            CheckSend(topic, _grid3);
 
             // Test different topic
             CheckNoMessage(NextId());
-            CheckNoMessage(NextId(), grid2);
+            CheckNoMessage(NextId(), _grid2);
 
             // Test multiple subscriptions for the same filter
             messaging.LocalListen(listener, topic);
@@ -123,12 +123,12 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("Unable to cast object of type 'System.Double' to type 'System.String'.", ex.Message);
 
             // Test end listen
-            MessagingTestHelper.listenResult = false;
+            MessagingTestHelper.ListenResult = false;
             CheckSend(topic, single: true); // we'll receive one more and then unsubscribe because of delegate result.
             CheckNoMessage(topic);
 
             // Start again
-            MessagingTestHelper.listenResult = true;
+            MessagingTestHelper.ListenResult = true;
             messaging.LocalListen(listener, topic);
             CheckSend(topic);
 
@@ -161,20 +161,20 @@ namespace Apache.Ignite.Core.Tests
                 return true;
             });
 
-            grid3.Message().LocalListen(grid3Listener, topic);
+            _grid3.Message().LocalListen(grid3Listener, topic);
 
-            var clusterMessaging = grid1.Cluster.ForNodes(grid1.Cluster.LocalNode, grid2.Cluster.LocalNode).Message();
+            var clusterMessaging = _grid1.Cluster.ForNodes(_grid1.Cluster.LocalNode, _grid2.Cluster.LocalNode).Message();
             var clusterListener = MessagingTestHelper.GetListener();
             clusterMessaging.LocalListen(clusterListener, topic);
 
             CheckSend(msg: clusterMessaging, topic: topic);
             Assert.IsFalse(grid3GotMessage, "Grid3 should not get messages");
 
-            CheckSend(grid: grid2, msg: clusterMessaging, topic: topic);
+            CheckSend(grid: _grid2, msg: clusterMessaging, topic: topic);
             Assert.IsFalse(grid3GotMessage, "Grid3 should not get messages");
 
             clusterMessaging.StopLocalListen(clusterListener, topic);
-            grid3.Message().StopLocalListen(grid3Listener, topic);
+            _grid3.Message().StopLocalListen(grid3Listener, topic);
         }
 
         /// <summary>
@@ -182,13 +182,13 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         [Test]
         [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
-        [Category(GridTestUtils.CATEGORY_INTENSIVE)]
+        [Category(GridTestUtils.CategoryIntensive)]
         public void TestLocalListenMultithreaded()
         {
             const int threadCnt = 20;
             const int runSeconds = 20;
 
-            var messaging = grid1.Message();
+            var messaging = _grid1.Message();
 
             var senders = Task.Factory.StartNew(() => GridTestUtils.RunMultiThreaded(() =>
             {
@@ -254,7 +254,7 @@ namespace Apache.Ignite.Core.Tests
 
             messaging.Send((object)NextMessage());
 
-            Thread.Sleep(MessagingTestHelper.MESSAGE_TIMEOUT);
+            Thread.Sleep(MessagingTestHelper.MessageTimeout);
 
             // Check that unsubscription worked properly
             Assert.AreEqual(sharedResult, Thread.VolatileRead(ref sharedReceived));
@@ -287,7 +287,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public void TestRemoteListen(object topic, bool async = false)
         {
-            var messaging = async ? grid1.Message().WithAsync() : grid1.Message();
+            var messaging = async ? _grid1.Message().WithAsync() : _grid1.Message();
 
             var listener = MessagingTestHelper.GetListener();
             var listenId = messaging.RemoteListen(listener, topic);
@@ -345,7 +345,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private void TestRemoteListenProjection(object topic)
         {
-            var clusterMessaging = grid1.Cluster.ForNodes(grid1.Cluster.LocalNode, grid2.Cluster.LocalNode).Message();
+            var clusterMessaging = _grid1.Cluster.ForNodes(_grid1.Cluster.LocalNode, _grid2.Cluster.LocalNode).Message();
             var clusterListener = MessagingTestHelper.GetListener();
             var listenId = clusterMessaging.RemoteListen(clusterListener, topic);
 
@@ -360,13 +360,13 @@ namespace Apache.Ignite.Core.Tests
         /// Tests LocalListen in multithreaded mode.
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CATEGORY_INTENSIVE)]
+        [Category(GridTestUtils.CategoryIntensive)]
         public void TestRemoteListenMultithreaded()
         {
             const int threadCnt = 20;
             const int runSeconds = 20;
 
-            var messaging = grid1.Message();
+            var messaging = _grid1.Message();
 
             var senders = Task.Factory.StartNew(() => GridTestUtils.RunMultiThreaded(() =>
             {
@@ -388,24 +388,24 @@ namespace Apache.Ignite.Core.Tests
 
             }, threadCnt, runSeconds);
 
-            MessagingTestHelper.listenResult = false;
+            MessagingTestHelper.ListenResult = false;
 
             messaging.Send((object) NextMessage()); // send a message to make filters return false
 
-            Thread.Sleep(MessagingTestHelper.MESSAGE_TIMEOUT); // wait for all to unsubscribe
+            Thread.Sleep(MessagingTestHelper.MessageTimeout); // wait for all to unsubscribe
 
-            MessagingTestHelper.listenResult = true;
+            MessagingTestHelper.ListenResult = true;
 
             senders.Wait(); // wait for senders to stop
 
-            var sharedResult = MessagingTestHelper.RECEIVED_MESSAGES.Count;
+            var sharedResult = MessagingTestHelper.ReceivedMessages.Count;
 
             messaging.Send((object) NextMessage());
 
-            Thread.Sleep(MessagingTestHelper.MESSAGE_TIMEOUT);
+            Thread.Sleep(MessagingTestHelper.MessageTimeout);
 
             // Check that unsubscription worked properly
-            Assert.AreEqual(sharedResult, MessagingTestHelper.RECEIVED_MESSAGES.Count);
+            Assert.AreEqual(sharedResult, MessagingTestHelper.ReceivedMessages.Count);
             
         }
 
@@ -427,7 +427,7 @@ namespace Apache.Ignite.Core.Tests
                 cluster = msg.ClusterGroup;
             else
             {
-                grid = grid ?? grid1;
+                grid = grid ?? _grid1;
                 msg = grid.Message();
                 cluster = grid.Cluster.ForLocal();
             }
@@ -452,7 +452,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Multiple messages, ordered
             MessagingTestHelper.ClearReceived(messages.Count * expectedRepeat);
-            messages.ForEach(x => msg.SendOrdered(x, topic, MessagingTestHelper.MESSAGE_TIMEOUT));
+            messages.ForEach(x => msg.SendOrdered(x, topic, MessagingTestHelper.MessageTimeout));
 
             if (remoteListen) // in remote scenario messages get mixed up due to different timing on different nodes
                 MessagingTestHelper.VerifyReceive(cluster, messages, m => m.OrderBy(x => x), expectedRepeat);
@@ -468,9 +468,9 @@ namespace Apache.Ignite.Core.Tests
             // this will result in an exception in case of a message
             MessagingTestHelper.ClearReceived(0);
 
-            (grid ?? grid1).Message().Send(NextMessage(), topic);
+            (grid ?? _grid1).Message().Send(NextMessage(), topic);
 
-            Thread.Sleep(MessagingTestHelper.MESSAGE_TIMEOUT);
+            Thread.Sleep(MessagingTestHelper.MessageTimeout);
 
             MessagingTestHelper.AssertFailures();
         }
@@ -502,7 +502,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static int NextId()
         {
-            return Interlocked.Increment(ref messageId);
+            return Interlocked.Increment(ref MessageId);
         }
     }
 
@@ -513,22 +513,22 @@ namespace Apache.Ignite.Core.Tests
     public static class MessagingTestHelper
     {
         /** */
-        public static readonly ConcurrentStack<string> RECEIVED_MESSAGES = new ConcurrentStack<string>();
+        public static readonly ConcurrentStack<string> ReceivedMessages = new ConcurrentStack<string>();
         
         /** */
-        public static readonly ConcurrentStack<string> FAILURES = new ConcurrentStack<string>();
+        public static readonly ConcurrentStack<string> Failures = new ConcurrentStack<string>();
 
         /** */
-        public static readonly CountdownEvent RECEIVED_EVENT = new CountdownEvent(0);
+        public static readonly CountdownEvent ReceivedEvent = new CountdownEvent(0);
 
         /** */
-        public static readonly ConcurrentStack<Guid> LAST_NODE_IDS = new ConcurrentStack<Guid>();
+        public static readonly ConcurrentStack<Guid> LastNodeIds = new ConcurrentStack<Guid>();
 
         /** */
-        public static volatile bool listenResult = true;
+        public static volatile bool ListenResult = true;
 
         /** */
-        public static readonly TimeSpan MESSAGE_TIMEOUT = TimeSpan.FromMilliseconds(700);
+        public static readonly TimeSpan MessageTimeout = TimeSpan.FromMilliseconds(700);
 
         /// <summary>
         /// Clears received message information.
@@ -536,9 +536,9 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="expectedCount">The expected count of messages to be received.</param>
         public static void ClearReceived(int expectedCount)
         {
-            RECEIVED_MESSAGES.Clear();
-            RECEIVED_EVENT.Reset(expectedCount);
-            LAST_NODE_IDS.Clear();
+            ReceivedMessages.Clear();
+            ReceivedEvent.Reset(expectedCount);
+            LastNodeIds.Clear();
         }
 
         /// <summary>
@@ -552,15 +552,15 @@ namespace Apache.Ignite.Core.Tests
             Func<IEnumerable<string>, IEnumerable<string>> resultFunc, int expectedRepeat)
         {
             // check if expected message count has been received; Wait returns false if there were none.
-            Assert.IsTrue(RECEIVED_EVENT.Wait(MESSAGE_TIMEOUT));
+            Assert.IsTrue(ReceivedEvent.Wait(MessageTimeout));
 
             expectedMessages = expectedMessages.SelectMany(x => Enumerable.Repeat(x, expectedRepeat));
 
-            Assert.AreEqual(expectedMessages, resultFunc(RECEIVED_MESSAGES));
+            Assert.AreEqual(expectedMessages, resultFunc(ReceivedMessages));
 
             // check that all messages came from local node.
             var localNodeId = cluster.Grid.Cluster.LocalNode.Id;
-            Assert.AreEqual(localNodeId, LAST_NODE_IDS.Distinct().Single());
+            Assert.AreEqual(localNodeId, LastNodeIds.Distinct().Single());
             
             AssertFailures();
         }
@@ -580,10 +580,10 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public static void AssertFailures()
         {
-            if (FAILURES.Any())
-                Assert.Fail(FAILURES.Reverse().Aggregate((x, y) => string.Format("{0}\n{1}", x, y)));
+            if (Failures.Any())
+                Assert.Fail(Failures.Reverse().Aggregate((x, y) => string.Format("{0}\n{1}", x, y)));
 
-            FAILURES.Clear();
+            Failures.Clear();
         }
 
         /// <summary>
@@ -595,18 +595,18 @@ namespace Apache.Ignite.Core.Tests
         {
             try
             {
-                LAST_NODE_IDS.Push(id);
-                RECEIVED_MESSAGES.Push(msg);
+                LastNodeIds.Push(id);
+                ReceivedMessages.Push(msg);
 
-                RECEIVED_EVENT.Signal();
+                ReceivedEvent.Signal();
 
-                return listenResult;
+                return ListenResult;
             }
             catch (Exception ex)
             {
                 // When executed on remote nodes, these exceptions will not go to sender, 
                 // so we have to accumulate them.
-                FAILURES.Push(string.Format("Exception in Listen (msg: {0}, id: {1}): {2}", msg, id, ex));
+                Failures.Push(string.Format("Exception in Listen (msg: {0}, id: {1}): {2}", msg, id, ex));
                 throw;
             }
         }
@@ -619,12 +619,12 @@ namespace Apache.Ignite.Core.Tests
     public class MessageFilter<T> : IMessageFilter<T>
     {
         /** */
-        private readonly Func<Guid, T, bool> invoke;
+        private readonly Func<Guid, T, bool> _invoke;
 
         #pragma warning disable 649
         /** Grid. */
         [InstanceResource]
-        private IIgnite grid;
+        private IIgnite _grid;
         #pragma warning restore 649
 
         /// <summary>
@@ -633,14 +633,14 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="invoke">The invoke delegate.</param>
         public MessageFilter(Func<Guid, T, bool> invoke)
         {
-            this.invoke = invoke;
+            this._invoke = invoke;
         }
 
         /** <inheritdoc /> */
         public bool Invoke(Guid nodeId, T message)
         {
-            Assert.IsNotNull(grid);
-            return invoke(nodeId, message);
+            Assert.IsNotNull(_grid);
+            return _invoke(nodeId, message);
         }
     }
 }

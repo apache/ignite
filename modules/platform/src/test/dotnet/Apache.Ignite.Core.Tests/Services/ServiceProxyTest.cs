@@ -35,10 +35,10 @@ namespace Apache.Ignite.Core.Tests.Services
     public class ServiceProxyTest
     {
         /** */
-        private TestGridService svc;
+        private TestGridService _svc;
 
         /** */
-        private readonly PortableMarshaller marsh = new PortableMarshaller(new PortableConfiguration
+        private readonly PortableMarshaller _marsh = new PortableMarshaller(new PortableConfiguration
         {
             TypeConfigurations = new[]
             {
@@ -48,23 +48,23 @@ namespace Apache.Ignite.Core.Tests.Services
         });
 
         /** */
-        protected readonly IPortables portables;
+        protected readonly IPortables Portables;
 
         /** */
-        private readonly PlatformMemoryManager memory = new PlatformMemoryManager(1024);
+        private readonly PlatformMemoryManager _memory = new PlatformMemoryManager(1024);
 
         /** */
-        protected bool keepPortable;
+        protected bool KeepPortable;
 
         /** */
-        protected bool srvKeepPortable;
+        protected bool SrvKeepPortable;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceProxyTest"/> class.
         /// </summary>
         public ServiceProxyTest()
         {
-            portables = new PortablesImpl(marsh);
+            Portables = new PortablesImpl(_marsh);
         }
 
         /// <summary>
@@ -78,9 +78,9 @@ namespace Apache.Ignite.Core.Tests.Services
             prx.IntProp = 12345;
 
             Assert.AreEqual("12345", prx.ToString());
-            Assert.AreEqual("12345", svc.ToString());
+            Assert.AreEqual("12345", _svc.ToString());
             Assert.AreEqual(12345, prx.GetHashCode());
-            Assert.AreEqual(12345, svc.GetHashCode());
+            Assert.AreEqual(12345, _svc.GetHashCode());
         }
 
         /// <summary>
@@ -94,23 +94,23 @@ namespace Apache.Ignite.Core.Tests.Services
 
             prx.IntProp = 10;
             Assert.AreEqual(10, prx.IntProp);
-            Assert.AreEqual(10, svc.IntProp);
+            Assert.AreEqual(10, _svc.IntProp);
 
-            svc.IntProp = 15;
+            _svc.IntProp = 15;
             Assert.AreEqual(15, prx.IntProp);
-            Assert.AreEqual(15, svc.IntProp);
+            Assert.AreEqual(15, _svc.IntProp);
 
             prx.ObjProp = "prop1";
             Assert.AreEqual("prop1", prx.ObjProp);
-            Assert.AreEqual("prop1", svc.ObjProp);
+            Assert.AreEqual("prop1", _svc.ObjProp);
 
             prx.ObjProp = null;
             Assert.IsNull(prx.ObjProp);
-            Assert.IsNull(svc.ObjProp);
+            Assert.IsNull(_svc.ObjProp);
 
             prx.ObjProp = new TestClass {Prop = "prop2"};
             Assert.AreEqual("prop2", ((TestClass)prx.ObjProp).Prop);
-            Assert.AreEqual("prop2", ((TestClass)svc.ObjProp).Prop);
+            Assert.AreEqual("prop2", ((TestClass)_svc.ObjProp).Prop);
         }
 
         /// <summary>
@@ -123,19 +123,19 @@ namespace Apache.Ignite.Core.Tests.Services
 
             prx.VoidMethod();
             Assert.AreEqual("VoidMethod", prx.InvokeResult);
-            Assert.AreEqual("VoidMethod", svc.InvokeResult);
+            Assert.AreEqual("VoidMethod", _svc.InvokeResult);
 
             prx.VoidMethod(10);
-            Assert.AreEqual(svc.InvokeResult, prx.InvokeResult);
+            Assert.AreEqual(_svc.InvokeResult, prx.InvokeResult);
 
             prx.VoidMethod(10, "string");
-            Assert.AreEqual(svc.InvokeResult, prx.InvokeResult);
+            Assert.AreEqual(_svc.InvokeResult, prx.InvokeResult);
 
             prx.VoidMethod(10, "string", "arg");
-            Assert.AreEqual(svc.InvokeResult, prx.InvokeResult);
+            Assert.AreEqual(_svc.InvokeResult, prx.InvokeResult);
 
             prx.VoidMethod(10, "string", "arg", "arg1", 2, 3, "arg4");
-            Assert.AreEqual(svc.InvokeResult, prx.InvokeResult);
+            Assert.AreEqual(_svc.InvokeResult, prx.InvokeResult);
         }
 
         /// <summary>
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 
             var ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionPortableMethod(false, false));
 
-            if (keepPortable)
+            if (KeepPortable)
             {
                 Assert.AreEqual("Proxy method invocation failed with a portable error. " +
                                 "Examine PortableCause for details.", ex.Message);
@@ -243,11 +243,11 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         protected T GetProxy<T>()
         {
-            svc = new TestGridService(portables);
+            _svc = new TestGridService(Portables);
 
             var prx = new ServiceProxy<T>(InvokeProxyMethod).GetTransparentProxy();
 
-            Assert.IsFalse(ReferenceEquals(svc, prx));
+            Assert.IsFalse(ReferenceEquals(_svc, prx));
 
             return prx;
         }
@@ -262,13 +262,13 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </returns>
         private object InvokeProxyMethod(MethodBase method, object[] args)
         {
-            using (var inStream = new PlatformMemoryStream(memory.Allocate()))
-            using (var outStream = new PlatformMemoryStream(memory.Allocate()))
+            using (var inStream = new PlatformMemoryStream(_memory.Allocate()))
+            using (var outStream = new PlatformMemoryStream(_memory.Allocate()))
             {
                 // 1) Write to a stream
-                inStream.WriteBool(srvKeepPortable);  // WriteProxyMethod does not do this, but Java does
+                inStream.WriteBool(SrvKeepPortable);  // WriteProxyMethod does not do this, but Java does
 
-                ServiceProxySerializer.WriteProxyMethod(marsh.StartMarshal(inStream), method, args);
+                ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method, args);
 
                 inStream.SynchronizeOutput();
 
@@ -278,19 +278,19 @@ namespace Apache.Ignite.Core.Tests.Services
                 string mthdName;
                 object[] mthdArgs;
 
-                ServiceProxySerializer.ReadProxyMethod(inStream, marsh, out mthdName, out mthdArgs);
+                ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs);
 
-                var result = ServiceProxyInvoker.InvokeServiceMethod(svc, mthdName, mthdArgs);
+                var result = ServiceProxyInvoker.InvokeServiceMethod(_svc, mthdName, mthdArgs);
 
-                ServiceProxySerializer.WriteInvocationResult(outStream, marsh, result.Key, result.Value);
+                ServiceProxySerializer.WriteInvocationResult(outStream, _marsh, result.Key, result.Value);
                 
-                marsh.StartMarshal(outStream).WriteString("unused");  // fake Java exception details
+                _marsh.StartMarshal(outStream).WriteString("unused");  // fake Java exception details
 
                 outStream.SynchronizeOutput();
 
                 outStream.Seek(0, SeekOrigin.Begin);
 
-                return ServiceProxySerializer.ReadInvocationResult(outStream, marsh, keepPortable);
+                return ServiceProxySerializer.ReadInvocationResult(outStream, _marsh, KeepPortable);
             }
         }
 
@@ -439,7 +439,7 @@ namespace Apache.Ignite.Core.Tests.Services
         private class TestGridService : ITestGridService, ITestGridServiceAmbiguity
         {
             /** */
-            private readonly IPortables portables;
+            private readonly IPortables _portables;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="TestGridService"/> class.
@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /// <param name="portables">The portables.</param>
             public TestGridService(IPortables portables)
             {
-                this.portables = portables;
+                this._portables = portables;
             }
 
             /** <inheritdoc /> */
@@ -534,13 +534,13 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public IPortableObject PortableResultMethod(int arg1, TestPortableClass arg2)
             {
-                return portables.ToPortable<IPortableObject>(arg2);
+                return _portables.ToPortable<IPortableObject>(arg2);
             }
 
             /** <inheritdoc /> */
             public IPortableObject PortableArgAndResultMethod(int arg1, IPortableObject arg2)
             {
-                return portables.ToPortable<IPortableObject>(arg2.Deserialize<TestPortableClass>());
+                return _portables.ToPortable<IPortableObject>(arg2.Deserialize<TestPortableClass>());
             }
 
             /** <inheritdoc /> */
@@ -668,7 +668,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         public ServiceProxyTestKeepPortableClient()
         {
-            keepPortable = true;
+            KeepPortable = true;
         }
 
         [Test]
@@ -694,7 +694,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         public ServiceProxyTestKeepPortableServer()
         {
-            srvKeepPortable = true;
+            SrvKeepPortable = true;
         }
 
         [Test]
@@ -703,7 +703,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = GetProxy();
 
             var obj = new TestPortableClass { Prop = "PropValue" };
-            var portObj = portables.ToPortable<IPortableObject>(obj);
+            var portObj = Portables.ToPortable<IPortableObject>(obj);
 
             var result = prx.PortableArgMethod(1, portObj);
 
@@ -721,8 +721,8 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         public ServiceProxyTestKeepPortableClientServer()
         {
-            keepPortable = true;
-            srvKeepPortable = true;
+            KeepPortable = true;
+            SrvKeepPortable = true;
         }
 
         [Test]
@@ -731,7 +731,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = GetProxy();
             
             var obj = new TestPortableClass { Prop = "PropValue" };
-            var portObj = portables.ToPortable<IPortableObject>(obj);
+            var portObj = Portables.ToPortable<IPortableObject>(obj);
 
             var result = prx.PortableArgAndResultMethod(1, portObj);
 

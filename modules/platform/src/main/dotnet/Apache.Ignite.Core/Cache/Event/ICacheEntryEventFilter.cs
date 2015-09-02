@@ -20,12 +20,12 @@ namespace Apache.Ignite.Core.Cache.Event
     /// <summary>
     /// Cache entry event filter.
     /// </summary>
-    public interface ICacheEntryEventFilter<K, V>
+    public interface ICacheEntryEventFilter<TK, TV>
     {
         /// <summary>
         /// Evaluates cache entry event.
         /// </summary>
         /// <param name="evt">Event.</param>
-        bool Evaluate(ICacheEntryEvent<K, V> evt);
+        bool Evaluate(ICacheEntryEvent<TK, TV> evt);
     }
 }

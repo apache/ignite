@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Portable
         /// <summary>Gets field value.</summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Field value.</returns>
-        F Field<F>(string fieldName);
+        TF Field<TF>(string fieldName);
 
         /// <summary>Gets fully deserialized instance of portable object.</summary>
         /// <returns>Fully deserialized instance of portable object.</returns>

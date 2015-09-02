@@ -28,10 +28,10 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     internal class ComputeFuncJob : IComputeJob, IComputeResourceInjector, IPortableWriteAware
     {
         /** Closure. */
-        private readonly IComputeFunc clo;
+        private readonly IComputeFunc _clo;
 
         /** Argument. */
-        private readonly object arg;
+        private readonly object _arg;
 
         /// <summary>
         /// Constructor.
@@ -40,14 +40,14 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <param name="arg">Argument.</param>
         public ComputeFuncJob(IComputeFunc clo, object arg)
         {
-            this.clo = clo;
-            this.arg = arg;
+            this._clo = clo;
+            this._arg = arg;
         }
 
         /** <inheritDoc /> */
         public object Execute()
         {
-            return clo.Invoke(arg);
+            return _clo.Invoke(_arg);
         }
 
         /** <inheritDoc /> */
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /** <inheritDoc /> */
         public void Inject(Ignite grid)
         {
-            ResourceProcessor.Inject(clo, grid);
+            ResourceProcessor.Inject(_clo, grid);
         }
 
         /** <inheritDoc /> */
@@ -68,10 +68,10 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
             PortableWriterImpl writer0 = (PortableWriterImpl) writer.RawWriter();
 
             writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, clo);
+            PortableUtils.WritePortableOrSerializable(writer0, _clo);
 
             writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, arg);
+            PortableUtils.WritePortableOrSerializable(writer0, _arg);
         }
 
         /// <summary>
@@ -82,8 +82,8 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         {
             var reader0 = (PortableReaderImpl) reader.RawReader();
             
-            clo = PortableUtils.ReadPortableOrSerializable<IComputeFunc>(reader0);
-            arg = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _clo = PortableUtils.ReadPortableOrSerializable<IComputeFunc>(reader0);
+            _arg = PortableUtils.ReadPortableOrSerializable<object>(reader0);
         }
     }
 }

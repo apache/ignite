@@ -26,22 +26,22 @@ namespace Apache.Ignite.Core.Events
     public sealed class CacheRebalancingEvent : EventBase
 	{
         /** */
-        private readonly string cacheName;
+        private readonly string _cacheName;
 
         /** */
-        private readonly int partition;
+        private readonly int _partition;
 
         /** */
-        private readonly IClusterNode discoveryNode;
+        private readonly IClusterNode _discoveryNode;
 
         /** */
-        private readonly int discoveryEventType;
+        private readonly int _discoveryEventType;
 
         /** */
-        private readonly string discoveryEventName;
+        private readonly string _discoveryEventName;
 
         /** */
-        private readonly long discoveryTimestamp;
+        private readonly long _discoveryTimestamp;
 
         /// <summary>
         /// Constructor.
@@ -49,43 +49,43 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         internal CacheRebalancingEvent(IPortableRawReader r) : base(r)
         {
-            cacheName = r.ReadString();
-            partition = r.ReadInt();
-            discoveryNode = ReadNode(r);
-            discoveryEventType = r.ReadInt();
-            discoveryEventName = r.ReadString();
-            discoveryTimestamp = r.ReadLong();
+            _cacheName = r.ReadString();
+            _partition = r.ReadInt();
+            _discoveryNode = ReadNode(r);
+            _discoveryEventType = r.ReadInt();
+            _discoveryEventName = r.ReadString();
+            _discoveryTimestamp = r.ReadLong();
         }
 		
         /// <summary>
         /// Gets cache name. 
         /// </summary>
-        public string CacheName { get { return cacheName; } }
+        public string CacheName { get { return _cacheName; } }
 
         /// <summary>
         /// Gets partition for the event. 
         /// </summary>
-        public int Partition { get { return partition; } }
+        public int Partition { get { return _partition; } }
 
         /// <summary>
         /// Gets shadow of the node that triggered this rebalancing event. 
         /// </summary>
-        public IClusterNode DiscoveryNode { get { return discoveryNode; } }
+        public IClusterNode DiscoveryNode { get { return _discoveryNode; } }
 
         /// <summary>
         /// Gets type of discovery event that triggered this rebalancing event. 
         /// </summary>
-        public int DiscoveryEventType { get { return discoveryEventType; } }
+        public int DiscoveryEventType { get { return _discoveryEventType; } }
 
         /// <summary>
         /// Gets name of discovery event that triggered this rebalancing event. 
         /// </summary>
-        public string DiscoveryEventName { get { return discoveryEventName; } }
+        public string DiscoveryEventName { get { return _discoveryEventName; } }
 
         /// <summary>
         /// Gets timestamp of discovery event that caused this rebalancing event. 
         /// </summary>
-        public long DiscoveryTimestamp { get { return discoveryTimestamp; } }
+        public long DiscoveryTimestamp { get { return _discoveryTimestamp; } }
 
         /** <inheritDoc /> */
 	    public override string ToShortString()

@@ -36,32 +36,32 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
     /// To execute the query use method 
     /// <see cref="ICache{K,V}.QueryContinuous(ContinuousQuery{K,V})"/>.
     /// </summary>
-    public class ContinuousQuery<K, V>
+    public class ContinuousQuery<TK, TV>
     {
         /// <summary>
         /// Default buffer size.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
-        public const int DFLT_BUF_SIZE = 1;
+        public const int DfltBufSize = 1;
 
         /// <summary>
         /// Default time interval.
         /// </summary>
         [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
         [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
-        public static readonly TimeSpan DFLT_TIME_INTERVAL = new TimeSpan(0);
+        public static readonly TimeSpan DfltTimeInterval = new TimeSpan(0);
 
         /// <summary>
         /// Default auto-unsubscribe flag value.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
-        public const bool DFLT_AUTO_UNSUBSCRIBE = true;
+        public const bool DfltAutoUnsubscribe = true;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="lsnr">Listener.</param>
-        public ContinuousQuery(ICacheEntryEventListener<K, V> lsnr) : this(lsnr, false)
+        public ContinuousQuery(ICacheEntryEventListener<TK, TV> lsnr) : this(lsnr, false)
         {
             // No-op.
         }
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// </summary>
         /// <param name="lsnr">Listener.</param>
         /// <param name="loc">Whether query should be executed locally.</param>
-        public ContinuousQuery(ICacheEntryEventListener<K, V> lsnr, bool loc) : this(lsnr, null, loc)
+        public ContinuousQuery(ICacheEntryEventListener<TK, TV> lsnr, bool loc) : this(lsnr, null, loc)
         {
             // No-op.
         }
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// </summary>
         /// <param name="lsnr">Listener.</param>
         /// <param name="filter">Filter.</param>
-        public ContinuousQuery(ICacheEntryEventListener<K, V> lsnr, ICacheEntryEventFilter<K, V> filter)
+        public ContinuousQuery(ICacheEntryEventListener<TK, TV> lsnr, ICacheEntryEventFilter<TK, TV> filter)
             : this(lsnr, filter, false)
         {
             // No-op.
@@ -93,22 +93,22 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// <param name="lsnr">Listener.</param>
         /// <param name="filter">Filter.</param>
         /// <param name="loc">Whether query should be executed locally.</param>
-        public ContinuousQuery(ICacheEntryEventListener<K, V> lsnr, ICacheEntryEventFilter<K, V> filter, bool loc)
+        public ContinuousQuery(ICacheEntryEventListener<TK, TV> lsnr, ICacheEntryEventFilter<TK, TV> filter, bool loc)
         {
             Listener = lsnr;
             Filter = filter;
             Local = loc;
 
-            BufferSize = DFLT_BUF_SIZE;
-            TimeInterval = DFLT_TIME_INTERVAL;
-            AutoUnsubscribe = DFLT_AUTO_UNSUBSCRIBE;
+            BufferSize = DfltBufSize;
+            TimeInterval = DfltTimeInterval;
+            AutoUnsubscribe = DfltAutoUnsubscribe;
         }
 
         /// <summary>
         /// Cache entry event listener. Invoked on the node where continuous query execution 
         /// has been started.
         /// </summary>
-        public ICacheEntryEventListener<K, V> Listener { get; set; }
+        public ICacheEntryEventListener<TK, TV> Listener { get; set; }
 
         /// <summary>
         /// Optional cache entry filter. Invoked on a node where cache event occurred. If filter
@@ -117,14 +117,14 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// <para />
         /// Must be either portable or serializable in case query is not local.
         /// </summary>
-        public ICacheEntryEventFilter<K, V> Filter { get; set; }
+        public ICacheEntryEventFilter<TK, TV> Filter { get; set; }
 
         /// <summary>
         /// Buffer size. When a cache update happens, entry is first put into a buffer. 
         /// Entries from buffer will be sent to the master node only if the buffer is 
         /// full or time provided via <see cref="TimeInterval"/> is exceeded.
         /// <para />
-        /// Defaults to <see cref="DFLT_BUF_SIZE"/>
+        /// Defaults to <see cref="DfltBufSize"/>
         /// </summary>
         public int BufferSize { get; set; }
 

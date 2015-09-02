@@ -27,19 +27,19 @@ namespace Apache.Ignite.Core.Events
     public sealed class TaskEvent : EventBase
 	{
         /** */
-        private readonly string taskName;
+        private readonly string _taskName;
 
         /** */
-        private readonly string taskClassName;
+        private readonly string _taskClassName;
 
         /** */
-        private readonly GridGuid taskSessionId;
+        private readonly GridGuid _taskSessionId;
 
         /** */
-        private readonly bool @internal;
+        private readonly bool _internal;
 
         /** */
-        private readonly Guid subjectId;
+        private readonly Guid _subjectId;
 
         /// <summary>
         /// Constructor.
@@ -47,39 +47,39 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         internal TaskEvent(IPortableRawReader r) : base(r)
         {
-            taskName = r.ReadString();
-            taskClassName = r.ReadString();
-            taskSessionId = GridGuid.ReadPortable(r);
-            @internal = r.ReadBoolean();
-            subjectId = r.ReadGuid() ?? Guid.Empty;
+            _taskName = r.ReadString();
+            _taskClassName = r.ReadString();
+            _taskSessionId = GridGuid.ReadPortable(r);
+            _internal = r.ReadBoolean();
+            _subjectId = r.ReadGuid() ?? Guid.Empty;
         }
 		
         /// <summary>
         /// Gets name of the task that triggered the event. 
         /// </summary>
-        public string TaskName { get { return taskName; } }
+        public string TaskName { get { return _taskName; } }
 
         /// <summary>
         /// Gets name of task class that triggered this event. 
         /// </summary>
-        public string TaskClassName { get { return taskClassName; } }
+        public string TaskClassName { get { return _taskClassName; } }
 
         /// <summary>
         /// Gets session ID of the task that triggered the event. 
         /// </summary>
-        public GridGuid TaskSessionId { get { return taskSessionId; } }
+        public GridGuid TaskSessionId { get { return _taskSessionId; } }
 
         /// <summary>
         /// Returns true if task is created by Ignite and is used for system needs. 
         /// </summary>
-        public bool Internal { get { return @internal; } }
+        public bool Internal { get { return _internal; } }
 
         /// <summary>
         /// Gets security subject ID initiated this task event, if available. This property is not available for 
         /// GridEventType#EVT_TASK_SESSION_ATTR_SET task event. Subject ID will be set either to node ID or client ID 
         /// initiated task execution. 
         /// </summary>
-        public Guid SubjectId { get { return subjectId; } }
+        public Guid SubjectId { get { return _subjectId; } }
 
         /** <inheritDoc /> */
 	    public override string ToShortString()

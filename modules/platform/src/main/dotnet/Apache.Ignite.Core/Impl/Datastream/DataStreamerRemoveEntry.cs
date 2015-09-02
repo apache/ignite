@@ -20,28 +20,28 @@ namespace Apache.Ignite.Core.Impl.Datastream
     /// <summary>
     /// Remove marker.
     /// </summary>
-    internal class DataStreamerRemoveEntry<K>
+    internal class DataStreamerRemoveEntry<TK>
     {
         /** Key to remove. */
-        private readonly K key;
+        private readonly TK _key;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="key">Key.</param>
-        public DataStreamerRemoveEntry(K key)
+        public DataStreamerRemoveEntry(TK key)
         {
-            this.key = key;
+            this._key = key;
         }
 
         /// <summary>
         /// Key.
         /// </summary>
-        public K Key
+        public TK Key
         {
             get
             {
-                return key;
+                return _key;
             }
         }
     }

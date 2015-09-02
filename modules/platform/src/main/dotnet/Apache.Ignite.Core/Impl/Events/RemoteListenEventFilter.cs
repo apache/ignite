@@ -30,10 +30,10 @@ namespace Apache.Ignite.Core.Impl.Events
     internal class RemoteListenEventFilter : IInteropCallback
     {
         /** */
-        private readonly Ignite grid;
+        private readonly Ignite _grid;
         
         /** */
-        private readonly Func<Guid, IEvent, bool> filter;
+        private readonly Func<Guid, IEvent, bool> _filter;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RemoteListenEventFilter"/> class.
@@ -42,20 +42,20 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="filter">The filter.</param>
         public RemoteListenEventFilter(Ignite grid, Func<Guid, IEvent, bool> filter)
         {
-            this.grid = grid;
-            this.filter = filter;
+            this._grid = grid;
+            this._filter = filter;
         }
 
         /** <inheritdoc /> */
         public int Invoke(IPortableStream stream)
         {
-            var reader = grid.Marshaller.StartUnmarshal(stream);
+            var reader = _grid.Marshaller.StartUnmarshal(stream);
 
             var evt = EventReader.Read<IEvent>(reader);
 
             var nodeId = reader.ReadGuid() ?? Guid.Empty;
 
-            return filter(nodeId, evt) ? 1 : 0;
+            return _filter(nodeId, evt) ? 1 : 0;
         }
 
         /// <summary>

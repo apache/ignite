@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Events
     public sealed class LicenseEvent : EventBase
 	{
         /** */
-        private readonly Guid licenseId;
+        private readonly Guid _licenseId;
 
         /// <summary>
         /// Constructor.
@@ -34,13 +34,13 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         internal LicenseEvent(IPortableRawReader r) : base(r)
         {
-            licenseId = r.ReadGuid() ?? Guid.Empty;
+            _licenseId = r.ReadGuid() ?? Guid.Empty;
         }
 		
         /// <summary>
         /// Gets license ID. 
         /// </summary>
-        public Guid LicenseId { get { return licenseId; } }
+        public Guid LicenseId { get { return _licenseId; } }
 
         /** <inheritDoc /> */
 	    public override string ToShortString()

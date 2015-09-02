@@ -34,42 +34,42 @@ namespace Apache.Ignite.Core.Impl.Common
     internal class DelegateTypeDescriptor
     {
         /** Cached decriptors. */
-        private static readonly CopyOnWriteConcurrentDictionary<Type, DelegateTypeDescriptor> DESCRIPTORS 
+        private static readonly CopyOnWriteConcurrentDictionary<Type, DelegateTypeDescriptor> Descriptors 
             = new CopyOnWriteConcurrentDictionary<Type, DelegateTypeDescriptor>();
 
         /** */
-        private readonly Func<object, object> computeOutFunc;
+        private readonly Func<object, object> _computeOutFunc;
 
         /** */
-        private readonly Func<object, object, object> computeFunc;
+        private readonly Func<object, object, object> _computeFunc;
 
         /** */
-        private readonly Func<object, Guid, object, bool> eventFilter;
+        private readonly Func<object, Guid, object, bool> _eventFilter;
 
         /** */
-        private readonly Func<object, object, object, bool> cacheEntryFilter;
+        private readonly Func<object, object, object, bool> _cacheEntryFilter;
 
         /** */
-        private readonly Func<object, object, object, byte, bool> cacheDrEntryFilter;
+        private readonly Func<object, object, object, byte, bool> _cacheDrEntryFilter;
 
         /** */
         private readonly Tuple<Func<object, IMutableCacheEntryInternal, object, object>, Tuple<Type, Type>> 
-            cacheEntryProcessor;
+            _cacheEntryProcessor;
 
         /** */
-        private readonly Func<object, Guid, object, bool> messageFilter;
+        private readonly Func<object, Guid, object, bool> _messageFilter;
 
         /** */
-        private readonly Func<object, object> computeJobExecute;
+        private readonly Func<object, object> _computeJobExecute;
 
         /** */
-        private readonly Action<object> computeJobCancel;
+        private readonly Action<object> _computeJobCancel;
 
         /** */
-        private readonly Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> streamReceiver;
+        private readonly Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> _streamReceiver;
 
         /** */
-        private readonly Func<object, object> streamTransformerCtor;
+        private readonly Func<object, object> _streamTransformerCtor;
 
         /// <summary>
         /// Gets the <see cref="IComputeFunc{T}" /> invocator.
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Precompiled invocator delegate.</returns>
         public static Func<object, object> GetComputeOutFunc(Type type)
         {
-            return Get(type).computeOutFunc;
+            return Get(type)._computeOutFunc;
         }
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Precompiled invocator delegate.</returns>
         public static Func<object, object, object> GetComputeFunc(Type type)
         {
-            return Get(type).computeFunc;
+            return Get(type)._computeFunc;
         }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Precompiled invocator delegate.</returns>
         public static Func<object, Guid, object, bool> GetEventFilter(Type type)
         {
-            return Get(type).eventFilter;
+            return Get(type)._eventFilter;
         }
 
         /// <summary>
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Precompiled invocator delegate.</returns>
         public static Func<object, object, object, bool> GetCacheEntryFilter(Type type)
         {
-            return Get(type).cacheEntryFilter;
+            return Get(type)._cacheEntryFilter;
         }
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Precompiled invocator delegate.</returns>
         public static Func<object, object, object, byte, bool> GetCacheDrEntryFilter(Type type)
         {
-            return Get(type).cacheDrEntryFilter;
+            return Get(type)._cacheDrEntryFilter;
         }
 
         /// <summary>
@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Precompiled invocator delegate.</returns>
         public static Func<object, IMutableCacheEntryInternal, object, object> GetCacheEntryProcessor(Type type)
         {
-            return Get(type).cacheEntryProcessor.Item1;
+            return Get(type)._cacheEntryProcessor.Item1;
         }
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Key and value types.</returns>
         public static Tuple<Type, Type> GetCacheEntryProcessorTypes(Type type)
         {
-            return Get(type).cacheEntryProcessor.Item2;
+            return Get(type)._cacheEntryProcessor.Item2;
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Precompiled invocator delegate.</returns>
         public static Func<object, Guid, object, bool> GetMessageFilter(Type type)
         {
-            return Get(type).messageFilter;
+            return Get(type)._messageFilter;
         }
 
         /// <summary>
@@ -161,8 +161,8 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             var desc = Get(type);
 
-            execute = desc.computeJobExecute;
-            cancel = desc.computeJobCancel;
+            execute = desc._computeJobExecute;
+            cancel = desc._computeJobCancel;
         }
 
         /// <summary>
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Precompiled invocator delegate.</returns>
         public static Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> GetStreamReceiver(Type type)
         {
-            return Get(type).streamReceiver;
+            return Get(type)._streamReceiver;
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Precompiled invocator delegate.</returns>
         public static Func<object, object> GetStreamTransformerCtor(Type type)
         {
-            return Get(type).streamTransformerCtor;
+            return Get(type)._streamTransformerCtor;
         }
 
         /// <summary>
@@ -192,9 +192,9 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             DelegateTypeDescriptor result;
 
-            return DESCRIPTORS.TryGetValue(type, out result)
+            return Descriptors.TryGetValue(type, out result)
                 ? result
-                : DESCRIPTORS.GetOrAdd(type, t => new DelegateTypeDescriptor(t));
+                : Descriptors.GetOrAdd(type, t => new DelegateTypeDescriptor(t));
         }
 
         /// <summary>
@@ -224,30 +224,30 @@ namespace Apache.Ignite.Core.Impl.Common
 
                 if (genericTypeDefinition == typeof (IComputeFunc<>))
                 {
-                    ThrowIfMultipleInterfaces(computeOutFunc, type, typeof(IComputeFunc<>));
+                    ThrowIfMultipleInterfaces(_computeOutFunc, type, typeof(IComputeFunc<>));
 
-                    computeOutFunc = DelegateConverter.CompileFunc(iface);
+                    _computeOutFunc = DelegateConverter.CompileFunc(iface);
                 }
                 else if (genericTypeDefinition == typeof (IComputeFunc<,>))
                 {
-                    ThrowIfMultipleInterfaces(computeFunc, type, typeof(IComputeFunc<,>));
+                    ThrowIfMultipleInterfaces(_computeFunc, type, typeof(IComputeFunc<,>));
 
                     var args = iface.GetGenericArguments();
 
-                    computeFunc = DelegateConverter.CompileFunc<Func<object, object, object>>(iface, new[] {args[0]});
+                    _computeFunc = DelegateConverter.CompileFunc<Func<object, object, object>>(iface, new[] {args[0]});
                 }
                 else if (genericTypeDefinition == typeof (IEventFilter<>))
                 {
-                    ThrowIfMultipleInterfaces(eventFilter, type, typeof(IEventFilter<>));
+                    ThrowIfMultipleInterfaces(_eventFilter, type, typeof(IEventFilter<>));
 
                     var args = iface.GetGenericArguments();
 
-                    eventFilter = DelegateConverter.CompileFunc<Func<object, Guid, object, bool>>(iface, 
+                    _eventFilter = DelegateConverter.CompileFunc<Func<object, Guid, object, bool>>(iface, 
                         new[] {typeof (Guid), args[0]}, new[] {false, true, false});
                 }
                 else if (genericTypeDefinition == typeof (ICacheEntryFilter<,>))
                 {
-                    ThrowIfMultipleInterfaces(cacheEntryFilter, type, typeof(ICacheEntryFilter<,>));
+                    ThrowIfMultipleInterfaces(_cacheEntryFilter, type, typeof(ICacheEntryFilter<,>));
 
                     var args = iface.GetGenericArguments();
 
@@ -260,11 +260,11 @@ namespace Apache.Ignite.Core.Impl.Common
                             typeof (CacheEntry<,>).MakeGenericType(args), args);
 
                     // Resulting func constructs CacheEntry and passes it to user implementation
-                    cacheEntryFilter = (obj, k, v) => invokeFunc(obj, ctor(k, v));
+                    _cacheEntryFilter = (obj, k, v) => invokeFunc(obj, ctor(k, v));
                 }
                 else if (genericTypeDefinition == typeof (ICacheEntryProcessor<,,,>))
                 {
-                    ThrowIfMultipleInterfaces(cacheEntryProcessor, type, typeof(ICacheEntryProcessor<,,,>));
+                    ThrowIfMultipleInterfaces(_cacheEntryProcessor, type, typeof(ICacheEntryProcessor<,,,>));
 
                     var args = iface.GetGenericArguments();
 
@@ -275,42 +275,42 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     var types = new Tuple<Type, Type>(args[0], args[1]);
 
-                    cacheEntryProcessor = new Tuple<Func<object, IMutableCacheEntryInternal, object, object>, Tuple<Type, Type>>
+                    _cacheEntryProcessor = new Tuple<Func<object, IMutableCacheEntryInternal, object, object>, Tuple<Type, Type>>
                         (func, types);
 
                     var transformerType = typeof (StreamTransformer<,,,>).MakeGenericType(args);
 
-                    streamTransformerCtor = DelegateConverter.CompileCtor<Func<object, object>>(transformerType,
+                    _streamTransformerCtor = DelegateConverter.CompileCtor<Func<object, object>>(transformerType,
                         new[] {iface});
                 }
                 else if (genericTypeDefinition == typeof (IMessageFilter<>))
                 {
-                    ThrowIfMultipleInterfaces(messageFilter, type, typeof(IMessageFilter<>));
+                    ThrowIfMultipleInterfaces(_messageFilter, type, typeof(IMessageFilter<>));
 
                     var arg = iface.GetGenericArguments()[0];
 
-                    messageFilter = DelegateConverter.CompileFunc<Func<object, Guid, object, bool>>(iface,
+                    _messageFilter = DelegateConverter.CompileFunc<Func<object, Guid, object, bool>>(iface,
                         new[] { typeof(Guid), arg }, new[] { false, true, false });
                 }
                 else if (genericTypeDefinition == typeof (IComputeJob<>))
                 {
-                    ThrowIfMultipleInterfaces(messageFilter, type, typeof(IComputeJob<>));
+                    ThrowIfMultipleInterfaces(_messageFilter, type, typeof(IComputeJob<>));
 
-                    computeJobExecute = DelegateConverter.CompileFunc<Func<object, object>>(iface, new Type[0], 
+                    _computeJobExecute = DelegateConverter.CompileFunc<Func<object, object>>(iface, new Type[0], 
                         methodName: "Execute");
 
-                    computeJobCancel = DelegateConverter.CompileFunc<Action<object>>(iface, new Type[0],
+                    _computeJobCancel = DelegateConverter.CompileFunc<Action<object>>(iface, new Type[0],
                         new[] {false}, "Cancel");
                 }
                 else if (genericTypeDefinition == typeof (IStreamReceiver<,>))
                 {
-                    ThrowIfMultipleInterfaces(streamReceiver, type, typeof (IStreamReceiver<,>));
+                    ThrowIfMultipleInterfaces(_streamReceiver, type, typeof (IStreamReceiver<,>));
 
                     var method =
                         typeof (StreamReceiverHolder).GetMethod("InvokeReceiver")
                             .MakeGenericMethod(iface.GetGenericArguments());
 
-                    streamReceiver = DelegateConverter
+                    _streamReceiver = DelegateConverter
                         .CompileFunc<Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool>>(
                             typeof (StreamReceiverHolder),
                             method,

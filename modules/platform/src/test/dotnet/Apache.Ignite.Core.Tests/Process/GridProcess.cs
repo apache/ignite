@@ -31,34 +31,34 @@ namespace Apache.Ignite.Core.Tests.Process
     public class GridProcess
     {
         /** Executable file name. */
-        private static readonly string EXE_NAME = "GridGain.exe";
+        private static readonly string ExeName = "GridGain.exe";
 
         /** Executable process name. */
-        private static readonly string EXE_PROC_NAME = EXE_NAME.Substring(0, EXE_NAME.IndexOf('.'));
+        private static readonly string ExeProcName = ExeName.Substring(0, ExeName.IndexOf('.'));
 
         /** Executable configuration file name. */
-        private static readonly string EXE_CFG_NAME = EXE_NAME + ".config";
+        private static readonly string ExeCfgName = ExeName + ".config";
 
         /** Executable backup configuration file name. */
-        private static readonly string EXE_CFG_BAK_NAME = EXE_CFG_NAME + ".bak";
+        private static readonly string ExeCfgBakName = ExeCfgName + ".bak";
 
         /** Directory where binaries are stored. */
-        private static readonly string EXE_DIR;
+        private static readonly string ExeDir;
 
         /** Full path to executable. */
-        private static readonly string EXE_PATH;
+        private static readonly string ExePath;
 
         /** Full path to executable configuration file. */
-        private static readonly string EXE_CFG_PATH;
+        private static readonly string ExeCfgPath;
 
         /** Full path to executable configuration file backup. */
-        private static readonly string EXE_CFG_BAK_PATH;
+        private static readonly string ExeCfgBakPath;
 
         /** Default process output reader. */
-        private static readonly IGridProcessOutputReader DFLT_OUT_READER = new GridProcessConsoleOutputReader();
+        private static readonly IGridProcessOutputReader DfltOutReader = new GridProcessConsoleOutputReader();
 
         /** Process. */
-        private readonly Process proc;
+        private readonly Process _proc;
 
         /// <summary>
         /// Static initializer.
@@ -69,25 +69,25 @@ namespace Apache.Ignite.Core.Tests.Process
             DirectoryInfo dir = new FileInfo(new Uri(typeof(GridProcess).Assembly.CodeBase).LocalPath).Directory;
 
             // ReSharper disable once PossibleNullReferenceException
-            EXE_DIR = dir.FullName;
+            ExeDir = dir.FullName;
 
-            FileInfo[] exe = dir.GetFiles(EXE_NAME);
+            FileInfo[] exe = dir.GetFiles(ExeName);
 
             if (exe.Length == 0)
-                throw new Exception(EXE_NAME + " is not found in test output directory: " + dir.FullName);
+                throw new Exception(ExeName + " is not found in test output directory: " + dir.FullName);
 
-            EXE_PATH = exe[0].FullName;
+            ExePath = exe[0].FullName;
 
-            FileInfo[] exeCfg = dir.GetFiles(EXE_CFG_NAME);
+            FileInfo[] exeCfg = dir.GetFiles(ExeCfgName);
 
             if (exeCfg.Length == 0)
-                throw new Exception(EXE_CFG_NAME + " is not found in test output directory: " + dir.FullName);
+                throw new Exception(ExeCfgName + " is not found in test output directory: " + dir.FullName);
 
-            EXE_CFG_PATH = exeCfg[0].FullName;
+            ExeCfgPath = exeCfg[0].FullName;
 
-            EXE_CFG_BAK_PATH = Path.Combine(EXE_DIR, EXE_CFG_BAK_NAME);
+            ExeCfgBakPath = Path.Combine(ExeDir, ExeCfgBakName);
 
-            File.Delete(EXE_CFG_BAK_PATH);
+            File.Delete(ExeCfgBakPath);
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests.Process
         /// </summary>
         public static void SaveConfigurationBackup()
         {
-            File.Copy(EXE_CFG_PATH, EXE_CFG_BAK_PATH, true);
+            File.Copy(ExeCfgPath, ExeCfgBakPath, true);
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Tests.Process
         /// </summary>
         public static void RestoreConfigurationBackup()
         {
-            File.Copy(EXE_CFG_BAK_PATH, EXE_CFG_PATH, true);
+            File.Copy(ExeCfgBakPath, ExeCfgPath, true);
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Tests.Process
         /// <param name="relPath">Path to config relative to executable directory.</param>
         public static void ReplaceConfiguration(string relPath)
         {
-            File.Copy(Path.Combine(EXE_DIR, relPath), EXE_CFG_PATH, true);
+            File.Copy(Path.Combine(ExeDir, relPath), ExeCfgPath, true);
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Process
         {
             foreach (Process proc in Process.GetProcesses())
             {
-                if (proc.ProcessName.Equals(EXE_PROC_NAME))
+                if (proc.ProcessName.Equals(ExeProcName))
                 {
                     proc.Kill();
 
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Tests.Process
         /// Construector.
         /// </summary>
         /// <param name="args">Arguments</param>
-        public GridProcess(params string[] args) : this(DFLT_OUT_READER, args) { }
+        public GridProcess(params string[] args) : this(DfltOutReader, args) { }
 
         /// <summary>
         /// Construector.
@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Tests.Process
             // Add test dll path
             args = args.Concat(new[] {"-assembly=" + GetType().Assembly.Location}).ToArray();
 
-            proc = Start(EXE_PATH, GridManager.GridGainHome(null), outReader, args);
+            _proc = Start(ExePath, GridManager.GridGainHome(null), outReader, args);
         }
 
         /// <summary>
@@ -177,7 +177,7 @@ namespace Apache.Ignite.Core.Tests.Process
             };
 
             if (!string.IsNullOrEmpty(ggHome))
-                procStart.EnvironmentVariables[GridManager.ENV_GRIDGAIN_HOME] = ggHome;
+                procStart.EnvironmentVariables[GridManager.EnvGridgainHome] = ggHome;
 
             procStart.EnvironmentVariables["GRIDGAIN_NATIVE_TEST_CLASSPATH"] = "true";
 
@@ -200,7 +200,7 @@ namespace Apache.Ignite.Core.Tests.Process
             Debug.Assert(proc != null);
 
             // 3. Attach output readers to avoid hangs.
-            outReader = outReader ?? DFLT_OUT_READER;
+            outReader = outReader ?? DfltOutReader;
 
             Attach(proc, proc.StandardOutput, outReader, false);
             Attach(proc, proc.StandardError, outReader, true);
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Tests.Process
         {
             get
             {
-                return !proc.HasExited;
+                return !_proc.HasExited;
             }
         }
 
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Tests.Process
         /// </summary>
         public void Kill()
         {
-            proc.Kill();
+            _proc.Kill();
         }
 
         /// <summary>
@@ -233,9 +233,9 @@ namespace Apache.Ignite.Core.Tests.Process
         /// <returns>Exit code.</returns>
         public int Join()
         {
-            proc.WaitForExit();
+            _proc.WaitForExit();
 
-            return proc.ExitCode;
+            return _proc.ExitCode;
         }
 
         /// <summary>
@@ -245,7 +245,7 @@ namespace Apache.Ignite.Core.Tests.Process
         /// <returns><c>True</c> if process exit occurred before timeout.</returns>
         public bool Join(int timeout)
         {
-            return proc.WaitForExit(timeout);
+            return _proc.WaitForExit(timeout);
         }
 
         /// <summary>
@@ -256,9 +256,9 @@ namespace Apache.Ignite.Core.Tests.Process
         /// <returns><c>True</c> if process exit occurred before timeout.</returns>
         public bool Join(int timeout, out int exitCode)
         {
-            if (proc.WaitForExit(timeout))
+            if (_proc.WaitForExit(timeout))
             {
-                exitCode = proc.ExitCode;
+                exitCode = _proc.ExitCode;
 
                 return true;
             }

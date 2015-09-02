@@ -34,16 +34,16 @@ namespace Apache.Ignite.Core.Impl.Cache
     internal class CacheEntryProcessorHolder : IPortableWriteAware
     {
         // generic processor
-        private readonly object proc;
+        private readonly object _proc;
 
         // argument
-        private readonly object arg;
+        private readonly object _arg;
 
         // func to invoke Process method on ICacheEntryProcessor in form of object.
-        private readonly Func<IMutableCacheEntryInternal, object, object> processFunc;
+        private readonly Func<IMutableCacheEntryInternal, object, object> _processFunc;
 
         // entry creator delegate
-        private readonly Func<object, object, bool, IMutableCacheEntryInternal> entryCtor;
+        private readonly Func<object, object, bool, IMutableCacheEntryInternal> _entryCtor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntryProcessorHolder"/> class.
@@ -59,13 +59,13 @@ namespace Apache.Ignite.Core.Impl.Cache
             Debug.Assert(proc != null);
             Debug.Assert(processFunc != null);
 
-            this.proc = proc;
-            this.arg = arg;
-            this.processFunc = processFunc;
+            this._proc = proc;
+            this._arg = arg;
+            this._processFunc = processFunc;
 
-            this.processFunc = GetProcessFunc(this.proc);
+            this._processFunc = GetProcessFunc(this._proc);
 
-            entryCtor = MutableCacheEntry.GetCtor(keyType, valType);
+            _entryCtor = MutableCacheEntry.GetCtor(keyType, valType);
         }
 
         /// <summary>
@@ -82,13 +82,13 @@ namespace Apache.Ignite.Core.Impl.Cache
             Justification = "User processor can throw any exception")]
         public CacheEntryProcessorResultHolder Process(object key, object value, bool exists, Ignite grid)
         {
-            ResourceProcessor.Inject(proc, grid);
+            ResourceProcessor.Inject(_proc, grid);
 
-            var entry = entryCtor(key, value, exists);
+            var entry = _entryCtor(key, value, exists);
 
             try
             {
-                return new CacheEntryProcessorResultHolder(entry, processFunc(entry, arg), null);
+                return new CacheEntryProcessorResultHolder(entry, _processFunc(entry, _arg), null);
             }
             catch (TargetInvocationException ex)
             {
@@ -106,8 +106,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             var writer0 = (PortableWriterImpl) writer.RawWriter();
 
             writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, proc);
-            PortableUtils.WritePortableOrSerializable(writer0, arg);
+            PortableUtils.WritePortableOrSerializable(writer0, _proc);
+            PortableUtils.WritePortableOrSerializable(writer0, _arg);
         }
 
         /// <summary>
@@ -118,14 +118,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var reader0 = (PortableReaderImpl) reader.RawReader();
 
-            proc = PortableUtils.ReadPortableOrSerializable<object>(reader0);
-            arg = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _proc = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _arg = PortableUtils.ReadPortableOrSerializable<object>(reader0);
 
-            processFunc = GetProcessFunc(proc);
+            _processFunc = GetProcessFunc(_proc);
 
-            var kvTypes = DelegateTypeDescriptor.GetCacheEntryProcessorTypes(proc.GetType());
+            var kvTypes = DelegateTypeDescriptor.GetCacheEntryProcessorTypes(_proc.GetType());
 
-            entryCtor = MutableCacheEntry.GetCtor(kvTypes.Item1, kvTypes.Item2);
+            _entryCtor = MutableCacheEntry.GetCtor(kvTypes.Item1, kvTypes.Item2);
         }
 
         /// <summary>

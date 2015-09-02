@@ -31,22 +31,22 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class CacheDynamicStartTest
     {
         /** Grid name: data. */
-        private const string GRID_DATA = "d";
+        private const string GridData = "d";
 
         /** Grid name: data, no configuration. */
-        private const string GRID_DATA_NO_CFG = "dnc";
+        private const string GridDataNoCfg = "dnc";
 
         /** Grid name: client. */
-        private const string GRID_CLIENT = "c";
+        private const string GridClient = "c";
 
         /** Cache name: partitioned, transactional. */
-        private const string CACHE_TX = "p";
+        private const string CacheTx = "p";
 
         /** Cache name: atomic. */
-        private const string CACHE_ATOMIC = "pa";
+        private const string CacheAtomic = "pa";
 
         /** Cache name: dummy. */
-        private const string CACHE_DUMMY = "dummy";
+        private const string CacheDummy = "dummy";
         
         /// <summary>
         /// Set up routine.
@@ -56,9 +56,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             GridTestUtils.KillProcesses();
 
-            Ignition.Start(CreateConfiguration(GRID_DATA, @"config/dynamic/dynamic-data.xml"));
-            Ignition.Start(CreateConfiguration(GRID_DATA_NO_CFG, @"config/dynamic/dynamic-data-no-cfg.xml"));
-            Ignition.Start(CreateConfiguration(GRID_CLIENT, @"config/dynamic/dynamic-client.xml"));
+            Ignition.Start(CreateConfiguration(GridData, @"config/dynamic/dynamic-data.xml"));
+            Ignition.Start(CreateConfiguration(GridDataNoCfg, @"config/dynamic/dynamic-data-no-cfg.xml"));
+            Ignition.Start(CreateConfiguration(GridClient, @"config/dynamic/dynamic-client.xml"));
         }
 
         /// <summary>
@@ -67,9 +67,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TearDown]
         public void StopGrids()
         {
-            Ignition.Stop(GRID_DATA, true);
-            Ignition.Stop(GRID_DATA_NO_CFG, true);
-            Ignition.Stop(GRID_CLIENT, true);
+            Ignition.Stop(GridData, true);
+            Ignition.Stop(GridDataNoCfg, true);
+            Ignition.Stop(GridClient, true);
         }
 
         /// <summary>
@@ -108,17 +108,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.Grid(GRID_DATA).Cache<GridCacheTestKey, GridPortablePerson>(CACHE_DUMMY);
+                Ignition.Grid(GridData).Cache<GridCacheTestKey, GridPortablePerson>(CacheDummy);
             });
 
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.Grid(GRID_DATA_NO_CFG).Cache<GridCacheTestKey, GridPortablePerson>(CACHE_DUMMY);
+                Ignition.Grid(GridDataNoCfg).Cache<GridCacheTestKey, GridPortablePerson>(CacheDummy);
             });
 
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.Grid(GRID_CLIENT).Cache<GridCacheTestKey, GridPortablePerson>(CACHE_DUMMY);
+                Ignition.Grid(GridClient).Cache<GridCacheTestKey, GridPortablePerson>(CacheDummy);
             });
         }
 
@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestTransactional()
         {
-            Check(CACHE_TX);
+            Check(CacheTx);
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestAtomic()
         {
-            Check(CACHE_ATOMIC);
+            Check(CacheAtomic);
         }
 
         /// <summary>
@@ -147,13 +147,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         private void Check(String cacheName)
         {
             ICache<DynamicTestKey, DynamicTestValue> cacheData =
-                Ignition.Grid(GRID_DATA).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
+                Ignition.Grid(GridData).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
 
             ICache<DynamicTestKey, DynamicTestValue> cacheDataNoCfg =
-                Ignition.Grid(GRID_DATA_NO_CFG).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
+                Ignition.Grid(GridDataNoCfg).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
 
             ICache<DynamicTestKey, DynamicTestValue> cacheClient =
-                Ignition.Grid(GRID_CLIENT).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
+                Ignition.Grid(GridClient).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
 
             DynamicTestKey key1 = new DynamicTestKey(1);
             DynamicTestKey key2 = new DynamicTestKey(2);

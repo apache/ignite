@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
     internal unsafe class PortableHeapStream : PortableAbstractStream
     {
         /** Data array. */
-        protected byte[] data;
+        protected byte[] Data;
 
         /// <summary>
         /// Constructor.
@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="cap">Initial capacity.</param>
         public PortableHeapStream(int cap)
         {
-            data = new byte[cap];
+            Data = new byte[cap];
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data array.</param>
         public PortableHeapStream(byte[] data)
         {
-            this.data = data;
+            this.Data = data;
         }
 
         /** <inheritdoc /> */
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int pos0 = EnsureWriteCapacityAndShift(1);
 
-            data[pos0] = val;
+            Data[pos0] = val;
         }
 
         /** <inheritdoc /> */
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int pos0 = EnsureReadCapacityAndShift(1);
 
-            return data[pos0];
+            return Data[pos0];
         }
 
         /** <inheritdoc /> */
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int pos0 = EnsureWriteCapacityAndShift(val.Length);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 WriteByteArray0(val, data0 + pos0);
             }
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int pos0 = EnsureReadCapacityAndShift(cnt);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 return ReadByteArray0(cnt, data0 + pos0);
             }
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int pos0 = EnsureWriteCapacityAndShift(val.Length);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 WriteBoolArray0(val, data0 + pos0);
             }
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int pos0 = EnsureReadCapacityAndShift(cnt);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 return ReadBoolArray0(cnt, data0 + pos0);
             }
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int pos0 = EnsureWriteCapacityAndShift(2);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 WriteShort0(val, data0 + pos0);
             }
@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int pos0 = EnsureReadCapacityAndShift(2);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 return ReadShort0(data0 + pos0);
             }
@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             int pos0 = EnsureWriteCapacityAndShift(cnt);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 WriteShortArray0(val, data0 + pos0, cnt);
             }
@@ -149,7 +149,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             int pos0 = EnsureReadCapacityAndShift(cnt0);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 return ReadShortArray0(cnt, data0 + pos0, cnt0);
             }
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             int pos0 = EnsureWriteCapacityAndShift(cnt);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 WriteCharArray0(val, data0 + pos0, cnt);
             }
@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             int pos0 = EnsureReadCapacityAndShift(cnt0);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 return ReadCharArray0(cnt, data0 + pos0, cnt0);
             }
@@ -186,7 +186,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int pos0 = EnsureWriteCapacityAndShift(4);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 WriteInt0(val, data0 + pos0);
             }
@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             EnsureWriteCapacity(writePos + 4);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 WriteInt0(val, data0 + writePos);
             }
@@ -208,7 +208,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int pos0 = EnsureReadCapacityAndShift(4);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 return ReadInt0(data0 + pos0);
             }
@@ -221,7 +221,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             int pos0 = EnsureWriteCapacityAndShift(cnt);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 WriteIntArray0(val, data0 + pos0, cnt);
             }
@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             int pos0 = EnsureReadCapacityAndShift(cnt0);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 return ReadIntArray0(cnt, data0 + pos0, cnt0);
             }
@@ -247,7 +247,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             int pos0 = EnsureWriteCapacityAndShift(cnt);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 WriteFloatArray0(val, data0 + pos0, cnt);
             }
@@ -260,7 +260,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             int pos0 = EnsureReadCapacityAndShift(cnt0);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 return ReadFloatArray0(cnt, data0 + pos0, cnt0);
             }
@@ -271,7 +271,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int pos0 = EnsureWriteCapacityAndShift(8);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 WriteLong0(val, data0 + pos0);
             }
@@ -282,7 +282,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int pos0 = EnsureReadCapacityAndShift(8);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 return ReadLong0(data0 + pos0);
             }
@@ -295,7 +295,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             int pos0 = EnsureWriteCapacityAndShift(cnt);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 WriteLongArray0(val, data0 + pos0, cnt);
             }
@@ -308,7 +308,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             int pos0 = EnsureReadCapacityAndShift(cnt0);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 return ReadLongArray0(cnt, data0 + pos0, cnt0);
             }
@@ -321,7 +321,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             int pos0 = EnsureWriteCapacityAndShift(cnt);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 WriteDoubleArray0(val, data0 + pos0, cnt);
             }
@@ -334,7 +334,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             int pos0 = EnsureReadCapacityAndShift(cnt0);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 return ReadDoubleArray0(cnt, data0 + pos0, cnt0);
             }
@@ -347,7 +347,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             int written;
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 written = WriteString0(chars, charCnt, byteCnt, encoding, data0 + pos0);
             }
@@ -358,9 +358,9 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void Write(byte* src, int cnt)
         {
-            EnsureWriteCapacity(pos + cnt);
+            EnsureWriteCapacity(Pos + cnt);
 
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 WriteInternal(src, cnt, data0);
             }
@@ -371,7 +371,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void Read(byte* dest, int cnt)
         {
-            fixed (byte* data0 = data)
+            fixed (byte* data0 = Data)
             {
                 ReadInternal(dest, cnt, data0);
             }
@@ -380,21 +380,21 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override int Remaining()
         {
-            return data.Length - pos;
+            return Data.Length - Pos;
         }
 
         /** <inheritdoc /> */
         public override byte[] Array()
         {
-            return data;
+            return Data;
         }
 
         /** <inheritdoc /> */
         public override byte[] ArrayCopy()
         {
-            byte[] copy = new byte[pos];
+            byte[] copy = new byte[Pos];
 
-            Buffer.BlockCopy(data, 0, copy, 0, pos);
+            Buffer.BlockCopy(Data, 0, copy, 0, Pos);
 
             return copy;
         }
@@ -402,7 +402,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override bool IsSameArray(byte[] arr)
         {
-            return data == arr;
+            return Data == arr;
         }
 
         /** <inheritdoc /> */
@@ -416,32 +416,32 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// </summary>
         internal byte[] InternalArray
         {
-            get { return data; }
+            get { return Data; }
         }
 
         /** <inheritdoc /> */
         protected override void EnsureWriteCapacity(int cnt)
         {
-            if (cnt > data.Length)
+            if (cnt > Data.Length)
             {
-                int newCap = Capacity(data.Length, cnt);
+                int newCap = Capacity(Data.Length, cnt);
 
                 byte[] data0 = new byte[newCap];
 
                 // Copy the whole initial array length here because it can be changed
                 // from Java without position adjusting.
-                Buffer.BlockCopy(data, 0, data0, 0, data.Length);
+                Buffer.BlockCopy(Data, 0, data0, 0, Data.Length);
 
-                data = data0;
+                Data = data0;
             }
         }
 
         /** <inheritdoc /> */
         protected override void EnsureReadCapacity(int cnt)
         {
-            if (data.Length - pos < cnt)
+            if (Data.Length - Pos < cnt)
                 throw new EndOfStreamException("Not enough data in stream [expected=" + cnt +
-                    ", remaining=" + (data.Length - pos) + ']');
+                    ", remaining=" + (Data.Length - Pos) + ']');
         }
     }
 }

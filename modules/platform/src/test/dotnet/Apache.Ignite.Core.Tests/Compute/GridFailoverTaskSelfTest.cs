@@ -31,10 +31,10 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class GridFailoverTaskSelfTest : GridAbstractTaskTest
     {
         /** */
-        static volatile string gridName;
+        static volatile string _gridName;
 
         /** */
-        static volatile int cnt;
+        static volatile int _cnt;
 
         /// <summary>
         /// Constructor.
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             for (int i = 0; i < 20; i++)
             {
-                int res = grid1.Compute().Call(new TestClosure());
+                int res = Grid1.Compute().Call(new TestClosure());
 
                 Assert.AreEqual(2, res);
 
@@ -86,14 +86,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         private void TestTaskAdapterFailoverException(bool serializable)
         {
-            int res = grid1.Compute().Execute(new TestTask(),
+            int res = Grid1.Compute().Execute(new TestTask(),
                 new Tuple<bool, bool>(serializable, true));
 
             Assert.AreEqual(2, res);
 
             Cleanup();
 
-            res = grid1.Compute().Execute(new TestTask(),
+            res = Grid1.Compute().Execute(new TestTask(),
                 new Tuple<bool, bool>(serializable, false));
 
             Assert.AreEqual(2, res);
@@ -105,9 +105,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TearDown]
         public void Cleanup()
         {
-            cnt = 0;
+            _cnt = 0;
 
-            gridName = null;
+            _gridName = null;
         }
 
         /** <inheritDoc /> */
@@ -172,12 +172,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         class TestClosure : IComputeFunc<int>
         {
             [InstanceResource]
-            private IIgnite grid = null;
+            private IIgnite _grid = null;
 
             /** <inheritDoc /> */
             public int Invoke()
             {
-                return FailoverJob(grid);
+                return FailoverJob(_grid);
             }
         }
 
@@ -188,12 +188,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         class TestSerializableJob : IComputeJob<int>
         {
             [InstanceResource]
-            private IIgnite grid = null;
+            private IIgnite _grid = null;
 
             /** <inheritDoc /> */
             public int Execute()
             {
-                return FailoverJob(grid);
+                return FailoverJob(_grid);
             }
 
             /** <inheritDoc /> */
@@ -209,12 +209,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         class TestPortableJob : IComputeJob<int>
         {
             [InstanceResource]
-            private IIgnite grid = null;
+            private IIgnite _grid = null;
 
             /** <inheritDoc /> */
             public int Execute()
             {
-                return FailoverJob(grid);
+                return FailoverJob(_grid);
             }
 
             public void Cancel()
@@ -230,18 +230,18 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.NotNull(grid);
 
-            cnt++;
+            _cnt++;
 
-            if (gridName == null)
+            if (_gridName == null)
             {
-                gridName = grid.Name;
+                _gridName = grid.Name;
 
                 throw new ComputeJobFailoverException("Test error.");
             }
             else
-                Assert.AreNotEqual(gridName, grid.Name);
+                Assert.AreNotEqual(_gridName, grid.Name);
 
-            return cnt;
+            return _cnt;
         }
     }
 }

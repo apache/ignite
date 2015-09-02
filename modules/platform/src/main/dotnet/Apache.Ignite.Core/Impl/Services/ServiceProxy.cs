@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Services
     internal class ServiceProxy<T> : RealProxy
     {
         /** Services. */
-        private readonly Func<MethodBase, object[], object> invokeAction;
+        private readonly Func<MethodBase, object[], object> _invokeAction;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceProxy{T}" /> class.
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             Debug.Assert(invokeAction != null);
 
-            this.invokeAction = invokeAction;
+            this._invokeAction = invokeAction;
         }
 
         /** <inheritdoc /> */
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 throw new NotSupportedException("Service proxy does not support out arguments: "
                                                 + methodCall.MethodBase);
 
-            var result = invokeAction(methodCall.MethodBase, methodCall.Args);
+            var result = _invokeAction(methodCall.MethodBase, methodCall.Args);
 
             return new ReturnMessage(result, null, 0, methodCall.LogicalCallContext, methodCall);
         }

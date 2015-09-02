@@ -32,47 +32,47 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// Cache proxy.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
-    internal class CacheProxyImpl<K, V> : ICache<K, V>
+    internal class CacheProxyImpl<TK, TV> : ICache<TK, TV>
     {
         /** wrapped cache instance */
-        private readonly CacheImpl<K, V> cache;
+        private readonly CacheImpl<TK, TV> _cache;
 
         /** */
-        private readonly ThreadLocal<int> lastAsyncOp = new ThreadLocal<int>(() => GridTarget.OP_NONE);
+        private readonly ThreadLocal<int> _lastAsyncOp = new ThreadLocal<int>(() => GridTarget.OpNone);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheProxyImpl{K, V}"/> class.
         /// </summary>
         /// <param name="cache">The cache to wrap.</param>
-        public CacheProxyImpl(CacheImpl<K, V> cache)
+        public CacheProxyImpl(CacheImpl<TK, TV> cache)
         {
             Debug.Assert(cache != null);
 
-            this.cache = cache;
+            this._cache = cache;
         }
 
         /** <inheritDoc /> */
-        public ICache<K, V> WithSkipStore()
+        public ICache<TK, TV> WithSkipStore()
         {
-            return cache.IsSkipStore ? this : new CacheProxyImpl<K, V>((CacheImpl<K, V>)cache.WithSkipStore());
+            return _cache.IsSkipStore ? this : new CacheProxyImpl<TK, TV>((CacheImpl<TK, TV>)_cache.WithSkipStore());
         }
 
         /** <inheritDoc /> */
-        public ICache<K, V> WithExpiryPolicy(IExpiryPolicy plc)
+        public ICache<TK, TV> WithExpiryPolicy(IExpiryPolicy plc)
         {
-            return new CacheProxyImpl<K, V>((CacheImpl<K, V>)cache.WithExpiryPolicy(plc));
+            return new CacheProxyImpl<TK, TV>((CacheImpl<TK, TV>)_cache.WithExpiryPolicy(plc));
         }
 
         /** <inheritDoc /> */
-        public ICache<K, V> WithAsync()
+        public ICache<TK, TV> WithAsync()
         {
-            return IsAsync ? this : new CacheProxyImpl<K, V>((CacheImpl<K, V>) cache.WithAsync());
+            return IsAsync ? this : new CacheProxyImpl<TK, TV>((CacheImpl<TK, TV>) _cache.WithAsync());
         }
 
         /** <inheritDoc /> */
         public bool IsAsync
         {
-            get { return cache.IsAsync; }
+            get { return _cache.IsAsync; }
         }
 
         /** <inheritDoc /> */
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IFuture<TResult> GetFuture<TResult>()
         {
-            var fut = cache.GetFuture<TResult>(lastAsyncOp.Value);
+            var fut = _cache.GetFuture<TResult>(_lastAsyncOp.Value);
 
             ClearLastAsyncOp();
 
@@ -92,39 +92,39 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IEnumerator<ICacheEntry<K, V>> GetEnumerator()
+        public IEnumerator<ICacheEntry<TK, TV>> GetEnumerator()
         {
-            return cache.GetEnumerator();
+            return _cache.GetEnumerator();
         }
 
         /** <inheritDoc /> */
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable) cache).GetEnumerator();
+            return ((IEnumerable) _cache).GetEnumerator();
         }
 
         /** <inheritDoc /> */
         public string Name
         {
-            get { return cache.Name; }
+            get { return _cache.Name; }
         }
 
         /** <inheritDoc /> */
         public IIgnite Grid
         {
-            get { return cache.Grid; }
+            get { return _cache.Grid; }
         }
 
         /** <inheritDoc /> */
         public bool IsEmpty
         {
-            get { return cache.IsEmpty; }
+            get { return _cache.IsEmpty; }
         }
 
         /** <inheritDoc /> */
         public bool KeepPortable
         {
-            get { return cache.KeepPortable; }
+            get { return _cache.KeepPortable; }
         }
 
         /// <summary>
@@ -132,237 +132,237 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         internal bool SkipStore
         {
-            get { return cache.IsSkipStore; }
+            get { return _cache.IsSkipStore; }
         }
 
         /** <inheritDoc /> */
-        public ICache<K1, V1> WithKeepPortable<K1, V1>()
+        public ICache<TK1, TV1> WithKeepPortable<TK1, TV1>()
         {
-            return new CacheProxyImpl<K1, V1>((CacheImpl<K1, V1>) cache.WithKeepPortable<K1, V1>());
+            return new CacheProxyImpl<TK1, TV1>((CacheImpl<TK1, TV1>) _cache.WithKeepPortable<TK1, TV1>());
         }
 
         /** <inheritDoc /> */
-        public void LoadCache(ICacheEntryFilter<K, V> p, params object[] args)
+        public void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            cache.LoadCache(p, args);
+            _cache.LoadCache(p, args);
 
-            SetLastAsyncOp(CacheOp.LOAD_CACHE);
+            SetLastAsyncOp(CacheOp.LoadCache);
         }
 
         /** <inheritDoc /> */
-        public void LocalLoadCache(ICacheEntryFilter<K, V> p, params object[] args)
+        public void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            cache.LocalLoadCache(p, args);
+            _cache.LocalLoadCache(p, args);
 
-            SetLastAsyncOp(CacheOp.LOC_LOAD_CACHE);
+            SetLastAsyncOp(CacheOp.LocLoadCache);
         }
 
         /** <inheritDoc /> */
-        public bool ContainsKey(K key)
+        public bool ContainsKey(TK key)
         {
-            var result = cache.ContainsKey(key);
+            var result = _cache.ContainsKey(key);
             
-            SetLastAsyncOp(CacheOp.CONTAINS_KEY);
+            SetLastAsyncOp(CacheOp.ContainsKey);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public bool ContainsKeys(IEnumerable<K> keys)
+        public bool ContainsKeys(IEnumerable<TK> keys)
         {
-            var result = cache.ContainsKeys(keys);
+            var result = _cache.ContainsKeys(keys);
 
-            SetLastAsyncOp(CacheOp.CONTAINS_KEYS);
+            SetLastAsyncOp(CacheOp.ContainsKeys);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public V LocalPeek(K key, params CachePeekMode[] modes)
+        public TV LocalPeek(TK key, params CachePeekMode[] modes)
         {
-            return cache.LocalPeek(key, modes);
+            return _cache.LocalPeek(key, modes);
         }
 
         /** <inheritDoc /> */
-        public V Get(K key)
+        public TV Get(TK key)
         {
-            var result = cache.Get(key);
+            var result = _cache.Get(key);
             
-            SetLastAsyncOp(CacheOp.GET);
+            SetLastAsyncOp(CacheOp.Get);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public IDictionary<K, V> GetAll(IEnumerable<K> keys)
+        public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
         {
-            var result = cache.GetAll(keys);
+            var result = _cache.GetAll(keys);
 
-            SetLastAsyncOp(CacheOp.GET_ALL);
+            SetLastAsyncOp(CacheOp.GetAll);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public void Put(K key, V val)
+        public void Put(TK key, TV val)
         {
-            cache.Put(key, val);
+            _cache.Put(key, val);
 
-            SetLastAsyncOp(CacheOp.PUT);
+            SetLastAsyncOp(CacheOp.Put);
         }
 
         /** <inheritDoc /> */
-        public V GetAndPut(K key, V val)
+        public TV GetAndPut(TK key, TV val)
         {
-            var result = cache.GetAndPut(key, val);
+            var result = _cache.GetAndPut(key, val);
 
-            SetLastAsyncOp(CacheOp.GET_AND_PUT);
+            SetLastAsyncOp(CacheOp.GetAndPut);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public V GetAndReplace(K key, V val)
+        public TV GetAndReplace(TK key, TV val)
         {
-            var result = cache.GetAndReplace(key, val);
+            var result = _cache.GetAndReplace(key, val);
 
-            SetLastAsyncOp(CacheOp.GET_AND_REPLACE);
+            SetLastAsyncOp(CacheOp.GetAndReplace);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public V GetAndRemove(K key)
+        public TV GetAndRemove(TK key)
         {
-            var result = cache.GetAndRemove(key);
+            var result = _cache.GetAndRemove(key);
 
-            SetLastAsyncOp(CacheOp.GET_AND_REMOVE);
+            SetLastAsyncOp(CacheOp.GetAndRemove);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public bool PutIfAbsent(K key, V val)
+        public bool PutIfAbsent(TK key, TV val)
         {
-            var result = cache.PutIfAbsent(key, val);
+            var result = _cache.PutIfAbsent(key, val);
 
-            SetLastAsyncOp(CacheOp.PUT_IF_ABSENT);
+            SetLastAsyncOp(CacheOp.PutIfAbsent);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public V GetAndPutIfAbsent(K key, V val)
+        public TV GetAndPutIfAbsent(TK key, TV val)
         {
-            var result = cache.GetAndPutIfAbsent(key, val);
+            var result = _cache.GetAndPutIfAbsent(key, val);
 
-            SetLastAsyncOp(CacheOp.GET_AND_PUT_IF_ABSENT);
+            SetLastAsyncOp(CacheOp.GetAndPutIfAbsent);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public bool Replace(K key, V val)
+        public bool Replace(TK key, TV val)
         {
-            var result = cache.Replace(key, val);
+            var result = _cache.Replace(key, val);
 
-            SetLastAsyncOp(CacheOp.REPLACE_2);
+            SetLastAsyncOp(CacheOp.Replace2);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public bool Replace(K key, V oldVal, V newVal)
+        public bool Replace(TK key, TV oldVal, TV newVal)
         {
-            var result = cache.Replace(key, oldVal, newVal);
+            var result = _cache.Replace(key, oldVal, newVal);
 
-            SetLastAsyncOp(CacheOp.REPLACE_3);
+            SetLastAsyncOp(CacheOp.Replace3);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public void PutAll(IDictionary<K, V> vals)
+        public void PutAll(IDictionary<TK, TV> vals)
         {
-            cache.PutAll(vals);
+            _cache.PutAll(vals);
 
-            SetLastAsyncOp(CacheOp.PUT_ALL);
+            SetLastAsyncOp(CacheOp.PutAll);
         }
 
         /** <inheritDoc /> */
-        public void LocalEvict(IEnumerable<K> keys)
+        public void LocalEvict(IEnumerable<TK> keys)
         {
-            cache.LocalEvict(keys);
+            _cache.LocalEvict(keys);
         }
 
         /** <inheritDoc /> */
         public void Clear()
         {
-            cache.Clear();
+            _cache.Clear();
 
             ClearLastAsyncOp();
         }
 
         /** <inheritDoc /> */
-        public void Clear(K key)
+        public void Clear(TK key)
         {
-            cache.Clear(key);
+            _cache.Clear(key);
 
-            SetLastAsyncOp(CacheOp.CLEAR);
+            SetLastAsyncOp(CacheOp.Clear);
         }
 
         /** <inheritDoc /> */
-        public void ClearAll(IEnumerable<K> keys)
+        public void ClearAll(IEnumerable<TK> keys)
         {
-            cache.ClearAll(keys);
+            _cache.ClearAll(keys);
             
-            SetLastAsyncOp(CacheOp.CLEAR_ALL);
+            SetLastAsyncOp(CacheOp.ClearAll);
         }
 
         /** <inheritDoc /> */
-        public void LocalClear(K key)
+        public void LocalClear(TK key)
         {
-            cache.LocalClear(key);
+            _cache.LocalClear(key);
         }
 
         /** <inheritDoc /> */
-        public void LocalClearAll(IEnumerable<K> keys)
+        public void LocalClearAll(IEnumerable<TK> keys)
         {
-            cache.LocalClearAll(keys);
+            _cache.LocalClearAll(keys);
         }
 
         /** <inheritDoc /> */
-        public bool Remove(K key)
+        public bool Remove(TK key)
         {
-            var result = cache.Remove(key);
+            var result = _cache.Remove(key);
 
-            SetLastAsyncOp(CacheOp.REMOVE_OBJ);
+            SetLastAsyncOp(CacheOp.RemoveObj);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public bool Remove(K key, V val)
+        public bool Remove(TK key, TV val)
         {
-            var result = cache.Remove(key, val);
+            var result = _cache.Remove(key, val);
 
-            SetLastAsyncOp(CacheOp.REMOVE_BOOL);
+            SetLastAsyncOp(CacheOp.RemoveBool);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public void RemoveAll(IEnumerable<K> keys)
+        public void RemoveAll(IEnumerable<TK> keys)
         {
-            cache.RemoveAll(keys);
+            _cache.RemoveAll(keys);
 
-            SetLastAsyncOp(CacheOp.REMOVE_ALL);
+            SetLastAsyncOp(CacheOp.RemoveAll);
         }
 
         /** <inheritDoc /> */
         public void RemoveAll()
         {
-            cache.RemoveAll();
+            _cache.RemoveAll();
 
             ClearLastAsyncOp();
         }
@@ -370,13 +370,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public int LocalSize(params CachePeekMode[] modes)
         {
-            return cache.LocalSize(modes);
+            return _cache.LocalSize(modes);
         }
 
         /** <inheritDoc /> */
         public int Size(params CachePeekMode[] modes)
         {
-            var result = cache.Size(modes);
+            var result = _cache.Size(modes);
 
             ClearLastAsyncOp();
 
@@ -384,96 +384,96 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public void LocalPromote(IEnumerable<K> keys)
+        public void LocalPromote(IEnumerable<TK> keys)
         {
-            cache.LocalPromote(keys);
+            _cache.LocalPromote(keys);
         }
 
         /** <inheritDoc /> */
-        public IQueryCursor<ICacheEntry<K, V>> Query(QueryBase qry)
+        public IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry)
         {
-            return cache.Query(qry);
+            return _cache.Query(qry);
         }
 
         /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
-            return cache.QueryFields(qry);
+            return _cache.QueryFields(qry);
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandle QueryContinuous(ContinuousQuery<K, V> qry)
+        public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> qry)
         {
-            return cache.QueryContinuous(qry);
+            return _cache.QueryContinuous(qry);
         }
 
         /** <inheritDoc /> */
-        public IContinuousQueryHandle<ICacheEntry<K, V>> QueryContinuous(ContinuousQuery<K, V> qry, QueryBase initialQry)
+        public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, QueryBase initialQry)
         {
-            return cache.QueryContinuous(qry, initialQry);
+            return _cache.QueryContinuous(qry, initialQry);
         }
 
         /** <inheritDoc /> */
-        public IEnumerable<ICacheEntry<K, V>> GetLocalEntries(params CachePeekMode[] peekModes)
+        public IEnumerable<ICacheEntry<TK, TV>> GetLocalEntries(params CachePeekMode[] peekModes)
         {
-            return cache.GetLocalEntries(peekModes);
+            return _cache.GetLocalEntries(peekModes);
         }
 
         /** <inheritDoc /> */
-        public R Invoke<R, A>(K key, ICacheEntryProcessor<K, V, A, R> processor, A arg)
+        public TR Invoke<TR, TA>(TK key, ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
         {
-            var result = cache.Invoke(key, processor, arg);
+            var result = _cache.Invoke(key, processor, arg);
 
-            SetLastAsyncOp(CacheOp.INVOKE);
+            SetLastAsyncOp(CacheOp.Invoke);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public IDictionary<K, ICacheEntryProcessorResult<R>> InvokeAll<R, A>(IEnumerable<K> keys,
-            ICacheEntryProcessor<K, V, A, R> processor, A arg)
+        public IDictionary<TK, ICacheEntryProcessorResult<TR>> InvokeAll<TR, TA>(IEnumerable<TK> keys,
+            ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
         {
-            var result = cache.InvokeAll(keys, processor, arg);
+            var result = _cache.InvokeAll(keys, processor, arg);
 
-            SetLastAsyncOp(CacheOp.INVOKE_ALL);
+            SetLastAsyncOp(CacheOp.InvokeAll);
 
             return result;
         }
 
         /** <inheritDoc /> */
-        public ICacheLock Lock(K key)
+        public ICacheLock Lock(TK key)
         {
-            return cache.Lock(key);
+            return _cache.Lock(key);
         }
 
         /** <inheritDoc /> */
-        public ICacheLock LockAll(IEnumerable<K> keys)
+        public ICacheLock LockAll(IEnumerable<TK> keys)
         {
-            return cache.LockAll(keys);
+            return _cache.LockAll(keys);
         }
 
         /** <inheritDoc /> */
-        public bool IsLocalLocked(K key, bool byCurrentThread)
+        public bool IsLocalLocked(TK key, bool byCurrentThread)
         {
-            return cache.IsLocalLocked(key, byCurrentThread);
+            return _cache.IsLocalLocked(key, byCurrentThread);
         }
 
         /** <inheritDoc /> */
         public ICacheMetrics GetMetrics()
         {
-            return cache.GetMetrics();
+            return _cache.GetMetrics();
         }
 
         /** <inheritDoc /> */
         public IFuture Rebalance()
         {
-            return cache.Rebalance();
+            return _cache.Rebalance();
         }
 
         /** <inheritDoc /> */
-        public ICache<K, V> WithNoRetries()
+        public ICache<TK, TV> WithNoRetries()
         {
-            return cache.IsNoRetries ? this : new CacheProxyImpl<K, V>((CacheImpl<K, V>) cache.WithNoRetries());
+            return _cache.IsNoRetries ? this : new CacheProxyImpl<TK, TV>((CacheImpl<TK, TV>) _cache.WithNoRetries());
         }
 
         /// <summary>
@@ -483,7 +483,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private void SetLastAsyncOp(CacheOp opId)
         {
             if (IsAsync)
-                lastAsyncOp.Value = (int) opId;
+                _lastAsyncOp.Value = (int) opId;
         }
 
         /// <summary>
@@ -493,7 +493,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private void ClearLastAsyncOp()
         {
             if (IsAsync)
-                lastAsyncOp.Value = GridTarget.OP_NONE;
+                _lastAsyncOp.Value = GridTarget.OpNone;
         }
     }
 }

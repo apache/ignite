@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     internal class ComputeJobResultGenericWrapper<T> : IComputeJobResult<T>
     {
         /** */
-        private readonly IComputeJobResult<object> wrappedRes;
+        private readonly IComputeJobResult<object> _wrappedRes;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeJobResultGenericWrapper{T}"/> class.
@@ -34,37 +34,37 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="jobRes">The job result to wrap.</param>
         public ComputeJobResultGenericWrapper(IComputeJobResult<object> jobRes)
         {
-            wrappedRes = jobRes;
+            _wrappedRes = jobRes;
         }
 
         /** <inheritdoc /> */
         public T Data()
         {
-            return (T)wrappedRes.Data();
+            return (T)_wrappedRes.Data();
         }
 
         /** <inheritdoc /> */
         public Exception Exception()
         {
-            return wrappedRes.Exception();
+            return _wrappedRes.Exception();
         }
 
         /** <inheritdoc /> */
         public IComputeJob<T> Job()
         {
-            return wrappedRes.Job().Unwrap<object, T>();
+            return _wrappedRes.Job().Unwrap<object, T>();
         }
 
         /** <inheritdoc /> */
         public Guid NodeId
         {
-            get { return wrappedRes.NodeId; }
+            get { return _wrappedRes.NodeId; }
         }
 
         /** <inheritdoc /> */
         public bool Cancelled
         {
-            get { return wrappedRes.Cancelled; }
+            get { return _wrappedRes.Cancelled; }
         }
     }
 }

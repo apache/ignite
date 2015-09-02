@@ -32,32 +32,32 @@ namespace Apache.Ignite.Core.Datastream
     /// <typeparam name="V">The type of the cache value.</typeparam>
     /// <typeparam name="A">The type of the processor argument.</typeparam>
     /// <typeparam name="R">The type of the processor result.</typeparam>
-    public sealed class StreamTransformer<K, V, A, R> : IStreamReceiver<K, V>, 
+    public sealed class StreamTransformer<TK, TV, TA, TR> : IStreamReceiver<TK, TV>, 
         IPortableWriteAware
     {
         /** Entry processor. */
-        private readonly ICacheEntryProcessor<K, V, A, R> proc;
+        private readonly ICacheEntryProcessor<TK, TV, TA, TR> _proc;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StreamTransformer{K, V, A, R}"/> class.
         /// </summary>
         /// <param name="proc">Entry processor.</param>
-        public StreamTransformer(ICacheEntryProcessor<K, V, A, R> proc)
+        public StreamTransformer(ICacheEntryProcessor<TK, TV, TA, TR> proc)
         {
             AC.NotNull(proc, "proc");
 
-            this.proc = proc;
+            this._proc = proc;
         }
 
         /** <inheritdoc /> */
-        public void Receive(ICache<K, V> cache, ICollection<ICacheEntry<K, V>> entries)
+        public void Receive(ICache<TK, TV> cache, ICollection<ICacheEntry<TK, TV>> entries)
         {
-            var keys = new List<K>(entries.Count);
+            var keys = new List<TK>(entries.Count);
 
             foreach (var entry in entries)
                 keys.Add(entry.Key);
 
-            cache.InvokeAll(keys, proc, default(A));
+            cache.InvokeAll(keys, _proc, default(TA));
         }
 
         /** <inheritdoc /> */
@@ -65,9 +65,9 @@ namespace Apache.Ignite.Core.Datastream
         {
             var w = (PortableWriterImpl)writer;
 
-            w.WriteByte(StreamReceiverHolder.RCV_TRANSFORMER);
+            w.WriteByte(StreamReceiverHolder.RcvTransformer);
 
-            PortableUtils.WritePortableOrSerializable(w, proc);
+            PortableUtils.WritePortableOrSerializable(w, _proc);
         }
     }
 }

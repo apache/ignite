@@ -30,16 +30,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     /// </summary>
     class Key
     {
-        private readonly int idx;
+        private readonly int _idx;
 
         public Key(int idx)
         {
-            this.idx = idx;
+            this._idx = idx;
         }
 
         public int Index()
         {
-            return idx;
+            return _idx;
         }
 
         public override bool Equals(object obj)
@@ -49,12 +49,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Key key = (Key)obj;
 
-            return key.idx == idx;
+            return key._idx == _idx;
         }
 
         public override int GetHashCode()
         {
-            return idx;
+            return _idx;
         }
     }
 
@@ -63,16 +63,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     /// </summary>
     class Value
     {
-        private int idx;
+        private int _idx;
 
         public Value(int idx)
         {
-            this.idx = idx;
+            this._idx = idx;
         }
 
         public int Index()
         {
-            return idx;
+            return _idx;
         }
     }
 
@@ -95,16 +95,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     public class GridCacheStoreTest
     {
         /** */
-        private const string PORTABLE_STORE_CACHE_NAME = "portable_store";
+        private const string PortableStoreCacheName = "portable_store";
 
         /** */
-        private const string OBJECT_STORE_CACHE_NAME = "object_store";
+        private const string ObjectStoreCacheName = "object_store";
 
         /** */
-        private const string CUSTOM_STORE_CACHE_NAME = "custom_store";
+        private const string CustomStoreCacheName = "custom_store";
 
         /** */
-        private const string TEMPLATE_STORE_CACHE_NAME = "template_store*";
+        private const string TemplateStoreCacheName = "template_store*";
 
         /// <summary>
         ///
@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             GridTestUtils.KillProcesses();
 
-            GridTestUtils.JVM_DEBUG = true;
+            GridTestUtils.JvmDebug = true;
 
             GridConfigurationEx cfg = new GridConfigurationEx();
 
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestLoadCacheMetadata()
         {
-            GridCacheTestStore.loadObjects = true;
+            GridCacheTestStore.LoadObjects = true;
 
             var cache = Cache();
 
@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             using (var tx = cache.Grid.Transactions.TxStart())
             {
-                GridCacheTestStore.expCommit = true;
+                GridCacheTestStore.ExpCommit = true;
 
                 tx.AddMeta("meta", 100);
 
@@ -418,7 +418,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestLoadCacheMultithreaded()
         {
-            GridCacheTestStore.loadMultithreaded = true;
+            GridCacheTestStore.LoadMultithreaded = true;
 
             var cache = Cache();
 
@@ -451,7 +451,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             cache.Put(1, cache.Name);
 
-            Assert.AreEqual(cache.Name, GridCacheTestStore.MAP[1]);
+            Assert.AreEqual(cache.Name, GridCacheTestStore.Map[1]);
         }
 
         /// <summary>
@@ -465,7 +465,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         private IDictionary StoreMap()
         {
-            return GridCacheTestStore.MAP;
+            return GridCacheTestStore.Map;
         }
 
         private ICache<int, string> Cache()
@@ -473,24 +473,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             return PortableStoreCache<int, string>();
         }
 
-        private ICache<K, V> PortableStoreCache<K, V>()
+        private ICache<TK, TV> PortableStoreCache<TK, TV>()
         {
-            return Ignition.Grid(GridName()).Cache<K, V>(PORTABLE_STORE_CACHE_NAME);
+            return Ignition.Grid(GridName()).Cache<TK, TV>(PortableStoreCacheName);
         }
 
-        private ICache<K, V> ObjectStoreCache<K, V>()
+        private ICache<TK, TV> ObjectStoreCache<TK, TV>()
         {
-            return Ignition.Grid(GridName()).Cache<K, V>(OBJECT_STORE_CACHE_NAME);
+            return Ignition.Grid(GridName()).Cache<TK, TV>(ObjectStoreCacheName);
         }
 
         private ICache<int, string> CustomStoreCache()
         {
-            return Ignition.Grid(GridName()).Cache<int, string>(CUSTOM_STORE_CACHE_NAME);
+            return Ignition.Grid(GridName()).Cache<int, string>(CustomStoreCacheName);
         }
 
         private ICache<int, string> TemplateStoreCache()
         {
-            var cacheName = TEMPLATE_STORE_CACHE_NAME.Replace("*", Guid.NewGuid().ToString());
+            var cacheName = TemplateStoreCacheName.Replace("*", Guid.NewGuid().ToString());
             
             return Ignition.Grid(GridName()).GetOrCreateCache<int, string>(cacheName);
         }

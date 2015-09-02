@@ -252,13 +252,13 @@ namespace Apache.Ignite.Core.Portable
         /// Read generic dictionary. 
         /// </summary>
         /// <returns>Dictionary.</returns>
-        IDictionary<K, V> ReadGenericDictionary<K, V>();
+        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>();
 
         /// <summary>
         /// Read generic dictionary.
         /// </summary>
         /// <param name="factory">Factory.</param>
         /// <returns>Dictionary.</returns>
-        IDictionary<K, V> ReadGenericDictionary<K, V>(PortableGenericDictionaryFactory<K, V> factory);
+        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableGenericDictionaryFactory<TK, TV> factory);
     }
 }

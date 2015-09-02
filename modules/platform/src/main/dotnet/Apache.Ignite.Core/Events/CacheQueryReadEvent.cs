@@ -26,34 +26,34 @@ namespace Apache.Ignite.Core.Events
     public sealed class CacheQueryReadEvent : EventBase
 	{
         /** */
-        private readonly string queryType;
+        private readonly string _queryType;
 
         /** */
-        private readonly string cacheName;
+        private readonly string _cacheName;
 
         /** */
-        private readonly string className;
+        private readonly string _className;
 
         /** */
-        private readonly string clause;
+        private readonly string _clause;
 
         /** */
-        private readonly Guid subjectId;
+        private readonly Guid _subjectId;
 
         /** */
-        private readonly string taskName;
+        private readonly string _taskName;
 
         /** */
-        private readonly object key;
+        private readonly object _key;
 
         /** */
-        private readonly object value;
+        private readonly object _value;
 
         /** */
-        private readonly object oldValue;
+        private readonly object _oldValue;
 
         /** */
-        private readonly object row;
+        private readonly object _row;
 
         /// <summary>
         /// Constructor.
@@ -61,67 +61,67 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         internal CacheQueryReadEvent(IPortableRawReader r) : base(r)
         {
-            queryType = r.ReadString();
-            cacheName = r.ReadString();
-            className = r.ReadString();
-            clause = r.ReadString();
-            subjectId = r.ReadGuid() ?? Guid.Empty;
-            taskName = r.ReadString();
-            key = r.ReadObject<object>();
-            value = r.ReadObject<object>();
-            oldValue = r.ReadObject<object>();
-            row = r.ReadObject<object>();
+            _queryType = r.ReadString();
+            _cacheName = r.ReadString();
+            _className = r.ReadString();
+            _clause = r.ReadString();
+            _subjectId = r.ReadGuid() ?? Guid.Empty;
+            _taskName = r.ReadString();
+            _key = r.ReadObject<object>();
+            _value = r.ReadObject<object>();
+            _oldValue = r.ReadObject<object>();
+            _row = r.ReadObject<object>();
         }
 		
         /// <summary>
         /// Gets query type. 
         /// </summary>
-        public string QueryType { get { return queryType; } }
+        public string QueryType { get { return _queryType; } }
 
         /// <summary>
         /// Gets cache name on which query was executed. 
         /// </summary>
-        public string CacheName { get { return cacheName; } }
+        public string CacheName { get { return _cacheName; } }
 
         /// <summary>
         /// Gets queried class name. Applicable for SQL and full text queries. 
         /// </summary>
-        public string ClassName { get { return className; } }
+        public string ClassName { get { return _className; } }
 
         /// <summary>
         /// Gets query clause. Applicable for SQL, SQL fields and full text queries. 
         /// </summary>
-        public string Clause { get { return clause; } }
+        public string Clause { get { return _clause; } }
 
         /// <summary>
         /// Gets security subject ID. 
         /// </summary>
-        public Guid SubjectId { get { return subjectId; } }
+        public Guid SubjectId { get { return _subjectId; } }
 
         /// <summary>
         /// Gets the name of the task that executed the query (if any). 
         /// </summary>
-        public string TaskName { get { return taskName; } }
+        public string TaskName { get { return _taskName; } }
 
         /// <summary>
         /// Gets read entry key. 
         /// </summary>
-        public object Key { get { return key; } }
+        public object Key { get { return _key; } }
 
         /// <summary>
         /// Gets read entry value. 
         /// </summary>
-        public object Value { get { return value; } }
+        public object Value { get { return _value; } }
 
         /// <summary>
         /// Gets read entry old value (applicable for continuous queries). 
         /// </summary>
-        public object OldValue { get { return oldValue; } }
+        public object OldValue { get { return _oldValue; } }
 
         /// <summary>
         /// Gets read results set row. 
         /// </summary>
-        public object Row { get { return row; } }
+        public object Row { get { return _row; } }
 
         /** <inheritDoc /> */
 	    public override string ToShortString()

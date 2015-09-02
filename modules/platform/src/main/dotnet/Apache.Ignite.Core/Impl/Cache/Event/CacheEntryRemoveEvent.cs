@@ -22,41 +22,41 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
     /// <summary>
     /// Cache entry remove event.
     /// </summary>
-    internal class CacheEntryRemoveEvent<K, V> : ICacheEntryEvent<K, V>
+    internal class CacheEntryRemoveEvent<TK, TV> : ICacheEntryEvent<TK, TV>
     {
         /** Key.*/
-        private readonly K key;
+        private readonly TK _key;
         
         /** Old value.*/
-        private readonly V oldVal;
+        private readonly TV _oldVal;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="key">Key.</param>
         /// <param name="oldVal">Old value.</param>
-        public CacheEntryRemoveEvent(K key, V oldVal)
+        public CacheEntryRemoveEvent(TK key, TV oldVal)
         {
-            this.key = key;
-            this.oldVal = oldVal;
+            this._key = key;
+            this._oldVal = oldVal;
         }
 
         /** <inheritdoc /> */
-        public K Key
+        public TK Key
         {
-            get { return key; }
+            get { return _key; }
         }
 
         /** <inheritdoc /> */
-        public V Value
+        public TV Value
         {
-            get { return default(V); }
+            get { return default(TV); }
         }
 
         /** <inheritdoc /> */
-        public V OldValue
+        public TV OldValue
         {
-            get { return oldVal; }
+            get { return _oldVal; }
         }
 
         /** <inheritdoc /> */
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
         /** <inheritdoc /> */
         public CacheEntryEventType EventType
         {
-            get { return CacheEntryEventType.REMOVED; }
+            get { return CacheEntryEventType.Removed; }
         }
     }
 }

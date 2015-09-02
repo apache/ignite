@@ -26,10 +26,10 @@ namespace Apache.Ignite.Core.Common
     public struct GridGuid : IEquatable<GridGuid>
     {
         /** Global id. */
-        private readonly Guid globalId;
+        private readonly Guid _globalId;
 
         /** Local id. */
-        private readonly long localId;
+        private readonly long _localId;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GridGuid"/> struct.
@@ -38,8 +38,8 @@ namespace Apache.Ignite.Core.Common
         /// <param name="localId">The local id.</param>
         public GridGuid(Guid globalId, long localId)
         {
-            this.globalId = globalId;
-            this.localId = localId;
+            this._globalId = globalId;
+            this._localId = localId;
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Common
         /// </summary>
         public Guid GlobalId
         {
-            get { return globalId; }
+            get { return _globalId; }
         }
 
         /// <summary>
@@ -55,13 +55,13 @@ namespace Apache.Ignite.Core.Common
         /// </summary>
         public long LocalId
         {
-            get { return localId; }
+            get { return _localId; }
         }
 
         /** <inheritDoc /> */
         public bool Equals(GridGuid other)
         {
-            return globalId.Equals(other.globalId) && localId == other.localId;
+            return _globalId.Equals(other._globalId) && _localId == other._localId;
         }
 
         /** <inheritDoc /> */
@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Common
         {
             unchecked
             {
-                return (globalId.GetHashCode() * 397) ^ localId.GetHashCode();
+                return (_globalId.GetHashCode() * 397) ^ _localId.GetHashCode();
             }
         }
 

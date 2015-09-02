@@ -30,20 +30,20 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Default initial JVM memory in megabytes.
         /// </summary>
-        public const int DFLT_JVM_INIT_MEM = 512;
+        public const int DfltJvmInitMem = 512;
 
         /// <summary>
         /// Default maximum JVM memory in megabytes.
         /// </summary>
-        public const int DFLT_JVM_MAX_MEM = 1024;
+        public const int DfltJvmMaxMem = 1024;
 
         /// <summary>
         /// Default constructor.
         /// </summary>
         public GridConfiguration()
         {
-            JvmInitialMemoryMB = DFLT_JVM_INIT_MEM;
-            JvmMaxMemoryMB = DFLT_JVM_MAX_MEM;
+            JvmInitialMemoryMb = DfltJvmInitMem;
+            JvmMaxMemoryMb = DfltJvmMaxMem;
         }
 
         /// <summary>
@@ -66,8 +66,8 @@ namespace Apache.Ignite.Core
 
             LifecycleBeans = cfg.LifecycleBeans != null ? new List<ILifecycleBean>(cfg.LifecycleBeans) : null;
 
-            JvmInitialMemoryMB = cfg.JvmInitialMemoryMB;
-            JvmMaxMemoryMB = cfg.JvmMaxMemoryMB;
+            JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
+            JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
         }
 
         /// <summary>
@@ -163,9 +163,9 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Initial amount of memory in megabytes given to JVM. Maps to -Xms Java option.
-        /// Defaults to <see cref="GridConfiguration.DFLT_JVM_INIT_MEM"/>.
+        /// Defaults to <see cref="DfltJvmInitMem"/>.
         /// </summary>
-        public int JvmInitialMemoryMB
+        public int JvmInitialMemoryMb
         {
             get;
             set;
@@ -173,9 +173,9 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Maximum amount of memory in megabytes given to JVM. Maps to -Xmx Java option.
-        /// Defaults to <see cref="GridConfiguration.DFLT_JVM_MAX_MEM"/>.
+        /// Defaults to <see cref="DfltJvmMaxMem"/>.
         /// </summary>
-        public int JvmMaxMemoryMB
+        public int JvmMaxMemoryMb
         {
             get;
             set;

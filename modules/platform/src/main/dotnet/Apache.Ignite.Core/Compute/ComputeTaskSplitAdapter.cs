@@ -30,12 +30,12 @@ namespace Apache.Ignite.Core.Compute
     /// in most homogeneous environments where all nodes are equally suitable for executing grid
     /// job, see <see cref="Split"/> method for more details.
     /// </summary>
-    public abstract class ComputeTaskSplitAdapter<A, T, R> : ComputeTaskAdapter<A, T, R>
+    public abstract class ComputeTaskSplitAdapter<TA, T, TR> : ComputeTaskAdapter<TA, T, TR>
     {
         /** Random generator */
         [ThreadStatic]
         // ReSharper disable once StaticMemberInGenericType
-        private static Random rnd;
+        private static Random _rnd;
 
         /// <summary>
         /// This is a simplified version of <see cref="IComputeTask{A,T,R}.Map"/> method.
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="gridSize">Number of available grid nodes. Note that returned number of jobs can be less, 
         ///  equal or greater than this grid size.</param>
         /// <param name="arg">Task execution argument. Can be <c>null</c>.</param>
-        protected abstract ICollection<IComputeJob<T>> Split(int gridSize, A arg);
+        protected abstract ICollection<IComputeJob<T>> Split(int gridSize, TA arg);
 
         /// <summary>
         /// This method is called to map or split grid task into multiple grid jobs. This is the
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Compute
         /// exception will be thrown.
         /// </returns>
         /// <exception cref="IgniteException">Split returned no jobs.</exception>
-        override public IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, A arg)
+        override public IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, TA arg)
         {
             Debug.Assert(subgrid != null && subgrid.Count > 0);
 
@@ -77,12 +77,12 @@ namespace Apache.Ignite.Core.Compute
 
             var map = new Dictionary<IComputeJob<T>, IClusterNode>(jobs.Count);
 
-            if (rnd == null)
-                rnd = new Random();
+            if (_rnd == null)
+                _rnd = new Random();
 
             foreach (var job in jobs)
             {
-                int idx = rnd.Next(subgrid.Count);
+                int idx = _rnd.Next(subgrid.Count);
 
                 IClusterNode node = subgrid[idx];
 

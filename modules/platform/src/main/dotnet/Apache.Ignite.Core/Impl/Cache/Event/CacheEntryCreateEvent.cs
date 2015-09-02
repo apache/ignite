@@ -22,41 +22,41 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
     /// <summary>
     /// Cache entry create event.
     /// </summary>
-    internal class CacheEntryCreateEvent<K, V> : ICacheEntryEvent<K, V>
+    internal class CacheEntryCreateEvent<TK, TV> : ICacheEntryEvent<TK, TV>
     {
         /** Key.*/
-        private readonly K key;
+        private readonly TK _key;
 
         /** Value.*/
-        private readonly V val;
+        private readonly TV _val;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
-        public CacheEntryCreateEvent(K key, V val)
+        public CacheEntryCreateEvent(TK key, TV val)
         {
-            this.key = key;
-            this.val = val;
+            this._key = key;
+            this._val = val;
         }
 
         /** <inheritdoc /> */
-        public K Key
+        public TK Key
         {
-            get { return key; }
+            get { return _key; }
         }
 
         /** <inheritdoc /> */
-        public V Value
+        public TV Value
         {
-            get { return val; }
+            get { return _val; }
         }
 
         /** <inheritdoc /> */
-        public V OldValue
+        public TV OldValue
         {
-            get { return default(V); }
+            get { return default(TV); }
         }
 
         /** <inheritdoc /> */
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
         /** <inheritdoc /> */
         public CacheEntryEventType EventType
         {
-            get { return CacheEntryEventType.CREATED; }
+            get { return CacheEntryEventType.Created; }
         }
     }
 }

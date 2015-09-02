@@ -24,22 +24,22 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// <summary>
     /// Cache enumerable.
     /// </summary>
-    internal class CacheEnumerable<K, V> : IEnumerable<ICacheEntry<K, V>>
+    internal class CacheEnumerable<TK, TV> : IEnumerable<ICacheEntry<TK, TV>>
     {
         /** Target cache. */
-        private readonly CacheImpl<K, V> cache;
+        private readonly CacheImpl<TK, TV> _cache;
 
         /** Local flag. */
-        private readonly bool loc;
+        private readonly bool _loc;
 
         /** Peek modes. */
-        private readonly int peekModes;
+        private readonly int _peekModes;
 
         /// <summary>
         /// Constructor for distributed iterator.
         /// </summary>
         /// <param name="cache">Target cache.</param>
-        public CacheEnumerable(CacheImpl<K, V> cache) : this(cache, false, 0)
+        public CacheEnumerable(CacheImpl<TK, TV> cache) : this(cache, false, 0)
         {
             // No-op.
         }
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="cache">Target cache.</param>
         /// <param name="peekModes">Peek modes.</param>
-        public CacheEnumerable(CacheImpl<K, V> cache, int peekModes) : this(cache, true, peekModes)
+        public CacheEnumerable(CacheImpl<TK, TV> cache, int peekModes) : this(cache, true, peekModes)
         {
             // No-op.
         }
@@ -60,17 +60,17 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="cache">Target cache.</param>
         /// <param name="loc">Local flag.</param>
         /// <param name="peekModes">Peek modes.</param>
-        private CacheEnumerable(CacheImpl<K, V> cache, bool loc, int peekModes)
+        private CacheEnumerable(CacheImpl<TK, TV> cache, bool loc, int peekModes)
         {
-            this.cache = cache;
-            this.loc = loc;
-            this.peekModes = peekModes;
+            this._cache = cache;
+            this._loc = loc;
+            this._peekModes = peekModes;
         }
 
         /** <inheritdoc /> */
-        public IEnumerator<ICacheEntry<K, V>> GetEnumerator()
+        public IEnumerator<ICacheEntry<TK, TV>> GetEnumerator()
         {
-            return new CacheEnumeratorProxy<K, V>(cache, loc, peekModes);
+            return new CacheEnumeratorProxy<TK, TV>(_cache, _loc, _peekModes);
         }
 
         /** <inheritdoc /> */

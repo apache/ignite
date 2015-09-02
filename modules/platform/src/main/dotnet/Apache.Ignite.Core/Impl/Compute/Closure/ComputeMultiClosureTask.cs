@@ -24,11 +24,11 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     /// Closure-based task producing multiple jobs and returning a collection of job results.
     /// </summary>
     [ComputeTaskNoResultCache]
-    internal class ComputeMultiClosureTask<A, T, R> : ComputeAbstractClosureTask<A, T, R> 
-        where R : ICollection<T>
+    internal class ComputeMultiClosureTask<TA, T, TR> : ComputeAbstractClosureTask<TA, T, TR> 
+        where TR : ICollection<T>
     {
         /** Result. */
-        private readonly ICollection<T> res;
+        private readonly ICollection<T> _res;
 
         /// <summary>
         /// Constructor.
@@ -36,21 +36,21 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <param name="size">Expected results count.</param>
         public ComputeMultiClosureTask(int size)
         {
-            res = new List<T>(size);
+            _res = new List<T>(size);
         }
 
         /** <inheritDoc /> */
         protected override ComputeJobResultPolicy Result0(IComputeJobResult<T> res)
         {
-            this.res.Add(res.Data());
+            this._res.Add(res.Data());
 
-            return ComputeJobResultPolicy.WAIT;
+            return ComputeJobResultPolicy.Wait;
         }
 
         /** <inheritDoc /> */
-        public override R Reduce(IList<IComputeJobResult<T>> results)
+        public override TR Reduce(IList<IComputeJobResult<T>> results)
         {
-            return (R) res;
+            return (TR) _res;
         }
     }
 }

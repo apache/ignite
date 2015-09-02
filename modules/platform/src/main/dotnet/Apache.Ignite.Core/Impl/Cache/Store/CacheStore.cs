@@ -34,40 +34,40 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
     internal class CacheStore
     {
         /** */
-        private const byte OP_LOAD_CACHE = 0;
+        private const byte OpLoadCache = 0;
 
         /** */
-        private const byte OP_LOAD = 1;
+        private const byte OpLoad = 1;
 
         /** */
-        private const byte OP_LOAD_ALL = 2;
+        private const byte OpLoadAll = 2;
 
         /** */
-        private const byte OP_PUT = 3;
+        private const byte OpPut = 3;
 
         /** */
-        private const byte OP_PUT_ALL = 4;
+        private const byte OpPutAll = 4;
 
         /** */
-        private const byte OP_RMV = 5;
+        private const byte OpRmv = 5;
 
         /** */
-        private const byte OP_RMV_ALL = 6;
+        private const byte OpRmvAll = 6;
 
         /** */
-        private const byte OP_SES_END = 7;
+        private const byte OpSesEnd = 7;
         
         /** */
-        private readonly bool convertPortable;
+        private readonly bool _convertPortable;
 
         /** Store. */
-        private readonly ICacheStore store;
+        private readonly ICacheStore _store;
 
         /** Session. */
-        private readonly CacheStoreSessionProxy sesProxy;
+        private readonly CacheStoreSessionProxy _sesProxy;
 
         /** */
-        private readonly long handle;
+        private readonly long _handle;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheStore" /> class.
@@ -79,14 +79,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         {
             Debug.Assert(store != null);
 
-            this.store = store;
-            this.convertPortable = convertPortable;
+            this._store = store;
+            this._convertPortable = convertPortable;
 
-            sesProxy = new CacheStoreSessionProxy();
+            _sesProxy = new CacheStoreSessionProxy();
 
-            ResourceProcessor.InjectStoreSession(store, sesProxy);
+            ResourceProcessor.InjectStoreSession(store, _sesProxy);
 
-            handle = registry.AllocateCritical(this);
+            _handle = registry.AllocateCritical(this);
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         {
             using (var stream = GridManager.Memory.Get(memPtr).Stream())
             {
-                var reader = PortableUtils.Marshaller.StartUnmarshal(stream, PortableMode.KEEP_PORTABLE);
+                var reader = PortableUtils.Marshaller.StartUnmarshal(stream, PortableMode.KeepPortable);
 
                 var assemblyName = reader.ReadString();
                 var className = reader.ReadString();
@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// </summary>
         public long Handle
         {
-            get { return handle; }
+            get { return _handle; }
         }
 
         /// <summary>
@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// <param name="grid">Grid.</param>
         public void Init(Ignite grid)
         {
-            ResourceProcessor.Inject(store, grid);
+            ResourceProcessor.Inject(_store, grid);
         }
 
         /// <summary>
@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         public int Invoke(IPortableStream input, IUnmanagedTarget cb, Ignite grid)
         {
             IPortableReader reader = grid.Marshaller.StartUnmarshal(input,
-                convertPortable ? PortableMode.DESERIALIZE : PortableMode.FORCE_PORTABLE);
+                _convertPortable ? PortableMode.Deserialize : PortableMode.ForcePortable);
             
             IPortableRawReader rawReader = reader.RawReader();
 
@@ -157,60 +157,60 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
 
             ses.CacheName = rawReader.ReadString();
 
-            sesProxy.SetSession(ses);
+            _sesProxy.SetSession(ses);
 
             try
             {
                 // Perform operation.
                 switch (opType)
                 {
-                    case OP_LOAD_CACHE:
-                        store.LoadCache((k, v) => WriteObjects(cb, grid, k, v), rawReader.ReadObjectArray<object>());
+                    case OpLoadCache:
+                        _store.LoadCache((k, v) => WriteObjects(cb, grid, k, v), rawReader.ReadObjectArray<object>());
 
                         break;
 
-                    case OP_LOAD:
-                        object val = store.Load(rawReader.ReadObject<object>());
+                    case OpLoad:
+                        object val = _store.Load(rawReader.ReadObject<object>());
 
                         if (val != null)
                             WriteObjects(cb, grid, val);
 
                         break;
 
-                    case OP_LOAD_ALL:
+                    case OpLoadAll:
                         var keys = rawReader.ReadCollection();
 
-                        var result = store.LoadAll(keys);
+                        var result = _store.LoadAll(keys);
 
                         foreach (DictionaryEntry entry in result)
                             WriteObjects(cb, grid, entry.Key, entry.Value);
 
                         break;
 
-                    case OP_PUT:
-                        store.Write(rawReader.ReadObject<object>(), rawReader.ReadObject<object>());
+                    case OpPut:
+                        _store.Write(rawReader.ReadObject<object>(), rawReader.ReadObject<object>());
 
                         break;
 
-                    case OP_PUT_ALL:
-                        store.WriteAll(rawReader.ReadDictionary());
+                    case OpPutAll:
+                        _store.WriteAll(rawReader.ReadDictionary());
 
                         break;
 
-                    case OP_RMV:
-                        store.Delete(rawReader.ReadObject<object>());
+                    case OpRmv:
+                        _store.Delete(rawReader.ReadObject<object>());
 
                         break;
 
-                    case OP_RMV_ALL:
-                        store.DeleteAll(rawReader.ReadCollection());
+                    case OpRmvAll:
+                        _store.DeleteAll(rawReader.ReadCollection());
 
                         break;
 
-                    case OP_SES_END:
+                    case OpSesEnd:
                         grid.HandleRegistry.Release(sesId);
 
-                        store.SessionEnd(rawReader.ReadBoolean());
+                        _store.SessionEnd(rawReader.ReadBoolean());
 
                         break;
 
@@ -222,7 +222,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
             }
             finally
             {
-                sesProxy.ClearSession();
+                _sesProxy.ClearSession();
             }
         }
 

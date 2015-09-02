@@ -30,31 +30,31 @@ namespace Apache.Ignite.Core.Impl.Cluster
     internal class ClusterNodeImpl : IClusterNode
     {
         /** Node ID. */
-        private readonly Guid id;
+        private readonly Guid _id;
 
         /** Attributes. */
-        private readonly IDictionary<string, object> attrs;
+        private readonly IDictionary<string, object> _attrs;
 
         /** Addresses. */
-        private readonly ICollection<string> addrs;
+        private readonly ICollection<string> _addrs;
 
         /** Hosts. */
-        private readonly ICollection<string> hosts;
+        private readonly ICollection<string> _hosts;
 
         /** Order. */
-        private readonly long order;
+        private readonly long _order;
 
         /** Local flag. */
-        private readonly bool local;
+        private readonly bool _local;
 
         /** Daemon flag. */
-        private readonly bool daemon;
+        private readonly bool _daemon;
 
         /** Metrics. */
-        private volatile ClusterMetricsImpl metrics;
+        private volatile ClusterMetricsImpl _metrics;
         
         /** Grid. */
-        private WeakReference gridRef;
+        private WeakReference _gridRef;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClusterNodeImpl"/> class.
@@ -62,22 +62,22 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="reader">The reader.</param>
         public ClusterNodeImpl(IPortableRawReader reader)
         {
-            id = reader.ReadGuid() ?? default(Guid);
+            _id = reader.ReadGuid() ?? default(Guid);
 
-            attrs = reader.ReadGenericDictionary<string, object>().AsReadOnly();
-            addrs = reader.ReadGenericCollection<string>().AsReadOnly();
-            hosts = reader.ReadGenericCollection<string>().AsReadOnly();
-            order = reader.ReadLong();
-            local = reader.ReadBoolean();
-            daemon = reader.ReadBoolean();
+            _attrs = reader.ReadGenericDictionary<string, object>().AsReadOnly();
+            _addrs = reader.ReadGenericCollection<string>().AsReadOnly();
+            _hosts = reader.ReadGenericCollection<string>().AsReadOnly();
+            _order = reader.ReadLong();
+            _local = reader.ReadBoolean();
+            _daemon = reader.ReadBoolean();
 
-            metrics = reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
+            _metrics = reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
         }
 
         /** <inheritDoc /> */
         public Guid Id
         {
-            get { return id; }
+            get { return _id; }
         }
 
         /** <inheritDoc /> */
@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             A.NotNull(name, "name");
 
-            return (T)attrs[name];
+            return (T)_attrs[name];
         }
 
         /** <inheritDoc /> */
@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
             object val;
 
-            if (attrs.TryGetValue(name, out val))
+            if (_attrs.TryGetValue(name, out val))
             {
                 attr = (T)val;
 
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IDictionary<string, object> Attributes()
         {
-            return attrs;
+            return _attrs;
         }
 
         /** <inheritDoc /> */
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             get
             {
-                return addrs;
+                return _addrs;
             }
         }
 
@@ -126,7 +126,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             get
             {
-                return hosts;
+                return _hosts;
             }
         }
 
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             get
             {
-                return order;
+                return _order;
             }
         }
 
@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             get
             {
-                return local;
+                return _local;
             }
         }
 
@@ -153,30 +153,30 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             get
             {
-                return daemon;
+                return _daemon;
             }
         }
 
         /** <inheritDoc /> */
         public IClusterMetrics Metrics()
         {
-            var grid = (Ignite)gridRef.Target;
+            var grid = (Ignite)_gridRef.Target;
 
             if (grid == null)
-                return metrics;
+                return _metrics;
 
-            ClusterMetricsImpl oldMetrics = metrics;
+            ClusterMetricsImpl oldMetrics = _metrics;
 
             long lastUpdateTime = oldMetrics.LastUpdateTimeRaw;
 
-            ClusterMetricsImpl newMetrics = grid.ClusterGroup.RefreshClusterNodeMetrics(id, lastUpdateTime);
+            ClusterMetricsImpl newMetrics = grid.ClusterGroup.RefreshClusterNodeMetrics(_id, lastUpdateTime);
 
             if (newMetrics != null)
             {
                 lock (this)
                 {
-                    if (metrics.LastUpdateTime < newMetrics.LastUpdateTime)
-                        metrics = newMetrics;
+                    if (_metrics.LastUpdateTime < newMetrics.LastUpdateTime)
+                        _metrics = newMetrics;
                 }
 
                 return newMetrics;
@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             ClusterNodeImpl node = obj as ClusterNodeImpl;
 
             if (node != null)
-                return id.Equals(node.id);
+                return _id.Equals(node._id);
 
             return false;
         }
@@ -206,7 +206,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public override int GetHashCode()
         {
             // ReSharper disable once NonReadonlyMemberInGetHashCode
-            return id.GetHashCode();
+            return _id.GetHashCode();
         }
 
         /// <summary>
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="grid">The grid.</param>
         internal void Init(Ignite grid)
         {
-            gridRef = new WeakReference(grid);
+            _gridRef = new WeakReference(grid);
         }
     }
 }

@@ -30,17 +30,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     public class GridCacheTestParallelLoadStore : CacheParallelLoadStoreAdapter
     {
         /** Length of input data sequence */
-        public const int INPUT_DATA_LENGTH = 10000;
+        public const int InputDataLength = 10000;
 
         /** list of thread ids where Parse has been executed */
-        private static readonly ConcurrentDictionary<int, int> THREAD_IDS = new ConcurrentDictionary<int, int>();
+        private static readonly ConcurrentDictionary<int, int> ThreadIds = new ConcurrentDictionary<int, int>();
 
         /// <summary>
         /// Gets the count of unique threads that entered Parse method.
         /// </summary>
         public static int UniqueThreadCount
         {
-            get { return THREAD_IDS.Count; }
+            get { return ThreadIds.Count; }
         }
 
         /// <summary>
@@ -48,20 +48,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// </summary>
         public static void ResetCounters()
         {
-            THREAD_IDS.Clear();
+            ThreadIds.Clear();
         }
 
         /** <inheritdoc /> */
         protected override IEnumerable GetInputData()
         {
-            return Enumerable.Range(0, INPUT_DATA_LENGTH).Select(x => new Record {Id = x, Name = "Test Record " + x});
+            return Enumerable.Range(0, InputDataLength).Select(x => new Record {Id = x, Name = "Test Record " + x});
         }
 
         /** <inheritdoc /> */
         protected override KeyValuePair<object, object>? Parse(object inputRecord, params object[] args)
         {
             var threadId = Thread.CurrentThread.ManagedThreadId;
-            THREAD_IDS.GetOrAdd(threadId, threadId);
+            ThreadIds.GetOrAdd(threadId, threadId);
 
             var minId = (int)args[0];
 

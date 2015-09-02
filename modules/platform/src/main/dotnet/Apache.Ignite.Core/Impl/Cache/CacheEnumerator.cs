@@ -28,16 +28,16 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// <summary>
     /// Real cache enumerator communicating with Java.
     /// </summary>
-    internal class CacheEnumerator<K, V> : GridDisposableTarget, IEnumerator<ICacheEntry<K, V>>
+    internal class CacheEnumerator<TK, TV> : GridDisposableTarget, IEnumerator<ICacheEntry<TK, TV>>
     {
         /** Operation: next value. */
-        private const int OP_NEXT = 1;
+        private const int OpNext = 1;
 
         /** Keep portable flag. */
-        private readonly bool keepPortable;
+        private readonly bool _keepPortable;
 
         /** Current entry. */
-        private CacheEntry<K, V>? cur;
+        private CacheEntry<TK, TV>? _cur;
 
         /// <summary>
         /// Constructor.
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         public CacheEnumerator(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable) : 
             base(target, marsh)
         {
-            this.keepPortable = keepPortable;
+            this._keepPortable = keepPortable;
         }
 
         /** <inheritdoc /> */
@@ -56,43 +56,43 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             ThrowIfDisposed();
 
-            return DoInOp(OP_NEXT, stream =>
+            return DoInOp(OpNext, stream =>
             {
-                var reader = marsh.StartUnmarshal(stream, keepPortable);
+                var reader = Marsh.StartUnmarshal(stream, _keepPortable);
 
                 bool hasNext = reader.ReadBoolean();
 
                 if (hasNext)
                 {
                     reader.DetachNext();
-                    K key = reader.ReadObject<K>();
+                    TK key = reader.ReadObject<TK>();
 
                     reader.DetachNext();
-                    V val = reader.ReadObject<V>();
+                    TV val = reader.ReadObject<TV>();
 
-                    cur = new CacheEntry<K, V>(key, val);
+                    _cur = new CacheEntry<TK, TV>(key, val);
 
                     return true;
                 }
 
-                cur = null;
+                _cur = null;
 
                 return false;
             });
         }
 
         /** <inheritdoc /> */
-        public ICacheEntry<K, V> Current
+        public ICacheEntry<TK, TV> Current
         {
             get
             {
                 ThrowIfDisposed();
 
-                if (cur == null)
+                if (_cur == null)
                     throw new InvalidOperationException(
                         "Invalid enumerator state, enumeration is either finished or not started");
 
-                return cur.Value;
+                return _cur.Value;
             }
         }
 

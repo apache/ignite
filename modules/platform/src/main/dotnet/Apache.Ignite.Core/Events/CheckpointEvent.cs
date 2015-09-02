@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Events
     public sealed class CheckpointEvent : EventBase
 	{
         /** */
-        private readonly string key;
+        private readonly string _key;
 
         /// <summary>
         /// Constructor.
@@ -33,13 +33,13 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         internal CheckpointEvent(IPortableRawReader r) : base(r)
         {
-            key = r.ReadString();
+            _key = r.ReadString();
         }
 		
         /// <summary>
         /// Gets checkpoint key associated with this event. 
         /// </summary>
-        public string Key { get { return key; } }
+        public string Key { get { return _key; } }
 
         /** <inheritDoc /> */
 	    public override string ToShortString()

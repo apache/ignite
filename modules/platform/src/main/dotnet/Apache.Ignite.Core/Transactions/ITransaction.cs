@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Transactions
     /// Cache transactions support the following isolation levels:
     /// <list type="bullet">
     ///     <item>
-    ///         <description><see cref="TransactionIsolation.READ_COMMITTED"/> isolation level 
+    ///         <description><see cref="TransactionIsolation.ReadCommitted"/> isolation level 
     ///         means that always a committed value will be provided for read operations. With this isolation 
     ///         level values are always read from cache global memory or persistent store every time a value 
     ///         is accessed. In other words, if the same key is accessed more than once within the same transaction, 
@@ -35,20 +35,20 @@ namespace Apache.Ignite.Core.Transactions
     ///         other threads.</description>
     ///     </item>
     ///     <item>
-    ///         <description><see cref="TransactionIsolation.REPEATABLE_READ"/> isolation level 
+    ///         <description><see cref="TransactionIsolation.RepeatableRead"/> isolation level 
     ///         means that if a value was read once within transaction, then all consecutive reads will provide 
     ///         the same in-transaction value. With this isolation level accessed values are stored within 
     ///         in-transaction memory, so consecutive access to the same key within the same transaction will always 
     ///         return the value that was previously read or updated within this transaction. If concurrency is 
-    ///         <see cref="TransactionConcurrency.PESSIMISTIC"/>, then a lock on the key will be 
+    ///         <see cref="TransactionConcurrency.Pessimistic"/>, then a lock on the key will be 
     ///         acquired prior to accessing the value.</description>
     ///     </item>
     ///     <item>
-    ///         <description><see cref="TransactionIsolation.SERIALIZABLE"/> isolation level means 
+    ///         <description><see cref="TransactionIsolation.Serializable"/> isolation level means 
     ///         that all transactions occur in a completely isolated fashion, as if all transactions in the system 
     ///         had executed serially, one after the other. Read access with this level happens the same way as with 
-    ///         <see cref="TransactionIsolation.REPEATABLE_READ"/> level. However, in 
-    ///         <see cref="TransactionConcurrency.OPTIMISTIC"/> mode, if some transactions cannot be 
+    ///         <see cref="TransactionIsolation.RepeatableRead"/> level. However, in 
+    ///         <see cref="TransactionConcurrency.Optimistic"/> mode, if some transactions cannot be 
     ///         serially isolated from each other, then one winner will be picked and the other transactions in 
     ///         conflict will result in <c>TransactionOptimisticException</c> being thrown on Java side.</description>
     ///     </item>
@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Transactions
     /// Cache transactions support the following concurrency models:
     /// <list type="bullet">
     ///     <item>
-    ///         <description><see cref="TransactionConcurrency.OPTIMISTIC"/> - in this mode all cache 
+    ///         <description><see cref="TransactionConcurrency.Optimistic"/> - in this mode all cache 
     ///         operations 
     ///         are not distributed to other nodes until <see cref="ITransaction.Commit()"/>.
     ///         In this mode one <c>PREPARE</c> message will 
@@ -67,14 +67,14 @@ namespace Apache.Ignite.Core.Transactions
     ///         <c>CacheConfiguration.setWriteSynchronizationMode</c>.
     ///         <para />
     ///         Note that in this mode, optimistic failures are only possible in conjunction with
-    ///         <see cref="TransactionIsolation.SERIALIZABLE"/> isolation level. In all other cases, 
+    ///         <see cref="TransactionIsolation.Serializable"/> isolation level. In all other cases, 
     ///         optimistic transactions will never fail optimistically and will always be identically ordered on all 
     ///         participating grid nodes.</description>
     ///     </item>
     ///     <item>
-    ///         <description><see cref="TransactionConcurrency.PESSIMISTIC"/> - in this mode a lock is 
+    ///         <description><see cref="TransactionConcurrency.Pessimistic"/> - in this mode a lock is 
     ///         acquired on all cache operations with exception of read operations in 
-    ///         <see cref="TransactionIsolation.READ_COMMITTED"/> mode. All optional filters passed 
+    ///         <see cref="TransactionIsolation.ReadCommitted"/> mode. All optional filters passed 
     ///         into cache operations will be evaluated after successful lock acquisition. Whenever 
     ///         <see cref="ITransaction.Commit()"/> is called, a single one-way <c>COMMIT</c> 
     ///         message is sent to participating cache nodes without waiting for reply. Note that there is no reason 
@@ -210,7 +210,7 @@ namespace Apache.Ignite.Core.Transactions
         /// </summary>
         /// <param name="name">Metadata name.</param>
         /// <param name="val">Metadata value.</param>
-        void AddMeta<V>(string name, V val);
+        void AddMeta<TV>(string name, TV val);
 
         /// <summary>
         /// Gets metadata by name.
@@ -218,13 +218,13 @@ namespace Apache.Ignite.Core.Transactions
         /// <param name="name">Metadata name.</param>
         /// <returns>Metadata value.</returns>
         /// <exception cref="KeyNotFoundException">If metadata key was not found.</exception>
-        V Meta<V>(string name);
+        TV Meta<TV>(string name);
 
         /// <summary>
         /// Removes metadata by name.
         /// </summary>
         /// <param name="name">Metadata name.</param>
         /// <returns>Value of removed metadata or default value for <code>V</code> type.</returns>
-        V RemoveMeta<V>(string name);
+        TV RemoveMeta<TV>(string name);
     }
 }

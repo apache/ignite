@@ -82,27 +82,27 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="name">Cache name.</param>
         /// <returns>Cache instance for given name.</returns>
-        /// <typeparam name="K">Cache key type.</typeparam>
-        /// <typeparam name="V">Cache value type.</typeparam>
-        ICache<K, V> Cache<K, V>(string name);
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
+        ICache<TK, TV> Cache<TK, TV>(string name);
 
         /// <summary>
         /// Gets existing cache with the given name or creates new one using template configuration.
         /// </summary>
-        /// <typeparam name="K">Cache key type.</typeparam>
-        /// <typeparam name="V">Cache value type.</typeparam>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
         /// <param name="name">Cache name.</param>
         /// <returns>Existing or newly created cache.</returns>
-        ICache<K, V> GetOrCreateCache<K, V>(string name);
+        ICache<TK, TV> GetOrCreateCache<TK, TV>(string name);
 
         /// <summary>
         /// Dynamically starts new cache using template configuration.
         /// </summary>
-        /// <typeparam name="K">Cache key type.</typeparam>
-        /// <typeparam name="V">Cache value type.</typeparam>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
         /// <param name="name">Cache name.</param>
         /// <returns>Existing or newly created cache.</returns>
-        ICache<K, V> CreateCache<K, V>(string name);
+        ICache<TK, TV> CreateCache<TK, TV>(string name);
 
         /// <summary>
         /// Gets a new instance of data streamer associated with given cache name. Data streamer
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="cacheName">Cache name (<c>null</c> for default cache).</param>
         /// <returns>Data streamer.</returns>
-        IDataStreamer<K, V> DataStreamer<K, V>(string cacheName);
+        IDataStreamer<TK, TV> DataStreamer<TK, TV>(string cacheName);
 
         /// <summary>
         /// Gets an instance of <see cref="IPortables"/> interface.

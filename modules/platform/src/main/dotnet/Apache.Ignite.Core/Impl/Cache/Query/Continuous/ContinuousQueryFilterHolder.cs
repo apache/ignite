@@ -28,16 +28,16 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     public class ContinuousQueryFilterHolder : IPortableWriteAware
     {
         /** Key type. */
-        private readonly Type keyTyp;
+        private readonly Type _keyTyp;
 
         /** Value type. */
-        private readonly Type valTyp;
+        private readonly Type _valTyp;
 
         /** Filter object. */
-        private readonly object filter;
+        private readonly object _filter;
 
         /** Keep portable flag. */
-        private readonly bool keepPortable;
+        private readonly bool _keepPortable;
 
         /// <summary>
         /// Constructor.
@@ -48,10 +48,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="keepPortable">Keep portable flag.</param>
         public ContinuousQueryFilterHolder(Type keyTyp, Type valTyp, object filter, bool keepPortable)
         {
-            this.keyTyp = keyTyp;
-            this.valTyp = valTyp;
-            this.filter = filter;
-            this.keepPortable = keepPortable;
+            this._keyTyp = keyTyp;
+            this._valTyp = valTyp;
+            this._filter = filter;
+            this._keepPortable = keepPortable;
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         internal Type KeyType
         {
-            get { return keyTyp; }
+            get { return _keyTyp; }
         }
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         internal Type ValueType
         {
-            get { return valTyp; }
+            get { return _valTyp; }
         }
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         internal object Filter
         {
-            get { return filter; }
+            get { return _filter; }
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         internal bool KeepPortable
         {
-            get { return keepPortable; }
+            get { return _keepPortable; }
         }
 
         /// <summary>
@@ -94,11 +94,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         {
             PortableWriterImpl rawWriter = (PortableWriterImpl) writer.RawWriter();
 
-            PortableUtils.WritePortableOrSerializable(rawWriter, keyTyp);
-            PortableUtils.WritePortableOrSerializable(rawWriter, valTyp);
-            PortableUtils.WritePortableOrSerializable(rawWriter, filter);
+            PortableUtils.WritePortableOrSerializable(rawWriter, _keyTyp);
+            PortableUtils.WritePortableOrSerializable(rawWriter, _valTyp);
+            PortableUtils.WritePortableOrSerializable(rawWriter, _filter);
 
-            rawWriter.WriteBoolean(keepPortable);
+            rawWriter.WriteBoolean(_keepPortable);
         }
 
         /// <summary>
@@ -109,10 +109,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         {
             PortableReaderImpl rawReader = (PortableReaderImpl) reader.RawReader();
 
-            keyTyp = PortableUtils.ReadPortableOrSerializable<Type>(rawReader);
-            valTyp = PortableUtils.ReadPortableOrSerializable<Type>(rawReader);
-            filter = PortableUtils.ReadPortableOrSerializable<object>(rawReader);
-            keepPortable = rawReader.ReadBoolean();
+            _keyTyp = PortableUtils.ReadPortableOrSerializable<Type>(rawReader);
+            _valTyp = PortableUtils.ReadPortableOrSerializable<Type>(rawReader);
+            _filter = PortableUtils.ReadPortableOrSerializable<object>(rawReader);
+            _keepPortable = rawReader.ReadBoolean();
         }
     }
 }

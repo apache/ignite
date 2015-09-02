@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="key">Key to get partition id for.</param>
         /// <returns>Partition id.</returns>
-        int Partition<K>(K key);
+        int Partition<TK>(TK key);
 
         /// <summary>
         /// Returns 'true' if given node is the primary node for given key.
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="n">Node.</param>
         /// <param name="key">Key.</param>
         /// <returns>'True' if given node is the primary node for given key.</returns>
-        bool IsPrimary<K>(IClusterNode n, K key);
+        bool IsPrimary<TK>(IClusterNode n, TK key);
 
         /// <summary>
         /// Returns 'true' if given node is the backup node for given key.
@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="n">Node.</param>
         /// <param name="key">Key.</param>
         /// <returns>'True' if given node is the backup node for given key.</returns>
-        bool IsBackup<K>(IClusterNode n, K key);
+        bool IsBackup<TK>(IClusterNode n, TK key);
 
         /// <summary>
         /// Returns 'true' if given node is either primary or backup node for given key.
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="n">Node.</param>
         /// <param name="key">Key.</param>
         /// <returns>'True' if given node is either primary or backup node for given key.</returns>
-        bool IsPrimaryOrBackup<K>(IClusterNode n, K key);
+        bool IsPrimaryOrBackup<TK>(IClusterNode n, TK key);
 
         /// <summary>
         /// Gets partition ids for which nodes of the given projection has primary
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="key">Key to map.</param>
         /// <returns>Key to be used for node-to-affinity mapping (may be the same key as passed in).</returns>
-        R AffinityKey<K, R>(K key);
+        TR AffinityKey<TK, TR>(TK key);
 
         /// <summary>
         /// This method provides ability to detect which keys are mapped to which nodes.
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="keys">Keys to map to nodes.</param>
         /// <returns>Map of nodes to keys or empty map if there are no alive nodes for this cache.</returns>
-        IDictionary<IClusterNode, IList<K>> MapKeysToNodes<K>(IList<K> keys);
+        IDictionary<IClusterNode, IList<TK>> MapKeysToNodes<TK>(IList<TK> keys);
 
         /// <summary>
         /// This method provides ability to detect to which primary node the given key
@@ -126,7 +126,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="key">Keys to map to a node.</param>
         /// <returns>Primary node for the key or null if there are no alive nodes for this cache.</returns>
-        IClusterNode MapKeyToNode<K>(K key);
+        IClusterNode MapKeyToNode<TK>(TK key);
 
         /// <summary>
         /// Gets primary and backup nodes for the key. Note that primary node is always
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        IList<IClusterNode> MapKeyToPrimaryAndBackups<K>(K key);
+        IList<IClusterNode> MapKeyToPrimaryAndBackups<TK>(TK key);
 
         /// <summary>
         /// Gets primary node for the given partition.

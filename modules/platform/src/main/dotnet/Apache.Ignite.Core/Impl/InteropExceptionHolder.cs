@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl
     internal class InteropExceptionHolder : IPortableMarshalAware
     {
         /** Initial exception. */
-        private Exception err;
+        private Exception _err;
 
         /// <summary>
         /// Constructor.
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="err">Error.</param>
         public InteropExceptionHolder(Exception err)
         {
-            this.err = err;
+            this._err = err;
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         public Exception Error
         {
-            get { return err; }
+            get { return _err; }
         }
 
         /** <inheritDoc /> */
@@ -61,10 +61,10 @@ namespace Apache.Ignite.Core.Impl
         {
             PortableWriterImpl writer0 = writer.RawWriter() as PortableWriterImpl;
 
-            if (writer0.IsPortable(err))
+            if (writer0.IsPortable(_err))
             {
                 writer0.WriteBoolean(true);
-                writer0.WriteObject<Exception>(err);
+                writer0.WriteObject<Exception>(_err);
             }
             else
             {
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Impl
 
                 BinaryFormatter bf = new BinaryFormatter();
 
-                bf.Serialize(new PortableStreamAdapter(writer0.Stream), err);
+                bf.Serialize(new PortableStreamAdapter(writer0.Stream), _err);
             }
         }
 

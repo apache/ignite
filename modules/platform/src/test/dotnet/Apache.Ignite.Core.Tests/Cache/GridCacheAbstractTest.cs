@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// </summary>
     class TestReferenceObject
     {
-        public TestReferenceObject obj;
+        public TestReferenceObject Obj;
 
         /// <summary>
         /// Default constructor.
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         public TestReferenceObject(TestReferenceObject obj)
         {
-            this.obj = obj;
+            this.Obj = obj;
         }
     }
 
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class AddArgCacheEntryProcessor : ICacheEntryProcessor<int, int, int, int>
     {
         // Expected exception text
-        public const string EXCEPTION_TEXT = "Exception from AddArgCacheEntryProcessor.";
+        public const string ExceptionText = "Exception from AddArgCacheEntryProcessor.";
 
         // Error flag
         public bool ThrowErr { get; set; }
@@ -178,10 +178,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             if (ThrowOnKey < 0 || ThrowOnKey == entry.Key)
             {
                 if (ThrowErr)
-                    throw new Exception(EXCEPTION_TEXT);
+                    throw new Exception(ExceptionText);
 
                 if (ThrowErrPortable)
-                    throw new PortableTestException {Info = EXCEPTION_TEXT};
+                    throw new PortableTestException {Info = ExceptionText};
 
                 if (ThrowErrNonSerializable)
                     throw new NonSerializableException();
@@ -373,8 +373,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             return Cache<int, int>(idx);
         }
 
-        public ICache<K, V> Cache<K, V>(int idx) {
-            return Grid(idx).Cache<K, V>(CacheName());
+        public ICache<TK, TV> Cache<TK, TV>(int idx) {
+            return Grid(idx).Cache<TK, TV>(CacheName());
         }
 
         public ICache<int, int> Cache()
@@ -382,9 +382,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             return Cache<int, int>(0);
         }
 
-        public ICache<K, V> Cache<K, V>()
+        public ICache<TK, TV> Cache<TK, TV>()
         {
-            return Cache<K, V>(0);
+            return Cache<TK, TV>(0);
         }
 
         public ICacheAffinity Affinity()
@@ -404,7 +404,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             TestReferenceObject obj1 = new TestReferenceObject();
 
-            obj1.obj = new TestReferenceObject(obj1);
+            obj1.Obj = new TestReferenceObject(obj1);
 
             cache.Put(1, obj1);
 
@@ -490,8 +490,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache.LocalPeek(key1));
             Assert.AreEqual(0, cache.LocalPeek(-1));
 
-            Assert.AreEqual(1, cache.LocalPeek(key1, CachePeekMode.ALL));
-            Assert.AreEqual(0, cache.LocalPeek(-1, CachePeekMode.ALL));
+            Assert.AreEqual(1, cache.LocalPeek(key1, CachePeekMode.All));
+            Assert.AreEqual(0, cache.LocalPeek(-1, CachePeekMode.All));
         }
 
         [Test]
@@ -1015,13 +1015,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalEvict(new[] {key});
 
-            Assert.AreEqual(0, cache.LocalSize(CachePeekMode.ONHEAP));
+            Assert.AreEqual(0, cache.LocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(0, PeekInt(cache, key));
 
             Assert.AreEqual(1, cache.Get(key));
 
-            Assert.AreEqual(1, cache.LocalSize(CachePeekMode.ONHEAP));
+            Assert.AreEqual(1, cache.LocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(1, PeekInt(cache, key));
         }
@@ -1043,7 +1043,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalEvict(new List<int> { -1, keys[0], keys[1] });
 
-            Assert.AreEqual(1, cache.LocalSize(CachePeekMode.ONHEAP));
+            Assert.AreEqual(1, cache.LocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(0, PeekInt(cache, keys[0]));
             Assert.AreEqual(0, PeekInt(cache, keys[1]));
@@ -1304,7 +1304,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.RemoveAll(new List<int> { 0, 1, 2 });
 
-            Assert.AreEqual(1, cache.Size(CachePeekMode.PRIMARY));
+            Assert.AreEqual(1, cache.Size(CachePeekMode.Primary));
 
             Assert.AreEqual(0, cache.Get(1));
             Assert.AreEqual(0, cache.Get(2));
@@ -1328,7 +1328,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.RemoveAll(new List<int> { 0, 1, 2 });
 
-            Assert.AreEqual(1, cache.Size(CachePeekMode.PRIMARY));
+            Assert.AreEqual(1, cache.Size(CachePeekMode.Primary));
 
             Assert.AreEqual(0, cache.Get(1));
             Assert.AreEqual(0, cache.Get(2));
@@ -1348,12 +1348,12 @@ namespace Apache.Ignite.Core.Tests.Cache
                     cache.Put(key, 1);
 
                 Assert.IsTrue(cache.Size() >= 2);
-                Assert.AreEqual(2, cache.LocalSize(CachePeekMode.PRIMARY));
+                Assert.AreEqual(2, cache.LocalSize(CachePeekMode.Primary));
             }
 
             ICache<int, int> cache0 = Cache();
 
-            Assert.AreEqual(GridCount() * 2, cache0.Size(CachePeekMode.PRIMARY));
+            Assert.AreEqual(GridCount() * 2, cache0.Size(CachePeekMode.Primary));
 
             if (!LocalCache() && !ReplicatedCache())
             {
@@ -1361,7 +1361,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 cache0.Put(nearKey, 1);
 
-                Assert.AreEqual(NearEnabled() ? 1 : 0, cache0.Size(CachePeekMode.NEAR));
+                Assert.AreEqual(NearEnabled() ? 1 : 0, cache0.Size(CachePeekMode.Near));
             }
         }
 
@@ -1378,12 +1378,12 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalEvict(keys.Take(2).ToArray());
 
-            Assert.AreEqual(0, cache.LocalSize(CachePeekMode.ONHEAP));
-            Assert.AreEqual(localSize, cache.LocalSize(CachePeekMode.ALL));
+            Assert.AreEqual(0, cache.LocalSize(CachePeekMode.Onheap));
+            Assert.AreEqual(localSize, cache.LocalSize(CachePeekMode.All));
 
             cache.Put(keys[2], 3);
 
-            Assert.AreEqual(localSize + 1, cache.LocalSize(CachePeekMode.ALL));
+            Assert.AreEqual(localSize + 1, cache.LocalSize(CachePeekMode.All));
 
             cache.RemoveAll(keys.Take(2).ToArray());
         }
@@ -1416,15 +1416,15 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Evict and check peek modes.
             cache.LocalEvict(new List<int> { keys[0] } );
 
-            e = cache.GetLocalEntries(CachePeekMode.ONHEAP);
+            e = cache.GetLocalEntries(CachePeekMode.Onheap);
             CheckEnumerator(e.GetEnumerator(), new List<int> { keys[1] });
             CheckEnumerator(e.GetEnumerator(), new List<int> { keys[1] });
 
-            e = cache.GetLocalEntries(CachePeekMode.ALL);
+            e = cache.GetLocalEntries(CachePeekMode.All);
             CheckEnumerator(e.GetEnumerator(), keys);
             CheckEnumerator(e.GetEnumerator(), keys);
 
-            e = cache.GetLocalEntries(CachePeekMode.ONHEAP, CachePeekMode.SWAP);
+            e = cache.GetLocalEntries(CachePeekMode.Onheap, CachePeekMode.Swap);
             CheckEnumerator(e.GetEnumerator(), keys);
             CheckEnumerator(e.GetEnumerator(), keys);
 
@@ -1495,13 +1495,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalEvict(new[] {key});
 
-            Assert.AreEqual(0, cache.LocalSize(CachePeekMode.ONHEAP));
+            Assert.AreEqual(0, cache.LocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(0, PeekInt(cache, key));
 
             cache.LocalPromote(new[] { key });
 
-            Assert.AreEqual(1, cache.LocalSize(CachePeekMode.ONHEAP));
+            Assert.AreEqual(1, cache.LocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(1, PeekInt(cache, key));
         }
@@ -1523,7 +1523,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalEvict(new List<int> { -1, keys[0], keys[1] });
 
-            Assert.AreEqual(1, cache.LocalSize(CachePeekMode.ONHEAP));
+            Assert.AreEqual(1, cache.LocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(0, PeekInt(cache, keys[0]));
             Assert.AreEqual(0, PeekInt(cache, keys[1]));
@@ -1531,7 +1531,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalPromote(new[] {keys[0], keys[1]});
 
-            Assert.AreEqual(3, cache.LocalSize(CachePeekMode.ONHEAP));
+            Assert.AreEqual(3, cache.LocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(1, PeekInt(cache, keys[0]));
             Assert.AreEqual(2, PeekInt(cache, keys[1]));
@@ -1549,8 +1549,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             obj1 = cache.Get(1);
 
-            Assert.AreEqual("obj1", obj1.name);
-            Assert.AreEqual(1, obj1.age);
+            Assert.AreEqual("obj1", obj1.Name);
+            Assert.AreEqual(1, obj1.Age);
         }
 
         [Test]
@@ -1564,8 +1564,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             obj1 = cache.Get(1);
 
-            Assert.AreEqual("obj1", obj1.name);
-            Assert.AreEqual(1, obj1.age);
+            Assert.AreEqual("obj1", obj1.Name);
+            Assert.AreEqual(1, obj1.Age);
         }
 
         [Test]
@@ -1611,7 +1611,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        [Category(GridTestUtils.CATEGORY_INTENSIVE)]
+        [Category(GridTestUtils.CategoryIntensive)]
         public void TestGetAsyncMultithreaded()
         {
             var cache = Cache().WithAsync();
@@ -1643,7 +1643,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        [Category(GridTestUtils.CATEGORY_INTENSIVE)]
+        [Category(GridTestUtils.CategoryIntensive)]
         public void TestPutxAsyncMultithreaded()
         {
             var cache = Cache().WithAsync();
@@ -1670,7 +1670,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        [Category(GridTestUtils.CATEGORY_INTENSIVE)]
+        [Category(GridTestUtils.CategoryIntensive)]
         public void TestPutGetAsyncMultithreaded()
         {
             var cache = Cache<GridCacheTestKey, GridPortablePerson>().WithAsync();
@@ -1716,8 +1716,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     var p = cache.GetFuture<GridPortablePerson>().Get();
 
                     Assert.IsNotNull(p);
-                    Assert.AreEqual(key, p.age);
-                    Assert.AreEqual("Person-" + key, p.name);
+                    Assert.AreEqual(key, p.Age);
+                    Assert.AreEqual("Person-" + key, p.Name);
                 }
             }
 
@@ -1763,8 +1763,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     var p = fut.Get();
 
                     Assert.IsNotNull(p);
-                    Assert.AreEqual(key, p.age);
-                    Assert.AreEqual("Person-" + key, p.name);
+                    Assert.AreEqual(key, p.Age);
+                    Assert.AreEqual("Person-" + key, p.Name);
                 }
             }, threads);
         }
@@ -2197,14 +2197,14 @@ namespace Apache.Ignite.Core.Tests.Cache
             if (!TxEnabled())
                 return;
 
-            ITransaction tx = Transactions.TxStart(TransactionConcurrency.OPTIMISTIC,
-                TransactionIsolation.REPEATABLE_READ, TimeSpan.FromMilliseconds(2500), 100);
+            ITransaction tx = Transactions.TxStart(TransactionConcurrency.Optimistic,
+                TransactionIsolation.RepeatableRead, TimeSpan.FromMilliseconds(2500), 100);
 
             Assert.IsFalse(tx.IsRollbackOnly);
-            Assert.AreEqual(TransactionConcurrency.OPTIMISTIC, tx.Concurrency);
-            Assert.AreEqual(TransactionIsolation.REPEATABLE_READ, tx.Isolation);
+            Assert.AreEqual(TransactionConcurrency.Optimistic, tx.Concurrency);
+            Assert.AreEqual(TransactionIsolation.RepeatableRead, tx.Isolation);
             Assert.AreEqual(2500, tx.Timeout.TotalMilliseconds);
-            Assert.AreEqual(TransactionState.ACTIVE, tx.State);
+            Assert.AreEqual(TransactionState.Active, tx.State);
             Assert.IsTrue(tx.StartTime.Ticks > 0);
             Assert.AreEqual(tx.NodeId, Grid(0).Cluster.LocalNode.Id);
 
@@ -2213,22 +2213,22 @@ namespace Apache.Ignite.Core.Tests.Cache
             tx.Commit();
 
             Assert.IsFalse(tx.IsRollbackOnly);
-            Assert.AreEqual(TransactionState.COMMITTED, tx.State);
-            Assert.AreEqual(TransactionConcurrency.OPTIMISTIC, tx.Concurrency);
-            Assert.AreEqual(TransactionIsolation.REPEATABLE_READ, tx.Isolation);
+            Assert.AreEqual(TransactionState.Committed, tx.State);
+            Assert.AreEqual(TransactionConcurrency.Optimistic, tx.Concurrency);
+            Assert.AreEqual(TransactionIsolation.RepeatableRead, tx.Isolation);
             Assert.AreEqual(2500, tx.Timeout.TotalMilliseconds);
             Assert.AreEqual(startTime1, tx.StartTime);
 
             Thread.Sleep(100);
 
-            tx = Transactions.TxStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED,
+            tx = Transactions.TxStart(TransactionConcurrency.Pessimistic, TransactionIsolation.ReadCommitted,
                 TimeSpan.FromMilliseconds(3500), 200);
 
             Assert.IsFalse(tx.IsRollbackOnly);
-            Assert.AreEqual(TransactionConcurrency.PESSIMISTIC, tx.Concurrency);
-            Assert.AreEqual(TransactionIsolation.READ_COMMITTED, tx.Isolation);
+            Assert.AreEqual(TransactionConcurrency.Pessimistic, tx.Concurrency);
+            Assert.AreEqual(TransactionIsolation.ReadCommitted, tx.Isolation);
             Assert.AreEqual(3500, tx.Timeout.TotalMilliseconds);
-            Assert.AreEqual(TransactionState.ACTIVE, tx.State);
+            Assert.AreEqual(TransactionState.Active, tx.State);
             Assert.IsTrue(tx.StartTime.Ticks > 0);
             Assert.IsTrue(tx.StartTime > startTime1);
 
@@ -2236,22 +2236,22 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             tx.Rollback();
 
-            Assert.AreEqual(TransactionState.ROLLED_BACK, tx.State);
-            Assert.AreEqual(TransactionConcurrency.PESSIMISTIC, tx.Concurrency);
-            Assert.AreEqual(TransactionIsolation.READ_COMMITTED, tx.Isolation);
+            Assert.AreEqual(TransactionState.RolledBack, tx.State);
+            Assert.AreEqual(TransactionConcurrency.Pessimistic, tx.Concurrency);
+            Assert.AreEqual(TransactionIsolation.ReadCommitted, tx.Isolation);
             Assert.AreEqual(3500, tx.Timeout.TotalMilliseconds);
             Assert.AreEqual(startTime2, tx.StartTime);
 
             Thread.Sleep(100);
 
-            tx = Transactions.TxStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ,
+            tx = Transactions.TxStart(TransactionConcurrency.Optimistic, TransactionIsolation.RepeatableRead,
                 TimeSpan.FromMilliseconds(2500), 100);
 
             Assert.IsFalse(tx.IsRollbackOnly);
-            Assert.AreEqual(TransactionConcurrency.OPTIMISTIC, tx.Concurrency);
-            Assert.AreEqual(TransactionIsolation.REPEATABLE_READ, tx.Isolation);
+            Assert.AreEqual(TransactionConcurrency.Optimistic, tx.Concurrency);
+            Assert.AreEqual(TransactionIsolation.RepeatableRead, tx.Isolation);
             Assert.AreEqual(2500, tx.Timeout.TotalMilliseconds);
-            Assert.AreEqual(TransactionState.ACTIVE, tx.State);
+            Assert.AreEqual(TransactionState.Active, tx.State);
             Assert.IsTrue(tx.StartTime > startTime2);
 
             DateTime startTime3 = tx.StartTime;
@@ -2259,9 +2259,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             tx.Commit();
 
             Assert.IsFalse(tx.IsRollbackOnly);
-            Assert.AreEqual(TransactionState.COMMITTED, tx.State);
-            Assert.AreEqual(TransactionConcurrency.OPTIMISTIC, tx.Concurrency);
-            Assert.AreEqual(TransactionIsolation.REPEATABLE_READ, tx.Isolation);
+            Assert.AreEqual(TransactionState.Committed, tx.State);
+            Assert.AreEqual(TransactionConcurrency.Optimistic, tx.Concurrency);
+            Assert.AreEqual(TransactionIsolation.RepeatableRead, tx.Isolation);
             Assert.AreEqual(2500, tx.Timeout.TotalMilliseconds);
             Assert.AreEqual(startTime3, tx.StartTime);
         }
@@ -2290,7 +2290,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.IsTrue(tx.IsRollbackOnly);
 
-            Assert.AreEqual(TransactionState.MARKED_ROLLBACK, tx.State);
+            Assert.AreEqual(TransactionState.MarkedRollback, tx.State);
 
             try
             {
@@ -2305,7 +2305,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             tx.Dispose();
 
-            Assert.AreEqual(TransactionState.ROLLED_BACK, tx.State);
+            Assert.AreEqual(TransactionState.RolledBack, tx.State);
 
             Assert.IsTrue(tx.IsRollbackOnly);
 
@@ -2366,11 +2366,11 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var tx = Transactions.TxStart();
             
-            Assert.AreEqual(TransactionState.ACTIVE, tx.State);
+            Assert.AreEqual(TransactionState.Active, tx.State);
 
             tx.Rollback();
 
-            Assert.AreEqual(TransactionState.ROLLED_BACK, tx.State);
+            Assert.AreEqual(TransactionState.RolledBack, tx.State);
 
             try
             {
@@ -2384,13 +2384,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             tx = Transactions.TxStart().WithAsync();
 
-            Assert.AreEqual(TransactionState.ACTIVE, tx.State);
+            Assert.AreEqual(TransactionState.Active, tx.State);
 
             tx.Commit();
 
             tx.GetFuture().Get();
 
-            Assert.AreEqual(TransactionState.COMMITTED, tx.State);
+            Assert.AreEqual(TransactionState.Committed, tx.State);
 
             tx.Rollback();  // Illegal, but should not fail here; will fail in future
 
@@ -2409,7 +2409,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test thraed-locals leak.
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CATEGORY_INTENSIVE)]
+        [Category(GridTestUtils.CategoryIntensive)]
         public void TestThreadLocalLeak()
         {
             var cache = Cache<string, string>();
@@ -2542,8 +2542,8 @@ namespace Apache.Ignite.Core.Tests.Cache
          * futures pinning works.
          */
         [Test]
-        [Category(GridTestUtils.CATEGORY_INTENSIVE)]
-        public void TestFuturesGC()
+        [Category(GridTestUtils.CategoryIntensive)]
+        public void TestFuturesGc()
         {
             var cache = Cache().WithAsync();
 
@@ -2952,7 +2952,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.IsInstanceOf<CacheEntryProcessorException>(ex);
 
                 if (string.IsNullOrEmpty(containsText))
-                    Assert.AreEqual(ex.InnerException.Message, AddArgCacheEntryProcessor.EXCEPTION_TEXT);
+                    Assert.AreEqual(ex.InnerException.Message, AddArgCacheEntryProcessor.ExceptionText);
                 else
                     Assert.IsTrue(ex.ToString().Contains(containsText));
             }
@@ -3212,8 +3212,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             GridPortablePerson person = obj.Deserialize<GridPortablePerson>();
 
-            Assert.AreEqual(expName, person.name);
-            Assert.AreEqual(expAge, person.age);
+            Assert.AreEqual(expName, person.Name);
+            Assert.AreEqual(expAge, person.Age);
         }
 
         protected static int PrimaryKeyForCache(ICache<int, int> cache)
@@ -3315,7 +3315,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         private static int PeekInt(ICache<int, int> cache, int key)
         {
-            return cache.LocalPeek(key, CachePeekMode.ONHEAP);
+            return cache.LocalPeek(key, CachePeekMode.Onheap);
         }
     }
 }

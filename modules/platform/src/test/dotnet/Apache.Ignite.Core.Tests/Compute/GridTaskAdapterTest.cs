@@ -46,13 +46,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestTaskAdapter()
         {
-            Assert.AreEqual(3, grid1.Cluster.Nodes().Count);
+            Assert.AreEqual(3, Grid1.Cluster.Nodes().Count);
 
             HashSet<Guid> allNodes = new HashSet<Guid>(); 
 
             for (int i = 0; i < 20 && allNodes.Count < 3; i++)
             {
-                HashSet<Guid> res = grid1.Compute().Execute(new TestSplitTask(), 1);
+                HashSet<Guid> res = Grid1.Compute().Execute(new TestSplitTask(), 1);
 
                 Assert.AreEqual(1, res.Count);
 
@@ -61,11 +61,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(3, allNodes.Count);
 
-            HashSet<Guid> res2 = grid1.Compute().Execute<int, Guid, HashSet<Guid>>(typeof(TestSplitTask), 3);
+            HashSet<Guid> res2 = Grid1.Compute().Execute<int, Guid, HashSet<Guid>>(typeof(TestSplitTask), 3);
 
             Assert.IsTrue(res2.Count > 0);
 
-            grid1.Compute().Execute(new TestSplitTask(), 100);
+            Grid1.Compute().Execute(new TestSplitTask(), 100);
 
             Assert.AreEqual(3, allNodes.Count);
         }
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             for (int i = 0; i < 10; i++)
             {
-                bool res = grid1.Compute().Execute(new TestJobAdapterTask(), true);
+                bool res = Grid1.Compute().Execute(new TestJobAdapterTask(), true);
 
                 Assert.IsTrue(res);
             }
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             for (int i = 0; i < 10; i++)
             {
-                bool res = grid1.Compute().Execute(new TestJobAdapterTask(), false);
+                bool res = Grid1.Compute().Execute(new TestJobAdapterTask(), false);
 
                 Assert.IsTrue(res);
             }
@@ -181,14 +181,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         public class NodeIdJob : IComputeJob<Guid>
         {
             [InstanceResource]
-            private IIgnite grid = null;
+            private IIgnite _grid = null;
 
             /** <inheritDoc /> */
             public Guid Execute()
             {
-                Assert.NotNull(grid);
+                Assert.NotNull(_grid);
 
-                return grid.Cluster.LocalNode.Id;
+                return _grid.Cluster.LocalNode.Id;
             }
 
             /** <inheritDoc /> */
@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         public class SerializableJob : ComputeJobAdapter<bool>
         {
             [InstanceResource]
-            private IIgnite grid = null;
+            private IIgnite _grid = null;
 
             public SerializableJob(params object[] args) : base(args)
             { 
@@ -221,7 +221,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.IsTrue(IsCancelled());
 
-                Assert.NotNull(grid);
+                Assert.NotNull(_grid);
 
                 int arg1 = Argument<int>(0);
 
@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         public class PortableJob : ComputeJobAdapter<bool>
         {
             [InstanceResource]
-            private IIgnite grid = null;
+            private IIgnite _grid = null;
 
             public PortableJob(params object[] args) : base(args)
             {
@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.IsTrue(IsCancelled());
 
-                Assert.NotNull(grid);
+                Assert.NotNull(_grid);
 
                 int arg1 = Argument<int>(0);
 

@@ -30,20 +30,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
     public class GridCacheTestStore : ICacheStore
     {
-        public static readonly IDictionary MAP = new ConcurrentDictionary<object, object>();
+        public static readonly IDictionary Map = new ConcurrentDictionary<object, object>();
 
-        public static bool expCommit;
+        public static bool ExpCommit;
         
-        public static bool loadMultithreaded;
+        public static bool LoadMultithreaded;
 
-        public static bool loadObjects;
+        public static bool LoadObjects;
 
         [InstanceResource]
-        private IIgnite grid = null;
+        private IIgnite _grid = null;
 
         [StoreSessionResource]
 #pragma warning disable 649
-        private ICacheStoreSession ses;
+        private ICacheStoreSession _ses;
 #pragma warning restore 649
 
         public static int intProperty;
@@ -52,18 +52,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public static void Reset()
         {
-            MAP.Clear();
+            Map.Clear();
 
-            expCommit = false;
-            loadMultithreaded = false;
-            loadObjects = false;
+            ExpCommit = false;
+            LoadMultithreaded = false;
+            LoadObjects = false;
         }
 
         public void LoadCache(Action<object, object> act, params object[] args)
         {
-            Debug.Assert(grid != null);
+            Debug.Assert(_grid != null);
 
-            if (loadMultithreaded)
+            if (LoadMultithreaded)
             {
                 int cnt = 0;
 
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
                 for (int i = start; i < start + cnt; i++)
                 {
-                    if (loadObjects)
+                    if (LoadObjects)
                         act(new Key(i), new Value(i));
                     else
                         act(i, "val_" + i);
@@ -91,53 +91,53 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public object Load(object key)
         {
-            Debug.Assert(grid != null);
+            Debug.Assert(_grid != null);
 
-            return MAP[key];
+            return Map[key];
         }
 
         public IDictionary LoadAll(ICollection keys)
         {
-            Debug.Assert(grid != null);
+            Debug.Assert(_grid != null);
 
             return keys.OfType<object>().ToDictionary(key => key, Load);
         }
 
         public void Write(object key, object val)
         {
-            Debug.Assert(grid != null);
+            Debug.Assert(_grid != null);
 
-            MAP[key] = val;
+            Map[key] = val;
         }
 
         public void WriteAll(IDictionary map)
         {
-            Debug.Assert(grid != null);
+            Debug.Assert(_grid != null);
 
             foreach (DictionaryEntry e in map)
-                MAP[e.Key] = e.Value;
+                Map[e.Key] = e.Value;
         }
 
         public void Delete(object key)
         {
-            Debug.Assert(grid != null);
+            Debug.Assert(_grid != null);
 
-            MAP.Remove(key);
+            Map.Remove(key);
         }
 
         public void DeleteAll(ICollection keys)
         {
-            Debug.Assert(grid != null);
+            Debug.Assert(_grid != null);
 
             foreach (object key in keys)
-                MAP.Remove(key);
+                Map.Remove(key);
         }
 
         public void SessionEnd(bool commit)
         {
-            Debug.Assert(grid != null);
+            Debug.Assert(_grid != null);
 
-            Debug.Assert(ses != null);
+            Debug.Assert(_ses != null);
         }
 
         public int IntProperty

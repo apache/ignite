@@ -37,10 +37,10 @@ namespace Apache.Ignite.Core.Compute
     {
         /** Cancelled flag */
         [NonSerialized]
-        private volatile bool cancelled;
+        private volatile bool _cancelled;
 
         /** Arguments. */
-        protected object[] args;
+        protected object[] Args;
 
         /// <summary>
         /// No-arg constructor.
@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="args">Optional job arguments.</param>
         protected ComputeJobAdapter(params object[] args)
         {
-            this.args = args;
+            this.Args = args;
         }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Compute
         /// </summary>
         public void Cancel()
         {
-            cancelled = true;
+            _cancelled = true;
         }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="args">Optional job arguments to set.</param>
         public void SetArguments(params object[] args)
         {
-            this.args = args;
+            this.Args = args;
         }
 
         /// <summary>
@@ -87,10 +87,10 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="idx">Index of the argument.</param>
         public TArg Argument<TArg>(int idx)
         {
-            if (idx < 0 || idx >= args.Length)
+            if (idx < 0 || idx >= Args.Length)
                 throw new ArgumentException("Invalid argument index: " + idx);
 
-            return (TArg)args[idx];
+            return (TArg)Args[idx];
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Compute
         /// <returns><c>True</c> if this job was cancelled, <c>false</c> otherwise.</returns>
         protected bool IsCancelled()
         {
-            return cancelled;
+            return _cancelled;
         }
 
         /// <summary>

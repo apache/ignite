@@ -41,10 +41,10 @@ namespace Apache.Ignite.Core.Impl.Compute
     internal class ComputeOutFuncWrapper : IComputeOutFunc, IPortableWriteAware
     {
         /** */
-        private readonly object func;
+        private readonly object _func;
 
         /** */
-        private readonly Func<object, object> invoker;
+        private readonly Func<object, object> _invoker;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeFuncWrapper" /> class.
@@ -56,9 +56,9 @@ namespace Apache.Ignite.Core.Impl.Compute
             Debug.Assert(func != null);
             Debug.Assert(invoker != null);
 
-            this.func = func;
+            this._func = func;
 
-            this.invoker = target => invoker();
+            this._invoker = target => invoker();
         }
 
         /** <inheritDoc /> */
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             try
             {
-                return invoker(func);
+                return _invoker(_func);
             }
             catch (TargetInvocationException ex)
             {
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             var writer0 = (PortableWriterImpl)writer.RawWriter();
 
             writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, func);
+            PortableUtils.WritePortableOrSerializable(writer0, _func);
         }
 
         /// <summary>
@@ -91,9 +91,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var reader0 = (PortableReaderImpl)reader.RawReader();
 
-            func = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _func = PortableUtils.ReadPortableOrSerializable<object>(reader0);
 
-            invoker = DelegateTypeDescriptor.GetComputeOutFunc(func.GetType());
+            _invoker = DelegateTypeDescriptor.GetComputeOutFunc(_func.GetType());
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         public void InjectGrid(IIgnite grid)
         {
             // Propagate injection
-            ResourceProcessor.Inject(func, (GridProxy)grid);
+            ResourceProcessor.Inject(_func, (GridProxy)grid);
         }
     }
 

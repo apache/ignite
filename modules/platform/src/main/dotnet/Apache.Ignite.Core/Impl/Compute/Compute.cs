@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     internal class Compute : ICompute
     {
         /** */
-        private readonly ComputeImpl compute;
+        private readonly ComputeImpl _compute;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Compute"/> class.
@@ -41,13 +41,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             Debug.Assert(computeImpl != null);
 
-            compute = computeImpl;
+            _compute = computeImpl;
         }
 
         /** <inheritDoc /> */
         public ICompute WithAsync()
         {
-            return new ComputeAsync(compute);
+            return new ComputeAsync(_compute);
         }
 
         /** <inheritDoc /> */
@@ -71,13 +71,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public IClusterGroup ClusterGroup
         {
-            get { return compute.ClusterGroup; }
+            get { return _compute.ClusterGroup; }
         }
 
         /** <inheritDoc /> */
         public ICompute WithNoFailover()
         {
-            compute.WithNoFailover();
+            _compute.WithNoFailover();
 
             return this;
         }
@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public ICompute WithTimeout(long timeout)
         {
-            compute.WithTimeout(timeout);
+            _compute.WithTimeout(timeout);
 
             return this;
         }
@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public ICompute WithKeepPortable()
         {
-            compute.WithKeepPortable();
+            _compute.WithKeepPortable();
 
             return this;
         }
@@ -101,114 +101,114 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public T ExecuteJavaTask<T>(string taskName, object taskArg)
         {
-            return compute.ExecuteJavaTask<T>(taskName, taskArg);
+            return _compute.ExecuteJavaTask<T>(taskName, taskArg);
         }
 
         /** <inheritDoc /> */
-        public R Execute<A, T, R>(IComputeTask<A, T, R> task, A taskArg)
+        public TR Execute<TA, T, TR>(IComputeTask<TA, T, TR> task, TA taskArg)
         {
-            return compute.Execute(task, taskArg).Get();
+            return _compute.Execute(task, taskArg).Get();
         }
 
         /** <inheritDoc /> */
-        public R Execute<T, R>(IComputeTask<T, R> task)
+        public TR Execute<T, TR>(IComputeTask<T, TR> task)
         {
-            return compute.Execute(task, null).Get();
+            return _compute.Execute(task, null).Get();
         }
 
         /** <inheritDoc /> */
-        public R Execute<A, T, R>(Type taskType, A taskArg)
+        public TR Execute<TA, T, TR>(Type taskType, TA taskArg)
         {
-            return compute.Execute<A, T, R>(taskType, taskArg).Get();
+            return _compute.Execute<TA, T, TR>(taskType, taskArg).Get();
         }
 
-        public R Execute<T, R>(Type taskType)
+        public TR Execute<T, TR>(Type taskType)
         {
-            return compute.Execute<object, T, R>(taskType, null).Get();
-        }
-
-        /** <inheritDoc /> */
-        public R Call<R>(IComputeFunc<R> clo)
-        {
-            return compute.Execute(clo).Get();
+            return _compute.Execute<object, T, TR>(taskType, null).Get();
         }
 
         /** <inheritDoc /> */
-        public R AffinityCall<R>(string cacheName, object affinityKey, IComputeFunc<R> clo)
+        public TR Call<TR>(IComputeFunc<TR> clo)
         {
-            return compute.AffinityCall(cacheName, affinityKey, clo).Get();
+            return _compute.Execute(clo).Get();
         }
 
         /** <inheritDoc /> */
-        public R Call<R>(Func<R> func)
+        public TR AffinityCall<TR>(string cacheName, object affinityKey, IComputeFunc<TR> clo)
         {
-            return compute.Execute(func).Get();
+            return _compute.AffinityCall(cacheName, affinityKey, clo).Get();
         }
 
         /** <inheritDoc /> */
-        public ICollection<R> Call<R>(IEnumerable<IComputeFunc<R>> clos)
+        public TR Call<TR>(Func<TR> func)
         {
-            return compute.Execute(clos).Get();
+            return _compute.Execute(func).Get();
         }
 
         /** <inheritDoc /> */
-        public R2 Call<R1, R2>(IEnumerable<IComputeFunc<R1>> clos, IComputeReducer<R1, R2> rdc)
+        public ICollection<TR> Call<TR>(IEnumerable<IComputeFunc<TR>> clos)
         {
-            return compute.Execute(clos, rdc).Get();
+            return _compute.Execute(clos).Get();
         }
 
         /** <inheritDoc /> */
-        public ICollection<R> Broadcast<R>(IComputeFunc<R> clo)
+        public TR2 Call<TR1, TR2>(IEnumerable<IComputeFunc<TR1>> clos, IComputeReducer<TR1, TR2> rdc)
         {
-            return compute.Broadcast(clo).Get();
+            return _compute.Execute(clos, rdc).Get();
         }
 
         /** <inheritDoc /> */
-        public ICollection<R> Broadcast<T, R>(IComputeFunc<T, R> clo, T arg)
+        public ICollection<TR> Broadcast<TR>(IComputeFunc<TR> clo)
         {
-            return compute.Broadcast(clo, arg).Get();
+            return _compute.Broadcast(clo).Get();
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<TR> Broadcast<T, TR>(IComputeFunc<T, TR> clo, T arg)
+        {
+            return _compute.Broadcast(clo, arg).Get();
         }
 
         /** <inheritDoc /> */
         public void Broadcast(IComputeAction action)
         {
-            compute.Broadcast(action).Get();
+            _compute.Broadcast(action).Get();
         }
 
         /** <inheritDoc /> */
         public void Run(IComputeAction action)
         {
-            compute.Run(action).Get();
+            _compute.Run(action).Get();
         }
 
         /** <inheritDoc /> */
         public void AffinityRun(string cacheName, object affinityKey, IComputeAction action)
         {
-            compute.AffinityRun(cacheName, affinityKey, action).Get();
+            _compute.AffinityRun(cacheName, affinityKey, action).Get();
         }
 
         /** <inheritDoc /> */
         public void Run(IEnumerable<IComputeAction> actions)
         {
-            compute.Run(actions).Get();
+            _compute.Run(actions).Get();
         }
 
         /** <inheritDoc /> */
-        public R Apply<T, R>(IComputeFunc<T, R> clo, T arg)
+        public TR Apply<T, TR>(IComputeFunc<T, TR> clo, T arg)
         {
-            return compute.Apply(clo, arg).Get();
+            return _compute.Apply(clo, arg).Get();
         }
 
         /** <inheritDoc /> */
-        public ICollection<R> Apply<T, R>(IComputeFunc<T, R> clo, IEnumerable<T> args)
+        public ICollection<TR> Apply<T, TR>(IComputeFunc<T, TR> clo, IEnumerable<T> args)
         {
-            return compute.Apply(clo, args).Get();
+            return _compute.Apply(clo, args).Get();
         }
 
         /** <inheritDoc /> */
-        public R2 Apply<T, R1, R2>(IComputeFunc<T, R1> clo, IEnumerable<T> args, IComputeReducer<R1, R2> rdc)
+        public TR2 Apply<T, TR1, TR2>(IComputeFunc<T, TR1> clo, IEnumerable<T> args, IComputeReducer<TR1, TR2> rdc)
         {
-            return compute.Apply(clo, args, rdc).Get();
+            return _compute.Apply(clo, args, rdc).Get();
         }
     }
 }

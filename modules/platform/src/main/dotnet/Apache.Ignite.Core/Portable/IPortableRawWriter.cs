@@ -216,6 +216,6 @@ namespace Apache.Ignite.Core.Portable
         /// Write generic dictionary.
         /// </summary>
         /// <param name="val">Dictionary.</param>
-        void WriteGenericDictionary<K, V>(IDictionary<K, V> val);
+        void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val);
     }
 }

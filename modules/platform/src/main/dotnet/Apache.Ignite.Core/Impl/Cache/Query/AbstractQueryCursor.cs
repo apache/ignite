@@ -33,28 +33,28 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     internal abstract class AbstractQueryCursor<T> : GridDisposableTarget, IQueryCursor<T>, IEnumerator<T>
     {
         /** */
-        private const int OP_GET_ALL = 1;
+        private const int OpGetAll = 1;
 
         /** */
-        private const int OP_GET_BATCH = 2;
+        private const int OpGetBatch = 2;
 
         /** Position before head. */
-        private const int BATCH_POS_BEFORE_HEAD = -1;
+        private const int BatchPosBeforeHead = -1;
 
         /** Keep portable flag. */
-        private readonly bool keepPortable;
+        private readonly bool _keepPortable;
 
         /** Wherther "GetAll" was called. */
-        private bool getAllCalled;
+        private bool _getAllCalled;
 
         /** Whether "GetEnumerator" was called. */
-        private bool iterCalled;
+        private bool _iterCalled;
 
         /** Batch with entries. */
-        private T[] batch;
+        private T[] _batch;
 
         /** Current position in batch. */
-        private int batchPos = BATCH_POS_BEFORE_HEAD;
+        private int _batchPos = BatchPosBeforeHead;
 
         /// <summary>
         /// Constructor.
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         protected AbstractQueryCursor(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable) : 
             base(target, marsh)
         {
-            this.keepPortable = keepPortable;
+            this._keepPortable = keepPortable;
         }
 
         #region Public methods
@@ -75,17 +75,17 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         {
             ThrowIfDisposed();
 
-            if (iterCalled)
+            if (_iterCalled)
                 throw new InvalidOperationException("Failed to get all entries because GetEnumerator() " + 
                     "method has already been called.");
 
-            if (getAllCalled)
+            if (_getAllCalled)
                 throw new InvalidOperationException("Failed to get all entries because GetAll() " + 
                     "method has already been called.");
 
-            var res = DoInOp<IList<T>>(OP_GET_ALL, ConvertGetAll);
+            var res = DoInOp<IList<T>>(OpGetAll, ConvertGetAll);
 
-            getAllCalled = true;
+            _getAllCalled = true;
 
             return res;
         }
@@ -113,17 +113,17 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         {
             ThrowIfDisposed();
 
-            if (iterCalled)
+            if (_iterCalled)
                 throw new InvalidOperationException("Failed to get enumerator entries because " + 
                     "GetEnumeartor() method has already been called.");
 
-            if (getAllCalled)
+            if (_getAllCalled)
                 throw new InvalidOperationException("Failed to get enumerator entries because " + 
                     "GetAll() method has already been called.");
 
             UU.QueryCursorIterator(target);
 
-            iterCalled = true;
+            _iterCalled = true;
 
             return this;
         }
@@ -145,13 +145,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             {
                 ThrowIfDisposed();
 
-                if (batchPos == BATCH_POS_BEFORE_HEAD)
+                if (_batchPos == BatchPosBeforeHead)
                     throw new InvalidOperationException("MoveNext has not been called.");
                 
-                if (batch == null)
+                if (_batch == null)
                     throw new InvalidOperationException("Previous call to MoveNext returned false.");
 
-                return batch[batchPos];
+                return _batch[_batchPos];
             }
         }
 
@@ -166,22 +166,22 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         {
             ThrowIfDisposed();
 
-            if (batch == null)
+            if (_batch == null)
             {
-                if (batchPos == BATCH_POS_BEFORE_HEAD)
+                if (_batchPos == BatchPosBeforeHead)
                     // Standing before head, let's get batch and advance position.
                     RequestBatch();
             }
             else
             {
-                batchPos++;
+                _batchPos++;
 
-                if (batch.Length == batchPos)
+                if (_batch.Length == _batchPos)
                     // Reached batch end => request another.
                     RequestBatch();
             }
 
-            return batch != null;
+            return _batch != null;
         }
 
         /** <inheritdoc /> */
@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** <inheritdoc /> */
         protected override T1 Unmarshal<T1>(IPortableStream stream)
         {
-            return marsh.Unmarshal<T1>(stream, keepPortable);
+            return Marsh.Unmarshal<T1>(stream, _keepPortable);
         }
 
         /// <summary>
@@ -212,9 +212,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         private void RequestBatch()
         {
-            batch = DoInOp<T[]>(OP_GET_BATCH, ConvertGetBatch);
+            _batch = DoInOp<T[]>(OpGetBatch, ConvertGetBatch);
 
-            batchPos = 0;
+            _batchPos = 0;
         }
 
         /// <summary>
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <returns>Result.</returns>
         private IList<T> ConvertGetAll(IPortableStream stream)
         {
-            var reader = marsh.StartUnmarshal(stream, keepPortable);
+            var reader = Marsh.StartUnmarshal(stream, _keepPortable);
 
             var size = reader.ReadInt();
 
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <returns>Result.</returns>
         private T[] ConvertGetBatch(IPortableStream stream)
         {
-            var reader = marsh.StartUnmarshal(stream, keepPortable);
+            var reader = Marsh.StartUnmarshal(stream, _keepPortable);
 
             var size = reader.ReadInt();
 

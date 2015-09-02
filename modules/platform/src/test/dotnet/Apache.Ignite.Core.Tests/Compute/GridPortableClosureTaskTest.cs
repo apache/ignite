@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             PortableResult res0 = res as PortableResult;
 
             Assert.IsTrue(res0 != null);
-            Assert.AreEqual(1, res0.res);
+            Assert.AreEqual(1, res0.Res);
         }
 
         /** <inheritDoc /> */
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             PortableException err0 = err as PortableException;
 
             Assert.IsTrue(err0 != null);
-            Assert.AreEqual(ERR_MSG, err0.msg);
+            Assert.AreEqual(ErrMsg, err0.Msg);
         }
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private class PortableOutFunc : IComputeFunc<object>
         {
             /** Error. */
-            private bool err;
+            private bool _err;
 
             /// <summary>
             /// 
@@ -104,14 +104,14 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="err"></param>
             public PortableOutFunc(bool err)
             {
-                this.err = err;
+                this._err = err;
             }
             
             /** <inheritDoc /> */
             public object Invoke()
             {
-                if (err)
-                    throw new PortableException(ERR_MSG);
+                if (_err)
+                    throw new PortableException(ErrMsg);
                 else
                     return new PortableResult(1);
             }
@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private class PortableFunc : IComputeFunc<object, object>
         {
             /** Error. */
-            private bool err;
+            private bool _err;
 
             /// <summary>
             /// 
@@ -139,14 +139,14 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="err"></param>
             public PortableFunc(bool err)
             {
-                this.err = err;
+                this._err = err;
             }
             
             /** <inheritDoc /> */
             public object Invoke(object arg)
             {
-                if (err)
-                    throw new PortableException(ERR_MSG);
+                if (_err)
+                    throw new PortableException(ErrMsg);
                 else
                     return new PortableResult(1);
             }
@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private class PortableException : Exception, IPortableMarshalAware
         {
             /** */
-            public string msg;
+            public string Msg;
 
             /// <summary>
             /// 
@@ -175,19 +175,19 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="msg"></param>
             public PortableException(string msg) : this()
             {
-                this.msg = msg;
+                this.Msg = msg;
             }
 
             /** <inheritDoc /> */
             public void WritePortable(IPortableWriter writer)
             {
-                writer.RawWriter().WriteString(msg);
+                writer.RawWriter().WriteString(Msg);
             }
 
             /** <inheritDoc /> */
             public void ReadPortable(IPortableReader reader)
             {
-                msg = reader.RawReader().ReadString();
+                Msg = reader.RawReader().ReadString();
             }
         }
 
@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private class PortableResult
         {
             /** */
-            public int res;
+            public int Res;
 
             /// <summary>
             /// 
@@ -213,7 +213,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="res"></param>
             public PortableResult(int res)
             {
-                this.res = res;
+                this.Res = res;
             }
         }
     }

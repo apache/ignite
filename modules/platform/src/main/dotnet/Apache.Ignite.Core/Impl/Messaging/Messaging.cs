@@ -43,21 +43,21 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// </summary>
         private enum Op
         {
-            LOC_LISTEN = 1,
+            LocListen = 1,
             REMOTE_LISTEN = 2,
             SEND = 3,
-            SEND_MULTI = 4,
+            SendMulti = 4,
             SEND_ORDERED = 5,
-            STOP_LOC_LISTEN = 6,
+            StopLocListen = 6,
             STOP_REMOTE_LISTEN = 7
         }
 
         /** Map from user (func+topic) -> id, needed for unsubscription. */
-        private readonly MultiValueDictionary<KeyValuePair<object, object>, long> funcMap =
+        private readonly MultiValueDictionary<KeyValuePair<object, object>, long> _funcMap =
             new MultiValueDictionary<KeyValuePair<object, object>, long>();
 
         /** Grid */
-        private readonly Ignite grid;
+        private readonly Ignite _grid;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Messaging" /> class.
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
             ClusterGroup = prj;
 
-            grid = (Ignite) prj.Grid;
+            _grid = (Ignite) prj.Grid;
         }
 
         /** <inheritdoc /> */
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             A.NotNull(messages, "messages");
 
-            DoOutOp((int) Op.SEND_MULTI, writer =>
+            DoOutOp((int) Op.SendMulti, writer =>
             {
                 writer.Write(topic);
 
@@ -118,27 +118,27 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             A.NotNull(filter, "filter");
 
-            ResourceProcessor.Inject(filter, grid);
+            ResourceProcessor.Inject(filter, _grid);
 
-            lock (funcMap)
+            lock (_funcMap)
             {
                 var key = GetKey(filter, topic);
 
-                MessageFilterHolder filter0 = MessageFilterHolder.CreateLocal(grid, filter); 
+                MessageFilterHolder filter0 = MessageFilterHolder.CreateLocal(_grid, filter); 
 
-                var filterHnd = grid.HandleRegistry.Allocate(filter0);
+                var filterHnd = _grid.HandleRegistry.Allocate(filter0);
 
                 filter0.DestroyAction = () =>
                 {
-                    lock (funcMap)
+                    lock (_funcMap)
                     {
-                        funcMap.Remove(key, filterHnd);
+                        _funcMap.Remove(key, filterHnd);
                     }
                 };
 
                 try
                 {
-                    DoOutOp((int) Op.LOC_LISTEN, writer =>
+                    DoOutOp((int) Op.LocListen, writer =>
                     {
                         writer.WriteLong(filterHnd);
                         writer.Write(topic);
@@ -146,12 +146,12 @@ namespace Apache.Ignite.Core.Impl.Messaging
                 }
                 catch (Exception)
                 {
-                    grid.HandleRegistry.Release(filterHnd);
+                    _grid.HandleRegistry.Release(filterHnd);
 
                     throw;
                 }
 
-                funcMap.Add(key, filterHnd);
+                _funcMap.Add(key, filterHnd);
             }
         }
 
@@ -163,14 +163,14 @@ namespace Apache.Ignite.Core.Impl.Messaging
             long filterHnd;
             bool removed;
 
-            lock (funcMap)
+            lock (_funcMap)
             {
-                removed = funcMap.TryRemove(GetKey(filter, topic), out filterHnd);
+                removed = _funcMap.TryRemove(GetKey(filter, topic), out filterHnd);
             }
 
             if (removed)
             {
-                DoOutOp((int) Op.STOP_LOC_LISTEN, writer =>
+                DoOutOp((int) Op.StopLocListen, writer =>
                 {
                     writer.WriteLong(filterHnd);
                     writer.Write(topic);
@@ -183,8 +183,8 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             A.NotNull(filter, "filter");
 
-            var filter0 = MessageFilterHolder.CreateLocal(grid, filter);
-            var filterHnd = grid.HandleRegistry.AllocateSafe(filter0);
+            var filter0 = MessageFilterHolder.CreateLocal(_grid, filter);
+            var filterHnd = _grid.HandleRegistry.AllocateSafe(filter0);
 
             try
             {
@@ -210,7 +210,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
             }
             catch (Exception)
             {
-                grid.HandleRegistry.Release(filterHnd);
+                _grid.HandleRegistry.Release(filterHnd);
 
                 throw;
             }

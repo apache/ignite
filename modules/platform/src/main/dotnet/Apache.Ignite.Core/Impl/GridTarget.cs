@@ -38,16 +38,16 @@ namespace Apache.Ignite.Core.Impl
     internal abstract class GridTarget
     {
         /** */
-        protected const int TRUE = 1;
+        protected const int True = 1;
 
         /** */
-        private const int OP_META = -1;
+        private const int OpMeta = -1;
 
         /** */
-        public const int OP_NONE = -2;
+        public const int OpNone = -2;
 
         /** */
-        private static readonly Dictionary<Type, FutureType> GRID_FUTURE_TYPE_MAP
+        private static readonly Dictionary<Type, FutureType> GridFutureTypeMap
             = new Dictionary<Type, FutureType>
             {
                 {typeof(bool), FutureType.Bool},
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Impl
         protected readonly IUnmanagedTarget target;
 
         /** Marshaller. */
-        protected readonly PortableMarshaller marsh;
+        protected readonly PortableMarshaller Marsh;
 
         /// <summary>
         /// Constructor.
@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl
         protected GridTarget(IUnmanagedTarget target, PortableMarshaller marsh)
         {
             this.target = target;
-            this.marsh = marsh;
+            this.Marsh = marsh;
         }
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal PortableMarshaller Marshaller
         {
-            get { return marsh; }
+            get { return Marsh; }
         }
 
         #region Static Helpers
@@ -273,7 +273,7 @@ namespace Apache.Ignite.Core.Impl
         {
             using (var stream = GridManager.Memory.Allocate().Stream())
             {
-                var writer = marsh.StartMarshal(stream);
+                var writer = Marsh.StartMarshal(stream);
 
                 action(writer);
 
@@ -403,7 +403,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 using (PlatformMemoryStream inStream = GridManager.Memory.Allocate().Stream())
                 {
-                    PortableWriterImpl writer = marsh.StartMarshal(outStream);
+                    PortableWriterImpl writer = Marsh.StartMarshal(outStream);
 
                     outAction(writer);
 
@@ -425,13 +425,13 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="outAction">Out action.</param>
         /// <param name="inAction">In action.</param>
         /// <returns>Result.</returns>
-        protected R DoOutInOp<R>(int type, Action<PortableWriterImpl> outAction, Func<IPortableStream, R> inAction)
+        protected TR DoOutInOp<TR>(int type, Action<PortableWriterImpl> outAction, Func<IPortableStream, TR> inAction)
         {
             using (PlatformMemoryStream outStream = GridManager.Memory.Allocate().Stream())
             {
                 using (PlatformMemoryStream inStream = GridManager.Memory.Allocate().Stream())
                 {
-                    PortableWriterImpl writer = marsh.StartMarshal(outStream);
+                    PortableWriterImpl writer = Marsh.StartMarshal(outStream);
 
                     outAction(writer);
 
@@ -454,13 +454,13 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="inAction">In action.</param>
         /// <param name="arg">Argument.</param>
         /// <returns>Result.</returns>
-        protected unsafe R DoOutInOp<R>(int type, Action<PortableWriterImpl> outAction, Func<IPortableStream, R> inAction, void* arg)
+        protected unsafe TR DoOutInOp<TR>(int type, Action<PortableWriterImpl> outAction, Func<IPortableStream, TR> inAction, void* arg)
         {
             using (PlatformMemoryStream outStream = GridManager.Memory.Allocate().Stream())
             {
                 using (PlatformMemoryStream inStream = GridManager.Memory.Allocate().Stream())
                 {
-                    PortableWriterImpl writer = marsh.StartMarshal(outStream);
+                    PortableWriterImpl writer = Marsh.StartMarshal(outStream);
 
                     outAction(writer);
 
@@ -481,13 +481,13 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
         /// <returns>Result.</returns>
-        protected R DoOutInOp<R>(int type, Action<PortableWriterImpl> outAction)
+        protected TR DoOutInOp<TR>(int type, Action<PortableWriterImpl> outAction)
         {
             using (PlatformMemoryStream outStream = GridManager.Memory.Allocate().Stream())
             {
                 using (PlatformMemoryStream inStream = GridManager.Memory.Allocate().Stream())
                 {
-                    PortableWriterImpl writer = marsh.StartMarshal(outStream);
+                    PortableWriterImpl writer = Marsh.StartMarshal(outStream);
 
                     outAction(writer);
 
@@ -497,7 +497,7 @@ namespace Apache.Ignite.Core.Impl
 
                     inStream.SynchronizeInput();
 
-                    return Unmarshal<R>(inStream);
+                    return Unmarshal<TR>(inStream);
                 }
             }
         }
@@ -508,13 +508,13 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="val">Value.</param>
         /// <returns>Result.</returns>
-        protected R DoOutInOp<T1, R>(int type, T1 val)
+        protected TR DoOutInOp<T1, TR>(int type, T1 val)
         {
             using (PlatformMemoryStream outStream = GridManager.Memory.Allocate().Stream())
             {
                 using (PlatformMemoryStream inStream = GridManager.Memory.Allocate().Stream())
                 {
-                    PortableWriterImpl writer = marsh.StartMarshal(outStream);
+                    PortableWriterImpl writer = Marsh.StartMarshal(outStream);
 
                     writer.WriteObject(val);
 
@@ -524,7 +524,7 @@ namespace Apache.Ignite.Core.Impl
 
                     inStream.SynchronizeInput();
 
-                    return Unmarshal<R>(inStream);
+                    return Unmarshal<TR>(inStream);
                 }
             }
         }
@@ -536,13 +536,13 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="val1">Value.</param>
         /// <param name="val2">Value.</param>
         /// <returns>Result.</returns>
-        protected R DoOutInOp<T1, T2, R>(int type, T1 val1, T2 val2)
+        protected TR DoOutInOp<T1, T2, TR>(int type, T1 val1, T2 val2)
         {
             using (PlatformMemoryStream outStream = GridManager.Memory.Allocate().Stream())
             {
                 using (PlatformMemoryStream inStream = GridManager.Memory.Allocate().Stream())
                 {
-                    PortableWriterImpl writer = marsh.StartMarshal(outStream);
+                    PortableWriterImpl writer = Marsh.StartMarshal(outStream);
 
                     writer.WriteObject(val1);
                     writer.WriteObject(val2);
@@ -553,7 +553,7 @@ namespace Apache.Ignite.Core.Impl
 
                     inStream.SynchronizeInput();
 
-                    return Unmarshal<R>(inStream);
+                    return Unmarshal<TR>(inStream);
                 }
             }
         }
@@ -568,7 +568,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writer">Portable writer.</param>
         internal void FinishMarshal(PortableWriterImpl writer)
         {
-            marsh.FinishMarshal(writer);
+            Marsh.FinishMarshal(writer);
         }
 
         /// <summary>
@@ -577,9 +577,9 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="metas">Metadatas.</param>
         internal void PutMetadata(IDictionary<int, IPortableMetadata> metas)
         {
-            DoOutOp(OP_META, stream =>
+            DoOutOp(OpMeta, stream =>
             {
-                PortableWriterImpl metaWriter = marsh.StartMarshal(stream);
+                PortableWriterImpl metaWriter = Marsh.StartMarshal(stream);
 
                 metaWriter.WriteInt(metas.Count);
 
@@ -602,10 +602,10 @@ namespace Apache.Ignite.Core.Impl
                     }
                 }
 
-                marsh.FinishMarshal(metaWriter);
+                Marsh.FinishMarshal(metaWriter);
             });
 
-            marsh.OnMetadataSent(metas);
+            Marsh.OnMetadataSent(metas);
         }
 
         /// <summary>
@@ -615,7 +615,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Unmarshalled object.</returns>
         protected virtual T Unmarshal<T>(IPortableStream stream)
         {
-            return marsh.Unmarshal<T>(stream);
+            return Marsh.Unmarshal<T>(stream);
         }
 
         /// <summary>
@@ -634,13 +634,13 @@ namespace Apache.Ignite.Core.Impl
             var type = typeof(T);
 
             if (type.IsPrimitive)
-                GRID_FUTURE_TYPE_MAP.TryGetValue(type, out futType);
+                GridFutureTypeMap.TryGetValue(type, out futType);
 
             var fut = convertFunc == null && futType != FutureType.Object
                 ? new Future<T>()
-                : new Future<T>(new FutureConverter<T>(marsh, keepPortable, convertFunc));
+                : new Future<T>(new FutureConverter<T>(Marsh, keepPortable, convertFunc));
 
-            var futHnd = marsh.Grid.HandleRegistry.Allocate(fut);
+            var futHnd = Marsh.Grid.HandleRegistry.Allocate(fut);
 
             listenAction(futHnd, (int)futType);
 
@@ -656,7 +656,7 @@ namespace Apache.Ignite.Core.Impl
     internal abstract class GridDisposableTarget : GridTarget, IDisposable
     {
         /** Disposed flag. */
-        private volatile bool disposed;
+        private volatile bool _disposed;
 
         /// <summary>
         /// Constructor.
@@ -673,14 +673,14 @@ namespace Apache.Ignite.Core.Impl
         {
             lock (this)
             {
-                if (disposed)
+                if (_disposed)
                     return;
 
                 Dispose(true);
 
                 GC.SuppressFinalize(this);
 
-                disposed = true;
+                _disposed = true;
             }
         }
 
@@ -700,7 +700,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         protected void ThrowIfDisposed()
         {
-            if (disposed)
+            if (_disposed)
                 throw new ObjectDisposedException(GetType().Name, "Object has been disposed.");
         }
 
@@ -709,7 +709,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         protected bool IsDisposed
         {
-            get { return disposed; }
+            get { return _disposed; }
         }
     }
 }

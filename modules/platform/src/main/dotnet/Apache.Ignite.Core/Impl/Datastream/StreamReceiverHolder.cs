@@ -35,16 +35,16 @@ namespace Apache.Ignite.Core.Impl.Datastream
     internal class StreamReceiverHolder : IPortableWriteAware
     {
         /** */
-        private const byte RCV_NORMAL = 0;
+        private const byte RcvNormal = 0;
 
         /** */
-        public const byte RCV_TRANSFORMER = 1;
+        public const byte RcvTransformer = 1;
 
         /** Generic receiver. */
-        private readonly object rcv;
+        private readonly object _rcv;
         
         /** Invoker delegate. */
-        private readonly Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> invoke;
+        private readonly Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> _invoke;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StreamReceiverHolder"/> class.
@@ -54,21 +54,21 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             var rcvType = reader.ReadByte();
 
-            rcv = PortableUtils.ReadPortableOrSerializable<object>(reader);
+            _rcv = PortableUtils.ReadPortableOrSerializable<object>(reader);
             
-            Debug.Assert(rcv != null);
+            Debug.Assert(_rcv != null);
 
-            var type = rcv.GetType();
+            var type = _rcv.GetType();
 
-            if (rcvType == RCV_TRANSFORMER)
+            if (rcvType == RcvTransformer)
             {
                 // rcv is a user ICacheEntryProcessor<K, V, A, R>, construct StreamTransformer from it.
                 // (we can't marshal StreamTransformer directly, because it is generic, 
                 // and we do not know type arguments that user will have)
-                rcv = DelegateTypeDescriptor.GetStreamTransformerCtor(type)(rcv);
+                _rcv = DelegateTypeDescriptor.GetStreamTransformerCtor(type)(_rcv);
             }
 
-            invoke = DelegateTypeDescriptor.GetStreamReceiver(rcv.GetType());
+            _invoke = DelegateTypeDescriptor.GetStreamReceiver(_rcv.GetType());
         }
 
         /// <summary>
@@ -82,8 +82,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
             Debug.Assert(rcv != null);
             Debug.Assert(invoke != null);
 
-            this.rcv = rcv;
-            this.invoke = invoke;
+            this._rcv = rcv;
+            this._invoke = invoke;
         }
 
         /** <inheritdoc /> */
@@ -91,14 +91,14 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             var w = writer.RawWriter();
 
-            var writeAware = rcv as IPortableWriteAware;
+            var writeAware = _rcv as IPortableWriteAware;
 
             if (writeAware != null)
                 writeAware.WritePortable(writer);
             else
             {
-                w.WriteByte(RCV_NORMAL);
-                PortableUtils.WritePortableOrSerializable((PortableWriterImpl) writer, rcv);
+                w.WriteByte(RcvNormal);
+                PortableUtils.WritePortableOrSerializable((PortableWriterImpl) writer, _rcv);
             }
         }
 
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             Debug.Assert(cache != null);
             Debug.Assert(stream != null);
 
-            invoke(rcv, grid, cache, stream, keepPortable);
+            _invoke(_rcv, grid, cache, stream, keepPortable);
         }
 
         /// <summary>
@@ -126,19 +126,19 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="cache">Cache.</param>
         /// <param name="stream">Stream.</param>
         /// <param name="keepPortable">Portable flag.</param>
-        public static void InvokeReceiver<K, V>(IStreamReceiver<K, V> receiver, Ignite grid, IUnmanagedTarget cache,
+        public static void InvokeReceiver<TK, TV>(IStreamReceiver<TK, TV> receiver, Ignite grid, IUnmanagedTarget cache,
             IPortableStream stream, bool keepPortable)
         {
             var reader = grid.Marshaller.StartUnmarshal(stream, keepPortable);
 
             var size = reader.ReadInt();
 
-            var entries = new List<ICacheEntry<K, V>>(size);
+            var entries = new List<ICacheEntry<TK, TV>>(size);
 
             for (var i = 0; i < size; i++)
-                entries.Add(new CacheEntry<K, V>(reader.ReadObject<K>(), reader.ReadObject<V>()));
+                entries.Add(new CacheEntry<TK, TV>(reader.ReadObject<TK>(), reader.ReadObject<TV>()));
 
-            receiver.Receive(grid.Cache<K, V>(cache, keepPortable), entries);
+            receiver.Receive(grid.Cache<TK, TV>(cache, keepPortable), entries);
         }
     }
 }

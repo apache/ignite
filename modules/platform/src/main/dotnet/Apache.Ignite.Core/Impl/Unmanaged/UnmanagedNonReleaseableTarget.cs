@@ -25,10 +25,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     internal unsafe class UnmanagedNonReleaseableTarget : IUnmanagedTarget
     {
         /** Context. */
-        private readonly void* ctx;
+        private readonly void* _ctx;
 
         /** Target. */
-        private readonly void* target;
+        private readonly void* _target;
 
         /// <summary>
         /// Constructor.
@@ -37,20 +37,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <param name="target">Target.</param>
         public UnmanagedNonReleaseableTarget(void* ctx, void* target)
         {
-            this.ctx = ctx;
-            this.target = target;
+            this._ctx = ctx;
+            this._target = target;
         }
 
         /** <inheritdoc /> */
         public void* Context
         {
-            get { return ctx; }
+            get { return _ctx; }
         }
 
         /** <inheritdoc /> */
         public void* Target
         {
-            get { return target; }
+            get { return _target; }
         }
 
         /** <inheritdoc /> */

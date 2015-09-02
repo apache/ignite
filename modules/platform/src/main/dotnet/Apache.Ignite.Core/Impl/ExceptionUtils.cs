@@ -38,13 +38,13 @@ namespace Apache.Ignite.Core.Impl
     internal static class ExceptionUtils
     {
         /** NoClassDefFoundError fully-qualified class name which is important during startup phase. */
-        private const string CLS_NO_CLS_DEF_FOUND_ERR = "java.lang.NoClassDefFoundError";
+        private const string ClsNoClsDefFoundErr = "java.lang.NoClassDefFoundError";
 
         /** NoSuchMethodError fully-qualified class name which is important during startup phase. */
-        private const string CLS_NO_SUCH_MTHD_ERR = "java.lang.NoSuchMethodError";
+        private const string ClsNoSuchMthdErr = "java.lang.NoSuchMethodError";
 
         /** InteropCachePartialUpdateException. */
-        private const string CLS_CACHE_PARTIAL_UPDATE_ERR = "org.apache.ignite.internal.processors.platform.cache.PlatformCachePartialUpdateException";
+        private const string ClsCachePartialUpdateErr = "org.apache.ignite.internal.processors.platform.cache.PlatformCachePartialUpdateException";
         
         /** Map with predefined exceptions. */
         private static readonly IDictionary<string, ExceptionFactoryDelegate> EXS = new Dictionary<string, ExceptionFactoryDelegate>();
@@ -109,15 +109,15 @@ namespace Apache.Ignite.Core.Impl
             if (EXS.TryGetValue(clsName, out ctor))
                 return ctor(msg);
 
-            if (CLS_NO_CLS_DEF_FOUND_ERR.Equals(clsName))
+            if (ClsNoClsDefFoundErr.Equals(clsName))
                 return new IgniteException("Java class is not found (did you set GRIDGAIN_HOME environment " +
                     "variable?): " + msg);
 
-            if (CLS_NO_SUCH_MTHD_ERR.Equals(clsName))
+            if (ClsNoSuchMthdErr.Equals(clsName))
                 return new IgniteException("Java class method is not found (did you set GRIDGAIN_HOME environment " +
                     "variable?): " + msg);
 
-            if (CLS_CACHE_PARTIAL_UPDATE_ERR.Equals(clsName))
+            if (ClsCachePartialUpdateErr.Equals(clsName))
                 return ProcessCachePartialUpdateException(msg, reader);
             
             return new IgniteException("Java exception occurred [class=" + clsName + ", message=" + msg + ']');

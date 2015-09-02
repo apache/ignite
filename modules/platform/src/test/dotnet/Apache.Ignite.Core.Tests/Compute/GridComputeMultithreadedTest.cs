@@ -26,11 +26,11 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Tests class.
     /// </summary>
-    [Category(GridTestUtils.CATEGORY_INTENSIVE)]
+    [Category(GridTestUtils.CategoryIntensive)]
     public class GridComputeMultithreadedTest : GridAbstractTaskTest
     {
         /** */
-        private static IList<Action<ICompute>> ACTIONS;
+        private static IList<Action<ICompute>> _actions;
 
         /// <summary>
         /// Constructor.
@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [SetUp]
         public void SetUp()
         {
-            ACTIONS = new List<Action<ICompute>>
+            _actions = new List<Action<ICompute>>
             {
                 compute => { compute.Apply(new My1ArgClosure(), "zzzz"); },
                 compute => { compute.Broadcast(new My1ArgClosure(), "zzzz"); },
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TearDown]
         public void TearDown()
         {
-            ACTIONS.Clear();
+            _actions.Clear();
         }
 
         /// <summary>
@@ -73,13 +73,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestAllTaskTypeAtSameTime()
         {
-            Assert.AreEqual(ACTIONS.Count, 6);
+            Assert.AreEqual(_actions.Count, 6);
 
-            var compute = grid1.Compute();
+            var compute = Grid1.Compute();
 
             GridTestUtils.RunMultiThreaded(() =>
             {
-                ACTIONS[GridTestUtils.Random.Next(ACTIONS.Count)](compute);
+                _actions[GridTestUtils.Random.Next(_actions.Count)](compute);
             }, 4, 60);
         }
 
@@ -89,9 +89,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestSingleTaskType0()
         {
-            Assert.AreEqual(ACTIONS.Count, 6);
+            Assert.AreEqual(_actions.Count, 6);
 
-            GridTestUtils.RunMultiThreaded(() => ACTIONS[0](grid1.Compute()), 4, 20);
+            GridTestUtils.RunMultiThreaded(() => _actions[0](Grid1.Compute()), 4, 20);
         }
 
         /// <summary>
@@ -100,9 +100,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestSingleTaskType1()
         {
-            Assert.AreEqual(ACTIONS.Count, 6);
+            Assert.AreEqual(_actions.Count, 6);
 
-            GridTestUtils.RunMultiThreaded(() => ACTIONS[1](grid1.Compute()), 4, 20);
+            GridTestUtils.RunMultiThreaded(() => _actions[1](Grid1.Compute()), 4, 20);
         }
 
         /// <summary>
@@ -111,9 +111,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestSingleTaskType2()
         {
-            Assert.AreEqual(ACTIONS.Count, 6);
+            Assert.AreEqual(_actions.Count, 6);
 
-            GridTestUtils.RunMultiThreaded(() => ACTIONS[2](grid1.Compute()), 4, 20);
+            GridTestUtils.RunMultiThreaded(() => _actions[2](Grid1.Compute()), 4, 20);
         }
 
         /// <summary>
@@ -122,9 +122,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestSingleTaskType3()
         {
-            Assert.AreEqual(ACTIONS.Count, 6);
+            Assert.AreEqual(_actions.Count, 6);
 
-            GridTestUtils.RunMultiThreaded(() => ACTIONS[3](grid1.Compute()), 4, 20);
+            GridTestUtils.RunMultiThreaded(() => _actions[3](Grid1.Compute()), 4, 20);
         }
         /// <summary>
         ///
@@ -132,9 +132,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestSingleTaskType4()
         {
-            Assert.AreEqual(ACTIONS.Count, 6);
+            Assert.AreEqual(_actions.Count, 6);
 
-            GridTestUtils.RunMultiThreaded(() => ACTIONS[4](grid1.Compute()), 4, 20);
+            GridTestUtils.RunMultiThreaded(() => _actions[4](Grid1.Compute()), 4, 20);
         }
 
         /// <summary>
@@ -143,9 +143,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestSingleTaskType5()
         {
-            Assert.AreEqual(ACTIONS.Count, 6);
+            Assert.AreEqual(_actions.Count, 6);
 
-            GridTestUtils.RunMultiThreaded(() => ACTIONS[5](grid1.Compute()), 4, 20);
+            GridTestUtils.RunMultiThreaded(() => _actions[5](Grid1.Compute()), 4, 20);
         }
     }
 
@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class MyNoArgClosure : IComputeFunc<int>
     {
         /** */
-        private readonly string s;
+        private readonly string _s;
 
         /// <summary>
         ///
@@ -177,13 +177,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <param name="s"></param>
         public MyNoArgClosure(string s)
         {
-            this.s = s;
+            this._s = s;
         }
 
         /** <inheritDoc /> */
         public int Invoke()
         {
-            return s.Length;
+            return _s.Length;
         }
     }
 
@@ -209,7 +209,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** <inheritDoc /> */
         public ComputeJobResultPolicy Result(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
         {
-            return ComputeJobResultPolicy.WAIT;
+            return ComputeJobResultPolicy.Wait;
         }
 
         /** <inheritDoc /> */
@@ -226,7 +226,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class StringLengthEmptyJob: IComputeJob<int>
     {
         /** */
-        private string s;
+        private string _s;
 
         /// <summary>
         ///
@@ -234,13 +234,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <param name="s"></param>
         public StringLengthEmptyJob(string s)
         {
-            this.s = s;
+            this._s = s;
         }
 
         /** <inheritDoc /> */
         public int Execute()
         {
-            return s.Length;
+            return _s.Length;
         }
 
         /** <inheritDoc /> */
@@ -253,17 +253,17 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class MyReducer : IComputeReducer<int, int>
     {
         /** */
-        private int res;
+        private int _res;
 
         public bool Collect(int res)
         {
-            this.res += res;
+            this._res += res;
             return true;
         }
 
         public int Reduce()
         {
-            return res;
+            return _res;
         }
     }
 }

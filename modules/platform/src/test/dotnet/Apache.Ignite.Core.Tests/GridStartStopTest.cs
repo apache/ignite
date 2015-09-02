@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// 
     /// </summary>
-    [Category(GridTestUtils.CATEGORY_INTENSIVE)]
+    [Category(GridTestUtils.CategoryIntensive)]
     public class GridStartStopTest
     {
         /// <summary>

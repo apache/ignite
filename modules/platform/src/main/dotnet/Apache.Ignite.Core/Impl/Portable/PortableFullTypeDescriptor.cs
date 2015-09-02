@@ -26,40 +26,40 @@ namespace Apache.Ignite.Core.Impl.Portable
     public class PortableFullTypeDescriptor : IPortableTypeDescriptor
     {
         /** Type. */
-        private readonly Type type;
+        private readonly Type _type;
 
         /** Type ID. */
-        private readonly int typeId;
+        private readonly int _typeId;
 
         /** Type name. */
-        private readonly string typeName;
+        private readonly string _typeName;
 
         /** User type flag. */
-        private readonly bool userType;
+        private readonly bool _userType;
 
         /** Name converter. */
-        private readonly IPortableNameMapper nameConverter;
+        private readonly IPortableNameMapper _nameConverter;
 
         /** Mapper. */
-        private readonly IPortableIdMapper mapper;
+        private readonly IPortableIdMapper _mapper;
 
         /** Serializer. */
-        private readonly IPortableSerializer serializer;
+        private readonly IPortableSerializer _serializer;
 
         /** Metadata enabled flag. */
-        private readonly bool metaEnabled;
+        private readonly bool _metaEnabled;
 
         /** Whether to cache deserialized value in IPortableObject */
-        private readonly bool keepDeserialized;
+        private readonly bool _keepDeserialized;
 
         /** Affinity field key name. */
-        private readonly string affKeyFieldName;
+        private readonly string _affKeyFieldName;
 
         /** Typed handler. */
-        private readonly object typedHandler;
+        private readonly object _typedHandler;
 
         /** Untyped handler. */
-        private readonly PortableSystemWriteDelegate untypedHandler;
+        private readonly PortableSystemWriteDelegate _untypedHandler;
 
         /// <summary>
         /// Constructor.
@@ -90,18 +90,18 @@ namespace Apache.Ignite.Core.Impl.Portable
             object typedHandler,
             PortableSystemWriteDelegate untypedHandler)
         {
-            this.type = type;
-            this.typeId = typeId;
-            this.typeName = typeName;
-            this.userType = userType;
-            this.nameConverter = nameConverter;
-            this.mapper = mapper;
-            this.serializer = serializer;
-            this.metaEnabled = metaEnabled;
-            this.keepDeserialized = keepDeserialized;
-            this.affKeyFieldName = affKeyFieldName;
-            this.typedHandler = typedHandler;
-            this.untypedHandler = untypedHandler;
+            this._type = type;
+            this._typeId = typeId;
+            this._typeName = typeName;
+            this._userType = userType;
+            this._nameConverter = nameConverter;
+            this._mapper = mapper;
+            this._serializer = serializer;
+            this._metaEnabled = metaEnabled;
+            this._keepDeserialized = keepDeserialized;
+            this._affKeyFieldName = affKeyFieldName;
+            this._typedHandler = typedHandler;
+            this._untypedHandler = untypedHandler;
         }
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public Type Type
         {
-            get { return type; }
+            get { return _type; }
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public int TypeId
         {
-            get { return typeId; }
+            get { return _typeId; }
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public string TypeName
         {
-            get { return typeName; }
+            get { return _typeName; }
         }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public bool UserType
         {
-            get { return userType; }
+            get { return _userType; }
         }
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public bool MetadataEnabled
         {
-            get { return metaEnabled; }
+            get { return _metaEnabled; }
         }
 
         /// <summary>
@@ -149,7 +149,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public bool KeepDeserialized
         {
-            get { return keepDeserialized; }
+            get { return _keepDeserialized; }
         }
 
         /// <summary>
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public IPortableNameMapper NameConverter
         {
-            get { return nameConverter; }
+            get { return _nameConverter; }
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public IPortableIdMapper Mapper
         {
-            get { return mapper; }
+            get { return _mapper; }
         }
 
         /// <summary>
@@ -173,7 +173,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public IPortableSerializer Serializer
         {
-            get { return serializer; }
+            get { return _serializer; }
         }
 
         /// <summary>
@@ -181,7 +181,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public string AffinityKeyFieldName
         {
-            get { return affKeyFieldName; }
+            get { return _affKeyFieldName; }
         }
 
         /// <summary>
@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public object TypedHandler
         {
-            get { return typedHandler; }
+            get { return _typedHandler; }
         }
 
         /// <summary>
@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public PortableSystemWriteDelegate UntypedHandler
         {
-            get { return untypedHandler; }
+            get { return _untypedHandler; }
         }
     }
 }

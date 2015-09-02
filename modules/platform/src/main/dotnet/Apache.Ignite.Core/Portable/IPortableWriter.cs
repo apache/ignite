@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Dictionary.</param>
-        void WriteGenericDictionary<K, V>(string fieldName, IDictionary<K, V> val);
+        void WriteGenericDictionary<TK, TV>(string fieldName, IDictionary<TK, TV> val);
 
         /// <summary>
         /// Get raw writer. 

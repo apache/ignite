@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Compute
     /// <summary>
     /// Convenience adapter for <see cref="IComputeTask{A,T,R}"/> interface
     /// </summary>
-    public abstract class ComputeTaskAdapter<A, T, R> : IComputeTask<A, T, R>
+    public abstract class ComputeTaskAdapter<TA, T, TR> : IComputeTask<TA, T, TR>
     {
         /// <summary>
         /// Default implementation which will wait for all jobs to complete before
@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Compute
         /// <p/>
         /// If remote job resulted in exception <see cref="IComputeJobResult{T}.Exception()"/> 
         /// is not <c>null</c>),
-        /// then <see cref="ComputeJobResultPolicy.FAILOVER"/>  policy will be returned if 
+        /// then <see cref="ComputeJobResultPolicy.Failover"/>  policy will be returned if 
         /// the exception is instance of <see cref="ClusterTopologyException"/> 
         /// or <see cref="ComputeExecutionRejectedException"/>, which means that
         /// remote node either failed or job execution was rejected before it got a chance to start. In all
@@ -50,13 +50,13 @@ namespace Apache.Ignite.Core.Compute
             {
                 if (err is ComputeExecutionRejectedException || err is ClusterTopologyException ||
                     err is ComputeJobFailoverException)
-                    return ComputeJobResultPolicy.FAILOVER;
+                    return ComputeJobResultPolicy.Failover;
                 
                 throw new IgniteException("Remote job threw user exception (override or implement IComputeTask.result(..) " +
                                         "method if you would like to have automatic failover for this exception).", err);
             }
 
-            return ComputeJobResultPolicy.WAIT;
+            return ComputeJobResultPolicy.Wait;
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Compute
         /// Map of grid jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
         /// exception will be thrown.
         /// </returns>
-        public abstract IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, A arg);
+        public abstract IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, TA arg);
 
         /// <summary>
         /// Reduces (or aggregates) results received so far into one compound result to be returned to
@@ -88,6 +88,6 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>
         /// Task result constructed from results of remote executions.
         /// </returns>
-        public abstract R Reduce(IList<IComputeJobResult<T>> results);
+        public abstract TR Reduce(IList<IComputeJobResult<T>> results);
     }
 }

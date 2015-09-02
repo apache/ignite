@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Cache
     /// </summary>
     /// <typeparam name="K">Key type.</typeparam>
     /// <typeparam name="V">Value type.</typeparam>
-    public interface ICache<K, V> : IAsyncSupport<ICache<K, V>>, IEnumerable<ICacheEntry<K, V>>
+    public interface ICache<TK, TV> : IAsyncSupport<ICache<TK, TV>>, IEnumerable<ICacheEntry<TK, TV>>
     {
         /// <summary>
         /// Name of this cache (<c>null</c> for default cache).
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Cache
         /// Get another cache instance with read-through and write-through behavior disabled.
         /// </summary>
         /// <returns>Cache with read-through and write-through behavior disabled.</returns>
-        ICache<K, V> WithSkipStore();
+        ICache<TK, TV> WithSkipStore();
 
         /// <summary>
         /// Returns cache with the specified expired policy set. This policy will be used for each operation
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="plc">Expiry policy to use.</param>
         /// <returns>Cache instance with the specified expiry policy set.</returns>
-        ICache<K, V> WithExpiryPolicy(IExpiryPolicy plc);
+        ICache<TK, TV> WithExpiryPolicy(IExpiryPolicy plc);
 
         /// <summary>
         /// Gets cache with KeepPortable mode enabled, changing key and/or value types if necessary.
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Cache
         /// <typeparam name="K1">Key type in portable mode.</typeparam>
         /// <typeparam name="V1">Value type in protable mode.</typeparam>
         /// <returns>Cache instance with portable mode enabled.</returns>
-        ICache<K1, V1> WithKeepPortable<K1, V1>();
+        ICache<TK1, TV1> WithKeepPortable<TK1, TV1>();
 
         /// <summary>
         /// Executes <see cref="LocalLoadCache"/> on all cache nodes.
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Cache
         /// Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />.
         /// </param>
         [AsyncSupported]
-        void LoadCache(ICacheEntryFilter<K, V> p, params object[] args);
+        void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args);
 
         /// <summary>
         /// Delegates to <see cref="ICacheStore.LoadCache" /> method to load state 
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Cache
         /// Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />.
         /// </param>
         [AsyncSupported]
-        void LocalLoadCache(ICacheEntryFilter<K, V> p, params object[] args);
+        void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args);
 
         /// <summary>
         /// Check if cache contains mapping for this key.
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key.</param>
         /// <returns>True if cache contains mapping for this key.</returns>
         [AsyncSupported]
-        bool ContainsKey(K key);
+        bool ContainsKey(TK key);
 
         /// <summary>
         /// Check if cache contains mapping for these keys.
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="keys">Keys.</param>
         /// <returns>True if cache contains mapping for all these keys.</returns>
         [AsyncSupported]
-        bool ContainsKeys(IEnumerable<K> keys);
+        bool ContainsKeys(IEnumerable<TK> keys);
 
         /// <summary>
         /// Peeks at cached value using optional set of peek modes. This method will sequentially
@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key.</param>
         /// <param name="modes">Peek modes.</param>
         /// <returns>Peeked value.</returns>
-        V LocalPeek(K key, params CachePeekMode[] modes);
+        TV LocalPeek(TK key, params CachePeekMode[] modes);
 
         /// <summary>
         /// Retrieves value mapped to the specified key from cache.
@@ -167,7 +167,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key.</param>
         /// <returns>Value.</returns>
         [AsyncSupported]
-        V Get(K key);
+        TV Get(TK key);
 
         /// <summary>
         /// Retrieves values mapped to the specified keys from cache.
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="keys">Keys.</param>
         /// <returns>Map of key-value pairs.</returns>
         [AsyncSupported]
-        IDictionary<K, V> GetAll(IEnumerable<K> keys);
+        IDictionary<TK, TV> GetAll(IEnumerable<TK> keys);
 
         /// <summary>
         /// Associates the specified value with the specified key in the cache.
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key with which the specified value is to be associated.</param>
         /// <param name="val">Value to be associated with the specified key.</param>
         [AsyncSupported]
-        void Put(K key, V val);
+        void Put(TK key, TV val);
 
         /// <summary>
         /// Associates the specified value with the specified key in this cache,
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Cache
         /// The value associated with the key at the start of the operation or null if none was associated.
         /// </returns>
         [AsyncSupported]
-        V GetAndPut(K key, V val);
+        TV GetAndPut(TK key, TV val);
         
         /// <summary>
         /// Atomically replaces the value for a given key if and only if there is a value currently mapped by the key.
@@ -213,7 +213,7 @@ namespace Apache.Ignite.Core.Cache
         /// The previous value associated with the specified key, or null if there was no mapping for the key.
         /// </returns>
         [AsyncSupported]
-        V GetAndReplace(K key, V val);
+        TV GetAndReplace(TK key, TV val);
 
         /// <summary>
         /// Atomically removes the entry for a key only if currently mapped to some value.
@@ -221,7 +221,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key with which the specified value is associated.</param>
         /// <returns>The value if one existed or null if no mapping existed for this key.</returns>
         [AsyncSupported]
-        V GetAndRemove(K key);
+        TV GetAndRemove(TK key);
 
         /// <summary>
         /// Atomically associates the specified key with the given value if it is not already associated with a value.
@@ -230,7 +230,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="val">Value to be associated with the specified key.</param>
         /// <returns>True if a value was set.</returns>
         [AsyncSupported]
-        bool PutIfAbsent(K key, V val);
+        bool PutIfAbsent(TK key, TV val);
 
         /// <summary>
         /// Stores given key-value pair in cache only if cache had no previous mapping for it.
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Cache
         /// Previously contained value regardless of whether put happened or not (null if there was no previous value).
         /// </returns>
         [AsyncSupported]
-        V GetAndPutIfAbsent(K key, V val);
+        TV GetAndPutIfAbsent(TK key, TV val);
 
         /// <summary>
         /// Stores given key-value pair in cache only if there is a previous mapping for it.
@@ -264,7 +264,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="val">Value to be associated with the given key.</param>
         /// <returns>True if the value was replaced.</returns>
         [AsyncSupported]
-        bool Replace(K key, V val);
+        bool Replace(TK key, TV val);
 
         /// <summary>
         /// Stores given key-value pair in cache only if only if the previous value is equal to the
@@ -276,7 +276,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="newVal">Value to be associated with the given key.</param>
         /// <returns>True if replace happened, false otherwise.</returns>
         [AsyncSupported]
-        bool Replace(K key, V oldVal, V newVal);
+        bool Replace(TK key, TV oldVal, TV newVal);
 
         /// <summary>
         /// Stores given key-value pairs in cache.
@@ -285,14 +285,14 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="vals">Key-value pairs to store in cache.</param>
         [AsyncSupported]
-        void PutAll(IDictionary<K, V> vals);
+        void PutAll(IDictionary<TK, TV> vals);
 
         /// <summary>
         /// Attempts to evict all entries associated with keys. Note, that entry will be evicted only 
         /// if it's not used (not participating in any locks or transactions).
         /// </summary>
         /// <param name="keys">Keys to evict from cache.</param>
-        void LocalEvict(IEnumerable<K> keys);
+        void LocalEvict(IEnumerable<TK> keys);
 
         /// <summary>
         /// Clears the contents of the cache, without notifying listeners or CacheWriters.
@@ -306,7 +306,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="key">Key to clear.</param>
         [AsyncSupported]
-        void Clear(K key);
+        void Clear(TK key);
 
         /// <summary>
         /// Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
@@ -314,7 +314,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="keys">Keys to clear.</param>
         [AsyncSupported]
-        void ClearAll(IEnumerable<K> keys);
+        void ClearAll(IEnumerable<TK> keys);
 
         /// <summary>
         /// Clear entry from the cache and swap storage, without notifying listeners or CacheWriters.
@@ -324,7 +324,7 @@ namespace Apache.Ignite.Core.Cache
         /// an entry from local cache, it does not remove entries from remote caches.
         /// </summary>
         /// <param name="key">Key to clear.</param>
-        void LocalClear(K key);
+        void LocalClear(TK key);
 
         /// <summary>
         /// Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
@@ -334,7 +334,7 @@ namespace Apache.Ignite.Core.Cache
         /// entries from local cache, it does not remove entries from remote caches.
         /// </summary>
         /// <param name="keys">Keys to clear.</param>
-        void LocalClearAll(IEnumerable<K> keys);
+        void LocalClearAll(IEnumerable<TK> keys);
 
         /// <summary>
         /// Removes given key mapping from cache. If cache previously contained value for the given key,
@@ -349,7 +349,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key whose mapping is to be removed from cache.</param>
         /// <returns>False if there was no matching key.</returns>
         [AsyncSupported]
-        bool Remove(K key);
+        bool Remove(TK key);
 
         /// <summary>
         /// Removes given key mapping from cache if one exists and value is equal to the passed in value.
@@ -360,7 +360,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="val">Value to match against currently cached value.</param>
         /// <returns>True if entry was removed, false otherwise.</returns>
         [AsyncSupported]
-        bool Remove(K key, V val);
+        bool Remove(TK key, TV val);
 
         /// <summary>
         /// Removes given key mappings from cache.
@@ -369,7 +369,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="keys">Keys whose mappings are to be removed from cache.</param>
         [AsyncSupported]
-        void RemoveAll(IEnumerable<K> keys);
+        void RemoveAll(IEnumerable<TK> keys);
 
         /// <summary>
         /// Removes all mappings from cache.
@@ -400,14 +400,14 @@ namespace Apache.Ignite.Core.Cache
         /// This method unswaps cache entries by given keys, if any, from swap storage into memory.
         /// </summary>
         /// <param name="keys">Keys to promote entries for.</param>
-        void LocalPromote(IEnumerable<K> keys);
+        void LocalPromote(IEnumerable<TK> keys);
         
         /// <summary>
         /// Queries cache.
         /// </summary>
         /// <param name="qry">Query.</param>
         /// <returns>Cursor.</returns>
-        IQueryCursor<ICacheEntry<K, V>> Query(QueryBase qry);
+        IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry);
 
         /// <summary>
         /// Queries separate entry fields.
@@ -421,7 +421,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="qry">Continuous query.</param>
         /// <returns>Handle to stop query execution.</returns>
-        IContinuousQueryHandle QueryContinuous(ContinuousQuery<K, V> qry);
+        IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> qry);
 
         /// <summary>
         /// Start continuous query execution.
@@ -434,14 +434,14 @@ namespace Apache.Ignite.Core.Cache
         /// <returns>
         /// Handle to get initial query cursor or stop query execution.
         /// </returns>
-        IContinuousQueryHandle<ICacheEntry<K, V>> QueryContinuous(ContinuousQuery<K, V> qry, QueryBase initialQry);
+        IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, QueryBase initialQry);
         
         /// <summary>
         /// Get local cache entries.
         /// </summary>
         /// <param name="peekModes">Peek modes.</param>
         /// <returns>Enumerable instance.</returns>
-        IEnumerable<ICacheEntry<K, V>> GetLocalEntries(params CachePeekMode[] peekModes);
+        IEnumerable<ICacheEntry<TK, TV>> GetLocalEntries(params CachePeekMode[] peekModes);
 
         /// <summary>
         /// Invokes an <see cref="ICacheEntryProcessor{K, V, A, R}"/> against the 
@@ -457,7 +457,7 @@ namespace Apache.Ignite.Core.Cache
         /// <returns>Result of the processing.</returns>
         /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
         [AsyncSupported]
-        R Invoke<R, A>(K key, ICacheEntryProcessor<K, V, A, R> processor, A arg);
+        TR Invoke<TR, TA>(TK key, ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg);
 
         /// <summary>
         /// Invokes an <see cref="ICacheEntryProcessor{K, V, A, R}"/> against a set of keys.
@@ -481,8 +481,8 @@ namespace Apache.Ignite.Core.Cache
         /// </returns>
         /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
         [AsyncSupported]
-        IDictionary<K, ICacheEntryProcessorResult<R>> InvokeAll<R, A>(IEnumerable<K> keys,
-            ICacheEntryProcessor<K, V, A, R> processor, A arg);
+        IDictionary<TK, ICacheEntryProcessorResult<TR>> InvokeAll<TR, TA>(IEnumerable<TK> keys,
+            ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg);
 
         /// <summary>
         /// Creates an <see cref="ICacheLock"/> instance associated with passed key.
@@ -490,7 +490,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="key">Key for lock.</param>
         /// <returns>New <see cref="ICacheLock"/> instance associated with passed key.</returns>
-        ICacheLock Lock(K key);
+        ICacheLock Lock(TK key);
 
         /// <summary>
         /// Creates an <see cref="ICacheLock"/> instance associated with passed keys.
@@ -498,7 +498,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="keys">Keys for lock.</param>
         /// <returns>New <see cref="ICacheLock"/> instance associated with passed keys.</returns>
-        ICacheLock LockAll(IEnumerable<K> keys);
+        ICacheLock LockAll(IEnumerable<TK> keys);
 
         /// <summary>
         /// Checks if specified key is locked.
@@ -512,7 +512,7 @@ namespace Apache.Ignite.Core.Cache
         /// otherwise, checks that any thread on any node owns a lock on this key.
         /// </param>
         /// <returns>True if specified key is locked; otherwise, false.</returns>
-        bool IsLocalLocked(K key, bool byCurrentThread);
+        bool IsLocalLocked(TK key, bool byCurrentThread);
 
         /// <summary>
         /// Gets snapshot metrics (statistics) for this cache.
@@ -537,6 +537,6 @@ namespace Apache.Ignite.Core.Cache
         /// Get another cache instance with no-retries behavior enabled.
         /// </summary>
         /// <returns>Cache with no-retries behavior enabled.</returns>
-        ICache<K, V> WithNoRetries();
+        ICache<TK, TV> WithNoRetries();
     }
 }

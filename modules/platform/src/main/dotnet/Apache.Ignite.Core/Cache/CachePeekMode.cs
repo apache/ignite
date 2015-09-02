@@ -30,39 +30,39 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Peeks into all available cache storages.
         /// </summary>
-        ALL = 0x01,
+        All = 0x01,
 
         /// <summary>
         /// Peek into near cache only (don't peek into partitioned cache).
-        /// In case of LOCAL cache, behaves as <see cref="ALL"/> mode.
+        /// In case of LOCAL cache, behaves as <see cref="All"/> mode.
         /// </summary>
-        NEAR = 0x02,
+        Near = 0x02,
 
         /// <summary>
         /// Peek value from primary copy of partitioned cache only (skip near cache).
-        /// In case of LOCAL cache, behaves as <see cref="ALL"/> mode.
+        /// In case of LOCAL cache, behaves as <see cref="All"/> mode.
         /// </summary>
-        PRIMARY = 0x04,
+        Primary = 0x04,
 
         /// <summary>
         /// Peek value from backup copies of partitioned cache only (skip near cache).
-        /// In case of LOCAL cache, behaves as <see cref="ALL"/> mode.
+        /// In case of LOCAL cache, behaves as <see cref="All"/> mode.
         /// </summary>
-        BACKUP = 0x08,
+        Backup = 0x08,
 
         /// <summary>
         /// Peeks value from the on-heap storage only.
         /// </summary>
-        ONHEAP = 0x10,
+        Onheap = 0x10,
 
         /// <summary>
         /// Peeks value from the off-heap storage only, without loading off-heap value into cache.
         /// </summary>
-        OFFHEAP = 0x20,
+        Offheap = 0x20,
 
         /// <summary>
         /// Peeks value from the swap storage only, without loading swapped value into cache.
         /// </summary>
-        SWAP = 0x40
+        Swap = 0x40
     }
 }

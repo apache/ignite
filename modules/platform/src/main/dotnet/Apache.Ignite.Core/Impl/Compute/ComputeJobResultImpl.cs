@@ -26,19 +26,19 @@ namespace Apache.Ignite.Core.Impl.Compute
     internal class ComputeJobResultImpl : IComputeJobResult<object>
     {
         /** Data. */
-        private readonly object data;
+        private readonly object _data;
 
         /** Exception. */
-        private readonly Exception err;
+        private readonly Exception _err;
 
         /** Backing job. */
-        private readonly IComputeJob job;
+        private readonly IComputeJob _job;
 
         /** Node ID. */
-        private readonly Guid nodeId;
+        private readonly Guid _nodeId;
 
         /** Cancel flag. */
-        private readonly bool cancelled;
+        private readonly bool _cancelled;
 
         /// <summary>
         /// Constructor.
@@ -50,29 +50,29 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="cancelled">Cancel flag.</param>
         public ComputeJobResultImpl(object data, Exception err, IComputeJob job, Guid nodeId, bool cancelled)
         {
-            this.data = data;
-            this.err = err;
-            this.job = job;
-            this.nodeId = nodeId;
-            this.cancelled = cancelled;
+            this._data = data;
+            this._err = err;
+            this._job = job;
+            this._nodeId = nodeId;
+            this._cancelled = cancelled;
         }
 
         /** <inheritDoc /> */
         public object Data()
         {
-            return data;
+            return _data;
         }
 
         /** <inheritDoc /> */
         public Exception Exception()
         {
-            return err;
+            return _err;
         }
 
         /** <inheritDoc /> */
         public IComputeJob<object> Job()
         {
-            return job;
+            return _job;
         }
 
         /** <inheritDoc /> */
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             get
             {
-                return nodeId;
+                return _nodeId;
             }
         }
 
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             get 
             { 
-                return cancelled; 
+                return _cancelled; 
             }
         }
     }

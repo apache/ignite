@@ -28,10 +28,10 @@ namespace Apache.Ignite.Core.Impl.Resource
     internal class ResourceProcessor
     {
         /** Mutex. */
-        private static readonly object MUX = new object();
+        private static readonly object Mux = new object();
         
         /** Cached descriptors. */
-        private static volatile IDictionary<Type, ResourceTypeDescriptor> descs = 
+        private static volatile IDictionary<Type, ResourceTypeDescriptor> _descs = 
             new Dictionary<Type, ResourceTypeDescriptor>();
 
         /// <summary>
@@ -41,24 +41,24 @@ namespace Apache.Ignite.Core.Impl.Resource
         /// <returns></returns>
         public static ResourceTypeDescriptor Descriptor(Type type)
         {
-            IDictionary<Type, ResourceTypeDescriptor> descs0 = descs;
+            IDictionary<Type, ResourceTypeDescriptor> descs0 = _descs;
 
             ResourceTypeDescriptor desc;
 
             if (!descs0.TryGetValue(type, out desc))
             {
-                lock (MUX)
+                lock (Mux)
                 {
-                    if (!descs.TryGetValue(type, out desc))
+                    if (!_descs.TryGetValue(type, out desc))
                     {
                         // Create descriptor from scratch.
                         desc = new ResourceTypeDescriptor(type);
 
-                        descs0 = new Dictionary<Type, ResourceTypeDescriptor>(descs);
+                        descs0 = new Dictionary<Type, ResourceTypeDescriptor>(_descs);
 
                         descs0[type] = desc;
 
-                        descs = descs0;
+                        _descs = descs0;
                     }
                 }
             }

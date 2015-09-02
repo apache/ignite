@@ -32,14 +32,14 @@ namespace Apache.Ignite.Core.Tests
     public static class GridTestUtils
     {
         /** Indicates long running and/or memory/cpu intensive test. */
-        public const string CATEGORY_INTENSIVE = "LONG_TEST";
+        public const string CategoryIntensive = "LONG_TEST";
 
         /** */
-        public const int DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
+        public const int DfltBusywaitSleepInterval = 200;
 
         /** */
 
-        private static readonly IList<string> TEST_JVM_OPTS = Environment.Is64BitProcess
+        private static readonly IList<string> TestJvmOpts = Environment.Is64BitProcess
             ? new List<string>
             {
                 "-XX:+HeapDumpOnOutOfMemoryError",
@@ -57,18 +57,18 @@ namespace Apache.Ignite.Core.Tests
             };
 
         /** */
-        private static readonly IList<string> JVM_DEBUG_OPTS =
+        private static readonly IList<string> JvmDebugOpts =
             new List<string> { "-Xdebug", "-Xnoagent", "-Djava.compiler=NONE", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005" };
 
         /** */
-        public static bool JVM_DEBUG = true;
+        public static bool JvmDebug = true;
 
         /** */
         [ThreadStatic]
         private static Random _random;
 
         /** */
-        private static int seed = Environment.TickCount;
+        private static int _seed = Environment.TickCount;
 
         /// <summary>
         /// Kill GridGain processes.
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public static Random Random
         {
-            get { return _random ?? (_random = new Random(Interlocked.Increment(ref seed))); }
+            get { return _random ?? (_random = new Random(Interlocked.Increment(ref _seed))); }
         }
 
         /// <summary>
@@ -92,11 +92,11 @@ namespace Apache.Ignite.Core.Tests
         /// <returns></returns>
         public static IList<string> TestJavaOptions()
         {
-            IList<string> ops = new List<string>(TEST_JVM_OPTS);
+            IList<string> ops = new List<string>(TestJvmOpts);
 
-            if (JVM_DEBUG)
+            if (JvmDebug)
             {
-                foreach (string opt in JVM_DEBUG_OPTS)
+                foreach (string opt in JvmDebugOpts)
                     ops.Add(opt);
             }
 
@@ -276,14 +276,14 @@ namespace Apache.Ignite.Core.Tests
             if (timeout <= 0)
                 return cond();
 
-            var maxTime = DateTime.Now.AddMilliseconds(timeout + DFLT_BUSYWAIT_SLEEP_INTERVAL);
+            var maxTime = DateTime.Now.AddMilliseconds(timeout + DfltBusywaitSleepInterval);
 
             while (DateTime.Now < maxTime)
             {
                 if (cond())
                     return true;
 
-                Thread.Sleep(DFLT_BUSYWAIT_SLEEP_INTERVAL);
+                Thread.Sleep(DfltBusywaitSleepInterval);
             }
 
             return false;

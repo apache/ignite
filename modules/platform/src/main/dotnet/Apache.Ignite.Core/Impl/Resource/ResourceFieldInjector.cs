@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Resource
     internal class ResourceFieldInjector : IResourceInjector
     {
         /** */
-        private readonly Action<object, object> inject;
+        private readonly Action<object, object> _inject;
 
         /// <summary>
         /// Constructor.
@@ -35,13 +35,13 @@ namespace Apache.Ignite.Core.Impl.Resource
         /// <param name="field">Field.</param>
         public ResourceFieldInjector(FieldInfo field)
         {
-            inject = DelegateConverter.CompileFieldSetter(field);
+            _inject = DelegateConverter.CompileFieldSetter(field);
         }
 
         /** <inheritDoc /> */
         public void Inject(object target, object val)
         {
-            inject(target, val);
+            _inject(target, val);
         }
     }
 }

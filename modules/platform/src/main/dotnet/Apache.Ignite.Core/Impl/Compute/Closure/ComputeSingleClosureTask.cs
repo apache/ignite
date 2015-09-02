@@ -24,25 +24,25 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     /// Closure-based task producing only one job and thus having only single result.
     /// </summary>
     [ComputeTaskNoResultCache]
-    internal class ComputeSingleClosureTask<A, T, R> : ComputeAbstractClosureTask<A, T, R> where R : T
+    internal class ComputeSingleClosureTask<TA, T, TR> : ComputeAbstractClosureTask<TA, T, TR> where TR : T
     {
         /** Result. */
-        private R res;
+        private TR _res;
 
         /** <inheritDoc /> */
         protected override ComputeJobResultPolicy Result0(IComputeJobResult<T> res)
         {
-            this.res = (R) res.Data();
+            this._res = (TR) res.Data();
 
             // No more results are expected at this point, but we prefer not to alter regular
             // task flow.
-            return ComputeJobResultPolicy.WAIT;
+            return ComputeJobResultPolicy.Wait;
         }
 
         /** <inheritDoc /> */
-        public override R Reduce(IList<IComputeJobResult<T>> results)
+        public override TR Reduce(IList<IComputeJobResult<T>> results)
         {
-            return res;
+            return _res;
         }
     }
 }

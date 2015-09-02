@@ -56,11 +56,11 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** Map from user func to local wrapper, needed for invoke/unsubscribe. */
-        private readonly Dictionary<object, Dictionary<int, LocalHandledEventFilter>> localFilters
+        private readonly Dictionary<object, Dictionary<int, LocalHandledEventFilter>> _localFilters
             = new Dictionary<object, Dictionary<int, LocalHandledEventFilter>>();
 
         /** Grid. */
-        protected readonly Ignite grid;
+        protected readonly Ignite Grid;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Events"/> class.
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
             ClusterGroup = clusterGroup;
 
-            grid = (Ignite) clusterGroup.Grid;
+            Grid = (Ignite) clusterGroup.Grid;
         }
 
         /** <inheritDoc /> */
@@ -142,8 +142,8 @@ namespace Apache.Ignite.Core.Impl.Events
 
                     if (localListener != null)
                     {
-                        var listener = new RemoteListenEventFilter(grid, (id, e) => localListener.Invoke(id, (T) e));
-                        writer.WriteLong(grid.HandleRegistry.Allocate(listener));
+                        var listener = new RemoteListenEventFilter(Grid, (id, e) => localListener.Invoke(id, (T) e));
+                        writer.WriteLong(Grid.HandleRegistry.Allocate(listener));
                     }
 
                     writer.WriteBoolean(remoteFilter != null);
@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
                     WriteEventTypes(types, writer);
                 },
-                reader => marsh.StartUnmarshal(reader).ReadGuid() ?? Guid.Empty);
+                reader => Marsh.StartUnmarshal(reader).ReadGuid() ?? Guid.Empty);
         }
 
         /** <inheritDoc /> */
@@ -161,7 +161,7 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             DoOutOp((int) Op.STOP_REMOTE_LISTEN, writer =>
             {
-                marsh.StartMarshal(writer).WriteGuid(opId);
+                Marsh.StartMarshal(writer).WriteGuid(opId);
             });
         }
 
@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Events
             finally
             {
                 if (filter != null)
-                    grid.HandleRegistry.Release(hnd);
+                    Grid.HandleRegistry.Release(hnd);
             }
         }
 
@@ -214,11 +214,11 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public bool StopLocalListen<T>(IEventFilter<T> listener, params int[] types) where T : IEvent
         {
-            lock (localFilters)
+            lock (_localFilters)
             {
                 Dictionary<int, LocalHandledEventFilter> filters;
 
-                if (!localFilters.TryGetValue(listener, out filters))
+                if (!_localFilters.TryGetValue(listener, out filters))
                     return false;
 
                 var success = false;
@@ -226,7 +226,7 @@ namespace Apache.Ignite.Core.Impl.Events
                 // Should do this inside lock to avoid race with subscription
                 // ToArray is required because we are going to modify underlying dictionary during enumeration
                 foreach (var filter in GetLocalFilters(listener, types).ToArray())
-                    success |= UU.EventsStopLocalListen(target, filter.handle);
+                    success |= UU.EventsStopLocalListen(target, filter.Handle);
 
                 return success;
             }
@@ -272,9 +272,9 @@ namespace Apache.Ignite.Core.Impl.Events
         protected T WaitForLocal0<T>(IEventFilter<T> filter, ref long handle, params int[] types) where T : IEvent
         {
             if (filter != null)
-                handle = grid.HandleRegistry.Allocate(new LocalEventFilter
+                handle = Grid.HandleRegistry.Allocate(new LocalEventFilter
                 {
-                    invokeFunc = stream => InvokeLocalFilter(stream, filter)
+                    InvokeFunc = stream => InvokeLocalFilter(stream, filter)
                 });
 
             var hnd = handle;
@@ -339,7 +339,7 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             Dictionary<int, LocalHandledEventFilter> filters;
 
-            if (!localFilters.TryGetValue(listener, out filters))
+            if (!_localFilters.TryGetValue(listener, out filters))
                 return Enumerable.Empty<LocalHandledEventFilter>();
 
             if (types.Length == 0)
@@ -361,15 +361,15 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="type">Event type for which this listener will be notified</param>
         private void LocalListen<T>(IEventFilter<T> listener, int type) where T : IEvent
         {
-            lock (localFilters)
+            lock (_localFilters)
             {
                 Dictionary<int, LocalHandledEventFilter> filters;
 
-                if (!localFilters.TryGetValue(listener, out filters))
+                if (!_localFilters.TryGetValue(listener, out filters))
                 {
                     filters = new Dictionary<int, LocalHandledEventFilter>();
 
-                    localFilters[listener] = filters;
+                    _localFilters[listener] = filters;
                 }
 
                 LocalHandledEventFilter localFilter;
@@ -381,7 +381,7 @@ namespace Apache.Ignite.Core.Impl.Events
                     filters[type] = localFilter;
                 }
 
-                UU.EventsLocalListen(target, localFilter.handle, type);
+                UU.EventsLocalListen(target, localFilter.Handle, type);
             }
         }
 
@@ -398,21 +398,21 @@ namespace Apache.Ignite.Core.Impl.Events
                 stream => InvokeLocalFilter(stream, listener),
                 unused =>
                 {
-                    lock (localFilters)
+                    lock (_localFilters)
                     {
                         Dictionary<int, LocalHandledEventFilter> filters;
 
-                        if (localFilters.TryGetValue(listener, out filters))
+                        if (_localFilters.TryGetValue(listener, out filters))
                         {
                             filters.Remove(type);
 
                             if (filters.Count == 0)
-                                localFilters.Remove(listener);
+                                _localFilters.Remove(listener);
                         }
                     }
                 });
 
-            result.handle = grid.HandleRegistry.Allocate(result);
+            result.Handle = Grid.HandleRegistry.Allocate(result);
 
             return result;
         }
@@ -451,7 +451,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="reader">Reader.</param>
         private int[] ReadEventTypes(IPortableStream reader)
         {
-            return marsh.StartUnmarshal(reader).ReadIntArray();
+            return Marsh.StartUnmarshal(reader).ReadIntArray();
         }
 
         /// <summary>
@@ -460,12 +460,12 @@ namespace Apache.Ignite.Core.Impl.Events
         private class LocalEventFilter : IInteropCallback
         {
             /** */
-            public Func<IPortableStream, bool> invokeFunc;
+            public Func<IPortableStream, bool> InvokeFunc;
 
             /** <inheritdoc /> */
             public int Invoke(IPortableStream stream)
             {
-                return invokeFunc(stream) ? 1 : 0;
+                return InvokeFunc(stream) ? 1 : 0;
             }
         }
 
@@ -475,7 +475,7 @@ namespace Apache.Ignite.Core.Impl.Events
         private class LocalHandledEventFilter : Handle<Func<IPortableStream, bool>>, IInteropCallback
         {
             /** */
-            public long handle;
+            public long Handle;
 
             /** <inheritdoc /> */
             public int Invoke(IPortableStream stream)

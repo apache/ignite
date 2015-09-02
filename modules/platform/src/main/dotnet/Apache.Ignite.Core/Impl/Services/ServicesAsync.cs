@@ -53,19 +53,19 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public override IServices WithKeepPortable()
         {
-            if (keepPortable)
+            if (KeepPortable)
                 return this;
 
-            return new ServicesAsync(target, marsh, clusterGroup, true, srvKeepPortable);
+            return new ServicesAsync(target, Marsh, clusterGroup, true, SrvKeepPortable);
         }
 
         /** <inheritDoc /> */
         public override IServices WithServerKeepPortable()
         {
-            if (srvKeepPortable)
+            if (SrvKeepPortable)
                 return this;
 
-            return new ServicesAsync(target, marsh, clusterGroup, keepPortable, true);
+            return new ServicesAsync(target, Marsh, clusterGroup, KeepPortable, true);
         }
 
         /** <inheritDoc /> */

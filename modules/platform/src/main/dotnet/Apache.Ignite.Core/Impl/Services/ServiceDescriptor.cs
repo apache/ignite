@@ -30,10 +30,10 @@ namespace Apache.Ignite.Core.Impl.Services
     internal class ServiceDescriptor : IServiceDescriptor
     {
         /** Services. */
-        private readonly IServices services;
+        private readonly IServices _services;
 
         /** Service type. */
-        private Type type;
+        private Type _type;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceDescriptor" /> class.
@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Services
             Debug.Assert(services != null);
             Debug.Assert(!string.IsNullOrEmpty(name));
 
-            this.services = services;
+            this._services = services;
             Name = name;
 
             CacheName = reader.ReadString();
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Services
             {
                 try
                 {
-                    return type ?? (type = services.GetServiceProxy<IService>(Name).GetType());
+                    return _type ?? (_type = _services.GetServiceProxy<IService>(Name).GetType());
                 }
                 catch (Exception ex)
                 {

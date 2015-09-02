@@ -36,28 +36,28 @@ namespace Apache.Ignite.Core.Impl.Services
     internal class Services : GridTarget, IServices
     {
         /** */
-        private const int OP_DEPLOY = 1;
+        private const int OpDeploy = 1;
         
         /** */
-        private const int OP_DEPLOY_MULTIPLE = 2;
+        private const int OpDeployMultiple = 2;
 
         /** */
-        private const int OP_DOTNET_SERVICES = 3;
+        private const int OpDotnetServices = 3;
 
         /** */
-        private const int OP_INVOKE_METHOD = 4;
+        private const int OpInvokeMethod = 4;
 
         /** */
-        private const int OP_DESCRIPTORS = 5;
+        private const int OpDescriptors = 5;
 
         /** */
         protected readonly IClusterGroup clusterGroup;
 
         /** Invoker portable flag. */
-        protected readonly bool keepPortable;
+        protected readonly bool KeepPortable;
 
         /** Server portable flag. */
-        protected readonly bool srvKeepPortable;
+        protected readonly bool SrvKeepPortable;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Services" /> class.
@@ -74,32 +74,32 @@ namespace Apache.Ignite.Core.Impl.Services
             Debug.Assert(clusterGroup  != null);
 
             this.clusterGroup = clusterGroup;
-            this.keepPortable = keepPortable;
-            this.srvKeepPortable = srvKeepPortable;
+            this.KeepPortable = keepPortable;
+            this.SrvKeepPortable = srvKeepPortable;
         }
 
         /** <inheritDoc /> */
         public virtual IServices WithKeepPortable()
         {
-            if (keepPortable)
+            if (KeepPortable)
                 return this;
 
-            return new Services(target, marsh, clusterGroup, true, srvKeepPortable);
+            return new Services(target, Marsh, clusterGroup, true, SrvKeepPortable);
         }
 
         /** <inheritDoc /> */
         public virtual IServices WithServerKeepPortable()
         {
-            if (srvKeepPortable)
+            if (SrvKeepPortable)
                 return this;
 
-            return new Services(UU.ServicesWithServerKeepPortable(target), marsh, clusterGroup, keepPortable, true);
+            return new Services(UU.ServicesWithServerKeepPortable(target), Marsh, clusterGroup, KeepPortable, true);
         }
 
         /** <inheritDoc /> */
         public virtual IServices WithAsync()
         {
-            return new ServicesAsync(UU.ServicesWithAsync(target), marsh, clusterGroup, keepPortable, srvKeepPortable);
+            return new ServicesAsync(UU.ServicesWithAsync(target), Marsh, clusterGroup, KeepPortable, SrvKeepPortable);
         }
 
         /** <inheritDoc /> */
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
-        public void DeployKeyAffinitySingleton<K>(string name, IService service, string cacheName, K affinityKey)
+        public void DeployKeyAffinitySingleton<TK>(string name, IService service, string cacheName, TK affinityKey)
         {
             A.NotNullOrEmpty(name, "name");
             A.NotNull(service, "service");
@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Impl.Services
             A.NotNullOrEmpty(name, "name");
             A.NotNull(service, "service");
 
-            DoOutOp(OP_DEPLOY_MULTIPLE, w =>
+            DoOutOp(OpDeployMultiple, w =>
             {
                 w.WriteString(name);
                 w.WriteObject(service);
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             A.NotNull(configuration, "configuration");
 
-            DoOutOp(OP_DEPLOY, w =>
+            DoOutOp(OpDeploy, w =>
             {
                 w.WriteString(configuration.Name);
                 w.WriteObject(configuration.Service);
@@ -215,9 +215,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public ICollection<IServiceDescriptor> GetServiceDescriptors()
         {
-            return DoInOp(OP_DESCRIPTORS, stream =>
+            return DoInOp(OpDescriptors, stream =>
             {
-                var reader = marsh.StartUnmarshal(stream, keepPortable);
+                var reader = Marsh.StartUnmarshal(stream, KeepPortable);
 
                 var size = reader.ReadInt();
 
@@ -252,7 +252,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             A.NotNullOrEmpty(name, "name");
 
-            return DoOutInOp<ICollection<T>>(OP_DOTNET_SERVICES, w => w.WriteString(name),
+            return DoOutInOp<ICollection<T>>(OpDotnetServices, w => w.WriteString(name),
                 r =>
                 {
                     bool hasVal = r.ReadBool();
@@ -264,7 +264,7 @@ namespace Apache.Ignite.Core.Impl.Services
                         var res = new List<T>(count);
 
                         for (var i = 0; i < count; i++)
-                            res.Add((T)marsh.Grid.HandleRegistry.Get<IService>(r.ReadLong()));
+                            res.Add((T)Marsh.Grid.HandleRegistry.Get<IService>(r.ReadLong()));
 
                         return res;
                     }
@@ -309,9 +309,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// </returns>
         private unsafe object InvokeProxyMethod(IUnmanagedTarget proxy, MethodBase method, object[] args)
         {
-            return DoOutInOp(OP_INVOKE_METHOD,
+            return DoOutInOp(OpInvokeMethod,
                 writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args),
-                stream => ServiceProxySerializer.ReadInvocationResult(stream, marsh, keepPortable), proxy.Target);
+                stream => ServiceProxySerializer.ReadInvocationResult(stream, Marsh, KeepPortable), proxy.Target);
         }
     }
 }

@@ -83,35 +83,35 @@ namespace Apache.Ignite.Core.Impl.Compute
     /// <summary>
     /// Compute task holder.
     /// </summary>
-    internal class ComputeTaskHolder<A, T, R> : IComputeTaskHolder
+    internal class ComputeTaskHolder<TA, T, TR> : IComputeTaskHolder
     {
         /** Empty results. */
-        private static readonly IList<IComputeJobResult<T>> EMPTY_RES =     
+        private static readonly IList<IComputeJobResult<T>> EmptyRes =     
             new ReadOnlyCollection<IComputeJobResult<T>>(new List<IComputeJobResult<T>>());
 
         /** Compute instance. */
-        private readonly ComputeImpl compute;
+        private readonly ComputeImpl _compute;
 
         /** Actual task. */
-        private readonly IComputeTask<A, T, R> task;
+        private readonly IComputeTask<TA, T, TR> _task;
 
         /** Task argument. */
-        private readonly A arg;
+        private readonly TA _arg;
 
         /** Results cache flag. */
-        private readonly bool resCache;
+        private readonly bool _resCache;
 
         /** Task future. */
-        private readonly Future<R> fut = new Future<R>();
+        private readonly Future<TR> _fut = new Future<TR>();
                 
         /** Jobs whose results are cached. */
-        private ISet<object> resJobs;
+        private ISet<object> _resJobs;
 
         /** Cached results. */
-        private IList<IComputeJobResult<T>> ress;
+        private IList<IComputeJobResult<T>> _ress;
 
         /** Handles for jobs which are not serialized right away. */
-        private volatile List<long> jobHandles;
+        private volatile List<long> _jobHandles;
         
         /// <summary>
         /// Constructor.
@@ -120,11 +120,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="compute">Compute.</param>
         /// <param name="task">Task.</param>
         /// <param name="arg">Argument.</param>
-        public ComputeTaskHolder(Ignite grid, ComputeImpl compute, IComputeTask<A, T, R> task, A arg)
+        public ComputeTaskHolder(Ignite grid, ComputeImpl compute, IComputeTask<TA, T, TR> task, TA arg)
         {
-            this.compute = compute;
-            this.arg = arg;
-            this.task = task;
+            this._compute = compute;
+            this._arg = arg;
+            this._task = task;
 
             ResourceTypeDescriptor resDesc = ResourceProcessor.Descriptor(task.GetType());
 
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             else
                 resDesc.InjectGrid(task, grid);
 
-            resCache = !resDesc.TaskNoResultCache;
+            _resCache = !resDesc.TaskNoResultCache;
         }
 
         /** <inheritDoc /> */
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             IList<IClusterNode> subgrid;
 
-            ClusterGroupImpl prj = (ClusterGroupImpl)compute.ClusterGroup;
+            ClusterGroupImpl prj = (ClusterGroupImpl)_compute.ClusterGroup;
 
             var grid = (Ignite) prj.Grid;
 
@@ -193,7 +193,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                map = task.Map(subgrid, arg);
+                map = _task.Map(subgrid, _arg);
 
                 err = null;
             }
@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                 err = e;
 
                 // Java can receive another exception in case of marshalling failure but it is not important.
-                Finish(default(R), e);
+                Finish(default(TR), e);
             }
 
             // 3. Write map result to the output stream.
@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                         foreach (KeyValuePair<IComputeJob<T>, IClusterNode> mapEntry in map)
                         {
-                            var job = new ComputeJobHolder(compute.ClusterGroup.Grid as Ignite, mapEntry.Key.ToNonGeneric());
+                            var job = new ComputeJobHolder(_compute.ClusterGroup.Grid as Ignite, mapEntry.Key.ToNonGeneric());
 
                             IClusterNode node = mapEntry.Value;
 
@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                             writer.WriteGuid(node.Id);
                         }
 
-                        this.jobHandles = jobHandles;
+                        this._jobHandles = jobHandles;
                     }
                 }
                 else
@@ -264,7 +264,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             catch (Exception e)
             {
                 // Something went wrong during marshaling.
-                Finish(default(R), e);
+                Finish(default(TR), e);
 
                 outStream.Reset();
                 
@@ -288,7 +288,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         public int JobResultRemote(ComputeJobHolder job, PlatformMemoryStream stream)
         {
             // 1. Unmarshal result.
-            PortableReaderImpl reader = compute.Marshaller.StartUnmarshal(stream);
+            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
 
             Guid nodeId = reader.ReadGuid().Value;
             bool cancelled = reader.ReadBoolean();
@@ -304,7 +304,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
             catch (Exception e)
             {
-                Finish(default(R), e);
+                Finish(default(TR), e);
 
                 if (!(e is IgniteException))
                     throw new IgniteException("Failed to process job result: " + e.Message, e);
@@ -318,13 +318,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             try
             {
-                R taskRes = task.Reduce(resCache ? ress : EMPTY_RES);
+                TR taskRes = _task.Reduce(_resCache ? _ress : EmptyRes);
 
                 Finish(taskRes, null);
             }
             catch (Exception e)
             {
-                Finish(default(R), e);
+                Finish(default(TR), e);
 
                 if (!(e is IgniteException))
                     throw new IgniteException("Failed to reduce task: " + e.Message, e);
@@ -346,7 +346,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="e">Error.</param>
         public void CompleteWithError(long taskHandle, Exception e)
         {
-            Finish(default(R), e);
+            Finish(default(TR), e);
 
             Clean(taskHandle);
         }
@@ -356,7 +356,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             Justification = "User object deserialization can throw any exception")]
         public void CompleteWithError(long taskHandle, PlatformMemoryStream stream)
         {
-            PortableReaderImpl reader = compute.Marshaller.StartUnmarshal(stream);
+            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
 
             Exception err;
 
@@ -383,9 +383,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <summary>
         /// Task completion future.
         /// </summary>
-        internal IFuture<R> Future
+        internal IFuture<TR> Future
         {
-            get { return fut; }
+            get { return _fut; }
         }
 
         /// <summary>
@@ -394,7 +394,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="jobHandles">Job handles.</param>
         internal void JobHandles(List<long> jobHandles)
         {
-            this.jobHandles = jobHandles;
+            this._jobHandles = jobHandles;
         }
 
         /// <summary>
@@ -408,44 +408,44 @@ namespace Apache.Ignite.Core.Impl.Compute
                 IList<IComputeJobResult<T>> ress0;
 
                 // 1. Prepare old results.
-                if (resCache)
+                if (_resCache)
                 {
-                    if (resJobs == null)
+                    if (_resJobs == null)
                     {
-                        resJobs = new HashSet<object>();
+                        _resJobs = new HashSet<object>();
 
-                        ress = new List<IComputeJobResult<T>>();
+                        _ress = new List<IComputeJobResult<T>>();
                     }
 
-                    ress0 = ress;
+                    ress0 = _ress;
                 }
                 else
-                    ress0 = EMPTY_RES;
+                    ress0 = EmptyRes;
 
                 // 2. Invoke user code.
-                var policy = task.Result(new ComputeJobResultGenericWrapper<T>(res), ress0);
+                var policy = _task.Result(new ComputeJobResultGenericWrapper<T>(res), ress0);
 
                 // 3. Add result to the list only in case of success.
-                if (resCache)
+                if (_resCache)
                 {
                     var job = res.Job().Unwrap();
 
-                    if (!resJobs.Add(job))
+                    if (!_resJobs.Add(job))
                     {
                         // Duplicate result => find and replace it with the new one.
-                        var oldRes = ress.Single(item => item.Job() == job);
+                        var oldRes = _ress.Single(item => item.Job() == job);
 
-                        ress.Remove(oldRes);
+                        _ress.Remove(oldRes);
                     }
 
-                    ress.Add(new ComputeJobResultGenericWrapper<T>(res));
+                    _ress.Add(new ComputeJobResultGenericWrapper<T>(res));
                 }
 
                 return policy;
             }
             catch (Exception e)
             {
-                Finish(default(R), e);
+                Finish(default(TR), e);
 
                 if (!(e is IgniteException))
                     throw new IgniteException("Failed to process job result: " + e.Message, e);
@@ -459,9 +459,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="res">Result.</param>
         /// <param name="err">Error.</param>
-        private void Finish(R res, Exception err)
+        private void Finish(TR res, Exception err)
         {
-            fut.OnDone(res, err);
+            _fut.OnDone(res, err);
         }
 
         /// <summary>
@@ -470,9 +470,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="taskHandle"></param>
         private void Clean(long taskHandle)
         {
-            var handles = jobHandles;
+            var handles = _jobHandles;
 
-            var handleRegistry = compute.Marshaller.Grid.HandleRegistry;
+            var handleRegistry = _compute.Marshaller.Grid.HandleRegistry;
 
             if (handles != null)
                 foreach (var handle in handles) 

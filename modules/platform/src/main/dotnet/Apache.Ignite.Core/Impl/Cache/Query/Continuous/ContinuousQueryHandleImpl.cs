@@ -46,32 +46,32 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     /// <summary>
     /// Continuous query handle.
     /// </summary>
-    internal class ContinuousQueryHandleImpl<K, V> : IContinuousQueryHandleImpl, IContinuousQueryFilter, 
-        IContinuousQueryHandle<ICacheEntry<K, V>>
+    internal class ContinuousQueryHandleImpl<TK, TV> : IContinuousQueryHandleImpl, IContinuousQueryFilter, 
+        IContinuousQueryHandle<ICacheEntry<TK, TV>>
     {
         /** Marshaller. */
-        private readonly PortableMarshaller marsh;
+        private readonly PortableMarshaller _marsh;
 
         /** Keep portable flag. */
-        private readonly bool keepPortable;
+        private readonly bool _keepPortable;
 
         /** Real listener. */
-        private readonly ICacheEntryEventListener<K, V> lsnr;
+        private readonly ICacheEntryEventListener<TK, TV> _lsnr;
 
         /** Real filter. */
-        private readonly ICacheEntryEventFilter<K, V> filter;
+        private readonly ICacheEntryEventFilter<TK, TV> _filter;
 
         /** GC handle. */
-        private long hnd;
+        private long _hnd;
 
         /** Native query. */
-        private volatile IUnmanagedTarget nativeQry;
+        private volatile IUnmanagedTarget _nativeQry;
         
         /** Initial query cursor. */
-        private volatile IQueryCursor<ICacheEntry<K, V>> initialQueryCursor;
+        private volatile IQueryCursor<ICacheEntry<TK, TV>> _initialQueryCursor;
 
         /** Disposed flag. */
-        private bool disposed;
+        private bool _disposed;
 
         /// <summary>
         /// Constructor.
@@ -79,13 +79,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="qry">Query.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
-        public ContinuousQueryHandleImpl(ContinuousQuery<K, V> qry, PortableMarshaller marsh, bool keepPortable)
+        public ContinuousQueryHandleImpl(ContinuousQuery<TK, TV> qry, PortableMarshaller marsh, bool keepPortable)
         {
-            this.marsh = marsh;
-            this.keepPortable = keepPortable;
+            this._marsh = marsh;
+            this._keepPortable = keepPortable;
 
-            lsnr = qry.Listener;
-            filter = qry.Filter;
+            _lsnr = qry.Listener;
+            _filter = qry.Filter;
         }
 
         /// <summary>
@@ -96,22 +96,22 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="cb">Callback invoked when all necessary data is written to stream.</param>
         /// <param name="qry">Query.</param>
         public void Start(Ignite grid, PortableWriterImpl writer, Func<IUnmanagedTarget> cb, 
-            ContinuousQuery<K, V> qry)
+            ContinuousQuery<TK, TV> qry)
         {
             // 1. Inject resources.
-            ResourceProcessor.Inject(lsnr, grid);
-            ResourceProcessor.Inject(filter, grid);
+            ResourceProcessor.Inject(_lsnr, grid);
+            ResourceProcessor.Inject(_filter, grid);
 
             // 2. Allocate handle.
-            hnd = grid.HandleRegistry.Allocate(this);
+            _hnd = grid.HandleRegistry.Allocate(this);
 
             // 3. Write data to stream.
-            writer.WriteLong(hnd);
+            writer.WriteLong(_hnd);
             writer.WriteBoolean(qry.Local);
-            writer.WriteBoolean(filter != null);
+            writer.WriteBoolean(_filter != null);
 
-            ContinuousQueryFilterHolder filterHolder = filter == null || qry.Local ? null : 
-                new ContinuousQueryFilterHolder(typeof (K), typeof (V), filter, keepPortable);
+            ContinuousQueryFilterHolder filterHolder = _filter == null || qry.Local ? null : 
+                new ContinuousQueryFilterHolder(typeof (TK), typeof (TV), _filter, _keepPortable);
 
             writer.WriteObject(filterHolder);
 
@@ -120,31 +120,31 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
             writer.WriteBoolean(qry.AutoUnsubscribe);
 
             // 4. Call Java.
-            nativeQry = cb();
+            _nativeQry = cb();
 
             // 5. Initial query.
-            var nativeInitialQryCur = UU.ContinuousQueryGetInitialQueryCursor(nativeQry);
-            initialQueryCursor = nativeInitialQryCur == null
+            var nativeInitialQryCur = UU.ContinuousQueryGetInitialQueryCursor(_nativeQry);
+            _initialQueryCursor = nativeInitialQryCur == null
                 ? null
-                : new QueryCursor<K, V>(nativeInitialQryCur, marsh, keepPortable);
+                : new QueryCursor<TK, TV>(nativeInitialQryCur, _marsh, _keepPortable);
         }
 
         /** <inheritdoc /> */
         public void Apply(IPortableStream stream)
         {
-            ICacheEntryEvent<K, V>[] evts = CQU.ReadEvents<K, V>(stream, marsh, keepPortable);
+            ICacheEntryEvent<TK, TV>[] evts = CQU.ReadEvents<TK, TV>(stream, _marsh, _keepPortable);
 
-            lsnr.OnEvent(evts); 
+            _lsnr.OnEvent(evts); 
         }
 
         /** <inheritdoc /> */
         public bool Evaluate(IPortableStream stream)
         {
-            Debug.Assert(filter != null, "Evaluate should not be called if filter is not set.");
+            Debug.Assert(_filter != null, "Evaluate should not be called if filter is not set.");
 
-            ICacheEntryEvent<K, V> evt = CQU.ReadEvent<K, V>(stream, marsh, keepPortable);
+            ICacheEntryEvent<TK, TV> evt = CQU.ReadEvent<TK, TV>(stream, _marsh, _keepPortable);
 
-            return filter.Evaluate(evt);
+            return _filter.Evaluate(evt);
         }
 
         /** <inheritdoc /> */
@@ -162,29 +162,29 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** <inheritdoc /> */
         public void Release()
         {
-            marsh.Grid.HandleRegistry.Release(hnd);
+            _marsh.Grid.HandleRegistry.Release(_hnd);
         }
 
         /** <inheritdoc /> */
-        public IQueryCursor<ICacheEntry<K, V>> InitialQueryCursor
+        public IQueryCursor<ICacheEntry<TK, TV>> InitialQueryCursor
         {
             get { return GetInitialQueryCursor(); }
         }
 
         /** <inheritdoc /> */
-        public IQueryCursor<ICacheEntry<K, V>> GetInitialQueryCursor()
+        public IQueryCursor<ICacheEntry<TK, TV>> GetInitialQueryCursor()
         {
             lock (this)
             {
-                if (disposed)
+                if (_disposed)
                     throw new ObjectDisposedException("Continuous query handle has been disposed.");
 
-                var cur = initialQueryCursor;
+                var cur = _initialQueryCursor;
 
                 if (cur == null)
                     throw new InvalidOperationException("GetInitialQueryCursor() can be called only once.");
 
-                initialQueryCursor = null;
+                _initialQueryCursor = null;
 
                 return cur;
             }
@@ -195,20 +195,20 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         {
             lock (this)
             {
-                if (disposed)
+                if (_disposed)
                     return;
 
-                Debug.Assert(nativeQry != null);
+                Debug.Assert(_nativeQry != null);
 
                 try
                 {
-                    UU.ContinuousQueryClose(nativeQry);
+                    UU.ContinuousQueryClose(_nativeQry);
                 }
                 finally
                 {
-                    nativeQry.Dispose();
+                    _nativeQry.Dispose();
 
-                    disposed = true;
+                    _disposed = true;
                 }
             }
         }

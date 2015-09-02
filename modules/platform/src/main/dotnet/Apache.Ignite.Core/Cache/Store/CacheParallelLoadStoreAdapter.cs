@@ -36,14 +36,14 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <summary>
         /// Default number of working threads (equal to the number of available processors).
         /// </summary>
-        public static readonly int DFLT_THREADS_CNT = Environment.ProcessorCount;
+        public static readonly int DfltThreadsCnt = Environment.ProcessorCount;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         protected CacheParallelLoadStoreAdapter()
         {
-            MaxDegreeOfParallelism = DFLT_THREADS_CNT;
+            MaxDegreeOfParallelism = DfltThreadsCnt;
         }
 
 
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// Gets or sets the maximum degree of parallelism to use in LoadCache. 
         /// Must be either positive or -1 for unlimited amount of threads.
         /// <para />
-        /// Defaults to <see cref="DFLT_THREADS_CNT"/>.
+        /// Defaults to <see cref="DfltThreadsCnt"/>.
         /// </summary>
         public int MaxDegreeOfParallelism
         {

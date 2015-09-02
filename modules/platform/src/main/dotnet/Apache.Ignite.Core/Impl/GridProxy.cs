@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl
     {
         /** */
         [NonSerialized]
-        private readonly IIgnite grid;
+        private readonly IIgnite _grid;
 
         /// <summary>
         /// Default ctor for marshalling.
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="grid">Grid.</param>
         public GridProxy(IIgnite grid)
         {
-            this.grid = grid;
+            this._grid = grid;
         }
 
         /** <inheritdoc /> */
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl
         {
             get
             {
-                return grid.Name;
+                return _grid.Name;
             }
         }
 
@@ -85,13 +85,13 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IClusterGroup ForLocal()
         {
-            return grid.Cluster.ForLocal();
+            return _grid.Cluster.ForLocal();
         }
 
         /** <inheritdoc /> */
         public ICompute Compute()
         {
-            return grid.Compute();
+            return _grid.Compute();
         }
 
         /** <inheritdoc /> */
@@ -103,145 +103,145 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IClusterGroup ForNodes(IEnumerable<IClusterNode> nodes)
         {
-            return grid.Cluster.ForNodes(nodes);
+            return _grid.Cluster.ForNodes(nodes);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForNodes(params IClusterNode[] nodes)
         {
-            return grid.Cluster.ForNodes(nodes);
+            return _grid.Cluster.ForNodes(nodes);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForNodeIds(IEnumerable<Guid> ids)
         {
-            return grid.Cluster.ForNodeIds(ids);
+            return _grid.Cluster.ForNodeIds(ids);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForNodeIds(ICollection<Guid> ids)
         {
-            return grid.Cluster.ForNodeIds(ids);
+            return _grid.Cluster.ForNodeIds(ids);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForNodeIds(params Guid[] ids)
         {
-            return grid.Cluster.ForNodeIds(ids);
+            return _grid.Cluster.ForNodeIds(ids);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForPredicate(Func<IClusterNode, bool> p)
         {
-            return grid.Cluster.ForPredicate(p);
+            return _grid.Cluster.ForPredicate(p);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForAttribute(string name, string val)
         {
-            return grid.Cluster.ForAttribute(name, val);
+            return _grid.Cluster.ForAttribute(name, val);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForCacheNodes(string name)
         {
-            return grid.Cluster.ForCacheNodes(name);
+            return _grid.Cluster.ForCacheNodes(name);
         }
         
         /** <inheritdoc /> */
         public IClusterGroup ForDataNodes(string name)
         {
-            return grid.Cluster.ForDataNodes(name);
+            return _grid.Cluster.ForDataNodes(name);
         }
         
         /** <inheritdoc /> */
         public IClusterGroup ForClientNodes(string name)
         {
-            return grid.Cluster.ForClientNodes(name);
+            return _grid.Cluster.ForClientNodes(name);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForRemotes()
         {
-            return grid.Cluster.ForRemotes();
+            return _grid.Cluster.ForRemotes();
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForHost(IClusterNode node)
         {
-            return grid.Cluster.ForHost(node);
+            return _grid.Cluster.ForHost(node);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForRandom()
         {
-            return grid.Cluster.ForRandom();
+            return _grid.Cluster.ForRandom();
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForOldest()
         {
-            return grid.Cluster.ForOldest();
+            return _grid.Cluster.ForOldest();
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForYoungest()
         {
-            return grid.Cluster.ForYoungest();
+            return _grid.Cluster.ForYoungest();
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForDotNet()
         {
-            return grid.Cluster.ForDotNet();
+            return _grid.Cluster.ForDotNet();
         }
 
         /** <inheritdoc /> */
         public ICollection<IClusterNode> Nodes()
         {
-            return grid.Cluster.Nodes();
+            return _grid.Cluster.Nodes();
         }
 
         /** <inheritdoc /> */
         public IClusterNode Node(Guid id)
         {
-            return grid.Cluster.Node(id);
+            return _grid.Cluster.Node(id);
         }
 
         /** <inheritdoc /> */
         public IClusterNode Node()
         {
-            return grid.Cluster.Node();
+            return _grid.Cluster.Node();
         }
 
         /** <inheritdoc /> */
         public IClusterMetrics Metrics()
         {
-            return grid.Cluster.Metrics();
+            return _grid.Cluster.Metrics();
         }
 
         /** <inheritdoc /> */
         public void Dispose()
         {
-            grid.Dispose();
+            _grid.Dispose();
         }
 
         /** <inheritdoc /> */
-        public ICache<K, V> Cache<K, V>(string name)
+        public ICache<TK, TV> Cache<TK, TV>(string name)
         {
-            return grid.Cache<K, V>(name);
+            return _grid.Cache<TK, TV>(name);
         }
 
         /** <inheritdoc /> */
-        public ICache<K, V> GetOrCreateCache<K, V>(string name)
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(string name)
         {
-            return grid.GetOrCreateCache<K, V>(name);
+            return _grid.GetOrCreateCache<TK, TV>(name);
         }
 
         /** <inheritdoc /> */
-        public ICache<K, V> CreateCache<K, V>(string name)
+        public ICache<TK, TV> CreateCache<TK, TV>(string name)
         {
-            return grid.CreateCache<K, V>(name);
+            return _grid.CreateCache<TK, TV>(name);
         }
 
         /** <inheritdoc /> */
@@ -249,86 +249,86 @@ namespace Apache.Ignite.Core.Impl
         {
             get
             {
-                return grid.Cluster.LocalNode;
+                return _grid.Cluster.LocalNode;
             }
         }
 
         /** <inheritdoc /> */
         public bool PingNode(Guid nodeId)
         {
-            return grid.Cluster.PingNode(nodeId);
+            return _grid.Cluster.PingNode(nodeId);
         }
 
         /** <inheritdoc /> */
         public long TopologyVersion
         {
-            get { return grid.Cluster.TopologyVersion; }
+            get { return _grid.Cluster.TopologyVersion; }
         }
 
         /** <inheritdoc /> */
         public ICollection<IClusterNode> Topology(long ver)
         {
-            return grid.Cluster.Topology(ver);
+            return _grid.Cluster.Topology(ver);
         }
 
         /** <inheritdoc /> */
         public void ResetMetrics()
         {
-            grid.Cluster.ResetMetrics();
+            _grid.Cluster.ResetMetrics();
         }
 
         /** <inheritdoc /> */
-        public IDataStreamer<K, V> DataStreamer<K, V>(string cacheName)
+        public IDataStreamer<TK, TV> DataStreamer<TK, TV>(string cacheName)
         {
-            return grid.DataStreamer<K, V>(cacheName);
+            return _grid.DataStreamer<TK, TV>(cacheName);
         }
 
         /** <inheritdoc /> */
         public IPortables Portables()
         {
-            return grid.Portables();
+            return _grid.Portables();
         }
 
         /** <inheritdoc /> */
         public ICacheAffinity Affinity(string name)
         {
-            return grid.Affinity(name);
+            return _grid.Affinity(name);
         }
 
         /** <inheritdoc /> */
         public ITransactions Transactions
         {
-            get { return grid.Transactions; }
+            get { return _grid.Transactions; }
         }
 
         /** <inheritdoc /> */
         public IMessaging Message()
         {
-            return grid.Message();
+            return _grid.Message();
         }
 
         /** <inheritdoc /> */
         public IMessaging Message(IClusterGroup clusterGroup)
         {
-            return grid.Message(clusterGroup);
+            return _grid.Message(clusterGroup);
         }
 
         /** <inheritdoc /> */
         public IEvents Events()
         {
-            return grid.Events();
+            return _grid.Events();
         }
 
         /** <inheritdoc /> */
         public IEvents Events(IClusterGroup clusterGroup)
         {
-            return grid.Events(clusterGroup);
+            return _grid.Events(clusterGroup);
         }
 
         /** <inheritdoc /> */
         public IServices Services()
         {
-            return grid.Services();
+            return _grid.Services();
         }
 
         /** <inheritdoc /> */
@@ -344,14 +344,14 @@ namespace Apache.Ignite.Core.Impl
         {
             get
             {
-                return grid;
+                return _grid;
             }
         }
 
         /** <inheritdoc /> */
         public IPortableMetadata Metadata(int typeId)
         {
-            return ((IClusterGroupEx)grid).Metadata(typeId);
+            return ((IClusterGroupEx)_grid).Metadata(typeId);
         }
     }
 }

@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests
         /// 
         /// </summary>
         [Test]
-        public void TestLoadFromGAC()
+        public void TestLoadFromGac()
         {
             Assert.False(IsLoaded("System.Data.Linq"));
 

@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Resource
     internal class ResourcePropertyInjector : IResourceInjector
     {
         /** */
-        private readonly Action<object, object> inject;
+        private readonly Action<object, object> _inject;
 
         /// <summary>
         /// Constructor.
@@ -35,13 +35,13 @@ namespace Apache.Ignite.Core.Impl.Resource
         /// <param name="prop">Property.</param>
         public ResourcePropertyInjector(PropertyInfo prop)
         {
-            inject = DelegateConverter.CompilePropertySetter(prop);
+            _inject = DelegateConverter.CompilePropertySetter(prop);
         }
 
         /** <inheritDoc /> */
         public void Inject(object target, object val)
         {
-            inject(target, val);
+            _inject(target, val);
         }
     }
 }

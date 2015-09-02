@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.Services
     public class ServicesAsyncWrapper : IServices
     {
         /** Wrapped async services. */
-        private readonly IServices services;
+        private readonly IServices _services;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServicesAsyncWrapper"/> class.
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <param name="services">Services to wrap.</param>
         public ServicesAsyncWrapper(IServices services)
         {
-            this.services = services.WithAsync();
+            this._services = services.WithAsync();
         }
 
         /** <inheritDoc /> */
@@ -69,98 +69,98 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public IClusterGroup ClusterGroup
         {
-            get { return services.ClusterGroup; }
+            get { return _services.ClusterGroup; }
         }
 
         /** <inheritDoc /> */
         public void DeployClusterSingleton(string name, IService service)
         {
-            services.DeployClusterSingleton(name, service);
+            _services.DeployClusterSingleton(name, service);
             WaitResult();
         }
 
         /** <inheritDoc /> */
         public void DeployNodeSingleton(string name, IService service)
         {
-            services.DeployNodeSingleton(name, service);
+            _services.DeployNodeSingleton(name, service);
             WaitResult();
         }
 
         /** <inheritDoc /> */
-        public void DeployKeyAffinitySingleton<K>(string name, IService service, string cacheName, K affinityKey)
+        public void DeployKeyAffinitySingleton<TK>(string name, IService service, string cacheName, TK affinityKey)
         {
-            services.DeployKeyAffinitySingleton(name, service, cacheName, affinityKey);
+            _services.DeployKeyAffinitySingleton(name, service, cacheName, affinityKey);
             WaitResult();
         }
 
         /** <inheritDoc /> */
         public void DeployMultiple(string name, IService service, int totalCount, int maxPerNodeCount)
         {
-            services.DeployMultiple(name, service, totalCount, maxPerNodeCount);
+            _services.DeployMultiple(name, service, totalCount, maxPerNodeCount);
             WaitResult();
         }
 
         /** <inheritDoc /> */
         public void Deploy(ServiceConfiguration configuration)
         {
-            services.Deploy(configuration);
+            _services.Deploy(configuration);
             WaitResult();
         }
 
         /** <inheritDoc /> */
         public void Cancel(string name)
         {
-            services.Cancel(name);
+            _services.Cancel(name);
             WaitResult();
         }
 
         /** <inheritDoc /> */
         public void CancelAll()
         {
-            services.CancelAll();
+            _services.CancelAll();
             WaitResult();
         }
 
         /** <inheritDoc /> */
         public ICollection<IServiceDescriptor> GetServiceDescriptors()
         {
-            return services.GetServiceDescriptors();
+            return _services.GetServiceDescriptors();
         }
 
         /** <inheritDoc /> */
         public T GetService<T>(string name)
         {
-            return services.GetService<T>(name);
+            return _services.GetService<T>(name);
         }
 
         /** <inheritDoc /> */
         public ICollection<T> GetServices<T>(string name)
         {
-            return services.GetServices<T>(name);
+            return _services.GetServices<T>(name);
         }
 
         /** <inheritDoc /> */
         public T GetServiceProxy<T>(string name) where T : class
         {
-            return services.GetServiceProxy<T>(name);
+            return _services.GetServiceProxy<T>(name);
         }
 
         /** <inheritDoc /> */
         public T GetServiceProxy<T>(string name, bool sticky) where T : class
         {
-            return services.GetServiceProxy<T>(name, sticky);
+            return _services.GetServiceProxy<T>(name, sticky);
         }
 
         /** <inheritDoc /> */
         public IServices WithKeepPortable()
         {
-            return new ServicesAsyncWrapper(services.WithKeepPortable());
+            return new ServicesAsyncWrapper(_services.WithKeepPortable());
         }
 
         /** <inheritDoc /> */
         public IServices WithServerKeepPortable()
         {
-            return new ServicesAsyncWrapper(services.WithServerKeepPortable());
+            return new ServicesAsyncWrapper(_services.WithServerKeepPortable());
         }
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private void WaitResult()
         {
-            services.GetFuture().Get();
+            _services.GetFuture().Get();
         }
     }
 }

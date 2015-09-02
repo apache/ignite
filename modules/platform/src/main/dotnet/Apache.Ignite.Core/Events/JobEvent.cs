@@ -28,22 +28,22 @@ namespace Apache.Ignite.Core.Events
     public sealed class JobEvent : EventBase
 	{
         /** */
-        private readonly string taskName;
+        private readonly string _taskName;
 
         /** */
-        private readonly string taskClassName;
+        private readonly string _taskClassName;
 
         /** */
-        private readonly GridGuid taskSessionId;
+        private readonly GridGuid _taskSessionId;
 
         /** */
-        private readonly GridGuid jobId;
+        private readonly GridGuid _jobId;
 
         /** */
-        private readonly IClusterNode taskNode;
+        private readonly IClusterNode _taskNode;
 
         /** */
-        private readonly Guid taskSubjectId;
+        private readonly Guid _taskSubjectId;
 
         /// <summary>
         /// Constructor.
@@ -51,43 +51,43 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         internal JobEvent(IPortableRawReader r) : base(r)
         {
-            taskName = r.ReadString();
-            taskClassName = r.ReadString();
-            taskSessionId = GridGuid.ReadPortable(r);
-            jobId = GridGuid.ReadPortable(r);
-            taskNode = ReadNode(r);
-            taskSubjectId = r.ReadGuid() ?? Guid.Empty;
+            _taskName = r.ReadString();
+            _taskClassName = r.ReadString();
+            _taskSessionId = GridGuid.ReadPortable(r);
+            _jobId = GridGuid.ReadPortable(r);
+            _taskNode = ReadNode(r);
+            _taskSubjectId = r.ReadGuid() ?? Guid.Empty;
         }
 		
         /// <summary>
         /// Gets name of the task that triggered the event. 
         /// </summary>
-        public string TaskName { get { return taskName; } }
+        public string TaskName { get { return _taskName; } }
 
         /// <summary>
         /// Gets name of task class that triggered this event. 
         /// </summary>
-        public string TaskClassName { get { return taskClassName; } }
+        public string TaskClassName { get { return _taskClassName; } }
 
         /// <summary>
         /// Gets task session ID of the task that triggered this event. 
         /// </summary>
-        public GridGuid TaskSessionId { get { return taskSessionId; } }
+        public GridGuid TaskSessionId { get { return _taskSessionId; } }
 
         /// <summary>
         /// Gets job ID. 
         /// </summary>
-        public GridGuid JobId { get { return jobId; } }
+        public GridGuid JobId { get { return _jobId; } }
 
         /// <summary>
         /// Get node where parent task of the job has originated. 
         /// </summary>
-        public IClusterNode TaskNode { get { return taskNode; } }
+        public IClusterNode TaskNode { get { return _taskNode; } }
 
         /// <summary>
         /// Gets task subject ID. 
         /// </summary>
-        public Guid TaskSubjectId { get { return taskSubjectId; } }
+        public Guid TaskSubjectId { get { return _taskSubjectId; } }
 
         /** <inheritDoc /> */
 	    public override string ToShortString()

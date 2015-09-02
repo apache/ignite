@@ -27,13 +27,13 @@ namespace Apache.Ignite.Core.Impl.Common
     internal class FutureConverter<T> : IFutureConverter<T>
     {
         /** Marshaller. */
-        private readonly PortableMarshaller marsh;
+        private readonly PortableMarshaller _marsh;
 
         /** Keep portable flag. */
-        private readonly bool keepPortable;
+        private readonly bool _keepPortable;
 
         /** Converting function. */
-        private readonly Func<PortableReaderImpl, T> func;
+        private readonly Func<PortableReaderImpl, T> _func;
 
         /// <summary>
         /// Constructor.
@@ -44,9 +44,9 @@ namespace Apache.Ignite.Core.Impl.Common
         public FutureConverter(PortableMarshaller marsh, bool keepPortable,
             Func<PortableReaderImpl, T> func = null)
         {
-            this.marsh = marsh;
-            this.keepPortable = keepPortable;
-            this.func = func ?? (reader => reader.ReadObject<T>());
+            this._marsh = marsh;
+            this._keepPortable = keepPortable;
+            this._func = func ?? (reader => reader.ReadObject<T>());
         }
 
         /// <summary>
@@ -54,9 +54,9 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public T Convert(IPortableStream stream)
         {
-            var reader = marsh.StartUnmarshal(stream, keepPortable);
+            var reader = _marsh.StartUnmarshal(stream, _keepPortable);
 
-            return func(reader);
+            return _func(reader);
         }
     }
 }

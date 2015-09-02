@@ -105,10 +105,10 @@ namespace Apache.Ignite.Core.Tests.Cache
         public class AffinityTestKey
         {
             /** ID. */
-            private int id;
+            private int _id;
 
             /** Affinity key. */
-            private int affKey;
+            private int _affKey;
 
             /// <summary>
             /// Constructor.
@@ -117,8 +117,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             /// <param name="affKey">Affinity key.</param>
             public AffinityTestKey(int id, int affKey)
             {
-                this.id = id;
-                this.affKey = affKey;
+                this._id = id;
+                this._affKey = affKey;
             }
 
             /** <inheritdoc /> */
@@ -126,13 +126,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 AffinityTestKey other = obj as AffinityTestKey;
 
-                return other != null && id == other.id;
+                return other != null && _id == other._id;
             }
 
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                return id;
+                return _id;
             }
         }
     }

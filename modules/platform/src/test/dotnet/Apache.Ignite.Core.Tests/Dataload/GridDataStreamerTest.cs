@@ -35,16 +35,16 @@ namespace Apache.Ignite.Core.Tests.Dataload
     public class GridDataStreamerTest
     {
         /** Node name. */
-        protected const string GRID_NAME = "grid";
+        protected const string GridName = "grid";
 
         /** Cache name. */
-        protected const string CACHE_NAME = "partitioned";
+        protected const string CacheName = "partitioned";
 
         /** Node. */
-        private IIgnite grid;
+        private IIgnite _grid;
 
         /** Cache. */
-        private ICache<int, int?> cache;
+        private ICache<int, int?> _cache;
 
         /// <summary>
         /// Initialization routine.
@@ -52,11 +52,11 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [TestFixtureSetUp]
         public virtual void InitClient()
         {
-            grid = Ignition.Start(GetGridConfiguration(GRID_NAME));
+            _grid = Ignition.Start(GetGridConfiguration(GridName));
 
-            Ignition.Start(GetGridConfiguration(GRID_NAME + "_1"));
+            Ignition.Start(GetGridConfiguration(GridName + "_1"));
 
-            cache = grid.Cache<int, int?>(CACHE_NAME);
+            _cache = _grid.Cache<int, int?>(CacheName);
         }
 
         /// <summary>
@@ -77,13 +77,13 @@ namespace Apache.Ignite.Core.Tests.Dataload
             Console.WriteLine("Test started: " + TestContext.CurrentContext.Test.Name);
 
             for (int i = 0; i < 100; i++)
-                cache.Remove(i);
+                _cache.Remove(i);
         }
 
         [TearDown]
         public void AfterTest()
         {
-            GridTestUtils.AssertHandleRegistryIsEmpty(grid, 1000);
+            GridTestUtils.AssertHandleRegistryIsEmpty(_grid, 1000);
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestPropertyPropagation()
         {
-            using (IDataStreamer<int, int> ldr = grid.DataStreamer<int, int>(CACHE_NAME))
+            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
             {
                 ldr.AllowOverwrite = true;
                 Assert.IsTrue(ldr.AllowOverwrite);
@@ -122,28 +122,28 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]        
         public void TestAddRemove()
         {
-            using (IDataStreamer<int, int> ldr = grid.DataStreamer<int, int>(CACHE_NAME))
+            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
             {
                 ldr.AllowOverwrite = true;
 
                 // Additions.
                 ldr.AddData(1, 1);
                 ldr.Flush();                
-                Assert.AreEqual(1, cache.Get(1));
+                Assert.AreEqual(1, _cache.Get(1));
 
                 ldr.AddData(new KeyValuePair<int, int>(2, 2));
                 ldr.Flush();
-                Assert.AreEqual(2, cache.Get(2));
+                Assert.AreEqual(2, _cache.Get(2));
 
                 ldr.AddData(new List<KeyValuePair<int, int>> { new KeyValuePair<int, int>(3, 3), new KeyValuePair<int, int>(4, 4) });
                 ldr.Flush();
-                Assert.AreEqual(3, cache.Get(3));
-                Assert.AreEqual(4, cache.Get(4));
+                Assert.AreEqual(3, _cache.Get(3));
+                Assert.AreEqual(4, _cache.Get(4));
 
                 // Removal.
                 ldr.RemoveData(1);
                 ldr.Flush();
-                Assert.IsNull(cache.Get(1));
+                Assert.IsNull(_cache.Get(1));
 
                 // Mixed.
                 ldr.AddData(5, 5);                
@@ -159,10 +159,10 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.Flush();
 
                 for (int i = 2; i < 5; i++)
-                    Assert.IsNull(cache.Get(i));
+                    Assert.IsNull(_cache.Get(i));
 
                 for (int i = 5; i < 13; i++)
-                    Assert.AreEqual(i, cache.Get(i));
+                    Assert.AreEqual(i, _cache.Get(i));
             }
         }
 
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestTryFlush()
         {
-            using (IDataStreamer<int, int> ldr = grid.DataStreamer<int, int>(CACHE_NAME))
+            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
             {
                 var fut = ldr.AddData(1, 1);
 
@@ -180,7 +180,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 fut.Get();
 
-                Assert.AreEqual(1, cache.Get(1));
+                Assert.AreEqual(1, _cache.Get(1));
             }
         }
 
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestBufferSize()
         {
-            using (IDataStreamer<int, int> ldr = grid.DataStreamer<int, int>(CACHE_NAME))
+            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
             {
                 var fut = ldr.AddData(1, 1);
 
@@ -205,10 +205,10 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.AddData(4, 4).Get();
                 fut.Get();
 
-                Assert.AreEqual(1, cache.Get(1));
-                Assert.AreEqual(2, cache.Get(2));
-                Assert.AreEqual(3, cache.Get(3));
-                Assert.AreEqual(4, cache.Get(4));
+                Assert.AreEqual(1, _cache.Get(1));
+                Assert.AreEqual(2, _cache.Get(2));
+                Assert.AreEqual(3, _cache.Get(3));
+                Assert.AreEqual(4, _cache.Get(4));
 
                 ldr.AddData(new List<KeyValuePair<int, int>>
                 {
@@ -218,10 +218,10 @@ namespace Apache.Ignite.Core.Tests.Dataload
                     new KeyValuePair<int, int>(8, 8)
                 }).Get();
 
-                Assert.AreEqual(5, cache.Get(5));
-                Assert.AreEqual(6, cache.Get(6));
-                Assert.AreEqual(7, cache.Get(7));
-                Assert.AreEqual(8, cache.Get(8));
+                Assert.AreEqual(5, _cache.Get(5));
+                Assert.AreEqual(6, _cache.Get(6));
+                Assert.AreEqual(7, _cache.Get(7));
+                Assert.AreEqual(8, _cache.Get(8));
             }
         }
 
@@ -231,7 +231,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestClose()
         {
-            using (IDataStreamer<int, int> ldr = grid.DataStreamer<int, int>(CACHE_NAME))
+            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
             {
                 var fut = ldr.AddData(1, 1);
 
@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 fut.Get();
 
-                Assert.AreEqual(1, cache.Get(1));
+                Assert.AreEqual(1, _cache.Get(1));
             }
         }
 
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestCancel()
         {
-            using (IDataStreamer<int, int> ldr = grid.DataStreamer<int, int>(CACHE_NAME))
+            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
             {
                 var fut = ldr.AddData(1, 1);
 
@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 fut.Get();
 
-                Assert.IsNull(cache.Get(1));
+                Assert.IsNull(_cache.Get(1));
             }
         }
 
@@ -267,7 +267,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestFinalizer()
         {
-            var streamer = grid.DataStreamer<int, int>(CACHE_NAME);
+            var streamer = _grid.DataStreamer<int, int>(CacheName);
             var streamerRef = new WeakReference(streamer);
 
             Assert.IsNotNull(streamerRef.Target);
@@ -287,7 +287,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestAutoFlush()
         {
-            using (IDataStreamer<int, int> ldr = grid.DataStreamer<int, int>(CACHE_NAME))
+            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
             {
                 // Test auto flush turning on.
                 var fut = ldr.AddData(1, 1);
@@ -316,11 +316,11 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.AutoFlushFrequency = 1000;
                 fut.Get();
 
-                Assert.AreEqual(1, cache.Get(1));
-                Assert.AreEqual(2, cache.Get(2));
-                Assert.AreEqual(3, cache.Get(3));
-                Assert.AreEqual(4, cache.Get(4));
-                Assert.AreEqual(5, cache.Get(5));
+                Assert.AreEqual(1, _cache.Get(1));
+                Assert.AreEqual(2, _cache.Get(2));
+                Assert.AreEqual(3, _cache.Get(3));
+                Assert.AreEqual(4, _cache.Get(4));
+                Assert.AreEqual(5, _cache.Get(5));
             }
         }
 
@@ -328,7 +328,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Test multithreaded behavior. 
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CATEGORY_INTENSIVE)]
+        [Category(GridTestUtils.CategoryIntensive)]
         public void TestMultithreaded()
         {
             int entriesPerThread = 100000;
@@ -336,15 +336,15 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
             for (int i = 0; i < 5; i++)
             {
-                cache.Clear();
+                _cache.Clear();
 
-                Assert.AreEqual(0, cache.Size());
+                Assert.AreEqual(0, _cache.Size());
 
                 Stopwatch watch = new Stopwatch();
 
                 watch.Start();
 
-                using (IDataStreamer<int, int> ldr = grid.DataStreamer<int, int>(CACHE_NAME))
+                using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
                 {
                     ldr.PerNodeBufferSize = 1024;
 
@@ -411,7 +411,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// </summary>
         private void TestStreamReceiver(IStreamReceiver<int, int> receiver)
         {
-            using (var ldr = grid.DataStreamer<int, int>(CACHE_NAME))
+            using (var ldr = _grid.DataStreamer<int, int>(CacheName))
             {
                 ldr.AllowOverwrite = true;
 
@@ -427,7 +427,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.Flush();
 
                 for (var i = 0; i < 100; i++)
-                    Assert.AreEqual(i + 1, cache.Get(i));
+                    Assert.AreEqual(i + 1, _cache.Get(i));
             }
         }
 
@@ -438,9 +438,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
         public void TestStreamReceiverKeepPortable()
         {
             // ReSharper disable once LocalVariableHidesMember
-            var cache = grid.Cache<int, PortableEntry>(CACHE_NAME);
+            var cache = _grid.Cache<int, PortableEntry>(CacheName);
 
-            using (var ldr0 = grid.DataStreamer<int, int>(CACHE_NAME))
+            using (var ldr0 = _grid.DataStreamer<int, int>(CacheName))
             using (var ldr = ldr0.WithKeepPortable<int, IPortableObject>())
             {
                 ldr.Receiver = new StreamReceiverKeepPortable();
@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.AllowOverwrite = true;
 
                 for (var i = 0; i < 100; i++)
-                    ldr.AddData(i, grid.Portables().ToPortable<IPortableObject>(new PortableEntry {Val = i}));
+                    ldr.AddData(i, _grid.Portables().ToPortable<IPortableObject>(new PortableEntry {Val = i}));
 
                 ldr.Flush();
 

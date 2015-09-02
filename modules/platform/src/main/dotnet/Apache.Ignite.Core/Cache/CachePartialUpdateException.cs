@@ -29,13 +29,13 @@ namespace Apache.Ignite.Core.Cache
     public class CachePartialUpdateException : CacheException
     {
         /** Serializer key. */
-        private const string KEY_FAILED_KEYS = "FailedKeys";
+        private const string KeyFailedKeys = "FailedKeys";
 
         /** Failed keys. */
-        private readonly IList<object> failedKeys;
+        private readonly IList<object> _failedKeys;
 
         /** Failed keys exception. */
-        private readonly Exception failedKeysException;
+        private readonly Exception _failedKeysException;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CachePartialUpdateException"/> class.
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Cache
         protected CachePartialUpdateException(SerializationInfo info, StreamingContext ctx)
             : base(info, ctx)
         {
-            failedKeys = (IList<object>) info.GetValue(KEY_FAILED_KEYS, typeof (IList<object>));
+            _failedKeys = (IList<object>) info.GetValue(KeyFailedKeys, typeof (IList<object>));
         }
 
         /// <summary>
@@ -93,8 +93,8 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="failedKeysException">Exception occurred during failed keys read/write.</param>
         private CachePartialUpdateException(string msg, IList<object> failedKeys, Exception failedKeysException) : base(msg)
         {
-            this.failedKeys = failedKeys;
-            this.failedKeysException = failedKeysException;
+            this._failedKeys = failedKeys;
+            this._failedKeysException = failedKeysException;
         }
 
         /// <summary>
@@ -102,16 +102,16 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         public IEnumerable<T> GetFailedKeys<T>()
         {
-            if (failedKeysException != null)
-                throw failedKeysException;
+            if (_failedKeysException != null)
+                throw _failedKeysException;
             
-            return failedKeys == null ? null : failedKeys.Cast<T>();
+            return _failedKeys == null ? null : _failedKeys.Cast<T>();
         }
 
         /** <inheritdoc /> */
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue(KEY_FAILED_KEYS, failedKeys);
+            info.AddValue(KeyFailedKeys, _failedKeys);
 
             base.GetObjectData(info, context);
         }

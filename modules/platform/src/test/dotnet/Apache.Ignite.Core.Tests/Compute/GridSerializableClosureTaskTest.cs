@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             SerializableResult res0 = res as SerializableResult;
 
             Assert.IsTrue(res0 != null);
-            Assert.AreEqual(1, res0.res);
+            Assert.AreEqual(1, res0.Res);
         }
 
         /** <inheritDoc /> */
@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             SerializableException err0 = err as SerializableException;
 
             Assert.IsTrue(err0 != null);
-            Assert.AreEqual(ERR_MSG, err0.msg);
+            Assert.AreEqual(ErrMsg, err0.Msg);
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private class SerializableOutFunc : IComputeFunc<object>
         {
             /** Error. */
-            private bool err;
+            private bool _err;
 
             /// <summary>
             ///
@@ -95,14 +95,14 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="err"></param>
             public SerializableOutFunc(bool err)
             {
-                this.err = err;
+                this._err = err;
             }
 
             /** <inheritDoc /> */
             public object Invoke()
             {
-                if (err)
-                    throw new SerializableException(ERR_MSG);
+                if (_err)
+                    throw new SerializableException(ErrMsg);
                 else
                     return new SerializableResult(1);
             }
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private class SerializableFunc : IComputeFunc<object, object>
         {
             /** Error. */
-            private bool err;
+            private bool _err;
 
             /// <summary>
             ///
@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="err"></param>
             public SerializableFunc(bool err)
             {
-                this.err = err;
+                this._err = err;
             }
 
             /** <inheritDoc /> */
@@ -139,8 +139,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 Console.WriteLine("INVOKED!");
 
-                if (err)
-                    throw new SerializableException(ERR_MSG);
+                if (_err)
+                    throw new SerializableException(ErrMsg);
                 else
                     return new SerializableResult(1);
             }
@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private class SerializableException : Exception
         {
             /** */
-            public string msg;
+            public string Msg;
 
             /// <summary>
             ///
@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="msg"></param>
             public SerializableException(string msg) : this()
             {
-                this.msg = msg;
+                this.Msg = msg;
             }
             /// <summary>
             ///
@@ -178,13 +178,13 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="context"></param>
             public SerializableException(SerializationInfo info, StreamingContext context) : base(info, context)
             {
-                msg = info.GetString("msg");
+                Msg = info.GetString("msg");
             }
 
             /** <inheritDoc /> */
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                info.AddValue("msg", msg);
+                info.AddValue("msg", Msg);
 
                 base.GetObjectData(info, context);
             }
@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Serializable]
         private class SerializableResult
         {
-            public int res;
+            public int Res;
 
             /// <summary>
             ///
@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <param name="res"></param>
             public SerializableResult(int res)
             {
-                this.res = res;
+                this.Res = res;
             }
         }
     }

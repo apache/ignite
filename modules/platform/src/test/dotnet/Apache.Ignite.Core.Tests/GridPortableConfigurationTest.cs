@@ -27,13 +27,13 @@ namespace Apache.Ignite.Core.Tests
     public class GridPortableConfigurationTest
     {
         /** Cache. */
-        private ICache<int, TestGenericPortableBase> cache;
+        private ICache<int, TestGenericPortableBase> _cache;
 
         /** Random generator. */
-        private static readonly Random RND = new Random();
+        private static readonly Random Rnd = new Random();
 
         /** Test types for code config */
-        private static readonly Type[] TEST_TYPES = {
+        private static readonly Type[] TestTypes = {
             typeof (TestGenericPortable<int>),
             typeof (TestGenericPortable<string>),
             typeof (TestGenericPortable<TestGenericPortable<int>>),
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests
         };
 
         /** Test types for xml config */
-        private static readonly Type[] TEST_TYPES_XML = {
+        private static readonly Type[] TestTypesXml = {
             typeof (TestGenericPortable<long>),
             typeof (TestGenericPortable<Type>),
             typeof (TestGenericPortable<TestGenericPortable<long>>),
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests
                 PortableConfiguration = portableConfiguration
             });
 
-            cache = grid.Cache<int, TestGenericPortableBase>(null);
+            _cache = grid.Cache<int, TestGenericPortableBase>(null);
         }
 
         /// <summary>
@@ -92,10 +92,10 @@ namespace Apache.Ignite.Core.Tests
         {
             StartGrid(new PortableConfiguration
             {
-                TypeConfigurations = TEST_TYPES.Select(x => new PortableTypeConfiguration(x)).ToList()
+                TypeConfigurations = TestTypes.Select(x => new PortableTypeConfiguration(x)).ToList()
             });
 
-            CheckPortableTypes(TEST_TYPES);
+            CheckPortableTypes(TestTypes);
         }
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Tests
         {
             StartGrid(null);
 
-            CheckPortableTypes(TEST_TYPES_XML);
+            CheckPortableTypes(TestTypesXml);
         }
 
         /// <summary>
@@ -122,9 +122,9 @@ namespace Apache.Ignite.Core.Tests
 
                 var inst = CreateInstance(typ);
 
-                cache.Put(key, inst);
+                _cache.Put(key, inst);
 
-                var result = cache.Get(key);
+                var result = _cache.Get(key);
 
                 Assert.AreEqual(inst.Prop, result.Prop);
 
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var inst = (TestGenericPortableBase)Activator.CreateInstance(type);
 
-            inst.Prop = RND.Next(int.MaxValue);
+            inst.Prop = Rnd.Next(int.MaxValue);
 
             return inst;
         }

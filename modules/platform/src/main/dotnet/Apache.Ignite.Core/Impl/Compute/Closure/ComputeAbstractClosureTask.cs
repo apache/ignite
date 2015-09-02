@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     /// <summary>
     /// Base class for all tasks working with closures.
     /// </summary>
-    internal abstract class ComputeAbstractClosureTask<A, T, R> : IComputeTask<A, T, R>
+    internal abstract class ComputeAbstractClosureTask<TA, T, TR> : IComputeTask<TA, T, TR>
     {
         /// <summary>
         /// This method is called to map or split grid task into multiple grid jobs. This is the
@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// exception will be thrown.
         /// </returns>
         /// <exception cref="System.NotSupportedException">Map step should not be called on this task.</exception>
-        public IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, A arg)
+        public IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, TA arg)
         {
             throw new NotSupportedException("Map step should not be called on this task.");
         }
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
             {
                 if (err is ComputeExecutionRejectedException || err is ClusterTopologyException || 
                     err is ComputeJobFailoverException)
-                    return ComputeJobResultPolicy.FAILOVER;
+                    return ComputeJobResultPolicy.Failover;
                 
                 throw err;
             }
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <returns>
         /// Task result constructed from results of remote executions.
         /// </returns>
-        public abstract R Reduce(IList<IComputeJobResult<T>> results);
+        public abstract TR Reduce(IList<IComputeJobResult<T>> results);
 
         /// <summary>
         /// Internal result processing routine.

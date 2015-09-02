@@ -29,25 +29,25 @@ namespace Apache.Ignite.Core.Events
     public abstract class EventBase : IEvent, IEquatable<EventBase>
     {
         /** */
-        private readonly GridGuid id;
+        private readonly GridGuid _id;
 
         /** */
-        private readonly long localOrder;
+        private readonly long _localOrder;
 
         /** */
-        private readonly IClusterNode node;
+        private readonly IClusterNode _node;
 
         /** */
-        private readonly string message;
+        private readonly string _message;
 
         /** */
-        private readonly int type;
+        private readonly int _type;
 
         /** */
-        private readonly string name;
+        private readonly string _name;
 
         /** */
-        private readonly DateTime timeStamp;
+        private readonly DateTime _timeStamp;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EventBase"/> class.
@@ -55,58 +55,58 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         protected EventBase(IPortableRawReader r)
         {
-            id = GridGuid.ReadPortable(r);
+            _id = GridGuid.ReadPortable(r);
 
-            localOrder = r.ReadLong();
+            _localOrder = r.ReadLong();
 
-            node = ReadNode(r);
+            _node = ReadNode(r);
 
-            message = r.ReadString();
-            type = r.ReadInt();
-            name = r.ReadString();
-            timeStamp = r.ReadDate() ?? DateTime.Now;
+            _message = r.ReadString();
+            _type = r.ReadInt();
+            _name = r.ReadString();
+            _timeStamp = r.ReadDate() ?? DateTime.Now;
         }
 
         /** <inheritDoc /> */
         public GridGuid Id
         {
-            get { return id; }
+            get { return _id; }
         }
 
         /** <inheritDoc /> */
         public long LocalOrder
         {
-            get { return localOrder; }
+            get { return _localOrder; }
         }
 
         /** <inheritDoc /> */
         public IClusterNode Node
         {
-            get { return node; }
+            get { return _node; }
         }
 
         /** <inheritDoc /> */
         public string Message
         {
-            get { return message; }
+            get { return _message; }
         }
 
         /** <inheritDoc /> */
         public int Type
         {
-            get { return type; }
+            get { return _type; }
         }
 
         /** <inheritDoc /> */
         public string Name
         {
-            get { return name; }
+            get { return _name; }
         }
 
         /** <inheritDoc /> */
         public DateTime TimeStamp
         {
-            get { return timeStamp; }
+            get { return _timeStamp; }
         }
 
         /** <inheritDoc /> */
@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Events
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
             
-            return id.Equals(other.id);
+            return _id.Equals(other._id);
         }
 
         /** <inheritDoc /> */
@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Events
         /** <inheritDoc /> */
         public override int GetHashCode()
         {
-            return id.GetHashCode();
+            return _id.GetHashCode();
         }
 
         /** <inheritDoc /> */

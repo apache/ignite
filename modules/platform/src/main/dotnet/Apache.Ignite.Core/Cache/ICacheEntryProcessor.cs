@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Cache
     /// <typeparam name="V">The type of the cache value.</typeparam>
     /// <typeparam name="A">The type of the processor argument.</typeparam>
     /// <typeparam name="R">The type of the processor result.</typeparam>
-    public interface ICacheEntryProcessor<in K, V, in A, out R>
+    public interface ICacheEntryProcessor<in TK, TV, in TA, out TR>
     {
         /// <summary>
         /// Process an entry.
@@ -40,6 +40,6 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="entry">The entry to process.</param>
         /// <param name="arg">The argument.</param>
         /// <returns>Processing result.</returns>
-        R Process(IMutableCacheEntry<K, V> entry, A arg);
+        TR Process(IMutableCacheEntry<TK, TV> entry, TA arg);
     }
 }

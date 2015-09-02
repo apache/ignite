@@ -27,14 +27,14 @@ namespace Apache.Ignite.Core.Tests.Query
          * 
          */
         public GridNoDefPortablePerson(String _name, int _age) {
-            this.name = _name;
-            this.age = _age;
+            this.Name = _name;
+            this.Age = _age;
         }
 
         /**
          * 
          */
-        public String name
+        public String Name
         {
             get;
             set;
@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Query
         /**
          * 
          */
-        public int age
+        public int Age
         {
             get;
             set;

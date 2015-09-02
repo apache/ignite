@@ -46,11 +46,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestPortableObjectInTask()
         {
-            IPortableObject taskArg = ToPortable(grid1, new PortableTaskArgument(100));
+            IPortableObject taskArg = ToPortable(Grid1, new PortableTaskArgument(100));
 
-            TestTask task = new TestTask(grid1, taskArg);
+            TestTask task = new TestTask(Grid1, taskArg);
 
-            IPortableObject res = grid1.Compute().Execute(task, taskArg);
+            IPortableObject res = Grid1.Compute().Execute(task, taskArg);
 
             Assert.NotNull(res);
 
@@ -58,12 +58,12 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             PortableTaskResult resObj = res.Deserialize<PortableTaskResult>();
 
-            Assert.AreEqual(400, resObj.val);
+            Assert.AreEqual(400, resObj.Val);
         }
 
         private static IPortableObject ToPortable(IIgnite grid, object obj)
         {
-            var cache = grid.Cache<object, object>(CACHE1_NAME).WithKeepPortable<object, object>();
+            var cache = grid.Cache<object, object>(Cache1Name).WithKeepPortable<object, object>();
 
             cache.Put(1, obj);
 
@@ -86,38 +86,38 @@ namespace Apache.Ignite.Core.Tests.Compute
         public class TestTask : ComputeTaskAdapter<IPortableObject, IPortableObject, IPortableObject>
         {
             /** */
-            private readonly IIgnite grid;
+            private readonly IIgnite _grid;
 
-            private readonly IPortableObject taskArgField;
+            private readonly IPortableObject _taskArgField;
 
             public TestTask(IIgnite grid, IPortableObject taskArgField)
             {
-                this.grid = grid;
-                this.taskArgField = taskArgField;
+                this._grid = grid;
+                this._taskArgField = taskArgField;
             }
 
             /** <inheritDoc /> */
             override public IDictionary<IComputeJob<IPortableObject>, IClusterNode> Map(IList<IClusterNode> subgrid, IPortableObject arg)
             {
                 Assert.AreEqual(3, subgrid.Count);
-                Assert.NotNull(grid);
+                Assert.NotNull(_grid);
 
                 IPortableObject taskArg = arg;
 
                 CheckTaskArgument(taskArg);
 
-                CheckTaskArgument(taskArgField);
+                CheckTaskArgument(_taskArgField);
 
                 IDictionary<IComputeJob<IPortableObject>, IClusterNode> jobs = new Dictionary<IComputeJob<IPortableObject>, IClusterNode>();
 
 
                 foreach (IClusterNode node in subgrid)
                 {
-                    if (!GRID3_NAME.Equals(node.Attribute<string>("org.apache.ignite.ignite.name"))) // Grid3 does not have cache.
+                    if (!Grid3Name.Equals(node.Attribute<string>("org.apache.ignite.ignite.name"))) // Grid3 does not have cache.
                     {
                         PortableJob job = new PortableJob();
 
-                        job.arg = ToPortable(grid, new PortableJobArgument(200));
+                        job.Arg = ToPortable(_grid, new PortableJobArgument(200));
 
                         jobs.Add(job, node);
                     }
@@ -136,13 +136,13 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 PortableTaskArgument taskArgObj = taskArg.Deserialize<PortableTaskArgument>();
 
-                Assert.AreEqual(100, taskArgObj.val);
+                Assert.AreEqual(100, taskArgObj.Val);
             }
 
             /** <inheritDoc /> */
             override public IPortableObject Reduce(IList<IComputeJobResult<IPortableObject>> results)
             {
-                Assert.NotNull(grid);
+                Assert.NotNull(_grid);
 
                 Assert.AreEqual(2, results.Count);
 
@@ -156,10 +156,10 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                     PortableJobResult jobResObj = jobRes.Deserialize<PortableJobResult>();
 
-                    Assert.AreEqual(300, jobResObj.val);
+                    Assert.AreEqual(300, jobResObj.Val);
                 }
 
-                return ToPortable(grid, new PortableTaskResult(400));
+                return ToPortable(_grid, new PortableTaskResult(400));
             }
         }
 
@@ -169,11 +169,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         class PortableJobArgument
         {
             /** */
-            public int val;
+            public int Val;
 
             public PortableJobArgument(int val)
             {
-                this.val = val;
+                this.Val = val;
             }
         }
 
@@ -183,11 +183,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         class PortableJobResult
         {
             /** */
-            public int val;
+            public int Val;
 
             public PortableJobResult(int val)
             {
-                this.val = val;
+                this.Val = val;
             }
         }
 
@@ -197,11 +197,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         class PortableTaskArgument
         {
             /** */
-            public int val;
+            public int Val;
 
             public PortableTaskArgument(int val)
             {
-                this.val = val;
+                this.Val = val;
             }
         }
 
@@ -211,11 +211,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         class PortableTaskResult
         {
             /** */
-            public int val;
+            public int Val;
 
             public PortableTaskResult(int val)
             {
-                this.val = val;
+                this.Val = val;
             }
         }
 
@@ -225,23 +225,23 @@ namespace Apache.Ignite.Core.Tests.Compute
         class PortableJob : IComputeJob<IPortableObject>
         {
             [InstanceResource]
-            private IIgnite grid = null;
+            private IIgnite _grid = null;
             
             /** */
-            public IPortableObject arg;
+            public IPortableObject Arg;
 
             /** <inheritDoc /> */
             public IPortableObject Execute()
             {
-                Assert.IsNotNull(arg);
+                Assert.IsNotNull(Arg);
 
-                Assert.AreEqual(200, arg.Field<int>("val"));
+                Assert.AreEqual(200, Arg.Field<int>("val"));
 
-                PortableJobArgument argObj = arg.Deserialize<PortableJobArgument>();
+                PortableJobArgument argObj = Arg.Deserialize<PortableJobArgument>();
 
-                Assert.AreEqual(200, argObj.val);
+                Assert.AreEqual(200, argObj.Val);
 
-                return ToPortable(grid, new PortableJobResult(300));
+                return ToPortable(_grid, new PortableJobResult(300));
             }
 
             public void Cancel()

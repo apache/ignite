@@ -25,37 +25,37 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     /// Closure-based task producing only one job and thus having only single result.
     /// </summary>
     [ComputeTaskNoResultCache]
-    internal class ComputeReducingClosureTask<A, T, R> 
-        : ComputeAbstractClosureTask<A, T, R>, IComputeResourceInjector
+    internal class ComputeReducingClosureTask<TA, T, TR> 
+        : ComputeAbstractClosureTask<TA, T, TR>, IComputeResourceInjector
     {
         /** Reducer. */
-        private readonly IComputeReducer<T, R> rdc;
+        private readonly IComputeReducer<T, TR> _rdc;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="rdc">Reducer.</param>
-        public ComputeReducingClosureTask(IComputeReducer<T, R> rdc)
+        public ComputeReducingClosureTask(IComputeReducer<T, TR> rdc)
         {
-            this.rdc = rdc;
+            this._rdc = rdc;
         }
 
         /** <inheritDoc /> */
         protected override ComputeJobResultPolicy Result0(IComputeJobResult<T> res)
         {
-            return rdc.Collect(res.Data()) ? ComputeJobResultPolicy.WAIT : ComputeJobResultPolicy.REDUCE;
+            return _rdc.Collect(res.Data()) ? ComputeJobResultPolicy.Wait : ComputeJobResultPolicy.Reduce;
         }
 
         /** <inheritDoc /> */
-        public override R Reduce(IList<IComputeJobResult<T>> results)
+        public override TR Reduce(IList<IComputeJobResult<T>> results)
         {
-            return rdc.Reduce();
+            return _rdc.Reduce();
         }
 
         /** <inheritDoc /> */
         public void Inject(Ignite grid)
         {
-            ResourceProcessor.Inject(rdc, grid);
+            ResourceProcessor.Inject(_rdc, grid);
         }
     }
 }

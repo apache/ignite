@@ -31,11 +31,11 @@ namespace Apache.Ignite.Core.Impl.Portable
     internal class TypeResolver
     {
         /** Regex to parse generic types from portable configuration. Allows nested generics in type arguments. */
-        private static readonly Regex GENERIC_TYPE_REGEX =
+        private static readonly Regex GenericTypeRegex =
             new Regex(@"([^`,\[\]]*)(?:`[0-9]+)?(?:\[((?:(?<br>\[)|(?<-br>\])|[^\[\]]*)+)\])?", RegexOptions.Compiled);
 
         /** Assemblies loaded in ReflectionOnly mode. */
-        private readonly Dictionary<string, Assembly> reflectionOnlyAssemblies = new Dictionary<string, Assembly>();
+        private readonly Dictionary<string, Assembly> _reflectionOnlyAssemblies = new Dictionary<string, Assembly>();
 
         /// <summary>
         /// Resolve type by name.
@@ -104,13 +104,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Fully qualified generic type name, or null if argument(s) could not be resolved.</returns>
         private static Type ResolveGenericType(string assemblyName, string typeName, ICollection<Assembly> assemblies)
         {
-            var match = GENERIC_TYPE_REGEX.Match(typeName);
+            var match = GenericTypeRegex.Match(typeName);
 
             if (!match.Success || !match.Groups[2].Success)
                 return null;
 
             // Try to construct generic type; each generic arg can also be a generic type.
-            var genericArgs = GENERIC_TYPE_REGEX.Matches(match.Groups[2].Value)
+            var genericArgs = GenericTypeRegex.Matches(match.Groups[2].Value)
                 .OfType<Match>().Select(m => m.Value).Where(v => !string.IsNullOrWhiteSpace(v))
                 .Select(v => ResolveType(null, TrimBrackets(v), assemblies)).ToArray();
 
@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             Assembly result;
 
-            if (!reflectionOnlyAssemblies.TryGetValue(fullName, out result))
+            if (!_reflectionOnlyAssemblies.TryGetValue(fullName, out result))
             {
                 try
                 {
@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     result = null;
                 }
 
-                reflectionOnlyAssemblies[fullName] = result;
+                _reflectionOnlyAssemblies[fullName] = result;
             }
 
             return result;

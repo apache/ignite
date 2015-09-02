@@ -29,8 +29,8 @@ namespace Apache.Ignite.Core.Tests.Query
          */
         public GridPortablePerson(String _name, int _age) 
         {
-            this.name = _name;
-            this.age = _age;
+            this.Name = _name;
+            this.Age = _age;
         }
 
         /**
@@ -38,15 +38,15 @@ namespace Apache.Ignite.Core.Tests.Query
          */
         public GridPortablePerson(String _name, int _age, String _address)
         {
-            this.name = _name;
-            this.address = _address;
-            this.age = _age;
+            this.Name = _name;
+            this.Address = _address;
+            this.Age = _age;
         }
 
         /**
          * 
          */
-        public String name 
+        public String Name 
         { 
             get; 
             set; 
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Query
         /**
          * 
          */
-        public String address
+        public String Address
         {
             get;
             set;
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Query
         /**
          * 
          */
-        public int age 
+        public int Age 
         {
             get;
             set;
@@ -77,9 +77,9 @@ namespace Apache.Ignite.Core.Tests.Query
          * <exception cref="System.IO.IOException">If write failed.</exception>
          */
         public void WritePortable(IPortableWriter writer) {
-            writer.WriteString("name", name);
-            writer.WriteString("address", address);
-            writer.WriteInt("age", age);
+            writer.WriteString("name", Name);
+            writer.WriteString("address", Address);
+            writer.WriteInt("age", Age);
         }
 
         /**
@@ -89,9 +89,9 @@ namespace Apache.Ignite.Core.Tests.Query
          * <exception cref="System.IO.IOException">If read failed.</exception>
          */
         public void ReadPortable(IPortableReader reader) {
-            name = reader.ReadString("name");
-            address = reader.ReadString("address");
-            age = reader.ReadInt("age");
+            Name = reader.ReadString("name");
+            Address = reader.ReadString("address");
+            Age = reader.ReadInt("age");
         }
     }
 }

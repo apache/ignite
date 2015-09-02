@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="T">Type of job result.</typeparam>
         /// <typeparam name="R">Type of reduce result.</typeparam>
         [AsyncSupported]
-        R Execute<A, T, R>(IComputeTask<A, T, R> task, A taskArg);
+        TR Execute<TA, T, TR>(IComputeTask<TA, T, TR> task, TA taskArg);
         
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="T">Type of job result.</typeparam>
         /// <typeparam name="R">Type of reduce result.</typeparam>
         [AsyncSupported]
-        R Execute<T, R>(IComputeTask<T, R> task);
+        TR Execute<T, TR>(IComputeTask<T, TR> task);
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="T">Type of job result.</typeparam>
         /// <typeparam name="R">Type of reduce result.</typeparam>
         [AsyncSupported]
-        R Execute<A, T, R>(Type taskType, A taskArg);
+        TR Execute<TA, T, TR>(Type taskType, TA taskArg);
         
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="T">Type of job result.</typeparam>
         /// <typeparam name="R">Type of reduce result.</typeparam>
         [AsyncSupported]
-        R Execute<T, R>(Type taskType);
+        TR Execute<T, TR>(Type taskType);
 
         /// <summary>
         /// Executes provided job on a node in this grid projection. The result of the
@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>Job result for this execution.</returns>
         /// <typeparam name="R">Type of job result.</typeparam>
         [AsyncSupported]
-        R Call<R>(IComputeFunc<R> clo);
+        TR Call<TR>(IComputeFunc<TR> clo);
 
         /// <summary>
         /// Executes given job on the node where data for provided affinity key is located 
@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>Job result for this execution.</returns>
         /// <typeparam name="R">Type of job result.</typeparam>
         [AsyncSupported]
-        R AffinityCall<R>(string cacheName, object affinityKey, IComputeFunc<R> clo);
+        TR AffinityCall<TR>(string cacheName, object affinityKey, IComputeFunc<TR> clo);
 
         /// <summary>
         /// Executes collection of jobs on nodes within this grid projection.
@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="R1">Type of job result.</typeparam>
         /// <typeparam name="R2">Type of reduced result.</typeparam>
         [AsyncSupported]
-        R2 Call<R1, R2>(IEnumerable<IComputeFunc<R1>> clos, IComputeReducer<R1, R2> rdc);
+        TR2 Call<TR1, TR2>(IEnumerable<IComputeFunc<TR1>> clos, IComputeReducer<TR1, TR2> rdc);
         
         /// <summary>
         /// Executes collection of jobs on nodes within this grid projection.
@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>Collection of job results for this execution.</returns>
         /// <typeparam name="R">Type of job result.</typeparam>
         [AsyncSupported]
-        ICollection<R> Call<R>(IEnumerable<IComputeFunc<R>> clos);
+        ICollection<TR> Call<TR>(IEnumerable<IComputeFunc<TR>> clos);
 
         /// <summary>
         /// Broadcasts given job to all nodes in grid projection. Every participating node will return a job result. 
@@ -186,7 +186,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="clo">Job to broadcast to all projection nodes.</param>
         /// <returns>Collection of results for this execution.</returns>
         [AsyncSupported]
-        ICollection<R> Broadcast<R>(IComputeFunc<R> clo);
+        ICollection<TR> Broadcast<TR>(IComputeFunc<TR> clo);
 
         /// <summary>
         /// Broadcasts given closure job with passed in argument to all nodes in grid projection.
@@ -198,7 +198,7 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="T">Type of argument.</typeparam>
         /// <typeparam name="R">Type of job result.</typeparam>
         [AsyncSupported]
-        ICollection<R> Broadcast<T, R>(IComputeFunc<T, R> clo, T arg);
+        ICollection<TR> Broadcast<T, TR>(IComputeFunc<T, TR> clo, T arg);
 
         /// <summary>
         /// Broadcasts given job to all nodes in grid projection.
@@ -240,7 +240,7 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="T">Type of argument.</typeparam>
         /// <typeparam name="R">Type of job result.</typeparam>
         [AsyncSupported]
-        R Apply<T, R>(IComputeFunc<T, R> clo, T arg);
+        TR Apply<T, TR>(IComputeFunc<T, TR> clo, T arg);
 
         /// <summary>
         /// Executes provided closure job on nodes within this grid projection. A new job is executed for
@@ -253,7 +253,7 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="T">Type of argument.</typeparam>
         /// <typeparam name="R">Type of job result.</typeparam>
         [AsyncSupported]
-        ICollection<R> Apply<T, R>(IComputeFunc<T, R> clo, IEnumerable<T> args);
+        ICollection<TR> Apply<T, TR>(IComputeFunc<T, TR> clo, IEnumerable<T> args);
 
         /// <summary>
         /// Executes provided closure job on nodes within this grid projection. A new job is executed for
@@ -269,6 +269,6 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="R1">Type of job result.</typeparam>
         /// <typeparam name="R2">Type of reduced result.</typeparam>
         [AsyncSupported]
-        R2 Apply<T, R1, R2>(IComputeFunc<T, R1> clo, IEnumerable<T> args, IComputeReducer<R1, R2> rdc);
+        TR2 Apply<T, TR1, TR2>(IComputeFunc<T, TR1> clo, IEnumerable<T> args, IComputeReducer<TR1, TR2> rdc);
     }
 }

@@ -35,10 +35,10 @@ namespace Apache.Ignite.Core.Impl.Events
     internal class EventsAsync : Events
     {
         /** */
-        private readonly ThreadLocal<int> lastAsyncOp = new ThreadLocal<int>(() => OP_NONE);
+        private readonly ThreadLocal<int> _lastAsyncOp = new ThreadLocal<int>(() => OpNone);
 
         /** */
-        private readonly ThreadLocal<IFuture> curFut = new ThreadLocal<IFuture>();
+        private readonly ThreadLocal<IFuture> _curFut = new ThreadLocal<IFuture>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Events"/> class.
@@ -55,13 +55,13 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritdoc /> */
         public override List<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types)
         {
-            lastAsyncOp.Value = (int) Op.REMOTE_QUERY;
+            _lastAsyncOp.Value = (int) Op.REMOTE_QUERY;
 
             var result = base.RemoteQuery(filter, timeout, types);
 
             // Result is a List<T> so we can't create proper converter later in GetFuture call from user.
             // ReSharper disable once RedundantTypeArgumentsOfMethod (otherwise won't compile in VS2010 / TC)
-            curFut.Value = GetFuture<List<T>>((futId, futTyp) => UU.TargetListenFutureForOperation(target, futId, futTyp,
+            _curFut.Value = GetFuture<List<T>>((futId, futTyp) => UU.TargetListenFutureForOperation(target, futId, futTyp,
                 (int) Op.REMOTE_QUERY), convertFunc: ReadEvents<T>);
 
             return result;
@@ -71,8 +71,8 @@ namespace Apache.Ignite.Core.Impl.Events
         public override Guid RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
             IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types)
         {
-            lastAsyncOp.Value = (int) Op.REMOTE_LISTEN;
-            curFut.Value = null;
+            _lastAsyncOp.Value = (int) Op.REMOTE_LISTEN;
+            _curFut.Value = null;
 
             return base.RemoteListen(bufSize, interval, autoUnsubscribe, localListener, remoteFilter, types);
         }
@@ -80,8 +80,8 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritdoc /> */
         public override void StopRemoteListen(Guid opId)
         {
-            lastAsyncOp.Value = (int) Op.STOP_REMOTE_LISTEN;
-            curFut.Value = null;
+            _lastAsyncOp.Value = (int) Op.STOP_REMOTE_LISTEN;
+            _curFut.Value = null;
 
             base.StopRemoteListen(opId);
         }
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritdoc /> */
         public override T WaitForLocal<T>(IEventFilter<T> filter, params int[] types)
         {
-            lastAsyncOp.Value = (int) Op.WAIT_FOR_LOCAL;
+            _lastAsyncOp.Value = (int) Op.WAIT_FOR_LOCAL;
 
             long hnd = 0;
 
@@ -102,18 +102,18 @@ namespace Apache.Ignite.Core.Impl.Events
                     // Dispose handle as soon as future ends.
                     var fut = GetFuture<T>();
 
-                    curFut.Value = fut;
+                    _curFut.Value = fut;
 
-                    fut.Listen(() => grid.HandleRegistry.Release(hnd));
+                    fut.Listen(() => Grid.HandleRegistry.Release(hnd));
                 }
                 else
-                    curFut.Value = null;
+                    _curFut.Value = null;
 
                 return result;
             }
             catch (Exception)
             {
-                grid.HandleRegistry.Release(hnd);
+                Grid.HandleRegistry.Release(hnd);
                 throw;
             }
         }
@@ -139,19 +139,19 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritdoc /> */
         public override IFuture<T> GetFuture<T>()
         {
-            if (curFut.Value != null)
+            if (_curFut.Value != null)
             {
-                var fut = curFut.Value;
-                curFut.Value = null;
+                var fut = _curFut.Value;
+                _curFut.Value = null;
                 return (IFuture<T>) fut;
             }
 
             Func<PortableReaderImpl, T> converter = null;
 
-            if (lastAsyncOp.Value == (int) Op.WAIT_FOR_LOCAL)
+            if (_lastAsyncOp.Value == (int) Op.WAIT_FOR_LOCAL)
                 converter = reader => (T) EventReader.Read<IEvent>(reader);
 
-            return GetFuture((futId, futTyp) => UU.TargetListenFutureForOperation(target, futId, futTyp, lastAsyncOp.Value),
+            return GetFuture((futId, futTyp) => UU.TargetListenFutureForOperation(target, futId, futTyp, _lastAsyncOp.Value),
                 convertFunc: converter);
         }
     }

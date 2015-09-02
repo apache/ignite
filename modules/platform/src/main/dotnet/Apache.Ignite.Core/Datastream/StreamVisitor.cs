@@ -29,27 +29,27 @@ namespace Apache.Ignite.Core.Datastream
     /// <typeparam name="K">The type of the cache key.</typeparam>
     /// <typeparam name="V">The type of the cache value.</typeparam>
     [Serializable]
-    public sealed class StreamVisitor<K, V> : IStreamReceiver<K, V>
+    public sealed class StreamVisitor<TK, TV> : IStreamReceiver<TK, TV>
     {
         /** Visitor action */
-        private readonly Action<ICache<K, V>, ICacheEntry<K, V>> action;
+        private readonly Action<ICache<TK, TV>, ICacheEntry<TK, TV>> _action;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StreamVisitor{K, V}"/> class.
         /// </summary>
         /// <param name="action">The action to be called on each stream entry.</param>
-        public StreamVisitor(Action<ICache<K, V>, ICacheEntry<K, V>> action)
+        public StreamVisitor(Action<ICache<TK, TV>, ICacheEntry<TK, TV>> action)
         {
             A.NotNull(action, "action");
 
-            this.action = action;
+            this._action = action;
         }
 
         /** <inheritdoc /> */
-        public void Receive(ICache<K, V> cache, ICollection<ICacheEntry<K, V>> entries)
+        public void Receive(ICache<TK, TV> cache, ICollection<ICacheEntry<TK, TV>> entries)
         {
             foreach (var entry in entries)
-                action(cache, entry);
+                _action(cache, entry);
         }
     }
 }

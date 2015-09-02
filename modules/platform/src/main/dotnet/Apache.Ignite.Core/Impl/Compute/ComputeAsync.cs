@@ -32,10 +32,10 @@ namespace Apache.Ignite.Core.Impl.Compute
     internal class ComputeAsync : ICompute
     {
         /** */
-        protected readonly ComputeImpl compute;
+        protected readonly ComputeImpl Compute;
 
         /** Current future. */
-        private readonly ThreadLocal<IFuture> curFut = new ThreadLocal<IFuture>();
+        private readonly ThreadLocal<IFuture> _curFut = new ThreadLocal<IFuture>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeAsync"/> class.
@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="computeImpl">The compute implementation.</param>
         internal ComputeAsync(ComputeImpl computeImpl)
         {
-            compute = computeImpl;
+            Compute = computeImpl;
         }
 
         /** <inheritDoc /> */
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public IFuture<TResult> GetFuture<TResult>()
         {
-            var fut = curFut.Value;
+            var fut = _curFut.Value;
 
             if (fut == null)
                 throw new InvalidOperationException("Asynchronous operation not started.");
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                     string.Format("Requested future type {0} is incompatible with current future type {1}",
                         typeof(IFuture<TResult>), fut.GetType()));
 
-            curFut.Value = null;
+            _curFut.Value = null;
 
             return fut0;
         }
@@ -87,13 +87,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public IClusterGroup ClusterGroup
         {
-            get { return compute.ClusterGroup; }
+            get { return Compute.ClusterGroup; }
         }
 
         /** <inheritDoc /> */
         public ICompute WithNoFailover()
         {
-            compute.WithNoFailover();
+            Compute.WithNoFailover();
 
             return this;
         }
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public ICompute WithTimeout(long timeout)
         {
-            compute.WithTimeout(timeout);
+            Compute.WithTimeout(timeout);
 
             return this;
         }
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public ICompute WithKeepPortable()
         {
-            compute.WithKeepPortable();
+            Compute.WithKeepPortable();
 
             return this;
         }
@@ -117,95 +117,95 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public T ExecuteJavaTask<T>(string taskName, object taskArg)
         {
-            curFut.Value = compute.ExecuteJavaTaskAsync<T>(taskName, taskArg);
+            _curFut.Value = Compute.ExecuteJavaTaskAsync<T>(taskName, taskArg);
 
             return default(T);
         }
 
         /** <inheritDoc /> */
-        public R Execute<A, T, R>(IComputeTask<A, T, R> task, A taskArg)
+        public TR Execute<TA, T, TR>(IComputeTask<TA, T, TR> task, TA taskArg)
         {
-            curFut.Value = compute.Execute(task, taskArg);
+            _curFut.Value = Compute.Execute(task, taskArg);
 
-            return default(R);
+            return default(TR);
         }
 
         /** <inheritDoc /> */
-        public R Execute<T, R>(IComputeTask<T, R> task)
+        public TR Execute<T, TR>(IComputeTask<T, TR> task)
         {
-            curFut.Value = compute.Execute(task, null);
+            _curFut.Value = Compute.Execute(task, null);
 
-            return default(R);
+            return default(TR);
         }
 
         /** <inheritDoc /> */
-        public R Execute<A, T, R>(Type taskType, A taskArg)
+        public TR Execute<TA, T, TR>(Type taskType, TA taskArg)
         {
-            curFut.Value = compute.Execute<A, T, R>(taskType, taskArg);
+            _curFut.Value = Compute.Execute<TA, T, TR>(taskType, taskArg);
 
-            return default(R);
+            return default(TR);
         }
 
         /** <inheritDoc /> */
-        public R Execute<T, R>(Type taskType)
+        public TR Execute<T, TR>(Type taskType)
         {
-            curFut.Value = compute.Execute<object, T, R>(taskType, null);
+            _curFut.Value = Compute.Execute<object, T, TR>(taskType, null);
 
-            return default(R);
+            return default(TR);
         }
 
         /** <inheritDoc /> */
-        public R Call<R>(IComputeFunc<R> clo)
+        public TR Call<TR>(IComputeFunc<TR> clo)
         {
-            curFut.Value = compute.Execute(clo);
+            _curFut.Value = Compute.Execute(clo);
 
-            return default(R);
+            return default(TR);
         }
 
         /** <inheritDoc /> */
-        public R AffinityCall<R>(string cacheName, object affinityKey, IComputeFunc<R> clo)
+        public TR AffinityCall<TR>(string cacheName, object affinityKey, IComputeFunc<TR> clo)
         {
-            compute.AffinityCall(cacheName, affinityKey, clo);
+            Compute.AffinityCall(cacheName, affinityKey, clo);
 
-            return default(R);
+            return default(TR);
         }
 
         /** <inheritDoc /> */
-        public R Call<R>(Func<R> func)
+        public TR Call<TR>(Func<TR> func)
         {
-            curFut.Value = compute.Execute(func);
+            _curFut.Value = Compute.Execute(func);
 
-            return default(R);
+            return default(TR);
         }
 
         /** <inheritDoc /> */
-        public ICollection<R> Call<R>(IEnumerable<IComputeFunc<R>> clos)
+        public ICollection<TR> Call<TR>(IEnumerable<IComputeFunc<TR>> clos)
         {
-            curFut.Value = compute.Execute(clos);
+            _curFut.Value = Compute.Execute(clos);
 
             return null;
         }
 
         /** <inheritDoc /> */
-        public R2 Call<R1, R2>(IEnumerable<IComputeFunc<R1>> clos, IComputeReducer<R1, R2> rdc)
+        public TR2 Call<TR1, TR2>(IEnumerable<IComputeFunc<TR1>> clos, IComputeReducer<TR1, TR2> rdc)
         {
-            curFut.Value = compute.Execute(clos, rdc);
+            _curFut.Value = Compute.Execute(clos, rdc);
 
-            return default(R2);
+            return default(TR2);
         }
 
         /** <inheritDoc /> */
-        public ICollection<R> Broadcast<R>(IComputeFunc<R> clo)
+        public ICollection<TR> Broadcast<TR>(IComputeFunc<TR> clo)
         {
-            curFut.Value = compute.Broadcast(clo);
+            _curFut.Value = Compute.Broadcast(clo);
 
             return null;
         }
 
         /** <inheritDoc /> */
-        public ICollection<R> Broadcast<T, R>(IComputeFunc<T, R> clo, T arg)
+        public ICollection<TR> Broadcast<T, TR>(IComputeFunc<T, TR> clo, T arg)
         {
-            curFut.Value = compute.Broadcast(clo, arg);
+            _curFut.Value = Compute.Broadcast(clo, arg);
 
             return null;
         }
@@ -213,49 +213,49 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public void Broadcast(IComputeAction action)
         {
-            curFut.Value = compute.Broadcast(action);
+            _curFut.Value = Compute.Broadcast(action);
         }
 
         /** <inheritDoc /> */
         public void Run(IComputeAction action)
         {
-            curFut.Value = compute.Run(action);
+            _curFut.Value = Compute.Run(action);
         }
 
         /** <inheritDoc /> */
         public void AffinityRun(string cacheName, object affinityKey, IComputeAction action)
         {
-            compute.AffinityRun(cacheName, affinityKey, action);
+            Compute.AffinityRun(cacheName, affinityKey, action);
         }
 
         /** <inheritDoc /> */
         public void Run(IEnumerable<IComputeAction> actions)
         {
-            curFut.Value = compute.Run(actions);
+            _curFut.Value = Compute.Run(actions);
         }
 
         /** <inheritDoc /> */
-        public R Apply<T, R>(IComputeFunc<T, R> clo, T arg)
+        public TR Apply<T, TR>(IComputeFunc<T, TR> clo, T arg)
         {
-            curFut.Value = compute.Apply(clo, arg);
+            _curFut.Value = Compute.Apply(clo, arg);
 
-            return default(R);
+            return default(TR);
         }
 
         /** <inheritDoc /> */
-        public ICollection<R> Apply<T, R>(IComputeFunc<T, R> clo, IEnumerable<T> args)
+        public ICollection<TR> Apply<T, TR>(IComputeFunc<T, TR> clo, IEnumerable<T> args)
         {
-            curFut.Value = compute.Apply(clo, args);
+            _curFut.Value = Compute.Apply(clo, args);
 
             return null;
         }
 
         /** <inheritDoc /> */
-        public R2 Apply<T, R1, R2>(IComputeFunc<T, R1> clo, IEnumerable<T> args, IComputeReducer<R1, R2> rdc)
+        public TR2 Apply<T, TR1, TR2>(IComputeFunc<T, TR1> clo, IEnumerable<T> args, IComputeReducer<TR1, TR2> rdc)
         {
-            curFut.Value = compute.Apply(clo, args, rdc);
+            _curFut.Value = Compute.Apply(clo, args, rdc);
 
-            return default(R2);
+            return default(TR2);
         }
     }
 }

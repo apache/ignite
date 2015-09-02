@@ -31,32 +31,32 @@ namespace Apache.Ignite.Core.Impl.Resource
     internal class ResourceTypeDescriptor
     {
         /** Attribute type: InstanceResourceAttribute. */
-        private static readonly Type TYP_ATTR_GRID = typeof(InstanceResourceAttribute);
+        private static readonly Type TypAttrGrid = typeof(InstanceResourceAttribute);
 
         /** Attribute type: StoreSessionResourceAttribute. */
-        private static readonly Type TYP_ATTR_STORE_SES = typeof(StoreSessionResourceAttribute);
+        private static readonly Type TypAttrStoreSes = typeof(StoreSessionResourceAttribute);
 
         /** Type: IGrid. */
-        private static readonly Type TYP_GRID = typeof(IIgnite);
+        private static readonly Type TypGrid = typeof(IIgnite);
 
         /** Type: ICacheStoreSession. */
-        private static readonly Type TYP_STORE_SES = typeof (ICacheStoreSession);
+        private static readonly Type TypStoreSes = typeof (ICacheStoreSession);
 
         /** Type: ComputeTaskNoResultCacheAttribute. */
-        private static readonly Type TYP_COMPUTE_TASK_NO_RES_CACHE = typeof(ComputeTaskNoResultCacheAttribute);
+        private static readonly Type TypComputeTaskNoResCache = typeof(ComputeTaskNoResultCacheAttribute);
 
         /** Cached binding flags. */
-        private static readonly BindingFlags FLAGS = BindingFlags.Instance | BindingFlags.Public |
+        private static readonly BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public |
             BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
         /** Grid instance gridInjectors. */
-        private readonly IList<IResourceInjector> gridInjectors;
+        private readonly IList<IResourceInjector> _gridInjectors;
 
         /** Session gridInjectors. */
-        private readonly IList<IResourceInjector> storeSesInjectors;
+        private readonly IList<IResourceInjector> _storeSesInjectors;
         
         /** Task "no result cache" flag. */
-        private readonly bool taskNoResCache;
+        private readonly bool _taskNoResCache;
         
         /// <summary>
         /// Constructor.
@@ -64,8 +64,8 @@ namespace Apache.Ignite.Core.Impl.Resource
         /// <param name="type">Type.</param>
         internal ResourceTypeDescriptor(Type type)
         {
-            Collector gridCollector = new Collector(TYP_ATTR_GRID, TYP_GRID);
-            Collector storeSesCollector = new Collector(TYP_ATTR_STORE_SES, TYP_STORE_SES);
+            Collector gridCollector = new Collector(TypAttrGrid, TypGrid);
+            Collector storeSesCollector = new Collector(TypAttrStoreSes, TypStoreSes);
 
             Type curType = type;
 
@@ -76,10 +76,10 @@ namespace Apache.Ignite.Core.Impl.Resource
                 curType = curType.BaseType;
             }
 
-            gridInjectors = gridCollector.Injectors;
-            storeSesInjectors = storeSesCollector.Injectors;
+            _gridInjectors = gridCollector.Injectors;
+            _storeSesInjectors = storeSesCollector.Injectors;
 
-            taskNoResCache = ContainsAttribute(type, TYP_COMPUTE_TASK_NO_RES_CACHE, true);
+            _taskNoResCache = ContainsAttribute(type, TypComputeTaskNoResCache, true);
         }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Resource
         /// <param name="grid">Grid proxy.</param>
         public void InjectGrid(object target, GridProxy grid)
         {
-            Inject0(target, grid, gridInjectors);
+            Inject0(target, grid, _gridInjectors);
         }
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Resource
         /// <param name="ses">Store session.</param>
         public void InjectStoreSession(object target, ICacheStoreSession ses)
         {
-            Inject0(target, ses, storeSesInjectors);
+            Inject0(target, ses, _storeSesInjectors);
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Impl.Resource
         {
             get
             {
-                return taskNoResCache;
+                return _taskNoResCache;
             }
         }
         
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Impl.Resource
         /// <param name="collectors">Collectors.</param>
         private static void CreateInjectors(Type type, params Collector[] collectors)
         {
-            FieldInfo[] fields = type.GetFields(FLAGS);
+            FieldInfo[] fields = type.GetFields(Flags);
 
             foreach (FieldInfo field in fields)
             {
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Resource
                 }
             }
 
-            PropertyInfo[] props = type.GetProperties(FLAGS);
+            PropertyInfo[] props = type.GetProperties(Flags);
 
             foreach (var prop in props)
             {
@@ -191,7 +191,7 @@ namespace Apache.Ignite.Core.Impl.Resource
                 }
             }
 
-            MethodInfo[] mthds = type.GetMethods(FLAGS);
+            MethodInfo[] mthds = type.GetMethods(Flags);
 
             foreach (MethodInfo mthd in mthds)
             {
@@ -238,10 +238,10 @@ namespace Apache.Ignite.Core.Impl.Resource
         private class Collector
         {
             /** Attribute type. */
-            private readonly Type attrType;
+            private readonly Type _attrType;
 
             /** Resource type. */
-            private readonly Type resType;
+            private readonly Type _resType;
             
             /// <summary>
             /// Constructor.
@@ -250,8 +250,8 @@ namespace Apache.Ignite.Core.Impl.Resource
             /// <param name="resType">Resource type.</param>
             public Collector(Type attrType, Type resType)
             {
-                this.attrType = attrType;
-                this.resType = resType;
+                this._attrType = attrType;
+                this._resType = resType;
             }
 
             /// <summary>
@@ -259,7 +259,7 @@ namespace Apache.Ignite.Core.Impl.Resource
             /// </summary>
             public Type AttributeType
             {
-                get { return attrType; }
+                get { return _attrType; }
             }
 
             /// <summary>
@@ -267,7 +267,7 @@ namespace Apache.Ignite.Core.Impl.Resource
             /// </summary>
             public Type ResourceType
             {
-                get { return resType; }
+                get { return _resType; }
             }
 
             /// <summary>

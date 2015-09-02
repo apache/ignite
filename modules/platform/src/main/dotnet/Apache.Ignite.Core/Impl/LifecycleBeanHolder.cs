@@ -26,10 +26,10 @@ namespace Apache.Ignite.Core.Impl
     internal class LifecycleBeanHolder : ILifecycleBean
     {
         /** Target bean. */
-        private readonly ILifecycleBean target;
+        private readonly ILifecycleBean _target;
 
         /** Whether start event was invoked. */
-        private volatile bool startEvt;
+        private volatile bool _startEvt;
         
         /// <summary>
         /// Constructor.
@@ -37,18 +37,18 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="target">Target bean.</param>
         public LifecycleBeanHolder(ILifecycleBean target)
         {
-            this.target = target;
+            this._target = target;
         }
 
         /** <inheritDoc /> */
         public void OnLifecycleEvent(LifecycleEventType evt)
         {
-            if (evt == LifecycleEventType.AFTER_GRID_START)
+            if (evt == LifecycleEventType.AfterGridStart)
                 // This event cannot be propagated right away because at this point we
                 // do not have Ignite instance yet. So just schedule it.
-                startEvt = true;
+                _startEvt = true;
             else
-                target.OnLifecycleEvent(evt);
+                _target.OnLifecycleEvent(evt);
         }
 
         /// <summary>
@@ -57,10 +57,10 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="grid">Grid instance.</param>
         internal void OnStart(Ignite grid)
         {
-            ResourceProcessor.Inject(target, grid);
+            ResourceProcessor.Inject(_target, grid);
 
-            if (startEvt)
-                target.OnLifecycleEvent(LifecycleEventType.AFTER_GRID_START);
+            if (_startEvt)
+                _target.OnLifecycleEvent(LifecycleEventType.AfterGridStart);
         }
     }
 }

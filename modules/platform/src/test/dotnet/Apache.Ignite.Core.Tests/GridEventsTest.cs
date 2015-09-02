@@ -38,19 +38,19 @@ namespace Apache.Ignite.Core.Tests
     public class GridEventsTest
     {
         /** */
-        private IIgnite grid1;
+        private IIgnite _grid1;
 
         /** */
-        private IIgnite grid2;
+        private IIgnite _grid2;
 
         /** */
-        private IIgnite grid3;
+        private IIgnite _grid3;
 
         /** */
-        private IIgnite[] grids;
+        private IIgnite[] _grids;
         
         /** */
-        public static int idGen;
+        public static int IdGen;
 
         [TestFixtureTearDown]
         public void FixtureTearDown()
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests
         public void SetUp()
         {
             StartGrids();
-            EventsTestHelper.listenResult = true;
+            EventsTestHelper.ListenResult = true;
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Tests
         {
             try
             {
-                GridTestUtils.AssertHandleRegistryIsEmpty(1000, grid1, grid2, grid3);
+                GridTestUtils.AssertHandleRegistryIsEmpty(1000, _grid1, _grid2, _grid3);
             }
             catch (Exception)
             {
@@ -100,23 +100,23 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestEnableDisable()
         {
-            var events = grid1.Events();
+            var events = _grid1.Events();
 
             Assert.AreEqual(0, events.GetEnabledEvents().Length);
 
-            Assert.IsFalse(EventType.EVTS_CACHE.Any(events.IsEnabled));
+            Assert.IsFalse(EventType.EvtsCache.Any(events.IsEnabled));
 
-            events.EnableLocal(EventType.EVTS_CACHE);
+            events.EnableLocal(EventType.EvtsCache);
 
-            Assert.AreEqual(EventType.EVTS_CACHE, events.GetEnabledEvents());
+            Assert.AreEqual(EventType.EvtsCache, events.GetEnabledEvents());
 
-            Assert.IsTrue(EventType.EVTS_CACHE.All(events.IsEnabled));
+            Assert.IsTrue(EventType.EvtsCache.All(events.IsEnabled));
 
-            events.EnableLocal(EventType.EVTS_TASK_EXECUTION);
+            events.EnableLocal(EventType.EvtsTaskExecution);
 
-            events.DisableLocal(EventType.EVTS_CACHE);
+            events.DisableLocal(EventType.EvtsCache);
 
-            Assert.AreEqual(EventType.EVTS_TASK_EXECUTION, events.GetEnabledEvents());
+            Assert.AreEqual(EventType.EvtsTaskExecution, events.GetEnabledEvents());
         }
 
         /// <summary>
@@ -125,9 +125,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestLocalListen()
         {
-            var events = grid1.Events();
+            var events = _grid1.Events();
             var listener = EventsTestHelper.GetListener();
-            var eventType = EventType.EVTS_TASK_EXECUTION;
+            var eventType = EventType.EvtsTaskExecution;
 
             events.EnableLocal(eventType);
 
@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Tests
             CheckSend(3);  // 3 events per task * 3 grids
 
             // Check unsubscription for specific event
-            events.StopLocalListen(listener, EventType.EVT_TASK_REDUCED);
+            events.StopLocalListen(listener, EventType.EvtTaskReduced);
 
             CheckSend(2);
 
@@ -146,11 +146,11 @@ namespace Apache.Ignite.Core.Tests
             CheckNoEvent();
 
             // Check unsubscription by filter
-            events.LocalListen(listener, EventType.EVT_TASK_REDUCED);
+            events.LocalListen(listener, EventType.EvtTaskReduced);
 
             CheckSend();
 
-            EventsTestHelper.listenResult = false;
+            EventsTestHelper.ListenResult = false;
 
             CheckSend();  // one last event will be received for each listener
 
@@ -164,9 +164,9 @@ namespace Apache.Ignite.Core.Tests
         [Ignore("IGNITE-879")]
         public void TestLocalListenRepeatedSubscription()
         {
-            var events = grid1.Events();
+            var events = _grid1.Events();
             var listener = EventsTestHelper.GetListener();
-            var eventType = EventType.EVTS_TASK_EXECUTION;
+            var eventType = EventType.EvtsTaskExecution;
 
             events.EnableLocal(eventType);
 
@@ -198,7 +198,7 @@ namespace Apache.Ignite.Core.Tests
         [Test, TestCaseSource("TestCases")]
         public void TestEventTypes(EventTestCase testCase)
         {
-            var events = grid1.Events();
+            var events = _grid1.Events();
 
             events.EnableLocal(testCase.EventType);
 
@@ -208,21 +208,21 @@ namespace Apache.Ignite.Core.Tests
 
             EventsTestHelper.ClearReceived(testCase.EventCount);
 
-            testCase.GenerateEvent(grid1);
+            testCase.GenerateEvent(_grid1);
 
             EventsTestHelper.VerifyReceive(testCase.EventCount, testCase.EventObjectType, testCase.EventType);
 
             if (testCase.VerifyEvents != null)
-                testCase.VerifyEvents(EventsTestHelper.RECEIVED_EVENTS.Reverse(), grid1);
+                testCase.VerifyEvents(EventsTestHelper.ReceivedEvents.Reverse(), _grid1);
 
             // Check stop
             events.StopLocalListen(listener);
 
             EventsTestHelper.ClearReceived(0);
 
-            testCase.GenerateEvent(grid1);
+            testCase.GenerateEvent(_grid1);
 
-            Thread.Sleep(EventsTestHelper.TIMEOUT);
+            Thread.Sleep(EventsTestHelper.Timeout);
         }
 
         /// <summary>
@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 yield return new EventTestCase
                 {
-                    EventType = EventType.EVTS_CACHE,
+                    EventType = EventType.EvtsCache,
                     EventObjectType = typeof (CacheEvent),
                     GenerateEvent = g => g.Cache<int, int>(null).Put(1, 1),
                     VerifyEvents = (e, g) => VerifyCacheEvents(e, g),
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Tests
 
                 yield return new EventTestCase
                 {
-                    EventType = EventType.EVTS_TASK_EXECUTION,
+                    EventType = EventType.EvtsTaskExecution,
                     EventObjectType = typeof (TaskEvent),
                     GenerateEvent = g => GenerateTaskEvent(g),
                     VerifyEvents = (e, g) => VerifyTaskEvents(e),
@@ -252,7 +252,7 @@ namespace Apache.Ignite.Core.Tests
 
                 yield return new EventTestCase
                 {
-                    EventType = EventType.EVTS_JOB_EXECUTION,
+                    EventType = EventType.EvtsJobExecution,
                     EventObjectType = typeof (JobEvent),
                     GenerateEvent = g => GenerateTaskEvent(g),
                     EventCount = 9
@@ -260,7 +260,7 @@ namespace Apache.Ignite.Core.Tests
 
                 yield return new EventTestCase
                 {
-                    EventType = new[] {EventType.EVT_CACHE_QUERY_EXECUTED},
+                    EventType = new[] {EventType.EvtCacheQueryExecuted},
                     EventObjectType = typeof (CacheQueryExecutedEvent),
                     GenerateEvent = g => GenerateCacheQueryEvent(g),
                     EventCount = 1
@@ -268,7 +268,7 @@ namespace Apache.Ignite.Core.Tests
 
                 yield return new EventTestCase
                 {
-                    EventType = new[] { EventType.EVT_CACHE_QUERY_OBJECT_READ },
+                    EventType = new[] { EventType.EvtCacheQueryObjectRead },
                     EventObjectType = typeof (CacheQueryReadEvent),
                     GenerateEvent = g => GenerateCacheQueryEvent(g),
                     EventCount = 1
@@ -282,9 +282,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestLocalQuery()
         {
-            var events = grid1.Events();
+            var events = _grid1.Events();
 
-            var eventType = EventType.EVTS_TASK_EXECUTION;
+            var eventType = EventType.EvtsTaskExecution;
 
             events.EnableLocal(eventType);
 
@@ -304,14 +304,14 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestWaitForLocal([Values(true, false)] bool async)
         {
-            var events = grid1.Events();
+            var events = _grid1.Events();
 
             var timeout = TimeSpan.FromSeconds(3);
 
             if (async)
                 events = events.WithAsync();
 
-            var eventType = EventType.EVTS_TASK_EXECUTION;
+            var eventType = EventType.EvtsTaskExecution;
 
             events.EnableLocal(eventType);
 
@@ -340,27 +340,27 @@ namespace Apache.Ignite.Core.Tests
             waitTask.Wait(timeout);
 
             // Event types
-            waitTask = getWaitTask(() => events.WaitForLocal(EventType.EVT_TASK_REDUCED));
+            waitTask = getWaitTask(() => events.WaitForLocal(EventType.EvtTaskReduced));
 
             Assert.IsTrue(waitTask.Wait(timeout));
             Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-            Assert.AreEqual(EventType.EVT_TASK_REDUCED, waitTask.Result.Type);
+            Assert.AreEqual(EventType.EvtTaskReduced, waitTask.Result.Type);
 
             // Filter
             waitTask = getWaitTask(() => events.WaitForLocal(
-                new EventFilter<IEvent>((g, e) => e.Type == EventType.EVT_TASK_REDUCED)));
+                new EventFilter<IEvent>((g, e) => e.Type == EventType.EvtTaskReduced)));
 
             Assert.IsTrue(waitTask.Wait(timeout));
             Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-            Assert.AreEqual(EventType.EVT_TASK_REDUCED, waitTask.Result.Type);
+            Assert.AreEqual(EventType.EvtTaskReduced, waitTask.Result.Type);
 
             // Filter & types
             waitTask = getWaitTask(() => events.WaitForLocal(
-                new EventFilter<IEvent>((g, e) => e.Type == EventType.EVT_TASK_REDUCED), EventType.EVT_TASK_REDUCED));
+                new EventFilter<IEvent>((g, e) => e.Type == EventType.EvtTaskReduced), EventType.EvtTaskReduced));
 
             Assert.IsTrue(waitTask.Wait(timeout));
             Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-            Assert.AreEqual(EventType.EVT_TASK_REDUCED, waitTask.Result.Type);
+            Assert.AreEqual(EventType.EvtTaskReduced, waitTask.Result.Type);
         }
 
         /// <summary>
@@ -372,15 +372,15 @@ namespace Apache.Ignite.Core.Tests
             [Values(true, false)] bool portable,
             [Values(true, false)] bool autoUnsubscribe)
         {
-            foreach (var g in grids)
+            foreach (var g in _grids)
             {
-                g.Events().EnableLocal(EventType.EVTS_JOB_EXECUTION);
-                g.Events().EnableLocal(EventType.EVTS_TASK_EXECUTION);
+                g.Events().EnableLocal(EventType.EvtsJobExecution);
+                g.Events().EnableLocal(EventType.EvtsTaskExecution);
             }
 
-            var events = grid1.Events();
+            var events = _grid1.Events();
 
-            var expectedType = EventType.EVT_JOB_STARTED;
+            var expectedType = EventType.EvtJobStarted;
 
             var remoteFilter = portable 
                 ?  (IEventFilter<IEvent>) new RemoteEventPortableFilter(expectedType) 
@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Tests
 
             CheckSend(3, typeof(JobEvent), expectedType);
 
-            grid3.Events().DisableLocal(EventType.EVTS_JOB_EXECUTION);
+            _grid3.Events().DisableLocal(EventType.EvtsJobExecution);
 
             CheckSend(2, typeof(JobEvent), expectedType);
 
@@ -419,7 +419,7 @@ namespace Apache.Ignite.Core.Tests
 
             CheckSend(2, typeof(JobEvent), expectedType);
 
-            EventsTestHelper.listenResult = false;
+            EventsTestHelper.ListenResult = false;
 
             CheckSend(1, typeof(JobEvent), expectedType);  // one last event
 
@@ -432,12 +432,12 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestRemoteQuery([Values(true, false)] bool async)
         {
-            foreach (var g in grids)
-                g.Events().EnableLocal(EventType.EVTS_JOB_EXECUTION);
+            foreach (var g in _grids)
+                g.Events().EnableLocal(EventType.EvtsJobExecution);
 
-            var events = grid1.Events();
+            var events = _grid1.Events();
 
-            var eventFilter = new RemoteEventFilter(EventType.EVT_JOB_STARTED);
+            var eventFilter = new RemoteEventFilter(EventType.EvtJobStarted);
 
             var oldEvents = events.RemoteQuery(eventFilter);
 
@@ -446,7 +446,7 @@ namespace Apache.Ignite.Core.Tests
 
             GenerateTaskEvent();
 
-            var remoteQuery = events.RemoteQuery(eventFilter, EventsTestHelper.TIMEOUT, EventType.EVTS_JOB_EXECUTION);
+            var remoteQuery = events.RemoteQuery(eventFilter, EventsTestHelper.Timeout, EventType.EvtsJobExecution);
 
             if (async)
             {
@@ -457,9 +457,9 @@ namespace Apache.Ignite.Core.Tests
 
             var qryResult = remoteQuery.Except(oldEvents).Cast<JobEvent>().ToList();
 
-            Assert.AreEqual(grids.Length, qryResult.Count);
+            Assert.AreEqual(_grids.Length, qryResult.Count);
 
-            Assert.IsTrue(qryResult.All(x => x.Type == EventType.EVT_JOB_STARTED));
+            Assert.IsTrue(qryResult.All(x => x.Type == EventType.EvtJobStarted));
         }
 
         /// <summary>
@@ -468,7 +468,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSerialization()
         {
-            var grid = (Ignite) grid1;
+            var grid = (Ignite) _grid1;
             var comp = (Impl.Compute.Compute) grid.Cluster.ForLocal().Compute();
             var locNode = grid.Cluster.LocalNode;
 
@@ -575,11 +575,11 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="evt">The evt.</param>
         private void CheckEventBase(IEvent evt)
         {
-            var locNode = grid1.Cluster.LocalNode;
+            var locNode = _grid1.Cluster.LocalNode;
 
             Assert.AreEqual(locNode, evt.Node);
             Assert.AreEqual("msg", evt.Message);
-            Assert.AreEqual(EventType.EVT_LIC_CLEARED, evt.Type);
+            Assert.AreEqual(EventType.EvtLicCleared, evt.Type);
             Assert.IsNotNullOrEmpty(evt.Name);
             Assert.AreNotEqual(Guid.Empty, evt.Id.GlobalId);
             Assert.IsTrue((evt.TimeStamp - DateTime.Now).TotalSeconds < 10);
@@ -598,7 +598,7 @@ namespace Apache.Ignite.Core.Tests
             GenerateTaskEvent();
 
             EventsTestHelper.VerifyReceive(repeat, eventObjectType ?? typeof (TaskEvent),
-                eventType.Any() ? eventType : EventType.EVTS_TASK_EXECUTION);
+                eventType.Any() ? eventType : EventType.EvtsTaskExecution);
         }
 
         /// <summary>
@@ -611,7 +611,7 @@ namespace Apache.Ignite.Core.Tests
 
             GenerateTaskEvent();
 
-            Thread.Sleep(EventsTestHelper.TIMEOUT);
+            Thread.Sleep(EventsTestHelper.Timeout);
 
             EventsTestHelper.AssertFailures();
         }
@@ -641,7 +641,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private void GenerateTaskEvent(IIgnite grid = null)
         {
-            (grid ?? grid1).Compute().Broadcast(new ComputeAction());
+            (grid ?? _grid1).Compute().Broadcast(new ComputeAction());
         }
 
         /// <summary>
@@ -653,7 +653,7 @@ namespace Apache.Ignite.Core.Tests
 
             // started, reduced, finished
             Assert.AreEqual(
-                new[] {EventType.EVT_TASK_STARTED, EventType.EVT_TASK_REDUCED, EventType.EVT_TASK_FINISHED},
+                new[] {EventType.EvtTaskStarted, EventType.EvtTaskReduced, EventType.EvtTaskFinished},
                 e.Select(x => x.Type).ToArray());
         }
 
@@ -689,12 +689,12 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(false, cacheEvent.HasOldValue);
                 Assert.AreEqual(null, cacheEvent.OldValue);
 
-                if (cacheEvent.Type == EventType.EVT_CACHE_OBJECT_PUT)
+                if (cacheEvent.Type == EventType.EvtCacheObjectPut)
                 {
                     Assert.AreEqual(true, cacheEvent.HasNewValue);
                     Assert.AreEqual(1, cacheEvent.NewValue);
                 }
-                else if (cacheEvent.Type == EventType.EVT_CACHE_ENTRY_CREATED)
+                else if (cacheEvent.Type == EventType.EvtCacheEntryCreated)
                 {
                     Assert.AreEqual(false, cacheEvent.HasNewValue);
                     Assert.AreEqual(null, cacheEvent.NewValue);
@@ -711,14 +711,14 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private void StartGrids()
         {
-            if (grid1 != null)
+            if (_grid1 != null)
                 return;
 
-            grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
+            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
 
-            grids = new[] {grid1, grid2, grid3};
+            _grids = new[] {_grid1, _grid2, _grid3};
         }
 
         /// <summary>
@@ -726,8 +726,8 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private void StopGrids()
         {
-            grid1 = grid2 = grid3 = null;
-            grids = null;
+            _grid1 = _grid2 = _grid3 = null;
+            _grids = null;
             
             Ignition.StopAll(true);
         }
@@ -740,22 +740,22 @@ namespace Apache.Ignite.Core.Tests
     public static class EventsTestHelper
     {
         /** */
-        public static readonly ConcurrentStack<IEvent> RECEIVED_EVENTS = new ConcurrentStack<IEvent>();
+        public static readonly ConcurrentStack<IEvent> ReceivedEvents = new ConcurrentStack<IEvent>();
         
         /** */
-        public static readonly ConcurrentStack<string> FAILURES = new ConcurrentStack<string>();
+        public static readonly ConcurrentStack<string> Failures = new ConcurrentStack<string>();
 
         /** */
-        public static readonly CountdownEvent RECEIVED_EVENT = new CountdownEvent(0);
+        public static readonly CountdownEvent ReceivedEvent = new CountdownEvent(0);
 
         /** */
-        public static readonly ConcurrentStack<Guid> LAST_NODE_IDS = new ConcurrentStack<Guid>();
+        public static readonly ConcurrentStack<Guid> LastNodeIds = new ConcurrentStack<Guid>();
 
         /** */
-        public static volatile bool listenResult = true;
+        public static volatile bool ListenResult = true;
 
         /** */
-        public static readonly TimeSpan TIMEOUT = TimeSpan.FromMilliseconds(800);
+        public static readonly TimeSpan Timeout = TimeSpan.FromMilliseconds(800);
 
         /// <summary>
         /// Clears received event information.
@@ -763,9 +763,9 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="expectedCount">The expected count of events to be received.</param>
         public static void ClearReceived(int expectedCount)
         {
-            RECEIVED_EVENTS.Clear();
-            RECEIVED_EVENT.Reset(expectedCount);
-            LAST_NODE_IDS.Clear();
+            ReceivedEvents.Clear();
+            ReceivedEvent.Reset(expectedCount);
+            LastNodeIds.Clear();
         }
 
         /// <summary>
@@ -774,14 +774,14 @@ namespace Apache.Ignite.Core.Tests
         public static void VerifyReceive(int count, Type eventObjectType, params int[] eventTypes)
         {
             // check if expected event count has been received; Wait returns false if there were none.
-            Assert.IsTrue(RECEIVED_EVENT.Wait(TIMEOUT), 
-                "Failed to receive expected number of events. Remaining count: " + RECEIVED_EVENT.CurrentCount);
+            Assert.IsTrue(ReceivedEvent.Wait(Timeout), 
+                "Failed to receive expected number of events. Remaining count: " + ReceivedEvent.CurrentCount);
             
-            Assert.AreEqual(count, RECEIVED_EVENTS.Count);
+            Assert.AreEqual(count, ReceivedEvents.Count);
 
-            Assert.IsTrue(RECEIVED_EVENTS.All(x => x.GetType() == eventObjectType));
+            Assert.IsTrue(ReceivedEvents.All(x => x.GetType() == eventObjectType));
 
-            Assert.IsTrue(RECEIVED_EVENTS.All(x => eventTypes.Contains(x.Type)));
+            Assert.IsTrue(ReceivedEvents.All(x => eventTypes.Contains(x.Type)));
 
             AssertFailures();
         }
@@ -803,12 +803,12 @@ namespace Apache.Ignite.Core.Tests
         {
             try
             {
-                if (FAILURES.Any())
-                    Assert.Fail(FAILURES.Reverse().Aggregate((x, y) => string.Format("{0}\n{1}", x, y)));
+                if (Failures.Any())
+                    Assert.Fail(Failures.Reverse().Aggregate((x, y) => string.Format("{0}\n{1}", x, y)));
             }
             finally 
             {
-                FAILURES.Clear();
+                Failures.Clear();
             }
         }
 
@@ -821,18 +821,18 @@ namespace Apache.Ignite.Core.Tests
         {
             try
             {
-                LAST_NODE_IDS.Push(id);
-                RECEIVED_EVENTS.Push(evt);
+                LastNodeIds.Push(id);
+                ReceivedEvents.Push(evt);
 
-                RECEIVED_EVENT.Signal();
+                ReceivedEvent.Signal();
                 
-                return listenResult;
+                return ListenResult;
             }
             catch (Exception ex)
             {
                 // When executed on remote nodes, these exceptions will not go to sender, 
                 // so we have to accumulate them.
-                FAILURES.Push(string.Format("Exception in Listen (msg: {0}, id: {1}): {2}", evt, id, ex));
+                Failures.Push(string.Format("Exception in Listen (msg: {0}, id: {1}): {2}", evt, id, ex));
                 throw;
             }
         }
@@ -845,7 +845,7 @@ namespace Apache.Ignite.Core.Tests
     public class EventFilter<T> : IEventFilter<T> where T : IEvent
     {
         /** */
-        private readonly Func<Guid, T, bool> invoke;
+        private readonly Func<Guid, T, bool> _invoke;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RemoteListenEventFilter"/> class.
@@ -853,13 +853,13 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="invoke">The invoke delegate.</param>
         public EventFilter(Func<Guid, T, bool> invoke)
         {
-            this.invoke = invoke;
+            this._invoke = invoke;
         }
 
         /** <inheritdoc /> */
         bool IEventFilter<T>.Invoke(Guid nodeId, T evt)
         {
-            return invoke(nodeId, evt);
+            return _invoke(nodeId, evt);
         }
 
         /** <inheritdoc /> */
@@ -876,17 +876,17 @@ namespace Apache.Ignite.Core.Tests
     public class RemoteEventFilter : IEventFilter<IEvent>
     {
         /** */
-        private readonly int type;
+        private readonly int _type;
 
         public RemoteEventFilter(int type)
         {
-            this.type = type;
+            this._type = type;
         }
 
         /** <inheritdoc /> */
         public bool Invoke(Guid nodeId, IEvent evt)
         {
-            return evt.Type == type;
+            return evt.Type == _type;
         }
     }
 
@@ -896,7 +896,7 @@ namespace Apache.Ignite.Core.Tests
     public class RemoteEventPortableFilter : IEventFilter<IEvent>, IPortableMarshalAware
     {
         /** */
-        private int type;
+        private int _type;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RemoteEventPortableFilter"/> class.
@@ -904,25 +904,25 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="type">The event type.</param>
         public RemoteEventPortableFilter(int type)
         {
-            this.type = type;
+            this._type = type;
         }
 
         /** <inheritdoc /> */
         public bool Invoke(Guid nodeId, IEvent evt)
         {
-            return evt.Type == type;
+            return evt.Type == _type;
         }
 
         /** <inheritdoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            writer.RawWriter().WriteInt(type);
+            writer.RawWriter().WriteInt(_type);
         }
 
         /** <inheritdoc /> */
         public void ReadPortable(IPortableReader reader)
         {
-            type = reader.RawReader().ReadInt();
+            _type = reader.RawReader().ReadInt();
         }
     }
 

@@ -26,13 +26,13 @@ namespace Apache.Ignite.Core.Datastream
     /// internal cache receiver will be chosen automatically. But in some cases custom implementation may help 
     /// to achieve better performance.
     /// </summary>
-    public interface IStreamReceiver<K, V>
+    public interface IStreamReceiver<TK, TV>
     {
         /// <summary>
         /// Updates cache with batch of entries.
         /// </summary>
         /// <param name="cache">Cache.</param>
         /// <param name="entries">Entries.</param>
-        void Receive(ICache<K, V> cache, ICollection<ICacheEntry<K, V>> entries);
+        void Receive(ICache<TK, TV> cache, ICollection<ICacheEntry<TK, TV>> entries);
     }
 }

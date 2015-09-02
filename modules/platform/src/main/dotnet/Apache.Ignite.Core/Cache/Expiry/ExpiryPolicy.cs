@@ -25,13 +25,13 @@ namespace Apache.Ignite.Core.Cache.Expiry
     public class ExpiryPolicy : IExpiryPolicy
     {
         /** Expiry for create. */
-        private readonly TimeSpan? create;
+        private readonly TimeSpan? _create;
 
         /** Expiry for update. */
-        private readonly TimeSpan? update;
+        private readonly TimeSpan? _update;
 
         /** Expiry for access. */
-        private readonly TimeSpan? access;
+        private readonly TimeSpan? _access;
 
         /// <summary>
         /// Constructor.
@@ -41,9 +41,9 @@ namespace Apache.Ignite.Core.Cache.Expiry
         /// <param name="access">Expiry for access.</param>
         public ExpiryPolicy(TimeSpan? create, TimeSpan? update, TimeSpan? access)
         {
-            this.create = create;
-            this.update = update;
-            this.access = access;
+            this._create = create;
+            this._update = update;
+            this._access = access;
         }
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Cache.Expiry
         /// <returns>Expiry for create opeartion.</returns>
         public TimeSpan? GetExpiryForCreate()
         {
-            return create;
+            return _create;
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Cache.Expiry
         /// <returns>Expiry for update operation.</returns>
         public TimeSpan? GetExpiryForUpdate()
         {
-            return update;
+            return _update;
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Cache.Expiry
         /// <returns>Expiry for access operation.</returns>
         public TimeSpan? GetExpiryForAccess()
         {
-            return access;
+            return _access;
         }
     }
 }

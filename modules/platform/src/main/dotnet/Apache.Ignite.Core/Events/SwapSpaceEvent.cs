@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Events
     public sealed class SwapSpaceEvent : EventBase
 	{
         /** */
-        private readonly string space;
+        private readonly string _space;
 
         /// <summary>
         /// Constructor.
@@ -33,13 +33,13 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         internal SwapSpaceEvent(IPortableRawReader r) : base(r)
         {
-            space = r.ReadString();
+            _space = r.ReadString();
         }
 		
         /// <summary>
         /// Gets swap space name. 
         /// </summary>
-        public string Space { get { return space; } }
+        public string Space { get { return _space; } }
 
         /** <inheritDoc /> */
 	    public override string ToShortString()

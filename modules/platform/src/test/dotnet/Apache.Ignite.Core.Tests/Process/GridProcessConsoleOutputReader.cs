@@ -26,15 +26,15 @@ namespace Apache.Ignite.Core.Tests.Process
     public class GridProcessConsoleOutputReader : IGridProcessOutputReader
     {
         /** Out message format. */
-        private static readonly string OUT_FORMAT = ">>> {0} OUT: {1}";
+        private static readonly string OutFormat = ">>> {0} OUT: {1}";
 
         /** Error message format. */
-        private static readonly string ERR_FORMAT = ">>> {0} ERR: {1}";
+        private static readonly string ErrFormat = ">>> {0} ERR: {1}";
 
         /** <inheritDoc /> */
         public void OnOutput(Process proc, string data, bool err)
         {
-            Console.WriteLine(err ? ERR_FORMAT : OUT_FORMAT, proc.Id, data);
+            Console.WriteLine(err ? ErrFormat : OutFormat, proc.Id, data);
         }
     }
 }

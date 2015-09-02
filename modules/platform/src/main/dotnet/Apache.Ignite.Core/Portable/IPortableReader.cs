@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Portable
     /// </summary>
     /// <param name="size">Collection size.</param>
     /// <returns>Collection.</returns>
-    public delegate IDictionary<K, V> PortableGenericDictionaryFactory<K, V>(int size);
+    public delegate IDictionary<TK, TV> PortableGenericDictionaryFactory<TK, TV>(int size);
 
     /// <summary>
     /// Reader for portable objects. 
@@ -321,7 +321,7 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Dictionary.</returns>
-        IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName);
+        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(string fieldName);
 
         /// <summary>
         /// Read named generic dictionary.
@@ -329,7 +329,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Field name.</param>
         /// <param name="factory">Factory.</param>
         /// <returns>Dictionary.</returns>
-        IDictionary<K, V> ReadGenericDictionary<K, V>(string fieldName, PortableGenericDictionaryFactory<K, V> factory);
+        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(string fieldName, PortableGenericDictionaryFactory<TK, TV> factory);
 
         /// <summary>
         /// Get raw reader. 

@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Common
     internal class PortableResultWrapper : IPortableWriteAware
     {
         /** */
-        private readonly object result;
+        private readonly object _result;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PortableResultWrapper"/> class.
@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             var reader0 = (PortableReaderImpl)reader.RawReader();
 
-            result = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _result = PortableUtils.ReadPortableOrSerializable<object>(reader0);
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="res">Result.</param>
         public PortableResultWrapper(object res)
         {
-            result = res;
+            _result = res;
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public object Result
         {
-            get { return result; }
+            get { return _result; }
         }
 
         /** <inheritDoc /> */

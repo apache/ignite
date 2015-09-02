@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     internal class ComputeActionJob : IComputeJob, IComputeResourceInjector, IPortableWriteAware
     {
         /** Closure. */
-        private readonly IComputeAction action;
+        private readonly IComputeAction _action;
 
         /// <summary>
         /// Constructor.
@@ -37,13 +37,13 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <param name="action">Action.</param>
         public ComputeActionJob(IComputeAction action)
         {
-            this.action = action;
+            this._action = action;
         }
 
         /** <inheritDoc /> */
         public object Execute()
         {
-            action.Invoke();
+            _action.Invoke();
             
             return null;
         }
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /** <inheritDoc /> */
         public void Inject(Ignite grid)
         {
-            ResourceProcessor.Inject(action, grid);
+            ResourceProcessor.Inject(_action, grid);
         }
 
         /** <inheritDoc /> */
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
             var writer0 = (PortableWriterImpl)writer.RawWriter();
 
             writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, action);
+            PortableUtils.WritePortableOrSerializable(writer0, _action);
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         {
             var reader0 = (PortableReaderImpl)reader.RawReader();
 
-            action = PortableUtils.ReadPortableOrSerializable<IComputeAction>(reader0);
+            _action = PortableUtils.ReadPortableOrSerializable<IComputeAction>(reader0);
         }
     }
 }

@@ -38,32 +38,32 @@ namespace Apache.Ignite.Core.Impl
     internal static class GridUtils
     {
         /** Environment variable: JAVA_HOME. */
-        private const string ENV_JAVA_HOME = "JAVA_HOME";
+        private const string EnvJavaHome = "JAVA_HOME";
 
         /** Directory: jre. */
-        private const string DIR_JRE = "jre";
+        private const string DirJre = "jre";
 
         /** Directory: bin. */
-        private const string DIR_BIN = "bin";
+        private const string DirBin = "bin";
 
         /** Directory: server. */
-        private const string DIR_SERVER = "server";
+        private const string DirServer = "server";
 
         /** File: jvm.dll. */
-        private const string FILE_JVM_DLL = "jvm.dll";
+        private const string FileJvmDll = "jvm.dll";
 
         /** File: GridGainJvm.dll. */
-        internal const string FILE_GG_JNI_DLL = "ignite.common.dll";
+        internal const string FileGgJniDll = "ignite.common.dll";
         
         /** Prefix for temp directory names. */
-        private const string DIR_GG_TMP = "GridGain_";
+        private const string DirGgTmp = "GridGain_";
         
         /** Loaded. */
-        private static bool loaded;        
+        private static bool _loaded;        
 
         /** Thread-local random. */
         [ThreadStatic]
-        private static Random rnd;
+        private static Random _rnd;
 
         /// <summary>
         /// Initializes the <see cref="GridUtils"/> class.
@@ -79,10 +79,10 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Thread local random.</returns>
         public static Random ThreadLocalRandom()
         {
-            if (rnd == null)
-                rnd = new Random();
+            if (_rnd == null)
+                _rnd = new Random();
 
-            return rnd;
+            return _rnd;
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="configJvmDllPath">JVM DLL path from config.</param>
         public static void LoadDlls(string configJvmDllPath)
         {
-            if (loaded) return;
+            if (_loaded) return;
 
             // 1. Load JNI dll.
             LoadJvmDll(configJvmDllPath);
@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Impl
             // 2. Load GG JNI dll.
             UnmanagedUtils.Initialize();
 
-            loaded = true;
+            _loaded = true;
         }
 
         /// <summary>
@@ -186,7 +186,7 @@ namespace Apache.Ignite.Core.Impl
             var messages = new List<string>();
             foreach (var dllPath in GetJvmDllPaths(configJvmDllPath))
             {
-                var errCode = LoadDll(dllPath.Value, FILE_JVM_DLL);
+                var errCode = LoadDll(dllPath.Value, FileJvmDll);
                 if (errCode == 0)
                     return;
 
@@ -198,13 +198,13 @@ namespace Apache.Ignite.Core.Impl
             }
 
             if (!messages.Any())  // not loaded and no messages - everything was null
-                messages.Add(string.Format("Please specify GridConfiguration.JvmDllPath or {0}.", ENV_JAVA_HOME));
+                messages.Add(string.Format("Please specify GridConfiguration.JvmDllPath or {0}.", EnvJavaHome));
 
             if (messages.Count == 1)
-                throw new IgniteException(string.Format("Failed to load {0} ({1})", FILE_JVM_DLL, messages[0]));
+                throw new IgniteException(string.Format("Failed to load {0} ({1})", FileJvmDll, messages[0]));
 
             var combinedMessage = messages.Aggregate((x, y) => string.Format("{0}\n{1}", x, y));
-            throw new IgniteException(string.Format("Failed to load {0}:\n{1}", FILE_JVM_DLL, combinedMessage));
+            throw new IgniteException(string.Format("Failed to load {0}:\n{1}", FileJvmDll, combinedMessage));
         }
 
         /// <summary>
@@ -252,11 +252,11 @@ namespace Apache.Ignite.Core.Impl
             if (!string.IsNullOrEmpty(configJvmDllPath))
                 yield return new KeyValuePair<string, string>("GridConfiguration.JvmDllPath", configJvmDllPath);
 
-            var javaHomeDir = Environment.GetEnvironmentVariable(ENV_JAVA_HOME);
+            var javaHomeDir = Environment.GetEnvironmentVariable(EnvJavaHome);
 
             if (!string.IsNullOrEmpty(javaHomeDir))
                 yield return
-                    new KeyValuePair<string, string>(ENV_JAVA_HOME, GetJvmDllPath(Path.Combine(javaHomeDir, DIR_JRE)));
+                    new KeyValuePair<string, string>(EnvJavaHome, GetJvmDllPath(Path.Combine(javaHomeDir, DirJre)));
         }
 
         /// <summary>
@@ -264,7 +264,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         private static string GetJvmDllPath(string jreDir)
         {
-            return Path.Combine(jreDir, DIR_BIN, DIR_SERVER, FILE_JVM_DLL);
+            return Path.Combine(jreDir, DirBin, DirServer, FileJvmDll);
         }
 
         /// <summary>
@@ -306,7 +306,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         private static void TryCleanTempDirectories()
         {
-            foreach (var dir in Directory.GetDirectories(Path.GetTempPath(), DIR_GG_TMP + "*"))
+            foreach (var dir in Directory.GetDirectories(Path.GetTempPath(), DirGgTmp + "*"))
             {
                 try
                 {
@@ -331,7 +331,7 @@ namespace Apache.Ignite.Core.Impl
         {
             while (true)
             {
-                var dir = Path.Combine(Path.GetTempPath(), DIR_GG_TMP + Path.GetRandomFileName());
+                var dir = Path.Combine(Path.GetTempPath(), DirGgTmp + Path.GetRandomFileName());
 
                 try
                 {

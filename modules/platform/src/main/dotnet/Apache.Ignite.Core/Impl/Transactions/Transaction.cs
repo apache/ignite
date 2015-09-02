@@ -11,7 +11,7 @@
     internal class Transaction : ITransaction
     {
         /** */
-        protected readonly TransactionImpl tx;
+        protected readonly TransactionImpl Tx;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Transaction" /> class.
@@ -19,19 +19,19 @@
         /// <param name="tx">The tx to wrap.</param>
         public Transaction(TransactionImpl tx)
         {
-            this.tx = tx;
+            this.Tx = tx;
         }
 
         /** <inheritDoc /> */
         public void Dispose()
         {
-            tx.Dispose();
+            Tx.Dispose();
         }
 
         /** <inheritDoc /> */
         public ITransaction WithAsync()
         {
-            return new AsyncTransaction(tx);
+            return new AsyncTransaction(Tx);
         }
 
         /** <inheritDoc /> */
@@ -55,85 +55,85 @@
         /** <inheritDoc /> */
         public Guid NodeId
         {
-            get { return tx.NodeId; }
+            get { return Tx.NodeId; }
         }
 
         /** <inheritDoc /> */
         public long ThreadId
         {
-            get { return tx.ThreadId; }
+            get { return Tx.ThreadId; }
         }
 
         /** <inheritDoc /> */
         public DateTime StartTime
         {
-            get { return tx.StartTime; }
+            get { return Tx.StartTime; }
         }
 
         /** <inheritDoc /> */
         public TransactionIsolation Isolation
         {
-            get { return tx.Isolation; }
+            get { return Tx.Isolation; }
         }
 
         /** <inheritDoc /> */
         public TransactionConcurrency Concurrency
         {
-            get { return tx.Concurrency; }
+            get { return Tx.Concurrency; }
         }
 
         /** <inheritDoc /> */
         public TransactionState State
         {
-            get { return tx.State; }
+            get { return Tx.State; }
         }
 
         /** <inheritDoc /> */
         public TimeSpan Timeout
         {
-            get { return tx.Timeout; }
+            get { return Tx.Timeout; }
         }
 
         /** <inheritDoc /> */
         public bool IsRollbackOnly
         {
-            get { return tx.IsRollbackOnly; }
+            get { return Tx.IsRollbackOnly; }
         }
 
         /** <inheritDoc /> */
         public bool SetRollbackonly()
         {
-            return tx.SetRollbackOnly();
+            return Tx.SetRollbackOnly();
         }
 
         /** <inheritDoc /> */
         public virtual void Commit()
         {
-            tx.Commit();
+            Tx.Commit();
         }
 
         /** <inheritDoc /> */
         public virtual void Rollback()
         {
-            tx.Rollback();
+            Tx.Rollback();
         }
 
         /** <inheritDoc /> */
-        public void AddMeta<V>(string name, V val)
+        public void AddMeta<TV>(string name, TV val)
         {
-            tx.AddMeta(name, val);
+            Tx.AddMeta(name, val);
         }
 
         /** <inheritDoc /> */
-        public V Meta<V>(string name)
+        public TV Meta<TV>(string name)
         {
-            return tx.Meta<V>(name);
+            return Tx.Meta<TV>(name);
         }
 
         /** <inheritDoc /> */
-        public V RemoveMeta<V>(string name)
+        public TV RemoveMeta<TV>(string name)
         {
-            return tx.RemoveMeta<V>(name);
+            return Tx.RemoveMeta<TV>(name);
         }
     }
 }

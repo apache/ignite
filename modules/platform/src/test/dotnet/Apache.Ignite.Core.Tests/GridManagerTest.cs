@@ -33,9 +33,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestGridGainHome()
         {
-            var env = Environment.GetEnvironmentVariable(GridManager.ENV_GRIDGAIN_HOME);
+            var env = Environment.GetEnvironmentVariable(GridManager.EnvGridgainHome);
             
-            Environment.SetEnvironmentVariable(GridManager.ENV_GRIDGAIN_HOME, null);
+            Environment.SetEnvironmentVariable(GridManager.EnvGridgainHome, null);
 
             try
             {
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Tests
             finally
             {
                 // Restore
-                Environment.SetEnvironmentVariable(GridManager.ENV_GRIDGAIN_HOME, env);
+                Environment.SetEnvironmentVariable(GridManager.EnvGridgainHome, env);
             }
         }
     }

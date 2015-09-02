@@ -30,125 +30,125 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     internal static unsafe class UnmanagedUtils
     {
         /** Interop factory ID for .Net. */
-        private const int INTEROP_FACTORY_ID = 1001;
+        private const int InteropFactoryId = 1001;
 
         #region PROCEDURE NAMES
 
-        private const string PROC_REALLOCATE = "IgniteReallocate";
+        private const string ProcReallocate = "IgniteReallocate";
 
-        private const string PROC_IGNITION_START = "IgniteIgnitionStart";
-        private const string PROC_IGNITION_STOP = "IgniteIgnitionStop";
-        private const string PROC_IGNITION_STOP_ALL = "IgniteIgnitionStopAll";
+        private const string ProcIgnitionStart = "IgniteIgnitionStart";
+        private const string ProcIgnitionStop = "IgniteIgnitionStop";
+        private const string ProcIgnitionStopAll = "IgniteIgnitionStopAll";
         
-        private const string PROC_PROCESSOR_RELEASE_START = "IgniteProcessorReleaseStart";
-        private const string PROC_PROCESSOR_PROJECTION = "IgniteProcessorProjection";
-        private const string PROC_PROCESSOR_CACHE = "IgniteProcessorCache";
-        private const string PROC_PROCESSOR_GET_OR_CREATE_CACHE = "IgniteProcessorGetOrCreateCache";
-        private const string PROC_PROCESSOR_CREATE_CACHE = "IgniteProcessorCreateCache";
-        private const string PROC_PROCESSOR_AFFINITY = "IgniteProcessorAffinity";
-        private const string PROC_PROCESSOR_DATA_STREAMER = "IgniteProcessorDataStreamer";
-        private const string PROC_PROCESSOR_TRANSACTIONS = "IgniteProcessorTransactions";
-        private const string PROC_PROCESSOR_COMPUTE = "IgniteProcessorCompute";
-        private const string PROC_PROCESSOR_MESSAGE = "IgniteProcessorMessage";
-        private const string PROC_PROCESSOR_EVENTS = "IgniteProcessorEvents";
-        private const string PROC_PROCESSOR_SERVICES = "IgniteProcessorServices";
-        private const string PROC_PROCESSOR_EXTENSIONS = "IgniteProcessorExtensions";
+        private const string ProcProcessorReleaseStart = "IgniteProcessorReleaseStart";
+        private const string ProcProcessorProjection = "IgniteProcessorProjection";
+        private const string ProcProcessorCache = "IgniteProcessorCache";
+        private const string ProcProcessorGetOrCreateCache = "IgniteProcessorGetOrCreateCache";
+        private const string ProcProcessorCreateCache = "IgniteProcessorCreateCache";
+        private const string ProcProcessorAffinity = "IgniteProcessorAffinity";
+        private const string ProcProcessorDataStreamer = "IgniteProcessorDataStreamer";
+        private const string ProcProcessorTransactions = "IgniteProcessorTransactions";
+        private const string ProcProcessorCompute = "IgniteProcessorCompute";
+        private const string ProcProcessorMessage = "IgniteProcessorMessage";
+        private const string ProcProcessorEvents = "IgniteProcessorEvents";
+        private const string ProcProcessorServices = "IgniteProcessorServices";
+        private const string ProcProcessorExtensions = "IgniteProcessorExtensions";
         
-        private const string PROC_TARGET_IN_STREAM_OUT_LONG = "IgniteTargetInStreamOutLong";
-        private const string PROC_TARGET_IN_STREAM_OUT_STREAM = "IgniteTargetInStreamOutStream";
-        private const string PROC_TARGET_IN_STREAM_OUT_OBJECT = "IgniteTargetInStreamOutObject";
-        private const string PROC_TARGET_IN_OBJECT_STREAM_OUT_STREAM = "IgniteTargetInObjectStreamOutStream";
-        private const string PROC_TARGET_OUT_LONG = "IgniteTargetOutLong";
-        private const string PROC_TARGET_OUT_STREAM = "IgniteTargetOutStream";
-        private const string PROC_TARGET_OUT_OBJECT = "IgniteTargetOutObject";
-        private const string PROC_TARGET_LISTEN_FUT = "IgniteTargetListenFuture";
-        private const string PROC_TARGET_LISTEN_FUT_FOR_OP = "IgniteTargetListenFutureForOperation";
+        private const string ProcTargetInStreamOutLong = "IgniteTargetInStreamOutLong";
+        private const string ProcTargetInStreamOutStream = "IgniteTargetInStreamOutStream";
+        private const string ProcTargetInStreamOutObject = "IgniteTargetInStreamOutObject";
+        private const string ProcTargetInObjectStreamOutStream = "IgniteTargetInObjectStreamOutStream";
+        private const string ProcTargetOutLong = "IgniteTargetOutLong";
+        private const string ProcTargetOutStream = "IgniteTargetOutStream";
+        private const string ProcTargetOutObject = "IgniteTargetOutObject";
+        private const string ProcTargetListenFut = "IgniteTargetListenFuture";
+        private const string ProcTargetListenFutForOp = "IgniteTargetListenFutureForOperation";
 
-        private const string PROC_AFFINITY_PARTS = "IgniteAffinityPartitions";
+        private const string ProcAffinityParts = "IgniteAffinityPartitions";
 
-        private const string PROC_CACHE_WITH_SKIP_STORE = "IgniteCacheWithSkipStore";
-        private const string PROC_CACHE_WITH_NO_RETRIES = "IgniteCacheWithNoRetries";
-        private const string PROC_CACHE_WITH_EXPIRY_POLICY = "IgniteCacheWithExpiryPolicy";
-        private const string PROC_CACHE_WITH_ASYNC = "IgniteCacheWithAsync";
-        private const string PROC_CACHE_WITH_KEEP_PORTABLE = "IgniteCacheWithKeepPortable";
-        private const string PROC_CACHE_CLEAR = "IgniteCacheClear";
-        private const string PROC_CACHE_REMOVE_ALL = "IgniteCacheRemoveAll";
-        private const string PROC_CACHE_OUT_OP_QUERY_CURSOR = "IgniteCacheOutOpQueryCursor";
-        private const string PROC_CACHE_OUT_OP_CONTINUOUS_QUERY = "IgniteCacheOutOpContinuousQuery";
-        private const string PROC_CACHE_ITERATOR = "IgniteCacheIterator";
-        private const string PROC_CACHE_LOCAL_ITERATOR = "IgniteCacheLocalIterator";
-        private const string PROC_CACHE_ENTER_LOCK = "IgniteCacheEnterLock";
-        private const string PROC_CACHE_EXIT_LOCK = "IgniteCacheExitLock";
-        private const string PROC_CACHE_TRY_ENTER_LOCK = "IgniteCacheTryEnterLock";
-        private const string PROC_CACHE_CLOSE_LOCK = "IgniteCacheCloseLock";
-        private const string PROC_CACHE_REBALANCE = "IgniteCacheRebalance";
-        private const string PROC_CACHE_SIZE = "IgniteCacheSize";
+        private const string ProcCacheWithSkipStore = "IgniteCacheWithSkipStore";
+        private const string ProcCacheWithNoRetries = "IgniteCacheWithNoRetries";
+        private const string ProcCacheWithExpiryPolicy = "IgniteCacheWithExpiryPolicy";
+        private const string ProcCacheWithAsync = "IgniteCacheWithAsync";
+        private const string ProcCacheWithKeepPortable = "IgniteCacheWithKeepPortable";
+        private const string ProcCacheClear = "IgniteCacheClear";
+        private const string ProcCacheRemoveAll = "IgniteCacheRemoveAll";
+        private const string ProcCacheOutOpQueryCursor = "IgniteCacheOutOpQueryCursor";
+        private const string ProcCacheOutOpContinuousQuery = "IgniteCacheOutOpContinuousQuery";
+        private const string ProcCacheIterator = "IgniteCacheIterator";
+        private const string ProcCacheLocalIterator = "IgniteCacheLocalIterator";
+        private const string ProcCacheEnterLock = "IgniteCacheEnterLock";
+        private const string ProcCacheExitLock = "IgniteCacheExitLock";
+        private const string ProcCacheTryEnterLock = "IgniteCacheTryEnterLock";
+        private const string ProcCacheCloseLock = "IgniteCacheCloseLock";
+        private const string ProcCacheRebalance = "IgniteCacheRebalance";
+        private const string ProcCacheSize = "IgniteCacheSize";
 
-        private const string PROC_CACHE_STORE_CALLBACK_INVOKE = "IgniteCacheStoreCallbackInvoke";
+        private const string ProcCacheStoreCallbackInvoke = "IgniteCacheStoreCallbackInvoke";
 
-        private const string PROC_COMPUTE_WITH_NO_FAILOVER = "IgniteComputeWithNoFailover";
-        private const string PROC_COMPUTE_WITH_TIMEOUT = "IgniteComputeWithTimeout";
-        private const string PROC_COMPUTE_EXECUTE_NATIVE = "IgniteComputeExecuteNative";
+        private const string ProcComputeWithNoFailover = "IgniteComputeWithNoFailover";
+        private const string ProcComputeWithTimeout = "IgniteComputeWithTimeout";
+        private const string ProcComputeExecuteNative = "IgniteComputeExecuteNative";
 
-        private const string PROC_CONTINUOUS_QRY_CLOSE = "IgniteContinuousQueryClose";
-        private const string PROC_CONTINUOUS_QRY_GET_INITIAL_QUERY_CURSOR = "IgniteContinuousQueryGetInitialQueryCursor";
+        private const string ProcContinuousQryClose = "IgniteContinuousQueryClose";
+        private const string ProcContinuousQryGetInitialQueryCursor = "IgniteContinuousQueryGetInitialQueryCursor";
 
-        private const string PROC_DATA_STREAMER_LISTEN_TOP = "IgniteDataStreamerListenTopology";
-        private const string PROC_DATA_STREAMER_ALLOW_OVERWRITE_GET = "IgniteDataStreamerAllowOverwriteGet";
-        private const string PROC_DATA_STREAMER_ALLOW_OVERWRITE_SET = "IgniteDataStreamerAllowOverwriteSet";
-        private const string PROC_DATA_STREAMER_SKIP_STORE_GET = "IgniteDataStreamerSkipStoreGet";
-        private const string PROC_DATA_STREAMER_SKIP_STORE_SET = "IgniteDataStreamerSkipStoreSet";
-        private const string PROC_DATA_STREAMER_PER_NODE_BUFFER_SIZE_GET = "IgniteDataStreamerPerNodeBufferSizeGet";
-        private const string PROC_DATA_STREAMER_PER_NODE_BUFFER_SIZE_SET = "IgniteDataStreamerPerNodeBufferSizeSet";
-        private const string PROC_DATA_STREAMER_PER_NODE_PARALLEL_OPS_GET = "IgniteDataStreamerPerNodeParallelOperationsGet";
-        private const string PROC_DATA_STREAMER_PER_NODE_PARALLEL_OPS_SET = "IgniteDataStreamerPerNodeParallelOperationsSet";
+        private const string ProcDataStreamerListenTop = "IgniteDataStreamerListenTopology";
+        private const string ProcDataStreamerAllowOverwriteGet = "IgniteDataStreamerAllowOverwriteGet";
+        private const string ProcDataStreamerAllowOverwriteSet = "IgniteDataStreamerAllowOverwriteSet";
+        private const string ProcDataStreamerSkipStoreGet = "IgniteDataStreamerSkipStoreGet";
+        private const string ProcDataStreamerSkipStoreSet = "IgniteDataStreamerSkipStoreSet";
+        private const string ProcDataStreamerPerNodeBufferSizeGet = "IgniteDataStreamerPerNodeBufferSizeGet";
+        private const string ProcDataStreamerPerNodeBufferSizeSet = "IgniteDataStreamerPerNodeBufferSizeSet";
+        private const string ProcDataStreamerPerNodeParallelOpsGet = "IgniteDataStreamerPerNodeParallelOperationsGet";
+        private const string ProcDataStreamerPerNodeParallelOpsSet = "IgniteDataStreamerPerNodeParallelOperationsSet";
 
-        private const string PROC_MESSAGING_WITH_ASYNC = "IgniteMessagingWithAsync";
+        private const string ProcMessagingWithAsync = "IgniteMessagingWithAsync";
 
-        private const string PROC_QRY_CURSOR_ITERATOR = "IgniteQueryCursorIterator";
-        private const string PROC_QRY_CURSOR_CLOSE = "IgniteQueryCursorClose";
+        private const string ProcQryCursorIterator = "IgniteQueryCursorIterator";
+        private const string ProcQryCursorClose = "IgniteQueryCursorClose";
 
-        private const string PROC_PROJECTION_FOR_OTHERS = "IgniteProjectionForOthers";
-        private const string PROC_PROJECTION_FOR_REMOTES = "IgniteProjectionForRemotes";
-        private const string PROC_PROJECTION_FOR_DAEMONS = "IgniteProjectionForDaemons";
-        private const string PROC_PROJECTION_FOR_RANDOM = "IgniteProjectionForRandom";
-        private const string PROC_PROJECTION_FOR_OLDEST = "IgniteProjectionForOldest";
-        private const string PROC_PROJECTION_FOR_YOUNGEST = "IgniteProjectionForYoungest";
-        private const string PROC_PROJECTION_RESET_METRICS = "IgniteProjectionResetMetrics";
-        private const string PROC_PROJECTION_OUT_OP_RET = "IgniteProjectionOutOpRet";
+        private const string ProcProjectionForOthers = "IgniteProjectionForOthers";
+        private const string ProcProjectionForRemotes = "IgniteProjectionForRemotes";
+        private const string ProcProjectionForDaemons = "IgniteProjectionForDaemons";
+        private const string ProcProjectionForRandom = "IgniteProjectionForRandom";
+        private const string ProcProjectionForOldest = "IgniteProjectionForOldest";
+        private const string ProcProjectionForYoungest = "IgniteProjectionForYoungest";
+        private const string ProcProjectionResetMetrics = "IgniteProjectionResetMetrics";
+        private const string ProcProjectionOutOpRet = "IgniteProjectionOutOpRet";
 
-        private const string PROC_RELEASE = "IgniteRelease";
+        private const string ProcRelease = "IgniteRelease";
 
-        private const string PROC_TX_START = "IgniteTransactionsStart";
-        private const string PROC_TX_COMMIT = "IgniteTransactionsCommit";
-        private const string PROC_TX_COMMIT_ASYNC = "IgniteTransactionsCommitAsync";
-        private const string PROC_TX_ROLLBACK = "IgniteTransactionsRollback";
-        private const string PROC_TX_ROLLBACK_ASYNC = "IgniteTransactionsRollbackAsync";
-        private const string PROC_TX_CLOSE = "IgniteTransactionsClose";
-        private const string PROC_TX_STATE = "IgniteTransactionsState";
-        private const string PROC_TX_SET_ROLLBACK_ONLY = "IgniteTransactionsSetRollbackOnly";
-        private const string PROC_TX_RESET_METRICS = "IgniteTransactionsResetMetrics";
+        private const string ProcTxStart = "IgniteTransactionsStart";
+        private const string ProcTxCommit = "IgniteTransactionsCommit";
+        private const string ProcTxCommitAsync = "IgniteTransactionsCommitAsync";
+        private const string ProcTxRollback = "IgniteTransactionsRollback";
+        private const string ProcTxRollbackAsync = "IgniteTransactionsRollbackAsync";
+        private const string ProcTxClose = "IgniteTransactionsClose";
+        private const string ProcTxState = "IgniteTransactionsState";
+        private const string ProcTxSetRollbackOnly = "IgniteTransactionsSetRollbackOnly";
+        private const string ProcTxResetMetrics = "IgniteTransactionsResetMetrics";
 
-        private const string PROC_THROW_TO_JAVA = "IgniteThrowToJava";
+        private const string ProcThrowToJava = "IgniteThrowToJava";
 
-        private const string PROC_DESTROY_JVM = "IgniteDestroyJvm";
+        private const string ProcDestroyJvm = "IgniteDestroyJvm";
 
-        private const string PROC_HANDLERS_SIZE = "IgniteHandlersSize";
+        private const string ProcHandlersSize = "IgniteHandlersSize";
 
-        private const string PROC_CREATE_CONTEXT = "IgniteCreateContext";
+        private const string ProcCreateContext = "IgniteCreateContext";
         
-        private const string PROC_EVENTS_WITH_ASYNC = "IgniteEventsWithAsync";
-        private const string PROC_EVENTS_STOP_LOCAL_LISTEN = "IgniteEventsStopLocalListen";
-        private const string PROC_EVENTS_LOCAL_LISTEN = "IgniteEventsLocalListen";
-        private const string PROC_EVENTS_IS_ENABLED = "IgniteEventsIsEnabled";
+        private const string ProcEventsWithAsync = "IgniteEventsWithAsync";
+        private const string ProcEventsStopLocalListen = "IgniteEventsStopLocalListen";
+        private const string ProcEventsLocalListen = "IgniteEventsLocalListen";
+        private const string ProcEventsIsEnabled = "IgniteEventsIsEnabled";
 
-        private const string PROC_DELETE_CONTEXT = "IgniteDeleteContext";
+        private const string ProcDeleteContext = "IgniteDeleteContext";
         
-        private const string PROC_SERVICES_WITH_ASYNC = "IgniteServicesWithAsync";
-        private const string PROC_SERVICES_WITH_SERVER_KEEP_PORTABLE = "IgniteServicesWithServerKeepPortable";
-        private const string PROC_SERVICES_CANCEL = "IgniteServicesCancel";
-        private const string PROC_SERVICES_CANCEL_ALL = "IgniteServicesCancelAll";
-        private const string PROC_SERVICES_GET_SERVICE_PROXY = "IgniteServicesGetServiceProxy";
+        private const string ProcServicesWithAsync = "IgniteServicesWithAsync";
+        private const string ProcServicesWithServerKeepPortable = "IgniteServicesWithServerKeepPortable";
+        private const string ProcServicesCancel = "IgniteServicesCancel";
+        private const string ProcServicesCancelAll = "IgniteServicesCancelAll";
+        private const string ProcServicesGetServiceProxy = "IgniteServicesGetServiceProxy";
         
         #endregion
 
@@ -301,10 +301,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly TargetOutLongDelegate TARGET_OUT_LONG;
         private static readonly TargetOutStreamDelegate TARGET_OUT_STREAM;
         private static readonly TargetOutObjectDelegate TARGET_OUT_OBJECT;
-        private static readonly TargetListenFutureDelegate TARGET_LISTEN_FUT;
-        private static readonly TargetListenFutureForOpDelegate TARGET_LISTEN_FUT_FOR_OP;
+        private static readonly TargetListenFutureDelegate TargetListenFut;
+        private static readonly TargetListenFutureForOpDelegate TargetListenFutForOp;
 
-        private static readonly AffinityPartitionsDelegate AFFINITY_PARTS;
+        private static readonly AffinityPartitionsDelegate AffinityParts;
 
         private static readonly CacheWithSkipStoreDelegate CACHE_WITH_SKIP_STORE;
         private static readonly CacheNoRetriesDelegate CACHE_WITH_NO_RETRIES;
@@ -330,20 +330,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ComputeWithTimeoutDelegate COMPUTE_WITH_TIMEOUT;
         private static readonly ComputeExecuteNativeDelegate COMPUTE_EXECUTE_NATIVE;
 
-        private static readonly ContinuousQueryCloseDelegate CONTINUOUS_QRY_CLOSE;
-        private static readonly ContinuousQueryGetInitialQueryCursorDelegate CONTINUOUS_QRY_GET_INITIAL_QUERY_CURSOR;
+        private static readonly ContinuousQueryCloseDelegate ContinuousQryClose;
+        private static readonly ContinuousQueryGetInitialQueryCursorDelegate ContinuousQryGetInitialQueryCursor;
 
-        private static readonly DataStreamerListenTopologyDelegate DATA_STREAMER_LISTEN_TOP;
+        private static readonly DataStreamerListenTopologyDelegate DataStreamerListenTop;
         private static readonly DataStreamerAllowOverwriteGetDelegate DATA_STREAMER_ALLOW_OVERWRITE_GET;
         private static readonly DataStreamerAllowOverwriteSetDelegate DATA_STREAMER_ALLOW_OVERWRITE_SET;
         private static readonly DataStreamerSkipStoreGetDelegate DATA_STREAMER_SKIP_STORE_GET;
         private static readonly DataStreamerSkipStoreSetDelegate DATA_STREAMER_SKIP_STORE_SET;
         private static readonly DataStreamerPerNodeBufferSizeGetDelegate DATA_STREAMER_PER_NODE_BUFFER_SIZE_GET;
         private static readonly DataStreamerPerNodeBufferSizeSetDelegate DATA_STREAMER_PER_NODE_BUFFER_SIZE_SET;
-        private static readonly DataStreamerPerNodeParallelOperationsGetDelegate DATA_STREAMER_PER_NODE_PARALLEL_OPS_GET;
-        private static readonly DataStreamerPerNodeParallelOperationsSetDelegate DATA_STREAMER_PER_NODE_PARALLEL_OPS_SET;
+        private static readonly DataStreamerPerNodeParallelOperationsGetDelegate DataStreamerPerNodeParallelOpsGet;
+        private static readonly DataStreamerPerNodeParallelOperationsSetDelegate DataStreamerPerNodeParallelOpsSet;
 
-        private static readonly MessagingWithAsyncDelegate MESSAGING_WITH_ASYNC;
+        private static readonly MessagingWithAsyncDelegate MessagingWithAsync;
 
         private static readonly ProjectionForOthersDelegate PROJECTION_FOR_OTHERS;
         private static readonly ProjectionForRemotesDelegate PROJECTION_FOR_REMOTES;
@@ -354,20 +354,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ProjectionResetMetricsDelegate PROJECTION_RESET_METRICS;
         private static readonly ProjectionOutOpRetDelegate PROJECTION_OUT_OP_RET;
 
-        private static readonly QueryCursorIteratorDelegate QRY_CURSOR_ITERATOR;
-        private static readonly QueryCursorCloseDelegate QRY_CURSOR_CLOSE;
+        private static readonly QueryCursorIteratorDelegate QryCursorIterator;
+        private static readonly QueryCursorCloseDelegate QryCursorClose;
 
         private static readonly ReleaseDelegate RELEASE;
 
-        private static readonly TransactionsStartDelegate TX_START;
-        private static readonly TransactionsCommitDelegate TX_COMMIT;
-        private static readonly TransactionsCommitAsyncDelegate TX_COMMIT_ASYNC;
-        private static readonly TransactionsRollbackDelegate TX_ROLLBACK;
-        private static readonly TransactionsRollbackAsyncDelegate TX_ROLLBACK_ASYNC;
-        private static readonly TransactionsCloseDelegate TX_CLOSE;
-        private static readonly TransactionsStateDelegate TX_STATE;
-        private static readonly TransactionsSetRollbackOnlyDelegate TX_SET_ROLLBACK_ONLY;
-        private static readonly TransactionsResetMetricsDelegate TX_RESET_METRICS;
+        private static readonly TransactionsStartDelegate TxStart;
+        private static readonly TransactionsCommitDelegate TxCommit;
+        private static readonly TransactionsCommitAsyncDelegate TxCommitAsync;
+        private static readonly TransactionsRollbackDelegate TxRollback;
+        private static readonly TransactionsRollbackAsyncDelegate TxRollbackAsync;
+        private static readonly TransactionsCloseDelegate TxClose;
+        private static readonly TransactionsStateDelegate TxState;
+        private static readonly TransactionsSetRollbackOnlyDelegate TxSetRollbackOnly;
+        private static readonly TransactionsResetMetricsDelegate TxResetMetrics;
 
         private static readonly ThrowToJavaDelegate THROW_TO_JAVA;
 
@@ -393,7 +393,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         #endregion
 
         /** Library pointer. */
-        private static readonly IntPtr PTR;
+        private static readonly IntPtr Ptr;
 
         /// <summary>
         /// Initializer.
@@ -401,127 +401,127 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
         static UnmanagedUtils()
         {
-            var path = U.UnpackEmbeddedResource(U.FILE_GG_JNI_DLL);
+            var path = U.UnpackEmbeddedResource(U.FileGgJniDll);
 
-            PTR = NativeMethods.LoadLibrary(path);
+            Ptr = NativeMethods.LoadLibrary(path);
 
-            if (PTR == IntPtr.Zero)
-                throw new IgniteException("Failed to load " + U.FILE_GG_JNI_DLL + ": " + Marshal.GetLastWin32Error());
+            if (Ptr == IntPtr.Zero)
+                throw new IgniteException("Failed to load " + U.FileGgJniDll + ": " + Marshal.GetLastWin32Error());
 
-            REALLOCATE = CreateDelegate<ReallocateDelegate>(PROC_REALLOCATE);
+            REALLOCATE = CreateDelegate<ReallocateDelegate>(ProcReallocate);
 
-            IGNITION_START = CreateDelegate<IgnitionStartDelegate>(PROC_IGNITION_START);
-            IGNITION_STOP = CreateDelegate<IgnitionStopDelegate>(PROC_IGNITION_STOP);
-            IGNITION_STOP_ALL = CreateDelegate<IgnitionStopAllDelegate>(PROC_IGNITION_STOP_ALL);
+            IGNITION_START = CreateDelegate<IgnitionStartDelegate>(ProcIgnitionStart);
+            IGNITION_STOP = CreateDelegate<IgnitionStopDelegate>(ProcIgnitionStop);
+            IGNITION_STOP_ALL = CreateDelegate<IgnitionStopAllDelegate>(ProcIgnitionStopAll);
             
-            PROCESSOR_RELEASE_START = CreateDelegate<ProcessorReleaseStartDelegate>(PROC_PROCESSOR_RELEASE_START);
-            PROCESSOR_PROJECTION = CreateDelegate<ProcessorProjectionDelegate>(PROC_PROCESSOR_PROJECTION);
-            PROCESSOR_CACHE = CreateDelegate<ProcessorCacheDelegate>(PROC_PROCESSOR_CACHE);
-            PROCESSOR_CREATE_CACHE = CreateDelegate<ProcessorCreateCacheDelegate>(PROC_PROCESSOR_CREATE_CACHE);
-            PROCESSOR_GET_OR_CREATE_CACHE = CreateDelegate<ProcessorGetOrCreateCacheDelegate>(PROC_PROCESSOR_GET_OR_CREATE_CACHE);
-            PROCESSOR_AFFINITY = CreateDelegate<ProcessorAffinityDelegate>(PROC_PROCESSOR_AFFINITY);
-            PROCESSOR_DATA_STREAMER = CreateDelegate<ProcessorDataStreamerDelegate>(PROC_PROCESSOR_DATA_STREAMER);
-            PROCESSOR_TRANSACTIONS = CreateDelegate<ProcessorTransactionsDelegate>(PROC_PROCESSOR_TRANSACTIONS);
-            PROCESSOR_COMPUTE = CreateDelegate<ProcessorComputeDelegate>(PROC_PROCESSOR_COMPUTE);
-            PROCESSOR_MESSAGE = CreateDelegate<ProcessorMessageDelegate>(PROC_PROCESSOR_MESSAGE);
-            PROCESSOR_EVENTS = CreateDelegate<ProcessorEventsDelegate>(PROC_PROCESSOR_EVENTS);
-            PROCESSOR_SERVICES = CreateDelegate<ProcessorServicesDelegate>(PROC_PROCESSOR_SERVICES);
-            PROCESSOR_EXTENSIONS = CreateDelegate<ProcessorExtensionsDelegate>(PROC_PROCESSOR_EXTENSIONS);
+            PROCESSOR_RELEASE_START = CreateDelegate<ProcessorReleaseStartDelegate>(ProcProcessorReleaseStart);
+            PROCESSOR_PROJECTION = CreateDelegate<ProcessorProjectionDelegate>(ProcProcessorProjection);
+            PROCESSOR_CACHE = CreateDelegate<ProcessorCacheDelegate>(ProcProcessorCache);
+            PROCESSOR_CREATE_CACHE = CreateDelegate<ProcessorCreateCacheDelegate>(ProcProcessorCreateCache);
+            PROCESSOR_GET_OR_CREATE_CACHE = CreateDelegate<ProcessorGetOrCreateCacheDelegate>(ProcProcessorGetOrCreateCache);
+            PROCESSOR_AFFINITY = CreateDelegate<ProcessorAffinityDelegate>(ProcProcessorAffinity);
+            PROCESSOR_DATA_STREAMER = CreateDelegate<ProcessorDataStreamerDelegate>(ProcProcessorDataStreamer);
+            PROCESSOR_TRANSACTIONS = CreateDelegate<ProcessorTransactionsDelegate>(ProcProcessorTransactions);
+            PROCESSOR_COMPUTE = CreateDelegate<ProcessorComputeDelegate>(ProcProcessorCompute);
+            PROCESSOR_MESSAGE = CreateDelegate<ProcessorMessageDelegate>(ProcProcessorMessage);
+            PROCESSOR_EVENTS = CreateDelegate<ProcessorEventsDelegate>(ProcProcessorEvents);
+            PROCESSOR_SERVICES = CreateDelegate<ProcessorServicesDelegate>(ProcProcessorServices);
+            PROCESSOR_EXTENSIONS = CreateDelegate<ProcessorExtensionsDelegate>(ProcProcessorExtensions);
             
-            TARGET_IN_STREAM_OUT_LONG = CreateDelegate<TargetInStreamOutLongDelegate>(PROC_TARGET_IN_STREAM_OUT_LONG);
-            TARGET_IN_STREAM_OUT_STREAM = CreateDelegate<TargetInStreamOutStreamDelegate>(PROC_TARGET_IN_STREAM_OUT_STREAM);
-            TARGET_IN_STREAM_OUT_OBJECT = CreateDelegate<TargetInStreamOutObjectDelegate>(PROC_TARGET_IN_STREAM_OUT_OBJECT);
-            TARGET_IN_OBJECT_STREAM_OUT_STREAM = CreateDelegate<TargetInObjectStreamOutStreamDelegate>(PROC_TARGET_IN_OBJECT_STREAM_OUT_STREAM);
-            TARGET_OUT_LONG = CreateDelegate<TargetOutLongDelegate>(PROC_TARGET_OUT_LONG);
-            TARGET_OUT_STREAM = CreateDelegate<TargetOutStreamDelegate>(PROC_TARGET_OUT_STREAM);
-            TARGET_OUT_OBJECT = CreateDelegate<TargetOutObjectDelegate>(PROC_TARGET_OUT_OBJECT);
-            TARGET_LISTEN_FUT = CreateDelegate<TargetListenFutureDelegate>(PROC_TARGET_LISTEN_FUT);
-            TARGET_LISTEN_FUT_FOR_OP = CreateDelegate<TargetListenFutureForOpDelegate>(PROC_TARGET_LISTEN_FUT_FOR_OP);
+            TARGET_IN_STREAM_OUT_LONG = CreateDelegate<TargetInStreamOutLongDelegate>(ProcTargetInStreamOutLong);
+            TARGET_IN_STREAM_OUT_STREAM = CreateDelegate<TargetInStreamOutStreamDelegate>(ProcTargetInStreamOutStream);
+            TARGET_IN_STREAM_OUT_OBJECT = CreateDelegate<TargetInStreamOutObjectDelegate>(ProcTargetInStreamOutObject);
+            TARGET_IN_OBJECT_STREAM_OUT_STREAM = CreateDelegate<TargetInObjectStreamOutStreamDelegate>(ProcTargetInObjectStreamOutStream);
+            TARGET_OUT_LONG = CreateDelegate<TargetOutLongDelegate>(ProcTargetOutLong);
+            TARGET_OUT_STREAM = CreateDelegate<TargetOutStreamDelegate>(ProcTargetOutStream);
+            TARGET_OUT_OBJECT = CreateDelegate<TargetOutObjectDelegate>(ProcTargetOutObject);
+            TargetListenFut = CreateDelegate<TargetListenFutureDelegate>(ProcTargetListenFut);
+            TargetListenFutForOp = CreateDelegate<TargetListenFutureForOpDelegate>(ProcTargetListenFutForOp);
 
-            AFFINITY_PARTS = CreateDelegate<AffinityPartitionsDelegate>(PROC_AFFINITY_PARTS);
+            AffinityParts = CreateDelegate<AffinityPartitionsDelegate>(ProcAffinityParts);
 
-            CACHE_WITH_SKIP_STORE = CreateDelegate<CacheWithSkipStoreDelegate>(PROC_CACHE_WITH_SKIP_STORE);
-            CACHE_WITH_NO_RETRIES = CreateDelegate<CacheNoRetriesDelegate>(PROC_CACHE_WITH_NO_RETRIES);
-            CACHE_WITH_EXPIRY_POLICY = CreateDelegate<CacheWithExpiryPolicyDelegate>(PROC_CACHE_WITH_EXPIRY_POLICY);
-            CACHE_WITH_ASYNC = CreateDelegate<CacheWithAsyncDelegate>(PROC_CACHE_WITH_ASYNC);
-            CACHE_WITH_KEEP_PORTABLE = CreateDelegate<CacheWithKeepPortableDelegate>(PROC_CACHE_WITH_KEEP_PORTABLE);
-            CACHE_CLEAR = CreateDelegate<CacheClearDelegate>(PROC_CACHE_CLEAR);
-            CACHE_REMOVE_ALL = CreateDelegate<CacheRemoveAllDelegate>(PROC_CACHE_REMOVE_ALL);
-            CACHE_OUT_OP_QUERY_CURSOR = CreateDelegate<CacheOutOpQueryCursorDelegate>(PROC_CACHE_OUT_OP_QUERY_CURSOR);
-            CACHE_OUT_OP_CONTINUOUS_QUERY = CreateDelegate<CacheOutOpContinuousQueryDelegate>(PROC_CACHE_OUT_OP_CONTINUOUS_QUERY);
-            CACHE_ITERATOR = CreateDelegate<CacheIteratorDelegate>(PROC_CACHE_ITERATOR);
-            CACHE_LOCAL_ITERATOR = CreateDelegate<CacheLocalIteratorDelegate>(PROC_CACHE_LOCAL_ITERATOR);
-            CACHE_ENTER_LOCK = CreateDelegate<CacheEnterLockDelegate>(PROC_CACHE_ENTER_LOCK);
-            CACHE_EXIT_LOCK = CreateDelegate<CacheExitLockDelegate>(PROC_CACHE_EXIT_LOCK);
-            CACHE_TRY_ENTER_LOCK = CreateDelegate<CacheTryEnterLockDelegate>(PROC_CACHE_TRY_ENTER_LOCK);
-            CACHE_CLOSE_LOCK = CreateDelegate<CacheCloseLockDelegate>(PROC_CACHE_CLOSE_LOCK);
-            CACHE_REBALANCE = CreateDelegate<CacheRebalanceDelegate>(PROC_CACHE_REBALANCE);
-            CACHE_SIZE = CreateDelegate<CacheSizeDelegate>(PROC_CACHE_SIZE);
+            CACHE_WITH_SKIP_STORE = CreateDelegate<CacheWithSkipStoreDelegate>(ProcCacheWithSkipStore);
+            CACHE_WITH_NO_RETRIES = CreateDelegate<CacheNoRetriesDelegate>(ProcCacheWithNoRetries);
+            CACHE_WITH_EXPIRY_POLICY = CreateDelegate<CacheWithExpiryPolicyDelegate>(ProcCacheWithExpiryPolicy);
+            CACHE_WITH_ASYNC = CreateDelegate<CacheWithAsyncDelegate>(ProcCacheWithAsync);
+            CACHE_WITH_KEEP_PORTABLE = CreateDelegate<CacheWithKeepPortableDelegate>(ProcCacheWithKeepPortable);
+            CACHE_CLEAR = CreateDelegate<CacheClearDelegate>(ProcCacheClear);
+            CACHE_REMOVE_ALL = CreateDelegate<CacheRemoveAllDelegate>(ProcCacheRemoveAll);
+            CACHE_OUT_OP_QUERY_CURSOR = CreateDelegate<CacheOutOpQueryCursorDelegate>(ProcCacheOutOpQueryCursor);
+            CACHE_OUT_OP_CONTINUOUS_QUERY = CreateDelegate<CacheOutOpContinuousQueryDelegate>(ProcCacheOutOpContinuousQuery);
+            CACHE_ITERATOR = CreateDelegate<CacheIteratorDelegate>(ProcCacheIterator);
+            CACHE_LOCAL_ITERATOR = CreateDelegate<CacheLocalIteratorDelegate>(ProcCacheLocalIterator);
+            CACHE_ENTER_LOCK = CreateDelegate<CacheEnterLockDelegate>(ProcCacheEnterLock);
+            CACHE_EXIT_LOCK = CreateDelegate<CacheExitLockDelegate>(ProcCacheExitLock);
+            CACHE_TRY_ENTER_LOCK = CreateDelegate<CacheTryEnterLockDelegate>(ProcCacheTryEnterLock);
+            CACHE_CLOSE_LOCK = CreateDelegate<CacheCloseLockDelegate>(ProcCacheCloseLock);
+            CACHE_REBALANCE = CreateDelegate<CacheRebalanceDelegate>(ProcCacheRebalance);
+            CACHE_SIZE = CreateDelegate<CacheSizeDelegate>(ProcCacheSize);
 
-            CACHE_STORE_CALLBACK_INVOKE = CreateDelegate<CacheStoreCallbackInvokeDelegate>(PROC_CACHE_STORE_CALLBACK_INVOKE);
+            CACHE_STORE_CALLBACK_INVOKE = CreateDelegate<CacheStoreCallbackInvokeDelegate>(ProcCacheStoreCallbackInvoke);
 
-            COMPUTE_WITH_NO_FAILOVER = CreateDelegate<ComputeWithNoFailoverDelegate>(PROC_COMPUTE_WITH_NO_FAILOVER);
-            COMPUTE_WITH_TIMEOUT = CreateDelegate<ComputeWithTimeoutDelegate>(PROC_COMPUTE_WITH_TIMEOUT);
-            COMPUTE_EXECUTE_NATIVE = CreateDelegate<ComputeExecuteNativeDelegate>(PROC_COMPUTE_EXECUTE_NATIVE);
+            COMPUTE_WITH_NO_FAILOVER = CreateDelegate<ComputeWithNoFailoverDelegate>(ProcComputeWithNoFailover);
+            COMPUTE_WITH_TIMEOUT = CreateDelegate<ComputeWithTimeoutDelegate>(ProcComputeWithTimeout);
+            COMPUTE_EXECUTE_NATIVE = CreateDelegate<ComputeExecuteNativeDelegate>(ProcComputeExecuteNative);
 
-            CONTINUOUS_QRY_CLOSE = CreateDelegate<ContinuousQueryCloseDelegate>(PROC_CONTINUOUS_QRY_CLOSE);
-            CONTINUOUS_QRY_GET_INITIAL_QUERY_CURSOR = CreateDelegate<ContinuousQueryGetInitialQueryCursorDelegate>(PROC_CONTINUOUS_QRY_GET_INITIAL_QUERY_CURSOR);
+            ContinuousQryClose = CreateDelegate<ContinuousQueryCloseDelegate>(ProcContinuousQryClose);
+            ContinuousQryGetInitialQueryCursor = CreateDelegate<ContinuousQueryGetInitialQueryCursorDelegate>(ProcContinuousQryGetInitialQueryCursor);
 
-            DATA_STREAMER_LISTEN_TOP = CreateDelegate<DataStreamerListenTopologyDelegate>(PROC_DATA_STREAMER_LISTEN_TOP); 
-            DATA_STREAMER_ALLOW_OVERWRITE_GET = CreateDelegate<DataStreamerAllowOverwriteGetDelegate>(PROC_DATA_STREAMER_ALLOW_OVERWRITE_GET);
-            DATA_STREAMER_ALLOW_OVERWRITE_SET = CreateDelegate<DataStreamerAllowOverwriteSetDelegate>(PROC_DATA_STREAMER_ALLOW_OVERWRITE_SET); 
-            DATA_STREAMER_SKIP_STORE_GET = CreateDelegate<DataStreamerSkipStoreGetDelegate>(PROC_DATA_STREAMER_SKIP_STORE_GET); 
-            DATA_STREAMER_SKIP_STORE_SET = CreateDelegate<DataStreamerSkipStoreSetDelegate>(PROC_DATA_STREAMER_SKIP_STORE_SET); 
-            DATA_STREAMER_PER_NODE_BUFFER_SIZE_GET = CreateDelegate<DataStreamerPerNodeBufferSizeGetDelegate>(PROC_DATA_STREAMER_PER_NODE_BUFFER_SIZE_GET); 
-            DATA_STREAMER_PER_NODE_BUFFER_SIZE_SET = CreateDelegate<DataStreamerPerNodeBufferSizeSetDelegate>(PROC_DATA_STREAMER_PER_NODE_BUFFER_SIZE_SET); 
-            DATA_STREAMER_PER_NODE_PARALLEL_OPS_GET = CreateDelegate<DataStreamerPerNodeParallelOperationsGetDelegate>(PROC_DATA_STREAMER_PER_NODE_PARALLEL_OPS_GET); 
-            DATA_STREAMER_PER_NODE_PARALLEL_OPS_SET = CreateDelegate<DataStreamerPerNodeParallelOperationsSetDelegate>(PROC_DATA_STREAMER_PER_NODE_PARALLEL_OPS_SET); 
+            DataStreamerListenTop = CreateDelegate<DataStreamerListenTopologyDelegate>(ProcDataStreamerListenTop); 
+            DATA_STREAMER_ALLOW_OVERWRITE_GET = CreateDelegate<DataStreamerAllowOverwriteGetDelegate>(ProcDataStreamerAllowOverwriteGet);
+            DATA_STREAMER_ALLOW_OVERWRITE_SET = CreateDelegate<DataStreamerAllowOverwriteSetDelegate>(ProcDataStreamerAllowOverwriteSet); 
+            DATA_STREAMER_SKIP_STORE_GET = CreateDelegate<DataStreamerSkipStoreGetDelegate>(ProcDataStreamerSkipStoreGet); 
+            DATA_STREAMER_SKIP_STORE_SET = CreateDelegate<DataStreamerSkipStoreSetDelegate>(ProcDataStreamerSkipStoreSet); 
+            DATA_STREAMER_PER_NODE_BUFFER_SIZE_GET = CreateDelegate<DataStreamerPerNodeBufferSizeGetDelegate>(ProcDataStreamerPerNodeBufferSizeGet); 
+            DATA_STREAMER_PER_NODE_BUFFER_SIZE_SET = CreateDelegate<DataStreamerPerNodeBufferSizeSetDelegate>(ProcDataStreamerPerNodeBufferSizeSet); 
+            DataStreamerPerNodeParallelOpsGet = CreateDelegate<DataStreamerPerNodeParallelOperationsGetDelegate>(ProcDataStreamerPerNodeParallelOpsGet); 
+            DataStreamerPerNodeParallelOpsSet = CreateDelegate<DataStreamerPerNodeParallelOperationsSetDelegate>(ProcDataStreamerPerNodeParallelOpsSet); 
 
-            MESSAGING_WITH_ASYNC = CreateDelegate<MessagingWithAsyncDelegate>(PROC_MESSAGING_WITH_ASYNC);
+            MessagingWithAsync = CreateDelegate<MessagingWithAsyncDelegate>(ProcMessagingWithAsync);
 
-            PROJECTION_FOR_OTHERS = CreateDelegate<ProjectionForOthersDelegate>(PROC_PROJECTION_FOR_OTHERS);
-            PROJECTION_FOR_REMOTES = CreateDelegate<ProjectionForRemotesDelegate>(PROC_PROJECTION_FOR_REMOTES);
-            PROJECTION_FOR_DAEMONS = CreateDelegate<ProjectionForDaemonsDelegate>(PROC_PROJECTION_FOR_DAEMONS);
-            PROJECTION_FOR_RANDOM = CreateDelegate<ProjectionForRandomDelegate>(PROC_PROJECTION_FOR_RANDOM);
-            PROJECTION_FOR_OLDEST = CreateDelegate<ProjectionForOldestDelegate>(PROC_PROJECTION_FOR_OLDEST);
-            PROJECTION_FOR_YOUNGEST = CreateDelegate<ProjectionForYoungestDelegate>(PROC_PROJECTION_FOR_YOUNGEST);
-            PROJECTION_RESET_METRICS = CreateDelegate<ProjectionResetMetricsDelegate>(PROC_PROJECTION_RESET_METRICS);
-            PROJECTION_OUT_OP_RET = CreateDelegate<ProjectionOutOpRetDelegate>(PROC_PROJECTION_OUT_OP_RET);
+            PROJECTION_FOR_OTHERS = CreateDelegate<ProjectionForOthersDelegate>(ProcProjectionForOthers);
+            PROJECTION_FOR_REMOTES = CreateDelegate<ProjectionForRemotesDelegate>(ProcProjectionForRemotes);
+            PROJECTION_FOR_DAEMONS = CreateDelegate<ProjectionForDaemonsDelegate>(ProcProjectionForDaemons);
+            PROJECTION_FOR_RANDOM = CreateDelegate<ProjectionForRandomDelegate>(ProcProjectionForRandom);
+            PROJECTION_FOR_OLDEST = CreateDelegate<ProjectionForOldestDelegate>(ProcProjectionForOldest);
+            PROJECTION_FOR_YOUNGEST = CreateDelegate<ProjectionForYoungestDelegate>(ProcProjectionForYoungest);
+            PROJECTION_RESET_METRICS = CreateDelegate<ProjectionResetMetricsDelegate>(ProcProjectionResetMetrics);
+            PROJECTION_OUT_OP_RET = CreateDelegate<ProjectionOutOpRetDelegate>(ProcProjectionOutOpRet);
 
-            QRY_CURSOR_ITERATOR = CreateDelegate<QueryCursorIteratorDelegate>(PROC_QRY_CURSOR_ITERATOR);
-            QRY_CURSOR_CLOSE = CreateDelegate<QueryCursorCloseDelegate>(PROC_QRY_CURSOR_CLOSE);
+            QryCursorIterator = CreateDelegate<QueryCursorIteratorDelegate>(ProcQryCursorIterator);
+            QryCursorClose = CreateDelegate<QueryCursorCloseDelegate>(ProcQryCursorClose);
 
-            RELEASE = CreateDelegate<ReleaseDelegate>(PROC_RELEASE);
+            RELEASE = CreateDelegate<ReleaseDelegate>(ProcRelease);
 
-            TX_START = CreateDelegate<TransactionsStartDelegate>(PROC_TX_START);
-            TX_COMMIT = CreateDelegate<TransactionsCommitDelegate>(PROC_TX_COMMIT);
-            TX_COMMIT_ASYNC = CreateDelegate<TransactionsCommitAsyncDelegate>(PROC_TX_COMMIT_ASYNC);
-            TX_ROLLBACK = CreateDelegate<TransactionsRollbackDelegate>(PROC_TX_ROLLBACK);
-            TX_ROLLBACK_ASYNC = CreateDelegate<TransactionsRollbackAsyncDelegate>(PROC_TX_ROLLBACK_ASYNC);
-            TX_CLOSE = CreateDelegate<TransactionsCloseDelegate>(PROC_TX_CLOSE);
-            TX_STATE = CreateDelegate<TransactionsStateDelegate>(PROC_TX_STATE);
-            TX_SET_ROLLBACK_ONLY = CreateDelegate<TransactionsSetRollbackOnlyDelegate>(PROC_TX_SET_ROLLBACK_ONLY);
-            TX_RESET_METRICS = CreateDelegate<TransactionsResetMetricsDelegate>(PROC_TX_RESET_METRICS);
+            TxStart = CreateDelegate<TransactionsStartDelegate>(ProcTxStart);
+            TxCommit = CreateDelegate<TransactionsCommitDelegate>(ProcTxCommit);
+            TxCommitAsync = CreateDelegate<TransactionsCommitAsyncDelegate>(ProcTxCommitAsync);
+            TxRollback = CreateDelegate<TransactionsRollbackDelegate>(ProcTxRollback);
+            TxRollbackAsync = CreateDelegate<TransactionsRollbackAsyncDelegate>(ProcTxRollbackAsync);
+            TxClose = CreateDelegate<TransactionsCloseDelegate>(ProcTxClose);
+            TxState = CreateDelegate<TransactionsStateDelegate>(ProcTxState);
+            TxSetRollbackOnly = CreateDelegate<TransactionsSetRollbackOnlyDelegate>(ProcTxSetRollbackOnly);
+            TxResetMetrics = CreateDelegate<TransactionsResetMetricsDelegate>(ProcTxResetMetrics);
 
-            THROW_TO_JAVA = CreateDelegate<ThrowToJavaDelegate>(PROC_THROW_TO_JAVA);
+            THROW_TO_JAVA = CreateDelegate<ThrowToJavaDelegate>(ProcThrowToJava);
 
-            HANDLERS_SIZE = CreateDelegate<HandlersSizeDelegate>(PROC_HANDLERS_SIZE);
+            HANDLERS_SIZE = CreateDelegate<HandlersSizeDelegate>(ProcHandlersSize);
 
-            CREATE_CONTEXT = CreateDelegate<CreateContextDelegate>(PROC_CREATE_CONTEXT);
-            DELETE_CONTEXT = CreateDelegate<DeleteContextDelegate>(PROC_DELETE_CONTEXT);
+            CREATE_CONTEXT = CreateDelegate<CreateContextDelegate>(ProcCreateContext);
+            DELETE_CONTEXT = CreateDelegate<DeleteContextDelegate>(ProcDeleteContext);
 
-            DESTROY_JVM = CreateDelegate<DestroyJvmDelegate>(PROC_DESTROY_JVM);
+            DESTROY_JVM = CreateDelegate<DestroyJvmDelegate>(ProcDestroyJvm);
 
-            EVENTS_WITH_ASYNC = CreateDelegate<EventsWithAsyncDelegate>(PROC_EVENTS_WITH_ASYNC);
-            EVENTS_STOP_LOCAL_LISTEN = CreateDelegate<EventsStopLocalListenDelegate>(PROC_EVENTS_STOP_LOCAL_LISTEN);
-            EVENTS_LOCAL_LISTEN = CreateDelegate<EventsLocalListenDelegate>(PROC_EVENTS_LOCAL_LISTEN);
-            EVENTS_IS_ENABLED = CreateDelegate<EventsIsEnabledDelegate>(PROC_EVENTS_IS_ENABLED);
+            EVENTS_WITH_ASYNC = CreateDelegate<EventsWithAsyncDelegate>(ProcEventsWithAsync);
+            EVENTS_STOP_LOCAL_LISTEN = CreateDelegate<EventsStopLocalListenDelegate>(ProcEventsStopLocalListen);
+            EVENTS_LOCAL_LISTEN = CreateDelegate<EventsLocalListenDelegate>(ProcEventsLocalListen);
+            EVENTS_IS_ENABLED = CreateDelegate<EventsIsEnabledDelegate>(ProcEventsIsEnabled);
             
-            SERVICES_WITH_ASYNC = CreateDelegate<ServicesWithAsyncDelegate>(PROC_SERVICES_WITH_ASYNC);
-            SERVICES_WITH_SERVER_KEEP_PORTABLE = CreateDelegate<ServicesWithServerKeepPortableDelegate>(PROC_SERVICES_WITH_SERVER_KEEP_PORTABLE);
-            SERVICES_CANCEL = CreateDelegate<ServicesCancelDelegate>(PROC_SERVICES_CANCEL);
-            SERVICES_CANCEL_ALL = CreateDelegate<ServicesCancelAllDelegate>(PROC_SERVICES_CANCEL_ALL);
-            SERVICES_GET_SERVICE_PROXY = CreateDelegate<ServicesGetServiceProxyDelegate>(PROC_SERVICES_GET_SERVICE_PROXY);
+            SERVICES_WITH_ASYNC = CreateDelegate<ServicesWithAsyncDelegate>(ProcServicesWithAsync);
+            SERVICES_WITH_SERVER_KEEP_PORTABLE = CreateDelegate<ServicesWithServerKeepPortableDelegate>(ProcServicesWithServerKeepPortable);
+            SERVICES_CANCEL = CreateDelegate<ServicesCancelDelegate>(ProcServicesCancel);
+            SERVICES_CANCEL_ALL = CreateDelegate<ServicesCancelAllDelegate>(ProcServicesCancelAll);
+            SERVICES_GET_SERVICE_PROXY = CreateDelegate<ServicesGetServiceProxyDelegate>(ProcServicesGetServiceProxy);
         }
 
         #region NATIVE METHODS: PROCESSOR
@@ -538,7 +538,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 try
                 {
-                    void* res = IGNITION_START(ctx.NativeContext, cfgPath0, gridName0, INTEROP_FACTORY_ID,
+                    void* res = IGNITION_START(ctx.NativeContext, cfgPath0, gridName0, InteropFactoryId,
                         mem.SynchronizeOutput());
 
                     return new UnmanagedTarget(ctx, res);
@@ -749,12 +749,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static void TargetListenFuture(IUnmanagedTarget target, long futId, int typ)
         {
-            TARGET_LISTEN_FUT(target.Context, target.Target, futId, typ);
+            TargetListenFut(target.Context, target.Target, futId, typ);
         }
 
         internal static void TargetListenFutureForOperation(IUnmanagedTarget target, long futId, int typ, int opId)
         {
-            TARGET_LISTEN_FUT_FOR_OP(target.Context, target.Target, futId, typ, opId);
+            TargetListenFutForOp(target.Context, target.Target, futId, typ, opId);
         }
 
         #endregion
@@ -763,7 +763,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static int AffinityPartitions(IUnmanagedTarget target)
         {
-            return AFFINITY_PARTS(target.Context, target.Target);
+            return AffinityParts(target.Context, target.Target);
         }
 
         #endregion
@@ -903,12 +903,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static void ContinuousQueryClose(IUnmanagedTarget target)
         {
-            CONTINUOUS_QRY_CLOSE(target.Context, target.Target);
+            ContinuousQryClose(target.Context, target.Target);
         }
 
         internal static IUnmanagedTarget ContinuousQueryGetInitialQueryCursor(IUnmanagedTarget target)
         {
-            void* res = CONTINUOUS_QRY_GET_INITIAL_QUERY_CURSOR(target.Context, target.Target);
+            void* res = ContinuousQryGetInitialQueryCursor(target.Context, target.Target);
 
             return res == null ? null : target.ChangeTarget(res);
         }
@@ -919,7 +919,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static void DataStreamerListenTopology(IUnmanagedTarget target, long ptr)
         {
-            DATA_STREAMER_LISTEN_TOP(target.Context, target.Target, ptr);
+            DataStreamerListenTop(target.Context, target.Target, ptr);
         }
 
         internal static bool DataStreamerAllowOverwriteGet(IUnmanagedTarget target)
@@ -954,12 +954,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static int DataStreamerPerNodeParallelOperationsGet(IUnmanagedTarget target)
         {
-            return DATA_STREAMER_PER_NODE_PARALLEL_OPS_GET(target.Context, target.Target);
+            return DataStreamerPerNodeParallelOpsGet(target.Context, target.Target);
         }
 
         internal static void DataStreamerPerNodeParallelOperationsSet(IUnmanagedTarget target, int val)
         {
-            DATA_STREAMER_PER_NODE_PARALLEL_OPS_SET(target.Context, target.Target, val);
+            DataStreamerPerNodeParallelOpsSet(target.Context, target.Target, val);
         }
 
         #endregion
@@ -968,7 +968,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static IUnmanagedTarget MessagingWithASync(IUnmanagedTarget target)
         {
-            void* res = MESSAGING_WITH_ASYNC(target.Context, target.Target);
+            void* res = MessagingWithAsync(target.Context, target.Target);
 
             return target.ChangeTarget(res);
         }
@@ -1037,12 +1037,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static void QueryCursorIterator(IUnmanagedTarget target)
         {
-            QRY_CURSOR_ITERATOR(target.Context, target.Target);
+            QryCursorIterator(target.Context, target.Target);
         }
 
         internal static void QueryCursorClose(IUnmanagedTarget target)
         {
-            QRY_CURSOR_CLOSE(target.Context, target.Target);
+            QryCursorClose(target.Context, target.Target);
         }
 
         #endregion
@@ -1051,47 +1051,47 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static long TransactionsStart(IUnmanagedTarget target, int concurrency, int isolation, long timeout, int txSize)
         {
-            return TX_START(target.Context, target.Target, concurrency, isolation, timeout, txSize);
+            return TxStart(target.Context, target.Target, concurrency, isolation, timeout, txSize);
         }
 
         internal static int TransactionsCommit(IUnmanagedTarget target, long id)
         {
-            return TX_COMMIT(target.Context, target.Target, id);
+            return TxCommit(target.Context, target.Target, id);
         }
 
         internal static void TransactionsCommitAsync(IUnmanagedTarget target, long id, long futId)
         {
-            TX_COMMIT_ASYNC(target.Context, target.Target, id, futId);
+            TxCommitAsync(target.Context, target.Target, id, futId);
         }
 
         internal static int TransactionsRollback(IUnmanagedTarget target, long id)
         {
-            return TX_ROLLBACK(target.Context, target.Target, id);
+            return TxRollback(target.Context, target.Target, id);
         }
 
         internal static void TransactionsRollbackAsync(IUnmanagedTarget target, long id, long futId)
         {
-            TX_ROLLBACK_ASYNC(target.Context, target.Target, id, futId);
+            TxRollbackAsync(target.Context, target.Target, id, futId);
         }
 
         internal static int TransactionsClose(IUnmanagedTarget target, long id)
         {
-            return TX_CLOSE(target.Context, target.Target, id);
+            return TxClose(target.Context, target.Target, id);
         }
 
         internal static int TransactionsState(IUnmanagedTarget target, long id)
         {
-            return TX_STATE(target.Context, target.Target, id);
+            return TxState(target.Context, target.Target, id);
         }
 
         internal static bool TransactionsSetRollbackOnly(IUnmanagedTarget target, long id)
         {
-            return TX_SET_ROLLBACK_ONLY(target.Context, target.Target, id);
+            return TxSetRollbackOnly(target.Context, target.Target, id);
         }
 
         internal static void TransactionsResetMetrics(IUnmanagedTarget target)
         {
-            TX_RESET_METRICS(target.Context, target.Target);
+            TxResetMetrics(target.Context, target.Target);
         }
 
         #endregion
@@ -1238,7 +1238,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <returns></returns>
         private static T CreateDelegate<T>(string procName)
         {
-            var procPtr = NativeMethods.GetProcAddress(PTR, procName);
+            var procPtr = NativeMethods.GetProcAddress(Ptr, procName);
 
             if (procPtr == IntPtr.Zero)
                 throw new IgniteException(string.Format("Unable to find native function: {0} (Error code: {1}). " +

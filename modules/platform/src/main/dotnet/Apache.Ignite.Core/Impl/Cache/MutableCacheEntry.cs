@@ -24,16 +24,16 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// <summary>
     /// Represents a cache entry.
     /// </summary>
-    internal class MutableCacheEntry<K, V> : IMutableCacheEntry<K, V>, IMutableCacheEntryInternal
+    internal class MutableCacheEntry<TK, TV> : IMutableCacheEntry<TK, TV>, IMutableCacheEntryInternal
     {
         // Entry value
-        private V value;
+        private TV _value;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MutableCacheEntry{K, V}"/> class.
         /// </summary>
         /// <param name="key">The key.</param>
-        public MutableCacheEntry(K key)
+        public MutableCacheEntry(TK key)
         {
             Key = key;
         }
@@ -43,15 +43,15 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
-        public MutableCacheEntry(K key, V value)
+        public MutableCacheEntry(TK key, TV value)
         {
             Key = key;
-            this.value = value;
+            this._value = value;
             Exists = true;
         }
 
         /** <inheritdoc /> */
-        public K Key { get; private set; }
+        public TK Key { get; private set; }
 
         /** <inheritdoc /> */
         object IMutableCacheEntryInternal.Key
@@ -60,14 +60,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        public V Value
+        public TV Value
         {
-            get { return value; }
+            get { return _value; }
             set
             {
-                this.value = value;
+                this._value = value;
                 Exists = true;
-                State = MutableCacheEntryState.VALUE_SET;
+                State = MutableCacheEntryState.ValueSet;
             }
         }
 
@@ -83,9 +83,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Remove()
         {
-            Value = default(V);
+            Value = default(TV);
             Exists = false;
-            State = MutableCacheEntryState.REMOVED;
+            State = MutableCacheEntryState.Removed;
         }
 
         /** <inheritdoc /> */
@@ -124,16 +124,16 @@ namespace Apache.Ignite.Core.Impl.Cache
     internal static class MutableCacheEntry
     {
         private static readonly CopyOnWriteConcurrentDictionary<Tuple<Type, Type>, Func<object, object, bool, IMutableCacheEntryInternal>> 
-            CTORS = new CopyOnWriteConcurrentDictionary<Tuple<Type, Type>, Func<object, object, bool, IMutableCacheEntryInternal>>();
+            Ctors = new CopyOnWriteConcurrentDictionary<Tuple<Type, Type>, Func<object, object, bool, IMutableCacheEntryInternal>>();
 
         public static Func<object, object, bool, IMutableCacheEntryInternal> GetCtor(Type keyType, Type valType)
         {
             Func<object, object, bool, IMutableCacheEntryInternal> result;
             var funcKey = new Tuple<Type, Type>(keyType, valType);
 
-            return CTORS.TryGetValue(funcKey, out result)
+            return Ctors.TryGetValue(funcKey, out result)
                 ? result
-                : CTORS.GetOrAdd(funcKey, x =>
+                : Ctors.GetOrAdd(funcKey, x =>
                 {
                     var entryType = typeof (MutableCacheEntry<,>).MakeGenericType(keyType, valType);
 
@@ -154,10 +154,10 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// </summary>
     internal enum MutableCacheEntryState : byte
     {
-        INTACT = 0,
-        VALUE_SET = 1,
-        REMOVED = 2,
-        ERR_PORTABLE = 3,
-        ERR_STRING = 4
+        Intact = 0,
+        ValueSet = 1,
+        Removed = 2,
+        ErrPortable = 3,
+        ErrString = 4
     }
 }

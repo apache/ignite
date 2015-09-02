@@ -26,11 +26,11 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary>
         /// Optimistic concurrency control.
         /// </summary>
-        OPTIMISTIC = 0,
+        Optimistic = 0,
 
         /// <summary>
         /// Pessimistic concurrency control.
         /// </summary>
-        PESSIMISTIC = 1
+        Pessimistic = 1
     }
 }

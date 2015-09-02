@@ -40,10 +40,10 @@ namespace Apache.Ignite.Core.Impl.Compute
     internal class ComputeFuncWrapper : IComputeFunc, IPortableWriteAware
     {
         /** */
-        private readonly object func;
+        private readonly object _func;
 
         /** */
-        private readonly Func<object, object, object> invoker;
+        private readonly Func<object, object, object> _invoker;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeFuncWrapper" /> class.
@@ -52,9 +52,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="invoker">The function invoker.</param>
         public ComputeFuncWrapper(object func, Func<object, object> invoker)
         {
-            this.func = func;
+            this._func = func;
 
-            this.invoker = (target, arg) => invoker(arg);
+            this._invoker = (target, arg) => invoker(arg);
         }
 
         /** <inheritDoc /> */
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             try
             {
-                return invoker(func, arg);
+                return _invoker(_func, arg);
             }
             catch (TargetInvocationException ex)
             {
@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             var writer0 = (PortableWriterImpl)writer.RawWriter();
 
             writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, func);
+            PortableUtils.WritePortableOrSerializable(writer0, _func);
         }
 
         /// <summary>
@@ -87,9 +87,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var reader0 = (PortableReaderImpl)reader.RawReader();
 
-            func = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _func = PortableUtils.ReadPortableOrSerializable<object>(reader0);
 
-            invoker = DelegateTypeDescriptor.GetComputeFunc(func.GetType());
+            _invoker = DelegateTypeDescriptor.GetComputeFunc(_func.GetType());
         }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         public void InjectGrid(IIgnite grid)
         {
             // Propagate injection
-            ResourceProcessor.Inject(func, (GridProxy) grid);
+            ResourceProcessor.Inject(_func, (GridProxy) grid);
         }
     }    
     
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <summary>
         /// Convert to non-generic wrapper.
         /// </summary>
-        public static IComputeFunc ToNonGeneric<T, R>(this IComputeFunc<T, R> func)
+        public static IComputeFunc ToNonGeneric<T, TR>(this IComputeFunc<T, TR> func)
         {
             return new ComputeFuncWrapper(func, x => func.Invoke((T) x));
         }

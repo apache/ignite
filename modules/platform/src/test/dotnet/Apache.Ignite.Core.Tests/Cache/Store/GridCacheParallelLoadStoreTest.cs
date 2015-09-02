@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     public class GridCacheParallelLoadStoreTest
     {
         // object store name
-        private const string OBJECT_STORE_CACHE_NAME = "object_store_parallel";
+        private const string ObjectStoreCacheName = "object_store_parallel";
 
         /// <summary>
         /// Set up test class.
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         public virtual void BeforeTests()
         {
             GridTestUtils.KillProcesses();
-            GridTestUtils.JVM_DEBUG = true;
+            GridTestUtils.JvmDebug = true;
 
             Ignition.Start(new GridConfiguration
             {
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual(0, cache.Size());
 
             const int minId = 113;
-            const int expectedItemCount = GridCacheTestParallelLoadStore.INPUT_DATA_LENGTH - minId;
+            const int expectedItemCount = GridCacheTestParallelLoadStore.InputDataLength - minId;
 
             GridCacheTestParallelLoadStore.ResetCounters();
 
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// </summary>
         private static ICache<int, GridCacheTestParallelLoadStore.Record> GetCache()
         {
-            return Ignition.Grid().Cache<int, GridCacheTestParallelLoadStore.Record>(OBJECT_STORE_CACHE_NAME);
+            return Ignition.Grid().Cache<int, GridCacheTestParallelLoadStore.Record>(ObjectStoreCacheName);
         }
     }
 }

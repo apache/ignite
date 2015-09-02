@@ -25,16 +25,16 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Deserialize top-level portable objects, but leave nested portable objects in portable form.
         /// </summary>
-        DESERIALIZE,
+        Deserialize,
 
         /// <summary>
         /// Keep portable objects in portable form.
         /// </summary>
-        KEEP_PORTABLE,
+        KeepPortable,
 
         /// <summary>
         /// Always return IPortableObject.
         /// </summary>
-        FORCE_PORTABLE
+        ForcePortable
     }
 }

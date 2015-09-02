@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Cache
     /// </summary>
     /// <typeparam name="K">Key type.</typeparam>
     /// <typeparam name="V">Value type.</typeparam>
-    public interface IMutableCacheEntry<out K, V> : ICacheEntry<K, V>
+    public interface IMutableCacheEntry<out TK, TV> : ICacheEntry<TK, TV>
     {
         /// <summary>
         /// Gets a value indicating whether cache entry exists in cache.
@@ -42,6 +42,6 @@ namespace Apache.Ignite.Core.Cache
         /// <para />
         /// After setter invocation <see cref="Exists"/> will return true.
         /// </summary>
-        new V Value { get; set; }
+        new TV Value { get; set; }
     }
 }

@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Cache.Event
     /// <summary>
     /// Cache entry event.
     /// </summary>
-    public interface ICacheEntryEvent<K, V> : ICacheEntry<K, V>
+    public interface ICacheEntryEvent<TK, TV> : ICacheEntry<TK, TV>
     {
         /// <summary>
         /// Event type.
@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Cache.Event
         /// <summary>
         /// Gets old the value.
         /// </summary>
-        V OldValue { get; }
+        TV OldValue { get; }
 
         /// <summary>
         /// Whether old value exists.

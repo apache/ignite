@@ -26,14 +26,14 @@ namespace Apache.Ignite.Core.Cache.Query
     public abstract class QueryBase
     {
         /** Default page size. */
-        public const int DFLT_PAGE_SIZE = 1024;
+        public const int DfltPageSize = 1024;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryBase"/> class.
         /// </summary>
         protected internal QueryBase()
         {
-            PageSize = DFLT_PAGE_SIZE;
+            PageSize = DfltPageSize;
         }
 
         /// <summary>

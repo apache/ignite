@@ -55,45 +55,45 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     /// <summary>
     /// Continuous query filter generic implementation.
     /// </summary>
-    internal class ContinuousQueryFilter<K, V> : IContinuousQueryFilter        
+    internal class ContinuousQueryFilter<TK, TV> : IContinuousQueryFilter        
     {
         /** Actual filter. */
-        private readonly ICacheEntryEventFilter<K, V> filter;
+        private readonly ICacheEntryEventFilter<TK, TV> _filter;
 
         /** Keep portable flag. */
-        private readonly bool keepPortable;
+        private readonly bool _keepPortable;
 
         /** Grid hosting the filter. */
-        private volatile Ignite grid;
+        private volatile Ignite _grid;
 
         /** GC handle. */
-        private long? hnd;
+        private long? _hnd;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="filter">Actual filter.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
-        public ContinuousQueryFilter(ICacheEntryEventFilter<K, V> filter, bool keepPortable)
+        public ContinuousQueryFilter(ICacheEntryEventFilter<TK, TV> filter, bool keepPortable)
         {
-            this.filter = filter;
-            this.keepPortable = keepPortable;
+            this._filter = filter;
+            this._keepPortable = keepPortable;
         }
 
         /** <inheritDoc /> */
         public bool Evaluate(IPortableStream stream)
         {
-            ICacheEntryEvent<K, V> evt = CQU.ReadEvent<K, V>(stream, grid.Marshaller, keepPortable);
+            ICacheEntryEvent<TK, TV> evt = CQU.ReadEvent<TK, TV>(stream, _grid.Marshaller, _keepPortable);
 
-            return filter.Evaluate(evt);
+            return _filter.Evaluate(evt);
         }
 
         /** <inheritDoc /> */
         public void Inject(Ignite grid)
         {
-            this.grid = grid;
+            this._grid = grid;
 
-            ResourceProcessor.Inject(filter, grid);
+            ResourceProcessor.Inject(_filter, grid);
         }
 
         /** <inheritDoc /> */
@@ -101,10 +101,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         {
             lock (this)
             {
-                if (!hnd.HasValue)
-                    hnd = grid.HandleRegistry.Allocate(this);
+                if (!_hnd.HasValue)
+                    _hnd = _grid.HandleRegistry.Allocate(this);
 
-                return hnd.Value;
+                return _hnd.Value;
             }
         }
 
@@ -113,11 +113,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         {
             lock (this)
             {
-                if (hnd.HasValue)
+                if (_hnd.HasValue)
                 {
-                    grid.HandleRegistry.Release(hnd.Value);
+                    _grid.HandleRegistry.Release(_hnd.Value);
 
-                    hnd = null;
+                    _hnd = null;
                 }
             }
         }

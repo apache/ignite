@@ -26,16 +26,16 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary>
         /// Read committed isolation level.
         /// </summary>
-        READ_COMMITTED = 0,
+        ReadCommitted = 0,
 
         /// <summary>
         /// Repeatable read isolation level.
         /// </summary>
-        REPEATABLE_READ = 1,
+        RepeatableRead = 1,
 
         /// <summary>
         /// Serializable isolation level.
         /// </summary>
-        SERIALIZABLE = 2
+        Serializable = 2
     }
 }

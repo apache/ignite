@@ -26,22 +26,22 @@ namespace Apache.Ignite.Core.Events
     public sealed class CacheQueryExecutedEvent : EventBase
 	{
         /** */
-        private readonly string queryType;
+        private readonly string _queryType;
 
         /** */
-        private readonly string cacheName;
+        private readonly string _cacheName;
 
         /** */
-        private readonly string className;
+        private readonly string _className;
 
         /** */
-        private readonly string clause;
+        private readonly string _clause;
 
         /** */
-        private readonly Guid subjectId;
+        private readonly Guid _subjectId;
 
         /** */
-        private readonly string taskName;
+        private readonly string _taskName;
 
         /// <summary>
         /// Constructor.
@@ -49,43 +49,43 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         internal CacheQueryExecutedEvent(IPortableRawReader r) : base(r)
         {
-            queryType = r.ReadString();
-            cacheName = r.ReadString();
-            className = r.ReadString();
-            clause = r.ReadString();
-            subjectId = r.ReadGuid() ?? Guid.Empty;
-            taskName = r.ReadString();
+            _queryType = r.ReadString();
+            _cacheName = r.ReadString();
+            _className = r.ReadString();
+            _clause = r.ReadString();
+            _subjectId = r.ReadGuid() ?? Guid.Empty;
+            _taskName = r.ReadString();
         }
 		
         /// <summary>
         /// Gets query type. 
         /// </summary>
-        public string QueryType { get { return queryType; } }
+        public string QueryType { get { return _queryType; } }
 
         /// <summary>
         /// Gets cache name on which query was executed. 
         /// </summary>
-        public string CacheName { get { return cacheName; } }
+        public string CacheName { get { return _cacheName; } }
 
         /// <summary>
         /// Gets queried class name. Applicable for SQL and full text queries. 
         /// </summary>
-        public string ClassName { get { return className; } }
+        public string ClassName { get { return _className; } }
 
         /// <summary>
         /// Gets query clause. Applicable for SQL, SQL fields and full text queries. 
         /// </summary>
-        public string Clause { get { return clause; } }
+        public string Clause { get { return _clause; } }
 
         /// <summary>
         /// Gets security subject ID. 
         /// </summary>
-        public Guid SubjectId { get { return subjectId; } }
+        public Guid SubjectId { get { return _subjectId; } }
 
         /// <summary>
         /// Gets the name of the task that executed the query (if any). 
         /// </summary>
-        public string TaskName { get { return taskName; } }
+        public string TaskName { get { return _taskName; } }
 
         /** <inheritDoc /> */
 	    public override string ToShortString()

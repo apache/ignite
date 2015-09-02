@@ -22,16 +22,16 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
     /// <summary>
     /// Cache entry update event.
     /// </summary>
-    internal class CacheEntryUpdateEvent<K, V> : ICacheEntryEvent<K, V>
+    internal class CacheEntryUpdateEvent<TK, TV> : ICacheEntryEvent<TK, TV>
     {
         /** Key.*/
-        private readonly K key;
+        private readonly TK _key;
 
         /** Value.*/
-        private readonly V val;
+        private readonly TV _val;
 
         /** Old value.*/
-        private readonly V oldVal;
+        private readonly TV _oldVal;
 
         /// <summary>
         /// Constructor.
@@ -39,29 +39,29 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
         /// <param name="key">Key.</param>
         /// <param name="oldVal">Old value.</param>
         /// <param name="val">Value.</param>
-        public CacheEntryUpdateEvent(K key, V oldVal, V val)
+        public CacheEntryUpdateEvent(TK key, TV oldVal, TV val)
         {
-            this.key = key;
-            this.oldVal = oldVal;
-            this.val = val;
+            this._key = key;
+            this._oldVal = oldVal;
+            this._val = val;
         }
 
         /** <inheritdoc /> */
-        public K Key
+        public TK Key
         {
-            get { return key; }
+            get { return _key; }
         }
 
         /** <inheritdoc /> */
-        public V Value
+        public TV Value
         {
-            get { return val; }
+            get { return _val; }
         }
 
         /** <inheritdoc /> */
-        public V OldValue
+        public TV OldValue
         {
-            get { return oldVal; }
+            get { return _oldVal; }
         }
 
         /** <inheritdoc /> */
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
         /** <inheritdoc /> */
         public CacheEntryEventType EventType
         {
-            get { return CacheEntryEventType.UPDATED; }
+            get { return CacheEntryEventType.Updated; }
         }
     }
 }

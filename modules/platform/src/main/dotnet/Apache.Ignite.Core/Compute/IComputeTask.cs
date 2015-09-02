@@ -46,15 +46,15 @@ namespace Apache.Ignite.Core.Compute
     ///         will be called for ech received job result. The policy returned by this method will
     ///         determine the way task reacts to every job result.
     ///         <para />
-    ///         If <see cref="ComputeJobResultPolicy.WAIT"/> is returned, task will continue to wait
+    ///         If <see cref="ComputeJobResultPolicy.Wait"/> is returned, task will continue to wait
     ///         for other job results. If this result is the last job result, then reduce phase will be
     ///         started.
     ///         <para />
-    ///         If <see cref="ComputeJobResultPolicy.REDUCE"/> is returned, reduce phase will be started
+    ///         If <see cref="ComputeJobResultPolicy.Reduce"/> is returned, reduce phase will be started
     ///         right away without waiting for other jobs completion (all remaining jobs will receive cancel 
     ///         request).
     ///         <para />
-    ///         If <see cref="ComputeJobResultPolicy.FAILOVER"/> is returned, job will be failed over to 
+    ///         If <see cref="ComputeJobResultPolicy.Failover"/> is returned, job will be failed over to 
     ///         another node for execution. Note that if you use <see cref="ComputeTaskAdapter{A,T,R}"/>, it will
     ///         automatically fail jobs to another node for 2 well-known failure cases: 1) job has failed to due
     ///         to node crash (in this case <see cref="IComputeJobResult{T}.Exception()"/> will return 
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Compute
     ///     <item>
     ///         <description>Once all results are received or 
     ///         <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{T}, IList{IComputeJobResult{T}})"/>
-    ///         method returned <see cref="ComputeJobResultPolicy.REDUCE"/> policy, method 
+    ///         method returned <see cref="ComputeJobResultPolicy.Reduce"/> policy, method 
     ///         <see cref="IComputeTask{A,T,R}.Reduce(IList{IComputeJobResult{T}})"/>
     ///         is called to aggregate received results into one final result. Once this method is finished the 
     ///         execution of the grid task is complete. This result will be returned to the user through future.
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Compute
     /// <typeparam name="A">Argument type.</typeparam>
     /// <typeparam name="T">Type of job result.</typeparam>
     /// <typeparam name="R">Type of reduce result.</typeparam>
-    public interface IComputeTask<in A, T, out R>
+    public interface IComputeTask<in A, T, out TR>
     {
         /// <summary>
         /// This method is called to map or split grid task into multiple grid jobs. This is the
@@ -118,14 +118,14 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="results">Received job results. Note that if task class has 
         /// <see cref="ComputeTaskNoResultCacheAttribute"/> attribute, then this list will be empty.</param>
         /// <returns>Task result constructed from results of remote executions.</returns>
-        R Reduce(IList<IComputeJobResult<T>> results);
+        TR Reduce(IList<IComputeJobResult<T>> results);
     }
 
     /// <summary>
     /// IComputeTask without an argument.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
-    public interface IComputeTask<T, out R> : IComputeTask<object, T, R>
+    public interface IComputeTask<T, out TR> : IComputeTask<object, T, TR>
     {
         // No-op.
     }

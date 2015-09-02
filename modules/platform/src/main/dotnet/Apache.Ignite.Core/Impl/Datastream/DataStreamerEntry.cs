@@ -20,44 +20,44 @@ namespace Apache.Ignite.Core.Impl.Datastream
     /// <summary>
     /// Data streamer entry.
     /// </summary>
-    internal class DataStreamerEntry<K, V>
+    internal class DataStreamerEntry<TK, TV>
     {
         /** Key. */
-        private readonly K key;
+        private readonly TK _key;
 
         /** Value. */
-        private readonly V val;
+        private readonly TV _val;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
-        public DataStreamerEntry(K key, V val)
+        public DataStreamerEntry(TK key, TV val)
         {
-            this.key = key;
-            this.val = val;
+            this._key = key;
+            this._val = val;
         }
 
         /// <summary>
         /// Key.
         /// </summary>
-        public K Key
+        public TK Key
         {
             get
             {
-                return key;
+                return _key;
             }
         }
 
         /// <summary>
         /// Value.
         /// </summary>
-        public V Value
+        public TV Value
         {
             get
             {
-                return val;
+                return _val;
             }
         }
     }

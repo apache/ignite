@@ -20,14 +20,14 @@ namespace Apache.Ignite.Core.Compute
     /// <summary>
     /// Defines function having a single argument.
     /// </summary>
-    public interface IComputeFunc<in T, out R>
+    public interface IComputeFunc<in T, out TR>
     {
         /// <summary>
         /// Invoke function.
         /// </summary>
         /// <param name="arg">Argument.</param>
         /// <returns>Result.</returns>
-        R Invoke(T arg);
+        TR Invoke(T arg);
     }
 
     /// <summary>

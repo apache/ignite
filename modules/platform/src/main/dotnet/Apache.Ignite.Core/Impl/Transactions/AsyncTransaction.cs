@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     internal class AsyncTransaction : Transaction
     {
         /** */
-        private readonly ThreadLocal<IFuture> curFut = new ThreadLocal<IFuture>();
+        private readonly ThreadLocal<IFuture> _curFut = new ThreadLocal<IFuture>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AsyncTransaction"/> class.
@@ -53,12 +53,12 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inheritDoc /> */
         public override IFuture GetFuture()
         {
-            var fut = curFut.Value;
+            var fut = _curFut.Value;
 
             if (fut == null)
                 throw new InvalidOperationException("Asynchronous operation not started.");
 
-            curFut.Value = null;
+            _curFut.Value = null;
 
             return fut;
         }
@@ -66,13 +66,13 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inheritDoc /> */
         public override void Commit()
         {
-            curFut.Value = tx.GetFutureOrError(() => tx.CommitAsync());
+            _curFut.Value = Tx.GetFutureOrError(() => Tx.CommitAsync());
         }
 
         /** <inheritDoc /> */
         public override void Rollback()
         {
-            curFut.Value = tx.GetFutureOrError(() => tx.RollbackAsync());
+            _curFut.Value = Tx.GetFutureOrError(() => Tx.RollbackAsync());
         }
     }
 }

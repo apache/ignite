@@ -36,44 +36,44 @@ namespace Apache.Ignite.Core.Impl
     public static unsafe class GridManager
     {
         /** Environment variable: GRIDGAIN_HOME. */
-        internal const string ENV_GRIDGAIN_HOME = "GRIDGAIN_HOME";
+        internal const string EnvGridgainHome = "GRIDGAIN_HOME";
 
         /** Environment variable: platform. */
-        private const string ENV_PLATFORM_KEY = "gridgain.client.platform";
+        private const string EnvPlatformKey = "gridgain.client.platform";
 
         /** Environment variable value: platform. */
-        private const string EVN_PLATFORM_VAL = "dotnet";
+        private const string EvnPlatformVal = "dotnet";
 
         /** Environment variable: whether to set test classpath or not. */
-        private const string ENV_GRIDGAIN_NATIVE_TEST_CLASSPATH = "GRIDGAIN_NATIVE_TEST_CLASSPATH";
+        private const string EnvGridgainNativeTestClasspath = "GRIDGAIN_NATIVE_TEST_CLASSPATH";
         
         /** Classpath prefix. */
-        private const string CLASSPATH_PREFIX = "-Djava.class.path=";
+        private const string ClasspathPrefix = "-Djava.class.path=";
 
         /** Java Command line argument: Xms. Case sensitive. */
-        private const string CMD_JVM_MIN_MEM_JAVA = "-Xms";
+        private const string CmdJvmMinMemJava = "-Xms";
 
         /** Java Command line argument: Xmx. Case sensitive. */
-        private const string CMD_JVM_MAX_MEM_JAVA = "-Xmx";
+        private const string CmdJvmMaxMemJava = "-Xmx";
 
         /** Monitor for DLL load synchronization. */
-        private static readonly object MUX = new object();
+        private static readonly object Mux = new object();
 
         /** First created context. */
-        private static void* CTX;
+        private static void* _ctx;
 
         /** Configuration used on JVM start. */
-        private static JvmConfiguration JVM_CFG;
+        private static JvmConfiguration _jvmCfg;
 
         /** Memory manager. */
-        private static PlatformMemoryManager MEM;
+        private static PlatformMemoryManager _mem;
 
         /// <summary>
         /// Static initializer.
         /// </summary>
         static GridManager()
         {
-            Environment.SetEnvironmentVariable(ENV_PLATFORM_KEY, EVN_PLATFORM_VAL);
+            Environment.SetEnvironmentVariable(EnvPlatformKey, EvnPlatformVal);
         }
 
         /// <summary>
@@ -84,18 +84,18 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Context.</returns>
         internal static void* GetContext(GridConfiguration cfg, UnmanagedCallbacks cbs)
         {
-            lock (MUX)
+            lock (Mux)
             {
                 // 1. Warn about possible configuration inconsistency.
                 JvmConfiguration jvmCfg = JvmConfig(cfg);
 
-                if (!cfg.SuppressWarnings && JVM_CFG != null)
+                if (!cfg.SuppressWarnings && _jvmCfg != null)
                 {
-                    if (!JVM_CFG.Equals(jvmCfg))
+                    if (!_jvmCfg.Equals(jvmCfg))
                     {
                         Console.WriteLine("Attempting to start GridGain node with different Java " +
                             "configuration; current Java configuration will be ignored (consider " +
-                            "starting node in separate process) [oldConfig=" + JVM_CFG +
+                            "starting node in separate process) [oldConfig=" + _jvmCfg +
                             ", newConfig=" + jvmCfg + ']');
                     }
                 }
@@ -106,11 +106,11 @@ namespace Apache.Ignite.Core.Impl
                 cbs.SetContext(ctx);
 
                 // 3. If this is the first JVM created, preserve it.
-                if (CTX == null)
+                if (_ctx == null)
                 {
-                    CTX = ctx;
-                    JVM_CFG = jvmCfg;
-                    MEM = new PlatformMemoryManager(1024);
+                    _ctx = ctx;
+                    _jvmCfg = jvmCfg;
+                    _mem = new PlatformMemoryManager(1024);
                 }
 
                 return ctx;
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal static PlatformMemoryManager Memory
         {
-            get { return MEM; }
+            get { return _mem; }
         }
 
         /// <summary>
@@ -130,13 +130,13 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         public static void DestroyJvm()
         {
-            lock (MUX)
+            lock (Mux)
             {
-                if (CTX != null)
+                if (_ctx != null)
                 {
-                    UU.DestroyJvm(CTX);
+                    UU.DestroyJvm(_ctx);
 
-                    CTX = null;
+                    _ctx = null;
                 }
             }
         }
@@ -200,11 +200,11 @@ namespace Apache.Ignite.Core.Impl
             var jvmOpts = cfg.JvmOptions == null ? new List<string>() : cfg.JvmOptions.ToList();
 
             // JvmInitialMemoryMB / JvmMaxMemoryMB have lower priority than CMD_JVM_OPT
-            if (!jvmOpts.Any(opt => opt.StartsWith(CMD_JVM_MIN_MEM_JAVA, StringComparison.OrdinalIgnoreCase)))
-                jvmOpts.Add(string.Format("{0}{1}m", CMD_JVM_MIN_MEM_JAVA, cfg.JvmInitialMemoryMB));
+            if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMinMemJava, StringComparison.OrdinalIgnoreCase)))
+                jvmOpts.Add(string.Format("{0}{1}m", CmdJvmMinMemJava, cfg.JvmInitialMemoryMb));
 
-            if (!jvmOpts.Any(opt => opt.StartsWith(CMD_JVM_MAX_MEM_JAVA, StringComparison.OrdinalIgnoreCase)))
-                jvmOpts.Add(string.Format("{0}{1}m", CMD_JVM_MAX_MEM_JAVA, cfg.JvmMaxMemoryMB));
+            if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMaxMemJava, StringComparison.OrdinalIgnoreCase)))
+                jvmOpts.Add(string.Format("{0}{1}m", CmdJvmMaxMemJava, cfg.JvmMaxMemoryMb));
 
             return jvmOpts;
         }
@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Impl
 
             jvmCfg.Home = cfg.GridGainHome;
             jvmCfg.Dll = cfg.JvmDllPath;
-            jvmCfg.CP = cfg.JvmClasspath;
+            jvmCfg.Cp = cfg.JvmClasspath;
             jvmCfg.Options = cfg.JvmOptions;
 
             return jvmCfg;
@@ -253,14 +253,14 @@ namespace Apache.Ignite.Core.Impl
             var home = cfg == null ? null : cfg.GridGainHome;
 
             if (string.IsNullOrWhiteSpace(home))
-                home = Environment.GetEnvironmentVariable(ENV_GRIDGAIN_HOME);
+                home = Environment.GetEnvironmentVariable(EnvGridgainHome);
             else if (!IsGridGainHome(new DirectoryInfo(home)))
                 throw new IgniteException(string.Format("GridConfiguration.GridGainHome is not valid: '{0}'", home));
 
             if (string.IsNullOrWhiteSpace(home))
                 home = ResolveGridGainHome();
             else if (!IsGridGainHome(new DirectoryInfo(home)))
-                throw new IgniteException(string.Format("{0} is not valid: '{1}'", ENV_GRIDGAIN_HOME, home));
+                throw new IgniteException(string.Format("{0} is not valid: '{1}'", EnvGridgainHome, home));
 
             return home;
         }
@@ -307,7 +307,7 @@ namespace Apache.Ignite.Core.Impl
         /// Creates classpath from the given configuration, or default classpath if given config is null.
         /// </summary>
         /// <param name="cfg">The configuration.</param>
-        /// <param name="forceTestClasspath">Append test directories even if <see cref="ENV_GRIDGAIN_NATIVE_TEST_CLASSPATH" /> is not set.</param>
+        /// <param name="forceTestClasspath">Append test directories even if <see cref="EnvGridgainNativeTestClasspath" /> is not set.</param>
         /// <returns>
         /// Classpath string.
         /// </returns>
@@ -322,7 +322,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="ggHome">The home dir.</param>
         /// <param name="cfg">The configuration.</param>
         /// <param name="forceTestClasspath">Append test directories even if
-        ///     <see cref="ENV_GRIDGAIN_NATIVE_TEST_CLASSPATH" /> is not set.</param>
+        ///     <see cref="EnvGridgainNativeTestClasspath" /> is not set.</param>
         /// <returns>
         /// Classpath string.
         /// </returns>
@@ -341,7 +341,7 @@ namespace Apache.Ignite.Core.Impl
             if (!string.IsNullOrWhiteSpace(ggHome))
                 AppendHomeClasspath(ggHome, forceTestClasspath, cpStr);
 
-            return CLASSPATH_PREFIX + cpStr;
+            return ClasspathPrefix + cpStr;
         }
 
         /// <summary>
@@ -349,12 +349,12 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="ggHome">The home dir.</param>
         /// <param name="forceTestClasspath">Append test directories even if
-        ///     <see cref="ENV_GRIDGAIN_NATIVE_TEST_CLASSPATH"/> is not set.</param>
+        ///     <see cref="EnvGridgainNativeTestClasspath"/> is not set.</param>
         /// <param name="cpStr">The classpath string.</param>
         private static void AppendHomeClasspath(string ggHome, bool forceTestClasspath, StringBuilder cpStr)
         {
             // Append test directories (if needed) first, because otherwise build *.jar will be picked first.
-            if (forceTestClasspath || "true".Equals(Environment.GetEnvironmentVariable(ENV_GRIDGAIN_NATIVE_TEST_CLASSPATH)))
+            if (forceTestClasspath || "true".Equals(Environment.GetEnvironmentVariable(EnvGridgainNativeTestClasspath)))
             {
                 AppendTestClasses(ggHome + "\\examples", cpStr);
                 AppendTestClasses(ggHome + "\\modules", cpStr);
@@ -438,7 +438,7 @@ namespace Apache.Ignite.Core.Impl
             /// <summary>
             ///
             /// </summary>
-            public string CP
+            public string Cp
             {
                 get;
                 set;
@@ -471,7 +471,7 @@ namespace Apache.Ignite.Core.Impl
                 if (!string.Equals(Home, other.Home, StringComparison.OrdinalIgnoreCase))
                     return false;
 
-                if (!string.Equals(CP, other.CP, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(Cp, other.Cp, StringComparison.OrdinalIgnoreCase))
                     return false;
 
                 if (!string.Equals(Dll, other.Dll, StringComparison.OrdinalIgnoreCase))
@@ -506,7 +506,7 @@ namespace Apache.Ignite.Core.Impl
                     sb.Append(']');
                 }
 
-                sb.Append(", Classpath=" + CP + ']');
+                sb.Append(", Classpath=" + Cp + ']');
 
                 return sb.ToString();
             }

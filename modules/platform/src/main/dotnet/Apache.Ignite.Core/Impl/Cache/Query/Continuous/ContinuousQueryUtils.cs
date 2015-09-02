@@ -36,12 +36,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
         /// <returns>Event.</returns>
-        public static ICacheEntryEvent<K, V> ReadEvent<K, V>(IPortableStream stream, 
+        public static ICacheEntryEvent<TK, TV> ReadEvent<TK, TV>(IPortableStream stream, 
             PortableMarshaller marsh, bool keepPortable)
         {
             var reader = marsh.StartUnmarshal(stream, keepPortable);
 
-            return ReadEvent0<K, V>(reader);
+            return ReadEvent0<TK, TV>(reader);
         }
 
         /// <summary>
@@ -52,17 +52,17 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="keepPortable">Keep portable flag.</param>
         /// <returns>Events.</returns>
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
-        public static ICacheEntryEvent<K, V>[] ReadEvents<K, V>(IPortableStream stream,
+        public static ICacheEntryEvent<TK, TV>[] ReadEvents<TK, TV>(IPortableStream stream,
             PortableMarshaller marsh, bool keepPortable)
         {
             var reader = marsh.StartUnmarshal(stream, keepPortable);
 
             int cnt = reader.ReadInt();
 
-            ICacheEntryEvent<K, V>[] evts = new ICacheEntryEvent<K, V>[cnt];
+            ICacheEntryEvent<TK, TV>[] evts = new ICacheEntryEvent<TK, TV>[cnt];
 
             for (int i = 0; i < cnt; i++)
-                evts[i] = ReadEvent0<K, V>(reader);
+                evts[i] = ReadEvent0<TK, TV>(reader);
 
             return evts;
         }
@@ -72,16 +72,16 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Event.</returns>
-        private static ICacheEntryEvent<K, V> ReadEvent0<K, V>(PortableReaderImpl reader)
+        private static ICacheEntryEvent<TK, TV> ReadEvent0<TK, TV>(PortableReaderImpl reader)
         {
             reader.DetachNext();
-            K key = reader.ReadObject<K>();
+            TK key = reader.ReadObject<TK>();
 
             reader.DetachNext();
-            V oldVal = reader.ReadObject<V>();
+            TV oldVal = reader.ReadObject<TV>();
 
             reader.DetachNext();
-            V val = reader.ReadObject<V>();
+            TV val = reader.ReadObject<TV>();
 
             return CreateEvent(key, oldVal, val);
         }
@@ -93,23 +93,23 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="oldVal">Old value.</param>
         /// <param name="val">Value.</param>
         /// <returns>Event.</returns>
-        public static ICacheEntryEvent<K, V> CreateEvent<K, V>(K key, V oldVal, V val)
+        public static ICacheEntryEvent<TK, TV> CreateEvent<TK, TV>(TK key, TV oldVal, TV val)
         {
             if (oldVal == null)
             {
                 Debug.Assert(val != null);
 
-                return new CacheEntryCreateEvent<K, V>(key, val);
+                return new CacheEntryCreateEvent<TK, TV>(key, val);
             }
 
             if (val == null)
             {
                 Debug.Assert(oldVal != null);
 
-                return new CacheEntryRemoveEvent<K, V>(key, oldVal);
+                return new CacheEntryRemoveEvent<TK, TV>(key, oldVal);
             }
             
-            return new CacheEntryUpdateEvent<K, V>(key, oldVal, val);
+            return new CacheEntryUpdateEvent<TK, TV>(key, oldVal, val);
         }
     }
 }

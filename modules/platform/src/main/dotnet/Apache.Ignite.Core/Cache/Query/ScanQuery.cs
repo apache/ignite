@@ -23,13 +23,13 @@ namespace Apache.Ignite.Core.Cache.Query
     /// <summary>
     /// Scan query over cache entries. Will accept all the entries if no predicate was set.
     /// </summary>
-    public class ScanQuery<K, V> : QueryBase
+    public class ScanQuery<TK, TV> : QueryBase
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ScanQuery{K, V}"/> class.
         /// </summary>
         /// <param name="filter">The filter.</param>
-        public ScanQuery(ICacheEntryFilter<K, V> filter = null)
+        public ScanQuery(ICacheEntryFilter<TK, TV> filter = null)
         {
             Filter = filter;
         }
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Gets or sets the predicate.
         /// </summary>
-        public ICacheEntryFilter<K, V> Filter { get; set; }
+        public ICacheEntryFilter<TK, TV> Filter { get; set; }
 
         /// <summary>
         /// Gets or sets partition number over which this query should iterate. If null, query will iterate 
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Cache.Query
             else
             {
                 var holder = new CacheEntryFilterHolder(Filter, (key, val) => Filter.Invoke(
-                    new CacheEntry<K, V>((K) key, (V) val)), writer.Marshaller, keepPortable);
+                    new CacheEntry<TK, TV>((TK) key, (TV) val)), writer.Marshaller, keepPortable);
                 
                 writer.WriteObject(holder);
                 writer.WriteLong(holder.Handle);
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /** <inheritDoc /> */
         internal override CacheOp OpId
         {
-            get { return CacheOp.QRY_SCAN; }
+            get { return CacheOp.QryScan; }
         }
     }
 }

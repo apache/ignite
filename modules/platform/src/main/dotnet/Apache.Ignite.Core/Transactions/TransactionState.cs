@@ -25,46 +25,46 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary>
         /// Transaction started.
         /// </summary>
-        ACTIVE,
+        Active,
 
         /// <summary>
         /// Transaction validating.
         /// </summary>
-        PREPARING,
+        Preparing,
 
         /// <summary>
         /// Transaction validation succeeded.
         /// </summary>
-        PREPARED,
+        Prepared,
 
         /// <summary>
         /// Transaction is marked for rollback.
         /// </summary>
-        MARKED_ROLLBACK,
+        MarkedRollback,
 
         /// <summary>
         /// Transaction commit started (validating finished).
         /// </summary>
-        COMMITTING,
+        Committing,
 
         /// <summary>
         /// Transaction commit succeeded.
         /// </summary>
-        COMMITTED,
+        Committed,
         
         /// <summary>
         /// Transaction rollback started (validation failed).
         /// </summary>
-        ROLLING_BACK,
+        RollingBack,
 
         /// <summary>
         /// Transaction rollback succeeded.
         /// </summary>
-        ROLLED_BACK,
+        RolledBack,
 
         /// <summary>
         /// Transaction rollback failed or is otherwise unknown state.
         /// </summary>
-        UNKNOWN
+        Unknown
     }
 }

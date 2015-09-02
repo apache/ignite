@@ -31,19 +31,19 @@ namespace Apache.Ignite.Core.Impl.Cache
     internal class CacheEntryFilterHolder : IPortableWriteAware
     {
         /** Wrapped ICacheEntryFilter */
-        private readonly object pred;
+        private readonly object _pred;
 
         /** Invoker function that takes key and value and invokes wrapped ICacheEntryFilter */
-        private readonly Func<object, object, bool> invoker;
+        private readonly Func<object, object, bool> _invoker;
         
         /** Keep portable flag. */
-        private readonly bool keepPortable;
+        private readonly bool _keepPortable;
 
         /** Grid. */
-        private readonly PortableMarshaller marsh;
+        private readonly PortableMarshaller _marsh;
         
         /** Handle. */
-        private readonly long handle;
+        private readonly long _handle;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntryFilterHolder" /> class.
@@ -59,12 +59,12 @@ namespace Apache.Ignite.Core.Impl.Cache
             Debug.Assert(invoker != null);
             Debug.Assert(marsh != null);
 
-            this.pred = pred;
-            this.invoker = invoker;
-            this.marsh = marsh;
-            this.keepPortable = keepPortable;
+            this._pred = pred;
+            this._invoker = invoker;
+            this._marsh = marsh;
+            this._keepPortable = keepPortable;
 
-            handle = marsh.Grid.HandleRegistry.Allocate(this);
+            _handle = marsh.Grid.HandleRegistry.Allocate(this);
         }
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         public long Handle
         {
-            get { return handle; }
+            get { return _handle; }
         }
 
         /// <summary>
@@ -82,9 +82,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Invocation result.</returns>
         public int Invoke(IPortableStream input)
         {
-            var rawReader = marsh.StartUnmarshal(input, keepPortable).RawReader();
+            var rawReader = _marsh.StartUnmarshal(input, _keepPortable).RawReader();
 
-            return invoker(rawReader.ReadObject<object>(), rawReader.ReadObject<object>()) ? 1 : 0;
+            return _invoker(rawReader.ReadObject<object>(), rawReader.ReadObject<object>()) ? 1 : 0;
         }
 
         /** <inheritdoc /> */
@@ -93,9 +93,9 @@ namespace Apache.Ignite.Core.Impl.Cache
             var writer0 = (PortableWriterImpl)writer.RawWriter();
 
             writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, pred);
+            PortableUtils.WritePortableOrSerializable(writer0, _pred);
             
-            writer0.WriteBoolean(keepPortable);
+            writer0.WriteBoolean(_keepPortable);
         }
 
         /// <summary>
@@ -106,15 +106,15 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var reader0 = (PortableReaderImpl)reader.RawReader();
 
-            pred = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _pred = PortableUtils.ReadPortableOrSerializable<object>(reader0);
 
-            keepPortable = reader0.ReadBoolean();
+            _keepPortable = reader0.ReadBoolean();
 
-            marsh = reader0.Marshaller;
+            _marsh = reader0.Marshaller;
 
-            invoker = GetInvoker(pred);
+            _invoker = GetInvoker(_pred);
 
-            handle = marsh.Grid.HandleRegistry.Allocate(this);
+            _handle = _marsh.Grid.HandleRegistry.Allocate(this);
         }
 
         /// <summary>

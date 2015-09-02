@@ -36,16 +36,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     public class GridCacheQueriesTest
     {
         /** Grid count. */
-        private const int GRID_CNT = 2;
+        private const int GridCnt = 2;
 
         /** Cache name. */
-        private const string CACHE_NAME = "cache";
+        private const string CacheName = "cache";
 
         /** Path to XML configuration. */
-        private const string CFG_PATH = "config\\cache-query.xml";
+        private const string CfgPath = "config\\cache-query.xml";
 
         /** Maximum amount of items in cache. */
-        private const int MAX_ITEM_CNT = 100;
+        private const int MaxItemCnt = 100;
 
         /// <summary>
         /// 
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureSetUp]
         public virtual void StartGrids()
         {
-            GridTestUtils.JVM_DEBUG = true;
+            GridTestUtils.JvmDebug = true;
             GridTestUtils.KillProcesses();
 
             GridConfigurationEx cfg = new GridConfigurationEx
@@ -69,10 +69,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 },
                 JvmClasspath = GridTestUtils.CreateTestClasspath(),
                 JvmOptions = GridTestUtils.TestJavaOptions(),
-                SpringConfigUrl = CFG_PATH
+                SpringConfigUrl = CfgPath
             };
 
-            for (int i = 0; i < GRID_CNT; i++)
+            for (int i = 0; i < GridCnt; i++)
             {
                 cfg.GridName = "grid-" + i;
 
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureTearDown]
         public virtual void StopGrids()
         {
-            for (int i = 0; i < GRID_CNT; i++)
+            for (int i = 0; i < GridCnt; i++)
                 Ignition.Stop("grid-" + i, true);
         }
 
@@ -107,9 +107,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = Cache();
 
-            for (int i = 0; i < GRID_CNT; i++)
+            for (int i = 0; i < GridCnt; i++)
             {
-                for (int j = 0; j < MAX_ITEM_CNT; j++)
+                for (int j = 0; j < MaxItemCnt; j++)
                     cache.Remove(j);
 
                 Assert.IsTrue(cache.IsEmpty);
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <returns></returns>
         public ICache<int, QueryPerson> Cache(int idx)
         {
-            return Grid(idx).Cache<int, QueryPerson>(CACHE_NAME);
+            return Grid(idx).Cache<int, QueryPerson>(CacheName);
         }
 
         /// <summary>
@@ -359,7 +359,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestSqlQuery()
         {
-            CheckSqlQuery(MAX_ITEM_CNT, false, false);
+            CheckSqlQuery(MaxItemCnt, false, false);
         }
 
         /// <summary>
@@ -368,7 +368,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestSqlQueryPortable()
         {
-            CheckSqlQuery(MAX_ITEM_CNT, false, true);
+            CheckSqlQuery(MaxItemCnt, false, true);
         }
 
         /// <summary>
@@ -377,7 +377,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestSqlQueryLocal()
         {
-            CheckSqlQuery(MAX_ITEM_CNT, true, false);
+            CheckSqlQuery(MaxItemCnt, true, false);
         }
 
         /// <summary>
@@ -386,7 +386,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestSqlQueryLocalPortable()
         {
-            CheckSqlQuery(MAX_ITEM_CNT, true, true);
+            CheckSqlQuery(MaxItemCnt, true, true);
         }
 
         /// <summary>
@@ -415,7 +415,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestSqlFieldsQuery()
         {
-            CheckSqlFieldsQuery(MAX_ITEM_CNT, false);
+            CheckSqlFieldsQuery(MaxItemCnt, false);
         }
 
         /// <summary>
@@ -424,7 +424,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestSqlFieldsQueryLocal()
         {
-            CheckSqlFieldsQuery(MAX_ITEM_CNT, true);
+            CheckSqlFieldsQuery(MaxItemCnt, true);
         }
 
         /// <summary>
@@ -479,7 +479,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestTextQuery()
         {
-            CheckTextQuery(MAX_ITEM_CNT, false, false);
+            CheckTextQuery(MaxItemCnt, false, false);
         }
 
         /// <summary>
@@ -488,7 +488,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestTextQueryPortable()
         {
-            CheckTextQuery(MAX_ITEM_CNT, false, true);
+            CheckTextQuery(MaxItemCnt, false, true);
         }
 
         /// <summary>
@@ -497,7 +497,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestTextQueryLocal()
         {
-            CheckTextQuery(MAX_ITEM_CNT, true, false);
+            CheckTextQuery(MaxItemCnt, true, false);
         }
 
         /// <summary>
@@ -506,7 +506,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestTextQueryLocalPortable()
         {
-            CheckTextQuery(MAX_ITEM_CNT, true, true);
+            CheckTextQuery(MaxItemCnt, true, true);
         }
 
         /// <summary>
@@ -535,7 +535,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQuery()
         {
-            CheckScanQuery<QueryPerson>(MAX_ITEM_CNT, false, false);
+            CheckScanQuery<QueryPerson>(MaxItemCnt, false, false);
         }
 
         /// <summary>
@@ -544,7 +544,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryPortable()
         {
-            CheckScanQuery<PortableUserObject>(MAX_ITEM_CNT, false, true);
+            CheckScanQuery<PortableUserObject>(MaxItemCnt, false, true);
         }
 
         /// <summary>
@@ -553,7 +553,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryLocal()
         {
-            CheckScanQuery<QueryPerson>(MAX_ITEM_CNT, true, false);
+            CheckScanQuery<QueryPerson>(MaxItemCnt, true, false);
         }
 
         /// <summary>
@@ -562,7 +562,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryLocalPortable()
         {
-            CheckScanQuery<PortableUserObject>(MAX_ITEM_CNT, true, true);
+            CheckScanQuery<PortableUserObject>(MaxItemCnt, true, true);
         }
 
         /// <summary>
@@ -572,7 +572,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Ignore("IGNITE-1012")]
         public void TestScanQueryPartitions([Values(true, false)]  bool loc)
         {
-            CheckScanQueryPartitions<QueryPerson>(MAX_ITEM_CNT, loc, false);
+            CheckScanQueryPartitions<QueryPerson>(MaxItemCnt, loc, false);
         }
 
         /// <summary>
@@ -582,7 +582,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Ignore("IGNITE-1012")]
         public void TestScanQueryPartitionsPortable([Values(true, false)]  bool loc)
         {
-            CheckScanQueryPartitions<PortableUserObject>(MAX_ITEM_CNT, loc, true);
+            CheckScanQueryPartitions<PortableUserObject>(MaxItemCnt, loc, true);
         }
 
         /// <summary>
@@ -614,31 +614,31 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <param name="cnt">Amount of cache entries to create.</param>
         /// <param name="loc">Local query flag.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
-        private void CheckScanQuery<V>(int cnt, bool loc, bool keepPortable)
+        private void CheckScanQuery<TV>(int cnt, bool loc, bool keepPortable)
         {
             var cache = Cache();
 
             // No predicate
             var exp = PopulateCache(cache, loc, cnt, x => true);
-            var qry = new ScanQuery<int, V>();
+            var qry = new ScanQuery<int, TV>();
             ValidateQueryResults(cache, qry, exp, keepPortable);
 
             // Serializable
             exp = PopulateCache(cache, loc, cnt, x => x < 50);
-            qry = new ScanQuery<int, V>(new ScanQueryFilter<V>());
+            qry = new ScanQuery<int, TV>(new ScanQueryFilter<TV>());
             ValidateQueryResults(cache, qry, exp, keepPortable);
 
             // Portable
             exp = PopulateCache(cache, loc, cnt, x => x < 50);
-            qry = new ScanQuery<int, V>(new PortableScanQueryFilter<V>());
+            qry = new ScanQuery<int, TV>(new PortableScanQueryFilter<TV>());
             ValidateQueryResults(cache, qry, exp, keepPortable);
 
             // Exception
             exp = PopulateCache(cache, loc, cnt, x => x < 50);
-            qry = new ScanQuery<int, V>(new ScanQueryFilter<V> {ThrowErr = true});
+            qry = new ScanQuery<int, TV>(new ScanQueryFilter<TV> {ThrowErr = true});
             
             var ex = Assert.Throws<IgniteException>(() => ValidateQueryResults(cache, qry, exp, keepPortable));
-            Assert.AreEqual(ScanQueryFilter<V>.ERR_MESSAGE, ex.Message);
+            Assert.AreEqual(ScanQueryFilter<TV>.ErrMessage, ex.Message);
         }
 
         /// <summary>
@@ -647,14 +647,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <param name="cnt">Amount of cache entries to create.</param>
         /// <param name="loc">Local query flag.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
-        private void CheckScanQueryPartitions<V>(int cnt, bool loc, bool keepPortable)
+        private void CheckScanQueryPartitions<TV>(int cnt, bool loc, bool keepPortable)
         {
             StopGrids();
             StartGrids();
 
             var cache = Cache();
 
-            var aff = cache.Grid.Affinity(CACHE_NAME);
+            var aff = cache.Grid.Affinity(CacheName);
             var exp = PopulateCache(cache, loc, cnt, x => true);  // populate outside the loop (slow)
 
             for (var part = 0; part < aff.Partitions; part++)
@@ -665,7 +665,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     if (aff.Partition(x) == part)
                         exp0.Add(x);
 
-                var qry = new ScanQuery<int, V> { Partition = part };
+                var qry = new ScanQuery<int, TV> { Partition = part };
 
                 Console.WriteLine("Checking query on partition " + part);
                 ValidateQueryResults(cache, qry, exp0, keepPortable);
@@ -682,7 +682,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     if (aff.Partition(x) == part)
                         exp0.Add(x);
 
-                var qry = new ScanQuery<int, V>(new ScanQueryFilter<V>()) { Partition = part };
+                var qry = new ScanQuery<int, TV>(new ScanQueryFilter<TV>()) { Partition = part };
 
                 Console.WriteLine("Checking predicate query on partition " + part);
                 ValidateQueryResults(cache, qry, exp0, keepPortable);
@@ -886,19 +886,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// Query filter.
     /// </summary>
     [Serializable]
-    public class ScanQueryFilter<V> : ICacheEntryFilter<int, V>
+    public class ScanQueryFilter<TV> : ICacheEntryFilter<int, TV>
     {
         // Error message
-        public const string ERR_MESSAGE = "Error in ScanQueryFilter.Invoke";
+        public const string ErrMessage = "Error in ScanQueryFilter.Invoke";
 
         // Error flag
         public bool ThrowErr { get; set; }
 
         /** <inheritdoc /> */
-        public bool Invoke(ICacheEntry<int, V> entry)
+        public bool Invoke(ICacheEntry<int, TV> entry)
         {
             if (ThrowErr)
-                throw new Exception(ERR_MESSAGE);
+                throw new Exception(ErrMessage);
 
             return entry.Key < 50;
         }
@@ -907,7 +907,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// <summary>
     /// Portable query filter.
     /// </summary>
-    public class PortableScanQueryFilter<V> : ScanQueryFilter<V>, IPortableMarshalAware
+    public class PortableScanQueryFilter<TV> : ScanQueryFilter<TV>, IPortableMarshalAware
     {
         /** <inheritdoc /> */
         public void WritePortable(IPortableWriter writer)

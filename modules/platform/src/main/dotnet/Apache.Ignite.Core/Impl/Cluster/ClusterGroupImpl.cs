@@ -47,83 +47,83 @@ namespace Apache.Ignite.Core.Impl.Cluster
     internal class ClusterGroupImpl : GridTarget, IClusterGroupEx
     {
         /** Attribute: platform. */
-        private const string ATTR_PLATFORM = "org.gridgain.interop.platform";
+        private const string AttrPlatform = "org.gridgain.interop.platform";
 
         /** Platform. */
-        private const string PLATFORM = "dotnet";
+        private const string Platform = "dotnet";
 
         /** Initial topver; invalid from Java perspective, so update will be triggered when this value is met. */
-        private const int TOP_VER_INIT = 0;
+        private const int TopVerInit = 0;
 
         /** */
-        private const int OP_ALL_METADATA = 1;
+        private const int OpAllMetadata = 1;
 
         /** */
-        private const int OP_FOR_ATTRIBUTE = 2;
+        private const int OpForAttribute = 2;
 
         /** */
-        private const int OP_FOR_CACHE = 3;
+        private const int OpForCache = 3;
 
         /** */
-        private const int OP_FOR_CLIENT = 4;
+        private const int OpForClient = 4;
 
         /** */
-        private const int OP_FOR_DATA = 5;
+        private const int OpForData = 5;
 
         /** */
-        private const int OP_FOR_HOST = 6;
+        private const int OpForHost = 6;
 
         /** */
-        private const int OP_FOR_NODE_IDS = 7;
+        private const int OpForNodeIds = 7;
 
         /** */
-        private const int OP_METADATA = 8;
+        private const int OpMetadata = 8;
 
         /** */
-        private const int OP_METRICS = 9;
+        private const int OpMetrics = 9;
 
         /** */
-        private const int OP_METRICS_FILTERED = 10;
+        private const int OpMetricsFiltered = 10;
 
         /** */
-        private const int OP_NODE_METRICS = 11;
+        private const int OpNodeMetrics = 11;
 
         /** */
-        private const int OP_NODES = 12;
+        private const int OpNodes = 12;
 
         /** */
-        private const int OP_PING_NODE = 13;
+        private const int OpPingNode = 13;
 
         /** */
-        private const int OP_TOPOLOGY = 14;
+        private const int OpTopology = 14;
 
         /** Initial grid instance. */
-        private readonly Ignite grid;
+        private readonly Ignite _grid;
         
         /** Predicate. */
-        private readonly Func<IClusterNode, bool> pred;
+        private readonly Func<IClusterNode, bool> _pred;
 
         /** Topology version. */
         [SuppressMessage("Microsoft.Performance", "CA1805:DoNotInitializeUnnecessarily")]
-        private long topVer = TOP_VER_INIT;
+        private long _topVer = TopVerInit;
 
         /** Nodes for the given topology version. */
-        private volatile IList<IClusterNode> nodes;
+        private volatile IList<IClusterNode> _nodes;
 
         /** Processor. */
-        private readonly IUnmanagedTarget proc;
+        private readonly IUnmanagedTarget _proc;
 
         /** Compute. */
-        private readonly Lazy<Compute> comp;
+        private readonly Lazy<Compute> _comp;
 
         /** Messaging. */
-        private readonly Lazy<Messaging> msg;
+        private readonly Lazy<Messaging> _msg;
 
         /** Events. */
-        private readonly Lazy<Events> events;
+        private readonly Lazy<Events> _events;
 
         /** Services. */
-        private readonly Lazy<IServices> services;
+        private readonly Lazy<IServices> _services;
 
         /// <summary>
         /// Constructor.
@@ -137,31 +137,31 @@ namespace Apache.Ignite.Core.Impl.Cluster
             Ignite grid, Func<IClusterNode, bool> pred)
             : base(target, marsh)
         {
-            this.proc = proc;
-            this.grid = grid;
-            this.pred = pred;
+            this._proc = proc;
+            this._grid = grid;
+            this._pred = pred;
 
-            comp = new Lazy<Compute>(() => 
+            _comp = new Lazy<Compute>(() => 
                 new Compute(new ComputeImpl(UU.ProcessorCompute(proc, target), marsh, this, false)));
 
-            msg = new Lazy<Messaging>(() => new Messaging(UU.ProcessorMessage(proc, target), marsh, this));
+            _msg = new Lazy<Messaging>(() => new Messaging(UU.ProcessorMessage(proc, target), marsh, this));
 
-            events = new Lazy<Events>(() => new Events(UU.ProcessorEvents(proc, target), marsh, this));
+            _events = new Lazy<Events>(() => new Events(UU.ProcessorEvents(proc, target), marsh, this));
 
-            services = new Lazy<IServices>(() => 
+            _services = new Lazy<IServices>(() => 
                 new Services(UU.ProcessorServices(proc, target), marsh, this, false, false));
         }
 
         /** <inheritDoc /> */
         public IIgnite Grid
         {
-            get { return grid; }
+            get { return _grid; }
         }
 
         /** <inheritDoc /> */
         public ICompute Compute()
         {
-            return comp.Value;
+            return _comp.Value;
         }
 
         /** <inheritDoc /> */
@@ -206,7 +206,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             Debug.Assert(items != null);
 
-            IUnmanagedTarget prj = DoProjetionOutOp(OP_FOR_NODE_IDS, writer =>
+            IUnmanagedTarget prj = DoProjetionOutOp(OpForNodeIds, writer =>
             {
                 WriteEnumerable(writer, items, func);
             });
@@ -217,9 +217,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForPredicate(Func<IClusterNode, bool> p)
         {
-            var newPred = pred == null ? p : node => pred(node) && p(node);
+            var newPred = _pred == null ? p : node => _pred(node) && p(node);
 
-            return new ClusterGroupImpl(proc, target, marsh, grid, newPred);
+            return new ClusterGroupImpl(_proc, target, Marsh, _grid, newPred);
         }
 
         /** <inheritDoc /> */
@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             A.NotNull(name, "name");
 
-            IUnmanagedTarget prj = DoProjetionOutOp(OP_FOR_ATTRIBUTE, writer =>
+            IUnmanagedTarget prj = DoProjetionOutOp(OpForAttribute, writer =>
             {
                 writer.WriteString(name);
                 writer.WriteString(val);
@@ -257,19 +257,19 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForCacheNodes(string name)
         {
-            return ForCacheNodes(name, OP_FOR_CACHE);
+            return ForCacheNodes(name, OpForCache);
         }
 
         /** <inheritDoc /> */
         public IClusterGroup ForDataNodes(string name)
         {
-            return ForCacheNodes(name, OP_FOR_DATA);
+            return ForCacheNodes(name, OpForData);
         }
 
         /** <inheritDoc /> */
         public IClusterGroup ForClientNodes(string name)
         {
-            return ForCacheNodes(name, OP_FOR_CLIENT);
+            return ForCacheNodes(name, OpForClient);
         }
 
         /** <inheritDoc /> */
@@ -283,7 +283,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             A.NotNull(node, "node");
 
-            IUnmanagedTarget prj = DoProjetionOutOp(OP_FOR_HOST, writer =>
+            IUnmanagedTarget prj = DoProjetionOutOp(OpForHost, writer =>
             {
                 writer.WriteGuid(node.Id);
             });    
@@ -312,7 +312,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForDotNet()
         {
-            return ForAttribute(ATTR_PLATFORM, PLATFORM);
+            return ForAttribute(AttrPlatform, Platform);
         }
 
         /** <inheritDoc /> */
@@ -336,23 +336,23 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterMetrics Metrics()
         {
-            if (pred == null)
+            if (_pred == null)
             {
-                return DoInOp(OP_METRICS, stream =>
+                return DoInOp(OpMetrics, stream =>
                 {
-                    IPortableRawReader reader = marsh.StartUnmarshal(stream, false);
+                    IPortableRawReader reader = Marsh.StartUnmarshal(stream, false);
 
                     return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
                 });
             }
             else
             {
-                return DoOutInOp(OP_METRICS_FILTERED, writer =>
+                return DoOutInOp(OpMetricsFiltered, writer =>
                 {
                     WriteEnumerable(writer, Nodes().Select(node => node.Id));
                 }, stream =>
                 {
-                    IPortableRawReader reader = marsh.StartUnmarshal(stream, false);
+                    IPortableRawReader reader = Marsh.StartUnmarshal(stream, false);
 
                     return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
                 });
@@ -362,19 +362,19 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IMessaging Message()
         {
-            return msg.Value;
+            return _msg.Value;
         }
 
         /** <inheritDoc /> */
         public IEvents Events()
         {
-            return events.Value;
+            return _events.Value;
         }
 
         /** <inheritDoc /> */
         public IServices Services()
         {
-            return services.Value;
+            return _services.Value;
         }
 
         /// <summary>
@@ -384,7 +384,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <returns>True if node for a given ID is alive, false otherwise.</returns>
         internal bool PingNode(Guid nodeId)
         {
-            return DoOutOp(OP_PING_NODE, nodeId) == TRUE;
+            return DoOutOp(OpPingNode, nodeId) == True;
         }
 
         /// <summary>
@@ -392,7 +392,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         public Func<IClusterNode, bool> Predicate
         {
-            get { return pred; }
+            get { return _pred; }
         }
 
         /// <summary>
@@ -403,13 +403,13 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <returns></returns>
         internal ClusterMetricsImpl RefreshClusterNodeMetrics(Guid nodeId, long lastUpdateTime)
         {
-            return DoOutInOp(OP_NODE_METRICS, writer =>
+            return DoOutInOp(OpNodeMetrics, writer =>
                 {
                     writer.WriteGuid(nodeId);
                     writer.WriteLong(lastUpdateTime);
                 }, stream =>
                 {
-                    IPortableRawReader reader = marsh.StartUnmarshal(stream, false);
+                    IPortableRawReader reader = Marsh.StartUnmarshal(stream, false);
 
                     return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
                 }
@@ -428,8 +428,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// supports topology history.</exception>
         internal ICollection<IClusterNode> Topology(long version)
         {
-            return DoOutInOp(OP_TOPOLOGY, writer => writer.WriteLong(version), 
-                input => U.ReadNodes(marsh.StartUnmarshal(input)));
+            return DoOutInOp(OpTopology, writer => writer.WriteLong(version), 
+                input => U.ReadNodes(Marsh.StartUnmarshal(input)));
         }
 
         /// <summary>
@@ -441,7 +441,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             {
                 RefreshNodes();
 
-                return Interlocked.Read(ref topVer);
+                return Interlocked.Read(ref _topVer);
             }
         }
 
@@ -456,11 +456,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
             {
                 // If another thread already advanced topology version further, we still
                 // can safely return currently received nodes, but we will not assign them.
-                if (topVer < newTopVer)
+                if (_topVer < newTopVer)
                 {
-                    Interlocked.Exchange(ref topVer, newTopVer);
+                    Interlocked.Exchange(ref _topVer, newTopVer);
 
-                    nodes = newNodes.AsReadOnly();
+                    _nodes = newNodes.AsReadOnly();
                 }
             }
         }
@@ -471,7 +471,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <returns>Current nodes.</returns>
         internal IList<IClusterNode> NodesNoRefresh()
         {
-            return nodes;
+            return _nodes;
         }
 
         /// <summary>
@@ -481,7 +481,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <returns>New cluster group.</returns>
         private IClusterGroup GetClusterGroup(IUnmanagedTarget prj)
         {
-            return new ClusterGroupImpl(proc, prj, marsh, grid, pred);
+            return new ClusterGroupImpl(_proc, prj, Marsh, _grid, _pred);
         }
 
         /// <summary>
@@ -490,23 +490,23 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <returns>Nodes.</returns>
         private IList<IClusterNode> RefreshNodes()
         {
-            long oldTopVer = Interlocked.Read(ref topVer);
+            long oldTopVer = Interlocked.Read(ref _topVer);
 
             List<IClusterNode> newNodes = null;
 
-            DoOutInOp(OP_NODES, writer =>
+            DoOutInOp(OpNodes, writer =>
             {
                 writer.WriteLong(oldTopVer);
             }, input =>
             {
-                PortableReaderImpl reader = marsh.StartUnmarshal(input);
+                PortableReaderImpl reader = Marsh.StartUnmarshal(input);
 
                 if (reader.ReadBoolean())
                 {
                     // Topology has been updated.
                     long newTopVer = reader.ReadLong();
 
-                    newNodes = U.ReadNodes(reader, pred);
+                    newNodes = U.ReadNodes(reader, _pred);
 
                     UpdateTopology(newTopVer, newNodes);
                 }
@@ -516,9 +516,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
                 return newNodes;
             
             // No topology changes.
-            Debug.Assert(nodes != null, "At least one topology update should have occurred.");
+            Debug.Assert(_nodes != null, "At least one topology update should have occurred.");
 
-            return nodes;
+            return _nodes;
         }
         
         /// <summary>
@@ -531,7 +531,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             using (var stream = GridManager.Memory.Allocate().Stream())
             {
-                var writer = marsh.StartMarshal(stream);
+                var writer = Marsh.StartMarshal(stream);
 
                 action(writer);
 
@@ -544,14 +544,14 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IPortableMetadata Metadata(int typeId)
         {
-            return DoOutInOp<IPortableMetadata>(OP_METADATA, 
+            return DoOutInOp<IPortableMetadata>(OpMetadata, 
                 writer =>
                 {
                     writer.WriteInt(typeId);
                 },
                 stream =>
                 {
-                    PortableReaderImpl reader = marsh.StartUnmarshal(stream, false);
+                    PortableReaderImpl reader = Marsh.StartUnmarshal(stream, false);
 
                     return reader.ReadBoolean() ? new PortableMetadataImpl(reader) : null;
                 }
@@ -563,9 +563,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         public List<IPortableMetadata> Metadata()
         {
-            return DoInOp(OP_ALL_METADATA, s =>
+            return DoInOp(OpAllMetadata, s =>
             {
-                var reader = marsh.StartUnmarshal(s);
+                var reader = Marsh.StartUnmarshal(s);
 
                 var size = reader.ReadInt();
 

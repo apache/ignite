@@ -28,46 +28,46 @@ namespace Apache.Ignite.Core.Events
     public sealed class CacheEvent : EventBase
 	{
         /** */
-        private readonly string cacheName;
+        private readonly string _cacheName;
 
         /** */
-        private readonly int partition;
+        private readonly int _partition;
 
         /** */
-        private readonly bool isNear;
+        private readonly bool _isNear;
 
         /** */
-        private readonly IClusterNode eventNode;
+        private readonly IClusterNode _eventNode;
 
         /** */
-        private readonly object key;
+        private readonly object _key;
 
         /** */
-        private readonly GridGuid xid;
+        private readonly GridGuid _xid;
 
         /** */
-        private readonly object lockId;
+        private readonly object _lockId;
 
         /** */
-        private readonly object newValue;
+        private readonly object _newValue;
 
         /** */
-        private readonly object oldValue;
+        private readonly object _oldValue;
 
         /** */
-        private readonly bool hasOldValue;
+        private readonly bool _hasOldValue;
 
         /** */
-        private readonly bool hasNewValue;
+        private readonly bool _hasNewValue;
 
         /** */
-        private readonly Guid subjectId;
+        private readonly Guid _subjectId;
 
         /** */
-        private readonly string closureClassName;
+        private readonly string _closureClassName;
 
         /** */
-        private readonly string taskName;
+        private readonly string _taskName;
 
         /// <summary>
         /// Constructor.
@@ -75,102 +75,102 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         internal CacheEvent(IPortableRawReader r) : base(r)
         {
-            cacheName = r.ReadString();
-            partition = r.ReadInt();
-            isNear = r.ReadBoolean();
-            eventNode = ReadNode(r);
-            key = r.ReadObject<object>();
-            xid = GridGuid.ReadPortable(r);
-            lockId = r.ReadObject<object>();
-            newValue = r.ReadObject<object>();
-            oldValue = r.ReadObject<object>();
-            hasOldValue = r.ReadBoolean();
-            hasNewValue = r.ReadBoolean();
-            subjectId = r.ReadGuid() ?? Guid.Empty;
-            closureClassName = r.ReadString();
-            taskName = r.ReadString();
+            _cacheName = r.ReadString();
+            _partition = r.ReadInt();
+            _isNear = r.ReadBoolean();
+            _eventNode = ReadNode(r);
+            _key = r.ReadObject<object>();
+            _xid = GridGuid.ReadPortable(r);
+            _lockId = r.ReadObject<object>();
+            _newValue = r.ReadObject<object>();
+            _oldValue = r.ReadObject<object>();
+            _hasOldValue = r.ReadBoolean();
+            _hasNewValue = r.ReadBoolean();
+            _subjectId = r.ReadGuid() ?? Guid.Empty;
+            _closureClassName = r.ReadString();
+            _taskName = r.ReadString();
         }
 		
         /// <summary>
         /// Gets cache name. 
         /// </summary>
-        public string CacheName { get { return cacheName; } }
+        public string CacheName { get { return _cacheName; } }
 
         /// <summary>
         /// Gets partition for the event which is the partition the key belongs to. 
         /// </summary>
-        public int Partition { get { return partition; } }
+        public int Partition { get { return _partition; } }
 
         /// <summary>
         /// Gets flag indicating whether event happened on near or partitioned cache. 
         /// </summary>
-        public bool IsNear { get { return isNear; } }
+        public bool IsNear { get { return _isNear; } }
 
         /// <summary>
         /// Gets node which initiated cache operation or null if that node is not available. 
         /// </summary>
-        public IClusterNode EventNode { get { return eventNode; } }
+        public IClusterNode EventNode { get { return _eventNode; } }
 
         /// <summary>
         /// Gets cache entry associated with event. 
         /// </summary>
-        public object Key { get { return key; } }
+        public object Key { get { return _key; } }
 
         /// <summary>
         /// ID of surrounding cache cache transaction or null if there is no surrounding transaction. 
         /// </summary>
-        public GridGuid Xid { get { return xid; } }
+        public GridGuid Xid { get { return _xid; } }
 
         /// <summary>
         /// ID of the lock if held or null if no lock held. 
         /// </summary>
-        public object LockId { get { return lockId; } }
+        public object LockId { get { return _lockId; } }
 
         /// <summary>
         /// Gets new value for this event. 
         /// </summary>
-        public object NewValue { get { return newValue; } }
+        public object NewValue { get { return _newValue; } }
 
         /// <summary>
         /// Gets old value associated with this event. 
         /// </summary>
-        public object OldValue { get { return oldValue; } }
+        public object OldValue { get { return _oldValue; } }
 
         /// <summary>
         /// Gets flag indicating whether cache entry has old value in case if we only have old value in serialized form 
         /// in which case <see cref="OldValue" /> will return null. 
         /// </summary>
-        public bool HasOldValue { get { return hasOldValue; } }
+        public bool HasOldValue { get { return _hasOldValue; } }
 
         /// <summary>
         /// Gets flag indicating whether cache entry has new value in case if we only have new value in serialized form 
         /// in which case <see cref="NewValue" /> will return null. 
         /// </summary>
-        public bool HasNewValue { get { return hasNewValue; } }
+        public bool HasNewValue { get { return _hasNewValue; } }
 
         /// <summary>
         /// Gets security subject ID initiated this cache event, if available. This property is available only for <see 
-        /// cref="EventType.EVT_CACHE_OBJECT_PUT" />, <see cref="EventType.EVT_CACHE_OBJECT_REMOVED" /> and <see 
-        /// cref="EventType.EVT_CACHE_OBJECT_READ" /> cache events. Subject ID will be set either to nodeId initiated 
+        /// cref="EventType.EvtCacheObjectPut" />, <see cref="EventType.EvtCacheObjectRemoved" /> and <see 
+        /// cref="EventType.EvtCacheObjectRead" /> cache events. Subject ID will be set either to nodeId initiated 
         /// cache update or read or client ID initiated cache update or read. 
         /// </summary>
-        public Guid SubjectId { get { return subjectId; } }
+        public Guid SubjectId { get { return _subjectId; } }
 
         /// <summary>
         /// Gets closure class name (applicable only for TRANSFORM operations). 
         /// </summary>
-        public string ClosureClassName { get { return closureClassName; } }
+        public string ClosureClassName { get { return _closureClassName; } }
 
         /// <summary>
         /// Gets task name if cache event was caused by an operation initiated within task execution. 
         /// </summary>
-        public string TaskName { get { return taskName; } }
+        public string TaskName { get { return _taskName; } }
         
         /** <inheritDoc /> */
 	    public override string ToShortString()
 	    {
 	        return string.Format("{0}: IsNear={1}, Key={2}, HasNewValue={3}, HasOldValue={4}, NodeId={5}", Name, 
-                isNear, key, HasNewValue, HasOldValue, Node.Id);
+                _isNear, _key, HasNewValue, HasOldValue, Node.Id);
 	    }
     }
 }

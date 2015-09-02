@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class GridCacheForkedTest
     {
         /** */
-        private IIgnite grid;
+        private IIgnite _grid;
 
         /// <summary>
         /// Set up.
@@ -48,14 +48,14 @@ namespace Apache.Ignite.Core.Tests.Cache
                 "-J-DIGNITE_QUIET=false"
                 );
 
-            grid = Ignition.Start(new GridConfiguration
+            _grid = Ignition.Start(new GridConfiguration
             {
                 JvmClasspath = GridTestUtils.CreateTestClasspath(),
                 JvmOptions = GridTestUtils.TestJavaOptions(),
                 SpringConfigUrl = springConfigUrl
             });
 
-            Assert.IsTrue(grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2, 30000));
         }
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestClearCache()
         {
-            grid.Cache<object, object>(null).Clear();
+            _grid.Cache<object, object>(null).Clear();
         }
     }
 }

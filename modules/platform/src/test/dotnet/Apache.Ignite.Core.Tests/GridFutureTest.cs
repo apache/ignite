@@ -29,10 +29,10 @@ namespace Apache.Ignite.Core.Tests
     public class GridFutureTest
     {
         /** */
-        private ICache<object, object> cache;
+        private ICache<object, object> _cache;
 
         /** */
-        private ICompute compute;
+        private ICompute _compute;
 
         /// <summary>
         /// Test fixture set-up routine.
@@ -54,9 +54,9 @@ namespace Apache.Ignite.Core.Tests
                 }
             });
 
-            cache = grid.Cache<object, object>(null).WithAsync();
+            _cache = grid.Cache<object, object>(null).WithAsync();
 
-            compute = grid.Compute().WithAsync();
+            _compute = grid.Compute().WithAsync();
         }
 
         /// <summary>
@@ -91,9 +91,9 @@ namespace Apache.Ignite.Core.Tests
 
         private void TestListen(Action<IFuture<object>, Action> listenAction)
         {
-            compute.Broadcast(new SleepAction());
+            _compute.Broadcast(new SleepAction());
 
-            var fut = compute.GetFuture<object>();
+            var fut = _compute.GetFuture<object>();
 
             var listenCount = 0;
 
@@ -119,21 +119,21 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestToTask()
         {
-            cache.Put(1, 1);
+            _cache.Put(1, 1);
 
-            cache.GetFuture().ToTask().Wait();
+            _cache.GetFuture().ToTask().Wait();
 
-            cache.Get(1);
+            _cache.Get(1);
 
-            var task1 = cache.GetFuture<int>().ToTask();
+            var task1 = _cache.GetFuture<int>().ToTask();
 
             Assert.AreEqual(1, task1.Result);
 
             Assert.IsTrue(task1.IsCompleted);
 
-            compute.Broadcast(new SleepAction());
+            _compute.Broadcast(new SleepAction());
 
-            var task2 = compute.GetFuture().ToTask();
+            var task2 = _compute.GetFuture().ToTask();
 
             Assert.IsFalse(task2.IsCompleted);
 
@@ -149,9 +149,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestGetWithTimeout()
         {
-            compute.Broadcast(new SleepAction());
+            _compute.Broadcast(new SleepAction());
 
-            var fut = compute.GetFuture();
+            var fut = _compute.GetFuture();
 
             Assert.Throws<TimeoutException>(() => fut.Get(TimeSpan.FromMilliseconds(100)));
 
@@ -163,9 +163,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestToAsyncResult()
         {
-            compute.Broadcast(new SleepAction());
+            _compute.Broadcast(new SleepAction());
 
-            IFuture fut = compute.GetFuture();
+            IFuture fut = _compute.GetFuture();
 
             var asyncRes = fut.ToAsyncResult();
 
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Tests
 
             TestType(18m); // decimal
 
-            TestType(new Portable { a = 10, b = "foo" });
+            TestType(new Portable { A = 10, B = "foo" });
         }
 
         /// <summary>
@@ -200,13 +200,13 @@ namespace Apache.Ignite.Core.Tests
         {
             var key = typeof(T).Name;
 
-            cache.Put(key, value);
+            _cache.Put(key, value);
 
-            cache.GetFuture().Get();
+            _cache.GetFuture().Get();
 
-            cache.Get(key);
+            _cache.Get(key);
 
-            Assert.AreEqual(value, cache.GetFuture<T>().Get());
+            Assert.AreEqual(value, _cache.GetFuture<T>().Get());
         }
 
         /// <summary>
@@ -214,21 +214,21 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private class Portable : IPortableMarshalAware
         {
-            public int a;
-            public string b;
+            public int A;
+            public string B;
 
             /** <inheritDoc /> */
             public void WritePortable(IPortableWriter writer)
             {
-                writer.WriteInt("a", a);
-                writer.RawWriter().WriteString(b);
+                writer.WriteInt("a", A);
+                writer.RawWriter().WriteString(B);
             }
 
             /** <inheritDoc /> */
             public void ReadPortable(IPortableReader reader)
             {
-                a = reader.ReadInt("a");
-                b = reader.RawReader().ReadString();
+                A = reader.ReadInt("a");
+                B = reader.RawReader().ReadString();
             }
 
             /** <inheritDoc /> */
@@ -245,7 +245,7 @@ namespace Apache.Ignite.Core.Tests
 
                 var other = (Portable)obj;
 
-                return a == other.a && string.Equals(b, other.b);
+                return A == other.A && string.Equals(B, other.B);
             }
 
             /** <inheritDoc /> */
@@ -254,7 +254,7 @@ namespace Apache.Ignite.Core.Tests
                 unchecked
                 {
                     // ReSharper disable NonReadonlyMemberInGetHashCode
-                    return (a * 397) ^ (b != null ? b.GetHashCode() : 0);
+                    return (A * 397) ^ (B != null ? B.GetHashCode() : 0);
                     // ReSharper restore NonReadonlyMemberInGetHashCode
                 }
             }

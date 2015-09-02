@@ -35,25 +35,25 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         delegate void MemCopy(byte* a1, byte* a2, int len);
 
         /** memcpy function handle. */
-        private static readonly MemCopy MEMCPY;
+        private static readonly MemCopy Memcpy;
 
         /** Whether src and dest arguments are inverted. */
-        private static readonly bool MEMCPY_INVERTED;
+        private static readonly bool MemcpyInverted;
 
         /** Byte: zero. */
-        protected const byte BYTE_ZERO = 0;
+        protected const byte ByteZero = 0;
 
         /** Byte: one. */
-        protected const byte BYTE_ONE = 1;
+        protected const byte ByteOne = 1;
 
         /** LITTLE_ENDIAN flag. */
-        protected static readonly bool LITTLE_ENDIAN = BitConverter.IsLittleEndian;
+        protected static readonly bool LittleEndian = BitConverter.IsLittleEndian;
 
         /** Position. */
-        protected int pos;
+        protected int Pos;
 
         /** Disposed flag. */
-        private bool disposed;
+        private bool _disposed;
 
         /// <summary>
         /// Static initializer.
@@ -69,20 +69,20 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
             // Assume .Net 4.5.
             MethodInfo mthd = type.GetMethod("Memcpy", flags, null, paramTypes, null);
 
-            MEMCPY_INVERTED = true;
+            MemcpyInverted = true;
 
             if (mthd == null)
             {
                 // Assume .Net 4.0.
                 mthd = type.GetMethod("memcpyimpl", flags, null, paramTypes, null);
 
-                MEMCPY_INVERTED = false;
+                MemcpyInverted = false;
 
                 if (mthd == null)
                     throw new InvalidOperationException("Unable to get memory copy function delegate.");
             }
 
-            MEMCPY = (MemCopy)Delegate.CreateDelegate(typeof(MemCopy), mthd);
+            Memcpy = (MemCopy)Delegate.CreateDelegate(typeof(MemCopy), mthd);
         }
 
         /// <summary>
@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="val">Bool value.</param>
         public void WriteBool(bool val)
         {
-            WriteByte(val ? BYTE_ONE : BYTE_ZERO);
+            WriteByte(val ? ByteOne : ByteZero);
         }
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// </returns>
         public bool ReadBool()
         {
-            return ReadByte() == BYTE_ONE;
+            return ReadByte() == ByteOne;
         }
 
         /// <summary>
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data pointer.</param>
         protected void WriteShort0(short val, byte* data)
         {
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
                 *((short*)data) = val;
             else
             {
@@ -252,7 +252,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             short val;
 
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
                 val = *((short*)data);
             else
             {
@@ -279,7 +279,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="cnt">Bytes count.</param>
         protected void WriteShortArray0(short[] val, byte* data, int cnt)
         {
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
             {
                 fixed (short* val0 = val)
                 {
@@ -322,7 +322,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             short[] res = new short[len];
 
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
             {
                 fixed (short* res0 = res)
                 {
@@ -383,7 +383,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="cnt">Bytes count.</param>
         protected void WriteCharArray0(char[] val, byte* data, int cnt)
         {
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
             {
                 fixed (char* val0 = val)
                 {
@@ -426,7 +426,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             char[] res = new char[len];
 
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
             {
                 fixed (char* res0 = res)
                 {
@@ -471,7 +471,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data pointer.</param>
         protected void WriteInt0(int val, byte* data)
         {
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
                 *((int*)data) = val;
             else
             {
@@ -500,7 +500,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         protected int ReadInt0(byte* data) {
             int val;
 
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
                 val = *((int*)data);
             else
             {
@@ -529,7 +529,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="cnt">Bytes count.</param>
         protected void WriteIntArray0(int[] val, byte* data, int cnt)
         {
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
             {
                 fixed (int* val0 = val)
                 {
@@ -574,7 +574,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int[] res = new int[len];
 
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
             {
                 fixed (int* res0 = res)
                 {
@@ -639,7 +639,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="cnt">Bytes count.</param>
         protected void WriteFloatArray0(float[] val, byte* data, int cnt)
         {
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
             {
                 fixed (float* val0 = val)
                 {
@@ -684,7 +684,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             float[] res = new float[len];
 
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
             {
                 fixed (float* res0 = res)
                 {
@@ -724,7 +724,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data pointer.</param>
         protected void WriteLong0(long val, byte* data)
         {
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
                 *((long*)data) = val;
             else
             {
@@ -758,7 +758,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             long val;
 
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
                 val = *((long*)data);
             else
             {
@@ -791,7 +791,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="cnt">Bytes count.</param>
         protected void WriteLongArray0(long[] val, byte* data, int cnt)
         {
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
             {
                 fixed (long* val0 = val)
                 {
@@ -840,7 +840,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             long[] res = new long[len];
 
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
             {
                 fixed (long* res0 = res)
                 {
@@ -909,7 +909,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="cnt">Bytes count.</param>
         protected void WriteDoubleArray0(double[] val, byte* data, int cnt)
         {
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
             {
                 fixed (double* val0 = val)
                 {
@@ -958,7 +958,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             double[] res = new double[len];
 
-            if (LITTLE_ENDIAN)
+            if (LittleEndian)
             {
                 fixed (double* res0 = res)
                 {
@@ -1061,7 +1061,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data (dsetination).</param>
         protected void WriteInternal(byte* src, int cnt, byte* data)
         {
-            CopyMemory(src, data + pos, cnt);
+            CopyMemory(src, data + Pos, cnt);
         }
 
         /// <summary>
@@ -1083,7 +1083,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         {
             int cnt0 = Math.Min(Remaining(), cnt);
 
-            CopyMemory(data + pos, dest, cnt0);
+            CopyMemory(data + Pos, dest, cnt0);
 
             ShiftRead(cnt0);
         }
@@ -1093,7 +1093,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// </summary>
         public int Position
         {
-            get { return pos; }
+            get { return Pos; }
         }
 
         /// <summary>
@@ -1160,7 +1160,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
                 case SeekOrigin.Current:
                     {
-                        newPos = pos + offset;
+                        newPos = Pos + offset;
 
                         break;
                     }
@@ -1174,22 +1174,22 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
             EnsureWriteCapacity(newPos);
 
-            pos = newPos;
+            Pos = newPos;
 
-            return pos;
+            return Pos;
         }
 
         /** <inheritdoc /> */
         public void Dispose()
         {
-            if (disposed)
+            if (_disposed)
                 return;
 
             Dispose(true);
 
             GC.SuppressFinalize(this);
 
-            disposed = true;
+            _disposed = true;
         }
 
         /// <summary>
@@ -1210,9 +1210,9 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <returns>Position before shift.</returns>
         protected int EnsureWriteCapacityAndShift(int cnt)
         {
-            int pos0 = pos;
+            int pos0 = Pos;
 
-            EnsureWriteCapacity(pos + cnt);
+            EnsureWriteCapacity(Pos + cnt);
 
             ShiftWrite(cnt);
 
@@ -1232,7 +1232,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <returns>Position before shift.</returns>
         protected int EnsureReadCapacityAndShift(int cnt)
         {
-            int pos0 = pos;
+            int pos0 = Pos;
 
             EnsureReadCapacity(cnt);
 
@@ -1247,7 +1247,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="cnt">Bytes count.</param>
         protected void ShiftWrite(int cnt)
         {
-            pos += cnt;
+            Pos += cnt;
         }
 
         /// <summary>
@@ -1256,7 +1256,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="cnt">Bytes count.</param>
         protected void ShiftRead(int cnt)
         {
-            pos += cnt;
+            Pos += cnt;
         }
 
         /// <summary>
@@ -1290,10 +1290,10 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="len">Length.</param>
         public static void CopyMemory(byte* src, byte* dest, int len)
         {
-            if (MEMCPY_INVERTED)
-                MEMCPY.Invoke(dest, src, len);
+            if (MemcpyInverted)
+                Memcpy.Invoke(dest, src, len);
             else
-                MEMCPY.Invoke(src, dest, len);
+                Memcpy.Invoke(src, dest, len);
         }
     }
 }

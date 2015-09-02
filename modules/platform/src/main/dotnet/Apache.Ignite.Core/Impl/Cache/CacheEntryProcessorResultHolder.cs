@@ -92,14 +92,14 @@ namespace Apache.Ignite.Core.Impl.Cache
                 {
                     writer.WriteByte((byte) Entry.State);
 
-                    if (Entry.State == MutableCacheEntryState.VALUE_SET)
+                    if (Entry.State == MutableCacheEntryState.ValueSet)
                         writer.Write(Entry.Value);
 
                     writer.Write(ProcessResult);
                 }
                 else
                 {
-                    writer.WriteByte((byte) MutableCacheEntryState.ERR_PORTABLE);
+                    writer.WriteByte((byte) MutableCacheEntryState.ErrPortable);
                     writer.Write(new PortableResultWrapper(Error));
                 }
             }
@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 writer.Stream.Seek(pos, SeekOrigin.Begin);
 
-                writer.WriteByte((byte) MutableCacheEntryState.ERR_STRING);
+                writer.WriteByte((byte) MutableCacheEntryState.ErrString);
 
                 if (Error == null)
                 {

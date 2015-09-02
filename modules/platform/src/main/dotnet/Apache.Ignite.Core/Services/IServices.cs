@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Services
         /// default cache.</param>
         /// <param name="affinityKey">Affinity cache key.</param>
         [AsyncSupported]
-        void DeployKeyAffinitySingleton<K>(string name, IService service, string cacheName, K affinityKey);
+        void DeployKeyAffinitySingleton<TK>(string name, IService service, string cacheName, TK affinityKey);
 
         /// <summary>
         /// Deploys multiple instances of the service on the grid. Grid will deploy a

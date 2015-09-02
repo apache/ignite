@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
     internal class CacheStoreSession : ICacheStoreSession
     {
         /** Properties. */
-        private IDictionary<object, object> props;
+        private IDictionary<object, object> _props;
         
         /** <inheritdoc /> */
 
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /** <inheritdoc /> */
         public IDictionary<object, object> Properties
         {
-            get { return props ?? (props = new Dictionary<object, object>(2)); }
+            get { return _props ?? (_props = new Dictionary<object, object>(2)); }
         }
 
         /// <summary>
@@ -46,8 +46,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// </summary>
         public void Clear()
         {
-            if (props != null)
-                props.Clear();
+            if (_props != null)
+                _props.Clear();
         }
     }
 }

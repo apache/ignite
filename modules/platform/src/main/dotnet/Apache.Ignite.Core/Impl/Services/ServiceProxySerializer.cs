@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Impl.Services
             Debug.Assert(stream != null);
             Debug.Assert(marsh != null);
 
-            var mode = keepPortable ? PortableMode.FORCE_PORTABLE : PortableMode.DESERIALIZE;
+            var mode = keepPortable ? PortableMode.ForcePortable : PortableMode.Deserialize;
 
             var reader = marsh.StartUnmarshal(stream, mode);
 

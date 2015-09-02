@@ -44,67 +44,67 @@ namespace Apache.Ignite.Core.Impl.Datastream
     /// <summary>
     /// Data streamer implementation.
     /// </summary>
-    internal class DataStreamerImpl<K, V> : GridDisposableTarget, IDataStreamer, IDataStreamer<K, V>
+    internal class DataStreamerImpl<TK, TV> : GridDisposableTarget, IDataStreamer, IDataStreamer<TK, TV>
     {
 
 #pragma warning disable 0420
 
         /** Policy: continue. */
-        internal const int PLC_CONTINUE = 0;
+        internal const int PlcContinue = 0;
 
         /** Policy: close. */
-        internal const int PLC_CLOSE = 1;
+        internal const int PlcClose = 1;
 
         /** Policy: cancel and close. */
-        internal const int PLC_CANCEL_CLOSE = 2;
+        internal const int PlcCancelClose = 2;
 
         /** Policy: flush. */
-        internal const int PLC_FLUSH = 3;
+        internal const int PlcFlush = 3;
         
         /** Operation: update. */
-        private const int OP_UPDATE = 1;
+        private const int OpUpdate = 1;
         
         /** Operation: set receiver. */
-        private const int OP_RECEIVER = 2;
+        private const int OpReceiver = 2;
         
         /** Cache name. */
-        private readonly string cacheName;
+        private readonly string _cacheName;
 
         /** Lock. */
-        private readonly ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();
+        private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
 
         /** Closed event. */
-        private readonly ManualResetEventSlim closedEvt = new ManualResetEventSlim(false);
+        private readonly ManualResetEventSlim _closedEvt = new ManualResetEventSlim(false);
 
         /** Close future. */
-        private readonly Future<object> closeFut = new Future<object>();
+        private readonly Future<object> _closeFut = new Future<object>();
 
         /** GC handle to this streamer. */
-        private readonly long hnd;
+        private readonly long _hnd;
                 
         /** Topology version. */
-        private long topVer;
+        private long _topVer;
 
         /** Topology size. */
-        private int topSize;
+        private int _topSize;
         
         /** Buffer send size. */
-        private volatile int bufSndSize;
+        private volatile int _bufSndSize;
 
         /** Current data streamer batch. */
-        private volatile DataStreamerBatch<K, V> batch;
+        private volatile DataStreamerBatch<TK, TV> _batch;
 
         /** Flusher. */
-        private readonly Flusher<K, V> flusher;
+        private readonly Flusher<TK, TV> _flusher;
 
         /** Receiver. */
-        private volatile IStreamReceiver<K, V> rcv;
+        private volatile IStreamReceiver<TK, TV> _rcv;
 
         /** Receiver handle. */
-        private long rcvHnd;
+        private long _rcvHnd;
 
         /** Receiver portable mode. */
-        private readonly bool keepPortable;
+        private readonly bool _keepPortable;
 
         /// <summary>
         /// Constructor.
@@ -116,33 +116,33 @@ namespace Apache.Ignite.Core.Impl.Datastream
         public DataStreamerImpl(IUnmanagedTarget target, PortableMarshaller marsh, string cacheName, bool keepPortable)
             : base(target, marsh)
         {
-            this.cacheName = cacheName;
-            this.keepPortable = keepPortable;
+            this._cacheName = cacheName;
+            this._keepPortable = keepPortable;
 
             // Create empty batch.
-            batch = new DataStreamerBatch<K, V>();
+            _batch = new DataStreamerBatch<TK, TV>();
 
             // Allocate GC handle so that this data streamer could be easily dereferenced from native code.
             WeakReference thisRef = new WeakReference(this);
 
-            hnd = marsh.Grid.HandleRegistry.Allocate(thisRef);
+            _hnd = marsh.Grid.HandleRegistry.Allocate(thisRef);
 
             // Start topology listening. This call will ensure that buffer size member is updated.
-            UU.DataStreamerListenTopology(target, hnd);
+            UU.DataStreamerListenTopology(target, _hnd);
 
             // Membar to ensure fields initialization before leaving constructor.
             Thread.MemoryBarrier();
 
             // Start flusher after everything else is initialized.
-            flusher = new Flusher<K, V>(thisRef);
+            _flusher = new Flusher<TK, TV>(thisRef);
 
-            flusher.RunThread();
+            _flusher.RunThread();
         }
 
         /** <inheritDoc /> */
         public string CacheName
         {
-            get { return cacheName; }
+            get { return _cacheName; }
         }
 
         /** <inheritDoc /> */
@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             get
             {
-                rwLock.EnterReadLock();
+                _rwLock.EnterReadLock();
 
                 try
                 {
@@ -160,12 +160,12 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 }
                 finally
                 {
-                    rwLock.ExitReadLock();
+                    _rwLock.ExitReadLock();
                 }
             }
             set
             {
-                rwLock.EnterWriteLock();
+                _rwLock.EnterWriteLock();
 
                 try
                 {
@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 }
                 finally
                 {
-                    rwLock.ExitWriteLock();
+                    _rwLock.ExitWriteLock();
                 }
             }
         }
@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             get
             {
-                rwLock.EnterReadLock(); 
+                _rwLock.EnterReadLock(); 
                 
                 try
                 {
@@ -195,12 +195,12 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 }
                 finally
                 {
-                    rwLock.ExitReadLock();
+                    _rwLock.ExitReadLock();
                 }
             }
             set
             {
-                rwLock.EnterWriteLock(); 
+                _rwLock.EnterWriteLock(); 
                 
                 try
                 {
@@ -210,7 +210,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 }
                 finally
                 {
-                    rwLock.ExitWriteLock();
+                    _rwLock.ExitWriteLock();
                 }
             }
         }
@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             get
             {
-                rwLock.EnterReadLock(); 
+                _rwLock.EnterReadLock(); 
                 
                 try
                 {
@@ -230,12 +230,12 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 }
                 finally
                 {
-                    rwLock.ExitReadLock();
+                    _rwLock.ExitReadLock();
                 }
             }
             set
             {
-                rwLock.EnterWriteLock(); 
+                _rwLock.EnterWriteLock(); 
                 
                 try
                 {
@@ -243,11 +243,11 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
                     UU.DataStreamerPerNodeBufferSizeSet(target, value);
 
-                    bufSndSize = topSize * value;
+                    _bufSndSize = _topSize * value;
                 }
                 finally
                 {
-                    rwLock.ExitWriteLock();
+                    _rwLock.ExitWriteLock();
                 }
             }
         }
@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             get
             {
-                rwLock.EnterReadLock(); 
+                _rwLock.EnterReadLock(); 
                 
                 try
                 {
@@ -267,13 +267,13 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 }
                 finally
                 {
-                    rwLock.ExitReadLock();
+                    _rwLock.ExitReadLock();
                 }
 
             }
             set
             {
-                rwLock.EnterWriteLock(); 
+                _rwLock.EnterWriteLock(); 
                 
                 try
                 {
@@ -283,7 +283,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 }
                 finally
                 {
-                    rwLock.ExitWriteLock();
+                    _rwLock.ExitWriteLock();
                 }
 
             }
@@ -294,33 +294,33 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             get
             {
-                rwLock.EnterReadLock(); 
+                _rwLock.EnterReadLock(); 
                 
                 try
                 {
                     ThrowIfDisposed();
 
-                    return flusher.Frequency;
+                    return _flusher.Frequency;
                 }
                 finally
                 {
-                    rwLock.ExitReadLock();
+                    _rwLock.ExitReadLock();
                 }
 
             }
             set
             {
-                rwLock.EnterWriteLock(); 
+                _rwLock.EnterWriteLock(); 
                 
                 try
                 {
                     ThrowIfDisposed();
 
-                    flusher.Frequency = value;
+                    _flusher.Frequency = value;
                 }
                 finally
                 {
-                    rwLock.ExitWriteLock();
+                    _rwLock.ExitWriteLock();
                 }
             }
         }
@@ -332,44 +332,44 @@ namespace Apache.Ignite.Core.Impl.Datastream
             {
                 ThrowIfDisposed();
 
-                return closeFut;
+                return _closeFut;
             }
         }
 
         /** <inheritDoc /> */
-        public IStreamReceiver<K, V> Receiver
+        public IStreamReceiver<TK, TV> Receiver
         {
             get
             {
                 ThrowIfDisposed();
 
-                return rcv;
+                return _rcv;
             }
             set
             {
                 A.NotNull(value, "value");
 
-                var handleRegistry = marsh.Grid.HandleRegistry;
+                var handleRegistry = Marsh.Grid.HandleRegistry;
 
-                rwLock.EnterWriteLock();
+                _rwLock.EnterWriteLock();
 
                 try
                 {
                     ThrowIfDisposed();
 
-                    if (rcv == value)
+                    if (_rcv == value)
                         return;
 
                     var rcvHolder = new StreamReceiverHolder(value,
                         (rec, grid, cache, stream, keepPortable) =>
-                            StreamReceiverHolder.InvokeReceiver((IStreamReceiver<K, V>) rec, grid, cache, stream,
+                            StreamReceiverHolder.InvokeReceiver((IStreamReceiver<TK, TV>) rec, grid, cache, stream,
                                 keepPortable));
 
                     var rcvHnd0 = handleRegistry.Allocate(rcvHolder);
 
                     try
                     {
-                        DoOutOp(OP_RECEIVER, w =>
+                        DoOutOp(OpReceiver, w =>
                         {
                             w.WriteLong(rcvHnd0);
 
@@ -382,39 +382,39 @@ namespace Apache.Ignite.Core.Impl.Datastream
                         throw;
                     }
 
-                    if (rcv != null)
-                        handleRegistry.Release(rcvHnd);
+                    if (_rcv != null)
+                        handleRegistry.Release(_rcvHnd);
 
-                    rcv = value;
-                    rcvHnd = rcvHnd0;
+                    _rcv = value;
+                    _rcvHnd = rcvHnd0;
                 }
                 finally
                 {
-                    rwLock.ExitWriteLock();
+                    _rwLock.ExitWriteLock();
                 }
             }
         }
 
         /** <inheritDoc /> */
-        public IFuture AddData(K key, V val)
+        public IFuture AddData(TK key, TV val)
         {
             ThrowIfDisposed(); 
             
             A.NotNull(key, "key");
 
-            return Add0(new DataStreamerEntry<K, V>(key, val), 1);
+            return Add0(new DataStreamerEntry<TK, TV>(key, val), 1);
         }
 
         /** <inheritDoc /> */
-        public IFuture AddData(KeyValuePair<K, V> pair)
+        public IFuture AddData(KeyValuePair<TK, TV> pair)
         {
             ThrowIfDisposed();
 
-            return Add0(new DataStreamerEntry<K, V>(pair.Key, pair.Value), 1);
+            return Add0(new DataStreamerEntry<TK, TV>(pair.Key, pair.Value), 1);
         }
         
         /** <inheritDoc /> */
-        public IFuture AddData(ICollection<KeyValuePair<K, V>> entries)
+        public IFuture AddData(ICollection<KeyValuePair<TK, TV>> entries)
         {
             ThrowIfDisposed();
 
@@ -424,13 +424,13 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public IFuture RemoveData(K key)
+        public IFuture RemoveData(TK key)
         {
             ThrowIfDisposed();
 
             A.NotNull(key, "key");
 
-            return Add0(new DataStreamerRemoveEntry<K>(key), 1);
+            return Add0(new DataStreamerRemoveEntry<TK>(key), 1);
         }
 
         /** <inheritDoc /> */
@@ -438,10 +438,10 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             ThrowIfDisposed();
 
-            DataStreamerBatch<K, V> batch0 = batch;
+            DataStreamerBatch<TK, TV> batch0 = _batch;
 
             if (batch0 != null)
-                Flush0(batch0, false, PLC_FLUSH);
+                Flush0(batch0, false, PlcFlush);
         }
 
         /** <inheritDoc /> */
@@ -449,55 +449,55 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             ThrowIfDisposed();
 
-            DataStreamerBatch<K, V> batch0 = batch;
+            DataStreamerBatch<TK, TV> batch0 = _batch;
 
             if (batch0 != null)
-                Flush0(batch0, true, PLC_FLUSH);
+                Flush0(batch0, true, PlcFlush);
             else 
             {
                 // Batch is null, i.e. data streamer is closing. Wait for close to complete.
-                closedEvt.Wait();
+                _closedEvt.Wait();
             }
         }
 
         /** <inheritDoc /> */
         public void Close(bool cancel)
         {
-            flusher.Stop();
+            _flusher.Stop();
 
             while (true)
             {
-                DataStreamerBatch<K, V> batch0 = batch;
+                DataStreamerBatch<TK, TV> batch0 = _batch;
 
                 if (batch0 == null)
                 {
                     // Wait for concurrent close to finish.
-                    closedEvt.Wait();
+                    _closedEvt.Wait();
 
                     return;
                 }
 
-                if (Flush0(batch0, true, cancel ? PLC_CANCEL_CLOSE : PLC_CLOSE))
+                if (Flush0(batch0, true, cancel ? PlcCancelClose : PlcClose))
                 {
-                    closeFut.OnDone(null, null);
+                    _closeFut.OnDone(null, null);
 
-                    rwLock.EnterWriteLock(); 
+                    _rwLock.EnterWriteLock(); 
                     
                     try
                     {
                         base.Dispose(true);
 
-                        if (rcv != null)
-                            marsh.Grid.HandleRegistry.Release(rcvHnd);
+                        if (_rcv != null)
+                            Marsh.Grid.HandleRegistry.Release(_rcvHnd);
 
-                        closedEvt.Set();
+                        _closedEvt.Set();
                     }
                     finally
                     {
-                        rwLock.ExitWriteLock();
+                        _rwLock.ExitWriteLock();
                     }
 
-                    marsh.Grid.HandleRegistry.Release(hnd);
+                    Marsh.Grid.HandleRegistry.Release(_hnd);
 
                     break;
                 }
@@ -505,11 +505,11 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public IDataStreamer<K1, V1> WithKeepPortable<K1, V1>()
+        public IDataStreamer<TK1, TV1> WithKeepPortable<TK1, TV1>()
         {
-            if (keepPortable)
+            if (_keepPortable)
             {
-                var result = this as IDataStreamer<K1, V1>;
+                var result = this as IDataStreamer<TK1, TV1>;
 
                 if (result == null)
                     throw new InvalidOperationException(
@@ -519,8 +519,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 return result;
             }
 
-            return new DataStreamerImpl<K1, V1>(UU.ProcessorDataStreamer(marsh.Grid.InteropProcessor, cacheName, true), 
-                marsh, cacheName, true);
+            return new DataStreamerImpl<TK1, TV1>(UU.ProcessorDataStreamer(Marsh.Grid.InteropProcessor, _cacheName, true), 
+                Marsh, _cacheName, true);
         }
 
         /** <inheritDoc /> */
@@ -533,16 +533,16 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 // Finalizer: just close Java streamer
                 try
                 {
-                    if (batch != null)
-                        batch.Send(this, PLC_CANCEL_CLOSE);
+                    if (_batch != null)
+                        _batch.Send(this, PlcCancelClose);
                 }
                 catch (Exception)
                 {
                     // Finalizers should never throw
                 }
 
-                marsh.Grid.HandleRegistry.Release(hnd, true);
-                marsh.Grid.HandleRegistry.Release(rcvHnd, true);
+                Marsh.Grid.HandleRegistry.Release(_hnd, true);
+                Marsh.Grid.HandleRegistry.Release(_rcvHnd, true);
 
                 base.Dispose(false);
             }
@@ -557,23 +557,23 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /** <inheritDoc /> */
         public void TopologyChange(long topVer, int topSize)
         {
-            rwLock.EnterWriteLock(); 
+            _rwLock.EnterWriteLock(); 
             
             try
             {
                 ThrowIfDisposed();
 
-                if (this.topVer < topVer)
+                if (this._topVer < topVer)
                 {
-                    this.topVer = topVer;
-                    this.topSize = topSize;
+                    this._topVer = topVer;
+                    this._topSize = topSize;
 
-                    bufSndSize = topSize * UU.DataStreamerPerNodeBufferSizeGet(target);
+                    _bufSndSize = topSize * UU.DataStreamerPerNodeBufferSizeGet(target);
                 }
             }
             finally
             {
-                rwLock.ExitWriteLock();
+                _rwLock.ExitWriteLock();
             }
 
         }
@@ -586,11 +586,11 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <returns>Future.</returns>
         private IFuture Add0(object val, int cnt)
         {
-            int bufSndSize0 = bufSndSize;
+            int bufSndSize0 = _bufSndSize;
 
             while (true)
             {
-                var batch0 = batch;
+                var batch0 = _batch;
 
                 if (batch0 == null)
                     throw new InvalidOperationException("Data streamer is stopped.");
@@ -600,14 +600,14 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 if (size == -1)
                 {
                     // Batch is blocked, perform CAS.
-                    Interlocked.CompareExchange(ref batch,
-                        new DataStreamerBatch<K, V>(batch0), batch0);
+                    Interlocked.CompareExchange(ref _batch,
+                        new DataStreamerBatch<TK, TV>(batch0), batch0);
 
                     continue;
                 }
                 if (size >= bufSndSize0)
                     // Batch is too big, schedule flush.
-                    Flush0(batch0, false, PLC_CONTINUE);
+                    Flush0(batch0, false, PlcContinue);
 
                 return batch0.Future;
             }
@@ -620,12 +620,12 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="wait">Whether to wait for flush to complete.</param>
         /// <param name="plc">Whether this is the last batch.</param>
         /// <returns>Whether this call was able to CAS previous batch</returns>
-        private bool Flush0(DataStreamerBatch<K, V> curBatch, bool wait, int plc)
+        private bool Flush0(DataStreamerBatch<TK, TV> curBatch, bool wait, int plc)
         {
             // 1. Try setting new current batch to help further adders. 
-            bool res = Interlocked.CompareExchange(ref batch, 
-                (plc == PLC_CONTINUE || plc == PLC_FLUSH) ? 
-                new DataStreamerBatch<K, V>(curBatch) : null, curBatch) == curBatch;
+            bool res = Interlocked.CompareExchange(ref _batch, 
+                (plc == PlcContinue || plc == PlcFlush) ? 
+                new DataStreamerBatch<TK, TV>(curBatch) : null, curBatch) == curBatch;
 
             // 2. Perform actual send.
             curBatch.Send(this, plc);
@@ -643,42 +643,42 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <returns>Writer.</returns>
         internal void Update(Action<PortableWriterImpl> action)
         {
-            rwLock.EnterReadLock();
+            _rwLock.EnterReadLock();
 
             try
             {
                 ThrowIfDisposed();
 
-                DoOutOp(OP_UPDATE, action);
+                DoOutOp(OpUpdate, action);
             }
             finally
             {
-                rwLock.ExitReadLock();
+                _rwLock.ExitReadLock();
             }
         }
 
         /// <summary>
         /// Flusher.
         /// </summary>
-        private class Flusher<K1, V1>
+        private class Flusher<TK1, TV1>
         {
             /** State: running. */
-            private const int STATE_RUNNING = 0;
+            private const int StateRunning = 0;
 
             /** State: stopping. */
-            private const int STATE_STOPPING = 1;
+            private const int StateStopping = 1;
 
             /** State: stopped. */
-            private const int STATE_STOPPED = 2;
+            private const int StateStopped = 2;
 
             /** Data streamer. */
-            private readonly WeakReference ldrRef;
+            private readonly WeakReference _ldrRef;
 
             /** Finish flag. */
-            private int state;
+            private int _state;
 
             /** Flush frequency. */
-            private long freq;
+            private long _freq;
 
             /// <summary>
             /// Constructor.
@@ -686,11 +686,11 @@ namespace Apache.Ignite.Core.Impl.Datastream
             /// <param name="ldrRef">Data streamer weak reference..</param>
             public Flusher(WeakReference ldrRef)
             {
-                this.ldrRef = ldrRef;
+                this._ldrRef = ldrRef;
 
                 lock (this)
                 {
-                    state = STATE_RUNNING;
+                    _state = StateRunning;
                 }
             }
 
@@ -708,7 +708,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     {
                         if (curFreq > 0 || force)
                         {
-                            var ldr = ldrRef.Target as DataStreamerImpl<K1, V1>;
+                            var ldr = _ldrRef.Target as DataStreamerImpl<TK1, TV1>;
 
                             if (ldr == null)
                                 return;
@@ -721,10 +721,10 @@ namespace Apache.Ignite.Core.Impl.Datastream
                         lock (this)
                         {
                             // Stop immediately.
-                            if (state == STATE_STOPPING)
+                            if (_state == StateStopping)
                                 return;
 
-                            if (curFreq == freq)
+                            if (curFreq == _freq)
                             {
                                 // Frequency is unchanged
                                 if (curFreq == 0)
@@ -758,7 +758,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                                 if (curFreq != 0)
                                     force = true;
 
-                                curFreq = freq;
+                                curFreq = _freq;
                             } 
                         }
                     }
@@ -768,7 +768,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     // Let streamer know about stop.
                     lock (this)
                     {
-                        state = STATE_STOPPED;
+                        _state = StateStopped;
 
                         Monitor.PulseAll(this);
                     }
@@ -782,16 +782,16 @@ namespace Apache.Ignite.Core.Impl.Datastream
             {
                 get
                 {
-                    return Interlocked.Read(ref freq);
+                    return Interlocked.Read(ref _freq);
                 }
 
                 set
                 {
                     lock (this)
                     {
-                        if (freq != value)
+                        if (_freq != value)
                         {
-                            freq = value;
+                            _freq = value;
 
                             Monitor.PulseAll(this);
                         }
@@ -806,14 +806,14 @@ namespace Apache.Ignite.Core.Impl.Datastream
             {
                 lock (this)
                 {
-                    if (state == STATE_RUNNING)
+                    if (_state == StateRunning)
                     {
-                        state = STATE_STOPPING;
+                        _state = StateStopping;
 
                         Monitor.PulseAll(this);
                     }
 
-                    while (state != STATE_STOPPED)
+                    while (_state != StateStopped)
                         Monitor.Wait(this);
                 }
             }

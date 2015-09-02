@@ -40,13 +40,13 @@ namespace Apache.Ignite.Core.Impl.Compute
     internal class ComputeJobWrapper : IComputeJob, IPortableWriteAware
     {
         /** */
-        private readonly Func<object, object> execute;
+        private readonly Func<object, object> _execute;
 
         /** */
-        private readonly Action<object> cancel;
+        private readonly Action<object> _cancel;
 
         /** */
-        private readonly object job;
+        private readonly object _job;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeJobWrapper"/> class.
@@ -56,9 +56,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var reader0 = (PortableReaderImpl)reader.RawReader();
 
-            job = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _job = PortableUtils.ReadPortableOrSerializable<object>(reader0);
 
-            DelegateTypeDescriptor.GetComputeJob(job.GetType(), out execute, out cancel);
+            DelegateTypeDescriptor.GetComputeJob(_job.GetType(), out _execute, out _cancel);
         }
 
         /// <summary>
@@ -66,11 +66,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         public ComputeJobWrapper(object job, Func<object, object> execute, Action<object> cancel)
         {
-            this.job = job;
+            this._job = job;
 
-            this.execute = execute;
+            this._execute = execute;
 
-            this.cancel = cancel;
+            this._cancel = cancel;
         }
 
         /** <inheritDoc /> */
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             try
             {
-                return execute(job);
+                return _execute(_job);
             }
             catch (TargetInvocationException ex)
             {
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             try
             {
-                cancel(job);
+                _cancel(_job);
             }
             catch (TargetInvocationException ex)
             {
@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         public object Job
         {
-            get { return job; }
+            get { return _job; }
         }
     }
 
@@ -143,11 +143,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <summary>
         /// Unwraps job of one type into job of another type.
         /// </summary>
-        public static IComputeJob<R> Unwrap<T, R>(this IComputeJob<T> job)
+        public static IComputeJob<TR> Unwrap<T, TR>(this IComputeJob<T> job)
         {
             var wrapper = job as ComputeJobWrapper;
 
-            return wrapper != null ? (IComputeJob<R>) wrapper.Job : (IComputeJob<R>) job;
+            return wrapper != null ? (IComputeJob<TR>) wrapper.Job : (IComputeJob<TR>) job;
         }
         
         /// <summary>

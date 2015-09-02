@@ -23,39 +23,39 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// <summary>
     /// Represents a cache entry.
     /// </summary>
-    internal struct CacheEntry<K, V> : ICacheEntry<K, V>
+    internal struct CacheEntry<TK, TV> : ICacheEntry<TK, TV>
     {
         /** Key. */
-        private readonly K key;
+        private readonly TK _key;
 
         /** Value. */
-        private readonly V val;
+        private readonly TV _val;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntry{K,V}"/> struct.
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="val">The value.</param>
-        public CacheEntry(K key, V val)
+        public CacheEntry(TK key, TV val)
         {
-            this.key = key;
-            this.val = val;
+            this._key = key;
+            this._val = val;
         }
 
         /// <summary>
         /// Gets the key.
         /// </summary>
-        public K Key
+        public TK Key
         {
-            get { return key; }
+            get { return _key; }
         }
 
         /// <summary>
         /// Gets the value.
         /// </summary>
-        public V Value
+        public TV Value
         {
-            get { return val; }
+            get { return _val; }
         }
 
         /// <summary>
@@ -66,10 +66,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         ///   <c>true</c> if the specified <see cref="CacheEntry{K,V}"/> is equal to this instance; 
         ///   otherwise, <c>false</c>.
         /// </returns>
-        public bool Equals(CacheEntry<K, V> other)
+        public bool Equals(CacheEntry<TK, TV> other)
         {
-            return EqualityComparer<K>.Default.Equals(key, other.key) &&
-                EqualityComparer<V>.Default.Equals(val, other.val);
+            return EqualityComparer<TK>.Default.Equals(_key, other._key) &&
+                EqualityComparer<TV>.Default.Equals(_val, other._val);
         }
         
         /** <inheritDoc /> */
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (ReferenceEquals(null, obj)) 
                 return false;
 
-            return obj is CacheEntry<K, V> && Equals((CacheEntry<K, V>) obj);
+            return obj is CacheEntry<TK, TV> && Equals((CacheEntry<TK, TV>) obj);
         }
         
         /** <inheritDoc /> */
@@ -86,15 +86,15 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             unchecked
             {
-                return (EqualityComparer<K>.Default.GetHashCode(key) * 397) ^
-                    EqualityComparer<V>.Default.GetHashCode(val);
+                return (EqualityComparer<TK>.Default.GetHashCode(_key) * 397) ^
+                    EqualityComparer<TV>.Default.GetHashCode(_val);
             }
         }
 
         /** <inheritDoc /> */
         public override string ToString()
         {
-            return string.Format("CacheEntry [Key={0}, Value={1}]", key, val);
+            return string.Format("CacheEntry [Key={0}, Value={1}]", _key, _val);
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>
         /// The result of the operator.
         /// </returns>
-        public static bool operator ==(CacheEntry<K, V> a, CacheEntry<K, V> b)
+        public static bool operator ==(CacheEntry<TK, TV> a, CacheEntry<TK, TV> b)
         {
             return a.Equals(b);
         }
@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>
         /// The result of the operator.
         /// </returns>
-        public static bool operator !=(CacheEntry<K, V> a, CacheEntry<K, V> b)
+        public static bool operator !=(CacheEntry<TK, TV> a, CacheEntry<TK, TV> b)
         {
             return !(a == b);
         }

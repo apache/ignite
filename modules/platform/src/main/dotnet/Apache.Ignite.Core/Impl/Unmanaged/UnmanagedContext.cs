@@ -24,14 +24,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     internal unsafe class UnmanagedContext
     {
         /** Context */
-        private readonly void* nativeCtx;
+        private readonly void* _nativeCtx;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         public UnmanagedContext(void* ctx)
         {
-            nativeCtx = ctx;
+            _nativeCtx = ctx;
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         public void* NativeContext
         {
-            get { return nativeCtx; }
+            get { return _nativeCtx; }
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         ~UnmanagedContext()
         {
-            UnmanagedUtils.DeleteContext(nativeCtx); // Release CPP object.
+            UnmanagedUtils.DeleteContext(_nativeCtx); // Release CPP object.
         }
     }
 }

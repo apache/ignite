@@ -34,13 +34,13 @@ namespace Apache.Ignite.Core.Impl.Compute
     internal class ComputeJobHolder : IPortableWriteAware
     {
         /** Actual job. */
-        private readonly IComputeJob job;
+        private readonly IComputeJob _job;
         
         /** Owning grid. */
-        private readonly Ignite grid;
+        private readonly Ignite _grid;
 
         /** Result (set for local jobs only). */
-        private volatile ComputeJobResultImpl jobRes;
+        private volatile ComputeJobResultImpl _jobRes;
 
         /// <summary>
         /// Default ctor for marshalling.
@@ -50,9 +50,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var reader0 = (PortableReaderImpl) reader.RawReader();
 
-            grid = reader0.Marshaller.Grid;
+            _grid = reader0.Marshaller.Grid;
 
-            job = PortableUtils.ReadPortableOrSerializable<IComputeJob>(reader0);
+            _job = PortableUtils.ReadPortableOrSerializable<IComputeJob>(reader0);
         }
 
         /// <summary>
@@ -62,8 +62,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="job">Job.</param>
         public ComputeJobHolder(Ignite grid, IComputeJob job)
         {
-            this.grid = grid;
-            this.job = job;
+            this._grid = grid;
+            this._job = job;
         }
 
         /// <summary>
@@ -77,11 +77,11 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             Execute0(cancel, out res, out success);
 
-            jobRes = new ComputeJobResultImpl(
+            _jobRes = new ComputeJobResultImpl(
                 success ? res : null, 
                 success ? null : res as Exception, 
-                job, 
-                grid.LocalNode.Id, 
+                _job, 
+                _grid.LocalNode.Id, 
                 cancel
             );
         }
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             Execute0(cancel, out res, out success);
 
             // 2. Try writing result to the stream.
-            ClusterGroupImpl prj = grid.ClusterGroup;
+            ClusterGroupImpl prj = _grid.ClusterGroup;
 
             PortableWriterImpl writer = prj.Marshaller.StartMarshal(stream);
 
@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         public void Cancel()
         {
-            job.Cancel();
+            _job.Cancel();
         }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             Justification = "User job can throw any exception")]
         internal bool Serialize(IPortableStream stream)
         {
-            ClusterGroupImpl prj = grid.ClusterGroup;
+            ClusterGroupImpl prj = _grid.ClusterGroup;
 
             PortableWriterImpl writer = prj.Marshaller.StartMarshal(stream);
 
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
             catch (Exception e)
             {
-                writer.WriteString("Failed to marshal job [job=" + job + ", errType=" + e.GetType().Name +
+                writer.WriteString("Failed to marshal job [job=" + _job + ", errType=" + e.GetType().Name +
                     ", errMsg=" + e.Message + ']');
 
                 return false;
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         internal IComputeJob Job
         {
-            get { return job; }
+            get { return _job; }
         }
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         internal ComputeJobResultImpl JobResult
         {
-            get { return jobRes; }
+            get { return _jobRes; }
         }
 
         /// <summary>
@@ -184,20 +184,20 @@ namespace Apache.Ignite.Core.Impl.Compute
         private void Execute0(bool cancel, out object res, out bool success)
         {
             // 1. Inject resources.
-            IComputeResourceInjector injector = job as IComputeResourceInjector;
+            IComputeResourceInjector injector = _job as IComputeResourceInjector;
 
             if (injector != null)
-                injector.Inject(grid);
+                injector.Inject(_grid);
             else
-                ResourceProcessor.Inject(job, grid);
+                ResourceProcessor.Inject(_job, _grid);
 
             // 2. Execute.
             try
             {
                 if (cancel)
-                    job.Cancel();
+                    _job.Cancel();
 
-                res = job.Execute();
+                res = _job.Execute();
 
                 success = true;
             }
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             PortableWriterImpl writer0 = (PortableWriterImpl) writer.RawWriter();
 
             writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, job);
+            PortableUtils.WritePortableOrSerializable(writer0, _job);
         }
 
         /// <summary>

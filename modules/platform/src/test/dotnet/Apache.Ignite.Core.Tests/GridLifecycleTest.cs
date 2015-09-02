@@ -31,25 +31,25 @@ namespace Apache.Ignite.Core.Tests
     public class GridLifecycleTest
     {
         /** Configuration: without Java beans. */
-        private const string CFG_NO_BEANS = "config//lifecycle//lifecycle-no-beans.xml";
+        private const string CfgNoBeans = "config//lifecycle//lifecycle-no-beans.xml";
 
         /** Configuration: with Java beans. */
-        private const string CFG_BEANS = "config//lifecycle//lifecycle-beans.xml";
+        private const string CfgBeans = "config//lifecycle//lifecycle-beans.xml";
 
         /** Whether to throw an error on lifecycle event. */
-        internal static bool throwErr;
+        internal static bool ThrowErr;
 
         /** Events: before start. */
-        internal static IList<Event> beforeStartEvts;
+        internal static IList<Event> BeforeStartEvts;
 
         /** Events: after start. */
-        internal static IList<Event> afterStartEvts;
+        internal static IList<Event> AfterStartEvts;
 
         /** Events: before stop. */
-        internal static IList<Event> beforeStopEvts;
+        internal static IList<Event> BeforeStopEvts;
 
         /** Events: after stop. */
-        internal static IList<Event> afterStopEvts;
+        internal static IList<Event> AfterStopEvts;
 
         /// <summary>
         /// Set up routine.
@@ -57,12 +57,12 @@ namespace Apache.Ignite.Core.Tests
         [SetUp]
         public void SetUp()
         {
-            throwErr = false;
+            ThrowErr = false;
 
-            beforeStartEvts = new List<Event>();
-            afterStartEvts = new List<Event>();
-            beforeStopEvts = new List<Event>();
-            afterStopEvts = new List<Event>();
+            BeforeStartEvts = new List<Event>();
+            AfterStartEvts = new List<Event>();
+            BeforeStopEvts = new List<Event>();
+            AfterStopEvts = new List<Event>();
         }
 
         /// <summary>
@@ -81,29 +81,29 @@ namespace Apache.Ignite.Core.Tests
         public void TestWithoutBeans()
         {
             // 1. Test start events.
-            IIgnite grid = Start(CFG_NO_BEANS);
+            IIgnite grid = Start(CfgNoBeans);
 
-            Assert.AreEqual(2, beforeStartEvts.Count);
-            CheckEvent(beforeStartEvts[0], null, null, 0, null);
-            CheckEvent(beforeStartEvts[1], null, null, 0, null);
+            Assert.AreEqual(2, BeforeStartEvts.Count);
+            CheckEvent(BeforeStartEvts[0], null, null, 0, null);
+            CheckEvent(BeforeStartEvts[1], null, null, 0, null);
 
-            Assert.AreEqual(2, afterStartEvts.Count);
-            CheckEvent(afterStartEvts[0], grid, grid, 0, null);
-            CheckEvent(afterStartEvts[1], grid, grid, 0, null);
+            Assert.AreEqual(2, AfterStartEvts.Count);
+            CheckEvent(AfterStartEvts[0], grid, grid, 0, null);
+            CheckEvent(AfterStartEvts[1], grid, grid, 0, null);
 
             // 2. Test stop events.
             Ignition.Stop(grid.Name, false);
 
-            Assert.AreEqual(2, beforeStartEvts.Count);
-            Assert.AreEqual(2, afterStartEvts.Count);
+            Assert.AreEqual(2, BeforeStartEvts.Count);
+            Assert.AreEqual(2, AfterStartEvts.Count);
 
-            Assert.AreEqual(2, beforeStopEvts.Count);
-            CheckEvent(beforeStopEvts[0], grid, grid, 0, null);
-            CheckEvent(beforeStopEvts[1], grid, grid, 0, null);
+            Assert.AreEqual(2, BeforeStopEvts.Count);
+            CheckEvent(BeforeStopEvts[0], grid, grid, 0, null);
+            CheckEvent(BeforeStopEvts[1], grid, grid, 0, null);
 
-            Assert.AreEqual(2, afterStopEvts.Count);
-            CheckEvent(afterStopEvts[0], grid, grid, 0, null);
-            CheckEvent(afterStopEvts[1], grid, grid, 0, null);
+            Assert.AreEqual(2, AfterStopEvts.Count);
+            CheckEvent(AfterStopEvts[0], grid, grid, 0, null);
+            CheckEvent(AfterStopEvts[1], grid, grid, 0, null);
         }
 
         /// <summary>
@@ -113,19 +113,19 @@ namespace Apache.Ignite.Core.Tests
         public void TestWithBeans()
         {
             // 1. Test .Net start events.
-            IIgnite grid = Start(CFG_BEANS);
+            IIgnite grid = Start(CfgBeans);
 
-            Assert.AreEqual(4, beforeStartEvts.Count);
-            CheckEvent(beforeStartEvts[0], null, null, 0, null);
-            CheckEvent(beforeStartEvts[1], null, null, 1, "1");
-            CheckEvent(beforeStartEvts[2], null, null, 0, null);
-            CheckEvent(beforeStartEvts[3], null, null, 0, null);
+            Assert.AreEqual(4, BeforeStartEvts.Count);
+            CheckEvent(BeforeStartEvts[0], null, null, 0, null);
+            CheckEvent(BeforeStartEvts[1], null, null, 1, "1");
+            CheckEvent(BeforeStartEvts[2], null, null, 0, null);
+            CheckEvent(BeforeStartEvts[3], null, null, 0, null);
 
-            Assert.AreEqual(4, afterStartEvts.Count);
-            CheckEvent(afterStartEvts[0], grid, grid, 0, null);
-            CheckEvent(afterStartEvts[1], grid, grid, 1, "1");
-            CheckEvent(afterStartEvts[2], grid, grid, 0, null);
-            CheckEvent(afterStartEvts[3], grid, grid, 0, null);
+            Assert.AreEqual(4, AfterStartEvts.Count);
+            CheckEvent(AfterStartEvts[0], grid, grid, 0, null);
+            CheckEvent(AfterStartEvts[1], grid, grid, 1, "1");
+            CheckEvent(AfterStartEvts[2], grid, grid, 0, null);
+            CheckEvent(AfterStartEvts[3], grid, grid, 0, null);
 
             // 2. Test Java start events.
             IList<int> res = grid.Compute().ExecuteJavaTask<IList<int>>(
@@ -138,20 +138,20 @@ namespace Apache.Ignite.Core.Tests
             // 3. Test .Net stop events.
             Ignition.Stop(grid.Name, false);
 
-            Assert.AreEqual(4, beforeStartEvts.Count);
-            Assert.AreEqual(4, afterStartEvts.Count);
+            Assert.AreEqual(4, BeforeStartEvts.Count);
+            Assert.AreEqual(4, AfterStartEvts.Count);
 
-            Assert.AreEqual(4, beforeStopEvts.Count);
-            CheckEvent(beforeStopEvts[0], grid, grid, 0, null);
-            CheckEvent(beforeStopEvts[1], grid, grid, 1, "1");
-            CheckEvent(beforeStopEvts[2], grid, grid, 0, null);
-            CheckEvent(beforeStopEvts[3], grid, grid, 0, null);
+            Assert.AreEqual(4, BeforeStopEvts.Count);
+            CheckEvent(BeforeStopEvts[0], grid, grid, 0, null);
+            CheckEvent(BeforeStopEvts[1], grid, grid, 1, "1");
+            CheckEvent(BeforeStopEvts[2], grid, grid, 0, null);
+            CheckEvent(BeforeStopEvts[3], grid, grid, 0, null);
 
-            Assert.AreEqual(4, afterStopEvts.Count);
-            CheckEvent(afterStopEvts[0], grid, grid, 0, null);
-            CheckEvent(afterStopEvts[1], grid, grid, 1, "1");
-            CheckEvent(afterStopEvts[2], grid, grid, 0, null);
-            CheckEvent(afterStopEvts[3], grid, grid, 0, null);
+            Assert.AreEqual(4, AfterStopEvts.Count);
+            CheckEvent(AfterStopEvts[0], grid, grid, 0, null);
+            CheckEvent(AfterStopEvts[1], grid, grid, 1, "1");
+            CheckEvent(AfterStopEvts[2], grid, grid, 0, null);
+            CheckEvent(AfterStopEvts[3], grid, grid, 0, null);
         }
 
         /// <summary>
@@ -160,11 +160,11 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestError()
         {
-            throwErr = true;
+            ThrowErr = true;
 
             try
             {
-                IIgnite grid = Start(CFG_NO_BEANS);
+                IIgnite grid = Start(CfgNoBeans);
 
                 Assert.Fail("Should not reach this place.");
             }
@@ -181,7 +181,7 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>Grid.</returns>
         private static IIgnite Start(string cfgPath)
         {
-            GridTestUtils.JVM_DEBUG = true;
+            GridTestUtils.JvmDebug = true;
 
             GridConfiguration cfg = new GridConfiguration();
 
@@ -204,23 +204,23 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="expProp2">Expected property 2.</param>
         private static void CheckEvent(Event evt, IIgnite expGrid1, IIgnite expGrid2, int expProp1, string expProp2)
         {
-            if (evt.grid1 != null && evt.grid1 is GridProxy)
-                evt.grid1 = (evt.grid1 as GridProxy).Target;
+            if (evt.Grid1 != null && evt.Grid1 is GridProxy)
+                evt.Grid1 = (evt.Grid1 as GridProxy).Target;
 
-            if (evt.grid2 != null && evt.grid2 is GridProxy)
-                evt.grid2 = (evt.grid2 as GridProxy).Target;
+            if (evt.Grid2 != null && evt.Grid2 is GridProxy)
+                evt.Grid2 = (evt.Grid2 as GridProxy).Target;
 
-            Assert.AreEqual(expGrid1, evt.grid1);
-            Assert.AreEqual(expGrid2, evt.grid2);
-            Assert.AreEqual(expProp1, evt.prop1);
-            Assert.AreEqual(expProp2, evt.prop2);
+            Assert.AreEqual(expGrid1, evt.Grid1);
+            Assert.AreEqual(expGrid2, evt.Grid2);
+            Assert.AreEqual(expProp1, evt.Prop1);
+            Assert.AreEqual(expProp2, evt.Prop2);
         }
     }
 
     public abstract class AbstractBean
     {
         [InstanceResource]
-        public IIgnite grid1;
+        public IIgnite Grid1;
 
         public int Property1
         {
@@ -232,7 +232,7 @@ namespace Apache.Ignite.Core.Tests
     public class Bean : AbstractBean, ILifecycleBean
     {
         [InstanceResource]
-        public IIgnite grid2;
+        public IIgnite Grid2;
 
         public string Property2
         {
@@ -243,35 +243,35 @@ namespace Apache.Ignite.Core.Tests
         /** <inheritDoc /> */
         public void OnLifecycleEvent(LifecycleEventType evtType)
         {
-            if (GridLifecycleTest.throwErr)
+            if (GridLifecycleTest.ThrowErr)
                 throw new Exception("Lifecycle exception.");
 
             Event evt = new Event();
 
-            evt.grid1 = grid1;
-            evt.grid2 = grid2;
-            evt.prop1 = Property1;
-            evt.prop2 = Property2;
+            evt.Grid1 = Grid1;
+            evt.Grid2 = Grid2;
+            evt.Prop1 = Property1;
+            evt.Prop2 = Property2;
 
             switch (evtType)
             {
-                case LifecycleEventType.BEFORE_GRID_START:
-                    GridLifecycleTest.beforeStartEvts.Add(evt);
+                case LifecycleEventType.BeforeGridStart:
+                    GridLifecycleTest.BeforeStartEvts.Add(evt);
 
                     break;
 
-                case LifecycleEventType.AFTER_GRID_START:
-                    GridLifecycleTest.afterStartEvts.Add(evt);
+                case LifecycleEventType.AfterGridStart:
+                    GridLifecycleTest.AfterStartEvts.Add(evt);
 
                     break;
 
-                case LifecycleEventType.BEFORE_GRID_STOP:
-                    GridLifecycleTest.beforeStopEvts.Add(evt);
+                case LifecycleEventType.BeforeGridStop:
+                    GridLifecycleTest.BeforeStopEvts.Add(evt);
 
                     break;
 
-                case LifecycleEventType.AFTER_GRID_STOP:
-                    GridLifecycleTest.afterStopEvts.Add(evt);
+                case LifecycleEventType.AfterGridStop:
+                    GridLifecycleTest.AfterStopEvts.Add(evt);
 
                     break;
             }
@@ -280,9 +280,9 @@ namespace Apache.Ignite.Core.Tests
 
     public class Event
     {
-        public IIgnite grid1;
-        public IIgnite grid2;
-        public int prop1;
-        public string prop2;
+        public IIgnite Grid1;
+        public IIgnite Grid2;
+        public int Prop1;
+        public string Prop2;
     }
 }

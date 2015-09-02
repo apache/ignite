@@ -29,21 +29,21 @@ namespace Apache.Ignite.Core.Lifecycle
         /// <summary>
         /// Invoked before grid startup routine. Grid is not initialized and cannot be used.
         /// </summary>
-        BEFORE_GRID_START,
+        BeforeGridStart,
 
         /// <summary>
         /// Invoked after grid startup is complete. Grid is fully initialized and fully functional.
         /// </summary>
-        AFTER_GRID_START,
+        AfterGridStart,
 
         /// <summary>
         /// Invoked before grid stopping routine. Grid is fully functional at this point.
         /// </summary>
-        BEFORE_GRID_STOP,
+        BeforeGridStop,
 
         /// <summary>
         /// Invoked after grid had stopped. Grid is stopped and cannot be used. 
         /// </summary>
-        AFTER_GRID_STOP
+        AfterGridStop
     }
 }

@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     /// <summary>
     /// Cursor for entry-based queries.
     /// </summary>
-    internal class QueryCursor<K, V> : AbstractQueryCursor<ICacheEntry<K, V>>
+    internal class QueryCursor<TK, TV> : AbstractQueryCursor<ICacheEntry<TK, TV>>
     {
         /// <summary>
         /// Constructor.
@@ -39,12 +39,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         }
 
         /** <inheritdoc /> */
-        protected override ICacheEntry<K, V> Read(PortableReaderImpl reader)
+        protected override ICacheEntry<TK, TV> Read(PortableReaderImpl reader)
         {
-            K key = reader.ReadObject<K>();
-            V val = reader.ReadObject<V>();
+            TK key = reader.ReadObject<TK>();
+            TV val = reader.ReadObject<TV>();
 
-            return new CacheEntry<K, V>(key, val);
+            return new CacheEntry<TK, TV>(key, val);
         }
     }
 }

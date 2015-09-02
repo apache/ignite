@@ -26,22 +26,22 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// <summary>
     /// Cache enumerator proxy. Required to support reset and early native iterator cleanup.
     /// </summary>
-    internal class CacheEnumeratorProxy<K, V> : IEnumerator<ICacheEntry<K, V>>
+    internal class CacheEnumeratorProxy<TK, TV> : IEnumerator<ICacheEntry<TK, TV>>
     {
         /** Target cache. */
-        private readonly CacheImpl<K, V> cache;
+        private readonly CacheImpl<TK, TV> _cache;
 
         /** Local flag. */
-        private readonly bool loc;
+        private readonly bool _loc;
 
         /** Peek modes. */
-        private readonly int peekModes;
+        private readonly int _peekModes;
 
         /** Target enumerator. */
-        private CacheEnumerator<K, V> target;
+        private CacheEnumerator<TK, TV> _target;
 
         /** Dispose flag. */
-        private bool disposed;
+        private bool _disposed;
 
         /// <summary>
         /// Constructor.
@@ -49,11 +49,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="cache">Target cache.</param>
         /// <param name="loc">Local flag.</param>
         /// <param name="peekModes">Peek modes.</param>
-        public CacheEnumeratorProxy(CacheImpl<K, V> cache, bool loc, int peekModes)
+        public CacheEnumeratorProxy(CacheImpl<TK, TV> cache, bool loc, int peekModes)
         {
-            this.cache = cache;
-            this.loc = loc;
-            this.peekModes = peekModes;
+            this._cache = cache;
+            this._loc = loc;
+            this._peekModes = peekModes;
 
             CreateTarget();
         }
@@ -64,10 +64,10 @@ namespace Apache.Ignite.Core.Impl.Cache
             CheckDisposed();
 
             // No target => closed or finished.
-            if (target == null)
+            if (_target == null)
                 return false;
             
-            if (!target.MoveNext())
+            if (!_target.MoveNext())
             {
                 // Failed to advance => end is reached.
                 CloseTarget();
@@ -79,16 +79,16 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        public ICacheEntry<K, V> Current
+        public ICacheEntry<TK, TV> Current
         {
             get
             {
                 CheckDisposed();
 
-                if (target == null)
+                if (_target == null)
                     throw new InvalidOperationException("Invalid enumerator state (did you call MoveNext()?)");
 
-                return target.Current;
+                return _target.Current;
             }
         }
 
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             CheckDisposed();
 
-            if (target != null)
+            if (_target != null)
                 CloseTarget();
 
             CreateTarget();
@@ -112,12 +112,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Dispose()
         {
-            if (!disposed)
+            if (!_disposed)
             {
-                if (target != null)
+                if (_target != null)
                     CloseTarget();
 
-                disposed = true;
+                _disposed = true;
             }
         }
 
@@ -127,9 +127,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Target enumerator.</returns>
         private void CreateTarget()
         {
-            Debug.Assert(target == null, "Previous target is not cleaned.");
+            Debug.Assert(_target == null, "Previous target is not cleaned.");
 
-            target = cache.CreateEnumerator(loc, peekModes);
+            _target = _cache.CreateEnumerator(_loc, _peekModes);
         }
 
         /// <summary>
@@ -137,11 +137,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         private void CloseTarget()
         {
-            Debug.Assert(target != null);
+            Debug.Assert(_target != null);
 
-            target.Dispose();
+            _target.Dispose();
 
-            target = null;
+            _target = null;
         }
 
         /// <summary>
@@ -149,7 +149,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         private void CheckDisposed()
         {
-            if (disposed)
+            if (_disposed)
                 throw new ObjectDisposedException("Cache enumerator has been disposed.");
         }
     }

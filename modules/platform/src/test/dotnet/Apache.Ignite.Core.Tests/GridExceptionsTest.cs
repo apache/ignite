@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CATEGORY_INTENSIVE)]
+        [Category(GridTestUtils.CategoryIntensive)]
         public void TestPartialUpdateException()
         {
             // Primitive type
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests CachePartialUpdateException keys propagation in portable mode.
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CATEGORY_INTENSIVE)]
+        [Category(GridTestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionPortable()
         {
             // User type
@@ -188,7 +188,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CATEGORY_INTENSIVE)]
+        [Category(GridTestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionAsync()
         {
             // Primitive type
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests CachePartialUpdateException keys propagation in portable mode.
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CATEGORY_INTENSIVE)]
+        [Category(GridTestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionAsyncPortable()
         {
             TestPartialUpdateException(true, (x, g) => g.Portables().ToPortable<IPortableObject>(new PortableEntry(x)));
@@ -211,17 +211,17 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
-        private static void TestPartialUpdateException<K>(bool async, Func<int, IIgnite, K> keyFunc)
+        private static void TestPartialUpdateException<TK>(bool async, Func<int, IIgnite, TK> keyFunc)
         {
             using (var grid = StartGrid())
             {
-                var cache = grid.Cache<K, int>("partitioned_atomic").WithNoRetries();
+                var cache = grid.Cache<TK, int>("partitioned_atomic").WithNoRetries();
 
                 if (async)
                     cache = cache.WithAsync();
 
-                if (typeof (K) == typeof (IPortableObject))
-                    cache = cache.WithKeepPortable<K, int>();
+                if (typeof (TK) == typeof (IPortableObject))
+                    cache = cache.WithKeepPortable<TK, int>();
 
                 // Do cache puts in parallel
                 var putTask = Task.Factory.StartNew(() =>
@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Tests
                     }
                     catch (CachePartialUpdateException ex)
                     {
-                        var failedKeys = ex.GetFailedKeys<K>();
+                        var failedKeys = ex.GetFailedKeys<TK>();
 
                         Assert.IsTrue(failedKeys.Any());
 
@@ -294,12 +294,12 @@ namespace Apache.Ignite.Core.Tests
         private class PortableEntry
         {
             /** Value. */
-            private readonly int val;
+            private readonly int _val;
 
             /** <inheritDot /> */
             public override int GetHashCode()
             {
-                return val;
+                return _val;
             }
 
             /// <summary>
@@ -308,13 +308,13 @@ namespace Apache.Ignite.Core.Tests
             /// <param name="val">Value.</param>
             public PortableEntry(int val)
             {
-                this.val = val;
+                this._val = val;
             }
 
             /** <inheritDoc /> */
             public override bool Equals(object obj)
             {
-                return obj is PortableEntry && ((PortableEntry)obj).val == val;
+                return obj is PortableEntry && ((PortableEntry)obj)._val == _val;
             }
         }
 
@@ -325,12 +325,12 @@ namespace Apache.Ignite.Core.Tests
         private class SerializableEntry
         {
             /** Value. */
-            private readonly int val;
+            private readonly int _val;
 
             /** <inheritDot /> */
             public override int GetHashCode()
             {
-                return val;
+                return _val;
             }
 
             /// <summary>
@@ -339,13 +339,13 @@ namespace Apache.Ignite.Core.Tests
             /// <param name="val">Value.</param>
             public SerializableEntry(int val)
             {
-                this.val = val;
+                this._val = val;
             }
 
             /** <inheritDoc /> */
             public override bool Equals(object obj)
             {
-                return obj is SerializableEntry && ((SerializableEntry)obj).val == val;
+                return obj is SerializableEntry && ((SerializableEntry)obj)._val == _val;
             }
         }
     }

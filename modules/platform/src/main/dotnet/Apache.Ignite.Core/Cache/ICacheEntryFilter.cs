@@ -22,13 +22,13 @@ namespace Apache.Ignite.Core.Cache
     /// </summary>
     /// <typeparam name="K">Type of cache entry key.</typeparam>
     /// <typeparam name="V">Type of cache entry value.</typeparam>
-    public interface ICacheEntryFilter<in K, in V>
+    public interface ICacheEntryFilter<in TK, in TV>
     {
         /// <summary>
         /// Returns a value indicating whether provided cache entry satisfies this predicate.
         /// </summary>
         /// <param name="entry">Cache entry.</param>
         /// <returns>Value indicating whether provided cache entry satisfies this predicate.</returns>
-        bool Invoke(ICacheEntry<K, V> entry);
+        bool Invoke(ICacheEntry<TK, TV> entry);
     }
 }

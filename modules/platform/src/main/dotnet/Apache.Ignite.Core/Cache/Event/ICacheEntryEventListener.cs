@@ -22,12 +22,12 @@ namespace Apache.Ignite.Core.Cache.Event
     /// <summary>
     /// Cache entry event listener.
     /// </summary>
-    public interface ICacheEntryEventListener<K, V>
+    public interface ICacheEntryEventListener<TK, TV>
     {
         /// <summary>
         /// Event callback.
         /// </summary>
         /// <param name="evts">Events.</param>
-        void OnEvent(IEnumerable<ICacheEntryEvent<K, V>> evts);
+        void OnEvent(IEnumerable<ICacheEntryEvent<TK, TV>> evts);
     }
 }
