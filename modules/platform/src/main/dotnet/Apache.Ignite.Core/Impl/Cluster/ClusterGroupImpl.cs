@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     internal class ClusterGroupImpl : GridTarget, IClusterGroupEx
     {
         /** Attribute: platform. */
-        private const string AttrPlatform = "org.gridgain.interop.platform";
+        private const string AttrPlatform = "org.apache.ignite.platform";
 
         /** Platform. */
         private const string Platform = "dotnet";
