@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritDoc /> */
         public void OnLifecycleEvent(LifecycleEventType evt)
         {
-            if (evt == LifecycleEventType.AfterGridStart)
+            if (evt == LifecycleEventType.AfterNodeStart)
                 // This event cannot be propagated right away because at this point we
                 // do not have Ignite instance yet. So just schedule it.
                 _startEvt = true;
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl
             ResourceProcessor.Inject(_target, grid);
 
             if (_startEvt)
-                _target.OnLifecycleEvent(LifecycleEventType.AfterGridStart);
+                _target.OnLifecycleEvent(LifecycleEventType.AfterNodeStart);
         }
     }
 }

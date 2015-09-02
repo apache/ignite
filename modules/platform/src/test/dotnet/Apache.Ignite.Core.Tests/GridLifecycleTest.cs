@@ -255,22 +255,22 @@ namespace Apache.Ignite.Core.Tests
 
             switch (evtType)
             {
-                case LifecycleEventType.BeforeGridStart:
+                case LifecycleEventType.BeforeNodeStart:
                     GridLifecycleTest.BeforeStartEvts.Add(evt);
 
                     break;
 
-                case LifecycleEventType.AfterGridStart:
+                case LifecycleEventType.AfterNodeStart:
                     GridLifecycleTest.AfterStartEvts.Add(evt);
 
                     break;
 
-                case LifecycleEventType.BeforeGridStop:
+                case LifecycleEventType.BeforeNodeStop:
                     GridLifecycleTest.BeforeStopEvts.Add(evt);
 
                     break;
 
-                case LifecycleEventType.AfterGridStop:
+                case LifecycleEventType.AfterNodeStop:
                     GridLifecycleTest.AfterStopEvts.Add(evt);
 
                     break;

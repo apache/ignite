@@ -27,23 +27,23 @@ namespace Apache.Ignite.Core.Lifecycle
     public enum LifecycleEventType
     {
         /// <summary>
-        /// Invoked before grid startup routine. Grid is not initialized and cannot be used.
+        /// Invoked before node startup routine. Node is not initialized and cannot be used.
         /// </summary>
-        BeforeGridStart,
+        BeforeNodeStart,
 
         /// <summary>
-        /// Invoked after grid startup is complete. Grid is fully initialized and fully functional.
+        /// Invoked after node startup is complete. Node is fully initialized and fully functional.
         /// </summary>
-        AfterGridStart,
+        AfterNodeStart,
 
         /// <summary>
-        /// Invoked before grid stopping routine. Grid is fully functional at this point.
+        /// Invoked before node stopping routine. Node is fully functional at this point.
         /// </summary>
-        BeforeGridStop,
+        BeforeNodeStop,
 
         /// <summary>
-        /// Invoked after grid had stopped. Grid is stopped and cannot be used. 
+        /// Invoked after node had stopped. Node is stopped and cannot be used. 
         /// </summary>
-        AfterGridStop
+        AfterNodeStop
     }
 }
