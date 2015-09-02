@@ -30,20 +30,20 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Default initial JVM memory in megabytes.
         /// </summary>
-        public const int DfltJvmInitMem = 512;
+        public const int DefaultJvmInitMem = 512;
 
         /// <summary>
         /// Default maximum JVM memory in megabytes.
         /// </summary>
-        public const int DfltJvmMaxMem = 1024;
+        public const int DefaultJvmMaxMem = 1024;
 
         /// <summary>
         /// Default constructor.
         /// </summary>
         public IgniteConfiguration()
         {
-            JvmInitialMemoryMb = DfltJvmInitMem;
-            JvmMaxMemoryMb = DfltJvmMaxMem;
+            JvmInitialMemoryMb = DefaultJvmInitMem;
+            JvmMaxMemoryMb = DefaultJvmMaxMem;
         }
 
         /// <summary>
@@ -61,8 +61,9 @@ namespace Apache.Ignite.Core
             JvmOptions = cfg.JvmOptions != null ? new List<string>(cfg.JvmOptions) : null;
             Assemblies = cfg.Assemblies != null ? new List<string>(cfg.Assemblies) : null;
 
-            PortableConfiguration = cfg.PortableConfiguration != null ? 
-                new PortableConfiguration(cfg.PortableConfiguration) : null;
+            PortableConfiguration = cfg.PortableConfiguration != null
+                ? new PortableConfiguration(cfg.PortableConfiguration)
+                : null;
 
             LifecycleBeans = cfg.LifecycleBeans != null ? new List<ILifecycleBean>(cfg.LifecycleBeans) : null;
 
@@ -76,21 +77,13 @@ namespace Apache.Ignite.Core
         /// <value>
         /// The portable configuration.
         /// </value>
-        public PortableConfiguration PortableConfiguration
-        {
-            get;
-            set;
-        }
+        public PortableConfiguration PortableConfiguration { get; set; }
 
         /// <summary>
         /// URL to Spring configuration file.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
-        public string SpringConfigUrl
-        {
-            get;
-            set;
-        }
+        public string SpringConfigUrl { get; set; }
 
         /// <summary>
         /// Path jvm.dll file. If not set, it's location will be determined
@@ -98,87 +91,51 @@ namespace Apache.Ignite.Core
         /// If path is neither set nor determined automatically, an exception
         /// will be thrown.
         /// </summary>
-        public string JvmDllPath
-        {
-            get;
-            set;
-        }
+        public string JvmDllPath { get; set; }
 
         /// <summary>
         /// Path to GridGain home. If not set environment variable GRIDGAIN_HOME
         /// will be used.
         /// </summary>
-        public string GridGainHome
-        {
-            get;
-            set;
-        }
+        public string GridGainHome { get; set; }
 
         /// <summary>
         /// Classpath used by JVM on Ignite start.
         /// </summary>
-        public string JvmClasspath
-        {
-            get;
-            set;
-        }
+        public string JvmClasspath { get; set; }
 
         /// <summary>
         /// Collection of options passed to JVM on Ignite start.
         /// </summary>
-        public ICollection<string> JvmOptions
-        {
-            get;
-            set;
-        }
-    
+        public ICollection<string> JvmOptions { get; set; }
+
         /// <summary>
         /// List of additional .Net assemblies to load on Ignite start. Each item can be either
         /// fully qualified assembly name, path to assembly to DLL or path to a directory when 
         /// assemblies reside.
         /// </summary>
-        public IList<string> Assemblies
-        {
-            get;
-            set;
-        }
+        public IList<string> Assemblies { get; set; }
 
         /// <summary>
         /// Whether to suppress warnings.
         /// </summary>
-        public bool SuppressWarnings
-        {
-            get;
-            set;
-        }
+        public bool SuppressWarnings { get; set; }
 
         /// <summary>
         /// Lifecycle beans.
         /// </summary>
-        public ICollection<ILifecycleBean> LifecycleBeans
-        {
-            get;
-            set;
-        }
+        public ICollection<ILifecycleBean> LifecycleBeans { get; set; }
 
         /// <summary>
         /// Initial amount of memory in megabytes given to JVM. Maps to -Xms Java option.
-        /// Defaults to <see cref="DfltJvmInitMem"/>.
+        /// Defaults to <see cref="DefaultJvmInitMem"/>.
         /// </summary>
-        public int JvmInitialMemoryMb
-        {
-            get;
-            set;
-        }
+        public int JvmInitialMemoryMb { get; set; }
 
         /// <summary>
         /// Maximum amount of memory in megabytes given to JVM. Maps to -Xmx Java option.
-        /// Defaults to <see cref="DfltJvmMaxMem"/>.
+        /// Defaults to <see cref="DefaultJvmMaxMem"/>.
         /// </summary>
-        public int JvmMaxMemoryMb
-        {
-            get;
-            set;
-        }
+        public int JvmMaxMemoryMb { get; set; }
     }
 }

@@ -36,16 +36,15 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <summary>
         /// Default number of working threads (equal to the number of available processors).
         /// </summary>
-        public static readonly int DfltThreadsCnt = Environment.ProcessorCount;
+        public static readonly int DefaultThreadsCount = Environment.ProcessorCount;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         protected CacheParallelLoadStoreAdapter()
         {
-            MaxDegreeOfParallelism = DfltThreadsCnt;
+            MaxDegreeOfParallelism = DefaultThreadsCount;
         }
-
 
         /// <summary>
         /// Loads all values from underlying persistent storage. Note that keys are
@@ -65,10 +64,10 @@ namespace Apache.Ignite.Core.Cache.Store
         public virtual void LoadCache(Action<object, object> act, params object[] args)
         {
             if (MaxDegreeOfParallelism == 0 || MaxDegreeOfParallelism < -1)
-                throw new ArgumentOutOfRangeException("MaxDegreeOfParallelism must be either positive or -1: " + 
-                    MaxDegreeOfParallelism);
+                throw new ArgumentOutOfRangeException("MaxDegreeOfParallelism must be either positive or -1: " +
+                                                      MaxDegreeOfParallelism);
 
-            var options = new ParallelOptions { MaxDegreeOfParallelism = MaxDegreeOfParallelism };
+            var options = new ParallelOptions {MaxDegreeOfParallelism = MaxDegreeOfParallelism};
 
             Parallel.ForEach(GetInputData().OfType<object>(), options, item =>
             {
@@ -94,13 +93,9 @@ namespace Apache.Ignite.Core.Cache.Store
         /// Gets or sets the maximum degree of parallelism to use in LoadCache. 
         /// Must be either positive or -1 for unlimited amount of threads.
         /// <para />
-        /// Defaults to <see cref="DfltThreadsCnt"/>.
+        /// Defaults to <see cref="DefaultThreadsCount"/>.
         /// </summary>
-        public int MaxDegreeOfParallelism
-        {
-            get;
-            set;
-        }
+        public int MaxDegreeOfParallelism { get; set; }
 
         /// <summary>
         /// Loads an object. Application developers should implement this method to customize the loading
