@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
+// ReSharper disable NonReadonlyMemberInGetHashCode
 namespace Apache.Ignite.Core.Tests.Portable 
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -449,6 +451,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             nGuid = null;
 
+            // ReSharper disable once ExpressionIsAlwaysNull
             Assert.AreEqual(_marsh.Unmarshal<Guid?>(_marsh.Marshal(nGuid)), null);
         }
 
@@ -508,9 +511,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             typeCfgs.Add(new PortableTypeConfiguration(typeof(DateTimeType)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
+            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
             PortableMarshaller marsh = new PortableMarshaller(cfg);
 
@@ -556,7 +557,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             foreach (object obj in newObjList)
                 newList.Add((string)obj);
 
-            CompareCollections(list, newList);
+            CollectionAssert.AreEquivalent(list, newList);
         }
 
         /**
@@ -570,16 +571,15 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             typeCfgs.Add(new PortableTypeConfiguration(typeof(PropertyType)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
+            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
             PortableMarshaller marsh = new PortableMarshaller(cfg);
 
-            PropertyType obj = new PropertyType();
-
-            obj.Field1 = 1;
-            obj.Field2 = 2;
+            PropertyType obj = new PropertyType
+            {
+                Field1 = 1,
+                Field2 = 2
+            };
 
             byte[] data = marsh.Marshal(obj);
 
@@ -605,9 +605,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             typeCfgs.Add(new PortableTypeConfiguration(typeof(PrimitiveFieldType)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
+            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
             PortableMarshaller marsh = new PortableMarshaller(cfg);
 
@@ -666,19 +664,15 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsSerializer()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            var typeCfgs = new List<PortableTypeConfiguration>
+            {
+                new PortableTypeConfiguration(typeof (PrimitiveFieldType))
+                {
+                    Serializer = new PrimitiveFieldsSerializer()
+                }
+            };
 
-            PortableTypeConfiguration typeCfg =
-                new PortableTypeConfiguration(typeof(PrimitiveFieldType));
-
-            typeCfg.Serializer = new PrimitiveFieldsSerializer();
-            
-            typeCfgs.Add(typeCfg);
-
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
+            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
             PortableMarshaller marsh = new PortableMarshaller(cfg);
 
@@ -693,21 +687,23 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestDecimalFields()
         {
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = new List<PortableTypeConfiguration> 
-            { 
-                new PortableTypeConfiguration(typeof(DecimalReflective)),
-                new PortableTypeConfiguration(typeof(DecimalMarshalAware))
-            }; ;
+            PortableConfiguration cfg = new PortableConfiguration
+            {
+                TypeConfigurations = new List<PortableTypeConfiguration>
+                {
+                    new PortableTypeConfiguration(typeof (DecimalReflective)),
+                    new PortableTypeConfiguration(typeof (DecimalMarshalAware))
+                }
+            };
 
             PortableMarshaller marsh = new PortableMarshaller(cfg);
 
             // 1. Test reflective stuff.
-            DecimalReflective obj1 = new DecimalReflective();
-
-            obj1.Val = decimal.Zero;
-            obj1.ValArr = new[] { decimal.One, decimal.MinusOne };
+            DecimalReflective obj1 = new DecimalReflective
+            {
+                Val = decimal.Zero,
+                ValArr = new[] {decimal.One, decimal.MinusOne}
+            };
 
             IPortableObject portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj1), PortableMode.ForcePortable);
 
@@ -1271,13 +1267,9 @@ namespace Apache.Ignite.Core.Tests.Portable
                 if (this == obj)
                     return true;
 
-                if (obj != null && obj is OuterObjectType)
-                {
-                    OuterObjectType that = (OuterObjectType)obj;
-
-                    return _inObj == null ? that._inObj == null : _inObj.Equals(that._inObj);
-                }
-                return false;
+                var type = obj as OuterObjectType;
+                
+                return type != null && Equals(_inObj, type._inObj);
             }
 
             /** <inheritdoc /> */
@@ -1310,13 +1302,9 @@ namespace Apache.Ignite.Core.Tests.Portable
                 if (this == obj)
                     return true;
 
-                if (obj != null && obj is InnerObjectType)
-                {
-                    InnerObjectType that = (InnerObjectType)obj;
+                var that = obj as InnerObjectType;
 
-                    return _pInt1 == that._pInt1 && _pInt2 == that._pInt2;
-                }
-                return false;
+                return that != null && (_pInt1 == that._pInt1 && _pInt2 == that._pInt2);
             }
 
             /** <inheritdoc /> */
@@ -1417,64 +1405,8 @@ namespace Apache.Ignite.Core.Tests.Portable
                 return true;
             if (col1 == null || col2 == null)
                 return false;
-            if (col1.Count != col2.Count)
-                return false;
-            IEnumerator enum1 = col1.GetEnumerator();
 
-            while (enum1.MoveNext())
-            {
-                object elem = enum1.Current;
-
-                bool contains = false;
-
-                foreach (object thatElem in col2)
-                {
-                    if (elem == null && thatElem == null || elem != null && elem.Equals(thatElem))
-                    {
-                        contains = true;
-
-                        break;
-                    }
-                }
-
-                if (!contains)
-                    return false;
-            }
-
-            return true;
-        }
-
-        private static bool CompareCollections<T>(ICollection<T> col1, ICollection<T> col2)
-        {
-            if (col1 == null && col2 == null)
-                return true;
-            if (col1 == null || col2 == null)
-                return false;
-            if (col1.Count != col2.Count)
-                return false;
-            IEnumerator enum1 = col1.GetEnumerator();
-
-            while (enum1.MoveNext())
-            {
-                object elem = enum1.Current;
-
-                bool contains = false;
-
-                foreach (object thatElem in col2)
-                {
-                    if (elem == null && thatElem == null || elem != null && elem.Equals(thatElem))
-                    {
-                        contains = true;
-
-                        break;
-                    }
-                }
-
-                if (!contains)
-                    return false;
-            }
-
-            return true;
+            return col1.OfType<object>().SequenceEqual(col2.OfType<object>());
         }
 
         public class PrimitiveArrayFieldType
