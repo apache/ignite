@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core
         private static readonly IDictionary<GridKey, Ignite> Grids = new Dictionary<GridKey, Ignite>();
         
         /** Current DLL name. */
-        private static readonly string GridgainDllName = Path.GetFileName(Assembly.GetExecutingAssembly().Location);
+        private static readonly string IgniteDllName = Path.GetFileName(Assembly.GetExecutingAssembly().Location);
 
         /** Startup info. */
         [ThreadStatic]
@@ -459,7 +459,7 @@ namespace Apache.Ignite.Core
         /// <returns><c>True</c> if this is one of GG assemblies.</returns>
         private static bool SelfAssembly(string assembly)
         {
-            return assembly.EndsWith(GridgainDllName, StringComparison.OrdinalIgnoreCase);
+            return assembly.EndsWith(IgniteDllName, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -613,58 +613,32 @@ namespace Apache.Ignite.Core
             /// <summary>
             /// Configuration.
             /// </summary>
-            internal IgniteConfiguration Configuration
-            {
-                get;
-                private set;
-            }
+            internal IgniteConfiguration Configuration { get; private set; }
 
             /// <summary>
             /// Lifecycle beans.
             /// </summary>
-            internal IList<LifecycleBeanHolder> LifecycleBeans
-            {
-                get;
-                set;
-            }
+            internal IList<LifecycleBeanHolder> LifecycleBeans { get; set; }
 
             /// <summary>
             /// Node name.
             /// </summary>
-            internal string Name
-            {
-                get;
-                set;
-            }
+            internal string Name { get; set; }
 
             /// <summary>
             /// Marshaller.
             /// </summary>
-            internal PortableMarshaller Marshaller
-            {
-                get;
-                set;
-            }
+            internal PortableMarshaller Marshaller { get; set; }
 
             /// <summary>
             /// Start error.
             /// </summary>
-            internal Exception Error
-            {
-                get;
-                set;
-            }
+            internal Exception Error { get; set; }
 
             /// <summary>
             /// Gets or sets the context.
             /// </summary>
-            internal void* Context
-            {
-                get;
-                set;
-            }
+            internal void* Context { get; set; }
         }
-
-
     }
 }
