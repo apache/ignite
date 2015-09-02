@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.callback;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
 
 /**
  * Gateway to all platform-dependent callbacks. Implementers might extend this class and provide additional callbacks.
@@ -30,7 +30,7 @@ public class PlatformCallbackGateway {
     protected final long envPtr;
 
     /** Lock. */
-    private final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
+    private final GridStripedSpinBusyLock lock = new GridStripedSpinBusyLock();
 
     /**
      * Native gateway.
@@ -922,7 +922,7 @@ public class PlatformCallbackGateway {
      * Enter gateway.
      */
     protected void enter() {
-        if (!lock.tryReadLock())
+        if (!lock.enterBusy())
             throw new IgniteException("Failed to execute native callback because grid is stopping.");
     }
 
@@ -930,13 +930,13 @@ public class PlatformCallbackGateway {
      * Leave gateway.
      */
     protected void leave() {
-        lock.readUnlock();
+        lock.leaveBusy();
     }
 
     /**
      * Block gateway.
      */
     protected void block() {
-        lock.writeLock();
+        lock.block();
     }
 }

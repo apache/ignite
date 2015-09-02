@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
-import org.apache.ignite.internal.processors.cache.GridLoadCacheCloseablePredicate;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
@@ -62,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
@@ -477,8 +477,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         }
         finally {
-            if (p instanceof GridLoadCacheCloseablePredicate)
-                ((GridLoadCacheCloseablePredicate)p).onClose();
+            if (p instanceof PlatformCacheEntryFilter)
+                ((PlatformCacheEntryFilter)p).onClose();
         }
     }
 
