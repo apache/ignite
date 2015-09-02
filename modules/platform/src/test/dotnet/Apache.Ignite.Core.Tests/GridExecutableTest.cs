@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests
         {
             GridTestUtils.KillProcesses();
 
-            grid = GridFactory.Start(Configuration(SPRING_CFG_PATH));
+            grid = Ignition.Start(Configuration(SPRING_CFG_PATH));
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Tests
         [TestFixtureTearDown]
         public void TestFixtureTearDown()
         {
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
 
             GridTestUtils.KillProcesses();
         }

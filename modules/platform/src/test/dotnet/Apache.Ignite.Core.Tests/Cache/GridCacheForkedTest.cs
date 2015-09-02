@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 "-J-DIGNITE_QUIET=false"
                 );
 
-            grid = GridFactory.Start(new GridConfiguration
+            grid = Ignition.Start(new GridConfiguration
             {
                 JvmClasspath = GridTestUtils.CreateTestClasspath(),
                 JvmOptions = GridTestUtils.TestJavaOptions(),
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             GridProcess.KillAll();
 
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>

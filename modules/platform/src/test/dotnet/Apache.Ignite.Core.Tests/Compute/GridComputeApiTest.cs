@@ -121,22 +121,22 @@ namespace Apache.Ignite.Core.Tests.Compute
             //GridTestUtils.JVM_DEBUG = true;
             GridTestUtils.KillProcesses();
 
-            grid1 = GridFactory.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            grid2 = GridFactory.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            grid3 = GridFactory.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
+            grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+            grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
         }
 
         [TestFixtureTearDown]
         public void StopClient()
         {
             if (grid1 != null)
-                GridFactory.Stop(grid1.Name, true);
+                Ignition.Stop(grid1.Name, true);
 
             if (grid2 != null)
-                GridFactory.Stop(grid2.Name, true);
+                Ignition.Stop(grid2.Name, true);
 
             if (grid3 != null)
-                GridFactory.Stop(grid3.Name, true);
+                Ignition.Stop(grid3.Name, true);
         }
 
         [TearDown]
@@ -301,11 +301,11 @@ namespace Apache.Ignite.Core.Tests.Compute
             
             var topVer = cluster.TopologyVersion;
 
-            GridFactory.Stop(grid3.Name, true);
+            Ignition.Stop(grid3.Name, true);
 
             Assert.AreEqual(topVer + 1, grid1.Cluster.TopologyVersion);
 
-            grid3 = GridFactory.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
 
             Assert.AreEqual(topVer + 2, grid1.Cluster.TopologyVersion);
         }
@@ -334,7 +334,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.IsTrue(top.All(nodes.Contains));
 
             // Stop/start node to advance version and check that history is still correct
-            Assert.IsTrue(GridFactory.Stop(grid2.Name, true));
+            Assert.IsTrue(Ignition.Stop(grid2.Name, true));
 
             try
             {
@@ -346,7 +346,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
             finally 
             {
-                grid2 = GridFactory.Start(Configuration("config\\compute\\compute-grid2.xml"));
+                grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
             }
         }
 
@@ -367,7 +367,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.IsTrue(nodes.Count == 3);
 
-            Assert.IsTrue(GridFactory.Stop(grid2.Name, true));
+            Assert.IsTrue(Ignition.Stop(grid2.Name, true));
 
             // Check subsequent calls on updating topologies.
             nodes = grid1.Cluster.Nodes();
@@ -378,7 +378,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.IsTrue(nodes.Count == 2);
 
-            grid2 = GridFactory.Start(Configuration("config\\compute\\compute-grid2.xml"));
+            grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
 
             nodes = grid1.Cluster.Nodes();
 

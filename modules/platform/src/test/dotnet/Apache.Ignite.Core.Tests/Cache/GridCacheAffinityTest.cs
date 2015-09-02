@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 cfg.GridName = "grid-" + i;
 
-                GridFactory.Start(cfg);
+                Ignition.Start(cfg);
             }
         }
 
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public virtual void StopGrids()
         {
             for (int i = 0; i < 3; i++)
-                GridFactory.Stop("grid-" + i, true);
+                Ignition.Stop("grid-" + i, true);
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestAffinity()
         {
-            IIgnite g = GridFactory.Grid("grid-0");
+            IIgnite g = Ignition.Grid("grid-0");
 
             ICacheAffinity aff = g.Affinity(null);
 
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestAffinityPortable()
         {
-            IIgnite g = GridFactory.Grid("grid-0");
+            IIgnite g = Ignition.Grid("grid-0");
 
             ICacheAffinity aff = g.Affinity(null);  
 

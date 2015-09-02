@@ -62,9 +62,9 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="portableConfiguration">The portable configuration.</param>
         private void StartGrid(PortableConfiguration portableConfiguration)
         {
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
 
-            var grid = GridFactory.Start(new GridConfiguration
+            var grid = Ignition.Start(new GridConfiguration
             {
                 SpringConfigUrl = "config\\cache-portables.xml",
                 JvmClasspath = GridTestUtils.CreateTestClasspath(),

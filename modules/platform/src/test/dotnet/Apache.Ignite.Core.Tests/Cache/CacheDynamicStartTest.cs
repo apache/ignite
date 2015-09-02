@@ -56,9 +56,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             GridTestUtils.KillProcesses();
 
-            GridFactory.Start(CreateConfiguration(GRID_DATA, @"config/dynamic/dynamic-data.xml"));
-            GridFactory.Start(CreateConfiguration(GRID_DATA_NO_CFG, @"config/dynamic/dynamic-data-no-cfg.xml"));
-            GridFactory.Start(CreateConfiguration(GRID_CLIENT, @"config/dynamic/dynamic-client.xml"));
+            Ignition.Start(CreateConfiguration(GRID_DATA, @"config/dynamic/dynamic-data.xml"));
+            Ignition.Start(CreateConfiguration(GRID_DATA_NO_CFG, @"config/dynamic/dynamic-data-no-cfg.xml"));
+            Ignition.Start(CreateConfiguration(GRID_CLIENT, @"config/dynamic/dynamic-client.xml"));
         }
 
         /// <summary>
@@ -67,9 +67,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TearDown]
         public void StopGrids()
         {
-            GridFactory.Stop(GRID_DATA, true);
-            GridFactory.Stop(GRID_DATA_NO_CFG, true);
-            GridFactory.Stop(GRID_CLIENT, true);
+            Ignition.Stop(GRID_DATA, true);
+            Ignition.Stop(GRID_DATA_NO_CFG, true);
+            Ignition.Stop(GRID_CLIENT, true);
         }
 
         /// <summary>
@@ -108,17 +108,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             Assert.Throws<ArgumentException>(() =>
             {
-                GridFactory.Grid(GRID_DATA).Cache<GridCacheTestKey, GridPortablePerson>(CACHE_DUMMY);
+                Ignition.Grid(GRID_DATA).Cache<GridCacheTestKey, GridPortablePerson>(CACHE_DUMMY);
             });
 
             Assert.Throws<ArgumentException>(() =>
             {
-                GridFactory.Grid(GRID_DATA_NO_CFG).Cache<GridCacheTestKey, GridPortablePerson>(CACHE_DUMMY);
+                Ignition.Grid(GRID_DATA_NO_CFG).Cache<GridCacheTestKey, GridPortablePerson>(CACHE_DUMMY);
             });
 
             Assert.Throws<ArgumentException>(() =>
             {
-                GridFactory.Grid(GRID_CLIENT).Cache<GridCacheTestKey, GridPortablePerson>(CACHE_DUMMY);
+                Ignition.Grid(GRID_CLIENT).Cache<GridCacheTestKey, GridPortablePerson>(CACHE_DUMMY);
             });
         }
 
@@ -147,13 +147,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         private void Check(String cacheName)
         {
             ICache<DynamicTestKey, DynamicTestValue> cacheData =
-                GridFactory.Grid(GRID_DATA).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
+                Ignition.Grid(GRID_DATA).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
 
             ICache<DynamicTestKey, DynamicTestValue> cacheDataNoCfg =
-                GridFactory.Grid(GRID_DATA_NO_CFG).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
+                Ignition.Grid(GRID_DATA_NO_CFG).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
 
             ICache<DynamicTestKey, DynamicTestValue> cacheClient =
-                GridFactory.Grid(GRID_CLIENT).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
+                Ignition.Grid(GRID_CLIENT).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
 
             DynamicTestKey key1 = new DynamicTestKey(1);
             DynamicTestKey key2 = new DynamicTestKey(2);

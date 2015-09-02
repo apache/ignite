@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Tests
 
                 while (true)
                 {
-                    GridFactory.Stop("grid_2", true);
+                    Ignition.Stop("grid_2", true);
                     StartGrid("grid_2");
 
                     if (putTask.Exception != null)
@@ -272,7 +272,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IIgnite StartGrid(string gridName = null)
         {
-            return GridFactory.Start(new GridConfigurationEx
+            return Ignition.Start(new GridConfigurationEx
             {
                 SpringConfigUrl = "config\\native-client-test-cache.xml",
                 JvmOptions = GridTestUtils.TestJavaOptions(),

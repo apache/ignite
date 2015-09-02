@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests
         {
             GridTestUtils.KillProcesses();
 
-            var grid = GridFactory.Start(new GridConfiguration
+            var grid = Ignition.Start(new GridConfiguration
             {
                 SpringConfigUrl = "config\\compute\\compute-standalone.xml",
                 JvmClasspath = GridTestUtils.CreateTestClasspath(),

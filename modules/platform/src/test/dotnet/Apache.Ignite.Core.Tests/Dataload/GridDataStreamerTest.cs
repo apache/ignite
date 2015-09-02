@@ -52,9 +52,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [TestFixtureSetUp]
         public virtual void InitClient()
         {
-            grid = GridFactory.Start(GetGridConfiguration(GRID_NAME));
+            grid = Ignition.Start(GetGridConfiguration(GRID_NAME));
 
-            GridFactory.Start(GetGridConfiguration(GRID_NAME + "_1"));
+            Ignition.Start(GetGridConfiguration(GRID_NAME + "_1"));
 
             cache = grid.Cache<int, int?>(CACHE_NAME);
         }
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [TestFixtureTearDown]
         public virtual void StopGrids()
         {
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>

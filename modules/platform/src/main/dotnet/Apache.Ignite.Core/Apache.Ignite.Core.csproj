@@ -130,7 +130,7 @@
     <Compile Include="Events\SwapSpaceEvent.cs" />
     <Compile Include="Events\TaskEvent.cs" />
     <Compile Include="GridConfiguration.cs" />
-    <Compile Include="GridFactory.cs" />
+    <Compile Include="Ignition.cs" />
     <Compile Include="Common\AsyncSupportedAttribute.cs" />
     <Compile Include="IIgnite.cs" />
     <Compile Include="Impl\Cache\CacheAffinityImpl.cs" />

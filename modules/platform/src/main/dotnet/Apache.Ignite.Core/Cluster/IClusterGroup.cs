@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Cluster
     /// projection will include a subset of nodes from current projection. The following code snippet
     /// shows how to create grid projections:
     /// <code>
-    /// var g = GridFactory.Grid();
+    /// var g = Ignition.Grid();
     /// 
     /// // Projection over remote nodes.
     /// var remoteNodes = g.ForRemotes();

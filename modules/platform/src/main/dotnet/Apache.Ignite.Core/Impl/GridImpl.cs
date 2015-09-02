@@ -314,7 +314,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public void Dispose()
         {
-            GridFactory.Stop(Name, true);
+            Ignition.Stop(Name, true);
         }
 
         /// <summary>

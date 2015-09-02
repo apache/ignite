@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = "config\\native-client-test-cache.xml"
             };
 
-            GridFactory.Start(cfg);
+            Ignition.Start(cfg);
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Tests
         [TestFixtureTearDown]
         public void TearDown()
         {
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSerializableXmlDoc()
         {
-            var grid = GridFactory.Grid(GRID_NAME);
+            var grid = Ignition.Grid(GRID_NAME);
             var cache = grid.Cache<int, SerializableXmlDoc>("replicated");
 
             var doc = new SerializableXmlDoc();
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Tests
         {
             const int count = 50;
 
-            var cache = GridFactory.Grid(GRID_NAME).Cache<int, object>("local");
+            var cache = Ignition.Grid(GRID_NAME).Cache<int, object>("local");
 
             // Put multiple objects from muliple same-named assemblies to cache
             for (var i = 0; i < count; i++)

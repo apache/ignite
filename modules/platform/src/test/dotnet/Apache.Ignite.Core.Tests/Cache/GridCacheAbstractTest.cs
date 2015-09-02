@@ -315,7 +315,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             for (int i = 0; i < GridCount(); i++) {
                 cfg.GridName = "grid-" + i;
 
-                GridFactory.Start(cfg);
+                Ignition.Start(cfg);
             }
         }
 
@@ -325,7 +325,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TestFixtureTearDown]
         public virtual void StopGrids() {
             for (int i = 0; i < GridCount(); i++)
-                GridFactory.Stop("grid-" + i, true);
+                Ignition.Stop("grid-" + i, true);
         }
 
         /// <summary>
@@ -366,7 +366,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         public IIgnite Grid(int idx)
         {
-            return GridFactory.Grid("grid-" + idx);
+            return Ignition.Grid("grid-" + idx);
         }
 
         public ICache<int, int> Cache(int idx) {

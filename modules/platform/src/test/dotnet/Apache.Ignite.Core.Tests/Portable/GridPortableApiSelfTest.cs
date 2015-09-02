@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 SpringConfigUrl = "config\\portable.xml"
             };
 
-            grid = (GridImpl) GridFactory.Start(cfg);
+            grid = (GridImpl) Ignition.Start(cfg);
 
             marsh = grid.Marshaller;
         }
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public virtual void TearDown()
         {
             if (grid != null)
-                GridFactory.Stop(grid.Name, true);
+                Ignition.Stop(grid.Name, true);
 
             grid = null;
         }

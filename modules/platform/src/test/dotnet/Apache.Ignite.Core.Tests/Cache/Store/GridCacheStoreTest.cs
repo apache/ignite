@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             cfg.PortableConfiguration = portCfg;
 
-            GridFactory.Start(cfg);
+            Ignition.Start(cfg);
         }
 
         /// <summary>
@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureTearDown]
         public virtual void AfterTests()
         {
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -475,24 +475,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         private ICache<K, V> PortableStoreCache<K, V>()
         {
-            return GridFactory.Grid(GridName()).Cache<K, V>(PORTABLE_STORE_CACHE_NAME);
+            return Ignition.Grid(GridName()).Cache<K, V>(PORTABLE_STORE_CACHE_NAME);
         }
 
         private ICache<K, V> ObjectStoreCache<K, V>()
         {
-            return GridFactory.Grid(GridName()).Cache<K, V>(OBJECT_STORE_CACHE_NAME);
+            return Ignition.Grid(GridName()).Cache<K, V>(OBJECT_STORE_CACHE_NAME);
         }
 
         private ICache<int, string> CustomStoreCache()
         {
-            return GridFactory.Grid(GridName()).Cache<int, string>(CUSTOM_STORE_CACHE_NAME);
+            return Ignition.Grid(GridName()).Cache<int, string>(CUSTOM_STORE_CACHE_NAME);
         }
 
         private ICache<int, string> TemplateStoreCache()
         {
             var cacheName = TEMPLATE_STORE_CACHE_NAME.Replace("*", Guid.NewGuid().ToString());
             
-            return GridFactory.Grid(GridName()).GetOrCreateCache<int, string>(cacheName);
+            return Ignition.Grid(GridName()).GetOrCreateCache<int, string>(cacheName);
         }
     }
 

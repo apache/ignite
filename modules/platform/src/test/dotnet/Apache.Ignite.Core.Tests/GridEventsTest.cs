@@ -714,9 +714,9 @@ namespace Apache.Ignite.Core.Tests
             if (grid1 != null)
                 return;
 
-            grid1 = GridFactory.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            grid2 = GridFactory.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            grid3 = GridFactory.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
+            grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+            grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
 
             grids = new[] {grid1, grid2, grid3};
         }
@@ -729,7 +729,7 @@ namespace Apache.Ignite.Core.Tests
             grid1 = grid2 = grid3 = null;
             grids = null;
             
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
         }
     }
 

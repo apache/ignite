@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests
             cfg.Assemblies = new List<string> { "System.Data.Linq,Culture=neutral,Version=1.0.0.0,PublicKeyToken=b77a5c561934e089" };
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IIgnite grid = GridFactory.Start(cfg);
+            IIgnite grid = Ignition.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests
             cfg.Assemblies = new List<string> { "testDll.dll" };
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IIgnite grid = GridFactory.Start(cfg);
+            IIgnite grid = Ignition.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Tests
             cfg.Assemblies = new List<string> { dirInfo.FullName };
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IIgnite grid = GridFactory.Start(cfg);
+            IIgnite grid = Ignition.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Tests
             cfg.Assemblies = new List<string> { "testDllByName" };
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IIgnite grid = GridFactory.Start(cfg);
+            IIgnite grid = Ignition.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Tests
             cfg.Assemblies = new List<string> { dllPath };
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IIgnite grid = GridFactory.Start(cfg);
+            IIgnite grid = Ignition.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                IIgnite grid = GridFactory.Start(cfg);
+                IIgnite grid = Ignition.Start(cfg);
 
                 Assert.Fail("Grid has been started with broken configuration.");
             }

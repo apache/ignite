@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestDefaultMarhsaller()
         {
-            using (var grid = GridFactory.Start("config\\marshaller-default.xml"))
+            using (var grid = Ignition.Start("config\\marshaller-default.xml"))
             {
                 var cache = grid.GetOrCreateCache<int, int>(null);
 
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestPortableMarhsaller()
         {
-            using (var grid = GridFactory.Start("config\\marshaller-portable.xml"))
+            using (var grid = Ignition.Start("config\\marshaller-portable.xml"))
             {
                 var cache = grid.GetOrCreateCache<int, int>(null);
 
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestInvalidMarshaller()
         {
-            Assert.Throws<IgniteException>(() => GridFactory.Start("config\\marshaller-invalid.xml"));
+            Assert.Throws<IgniteException>(() => Ignition.Start("config\\marshaller-invalid.xml"));
         }
     }
 }

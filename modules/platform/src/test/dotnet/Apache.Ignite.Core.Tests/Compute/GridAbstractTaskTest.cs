@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             if (fork)
             {
-                grid1 = GridFactory.Start(Configuration("config\\compute\\compute-standalone.xml"));
+                grid1 = Ignition.Start(Configuration("config\\compute\\compute-standalone.xml"));
 
                 proc2 = Fork("config\\compute\\compute-standalone.xml");
 
@@ -113,9 +113,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
             else
             {
-                grid1 = GridFactory.Start(Configuration("config\\compute\\compute-grid1.xml"));
-                grid2 = GridFactory.Start(Configuration("config\\compute\\compute-grid2.xml"));
-                grid3 = GridFactory.Start(Configuration("config\\compute\\compute-grid3.xml"));
+                grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
+                grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+                grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
             }
         }
 
@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void StopClient()
         {
             if (grid1 != null)
-                GridFactory.Stop(grid1.Name, true);
+                Ignition.Stop(grid1.Name, true);
 
             if (fork)
             {
@@ -149,10 +149,10 @@ namespace Apache.Ignite.Core.Tests.Compute
             else
             {
                 if (grid2 != null)
-                    GridFactory.Stop(grid2.Name, true);
+                    Ignition.Stop(grid2.Name, true);
 
                 if (grid3 != null)
-                    GridFactory.Stop(grid3.Name, true);
+                    Ignition.Stop(grid3.Name, true);
             }
         }
 

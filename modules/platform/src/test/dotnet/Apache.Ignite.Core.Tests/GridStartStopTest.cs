@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests
 
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IIgnite grid = GridFactory.Start(cfg);
+            IIgnite grid = Ignition.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Tests
             cfg.SpringConfigUrl = "config/default-config.xml";
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IIgnite grid = GridFactory.Start(cfg);
+            IIgnite grid = Ignition.Start(cfg);
 
             Assert.IsNotNull(grid);
 
@@ -98,42 +98,42 @@ namespace Apache.Ignite.Core.Tests
             cfg.JvmOptions = GridTestUtils.TestJavaOptions();
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IIgnite grid1 = GridFactory.Start(cfg);
+            IIgnite grid1 = Ignition.Start(cfg);
 
             Assert.AreEqual("grid1", grid1.Name);
 
             cfg.SpringConfigUrl = cfgs[1];
 
-            IIgnite grid2 = GridFactory.Start(cfg);
+            IIgnite grid2 = Ignition.Start(cfg);
 
             Assert.AreEqual("grid2", grid2.Name);
 
             cfg.SpringConfigUrl = cfgs[2];
 
-            IIgnite grid3 = GridFactory.Start(cfg);
+            IIgnite grid3 = Ignition.Start(cfg);
 
             Assert.IsNull(grid3.Name);
 
-            Assert.AreSame(grid1, GridFactory.Grid("grid1"));
+            Assert.AreSame(grid1, Ignition.Grid("grid1"));
 
-            Assert.AreSame(grid2, GridFactory.Grid("grid2"));
+            Assert.AreSame(grid2, Ignition.Grid("grid2"));
 
-            Assert.AreSame(grid3, GridFactory.Grid(null));
+            Assert.AreSame(grid3, Ignition.Grid(null));
 
             try
             {
-                GridFactory.Grid("invalid_name");
+                Ignition.Grid("invalid_name");
             }
             catch (IgniteException e)
             {
                 Console.WriteLine("Expected exception: " + e);
             }
 
-            Assert.IsTrue(GridFactory.Stop("grid1", true));
+            Assert.IsTrue(Ignition.Stop("grid1", true));
 
             try
             {
-                GridFactory.Grid("grid1");
+                Ignition.Grid("grid1");
             }
             catch (IgniteException e)
             {
@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                GridFactory.Grid("grid2");
+                Ignition.Grid("grid2");
             }
             catch (IgniteException e)
             {
@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                GridFactory.Grid(null);
+                Ignition.Grid(null);
             }
             catch (IgniteException e)
             {
@@ -167,19 +167,19 @@ namespace Apache.Ignite.Core.Tests
                 cfg.SpringConfigUrl = cfgName;
                 cfg.JvmOptions = GridTestUtils.TestJavaOptions();
 
-                GridFactory.Start(cfg);
+                Ignition.Start(cfg);
             }
 
             foreach (string gridName in new List<string> { "grid1", "grid2", null })
-                Assert.IsNotNull(GridFactory.Grid(gridName));
+                Assert.IsNotNull(Ignition.Grid(gridName));
 
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
 
             foreach (string gridName in new List<string> { "grid1", "grid2", null })
             {
                 try
                 {
-                    GridFactory.Grid(gridName);
+                    Ignition.Grid(gridName);
                 }
                 catch (IgniteException e)
                 {
@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                GridFactory.Start(cfg);
+                Ignition.Start(cfg);
 
                 Assert.Fail("Start should fail.");
             }
@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Tests
 
             cfg.NativeJvmOptions = new List<string> { "-Xmx1g", "-Xms1g" };
 
-            GridFactory.Start(cfg);
+            Ignition.Start(cfg);
         }
         */
 
@@ -228,13 +228,13 @@ namespace Apache.Ignite.Core.Tests
             cfg.JvmOptions = GridTestUtils.TestJavaOptions();
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IIgnite grid1 = GridFactory.Start(cfg);
+            IIgnite grid1 = Ignition.Start(cfg);
 
             Assert.AreEqual("grid1", grid1.Name);
 
             try
             {
-                GridFactory.Start(cfg);
+                Ignition.Start(cfg);
 
                 Assert.Fail("Start should fail.");
             }
@@ -256,7 +256,7 @@ namespace Apache.Ignite.Core.Tests
             cfg.JvmOptions = GridTestUtils.TestJavaOptions();
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
-            IIgnite grid = GridFactory.Start(cfg);
+            IIgnite grid = Ignition.Start(cfg);
 
             Assert.IsNotNull(grid.Cache<int, int>("cache1"));
 
@@ -290,7 +290,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 Console.WriteLine("Iteration: " + i);
 
-                IIgnite grid = GridFactory.Start(cfg);
+                IIgnite grid = Ignition.Start(cfg);
 
                 UseGrid(grid);
 
@@ -333,11 +333,11 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                using (GridFactory.Start(servCfg))  // start server-mode grid first
+                using (Ignition.Start(servCfg))  // start server-mode grid first
                 {
-                    GridFactory.ClientMode = true;
+                    Ignition.ClientMode = true;
 
-                    using (var grid = GridFactory.Start(clientCfg))
+                    using (var grid = Ignition.Start(clientCfg))
                     {
                         UseGrid(grid);
                     }
@@ -345,7 +345,7 @@ namespace Apache.Ignite.Core.Tests
             }
             finally 
             {
-                GridFactory.ClientMode = false;
+                Ignition.ClientMode = false;
             }
         }
 

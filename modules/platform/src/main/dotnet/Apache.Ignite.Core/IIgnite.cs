@@ -30,8 +30,8 @@ namespace Apache.Ignite.Core
 
     /// <summary>
     /// Main entry point for all GridGain APIs.
-    /// You can obtain an instance of <c>IGrid</c> through <see cref="GridFactory.Grid()"/>,
-    /// or for named grids you can use <see cref="GridFactory.Grid(string)"/>. Note that you
+    /// You can obtain an instance of <c>IGrid</c> through <see cref="Ignition.Grid()"/>,
+    /// or for named grids you can use <see cref="Ignition.Grid(string)"/>. Note that you
     /// can have multiple instances of <c>IGrid</c> running in the same process by giving
     /// each instance a different name.
     /// <para/>
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core
         /// name allows to indicate to what grid this particular grid instance (i.e. grid runtime and its
         /// local node) belongs to.
         /// <p/>
-        /// If default grid instance is used, then <c>null</c> is returned. Refer to <see cref="GridFactory"/> documentation
+        /// If default grid instance is used, then <c>null</c> is returned. Refer to <see cref="Ignition"/> documentation
         /// for information on how to start named grids.
         /// </summary>
         /// <returns>Name of the grid, or <c>null</c> for default grid.</returns>

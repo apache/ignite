@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
         }
         
         /// <summary>
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests
             CheckEvent(afterStartEvts[1], grid, grid, 0, null);
 
             // 2. Test stop events.
-            GridFactory.Stop(grid.Name, false);
+            Ignition.Stop(grid.Name, false);
 
             Assert.AreEqual(2, beforeStartEvts.Count);
             Assert.AreEqual(2, afterStartEvts.Count);
@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(3, res[1]);
 
             // 3. Test .Net stop events.
-            GridFactory.Stop(grid.Name, false);
+            Ignition.Stop(grid.Name, false);
 
             Assert.AreEqual(4, beforeStartEvts.Count);
             Assert.AreEqual(4, afterStartEvts.Count);
@@ -191,7 +191,7 @@ namespace Apache.Ignite.Core.Tests
 
             cfg.LifecycleBeans = new List<ILifecycleBean>() { new Bean(), new Bean() };
 
-            return GridFactory.Start(cfg);
+            return Ignition.Start(cfg);
         }
 
         /// <summary>

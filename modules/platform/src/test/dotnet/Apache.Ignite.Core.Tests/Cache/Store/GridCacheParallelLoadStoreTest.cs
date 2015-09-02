@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             GridTestUtils.KillProcesses();
             GridTestUtils.JVM_DEBUG = true;
 
-            GridFactory.Start(new GridConfiguration
+            Ignition.Start(new GridConfiguration
             {
                 JvmClasspath = GridTestUtils.CreateTestClasspath(),
                 JvmOptions = GridTestUtils.TestJavaOptions(),
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureTearDown]
         public virtual void AfterTests()
         {
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// </summary>
         private static ICache<int, GridCacheTestParallelLoadStore.Record> GetCache()
         {
-            return GridFactory.Grid().Cache<int, GridCacheTestParallelLoadStore.Record>(OBJECT_STORE_CACHE_NAME);
+            return Ignition.Grid().Cache<int, GridCacheTestParallelLoadStore.Record>(OBJECT_STORE_CACHE_NAME);
         }
     }
 }

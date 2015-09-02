@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             };
 
 
-            GridFactory.Start(cfg);
+            Ignition.Start(cfg);
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureTearDown]
         public virtual void AfterTests()
         {
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
         }
         
         /// <summary>
@@ -84,10 +84,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             dumps = new ConcurrentBag<ICollection<Operation>>();
 
-            var grid = GridFactory.Grid(GRID);
+            var grid = Ignition.Grid(GRID);
 
-            var cache1 = GridFactory.Grid(GRID).Cache<int, int>(CACHE_1);
-            var cache2 = GridFactory.Grid(GRID).Cache<int, int>(CACHE_2);
+            var cache1 = Ignition.Grid(GRID).Cache<int, int>(CACHE_1);
+            var cache2 = Ignition.Grid(GRID).Cache<int, int>(CACHE_2);
 
             // 1. Test rollback.
             using (var tx = grid.Transactions.TxStart())

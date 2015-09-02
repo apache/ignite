@@ -113,11 +113,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             cfg.SpringConfigUrl = "config\\cache-query-continuous.xml";
 
             cfg.GridName = "grid-1";
-            grid1 = GridFactory.Start(cfg);
+            grid1 = Ignition.Start(cfg);
             cache1 = grid1.Cache<int, PortableEntry>(cacheName);
 
             cfg.GridName = "grid-2";
-            grid2 = GridFactory.Start(cfg);
+            grid2 = Ignition.Start(cfg);
             cache2 = grid2.Cache<int, PortableEntry>(cacheName);
         }
 
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [TestFixtureTearDown]
         public void TearDown()
         {
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>

@@ -53,9 +53,9 @@ namespace Apache.Ignite.Core.Tests
         [SetUp]
         public void SetUp()
         {
-            grid1 = GridFactory.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            grid2 = GridFactory.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            grid3 = GridFactory.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
+            grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+            grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests
             finally 
             {
                 // Stop all grids between tests to drop any hanging messages
-                GridFactory.StopAll(true);
+                Ignition.StopAll(true);
             }
         }
 
