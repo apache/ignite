@@ -16,6 +16,10 @@
  */
 
 // ReSharper disable NonReadonlyMemberInGetHashCode
+// ReSharper disable CompareOfFloatsByEqualityOperator
+// ReSharper disable PossibleInvalidOperationException
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
 namespace Apache.Ignite.Core.Tests.Portable 
 {
     using System;
@@ -1253,13 +1257,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public class OuterObjectType
         {
-            private InnerObjectType _inObj;
-
-            public InnerObjectType InObj
-            {
-                get { return _inObj; }
-                set { _inObj = value; }
-            }
+            public InnerObjectType InObj { get; set; }
 
             /** <inheritdoc /> */
             public override bool Equals(object obj)
@@ -1269,32 +1267,21 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 var type = obj as OuterObjectType;
                 
-                return type != null && Equals(_inObj, type._inObj);
+                return type != null && Equals(InObj, type.InObj);
             }
 
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                return _inObj != null ? _inObj.GetHashCode() : 0;
+                return InObj != null ? InObj.GetHashCode() : 0;
             }
         }
 
         public class InnerObjectType
         {
-            private int _pInt1;
-            private int _pInt2;
+            public int PInt1 { get; set; }
 
-            public int PInt1
-            {
-                get { return _pInt1; }
-                set { _pInt1 = value; }
-            }
-
-            public int PInt2
-            {
-                get { return _pInt2; }
-                set { _pInt2 = value; }
-            }
+            public int PInt2 { get; set; }
 
             /** <inheritdoc /> */
             public override bool Equals(object obj)
@@ -1304,40 +1291,28 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 var that = obj as InnerObjectType;
 
-                return that != null && (_pInt1 == that._pInt1 && _pInt2 == that._pInt2);
+                return that != null && (PInt1 == that.PInt1 && PInt2 == that.PInt2);
             }
 
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                return 31 * _pInt1 + _pInt2;
+                return 31 * PInt1 + PInt2;
             }
 
             /** <inheritdoc /> */
             public override string ToString()
             {
-                return "InnerObjectType[pInt1=" + _pInt1 + ", pInt2=" + _pInt2 + ']';
+                return "InnerObjectType[pInt1=" + PInt1 + ", pInt2=" + PInt2 + ']';
             }
         }
 
         public class CollectionsType
         {
-            private ICollection _col1;
+            public ICollection Col1 { get; set; }
 
-            private ArrayList _col2;
-            
-            public ICollection Col1
-            {
-                get { return _col1; }
-                set { _col1 = value; }
-            }
+            public ArrayList Col2 { get; set; }
 
-            public ArrayList Col2
-            {
-                get { return _col2; }
-                set { _col2 = value; }
-            }
-            
             /** <inheritdoc /> */
             public override bool Equals(object obj)
             {
@@ -1348,7 +1323,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 {
                     CollectionsType that = (CollectionsType)obj;
 
-                    return CompareCollections(_col1, that._col1) && CompareCollections(_col2, that._col2);
+                    return CompareCollections(Col1, that.Col1) && CompareCollections(Col2, that.Col2);
                 }
                 return false;
             }
@@ -1356,9 +1331,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                int res = _col1 != null ? _col1.GetHashCode() : 0;
+                int res = Col1 != null ? Col1.GetHashCode() : 0;
 
-                res = 31 * res + (_col2 != null ? _col2.GetHashCode() : 0);
+                res = 31 * res + (Col2 != null ? Col2.GetHashCode() : 0);
 
                 return res;
             }
@@ -1366,8 +1341,8 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritdoc /> */
             public override string ToString()
             {
-                return "CollectoinsType[col1=" + CollectionAsString(_col1) + 
-                    ", col2=" + CollectionAsString(_col2) + ']'; 
+                return "CollectoinsType[col1=" + CollectionAsString(Col1) + 
+                    ", col2=" + CollectionAsString(Col2) + ']'; 
             }
         }
 
@@ -1411,104 +1386,33 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public class PrimitiveArrayFieldType
         {
-            private bool[] _pBool;
-            private sbyte[] _pSbyte;
-            private byte[] _pByte;
-            private short[] _pShort;
-            private ushort[] _pUshort;
-            private char[] _pChar;
-            private int[] _pInt;
-            private uint[] _pUint;
-            private long[] _pLong;
-            private ulong[] _pUlong;
-            private float[] _pFloat;
-            private double[] _pDouble;
-            private string[] _pString;
-            private Guid?[] _pGuid;
-            
-            public bool[] PBool
-            {
-                get { return _pBool; }
-                set { _pBool = value; }
-            }
+            public bool[] PBool { get; set; }
 
-            public sbyte[] PSbyte
-            {
-                get { return _pSbyte; }
-                set { _pSbyte = value; }
-            }
+            public sbyte[] PSbyte { get; set; }
 
-            public byte[] PByte
-            {
-                get { return _pByte; }
-                set { _pByte = value; }
-            }
+            public byte[] PByte { get; set; }
 
-            public short[] PShort
-            {
-                get { return _pShort; }
-                set { _pShort = value; }
-            }
+            public short[] PShort { get; set; }
 
-            public ushort[] PUshort
-            {
-                get { return _pUshort; }
-                set { _pUshort = value; }
-            }
+            public ushort[] PUshort { get; set; }
 
-            public char[] PChar
-            {
-                get { return _pChar; }
-                set { _pChar = value; }
-            }
+            public char[] PChar { get; set; }
 
-            public int[] PInt
-            {
-                get { return _pInt; }
-                set { _pInt = value; }
-            }
+            public int[] PInt { get; set; }
 
-            public uint[] PUint
-            {
-                get { return _pUint; }
-                set { _pUint = value; }
-            }
+            public uint[] PUint { get; set; }
 
-            public long[] PLong
-            {
-                get { return _pLong; }
-                set { _pLong = value; }
-            }
+            public long[] PLong { get; set; }
 
-            public ulong[] PUlong
-            {
-                get { return _pUlong; }
-                set { _pUlong = value; }
-            }
+            public ulong[] PUlong { get; set; }
 
-            public float[] PFloat
-            {
-                get { return _pFloat; }
-                set { _pFloat = value; }
-            }
+            public float[] PFloat { get; set; }
 
-            public double[] PDouble
-            {
-                get { return _pDouble; }
-                set { _pDouble = value; }
-            }
+            public double[] PDouble { get; set; }
 
-            public string[] PString
-            {
-                get { return _pString; }
-                set { _pString = value; }
-            }
+            public string[] PString { get; set; }
 
-            public Guid?[] PGuid
-            {
-                get { return _pGuid; }
-                set { _pGuid = value; }
-            }
+            public Guid?[] PGuid { get; set; }
 
             /** <inheritdoc /> */
             public override bool Equals(object obj)
@@ -1516,32 +1420,28 @@ namespace Apache.Ignite.Core.Tests.Portable
                 if (this == obj)
                     return true;
 
-                if (obj != null && obj is PrimitiveArrayFieldType)
-                {
-                    PrimitiveArrayFieldType that = (PrimitiveArrayFieldType)obj;
+                var other = obj as PrimitiveArrayFieldType;
 
-                    return _pBool == that._pBool &&
-                        _pByte == that._pByte &&
-                        _pSbyte == that._pSbyte &&
-                        _pShort == that._pShort &&
-                        _pUshort == that._pUshort &&
-                        _pInt == that._pInt &&
-                        _pUint == that._pUint &&
-                        _pLong == that._pLong &&
-                        _pUlong == that._pUlong &&
-                        _pChar == that._pChar &&
-                        _pFloat == that._pFloat &&
-                        _pDouble == that._pDouble &&
-                        _pString == that._pString &&
-                        _pGuid == that._pGuid;
-                }
-                return false;
+                return other != null && (PBool == other.PBool &&
+                                         PByte == other.PByte &&
+                                         PSbyte == other.PSbyte &&
+                                         PShort == other.PShort &&
+                                         PUshort == other.PUshort &&
+                                         PInt == other.PInt &&
+                                         PUint == other.PUint &&
+                                         PLong == other.PLong &&
+                                         PUlong == other.PUlong &&
+                                         PChar == other.PChar &&
+                                         PFloat == other.PFloat &&
+                                         PDouble == other.PDouble &&
+                                         PString == other.PString &&
+                                         PGuid == other.PGuid);
             }
 
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                return _pInt != null && _pInt.Length > 0 ? _pInt[0].GetHashCode() : 0;
+                return PInt != null && PInt.Length > 0 ? PInt[0].GetHashCode() : 0;
             }
         }
 
@@ -1574,117 +1474,40 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public class EnumType
         {
-            private TestEnum _pEnum;
-            private TestEnum[] _pEnumArr;
+            public TestEnum PEnum { get; set; }
 
-            public TestEnum PEnum
-            {
-                get { return _pEnum; }
-                set { _pEnum = value; }
-            }
-
-            public TestEnum[] PEnumArray
-            {
-                get { return _pEnumArr; }
-                set { _pEnumArr = value; }
-            }
+            public TestEnum[] PEnumArray { get; set; }
         }
 
         public class PrimitiveFieldType 
         {
-            private bool _pBool;
-            private sbyte _pSbyte;
-            private byte _pByte;
-            private short _pShort;
-            private ushort _pUshort;
-            private char _pChar;
-            private int _pInt;
-            private uint _pUint;
-            private long _pLong;
-            private ulong _pUlong;
-            private float _pFloat;
-            private double _pDouble;
-            private string _pString;
             private Guid _pGuid;
-            private Guid? _pNguid;
-            
-            public bool PBool
-            {
-                get { return _pBool; }
-                set { _pBool = value; }
-            }
 
-            public sbyte PSbyte
-            {
-                get { return _pSbyte; }
-                set { _pSbyte = value; }
-            }
+            public bool PBool { get; set; }
 
-            public byte PByte
-            {
-                get { return _pByte; }
-                set { _pByte = value; }
-            }
+            public sbyte PSbyte { get; set; }
 
-            public short PShort
-            {
-                get { return _pShort; }
-                set { _pShort = value; }
-            }
+            public byte PByte { get; set; }
 
-            public ushort PUshort
-            {
-                get { return _pUshort; }
-                set { _pUshort = value; }
-            }
+            public short PShort { get; set; }
 
-            public char PChar
-            {
-                get { return _pChar; }
-                set { _pChar = value; }
-            }
+            public ushort PUshort { get; set; }
 
-            public int PInt
-            {
-                get { return _pInt; }
-                set { _pInt = value; }
-            }
+            public char PChar { get; set; }
 
-            public uint PUint
-            {
-                get { return _pUint; }
-                set { _pUint = value; }
-            }
+            public int PInt { get; set; }
 
-            public long PLong
-            {
-                get { return _pLong; }
-                set { _pLong = value; }
-            }
+            public uint PUint { get; set; }
 
-            public ulong PUlong
-            {
-                get { return _pUlong; }
-                set { _pUlong = value; }
-            }
+            public long PLong { get; set; }
 
-            public float PFloat
-            {
-                get { return _pFloat; }
-                set { _pFloat = value; }
-            }
+            public ulong PUlong { get; set; }
 
-            public double PDouble
-            {
-                get { return _pDouble; }
-                set { _pDouble = value; }
-            }
+            public float PFloat { get; set; }
 
-            public string PString
-            {
-                get { return _pString; }
-                set { _pString = value; }
-            }
+            public double PDouble { get; set; }
+
+            public string PString { get; set; }
 
             public Guid PGuid
             {
@@ -1692,11 +1515,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 set { _pGuid = value; }
             }
 
-            public Guid? PnGuid
-            {
-                get { return _pNguid; }
-                set { _pNguid = value; }
-            }
+            public Guid? PnGuid { get; set; }
 
             /** <inheritdoc /> */
             public override bool Equals(object obj)
@@ -1708,21 +1527,21 @@ namespace Apache.Ignite.Core.Tests.Portable
                 {
                     PrimitiveFieldType that = (PrimitiveFieldType)obj;
 
-                    return _pBool == that._pBool &&
-                        _pByte == that._pByte &&
-                        _pSbyte == that._pSbyte &&
-                        _pShort == that._pShort &&
-                        _pUshort == that._pUshort &&
-                        _pInt == that._pInt &&
-                        _pUint == that._pUint &&
-                        _pLong == that._pLong &&
-                        _pUlong == that._pUlong &&
-                        _pChar == that._pChar &&
-                        _pFloat == that._pFloat &&
-                        _pDouble == that._pDouble &&
-                        (_pString == null && that._pString == null || _pString != null && _pString.Equals(that._pString)) &&
+                    return PBool == that.PBool &&
+                        PByte == that.PByte &&
+                        PSbyte == that.PSbyte &&
+                        PShort == that.PShort &&
+                        PUshort == that.PUshort &&
+                        PInt == that.PInt &&
+                        PUint == that.PUint &&
+                        PLong == that.PLong &&
+                        PUlong == that.PUlong &&
+                        PChar == that.PChar &&
+                        PFloat == that.PFloat &&
+                        PDouble == that.PDouble &&
+                        (PString == null && that.PString == null || PString != null && PString.Equals(that.PString)) &&
                         _pGuid.Equals(that._pGuid) &&
-                        (_pNguid == null && that._pNguid == null || _pNguid != null && _pNguid.Equals(that._pNguid));
+                        (PnGuid == null && that.PnGuid == null || PnGuid != null && PnGuid.Equals(that.PnGuid));
                 }
                 return false;
             }
@@ -1730,7 +1549,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                return _pInt;
+                return PInt;
             }
         }
 
