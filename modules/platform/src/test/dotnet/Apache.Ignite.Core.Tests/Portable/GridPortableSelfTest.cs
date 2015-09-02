@@ -40,8 +40,6 @@ namespace Apache.Ignite.Core.Tests.Portable
         [TestFixtureSetUp]
         public void BeforeTest()
         {
-            GridTestUtils.KillProcesses();
-
             _marsh = new PortableMarshaller(null);
         }
         
