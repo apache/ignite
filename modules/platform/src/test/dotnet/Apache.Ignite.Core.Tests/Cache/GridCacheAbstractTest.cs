@@ -366,7 +366,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         public IIgnite Grid(int idx)
         {
-            return Ignition.Grid("grid-" + idx);
+            return Ignition.GetIgnite("grid-" + idx);
         }
 
         public ICache<int, int> Cache(int idx) {

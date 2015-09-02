@@ -475,24 +475,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         private ICache<TK, TV> PortableStoreCache<TK, TV>()
         {
-            return Ignition.Grid(GridName()).Cache<TK, TV>(PortableStoreCacheName);
+            return Ignition.GetIgnite(GridName()).Cache<TK, TV>(PortableStoreCacheName);
         }
 
         private ICache<TK, TV> ObjectStoreCache<TK, TV>()
         {
-            return Ignition.Grid(GridName()).Cache<TK, TV>(ObjectStoreCacheName);
+            return Ignition.GetIgnite(GridName()).Cache<TK, TV>(ObjectStoreCacheName);
         }
 
         private ICache<int, string> CustomStoreCache()
         {
-            return Ignition.Grid(GridName()).Cache<int, string>(CustomStoreCacheName);
+            return Ignition.GetIgnite(GridName()).Cache<int, string>(CustomStoreCacheName);
         }
 
         private ICache<int, string> TemplateStoreCache()
         {
             var cacheName = TemplateStoreCacheName.Replace("*", Guid.NewGuid().ToString());
             
-            return Ignition.Grid(GridName()).GetOrCreateCache<int, string>(cacheName);
+            return Ignition.GetIgnite(GridName()).GetOrCreateCache<int, string>(cacheName);
         }
     }
 

@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// </summary>
         private static ICache<int, GridCacheTestParallelLoadStore.Record> GetCache()
         {
-            return Ignition.Grid().Cache<int, GridCacheTestParallelLoadStore.Record>(ObjectStoreCacheName);
+            return Ignition.GetIgnite().Cache<int, GridCacheTestParallelLoadStore.Record>(ObjectStoreCacheName);
         }
     }
 }

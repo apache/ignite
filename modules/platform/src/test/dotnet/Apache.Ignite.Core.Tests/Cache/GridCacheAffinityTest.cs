@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestAffinity()
         {
-            IIgnite g = Ignition.Grid("grid-0");
+            IIgnite g = Ignition.GetIgnite("grid-0");
 
             ICacheAffinity aff = g.Affinity(null);
 
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestAffinityPortable()
         {
-            IIgnite g = Ignition.Grid("grid-0");
+            IIgnite g = Ignition.GetIgnite("grid-0");
 
             ICacheAffinity aff = g.Affinity(null);  
 

@@ -84,10 +84,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             _dumps = new ConcurrentBag<ICollection<Operation>>();
 
-            var grid = Ignition.Grid(Grid);
+            var grid = Ignition.GetIgnite(Grid);
 
-            var cache1 = Ignition.Grid(Grid).Cache<int, int>(Cache1);
-            var cache2 = Ignition.Grid(Grid).Cache<int, int>(Cache2);
+            var cache1 = Ignition.GetIgnite(Grid).Cache<int, int>(Cache1);
+            var cache2 = Ignition.GetIgnite(Grid).Cache<int, int>(Cache2);
 
             // 1. Test rollback.
             using (var tx = grid.Transactions.TxStart())

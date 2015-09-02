@@ -463,7 +463,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Gets an named grid instance. If grid name is {@code null} or empty string,
+        /// Gets a named Ignite instance. If Ignite name is {@code null} or empty string,
         /// then default no-name grid will be returned. Note that caller of this method
         /// should not assume that it will return the same instance every time.
         /// <p/>
@@ -471,11 +471,11 @@ namespace Apache.Ignite.Core
         /// node) can belong to a different grid. Grid name defines what grid a particular grid
         /// instance (and correspondingly its node) belongs to.
         /// </summary>
-        /// <param name="name">Grid name to which requested grid instance belongs to. If <code>null</code>,
+        /// <param name="name">Ignite name to which requested grid instance belongs. If <code>null</code>,
         /// then grid instance belonging to a default no-name grid will be returned.
         /// </param>
         /// <returns>An instance of named grid.</returns>
-        public static IIgnite Grid(string name)
+        public static IIgnite GetIgnite(string name)
         {
             lock (SyncRoot)
             {
@@ -494,9 +494,9 @@ namespace Apache.Ignite.Core
         /// instance every time.
         /// </summary>
         /// <returns>An instance of default no-name grid.</returns>
-        public static IIgnite Grid()
+        public static IIgnite GetIgnite()
         {
-            return Grid(null);
+            return GetIgnite(null);
         }
 
         /// <summary>

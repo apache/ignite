@@ -114,15 +114,15 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNull(grid3.Name);
 
-            Assert.AreSame(grid1, Ignition.Grid("grid1"));
+            Assert.AreSame(grid1, Ignition.GetIgnite("grid1"));
 
-            Assert.AreSame(grid2, Ignition.Grid("grid2"));
+            Assert.AreSame(grid2, Ignition.GetIgnite("grid2"));
 
-            Assert.AreSame(grid3, Ignition.Grid(null));
+            Assert.AreSame(grid3, Ignition.GetIgnite(null));
 
             try
             {
-                Ignition.Grid("invalid_name");
+                Ignition.GetIgnite("invalid_name");
             }
             catch (IgniteException e)
             {
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                Ignition.Grid("grid1");
+                Ignition.GetIgnite("grid1");
             }
             catch (IgniteException e)
             {
@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                Ignition.Grid("grid2");
+                Ignition.GetIgnite("grid2");
             }
             catch (IgniteException e)
             {
@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                Ignition.Grid(null);
+                Ignition.GetIgnite(null);
             }
             catch (IgniteException e)
             {
@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Tests
             }
 
             foreach (string gridName in new List<string> { "grid1", "grid2", null })
-                Assert.IsNotNull(Ignition.Grid(gridName));
+                Assert.IsNotNull(Ignition.GetIgnite(gridName));
 
             Ignition.StopAll(true);
 
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 try
                 {
-                    Ignition.Grid(gridName);
+                    Ignition.GetIgnite(gridName);
                 }
                 catch (IgniteException e)
                 {

@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <returns></returns>
         public IIgnite Grid(int idx)
         {
-            return Ignition.Grid("grid-" + idx);
+            return Ignition.GetIgnite("grid-" + idx);
         }
 
         /// <summary>
