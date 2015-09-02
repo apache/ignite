@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     internal static unsafe class UnmanagedUtils
     {
         /** Interop factory ID for .Net. */
-        private const int InteropFactoryId = 1001;
+        private const int InteropFactoryId = 1;
 
         #region PROCEDURE NAMES
 
