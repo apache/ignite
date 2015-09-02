@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
@@ -62,6 +63,9 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  */
 public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx>
     implements GridCacheFuture<IgniteInternalTx> {
+    /** */
+    public static final IgniteProductVersion FINISH_NEAR_ONE_PHASE_SINCE = IgniteProductVersion.fromString("1.4.0");
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -438,7 +442,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     finishReq.checkCommitted(true);
 
                     try {
-                        cctx.io().send(backup, finishReq, tx.ioPolicy());
+                        if (FINISH_NEAR_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0)
+                            cctx.io().send(backup, finishReq, tx.ioPolicy());
+                        else
+                            mini.onDone(new IgniteTxHeuristicCheckedException("Failed to check for tx commit on " +
+                                "the backup node (node has an old Ignite version) [rmtNodeId=" + backup.id() +
+                                ", ver=" + backup.version() + ']'));
                     }
                     catch (ClusterTopologyCheckedException e) {
                         mini.onResult(e);
@@ -460,6 +469,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (F.isEmpty(tx.mappings()))
             return false;
 
+        assert tx.mappings().size() == 1;
+
         boolean finish = false;
 
         for (Integer cacheId : tx.activeCacheIds()) {
@@ -470,6 +481,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                 break;
             }
+        }
+
+        if (finish) {
+            GridDistributedTxMapping mapping = F.first(tx.mappings().values());
+
+            if (FINISH_NEAR_ONE_PHASE_SINCE.compareTo(mapping.node().version()) > 0)
+                finish = false;
         }
 
         return finish;
