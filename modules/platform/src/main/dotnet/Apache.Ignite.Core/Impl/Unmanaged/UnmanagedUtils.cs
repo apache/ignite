@@ -400,12 +400,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
         static UnmanagedUtils()
         {
-            var path = IgniteUtils.UnpackEmbeddedResource(IgniteUtils.FileGgJniDll);
+            var path = IgniteUtils.UnpackEmbeddedResource(IgniteUtils.FileIgniteJniDll);
 
             Ptr = NativeMethods.LoadLibrary(path);
 
             if (Ptr == IntPtr.Zero)
-                throw new IgniteException("Failed to load " + IgniteUtils.FileGgJniDll + ": " + Marshal.GetLastWin32Error());
+                throw new IgniteException("Failed to load " + IgniteUtils.FileIgniteJniDll + ": " + Marshal.GetLastWin32Error());
 
             REALLOCATE = CreateDelegate<ReallocateDelegate>(ProcReallocate);
 
