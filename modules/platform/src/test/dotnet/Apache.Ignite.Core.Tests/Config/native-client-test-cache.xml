@@ -25,19 +25,19 @@
         <property name="connectorConfiguration"><null/></property>
 
         <property name="marshaller">
-            <bean class="org.gridgain.grid.marshaller.portable.PortableMarshaller">
+            <bean class="org.apache.ignite.marshaller.portable.PortableMarshaller">
                 <property name="typeConfigurations">
                     <list>
-                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
                             <property name="className" value="org.gridgain.client.ClientTestPortable"/>
                         </bean>
-                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
                             <property name="className" value="org.gridgain.internal.client.model.GridPortablePerson"/>
                         </bean>
-                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
                             <property name="className" value="org.gridgain.internal.client.model.GridImplicitPortablePerson"/>
                         </bean>
-                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
                             <property name="className" value="GridNoDefPortablePerson"/>
                         </bean>
                     </list>

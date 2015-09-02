@@ -38,16 +38,16 @@
             <bean class="org.gridgain.grid.configuration.PortableConfiguration">
                 <property name="typeConfigurations">
                     <list>
-                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
                             <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
                         </bean>
-                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
                             <property name="className" value="org.gridgain.client.model.GridPortablePerson"/>
                         </bean>
-                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
                             <property name="className" value="org.gridgain.client.model.GridImplicitPortablePerson"/>
                         </bean>
-                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
                             <property name="className" value="GridNoDefPortablePerson"/>
                         </bean>
                     </list>

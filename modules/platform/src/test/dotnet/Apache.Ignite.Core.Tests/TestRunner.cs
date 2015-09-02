@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Diagnostics;
     using System.Reflection;
+    using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
 
@@ -33,9 +34,9 @@ namespace Apache.Ignite.Core.Tests
 
             //TestOne(typeof(ContinuousQueryAtomiclBackupTest), "TestInitialQuery");
 
-            //TestAll(typeof(IgnitionTest));
+            TestAll(typeof(GridComputeApiTest));
 
-            TestAllInAssembly();
+            //TestAllInAssembly();
         }
 
         private static void TestOne(Type testClass, string method)

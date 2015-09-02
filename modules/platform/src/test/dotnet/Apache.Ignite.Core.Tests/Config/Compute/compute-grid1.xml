@@ -64,16 +64,16 @@
 
         <!-- Portable marshaller configuration -->
         <property name="marshaller">
-            <bean class="org.gridgain.grid.marshaller.portable.PortableMarshaller">
+            <bean class="org.apache.ignite.marshaller.portable.PortableMarshaller">
                 <property name="typeConfigurations">
                     <list>
-                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
                             <property name="className" value="org.gridgain.interop.GridInteropComputePortable"/>
                         </bean>
-                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
                             <property name="className" value="org.gridgain.interop.GridInteropComputeJavaPortable"/>
                         </bean>
-                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
                             <property name="className" value="org.gridgain.interop.GridInteropComputeEnum"/>
                         </bean>
                     </list>
