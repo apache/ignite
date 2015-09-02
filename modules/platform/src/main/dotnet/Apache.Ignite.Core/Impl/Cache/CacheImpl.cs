@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public string Name
         {
-            get { return DoInOp<string>((int)CacheOp.GET_NAME); }
+            get { return DoInOp<string>((int)CacheOp.GetName); }
         }
 
         /** <inheritDoc /> */

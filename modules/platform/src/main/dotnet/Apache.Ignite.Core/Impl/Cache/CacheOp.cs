@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         GetAndPutIfAbsent = 8,
         GetAndRemove = 9,
         GetAndReplace = 10,
-        GET_NAME = 11,
+        GetName = 11,
         Invoke = 12,
         InvokeAll = 13,
         IsLocalLocked = 14,
