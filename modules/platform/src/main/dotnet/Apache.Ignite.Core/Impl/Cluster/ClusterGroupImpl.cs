@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OP_TOPOLOGY = 14;
 
         /** Initial grid instance. */
-        private readonly GridImpl grid;
+        private readonly Ignite grid;
         
         /** Predicate. */
         private readonly Func<IClusterNode, bool> pred;
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="grid">Grid.</param>
         /// <param name="pred">Predicate.</param>
         public ClusterGroupImpl(IUnmanagedTarget proc, IUnmanagedTarget target, PortableMarshaller marsh,
-            GridImpl grid, Func<IClusterNode, bool> pred)
+            Ignite grid, Func<IClusterNode, bool> pred)
             : base(target, marsh)
         {
             this.proc = proc;

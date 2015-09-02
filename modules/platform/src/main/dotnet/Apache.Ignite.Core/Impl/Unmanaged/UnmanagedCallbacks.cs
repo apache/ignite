@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private readonly HandleRegistry handleRegistry = new HandleRegistry();
         
         /** Grid. */
-        private volatile GridImpl grid;
+        private volatile Ignite grid;
 
         /** Keep references to created delegates. */
         // ReSharper disable once CollectionNeverQueried.Local
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private readonly ManualResetEventSlim initEvent = new ManualResetEventSlim(false);
 
         /** Actions to be called upon grid initialisation. */
-        private readonly List<Action<GridImpl>> initActions = new List<Action<GridImpl>>();
+        private readonly List<Action<Ignite>> initActions = new List<Action<Ignite>>();
 
         /** GC handle to UnmanagedCallbacks instance to prevent it from being GCed. */
         private readonly GCHandle thisHnd;
@@ -363,7 +363,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <param name="grid">Grid.</param>
         /// <returns>CacheEntryProcessor result.</returns>
         private CacheEntryProcessorResultHolder ReadAndRunCacheEntryProcessor(IPortableStream inOutStream,
-            GridImpl grid)
+            Ignite grid)
         {
             var marsh = grid.Marshaller;
 
@@ -1095,7 +1095,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// Initializes this instance with grid.
         /// </summary>
         /// <param name="grid">Grid.</param>
-        public void Initialize(GridImpl grid)
+        public void Initialize(Ignite grid)
         {
             Debug.Assert(grid != null);
 

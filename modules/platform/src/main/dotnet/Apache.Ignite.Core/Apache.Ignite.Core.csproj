@@ -211,7 +211,7 @@
     <Compile Include="Impl\Events\RemoteListenEventFilter.cs" />
     <Compile Include="Impl\ExceptionUtils.cs" />
     <Compile Include="Impl\GridConfigurationEx.cs" />
-    <Compile Include="Impl\GridImpl.cs" />
+    <Compile Include="Impl\Ignite.cs" />
     <Compile Include="Impl\GridManager.cs" />
     <Compile Include="Impl\GridProxy.cs" />
     <Compile Include="Impl\GridTarget.cs" />

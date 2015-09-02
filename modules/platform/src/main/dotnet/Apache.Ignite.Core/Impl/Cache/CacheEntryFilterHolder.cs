@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="grid">Grid.</param>
         /// <returns>Deserialized instance of <see cref="CacheEntryFilterHolder"/></returns>
-        public static CacheEntryFilterHolder CreateInstance(long memPtr, GridImpl grid)
+        public static CacheEntryFilterHolder CreateInstance(long memPtr, Ignite grid)
         {
             var stream = GridManager.Memory.Get(memPtr).Stream();
 

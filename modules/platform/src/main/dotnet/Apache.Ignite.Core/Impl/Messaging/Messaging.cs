@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
             new MultiValueDictionary<KeyValuePair<object, object>, long>();
 
         /** Grid */
-        private readonly GridImpl grid;
+        private readonly Ignite grid;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Messaging" /> class.
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
             ClusterGroup = prj;
 
-            grid = (GridImpl) prj.Grid;
+            grid = (Ignite) prj.Grid;
         }
 
         /** <inheritdoc /> */

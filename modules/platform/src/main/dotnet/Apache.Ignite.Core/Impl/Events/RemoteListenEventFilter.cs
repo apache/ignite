@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Events
     internal class RemoteListenEventFilter : IInteropCallback
     {
         /** */
-        private readonly GridImpl grid;
+        private readonly Ignite grid;
         
         /** */
         private readonly Func<Guid, IEvent, bool> filter;
@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// </summary>
         /// <param name="grid">The grid.</param>
         /// <param name="filter">The filter.</param>
-        public RemoteListenEventFilter(GridImpl grid, Func<Guid, IEvent, bool> filter)
+        public RemoteListenEventFilter(Ignite grid, Func<Guid, IEvent, bool> filter)
         {
             this.grid = grid;
             this.filter = filter;
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="grid">Grid</param>
         /// <returns>Deserialized instance of <see cref="RemoteListenEventFilter"/></returns>
-        public static RemoteListenEventFilter CreateInstance(long memPtr, GridImpl grid)
+        public static RemoteListenEventFilter CreateInstance(long memPtr, Ignite grid)
         {
             Debug.Assert(grid != null);
 

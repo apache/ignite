@@ -26,6 +26,6 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// Inject resources.
         /// </summary>
         /// <param name="grid">Grid.</param>
-        void Inject(GridImpl grid);
+        void Inject(Ignite grid);
     }
 }

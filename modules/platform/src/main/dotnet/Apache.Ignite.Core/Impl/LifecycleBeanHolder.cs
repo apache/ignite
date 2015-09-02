@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl
         {
             if (evt == LifecycleEventType.AFTER_GRID_START)
                 // This event cannot be propagated right away because at this point we
-                // do not have GridImpl instance yet. So just schedule it.
+                // do not have Ignite instance yet. So just schedule it.
                 startEvt = true;
             else
                 target.OnLifecycleEvent(evt);
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl
         /// Grid start callback.
         /// </summary>
         /// <param name="grid">Grid instance.</param>
-        internal void OnStart(GridImpl grid)
+        internal void OnStart(Ignite grid)
         {
             ResourceProcessor.Inject(target, grid);
 

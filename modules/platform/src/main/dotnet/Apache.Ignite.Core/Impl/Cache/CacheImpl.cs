@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private const long DUR_ZERO = 0;
 
         /** Grid instance. */
-        private readonly GridImpl grid;
+        private readonly Ignite grid;
         
         /** Flag: skip store. */
         private readonly bool flagSkipStore;
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="flagKeepPortable">Keep portable flag.</param>
         /// <param name="flagAsync">Async mode flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
-        public CacheImpl(GridImpl grid, IUnmanagedTarget target, PortableMarshaller marsh,
+        public CacheImpl(Ignite grid, IUnmanagedTarget target, PortableMarshaller marsh,
             bool flagSkipStore, bool flagKeepPortable, bool flagAsync, bool flagNoRetries) : base(target, marsh)
         {
             this.grid = grid;

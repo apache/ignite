@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="compute">Compute.</param>
         /// <param name="task">Task.</param>
         /// <param name="arg">Argument.</param>
-        public ComputeTaskHolder(GridImpl grid, ComputeImpl compute, IComputeTask<A, T, R> task, A arg)
+        public ComputeTaskHolder(Ignite grid, ComputeImpl compute, IComputeTask<A, T, R> task, A arg)
         {
             this.compute = compute;
             this.arg = arg;
@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             ClusterGroupImpl prj = (ClusterGroupImpl)compute.ClusterGroup;
 
-            var grid = (GridImpl) prj.Grid;
+            var grid = (Ignite) prj.Grid;
 
             // 1. Unmarshal topology info if topology changed.
             var reader = prj.Marshaller.StartUnmarshal(inStream);
@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                         foreach (KeyValuePair<IComputeJob<T>, IClusterNode> mapEntry in map)
                         {
-                            var job = new ComputeJobHolder(compute.ClusterGroup.Grid as GridImpl, mapEntry.Key.ToNonGeneric());
+                            var job = new ComputeJobHolder(compute.ClusterGroup.Grid as Ignite, mapEntry.Key.ToNonGeneric());
 
                             IClusterNode node = mapEntry.Value;
 

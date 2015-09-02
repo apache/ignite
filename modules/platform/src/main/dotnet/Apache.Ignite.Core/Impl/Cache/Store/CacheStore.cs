@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// Initializes this instance with a grid.
         /// </summary>
         /// <param name="grid">Grid.</param>
-        public void Init(GridImpl grid)
+        public void Init(Ignite grid)
         {
             ResourceProcessor.Inject(store, grid);
         }
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// <param name="grid">Grid.</param>
         /// <returns>Invocation result.</returns>
         /// <exception cref="IgniteException">Invalid operation type:  + opType</exception>
-        public int Invoke(IPortableStream input, IUnmanagedTarget cb, GridImpl grid)
+        public int Invoke(IPortableStream input, IUnmanagedTarget cb, Ignite grid)
         {
             IPortableReader reader = grid.Marshaller.StartUnmarshal(input,
                 convertPortable ? PortableMode.DESERIALIZE : PortableMode.FORCE_PORTABLE);
@@ -232,7 +232,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// <param name="cb">Optional callback.</param>
         /// <param name="grid">Grid.</param>
         /// <param name="objects">Objects.</param>
-        private static void WriteObjects(IUnmanagedTarget cb, GridImpl grid, params object[] objects)
+        private static void WriteObjects(IUnmanagedTarget cb, Ignite grid, params object[] objects)
         {
             using (var stream = GridManager.Memory.Allocate().Stream())
             {

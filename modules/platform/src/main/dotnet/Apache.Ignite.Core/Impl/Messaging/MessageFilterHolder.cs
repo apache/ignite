@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         private readonly Func<Guid, object, bool> invoker;
 
         /** Current grid instance. */
-        private readonly GridImpl grid;
+        private readonly Ignite grid;
         
         /** Underlying filter. */
         private readonly object filter;
@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <param name="grid">Grid.</param>
         /// <param name="filter">The <see cref="IMessageFilter{T}" /> to wrap.</param>
         /// <param name="invoker">The invoker func that takes key and value and invokes wrapped IMessageFilter.</param>
-        private MessageFilterHolder(GridImpl grid, object filter, Func<Guid, object, bool> invoker)
+        private MessageFilterHolder(Ignite grid, object filter, Func<Guid, object, bool> invoker)
         {
             Debug.Assert(filter != null);
             Debug.Assert(invoker != null);
@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <returns>
         /// New instance of <see cref="MessageFilterHolder" />
         /// </returns>
-        public static MessageFilterHolder CreateLocal<T>(GridImpl grid, IMessageFilter<T> filter)
+        public static MessageFilterHolder CreateLocal<T>(Ignite grid, IMessageFilter<T> filter)
         {
             Debug.Assert(filter != null);
 
@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <param name="grid">Grid.</param>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>Deserialized instance of <see cref="MessageFilterHolder"/></returns>
-        public static MessageFilterHolder CreateRemote(GridImpl grid, long memPtr)
+        public static MessageFilterHolder CreateRemote(Ignite grid, long memPtr)
         {
             Debug.Assert(grid != null);
             

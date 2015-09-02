@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         private readonly object rcv;
         
         /** Invoker delegate. */
-        private readonly Action<object, GridImpl, IUnmanagedTarget, IPortableStream, bool> invoke;
+        private readonly Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> invoke;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StreamReceiverHolder"/> class.
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="rcv">Receiver.</param>
         /// <param name="invoke">Invoke delegate.</param>
         public StreamReceiverHolder(object rcv, 
-            Action<object, GridImpl, IUnmanagedTarget, IPortableStream, bool> invoke)
+            Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> invoke)
         {
             Debug.Assert(rcv != null);
             Debug.Assert(invoke != null);
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="cache">Cache.</param>
         /// <param name="stream">Stream.</param>
         /// <param name="keepPortable">Portable flag.</param>
-        public void Receive(GridImpl grid, IUnmanagedTarget cache, IPortableStream stream, bool keepPortable)
+        public void Receive(Ignite grid, IUnmanagedTarget cache, IPortableStream stream, bool keepPortable)
         {
             Debug.Assert(grid != null);
             Debug.Assert(cache != null);
@@ -126,7 +126,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="cache">Cache.</param>
         /// <param name="stream">Stream.</param>
         /// <param name="keepPortable">Portable flag.</param>
-        public static void InvokeReceiver<K, V>(IStreamReceiver<K, V> receiver, GridImpl grid, IUnmanagedTarget cache,
+        public static void InvokeReceiver<K, V>(IStreamReceiver<K, V> receiver, Ignite grid, IUnmanagedTarget cache,
             IPortableStream stream, bool keepPortable)
         {
             var reader = grid.Marshaller.StartUnmarshal(stream, keepPortable);

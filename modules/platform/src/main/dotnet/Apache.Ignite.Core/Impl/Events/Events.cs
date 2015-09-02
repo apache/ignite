@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Events
             = new Dictionary<object, Dictionary<int, LocalHandledEventFilter>>();
 
         /** Grid. */
-        protected readonly GridImpl grid;
+        protected readonly Ignite grid;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Events"/> class.
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
             ClusterGroup = clusterGroup;
 
-            grid = (GridImpl) clusterGroup.Grid;
+            grid = (Ignite) clusterGroup.Grid;
         }
 
         /** <inheritDoc /> */

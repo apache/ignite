@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="writer">Writer.</param>
         /// <param name="cb">Callback invoked when all necessary data is written to stream.</param>
         /// <param name="qry">Query.</param>
-        public void Start(GridImpl grid, PortableWriterImpl writer, Func<IUnmanagedTarget> cb, 
+        public void Start(Ignite grid, PortableWriterImpl writer, Func<IUnmanagedTarget> cb, 
             ContinuousQuery<K, V> qry)
         {
             // 1. Inject resources.
@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         }
 
         /** <inheritdoc /> */
-        public void Inject(GridImpl grid)
+        public void Inject(Ignite grid)
         {
             throw new NotSupportedException("Should not be called.");
         }

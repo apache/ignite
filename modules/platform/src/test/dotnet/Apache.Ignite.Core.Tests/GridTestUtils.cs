@@ -253,7 +253,7 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="timeout">Timeout, in milliseconds.</param>
         public static void AssertHandleRegistryIsEmpty(IIgnite grid, int timeout)
         {
-            var handleRegistry = ((GridImpl)grid).HandleRegistry;
+            var handleRegistry = ((Ignite)grid).HandleRegistry;
 
             if (WaitForCondition(() => handleRegistry.Count == 0, timeout))
                 return;

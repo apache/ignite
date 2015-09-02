@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly bool keepPortable;
         
         /** Grid. */
-        private readonly GridImpl grid;
+        private readonly Ignite grid;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheAffinityImpl" /> class.
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="keepPortable">Keep portable flag.</param>
         /// <param name="grid">Grid.</param>
         public CacheAffinityImpl(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable, 
-            GridImpl grid)
+            Ignite grid)
             : base(target, marsh)
         {
             this.keepPortable = keepPortable;

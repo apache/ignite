@@ -357,7 +357,7 @@ namespace Apache.Ignite.Core.Tests
             /** <inheritDoc /> */
             public RemoteConfiguration Invoke()
             {
-                GridImpl grid0 = (GridImpl) ((GridProxy) grid).Target;
+                Ignite grid0 = (Ignite) ((GridProxy) grid).Target;
 
                 GridConfiguration cfg = grid0.Configuration;
 

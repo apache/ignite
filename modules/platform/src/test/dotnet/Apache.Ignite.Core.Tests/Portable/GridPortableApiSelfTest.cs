@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         private const string TYPE_EMPTY = "EmptyUndefined";
 
         /** Grid. */
-        private GridImpl grid;
+        private Ignite grid;
 
         /** Marshaller. */
         private PortableMarshaller marsh;
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 SpringConfigUrl = "config\\portable.xml"
             };
 
-            grid = (GridImpl) Ignition.Start(cfg);
+            grid = (Ignite) Ignition.Start(cfg);
 
             marsh = grid.Marshaller;
         }

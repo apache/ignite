@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         }
 
         /** <inheritDoc /> */
-        public void Inject(GridImpl grid)
+        public void Inject(Ignite grid)
         {
             ResourceProcessor.Inject(rdc, grid);
         }

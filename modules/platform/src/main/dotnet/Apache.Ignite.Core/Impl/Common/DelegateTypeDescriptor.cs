@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private readonly Action<object> computeJobCancel;
 
         /** */
-        private readonly Action<object, GridImpl, IUnmanagedTarget, IPortableStream, bool> streamReceiver;
+        private readonly Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> streamReceiver;
 
         /** */
         private readonly Func<object, object> streamTransformerCtor;
@@ -170,7 +170,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Precompiled invocator delegate.</returns>
-        public static Action<object, GridImpl, IUnmanagedTarget, IPortableStream, bool> GetStreamReceiver(Type type)
+        public static Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> GetStreamReceiver(Type type)
         {
             return Get(type).streamReceiver;
         }
@@ -311,12 +311,12 @@ namespace Apache.Ignite.Core.Impl.Common
                             .MakeGenericMethod(iface.GetGenericArguments());
 
                     streamReceiver = DelegateConverter
-                        .CompileFunc<Action<object, GridImpl, IUnmanagedTarget, IPortableStream, bool>>(
+                        .CompileFunc<Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool>>(
                             typeof (StreamReceiverHolder),
                             method,
                             new[]
                             {
-                                iface, typeof (GridImpl), typeof (IUnmanagedTarget), typeof (IPortableStream),
+                                iface, typeof (Ignite), typeof (IUnmanagedTarget), typeof (IPortableStream),
                                 typeof (bool)
                             },
                             new[] {true, false, false, false, false, false});

@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         private readonly IComputeJob job;
         
         /** Owning grid. */
-        private readonly GridImpl grid;
+        private readonly Ignite grid;
 
         /** Result (set for local jobs only). */
         private volatile ComputeJobResultImpl jobRes;
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="grid">Grid.</param>
         /// <param name="job">Job.</param>
-        public ComputeJobHolder(GridImpl grid, IComputeJob job)
+        public ComputeJobHolder(Ignite grid, IComputeJob job)
         {
             this.grid = grid;
             this.job = job;
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="grid">Grid.</param>
         /// <param name="stream">Stream.</param>
         /// <returns></returns>
-        internal static ComputeJobHolder CreateJob(GridImpl grid, IPortableStream stream)
+        internal static ComputeJobHolder CreateJob(Ignite grid, IPortableStream stream)
         {
             try
             {

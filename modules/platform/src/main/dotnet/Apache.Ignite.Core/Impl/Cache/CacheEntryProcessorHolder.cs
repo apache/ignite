@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", 
             Justification = "User processor can throw any exception")]
-        public CacheEntryProcessorResultHolder Process(object key, object value, bool exists, GridImpl grid)
+        public CacheEntryProcessorResultHolder Process(object key, object value, bool exists, Ignite grid)
         {
             ResourceProcessor.Inject(proc, grid);
 

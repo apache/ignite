@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// Inject grid.
         /// </summary>
         /// <param name="grid"></param>
-        void Inject(GridImpl grid);
+        void Inject(Ignite grid);
 
         /// <summary>
         /// Allocate handle for the filter.
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         private readonly bool keepPortable;
 
         /** Grid hosting the filter. */
-        private volatile GridImpl grid;
+        private volatile Ignite grid;
 
         /** GC handle. */
         private long? hnd;
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         }
 
         /** <inheritDoc /> */
-        public void Inject(GridImpl grid)
+        public void Inject(Ignite grid)
         {
             this.grid = grid;
 

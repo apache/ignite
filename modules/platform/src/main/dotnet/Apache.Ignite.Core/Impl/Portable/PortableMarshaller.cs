@@ -149,7 +149,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Gets or sets the backing grid.
         /// </summary>
-        public GridImpl Grid { get; set; }
+        public Ignite Grid { get; set; }
 
         /// <summary>
         /// Marshal object.

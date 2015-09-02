@@ -468,7 +468,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSerialization()
         {
-            var grid = (GridImpl) grid1;
+            var grid = (Ignite) grid1;
             var comp = (Impl.Compute.Compute) grid.Cluster.ForLocal().Compute();
             var locNode = grid.Cluster.LocalNode;
 

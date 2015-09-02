@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterMetrics Metrics()
         {
-            var grid = (GridImpl)gridRef.Target;
+            var grid = (Ignite)gridRef.Target;
 
             if (grid == null)
                 return metrics;
@@ -213,7 +213,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// Initializes this instance with a grid.
         /// </summary>
         /// <param name="grid">The grid.</param>
-        internal void Init(GridImpl grid)
+        internal void Init(Ignite grid)
         {
             gridRef = new WeakReference(grid);
         }
