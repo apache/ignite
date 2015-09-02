@@ -15,11 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.internal.processors.platform.dotnet;
+
+import org.apache.ignite.internal.processors.platform.PlatformAbstractBootstrap;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 
 /**
- * Platform configuration marker interface.
+ * Interop .Net bootstrap.
  */
-public interface PlatformConfiguration {
-    // No-op.
+public class PlatformDotNetBootstrap extends PlatformAbstractBootstrap {
+    /** {@inheritDoc} */
+    @Override protected PlatformAbstractConfigurationClosure closure(long envPtr) {
+        return new PlatformDotNetConfigurationClosure(envPtr);
+    }
 }

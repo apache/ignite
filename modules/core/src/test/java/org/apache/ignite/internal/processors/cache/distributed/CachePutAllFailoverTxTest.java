@@ -15,11 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.internal.processors.cache.distributed;
+
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
- * Platform configuration marker interface.
+ *
  */
-public interface PlatformConfiguration {
-    // No-op.
+public class CachePutAllFailoverTxTest extends CachePutAllFailoverAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
+    }
 }

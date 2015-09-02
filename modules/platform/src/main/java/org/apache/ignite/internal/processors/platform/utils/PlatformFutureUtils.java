@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -66,8 +68,35 @@ public class PlatformFutureUtils {
      * @param futPtr Native future pointer.
      * @param typ Expected return type.
      */
-    public static void listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ) {
-        listen(ctx, new FutureListenable(fut), futPtr, typ, null);
+    public static void listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, final int typ,
+        PlatformAbstractTarget target) {
+        listen(ctx, new InternalFutureListenable(fut), futPtr, typ, null, target);
+    }
+    /**
+     * Listen future.
+     *
+     * @param ctx Context.
+     * @param fut Java future.
+     * @param futPtr Native future pointer.
+     * @param typ Expected return type.
+     */
+    public static void listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ,
+        PlatformAbstractTarget target) {
+        listen(ctx, new FutureListenable(fut), futPtr, typ, null, target);
+    }
+
+    /**
+     * Listen future.
+     *
+     * @param ctx Context.
+     * @param fut Java future.
+     * @param futPtr Native future pointer.
+     * @param typ Expected return type.
+     * @param writer Writer.
+     */
+    public static void listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, final int typ,
+        Writer writer, PlatformAbstractTarget target) {
+        listen(ctx, new InternalFutureListenable(fut), futPtr, typ, writer, target);
     }
 
     /**
@@ -80,8 +109,8 @@ public class PlatformFutureUtils {
      * @param writer Writer.
      */
     public static void listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, final int typ,
-        Writer writer) {
-        listen(ctx, new FutureListenable(fut), futPtr, typ, writer);
+        Writer writer, PlatformAbstractTarget target) {
+        listen(ctx, new FutureListenable(fut), futPtr, typ, writer, target);
     }
 
     /**
@@ -92,8 +121,9 @@ public class PlatformFutureUtils {
      * @param futPtr Native future pointer.
      * @param writer Writer.
      */
-    public static void listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr, Writer writer) {
-        listen(ctx, new FutureListenable(fut), futPtr, TYP_OBJ, writer);
+    public static void listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr, Writer writer,
+        PlatformAbstractTarget target) {
+        listen(ctx, new InternalFutureListenable(fut), futPtr, TYP_OBJ, writer, target);
     }
 
     /**
@@ -107,13 +137,16 @@ public class PlatformFutureUtils {
      */
     @SuppressWarnings("unchecked")
     private static void listen(final PlatformContext ctx, Listenable listenable, final long futPtr, final int typ,
-        @Nullable final Writer writer) {
+        @Nullable final Writer writer, final PlatformAbstractTarget target) {
         final PlatformCallbackGateway gate = ctx.gateway();
 
         listenable.listen(new IgniteBiInClosure<Object, Throwable>() {
             private static final long serialVersionUID = 0L;
 
             @Override public void apply(Object res, Throwable err) {
+                if (err instanceof Exception)
+                    err = target.convertException((Exception)err);
+
                 if (writer != null && writeToWriter(res, err, ctx, writer, futPtr))
                     return;
 
@@ -326,4 +359,39 @@ public class PlatformFutureUtils {
             });
         }
     }
+
+    /**
+     * Listenable around Ignite future.
+     */
+    private static class InternalFutureListenable implements Listenable {
+        /** Future. */
+        private final IgniteInternalFuture fut;
+
+        /**
+         * Constructor.
+         *
+         * @param fut Future.
+         */
+        public InternalFutureListenable(IgniteInternalFuture fut) {
+            this.fut = fut;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public void listen(final IgniteBiInClosure<Object, Throwable> lsnr) {
+            fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                private static final long serialVersionUID = 0L;
+
+                @Override public void apply(IgniteInternalFuture fut0) {
+                    try {
+                        lsnr.apply(fut0.get(), null);
+                    }
+                    catch (Throwable err) {
+                        lsnr.apply(null, err);
+                    }
+                }
+            });
+        }
+    }
+
 }

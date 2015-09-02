@@ -15,11 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.internal.processors.platform.dotnet;
+
+import org.apache.ignite.internal.processors.platform.PlatformBootstrap;
+import org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory;
 
 /**
- * Platform configuration marker interface.
+ * Interop .Net bootstrap factory.
  */
-public interface PlatformConfiguration {
-    // No-op.
+public class PlatformDotNetBootstrapFactory implements PlatformBootstrapFactory {
+    /** Bootstrap ID. */
+    public static final int ID = 1;
+
+    /** {@inheritDoc} */
+    @Override public int id() {
+        return ID;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformBootstrap create() {
+        return new PlatformDotNetBootstrap();
+    }
 }

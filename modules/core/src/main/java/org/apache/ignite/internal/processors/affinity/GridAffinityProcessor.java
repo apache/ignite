@@ -577,6 +577,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             return assignment;
         }
 
+        /**
+         * @return Key mapper.
+         */
         private AffinityKeyMapper keyMapper() {
             return mapper;
         }
@@ -888,6 +891,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         /**
          * @return Affinity info for current topology version.
+         * @throws IgniteCheckedException If failed.
          */
         private AffinityInfo cache() throws IgniteCheckedException {
             return affinityCache(cacheName, new AffinityTopologyVersion(topologyVersion()));

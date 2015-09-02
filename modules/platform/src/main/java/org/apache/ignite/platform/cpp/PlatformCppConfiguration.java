@@ -15,25 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+package org.apache.ignite.platform.cpp;
 
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.configuration.PlatformConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Denotes an exception which has some data to be written in a special manner.
+ * Platform CPP configuration.
  */
-public interface PlatformExtendedException {
+public class PlatformCppConfiguration implements PlatformConfiguration {
     /**
-     * Gets platform context.
-     *
-     * @return Platform context.
+     * Default constructor.
      */
-    public PlatformContext context();
+    public PlatformCppConfiguration() {
+        // No-op.
+    }
 
     /**
-     * Write data.
+     * Copying constructor.
      *
-     * @param writer Writer.
+     * @param cfg Configuration to copy.
      */
-    public void writeData(PortableRawWriterEx writer);
+    public PlatformCppConfiguration(PlatformConfiguration cfg) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PlatformConfiguration.class, this);
+    }
 }

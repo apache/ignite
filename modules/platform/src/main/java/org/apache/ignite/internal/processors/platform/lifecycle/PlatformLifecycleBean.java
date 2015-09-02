@@ -57,7 +57,9 @@ public class PlatformLifecycleBean implements LifecycleBean {
 
         assert ptr != 0;
 
-        gate.lifecycleEvent(ptr, evt.ordinal());
+        // Do not send after-stop events because gate will fail due to grid being stopped.
+        if (evt != LifecycleEventType.AFTER_NODE_STOP)
+            gate.lifecycleEvent(ptr, evt.ordinal());
     }
 
     /**

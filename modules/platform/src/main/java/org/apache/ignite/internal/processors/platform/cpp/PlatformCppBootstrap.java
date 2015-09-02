@@ -15,11 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.internal.processors.platform.cpp;
+
+import org.apache.ignite.internal.processors.platform.PlatformAbstractBootstrap;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 
 /**
- * Platform configuration marker interface.
+ * Platform .Net bootstrap.
  */
-public interface PlatformConfiguration {
-    // No-op.
+public class PlatformCppBootstrap extends PlatformAbstractBootstrap {
+    /** {@inheritDoc} */
+    @Override protected PlatformAbstractConfigurationClosure closure(long envPtr) {
+        return new PlatformCppConfigurationClosure(envPtr);
+    }
 }

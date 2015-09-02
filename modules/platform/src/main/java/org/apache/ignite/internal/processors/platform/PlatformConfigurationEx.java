@@ -15,11 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.internal.processors.platform;
+
+import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
+
+import java.util.Collection;
 
 /**
- * Platform configuration marker interface.
+ * Extended platform configuration.
  */
-public interface PlatformConfiguration {
-    // No-op.
+public interface PlatformConfigurationEx {
+    /*
+     * @return Native gateway.
+     */
+    public PlatformCallbackGateway gate();
+
+    /**
+     * @return Memory manager.
+     */
+    public PlatformMemoryManagerImpl memory();
+
+    /**
+     * @return Platform name.
+     */
+    public String platform();
+
+    /**
+     * @return Warnings to be displayed on grid start.
+     */
+    public Collection<String> warnings();
 }
