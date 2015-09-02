@@ -17,6 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicStampedReference;
+import java.util.concurrent.locks.ReentrantLock;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -111,10 +123,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private final LongAdder8 mapPubSize = new LongAdder8();
 
     /** Remove queue. */
-    private final GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
+    private GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
 
     /** Group reservations. */
     private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
+
+    /** Continuous query update index. */
+    private final AtomicLong contQryUpdIdx = new AtomicLong();
 
     /**
      * @param cctx Context.
@@ -141,7 +156,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         int delQueueSize = CU.isSystemCache(cctx.name()) ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
 
-        rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
+        if (cctx.deferredDelete())
+            rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
     }
 
     /**
@@ -295,6 +311,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @throws IgniteCheckedException If failed.
      */
     public void onDeferredDelete(KeyCacheObject key, GridCacheVersion ver) throws IgniteCheckedException {
+        assert cctx.deferredDelete();
+
         try {
             T2<KeyCacheObject, GridCacheVersion> evicted = rmvQueue.add(new T2<>(key, ver));
 
@@ -496,7 +514,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
             ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, updateSeq);
 
-            clearDeferredDeletes();
+            if (cctx.deferredDelete())
+                clearDeferredDeletes();
 
             return new GridFinishedFuture<>(true);
         }
@@ -541,13 +560,16 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (cctx.isDrEnabled())
                 cctx.dr().partitionEvicted(id);
 
+            cctx.continuousQueries().onPartitionEvicted(id);
+
             cctx.dataStructures().onPartitionEvicted(id);
 
             rent.onDone();
 
             ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, updateSeq);
 
-            clearDeferredDeletes();
+            if (cctx.deferredDelete())
+                clearDeferredDeletes();
 
             return true;
         }
@@ -609,6 +631,35 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     public boolean backup(AffinityTopologyVersion topVer) {
         return cctx.affinity().backup(cctx.localNode(), id, topVer);
+    }
+
+    /**
+     * @return Next update index.
+     */
+    public long nextContinuousQueryUpdateIndex() {
+        return contQryUpdIdx.incrementAndGet();
+    }
+
+    /**
+     * @return Current update index.
+     */
+    public long continuousQueryUpdateIndex() {
+        return contQryUpdIdx.get();
+    }
+
+    /**
+     * @param val Update index value.
+     */
+    public void continuousQueryUpdateIndex(long val) {
+        while (true) {
+            long val0 = contQryUpdIdx.get();
+
+            if (val0 >= val)
+                break;
+
+            if (contQryUpdIdx.compareAndSet(val0, val))
+                break;
+        }
     }
 
     /**
@@ -761,6 +812,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     private void clearDeferredDeletes() {
+        assert cctx.deferredDelete();
+
         rmvQueue.forEach(new CI1<T2<KeyCacheObject, GridCacheVersion>>() {
             @Override public void apply(T2<KeyCacheObject, GridCacheVersion> t) {
                 cctx.dht().removeVersionedEntry(t.get1(), t.get2());
