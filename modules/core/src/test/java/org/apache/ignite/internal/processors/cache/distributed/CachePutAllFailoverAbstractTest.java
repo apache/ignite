@@ -17,7 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -28,14 +36,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.TreeMap;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -85,21 +85,31 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
      * @throws Exception If failed.
      */
     public void testPutAllFailover() throws Exception {
-        testPutAllFailover(false);
+        testPutAllFailover(Test.PUT_ALL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllFailoverPessimisticTx() throws Exception {
+        if (atomicityMode() == CacheAtomicityMode.ATOMIC)
+            return;
+
+        testPutAllFailover(Test.PUT_ALL_PESSIMISTIC_TX);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAllFailoverAsync() throws Exception {
-        testPutAllFailover(true);
+        testPutAllFailover(Test.PUT_ALL_ASYNC);
     }
 
     /**
-     * @param async If {@code true} tests asynchronous operation.
+     * @param test Test type
      * @throws Exception If failed.
      */
-    private void testPutAllFailover(final boolean async) throws Exception {
+    private void testPutAllFailover(final Test test) throws Exception {
         final AtomicBoolean finished = new AtomicBoolean();
 
         final long endTime = System.currentTimeMillis() + TEST_TIME;
@@ -123,7 +133,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
         try {
             IgniteCache<TestKey, TestValue> cache0 = ignite(0).cache(null);
 
-            final IgniteCache<TestKey, TestValue> cache = async ? cache0.withAsync() : cache0;
+            final IgniteCache<TestKey, TestValue> cache = test == Test.PUT_ALL_ASYNC ? cache0.withAsync() : cache0;
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -142,10 +152,8 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
                             lastInfo = time;
                         }
 
-                        if (async) {
-                            Collection<IgniteFuture<?>> futs = new ArrayList<>();
-
-                            for (int i = 0 ; i < 10; i++) {
+                        switch (test) {
+                            case PUT_ALL: {
                                 TreeMap<TestKey, TestValue> map = new TreeMap<>();
 
                                 for (int k = 0; k < 100; k++)
@@ -153,23 +161,55 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
 
                                 cache.putAll(map);
 
-                                IgniteFuture<?> fut = cache.future();
-
-                                assertNotNull(fut);
-
-                                futs.add(fut);
+                                break;
                             }
 
-                            for (IgniteFuture<?> fut : futs)
-                                fut.get();
-                        }
-                        else {
-                            TreeMap<TestKey, TestValue> map = new TreeMap<>();
+                            case PUT_ALL_ASYNC: {
+                                Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
-                            for (int k = 0; k < 100; k++)
-                                map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
+                                for (int i = 0 ; i < 10; i++) {
+                                    TreeMap<TestKey, TestValue> map = new TreeMap<>();
 
-                            cache.putAll(map);
+                                    for (int k = 0; k < 100; k++)
+                                        map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
+
+                                    cache.putAll(map);
+
+                                    IgniteFuture<?> fut = cache.future();
+
+                                    assertNotNull(fut);
+
+                                    futs.add(fut);
+                                }
+
+                                for (IgniteFuture<?> fut : futs)
+                                    fut.get();
+
+                                break;
+                            }
+
+                            case PUT_ALL_PESSIMISTIC_TX: {
+                                final TreeMap<TestKey, TestValue> map = new TreeMap<>();
+
+                                for (int k = 0; k < 100; k++)
+                                    map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
+
+                                doInTransaction(ignite(0), new Callable<Object>() {
+                                    @Override public Object call() throws Exception {
+                                        for (TestKey key : map.keySet())
+                                            cache.get(key);
+
+                                        cache.putAll(map);
+
+                                        return null;
+                                    }
+                                });
+
+                                break;
+                            }
+
+                            default:
+                                assert false;
                         }
 
                         iter++;
@@ -276,5 +316,19 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
         @Override public String toString() {
             return S.toString(TestValue.class, this);
         }
+    }
+
+    /**
+     *
+     */
+    private enum Test {
+        /** */
+        PUT_ALL,
+
+        /** */
+        PUT_ALL_ASYNC,
+
+        /** */
+        PUT_ALL_PESSIMISTIC_TX
     }
 }
