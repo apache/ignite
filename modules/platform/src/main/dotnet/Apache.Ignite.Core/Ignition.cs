@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core
     /// cfg.PortableConfiguration = portableCfg;
     ///
     /// // Start grid node with grid configuration.
-    /// IGrid grid = GridGainFactory.Start(cfg);
+    /// IGrid grid = Ignition.Start(cfg);
     /// </code>
     /// </example>
     /// </summary>
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Starts grid with default configuration. By default this method will
-        /// use grid configuration defined in <code>GRIDGAIN_HOME/config/default-config.xml</code>
+        /// use grid configuration defined in <code>IGNITE/config/default-config.xml</code>
         /// configuration file. If such file is not found, then all system defaults will be used.
         /// </summary>
         /// <returns>Started grid.</returns>
@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core
         /// have been started so far will be stopped too.
         /// </summary>
         /// <param name="springCfgPath">Spring XML configuration file path or URL. Note, that the path can be
-        /// absolute or relative to GRIDGAIN_HOME.</param>
+        /// absolute or relative to IGNITE_HOME.</param>
         /// <returns>Started grid. If Spring configuration contains multiple grid instances, then the 1st
         /// found instance is returned.</returns>
         public static IIgnite Start(string springCfgPath)
@@ -453,7 +453,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Whether assembly points to GridGain binary.
+        /// Whether assembly points to Ignite binary.
         /// </summary>
         /// <param name="assembly">Assembly to check..</param>
         /// <returns><c>True</c> if this is one of GG assemblies.</returns>

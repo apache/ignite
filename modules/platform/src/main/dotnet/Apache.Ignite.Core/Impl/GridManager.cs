@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl
             opts[idx++] = IgniteUtils.StringToUtf8Unmanaged(cp);
 
             if (hasGgHome)
-                opts[idx++] = IgniteUtils.StringToUtf8Unmanaged("-DGRIDGAIN_HOME=" + ggHome);
+                opts[idx++] = IgniteUtils.StringToUtf8Unmanaged("-DIGNITE_HOME=" + ggHome);
 
             foreach (string cfgOpt in jvmOpts)
                 opts[idx++] = IgniteUtils.StringToUtf8Unmanaged(cfgOpt);

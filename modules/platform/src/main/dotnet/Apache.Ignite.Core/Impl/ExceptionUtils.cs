@@ -110,11 +110,11 @@ namespace Apache.Ignite.Core.Impl
                 return ctor(msg);
 
             if (ClsNoClsDefFoundErr.Equals(clsName))
-                return new IgniteException("Java class is not found (did you set GRIDGAIN_HOME environment " +
+                return new IgniteException("Java class is not found (did you set IGNITE_HOME environment " +
                     "variable?): " + msg);
 
             if (ClsNoSuchMthdErr.Equals(clsName))
-                return new IgniteException("Java class method is not found (did you set GRIDGAIN_HOME environment " +
+                return new IgniteException("Java class method is not found (did you set IGNITE_HOME environment " +
                     "variable?): " + msg);
 
             if (ClsCachePartialUpdateErr.Equals(clsName))
