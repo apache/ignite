@@ -517,7 +517,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             /** <inheritdoc /> */
             public void Receive(ICache<int, IPortableObject> cache, ICollection<ICacheEntry<int, IPortableObject>> entries)
             {
-                var portables = cache.Grid.Portables();
+                var portables = cache.Ignite.Portables();
 
                 cache.PutAll(entries.ToDictionary(x => x.Key, x =>
                     portables.ToPortable<IPortableObject>(new PortableEntry

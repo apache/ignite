@@ -20,8 +20,8 @@ namespace Apache.Ignite.Core.Cache
     /// <summary>
     /// Cache entry interface.
     /// </summary>
-    /// <typeparam name="K">Key type.</typeparam>
-    /// <typeparam name="V">Value type.</typeparam>
+    /// <typeparam name="TK">Key type.</typeparam>
+    /// <typeparam name="TV">Value type.</typeparam>
     public interface ICacheEntry<out TK, out TV>
     {
         /// <summary>

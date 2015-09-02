@@ -923,9 +923,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <returns></returns>
         private static List<int> PrimaryKeys<T>(ICache<int, T> cache, int cnt, int startFrom = 0)
         {
-            IClusterNode node = cache.Grid.Cluster.LocalNode;
+            IClusterNode node = cache.Ignite.Cluster.LocalNode;
 
-            ICacheAffinity aff = cache.Grid.Affinity(cache.Name);
+            ICacheAffinity aff = cache.Ignite.Affinity(cache.Name);
 
             List<int> keys = new List<int>(cnt);
 

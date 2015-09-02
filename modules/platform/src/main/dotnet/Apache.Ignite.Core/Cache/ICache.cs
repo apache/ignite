@@ -49,8 +49,8 @@ namespace Apache.Ignite.Core.Cache
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
-    /// <typeparam name="K">Key type.</typeparam>
-    /// <typeparam name="V">Value type.</typeparam>
+    /// <typeparam name="TK">Key type.</typeparam>
+    /// <typeparam name="TV">Value type.</typeparam>
     public interface ICache<TK, TV> : IAsyncSupport<ICache<TK, TV>>, IEnumerable<ICacheEntry<TK, TV>>
     {
         /// <summary>
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Grid hosting this cache.
         /// </summary>
-        IIgnite Grid { get; }
+        IIgnite Ignite { get; }
 
         /// <summary>
         /// Checks whether this cache contains no key-value mappings.

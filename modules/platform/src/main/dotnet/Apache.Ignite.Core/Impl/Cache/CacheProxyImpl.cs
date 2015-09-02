@@ -110,9 +110,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IIgnite Grid
+        public IIgnite Ignite
         {
-            get { return _cache.Grid; }
+            get { return _cache.Ignite; }
         }
 
         /** <inheritDoc /> */

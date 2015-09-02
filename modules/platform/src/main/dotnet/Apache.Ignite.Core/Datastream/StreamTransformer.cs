@@ -28,10 +28,10 @@ namespace Apache.Ignite.Core.Datastream
     /// Convenience adapter to transform update existing values in streaming cache 
     /// based on the previously cached value.
     /// </summary>
-    /// <typeparam name="K">The type of the cache key.</typeparam>
-    /// <typeparam name="V">The type of the cache value.</typeparam>
-    /// <typeparam name="A">The type of the processor argument.</typeparam>
-    /// <typeparam name="R">The type of the processor result.</typeparam>
+    /// <typeparam name="TK">Key type.</typeparam>
+    /// <typeparam name="TV">Value type.</typeparam>
+    /// <typeparam name="TA">The type of the processor argument.</typeparam>
+    /// <typeparam name="TR">The type of the processor result.</typeparam>
     public sealed class StreamTransformer<TK, TV, TA, TR> : IStreamReceiver<TK, TV>, 
         IPortableWriteAware
     {

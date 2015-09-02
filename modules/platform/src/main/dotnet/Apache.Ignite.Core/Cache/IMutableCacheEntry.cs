@@ -20,8 +20,8 @@ namespace Apache.Ignite.Core.Cache
     /// <summary>
     /// Mutable representation of <see cref="ICacheEntry{K, V}"/>
     /// </summary>
-    /// <typeparam name="K">Key type.</typeparam>
-    /// <typeparam name="V">Value type.</typeparam>
+    /// <typeparam name="TK">Key type.</typeparam>
+    /// <typeparam name="TV">Value type.</typeparam>
     public interface IMutableCacheEntry<out TK, TV> : ICacheEntry<TK, TV>
     {
         /// <summary>

@@ -28,10 +28,10 @@ namespace Apache.Ignite.Core.Cache
     /// must wrap any exception thrown wrapped in an <see cref="CacheEntryProcessorException" />
     /// If this occurs no mutations will be made to the cache entry.
     /// </summary>
-    /// <typeparam name="K">The type of the cache key.</typeparam>
-    /// <typeparam name="V">The type of the cache value.</typeparam>
-    /// <typeparam name="A">The type of the processor argument.</typeparam>
-    /// <typeparam name="R">The type of the processor result.</typeparam>
+    /// <typeparam name="TK">Key type.</typeparam>
+    /// <typeparam name="TV">Value type.</typeparam>
+    /// <typeparam name="TA">The type of the processor argument.</typeparam>
+    /// <typeparam name="TR">The type of the processor result.</typeparam>
     public interface ICacheEntryProcessor<in TK, TV, in TA, out TR>
     {
         /// <summary>

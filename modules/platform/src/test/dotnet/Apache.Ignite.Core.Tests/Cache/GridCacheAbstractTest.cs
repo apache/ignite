@@ -2849,8 +2849,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             const int count = 20;
 
             var cache = Cache();
-            var aff = cache.Grid.Affinity(cache.Name);
-            var node = cache.Grid.Cluster.LocalNode;
+            var aff = cache.Ignite.Affinity(cache.Name);
+            var node = cache.Ignite.Cluster.LocalNode;
 
             for (int i = 0; i < count; i++)
                 cache.Put(i, -i - 1);
@@ -3233,18 +3233,18 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         protected static IEnumerable<int> PrimaryKeysForCache(ICache<int, int> cache, int cnt, int startFrom)
         {
-            IClusterNode node = cache.Grid.Cluster.LocalNode;
+            IClusterNode node = cache.Ignite.Cluster.LocalNode;
 
-            ICacheAffinity aff = cache.Grid.Affinity(cache.Name);
+            ICacheAffinity aff = cache.Ignite.Affinity(cache.Name);
 
             return Enumerable.Range(startFrom, int.MaxValue - startFrom).Where(x => aff.IsPrimary(node, x));
         }
 
         protected static int NearKeyForCache(ICache<int, int> cache)
         {
-            IClusterNode node = cache.Grid.Cluster.LocalNode;
+            IClusterNode node = cache.Ignite.Cluster.LocalNode;
 
-            ICacheAffinity aff = cache.Grid.Affinity(cache.Name);
+            ICacheAffinity aff = cache.Ignite.Affinity(cache.Name);
 
             for (int i = 0; i < 100000; i++)
             {
@@ -3259,10 +3259,10 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         protected static string GetKeyAffinity(ICache<int, int> cache, int key)
         {
-            if (cache.Grid.Affinity(cache.Name).IsPrimary(cache.Grid.Cluster.LocalNode, key))
+            if (cache.Ignite.Affinity(cache.Name).IsPrimary(cache.Ignite.Cluster.LocalNode, key))
                 return "primary";
 
-            if (cache.Grid.Affinity(cache.Name).IsBackup(cache.Grid.Cluster.LocalNode, key))
+            if (cache.Ignite.Affinity(cache.Name).IsBackup(cache.Ignite.Cluster.LocalNode, key))
                 return "backup";
 
             return "near";

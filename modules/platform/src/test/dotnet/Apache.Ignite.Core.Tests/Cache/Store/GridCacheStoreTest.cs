@@ -397,7 +397,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             var cache = Cache();
 
-            using (var tx = cache.Grid.Transactions.TxStart())
+            using (var tx = cache.Ignite.Transactions.TxStart())
             {
                 GridCacheTestStore.ExpCommit = true;
 

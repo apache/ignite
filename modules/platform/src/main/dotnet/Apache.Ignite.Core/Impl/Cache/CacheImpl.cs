@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IIgnite Grid
+        public IIgnite Ignite
         {
             get
             {

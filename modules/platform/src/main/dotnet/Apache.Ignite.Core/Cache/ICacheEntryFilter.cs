@@ -20,8 +20,8 @@ namespace Apache.Ignite.Core.Cache
     /// <summary>
     /// Cache entry predicate.
     /// </summary>
-    /// <typeparam name="K">Type of cache entry key.</typeparam>
-    /// <typeparam name="V">Type of cache entry value.</typeparam>
+    /// <typeparam name="TK">Key type.</typeparam>
+    /// <typeparam name="TV">Value type.</typeparam>
     public interface ICacheEntryFilter<in TK, in TV>
     {
         /// <summary>

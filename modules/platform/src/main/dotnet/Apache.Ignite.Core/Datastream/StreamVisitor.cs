@@ -26,8 +26,8 @@ namespace Apache.Ignite.Core.Datastream
     /// Convenience adapter to visit every key-value tuple in the stream.
     /// Note that the visitor does not update the cache.
     /// </summary>
-    /// <typeparam name="K">The type of the cache key.</typeparam>
-    /// <typeparam name="V">The type of the cache value.</typeparam>
+    /// <typeparam name="TK">The type of the cache key.</typeparam>
+    /// <typeparam name="TV">The type of the cache value.</typeparam>
     [Serializable]
     public sealed class StreamVisitor<TK, TV> : IStreamReceiver<TK, TV>
     {
