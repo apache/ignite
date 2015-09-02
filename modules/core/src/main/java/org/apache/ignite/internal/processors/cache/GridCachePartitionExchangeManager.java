@@ -197,7 +197,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         // Validate requests to check if event should trigger partition exchange.
                         for (DynamicCacheChangeRequest req : batch.requests()) {
-                            if (cctx.cache().exchangeNeeded(req))
+                            if (req.exchangeNeeded())
                                 valid.add(req);
                             else
                                 cctx.cache().completeStartFuture(req);
