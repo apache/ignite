@@ -91,15 +91,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Opeartion: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        /** Opeartion: DR entry filter create. */
-        private const int OpDrEntryFilterCreate = 2;
-
-        /** Opeartion: DR entry filter apply. */
-        private const int OpDrEntryFilterApply = 3;
-
-        /** Opeartion: DR entry filter destroy. */
-        private const int OpDrEntryFilterDestroy = 4;
-
         private delegate long CacheStoreCreateCallbackDelegate(void* target, long memPtr);
         private delegate int CacheStoreInvokeCallbackDelegate(void* target, long objPtr, long memPtr, void* cb);
         private delegate void CacheStoreDestroyCallbackDelegate(void* target, long objPtr);
@@ -830,12 +821,30 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long ExtensionCallbackInLongOutLong(void* target, int op, long arg1)
         {
-            return 0;
+            throw new InvalidOperationException("Unsupported operation type: " + op);
         }
 
         private long ExtensionCallbackInLongLongOutLong(void* target, int op, long arg1, long arg2)
         {
-            return 0;
+            return SafeCall(() =>
+            {
+                switch (op)
+                {
+                    case OpPrepareDotNet:
+                        var inMem = GridManager.Memory.Get(arg1);
+                        var outMem = GridManager.Memory.Get(arg2);
+
+                        PlatformMemoryStream inStream = inMem.Stream();
+                        PlatformMemoryStream outStream = outMem.Stream();
+
+                        Ignition.OnPrepare(inStream, outStream, _handleRegistry);
+
+                        return 0;
+
+                    default:
+                        throw new InvalidOperationException("Unsupported operation type: " + op);
+                }
+            }, op == OpPrepareDotNet);
         }
 
         #endregion

@@ -34,8 +34,7 @@ namespace Apache.Ignite.Core.Tests
 
             //TestOne(typeof(ContinuousQueryAtomiclBackupTest), "TestInitialQuery");
 
-            TestAll(typeof(GridComputeApiTest));
-
+            TestAll(typeof (GridStartStopTest));
             //TestAllInAssembly();
         }
 
