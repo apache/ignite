@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Process
     public class GridProcess
     {
         /** Executable file name. */
-        private static readonly string ExeName = "GridGain.exe";
+        private static readonly string ExeName = "Ignite.exe";
 
         /** Executable process name. */
         private static readonly string ExeProcName = ExeName.Substring(0, ExeName.IndexOf('.'));
@@ -73,6 +73,7 @@ namespace Apache.Ignite.Core.Tests.Process
 
             FileInfo[] exe = dir.GetFiles(ExeName);
 
+            /*
             if (exe.Length == 0)
                 throw new Exception(ExeName + " is not found in test output directory: " + dir.FullName);
 
@@ -87,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Process
 
             ExeCfgBakPath = Path.Combine(ExeDir, ExeCfgBakName);
 
-            File.Delete(ExeCfgBakPath);
+            File.Delete(ExeCfgBakPath);*/
         }
 
         /// <summary>
