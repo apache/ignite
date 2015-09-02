@@ -740,12 +740,10 @@
                                         <exclude>src/test/dotnet/Apache.Ignite.Core.Tests/Apache.Ignite.Core.Tests.csproj</exclude>
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/1.1/test1-1.1.jar</exclude>
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/1.1/test2-1.1.jar</exclude>
-                                        <exclude>src/main/cpp/common/project/vs/common.vcxproj</exclude>
-                                        <exclude>src/main/cpp/common/project/vs/common.vcxproj.filters</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
-                                        <exclude>**/*.vcsproj</exclude>
-                                        <exclude>**/*.vcsproj.filters</exclude>
+                                        <exclude>**/*.vcxproj</exclude>
+                                        <exclude>**/*.vcxproj.filters</exclude>
                                         <exclude>**/module.def</exclude>
                                         <exclude>**/ignite-common.pc.in</exclude>
                                     </excludes>

@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -35,8 +30,13 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
@@ -248,20 +248,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         checkGridStartFails(g1Cfg,
             "Maximum IGFS space size cannot be greater than size of available heap memory and offheap storage", true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalIfBackupsEnabled() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-
-        for (CacheConfiguration cc : g1Cfg.getCacheConfiguration()) {
-            cc.setCacheMode(PARTITIONED);
-            cc.setBackups(1);
-        }
-
-        checkGridStartFails(g1Cfg, "IGFS data cache cannot be used with backups", true);
     }
 
     /**
