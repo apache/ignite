@@ -15,11 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.platform.cpp;
+
+import org.apache.ignite.configuration.PlatformConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Platform configuration marker interface.
+ * Platform CPP configuration.
  */
-public interface PlatformConfiguration {
-    // No-op.
+public class PlatformCppConfiguration implements PlatformConfiguration {
+    /**
+     * Default constructor.
+     */
+    public PlatformCppConfiguration() {
+        // No-op.
+    }
+
+    /**
+     * Copying constructor.
+     *
+     * @param cfg Configuration to copy.
+     */
+    public PlatformCppConfiguration(PlatformConfiguration cfg) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PlatformConfiguration.class, this);
+    }
 }
