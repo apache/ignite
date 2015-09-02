@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Events
         private readonly object _key;
 
         /** */
-        private readonly GridGuid _xid;
+        private readonly IgniteGuid _xid;
 
         /** */
         private readonly object _lockId;
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Events
             _isNear = r.ReadBoolean();
             _eventNode = ReadNode(r);
             _key = r.ReadObject<object>();
-            _xid = GridGuid.ReadPortable(r);
+            _xid = IgniteGuid.ReadPortable(r);
             _lockId = r.ReadObject<object>();
             _newValue = r.ReadObject<object>();
             _oldValue = r.ReadObject<object>();
@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// ID of surrounding cache cache transaction or null if there is no surrounding transaction. 
         /// </summary>
-        public GridGuid Xid { get { return _xid; } }
+        public IgniteGuid Xid { get { return _xid; } }
 
         /// <summary>
         /// ID of the lock if held or null if no lock held. 

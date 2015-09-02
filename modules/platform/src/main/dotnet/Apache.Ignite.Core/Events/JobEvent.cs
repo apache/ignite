@@ -34,10 +34,10 @@ namespace Apache.Ignite.Core.Events
         private readonly string _taskClassName;
 
         /** */
-        private readonly GridGuid _taskSessionId;
+        private readonly IgniteGuid _taskSessionId;
 
         /** */
-        private readonly GridGuid _jobId;
+        private readonly IgniteGuid _jobId;
 
         /** */
         private readonly IClusterNode _taskNode;
@@ -53,8 +53,8 @@ namespace Apache.Ignite.Core.Events
         {
             _taskName = r.ReadString();
             _taskClassName = r.ReadString();
-            _taskSessionId = GridGuid.ReadPortable(r);
-            _jobId = GridGuid.ReadPortable(r);
+            _taskSessionId = IgniteGuid.ReadPortable(r);
+            _jobId = IgniteGuid.ReadPortable(r);
             _taskNode = ReadNode(r);
             _taskSubjectId = r.ReadGuid() ?? Guid.Empty;
         }
@@ -72,12 +72,12 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// Gets task session ID of the task that triggered this event. 
         /// </summary>
-        public GridGuid TaskSessionId { get { return _taskSessionId; } }
+        public IgniteGuid TaskSessionId { get { return _taskSessionId; } }
 
         /// <summary>
         /// Gets job ID. 
         /// </summary>
-        public GridGuid JobId { get { return _jobId; } }
+        public IgniteGuid JobId { get { return _jobId; } }
 
         /// <summary>
         /// Get node where parent task of the job has originated. 

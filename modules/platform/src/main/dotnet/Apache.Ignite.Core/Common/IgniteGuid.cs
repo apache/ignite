@@ -21,9 +21,9 @@ namespace Apache.Ignite.Core.Common
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Grid guid with additional local ID.
+    /// Ignite guid with additional local ID.
     /// </summary>
-    public struct GridGuid : IEquatable<GridGuid>
+    public struct IgniteGuid : IEquatable<IgniteGuid>
     {
         /** Global id. */
         private readonly Guid _globalId;
@@ -32,11 +32,11 @@ namespace Apache.Ignite.Core.Common
         private readonly long _localId;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="GridGuid"/> struct.
+        /// Initializes a new instance of the <see cref="IgniteGuid"/> struct.
         /// </summary>
         /// <param name="globalId">The global id.</param>
         /// <param name="localId">The local id.</param>
-        public GridGuid(Guid globalId, long localId)
+        public IgniteGuid(Guid globalId, long localId)
         {
             _globalId = globalId;
             _localId = localId;
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Common
         }
 
         /** <inheritDoc /> */
-        public bool Equals(GridGuid other)
+        public bool Equals(IgniteGuid other)
         {
             return _globalId.Equals(other._globalId) && _localId == other._localId;
         }
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Common
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is GridGuid && Equals((GridGuid) obj);
+            return obj is IgniteGuid && Equals((IgniteGuid) obj);
         }
 
         /** <inheritDoc /> */
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Common
         /** <inheritDoc /> */
         public override string ToString()
         {
-            return string.Format("GridGuid [GlobalId={0}, LocalId={1}]", GlobalId, LocalId);
+            return string.Format("IgniteGuid [GlobalId={0}, LocalId={1}]", GlobalId, LocalId);
         }
 
         /// <summary>
@@ -100,13 +100,13 @@ namespace Apache.Ignite.Core.Common
         /// Reads this object from the given reader.
         /// </summary> 
         /// <param name="r">Reader.</param>
-        public static GridGuid ReadPortable(IPortableRawReader r)
+        public static IgniteGuid ReadPortable(IPortableRawReader r)
         {
             var guid = r.ReadGuid();
 
             return guid == null
-                ? new GridGuid(Guid.Empty, 0)
-                : new GridGuid(guid.Value, r.ReadLong());
+                ? new IgniteGuid(Guid.Empty, 0)
+                : new IgniteGuid(guid.Value, r.ReadLong());
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Common
         /// <returns>
         /// The result of the operator.
         /// </returns>
-        public static bool operator ==(GridGuid a, GridGuid b)
+        public static bool operator ==(IgniteGuid a, IgniteGuid b)
         {
             return a.Equals(b);
         }
@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Common
         /// <returns>
         /// The result of the operator.
         /// </returns>
-        public static bool operator !=(GridGuid a, GridGuid b)
+        public static bool operator !=(IgniteGuid a, IgniteGuid b)
         {
             return !(a == b);
         }

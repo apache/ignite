@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// Gets globally unique ID of this event.
         /// </summary>
-        GridGuid Id { get; }
+        IgniteGuid Id { get; }
 
         /// <summary>
         /// Gets locally unique ID that is atomically incremented for each event. Unlike global <see cref="Id" />

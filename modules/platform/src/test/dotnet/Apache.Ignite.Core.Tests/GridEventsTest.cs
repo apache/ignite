@@ -473,7 +473,7 @@ namespace Apache.Ignite.Core.Tests
             var locNode = grid.Cluster.LocalNode;
 
             var expectedGuid = Guid.Parse("00000000-0000-0001-0000-000000000002");
-            var expectedGridGuid = new GridGuid(expectedGuid, 3);
+            var expectedGridGuid = new IgniteGuid(expectedGuid, 3);
 
             using (var inStream = GridManager.Memory.Allocate().Stream())
             {

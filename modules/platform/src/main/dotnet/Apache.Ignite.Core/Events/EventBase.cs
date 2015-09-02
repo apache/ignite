@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Events
     public abstract class EventBase : IEvent, IEquatable<EventBase>
     {
         /** */
-        private readonly GridGuid _id;
+        private readonly IgniteGuid _id;
 
         /** */
         private readonly long _localOrder;
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         protected EventBase(IPortableRawReader r)
         {
-            _id = GridGuid.ReadPortable(r);
+            _id = IgniteGuid.ReadPortable(r);
 
             _localOrder = r.ReadLong();
 
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Events
         }
 
         /** <inheritDoc /> */
-        public GridGuid Id
+        public IgniteGuid Id
         {
             get { return _id; }
         }
