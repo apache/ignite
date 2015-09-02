@@ -32,6 +32,7 @@
 
     <artifactId>ignite-tools</artifactId>
     <version>1.4.1-SNAPSHOT</version>
+    <url>http://ignite.apache.org</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

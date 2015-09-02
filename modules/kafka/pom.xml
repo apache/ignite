@@ -32,6 +32,7 @@
 
     <artifactId>ignite-kafka</artifactId>
     <version>1.4.1-SNAPSHOT</version>
+    <url>http://ignite.apache.org</url>
 
     <dependencies>
         <dependency>

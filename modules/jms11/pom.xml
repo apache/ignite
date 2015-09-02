@@ -33,6 +33,7 @@
 
     <artifactId>ignite-jms11</artifactId>
     <version>1.4.1-SNAPSHOT</version>
+    <url>http://ignite.apache.org</url>
 
     <properties>
         <activemq.version>5.11.1</activemq.version>

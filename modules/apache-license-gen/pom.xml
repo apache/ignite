@@ -33,6 +33,7 @@
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-apache-license-gen</artifactId>
     <version>1.4.1-SNAPSHOT</version>
+    <url>http://ignite.apache.org</url>
 
     <build>
         <plugins>
