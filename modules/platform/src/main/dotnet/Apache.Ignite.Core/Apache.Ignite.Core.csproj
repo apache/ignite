@@ -344,6 +344,26 @@
       <Name>common</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <EmbeddedResource Include="..\x64\Debug\ignite.common.dll">
+      <Link>resources\debug\x64\ignite.common.dll</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <EmbeddedResource Include="..\x64\Release\ignite.common.dll">
+      <Link>resources\release\x64\ignite.common.dll</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <EmbeddedResource Include="..\Win32\Debug\ignite.common.dll">
+      <Link>resources\debug\x86\ignite.common.dll</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <EmbeddedResource Include="..\Win32\Release\ignite.common.dll">
+      <Link>resources\release\x86\ignite.common.dll</Link>
+    </EmbeddedResource>
+  </ItemGroup>  
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
