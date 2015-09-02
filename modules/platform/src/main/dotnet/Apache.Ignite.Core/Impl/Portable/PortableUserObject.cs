@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             int pos;
 
-            if (_fields.TryGetValue(fieldId, out pos))  
+            if (_fields.TryGetValue(fieldId, out pos))
             {
                 if (builder != null)
                 {
@@ -172,12 +172,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     return res;
                 }
-                else
-                    // Regular field read.
-                    return Field0<T>(pos, null);
+                return Field0<T>(pos, null);
             }
-            else
-                return default(T);
+            return default(T);
         }
 
         /// <summary>

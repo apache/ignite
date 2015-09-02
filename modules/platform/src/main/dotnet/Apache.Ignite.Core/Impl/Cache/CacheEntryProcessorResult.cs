@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Cache;
 
     /// <summary>
-    /// Represents a result of <see cref="ICacheEntryProcessor{K, V, A, R}"/> invocation.
+    /// Represents a result of <see cref="ICacheEntryProcessor{TK,TV,TA,TR}"/> invocation.
     /// </summary>
     /// <typeparam name="T">Result type.</typeparam>
     internal class CacheEntryProcessorResult<T> : ICacheEntryProcessorResult<T>

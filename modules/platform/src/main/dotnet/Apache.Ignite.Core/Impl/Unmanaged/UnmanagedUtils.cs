@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
-    using U = Apache.Ignite.Core.Impl.GridUtils;
+    using U = GridUtils;
 
     /// <summary>
     /// Unmanaged utility classes.

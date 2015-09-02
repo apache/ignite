@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Events
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Portable;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
-    using U = Apache.Ignite.Core.Impl.GridUtils;
+    using U = GridUtils;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>

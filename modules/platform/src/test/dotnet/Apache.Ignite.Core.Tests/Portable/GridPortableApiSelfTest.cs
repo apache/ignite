@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             IPortableBuilder builderItem =
                 _grid.Portables().Builder(typeof(BuilderCollectionItem)).SetField("val", 1);
 
-            builderCol.SetField<ICollection>("col", new List<IPortableBuilder>() { builderItem });
+            builderCol.SetField<ICollection>("col", new List<IPortableBuilder> { builderItem });
 
             IPortableObject portCol = builderCol.Build();
 
@@ -918,7 +918,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestCompositeArray()
         {
             // 1. Test simple array.
-            CompositeInner[] inArr = new[] { new CompositeInner(1) };
+            CompositeInner[] inArr = { new CompositeInner(1) };
 
             IPortableObject portObj = _grid.Portables().Builder(typeof(CompositeArray)).HashCode(100)
                 .SetField("inArr", inArr).Build();

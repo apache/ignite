@@ -112,8 +112,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 if (_err)
                     throw new PortableException(ErrMsg);
-                else
-                    return new PortableResult(1);
+                return new PortableResult(1);
             }
         }
 
@@ -147,8 +146,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 if (_err)
                     throw new PortableException(ErrMsg);
-                else
-                    return new PortableResult(1);
+                return new PortableResult(1);
             }
         }
 
@@ -164,7 +162,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// 
             /// </summary>
             public PortableException()
-                : base()
             {
                 // No-op.
             }

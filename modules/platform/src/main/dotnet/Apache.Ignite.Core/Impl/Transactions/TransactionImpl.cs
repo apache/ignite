@@ -253,7 +253,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
                             return;
                         }
-                        else if (_metas[i] == null && putIdx == -1)
+                        if (_metas[i] == null && putIdx == -1)
                             // Preserve empty space index.
                             putIdx = i;
                     }

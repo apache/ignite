@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using NUnit.Framework;
 
     /// <summary>
-    /// <see cref="CacheEntry{K,V}"/> tests.
+    /// <see cref="CacheEntry{TK,TV}"/> tests.
     /// </summary>
     public class GridCacheEntryTest
     {

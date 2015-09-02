@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Compute
 {
     using System.Collections.Generic;
-    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Resource;
 
     /// <summary>

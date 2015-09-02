@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             PortableConfiguration portCfg = new PortableConfiguration();
 
-            portCfg.Types = new List<string>() { typeof(Key).FullName, typeof(Value).FullName };
+            portCfg.Types = new List<string> { typeof(Key).FullName, typeof(Value).FullName };
 
             cfg.PortableConfiguration = portCfg;
 
@@ -384,7 +384,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.AreEqual(10, map.Count);
 
-            cache.RemoveAll(new List<int>() { 0, 1, 2, 3, 4 });
+            cache.RemoveAll(new List<int> { 0, 1, 2, 3, 4 });
 
             Assert.AreEqual(5, map.Count);
 

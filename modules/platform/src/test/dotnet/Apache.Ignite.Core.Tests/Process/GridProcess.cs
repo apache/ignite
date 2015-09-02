@@ -262,12 +262,9 @@ namespace Apache.Ignite.Core.Tests.Process
 
                 return true;
             }
-            else
-            {
-                exitCode = 0;
+            exitCode = 0;
 
-                return false;
-            }
+            return false;
         }
 
         /// <summary>

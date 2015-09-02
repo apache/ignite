@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
-    using U = Apache.Ignite.Core.Impl.GridUtils;
+    using U = GridUtils;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 

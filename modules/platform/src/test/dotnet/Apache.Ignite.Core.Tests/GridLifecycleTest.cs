@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Tests
             cfg.JvmOptions = GridTestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = cfgPath;
 
-            cfg.LifecycleBeans = new List<ILifecycleBean>() { new Bean(), new Bean() };
+            cfg.LifecycleBeans = new List<ILifecycleBean> { new Bean(), new Bean() };
 
             return Ignition.Start(cfg);
         }

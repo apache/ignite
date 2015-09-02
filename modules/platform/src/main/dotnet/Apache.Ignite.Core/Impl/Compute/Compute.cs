@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
-    using U = Apache.Ignite.Core.Impl.GridUtils;
+    using U = GridUtils;
 
     /// <summary>
     /// Synchronous Compute facade.

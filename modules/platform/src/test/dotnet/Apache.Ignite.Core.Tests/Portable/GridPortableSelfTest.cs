@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<bool>(_marsh.Marshal(true)), true);
 
             Assert.AreEqual(_marsh.Unmarshal<bool?>(_marsh.Marshal((bool?)false)), false);
-            Assert.AreEqual(_marsh.Unmarshal<bool?>(_marsh.Marshal((bool?)null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<bool?>(_marsh.Marshal(null)), null);
         }
 
         /**
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveBoolArray()
         {
-            bool[] vals = new bool[] { true, false };
+            bool[] vals = { true, false };
 
             Assert.AreEqual(_marsh.Unmarshal<bool[]>(_marsh.Marshal(vals)), vals);
         }
@@ -73,12 +73,12 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveSbyte()
         {
-            Assert.AreEqual(_marsh.Unmarshal<sbyte>(_marsh.Marshal((sbyte)1)), (sbyte)1);
+            Assert.AreEqual(_marsh.Unmarshal<sbyte>(_marsh.Marshal((sbyte)1)), 1);
             Assert.AreEqual(_marsh.Unmarshal<sbyte>(_marsh.Marshal(SByte.MinValue)), SByte.MinValue);
             Assert.AreEqual(_marsh.Unmarshal<sbyte>(_marsh.Marshal(SByte.MaxValue)), SByte.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<sbyte?>(_marsh.Marshal((sbyte?)1)), (sbyte?)1);
-            Assert.AreEqual(_marsh.Unmarshal<sbyte?>(_marsh.Marshal((sbyte?)null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<sbyte?>(_marsh.Marshal(null)), null);
         }
 
         /**
@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveSbyteArray()
         {
-            sbyte[] vals = new sbyte[] { SByte.MinValue, 0, 1, SByte.MaxValue };
+            sbyte[] vals = { SByte.MinValue, 0, 1, SByte.MaxValue };
             sbyte[] newVals = _marsh.Unmarshal<sbyte[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -99,12 +99,12 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveByte()
         {
-            Assert.AreEqual(_marsh.Unmarshal<byte>(_marsh.Marshal((byte)1)), (byte)1);
+            Assert.AreEqual(_marsh.Unmarshal<byte>(_marsh.Marshal((byte)1)), 1);
             Assert.AreEqual(_marsh.Unmarshal<byte>(_marsh.Marshal(Byte.MinValue)), Byte.MinValue);
             Assert.AreEqual(_marsh.Unmarshal<byte>(_marsh.Marshal(Byte.MaxValue)), Byte.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<byte?>(_marsh.Marshal((byte?)1)), (byte?)1);
-            Assert.AreEqual(_marsh.Unmarshal<byte?>(_marsh.Marshal((byte?)null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<byte?>(_marsh.Marshal(null)), null);
         }
 
         /**
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveByteArray()
         {
-            byte[] vals = new byte[] { Byte.MinValue, 0, 1, Byte.MaxValue };
+            byte[] vals = { Byte.MinValue, 0, 1, Byte.MaxValue };
             byte[] newVals = _marsh.Unmarshal<byte[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -125,12 +125,12 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveShort()
         {
-            Assert.AreEqual(_marsh.Unmarshal<short>(_marsh.Marshal((short)1)), (short)1);
+            Assert.AreEqual(_marsh.Unmarshal<short>(_marsh.Marshal((short)1)), 1);
             Assert.AreEqual(_marsh.Unmarshal<short>(_marsh.Marshal(Int16.MinValue)), Int16.MinValue);
             Assert.AreEqual(_marsh.Unmarshal<short>(_marsh.Marshal(Int16.MaxValue)), Int16.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<short?>(_marsh.Marshal((short?)1)), (short?)1);
-            Assert.AreEqual(_marsh.Unmarshal<short?>(_marsh.Marshal((short?)null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<short?>(_marsh.Marshal(null)), null);
         }
 
         /**
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveShortArray()
         {
-            short[] vals = new short[] { Int16.MinValue, 0, 1, Int16.MaxValue };
+            short[] vals = { Int16.MinValue, 0, 1, Int16.MaxValue };
             short[] newVals = _marsh.Unmarshal<short[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -151,12 +151,12 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveUshort()
         {
-            Assert.AreEqual(_marsh.Unmarshal<ushort>(_marsh.Marshal((ushort)1)), (ushort)1);
+            Assert.AreEqual(_marsh.Unmarshal<ushort>(_marsh.Marshal((ushort)1)), 1);
             Assert.AreEqual(_marsh.Unmarshal<ushort>(_marsh.Marshal(UInt16.MinValue)), UInt16.MinValue);
             Assert.AreEqual(_marsh.Unmarshal<ushort>(_marsh.Marshal(UInt16.MaxValue)), UInt16.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<ushort?>(_marsh.Marshal((ushort?)1)), (ushort?)1);
-            Assert.AreEqual(_marsh.Unmarshal<ushort?>(_marsh.Marshal((ushort?)null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<ushort?>(_marsh.Marshal(null)), null);
         }
 
         /**
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveUshortArray()
         {
-            ushort[] vals = new ushort[] { UInt16.MinValue, 0, 1, UInt16.MaxValue };
+            ushort[] vals = { UInt16.MinValue, 0, 1, UInt16.MaxValue };
             ushort[] newVals = _marsh.Unmarshal<ushort[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<char>(_marsh.Marshal(Char.MaxValue)), Char.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<char?>(_marsh.Marshal((char?)1)), (char?)1);
-            Assert.AreEqual(_marsh.Unmarshal<char?>(_marsh.Marshal((char?)null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<char?>(_marsh.Marshal(null)), null);
         }
 
         /**
@@ -191,7 +191,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveCharArray()
         {
-            char[] vals = new char[] { Char.MinValue, (char)0, (char)1, Char.MaxValue };
+            char[] vals = { Char.MinValue, (char)0, (char)1, Char.MaxValue };
             char[] newVals = _marsh.Unmarshal<char[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -203,12 +203,12 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveInt()
         {
-            Assert.AreEqual(_marsh.Unmarshal<int>(_marsh.Marshal((int)1)), (int)1);
+            Assert.AreEqual(_marsh.Unmarshal<int>(_marsh.Marshal(1)), 1);
             Assert.AreEqual(_marsh.Unmarshal<int>(_marsh.Marshal(Int32.MinValue)), Int32.MinValue);
             Assert.AreEqual(_marsh.Unmarshal<int>(_marsh.Marshal(Int32.MaxValue)), Int32.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<int?>(_marsh.Marshal((int?)1)), (int?)1);
-            Assert.AreEqual(_marsh.Unmarshal<int?>(_marsh.Marshal((int?)null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<int?>(_marsh.Marshal(null)), null);
         }
 
         /**
@@ -217,7 +217,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveIntArray()
         {
-            int[] vals = new int[] { Int32.MinValue, 0, 1, Int32.MaxValue };
+            int[] vals = { Int32.MinValue, 0, 1, Int32.MaxValue };
             int[] newVals = _marsh.Unmarshal<int[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -229,12 +229,12 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveUint()
         {
-            Assert.AreEqual(_marsh.Unmarshal<uint>(_marsh.Marshal((uint)1)), (uint)1);
+            Assert.AreEqual(_marsh.Unmarshal<uint>(_marsh.Marshal((uint)1)), 1);
             Assert.AreEqual(_marsh.Unmarshal<uint>(_marsh.Marshal(UInt32.MinValue)), UInt32.MinValue);
             Assert.AreEqual(_marsh.Unmarshal<uint>(_marsh.Marshal(UInt32.MaxValue)), UInt32.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<uint?>(_marsh.Marshal((uint?)1)), (int?)1);
-            Assert.AreEqual(_marsh.Unmarshal<uint?>(_marsh.Marshal((uint?)null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<uint?>(_marsh.Marshal(null)), null);
         }
 
         /**
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveUintArray()
         {
-            uint[] vals = new uint[] { UInt32.MinValue, 0, 1, UInt32.MaxValue };
+            uint[] vals = { UInt32.MinValue, 0, 1, UInt32.MaxValue };
             uint[] newVals = _marsh.Unmarshal<uint[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -255,12 +255,12 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveLong()
         {
-            Assert.AreEqual(_marsh.Unmarshal<long>(_marsh.Marshal((long)1)), (long)1);
+            Assert.AreEqual(_marsh.Unmarshal<long>(_marsh.Marshal((long)1)), 1);
             Assert.AreEqual(_marsh.Unmarshal<long>(_marsh.Marshal(Int64.MinValue)), Int64.MinValue);
             Assert.AreEqual(_marsh.Unmarshal<long>(_marsh.Marshal(Int64.MaxValue)), Int64.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<long?>(_marsh.Marshal((long?)1)), (long?)1);
-            Assert.AreEqual(_marsh.Unmarshal<long?>(_marsh.Marshal((long?)null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<long?>(_marsh.Marshal(null)), null);
         }
 
         /**
@@ -269,7 +269,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveLongArray()
         {
-            long[] vals = new long[] { Int64.MinValue, 0, 1, Int64.MaxValue };
+            long[] vals = { Int64.MinValue, 0, 1, Int64.MaxValue };
             long[] newVals = _marsh.Unmarshal<long[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -281,12 +281,12 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveUlong()
         {
-            Assert.AreEqual(_marsh.Unmarshal<ulong>(_marsh.Marshal((ulong)1)), (ulong)1);
+            Assert.AreEqual(_marsh.Unmarshal<ulong>(_marsh.Marshal((ulong)1)), 1);
             Assert.AreEqual(_marsh.Unmarshal<ulong>(_marsh.Marshal(UInt64.MinValue)), UInt64.MinValue);
             Assert.AreEqual(_marsh.Unmarshal<ulong>(_marsh.Marshal(UInt64.MaxValue)), UInt64.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<ulong?>(_marsh.Marshal((ulong?)1)), (ulong?)1);
-            Assert.AreEqual(_marsh.Unmarshal<ulong?>(_marsh.Marshal((ulong?)null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<ulong?>(_marsh.Marshal(null)), null);
         }
 
         /**
@@ -295,7 +295,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveUlongArray()
         {
-            ulong[] vals = new ulong[] { UInt64.MinValue, 0, 1, UInt64.MaxValue };
+            ulong[] vals = { UInt64.MinValue, 0, 1, UInt64.MaxValue };
             ulong[] newVals = _marsh.Unmarshal<ulong[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -312,7 +312,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<float>(_marsh.Marshal(float.MaxValue)), float.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<float?>(_marsh.Marshal((float?)1)), (float?)1);
-            Assert.AreEqual(_marsh.Unmarshal<float?>(_marsh.Marshal((float?)null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<float?>(_marsh.Marshal(null)), null);
         }
 
         /**
@@ -321,7 +321,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveFloatArray()
         {
-            float[] vals = new float[] { float.MinValue, 0, 1, float.MaxValue };
+            float[] vals = { float.MinValue, 0, 1, float.MaxValue };
             float[] newVals = _marsh.Unmarshal<float[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -338,7 +338,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<double>(_marsh.Marshal(double.MaxValue)), double.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<double?>(_marsh.Marshal((double?)1)), (double?)1);
-            Assert.AreEqual(_marsh.Unmarshal<double?>(_marsh.Marshal((double?)null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<double?>(_marsh.Marshal(null)), null);
         }
 
         /**
@@ -347,7 +347,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveDoubleArray()
         {
-            double[] vals = new double[] { double.MinValue, 0, 1, double.MaxValue };
+            double[] vals = { double.MinValue, 0, 1, double.MaxValue };
             double[] newVals = _marsh.Unmarshal<double[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -407,7 +407,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveDecimalArray()
         {
-            decimal[] vals = new decimal[] { decimal.One, decimal.Parse("11,12") };
+            decimal[] vals = { decimal.One, decimal.Parse("11,12") };
             decimal[] newVals = _marsh.Unmarshal<decimal[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -429,7 +429,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWriteStringArray()
         {
-            string[] vals = new string[] { "str1", null, "", "str2", null};
+            string[] vals = { "str1", null, "", "str2", null};
             string[] newVals = _marsh.Unmarshal<string[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -442,7 +442,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWriteGuid()
         {
             Guid guid = Guid.NewGuid();
-            Guid? nGuid = (Guid?)guid;
+            Guid? nGuid = guid;
 
             Assert.AreEqual(_marsh.Unmarshal<Guid>(_marsh.Marshal(guid)), guid);
             Assert.AreEqual(_marsh.Unmarshal<Guid?>(_marsh.Marshal(nGuid)), nGuid);
@@ -458,7 +458,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWriteGuidArray()
         {
-            Guid?[] vals = new Guid?[] { Guid.NewGuid(), null, Guid.Empty, Guid.NewGuid(), null };
+            Guid?[] vals = { Guid.NewGuid(), null, Guid.Empty, Guid.NewGuid(), null };
             Guid?[] newVals = _marsh.Unmarshal<Guid?[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -481,7 +481,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWriteEnumArray()
         {
-            TestEnum[] vals = new TestEnum[] { TestEnum.Val2, TestEnum.Val3 };
+            TestEnum[] vals = { TestEnum.Val2, TestEnum.Val3 };
             TestEnum[] newVals = _marsh.Unmarshal<TestEnum[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
@@ -707,7 +707,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             DecimalReflective obj1 = new DecimalReflective();
 
             obj1.Val = decimal.Zero;
-            obj1.ValArr = new decimal[] { decimal.One, decimal.MinusOne };
+            obj1.ValArr = new[] { decimal.One, decimal.MinusOne };
 
             IPortableObject portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj1), PortableMode.ForcePortable);
 
@@ -721,9 +721,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             DecimalMarshalAware obj2 = new DecimalMarshalAware();
 
             obj2.Val = decimal.Zero;
-            obj2.ValArr = new decimal[] { decimal.One, decimal.MinusOne };
+            obj2.ValArr = new[] { decimal.One, decimal.MinusOne };
             obj2.RawVal = decimal.MaxValue;
-            obj2.RawValArr = new decimal[] { decimal.MinusOne, decimal.One} ;
+            obj2.RawValArr = new[] { decimal.MinusOne, decimal.One} ;
 
             portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj2), PortableMode.ForcePortable);
 
@@ -867,7 +867,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             list.Add((byte)1);
             list.Add((short)2);
             list.Add('a');
-            list.Add((int)3);
+            list.Add(3);
             list.Add((long)4);
             list.Add((float)5);
             list.Add((double)6);
@@ -1099,7 +1099,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             PortableConfiguration cfg = new PortableConfiguration();
 
-            cfg.TypeConfigurations = new List<PortableTypeConfiguration>() { typeCfg };
+            cfg.TypeConfigurations = new List<PortableTypeConfiguration> { typeCfg };
 
             CheckKeepSerialized(cfg, false);
         }
@@ -1116,7 +1116,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             PortableConfiguration cfg = new PortableConfiguration();
             cfg.DefaultKeepDeserialized = false;
 
-            cfg.TypeConfigurations = new List<PortableTypeConfiguration>() { typeCfg };
+            cfg.TypeConfigurations = new List<PortableTypeConfiguration> { typeCfg };
 
             CheckKeepSerialized(cfg, true);
         }
@@ -1139,10 +1139,10 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             PortableMarshaller marsh = new PortableMarshaller(cfg);
 
-            Guid[] guidArr = new Guid[] { Guid.NewGuid() };
-            Guid?[] nGuidArr = new Guid?[] { Guid.NewGuid() };
-            DateTime[] dateArr = new DateTime[] { DateTime.Now.ToUniversalTime() };
-            DateTime?[] nDateArr = new DateTime?[] { DateTime.Now.ToUniversalTime() };
+            Guid[] guidArr = { Guid.NewGuid() };
+            Guid?[] nGuidArr = { Guid.NewGuid() };
+            DateTime[] dateArr = { DateTime.Now.ToUniversalTime() };
+            DateTime?[] nDateArr = { DateTime.Now.ToUniversalTime() };
 
             // Use special object.
             SpecialArray obj1 = new SpecialArray();
@@ -1197,7 +1197,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             if (cfg.TypeConfigurations == null)
             {
-                cfg.TypeConfigurations = new List<PortableTypeConfiguration>() 
+                cfg.TypeConfigurations = new List<PortableTypeConfiguration>
                 {
                     new PortableTypeConfiguration(typeof(PropertyType))
                 };
@@ -1277,8 +1277,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                     return _inObj == null ? that._inObj == null : _inObj.Equals(that._inObj);
                 }
-                else
-                    return false;
+                return false;
             }
 
             /** <inheritdoc /> */
@@ -1317,8 +1316,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                     return _pInt1 == that._pInt1 && _pInt2 == that._pInt2;
                 }
-                else
-                    return false;
+                return false;
             }
 
             /** <inheritdoc /> */
@@ -1364,8 +1362,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                     return CompareCollections(_col1, that._col1) && CompareCollections(_col2, that._col2);
                 }
-                else
-                    return false;
+                return false;
             }
 
             /** <inheritdoc /> */
@@ -1390,26 +1387,23 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             if (col == null)
                 return null;
-            else
+            StringBuilder sb = new StringBuilder("[");
+
+            bool first = true;
+
+            foreach (Object elem in col)
             {
-                StringBuilder sb = new StringBuilder("[");
+                if (first)
+                    first = false;
+                else
+                    sb.Append(", ");
 
-                bool first = true;
-
-                foreach (Object elem in col)
-                {
-                    if (first)
-                        first = false;
-                    else
-                        sb.Append(", ");
-
-                    sb.Append(elem);
-                }
-
-                sb.Append("]");
-
-                return sb.ToString();
+                sb.Append(elem);
             }
+
+            sb.Append("]");
+
+            return sb.ToString();
         }
 
         public class TestList : ArrayList
@@ -1421,84 +1415,66 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             if (col1 == null && col2 == null)
                 return true;
-            else
+            if (col1 == null || col2 == null)
+                return false;
+            if (col1.Count != col2.Count)
+                return false;
+            IEnumerator enum1 = col1.GetEnumerator();
+
+            while (enum1.MoveNext())
             {
-                if (col1 == null || col2 == null)
-                    return false;
-                else
+                object elem = enum1.Current;
+
+                bool contains = false;
+
+                foreach (object thatElem in col2)
                 {
-                    if (col1.Count != col2.Count)
-                        return false;
-                    else
+                    if (elem == null && thatElem == null || elem != null && elem.Equals(thatElem))
                     {
-                        IEnumerator enum1 = col1.GetEnumerator();
+                        contains = true;
 
-                        while (enum1.MoveNext())
-                        {
-                            object elem = enum1.Current;
-
-                            bool contains = false;
-
-                            foreach (object thatElem in col2)
-                            {
-                                if (elem == null && thatElem == null || elem != null && elem.Equals(thatElem))
-                                {
-                                    contains = true;
-
-                                    break;
-                                }
-                            }
-
-                            if (!contains)
-                                return false;
-                        }
-
-                        return true;
+                        break;
                     }
                 }
+
+                if (!contains)
+                    return false;
             }
+
+            return true;
         }
 
         private static bool CompareCollections<T>(ICollection<T> col1, ICollection<T> col2)
         {
             if (col1 == null && col2 == null)
                 return true;
-            else
+            if (col1 == null || col2 == null)
+                return false;
+            if (col1.Count != col2.Count)
+                return false;
+            IEnumerator enum1 = col1.GetEnumerator();
+
+            while (enum1.MoveNext())
             {
-                if (col1 == null || col2 == null)
-                    return false;
-                else
+                object elem = enum1.Current;
+
+                bool contains = false;
+
+                foreach (object thatElem in col2)
                 {
-                    if (col1.Count != col2.Count)
-                        return false;
-                    else
+                    if (elem == null && thatElem == null || elem != null && elem.Equals(thatElem))
                     {
-                        IEnumerator enum1 = col1.GetEnumerator();
+                        contains = true;
 
-                        while (enum1.MoveNext())
-                        {
-                            object elem = enum1.Current;
-
-                            bool contains = false;
-
-                            foreach (object thatElem in col2)
-                            {
-                                if (elem == null && thatElem == null || elem != null && elem.Equals(thatElem))
-                                {
-                                    contains = true;
-
-                                    break;
-                                }
-                            }
-
-                            if (!contains)
-                                return false;
-                        }
-
-                        return true;
+                        break;
                     }
                 }
+
+                if (!contains)
+                    return false;
             }
+
+            return true;
         }
 
         public class PrimitiveArrayFieldType
@@ -1627,8 +1603,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                         _pString == that._pString &&
                         _pGuid == that._pGuid;
                 }
-                else
-                    return false;
+                return false;
             }
 
             /** <inheritdoc /> */
@@ -1817,8 +1792,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                         _pGuid.Equals(that._pGuid) &&
                         (_pNguid == null && that._pNguid == null || _pNguid != null && _pNguid.Equals(that._pNguid));
                 }
-                else
-                    return false;
+                return false;
             }
 
             /** <inheritdoc /> */
@@ -2305,8 +2279,8 @@ namespace Apache.Ignite.Core.Tests.Portable
                 LocNullRaw = LocNull;
                 UtcNullRaw = UtcNull;
 
-                LocArrRaw = new DateTime?[] { LocArr[0] };
-                UtcArrRaw = new DateTime?[] { UtcArr[0] };
+                LocArrRaw = new[] { LocArr[0] };
+                UtcArrRaw = new[] { UtcArr[0] };
             }
 
             /** <inheritDoc /> */

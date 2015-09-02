@@ -908,8 +908,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 return res;
             }
-            else
-                return null;
+            return null;
         }
 
         /// <summary>

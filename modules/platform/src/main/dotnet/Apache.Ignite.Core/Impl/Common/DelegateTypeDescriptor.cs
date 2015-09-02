@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Gets the <see cref="ICacheEntryFilter{K, V}" /> invocator.
+        /// Gets the <see cref="ICacheEntryFilter{TK,TV}" /> invocator.
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Precompiled invocator delegate.</returns>
@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Gets the <see cref="IStreamReceiver{K,V}"/> invocator.
+        /// Gets the <see cref="IStreamReceiver{TK,TV}"/> invocator.
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Precompiled invocator delegate.</returns>

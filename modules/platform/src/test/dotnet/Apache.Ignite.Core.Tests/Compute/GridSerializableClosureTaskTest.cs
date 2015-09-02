@@ -103,8 +103,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 if (_err)
                     throw new SerializableException(ErrMsg);
-                else
-                    return new SerializableResult(1);
+                return new SerializableResult(1);
             }
         }
 
@@ -141,8 +140,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 if (_err)
                     throw new SerializableException(ErrMsg);
-                else
-                    return new SerializableResult(1);
+                return new SerializableResult(1);
             }
         }
 

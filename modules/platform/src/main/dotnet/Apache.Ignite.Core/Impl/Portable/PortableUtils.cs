@@ -1300,8 +1300,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 return res;
             }
-            else
-                return null;
+            return null;
         }
 
         /**
@@ -1446,8 +1445,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 return res;
             }
-            else
-                return null;
+            return null;
         }
 
         /**
@@ -1546,22 +1544,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             if (val == null)
                 return 0;
-            else
+            int hash = 0;
+
+            for (int i = 0; i < val.Length; i++)
             {
-                int hash = 0;
+                char c = val[i];
 
-                for (int i = 0; i < val.Length; i++)
-                {
-                    char c = val[i];
+                if ('A' <= c && c <= 'Z')
+                    c = (char)(c | 0x20);
 
-                    if ('A' <= c && c <= 'Z')
-                        c = (char)(c | 0x20);
-
-                    hash = 31 * hash + c;
-                }
-
-                return hash;
+                hash = 31 * hash + c;
             }
+
+            return hash;
         }
 
         public static string CleanFieldName(string fieldName)
@@ -1828,8 +1823,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 return true;
             }
-            else
-                return false;
+            return false;
         }
 
         /// <summary>

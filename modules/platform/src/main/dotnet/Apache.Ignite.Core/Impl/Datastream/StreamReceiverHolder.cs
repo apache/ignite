@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Portable wrapper for <see cref="IStreamReceiver{K,V}"/>.
+    /// Portable wrapper for <see cref="IStreamReceiver{TK,TV}"/>.
     /// </summary>
     internal class StreamReceiverHolder : IPortableWriteAware
     {

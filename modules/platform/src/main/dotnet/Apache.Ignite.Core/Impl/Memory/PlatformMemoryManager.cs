@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
-    
+
     /// <summary>
     /// Memory manager implementation.
     /// </summary>

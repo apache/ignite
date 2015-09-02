@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Services;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
-    using U = Apache.Ignite.Core.Impl.GridUtils;
+    using U = GridUtils;
 
     /// <summary>
     /// Grid projection implementation.
@@ -345,18 +345,15 @@ namespace Apache.Ignite.Core.Impl.Cluster
                     return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
                 });
             }
-            else
+            return DoOutInOp(OpMetricsFiltered, writer =>
             {
-                return DoOutInOp(OpMetricsFiltered, writer =>
-                {
-                    WriteEnumerable(writer, Nodes().Select(node => node.Id));
-                }, stream =>
-                {
-                    IPortableRawReader reader = Marsh.StartUnmarshal(stream, false);
+                WriteEnumerable(writer, Nodes().Select(node => node.Id));
+            }, stream =>
+            {
+                IPortableRawReader reader = Marsh.StartUnmarshal(stream, false);
 
-                    return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
-                });
-            }
+                return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
+            });
         }
 
         /** <inheritDoc /> */

@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Unmanaged;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
-    using U = Apache.Ignite.Core.Impl.GridUtils;
+    using U = GridUtils;
 
     /// <summary>
     /// Cache affinity implementation.

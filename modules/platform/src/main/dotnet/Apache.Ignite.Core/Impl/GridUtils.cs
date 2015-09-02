@@ -111,8 +111,7 @@ namespace Apache.Ignite.Core.Impl
 
                 return res;
             }
-            else
-                return list;
+            return list;
         }
 
         /// <summary>

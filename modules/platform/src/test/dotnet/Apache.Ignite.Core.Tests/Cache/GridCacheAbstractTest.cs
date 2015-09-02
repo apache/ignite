@@ -2774,7 +2774,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             ICacheAffinity aff = Affinity();
 
-            IList<int> keys = new List<int>() {1, 2, 3};
+            IList<int> keys = new List<int> {1, 2, 3};
 
             IDictionary<IClusterNode, IList<int>> map = aff.MapKeysToNodes(keys);
 
@@ -2801,7 +2801,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             if (LocalCache())
             {
-                IList<int> parts = new List<int>() { 0 };
+                IList<int> parts = new List<int> { 0 };
 
                 IDictionary<int, IClusterNode> map = aff.MapPartitionsToNodes(parts);
 
@@ -2811,7 +2811,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
             else
             {
-                IList<int> parts = new List<int>() { 1, 2, 3 };
+                IList<int> parts = new List<int> { 1, 2, 3 };
 
                 IDictionary<int, IClusterNode> map = aff.MapPartitionsToNodes(parts);
 

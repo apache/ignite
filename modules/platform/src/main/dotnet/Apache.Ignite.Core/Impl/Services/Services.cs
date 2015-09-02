@@ -268,8 +268,7 @@ namespace Apache.Ignite.Core.Impl.Services
 
                         return res;
                     }
-                    else
-                        return null;
+                    return null;
                 });
         }
 

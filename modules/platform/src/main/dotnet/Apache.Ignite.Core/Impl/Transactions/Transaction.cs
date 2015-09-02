@@ -3,7 +3,7 @@
     using System;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Transactions;
-    using U = Apache.Ignite.Core.Impl.GridUtils;
+    using U = GridUtils;
 
     /// <summary>
     /// Grid transaction facade.

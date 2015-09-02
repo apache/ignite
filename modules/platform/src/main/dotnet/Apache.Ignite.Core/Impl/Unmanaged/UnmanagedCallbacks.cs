@@ -244,7 +244,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 
                 onStart = CreateFunctionPointer((OnStartCallbackDelegate)OnStart),
                 onStop = CreateFunctionPointer((OnStopCallbackDelegate)OnStop),
-                error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
+                error = CreateFunctionPointer((ErrorCallbackDelegate)Error)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());

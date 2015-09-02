@@ -238,8 +238,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 throw new ComputeJobFailoverException("Test error.");
             }
-            else
-                Assert.AreNotEqual(_gridName, grid.Name);
+            Assert.AreNotEqual(_gridName, grid.Name);
 
             return _cnt;
         }

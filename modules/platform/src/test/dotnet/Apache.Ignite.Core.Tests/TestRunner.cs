@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Tests.Memory;
+    using NUnit.ConsoleRunner;
 
     public static class TestRunner
     {
@@ -41,7 +42,7 @@ namespace Apache.Ignite.Core.Tests
         {
             string[] args = { "/run:" + testClass.FullName + "." + method, Assembly.GetAssembly(testClass).Location };
 
-            int returnCode = NUnit.ConsoleRunner.Runner.Main(args);
+            int returnCode = Runner.Main(args);
 
             if (returnCode != 0)
                 Console.Beep();
@@ -51,7 +52,7 @@ namespace Apache.Ignite.Core.Tests
         {
             string[] args = { "/run:" + testClass.FullName, Assembly.GetAssembly(testClass).Location };
 
-            int returnCode = NUnit.ConsoleRunner.Runner.Main(args);
+            int returnCode = Runner.Main(args);
 
             if (returnCode != 0)
                 Console.Beep();
@@ -61,7 +62,7 @@ namespace Apache.Ignite.Core.Tests
         {
             string[] args = { Assembly.GetAssembly(typeof(InteropMemoryTest)).Location };
 
-            int returnCode = NUnit.ConsoleRunner.Runner.Main(args);
+            int returnCode = Runner.Main(args);
 
             if (returnCode != 0)
                 Console.Beep();

@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntryFilterHolder" /> class.
         /// </summary>
-        /// <param name="pred">The <see cref="ICacheEntryFilter{K,V}" /> to wrap.</param>
+        /// <param name="pred">The <see cref="ICacheEntryFilter{TK,TV}" /> to wrap.</param>
         /// <param name="invoker">The invoker func that takes key and value and invokes wrapped ICacheEntryFilter.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
