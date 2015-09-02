@@ -25,18 +25,20 @@ namespace Apache.Ignite.Core.Impl.Portable
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
-    /**
-     * <summary>Write delegate.</summary>
-     * <param name="ctx">Write context.</param>
-     * <param name="obj">Object to write.</param>
-     */
-    public delegate void PortableSystemWriteDelegate(PortableWriterImpl ctx, object obj);
+    /// <summary>
+    /// Write delegate.
+    /// </summary>
+    /// <param name="writer">Write context.</param>
+    /// <param name="obj">Object to write.</param>
+    internal delegate void PortableSystemWriteDelegate(PortableWriterImpl writer, object obj);
 
     /// <summary>
     /// Typed write delegate.
     /// </summary>
     /// <param name="stream">Stream.</param>
     /// <param name="obj">Object to write.</param>
+    // ReSharper disable once TypeParameterCanBeVariant
+    // Generic variance in a delegate causes performance hit
     internal delegate void PortableSystemTypedWriteDelegate<T>(IPortableStream stream, T obj);
 
     /**

@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     /// <summary>
     /// Transaction metrics.
     /// </summary>
-    public class TransactionMetricsImpl : ITransactionMetrics
+    internal class TransactionMetricsImpl : ITransactionMetrics
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="TransactionMetricsImpl"/> class.

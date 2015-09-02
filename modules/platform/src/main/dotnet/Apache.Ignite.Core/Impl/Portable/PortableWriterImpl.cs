@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Portable writer implementation.
     /// </summary>
-    public class PortableWriterImpl : IPortableWriter, IPortableRawWriter
+    internal class PortableWriterImpl : IPortableWriter, IPortableRawWriter
     {
         /** Marshaller. */
         private readonly PortableMarshaller _marsh;
@@ -694,8 +694,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named generic dictionary.
         /// </summary>
-        /// <typeparam name="K"></typeparam>
-        /// <typeparam name="V"></typeparam>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Dictionary.</param>
         public void WriteGenericDictionary<TK, TV>(string fieldName, IDictionary<TK, TV> val)
@@ -706,8 +704,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write generic dictionary.
         /// </summary>
-        /// <typeparam name="K"></typeparam>
-        /// <typeparam name="V"></typeparam>
         /// <param name="val">Dictionary.</param>
         public void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val)
         {
@@ -995,17 +991,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>True if handler was called.</returns>
         private bool InvokeHandler<T>(object typedHandler, PortableSystemWriteDelegate untypedHandler, T obj)
         {
-            if (typedHandler != null)
+            var typedHandler0 = typedHandler as PortableSystemTypedWriteDelegate<T>;
+
+            if (typedHandler0 != null)
             {
-                PortableSystemTypedWriteDelegate<T> typedHandler0 =
-                    typedHandler as PortableSystemTypedWriteDelegate<T>;
+                typedHandler0.Invoke(_stream, obj);
 
-                if (typedHandler0 != null)
-                {
-                    typedHandler0.Invoke(_stream, obj);
-
-                    return true;
-                }
+                return true;
             }
 
             if (untypedHandler != null)
@@ -1022,12 +1014,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write simple field with known length.
         /// </summary>
         /// <param name="fieldId">Field ID.</param>
-        /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
         /// <param name="len">Length.</param>
-        internal void WriteSimpleField<T>(int fieldId, byte typeId, T val,
-            PortableSystemTypedWriteDelegate<T> handler, int len)
+        private void WriteSimpleField<T>(int fieldId, T val, PortableSystemTypedWriteDelegate<T> handler, int len)
         {
             CheckNotRaw();
 
@@ -1041,11 +1031,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write simple nullable field with unknown length.
         /// </summary>
         /// <param name="fieldId">Field ID.</param>
-        /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
-        internal void WriteSimpleNullableField<T>(int fieldId, byte typeId, T val,
-            PortableSystemTypedWriteDelegate<T> handler)
+        private void WriteSimpleNullableField<T>(int fieldId, T val, PortableSystemTypedWriteDelegate<T> handler)
         {
             CheckNotRaw();
 
@@ -1073,12 +1061,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write simple nullable field with known length.
         /// </summary>
         /// <param name="fieldId">Field ID.</param>
-        /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
         /// <param name="len">Length.</param>
-        internal void WriteSimpleNullableField<T>(int fieldId, byte typeId, T val,
-            PortableSystemTypedWriteDelegate<T> handler, int len)
+        private void WriteSimpleNullableField<T>(int fieldId, T val, PortableSystemTypedWriteDelegate<T> handler, int len)
         {
             CheckNotRaw();
 
@@ -1102,10 +1088,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write field.
         /// </summary>
         /// <param name="fieldId">Field ID.</param>
-        /// <param name="typeId">Type ID.</param>
         /// <param name="val">Value.</param>
         /// <param name="handler">Handler.</param>
-        internal void WriteField(int fieldId, byte typeId, object val, PortableSystemWriteDelegate handler)
+        private void WriteField(int fieldId, object val, PortableSystemWriteDelegate handler)
         {
             CheckNotRaw();
 
@@ -1181,7 +1166,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
 
-            WriteSimpleField(fieldId, typeId, val, handler, len);
+            WriteSimpleField(fieldId, val, handler, len);
 
             if (_curMetaHnd != null)
                 _curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
@@ -1199,7 +1184,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
 
-            WriteSimpleNullableField(fieldId, typeId, val, handler);
+            WriteSimpleNullableField(fieldId, val, handler);
 
             if (_curMetaHnd != null)
                 _curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
@@ -1218,7 +1203,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
 
-            WriteSimpleNullableField(fieldId, typeId, val, handler, len);
+            WriteSimpleNullableField(fieldId, val, handler, len);
 
             if (_curMetaHnd != null)
                 _curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);
@@ -1249,7 +1234,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
 
-            WriteField(fieldId, typeId, val, handler);
+            WriteField(fieldId, val, handler);
 
             if (_curMetaHnd != null)
                 _curMetaHnd.OnFieldWrite(fieldId, fieldName, typeId);

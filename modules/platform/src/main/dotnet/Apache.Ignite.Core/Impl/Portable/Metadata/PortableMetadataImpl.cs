@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
     /// <summary>
     /// Portable metadata implementation.
     /// </summary>
-    public class PortableMetadataImpl : IPortableMetadata
+    internal class PortableMetadataImpl : IPortableMetadata
     {
         /** Empty metadata. */
         [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
