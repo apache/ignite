@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.datastreamer;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Collection;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -33,12 +28,17 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.stream.StreamReceiver;
+
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * Interop receiver.
  */
-public class PlatformStreamReceiver<K, V> extends PlatformAbstractPredicate implements StreamReceiver<K, V> {
+public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implements PlatformStreamReceiver {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,7 +48,7 @@ public class PlatformStreamReceiver<K, V> extends PlatformAbstractPredicate impl
     /**
      * Constructor.
      */
-    public PlatformStreamReceiver()
+    public PlatformStreamReceiverImpl()
     {
         super();
     }
@@ -60,7 +60,7 @@ public class PlatformStreamReceiver<K, V> extends PlatformAbstractPredicate impl
      * @param ptr Pointer to receiver in the native platform.
      * @param ctx Kernal context.
      */
-    public PlatformStreamReceiver(Object pred, long ptr, boolean keepPortable, PlatformContext ctx) {
+    public PlatformStreamReceiverImpl(Object pred, long ptr, boolean keepPortable, PlatformContext ctx) {
         super(pred, ptr, ctx);
 
         assert pred != null;
@@ -69,7 +69,7 @@ public class PlatformStreamReceiver<K, V> extends PlatformAbstractPredicate impl
     }
 
     /** {@inheritDoc} */
-    @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> collection)
+    @Override public void receive(IgniteCache<Object, Object> cache, Collection<Map.Entry<Object, Object>> collection)
         throws IgniteException {
         assert ctx != null;
 
@@ -82,15 +82,15 @@ public class PlatformStreamReceiver<K, V> extends PlatformAbstractPredicate impl
 
             writer.writeInt(collection.size());
 
-            for (Map.Entry<K, V> e : collection) {
+            for (Map.Entry<Object, Object> e : collection) {
                 writer.writeObject(e.getKey());
                 writer.writeObject(e.getValue());
             }
 
             out.synchronize();
 
-            ctx.gateway().dataStreamerStreamReceiverInvoke(ptr,
-                new PlatformCache(ctx, cache, keepPortable), mem.pointer(), keepPortable);
+            ctx.gateway().dataStreamerStreamReceiverInvoke(ptr, new PlatformCache(ctx, cache, keepPortable),
+                mem.pointer(), keepPortable);
         }
     }
 
@@ -116,5 +116,4 @@ public class PlatformStreamReceiver<K, V> extends PlatformAbstractPredicate impl
 
         keepPortable = in.readBoolean();
     }
-
 }

@@ -179,7 +179,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
             }
         });
 
-        PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ);
+        PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, this);
     }
 
     /**

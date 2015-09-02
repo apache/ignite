@@ -15,25 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+package org.apache.ignite.internal.processors.platform.cache.query;
 
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 
 /**
- * Denotes an exception which has some data to be written in a special manner.
+ * Platform continuous query filter.
  */
-public interface PlatformExtendedException {
+public interface PlatformContinuousQueryFilter extends CacheEntryEventSerializableFilter {
     /**
-     * Gets platform context.
-     *
-     * @return Platform context.
+     * Callback for query unregister event.
      */
-    public PlatformContext context();
-
-    /**
-     * Write data.
-     *
-     * @param writer Writer.
-     */
-    public void writeData(PortableRawWriterEx writer);
+    public void onQueryUnregister();
 }

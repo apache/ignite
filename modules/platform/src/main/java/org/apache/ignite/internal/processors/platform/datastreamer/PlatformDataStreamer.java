@@ -110,7 +110,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                             vals.add(new GridMapEntry(reader.readObjectDetached(), reader.readObjectDetached()));
 
                         PlatformFutureUtils.listen(platformCtx, ldr.addData(vals), futPtr,
-                            PlatformFutureUtils.TYP_OBJ);
+                            PlatformFutureUtils.TYP_OBJ, this);
                     }
 
                     if (plc == PLC_CLOSE) {

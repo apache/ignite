@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query;
+package org.apache.ignite.internal.processors.platform.datastreamer;
 
-import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.stream.StreamReceiver;
 
 /**
- * Special version of bi-predicate for cache scan queries with close callback.
+ * Platform data streamer filter marker interface.
  */
-public interface CacheQueryCloseableScanBiPredicate<K, V> extends IgniteBiPredicate<K, V> {
-    /**
-     * Callback invoked when predicate is not longer needed.
-     */
-    public void onClose();
+public interface PlatformStreamReceiver extends StreamReceiver<Object, Object> {
+    // No-op.
 }

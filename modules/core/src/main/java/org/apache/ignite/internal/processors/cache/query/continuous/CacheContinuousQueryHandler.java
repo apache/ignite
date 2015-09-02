@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
+import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -278,8 +279,8 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             }
 
             @Override public void onUnregister() {
-                if (rmtFilter instanceof CacheContinuousQueryFilterEx)
-                    ((CacheContinuousQueryFilterEx)rmtFilter).onQueryUnregister();
+                if (rmtFilter instanceof PlatformContinuousQueryFilter)
+                    ((PlatformContinuousQueryFilter)rmtFilter).onQueryUnregister();
             }
 
             @Override public boolean oldValueRequired() {

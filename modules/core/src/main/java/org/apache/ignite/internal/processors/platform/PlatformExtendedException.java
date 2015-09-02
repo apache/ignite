@@ -17,12 +17,41 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import org.apache.ignite.internal.portable.PortableRawWriterEx;
+
 /**
- * Special version of listener for events with close callbacks.
+ * Denotes an exception which has some data to be written in a special manner.
  */
-public interface PlatformLocalEventListener {
+public abstract class PlatformExtendedException extends PlatformException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Platform context. */
+    protected final PlatformContext ctx;
+
     /**
-     * Closes the listener.
+     * Constructor.
+     *
+     * @param cause Root cause.
+     * @param ctx Platform context.
      */
-    public void close();
+    protected PlatformExtendedException(Throwable cause, PlatformContext ctx) {
+        super(cause);
+
+        this.ctx = ctx;
+    }
+
+    /**
+     * @return Platform context.
+     */
+    public PlatformContext context() {
+        return ctx;
+    }
+
+    /**
+     * Write data.
+     *
+     * @param writer Writer.
+     */
+    public abstract void writeData(PortableRawWriterEx writer);
 }
