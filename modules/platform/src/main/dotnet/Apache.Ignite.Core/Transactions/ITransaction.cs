@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Transactions
     ///     </item>
     /// </list>
     /// <para />
-    /// In addition to standard <c>CacheAtomicityMode.TRANSACTIONAL</c> behavior, GridGain also supports
+    /// In addition to standard <c>CacheAtomicityMode.TRANSACTIONAL</c> behavior, Ignite also supports
     /// a lighter <c>CacheAtomicityMode.ATOMIC</c> mode as well. In this mode distributed transactions
     /// and distributed locking are not supported. Disabling transactions and locking allows to achieve much higher
     /// performance and throughput ratios. It is recommended that <c>CacheAtomicityMode.TRANSACTIONAL</c> mode

@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Impl
                 {
                     if (!_jvmCfg.Equals(jvmCfg))
                     {
-                        Console.WriteLine("Attempting to start GridGain node with different Java " +
+                        Console.WriteLine("Attempting to start Ignite node with different Java " +
                             "configuration; current Java configuration will be ignored (consider " +
                             "starting node in separate process) [oldConfig=" + _jvmCfg +
                             ", newConfig=" + jvmCfg + ']');
@@ -237,7 +237,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Calculate GridGain home.
+        /// Calculate Ignite home.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <returns></returns>
@@ -261,7 +261,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Automatically resolve Ignite home directory.
         /// </summary>
-        /// <returns>GridGain home directory.</returns>
+        /// <returns>Ignite home directory.</returns>
         private static string ResolveIgniteHome()
         {
             var probeDirs = new[]
@@ -287,10 +287,10 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Determines whether specified dir looks like a GridGain home.
+        /// Determines whether specified dir looks like a Ignite home.
         /// </summary>
         /// <param name="dir">Directory.</param>
-        /// <returns>Value indicating whether specified dir looks like a GridGain home.</returns>
+        /// <returns>Value indicating whether specified dir looks like a Ignite home.</returns>
         private static bool IsIgniteHome(DirectoryInfo dir)
         {
             return dir.Exists && dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2;
