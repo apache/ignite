@@ -559,7 +559,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(expectedMessages, resultFunc(ReceivedMessages));
 
             // check that all messages came from local node.
-            var localNodeId = cluster.Grid.Cluster.LocalNode.Id;
+            var localNodeId = cluster.Ignite.Cluster.LocalNode.Id;
             Assert.AreEqual(localNodeId, LastNodeIds.Distinct().Single());
             
             AssertFailures();

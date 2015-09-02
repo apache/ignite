@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritDoc /> */
-        public IIgnite Grid
+        public IIgnite Ignite
         {
             get { return _grid; }
         }

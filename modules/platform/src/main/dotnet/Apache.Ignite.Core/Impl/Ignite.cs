@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IIgnite Grid
+        IIgnite IClusterGroup.Ignite
         {
             get { return this; }
         }

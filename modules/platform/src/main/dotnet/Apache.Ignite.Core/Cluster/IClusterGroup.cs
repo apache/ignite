@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Cluster
         /// <summary>
         /// Instance of grid.
         /// </summary>
-        IIgnite Grid
+        IIgnite Ignite
         {
             get;
         }

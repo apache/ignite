@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             AC.NotNull(task, "task");
 
-            var holder = new ComputeTaskHolder<TA, T, TR>((Ignite) _prj.Grid, this, task, taskArg);
+            var holder = new ComputeTaskHolder<TA, T, TR>((Ignite) _prj.Ignite, this, task, taskArg);
 
             long ptr = Marsh.Grid.HandleRegistry.Allocate(holder);
 
@@ -505,7 +505,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             Debug.Assert(job != null || jobs != null);
 
-            var holder = new ComputeTaskHolder<TA, T, TR>((Ignite) _prj.Grid, this, task, default(TA));
+            var holder = new ComputeTaskHolder<TA, T, TR>((Ignite) _prj.Ignite, this, task, default(TA));
 
             var taskHandle = Marsh.Grid.HandleRegistry.Allocate(holder);
 
@@ -573,7 +573,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <returns>Handle to the job holder</returns>
         private long WriteJob(IComputeJob job, PortableWriterImpl writer)
         {
-            var jobHolder = new ComputeJobHolder(_prj.Grid as Ignite, job);
+            var jobHolder = new ComputeJobHolder(_prj.Ignite as Ignite, job);
 
             var jobHandle = Marsh.Grid.HandleRegistry.Allocate(jobHolder);
 

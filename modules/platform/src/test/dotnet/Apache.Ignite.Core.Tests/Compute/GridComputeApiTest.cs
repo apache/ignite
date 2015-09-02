@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.NotNull(prj);
 
-            Assert.IsTrue(prj == prj.Grid);
+            Assert.IsTrue(prj == prj.Ignite);
         }
 
         /// <summary>

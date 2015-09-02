@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             ClusterGroupImpl prj = (ClusterGroupImpl)_compute.ClusterGroup;
 
-            var grid = (Ignite) prj.Grid;
+            var grid = (Ignite) prj.Ignite;
 
             // 1. Unmarshal topology info if topology changed.
             var reader = prj.Marshaller.StartUnmarshal(inStream);
@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                         foreach (KeyValuePair<IComputeJob<T>, IClusterNode> mapEntry in map)
                         {
-                            var job = new ComputeJobHolder(_compute.ClusterGroup.Grid as Ignite, mapEntry.Key.ToNonGeneric());
+                            var job = new ComputeJobHolder(_compute.ClusterGroup.Ignite as Ignite, mapEntry.Key.ToNonGeneric());
 
                             IClusterNode node = mapEntry.Value;
 

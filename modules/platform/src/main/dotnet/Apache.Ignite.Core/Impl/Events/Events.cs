@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
             ClusterGroup = clusterGroup;
 
-            Grid = (Ignite) clusterGroup.Grid;
+            Grid = (Ignite) clusterGroup.Ignite;
         }
 
         /** <inheritDoc /> */

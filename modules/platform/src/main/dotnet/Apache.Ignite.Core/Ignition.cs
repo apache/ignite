@@ -479,12 +479,12 @@ namespace Apache.Ignite.Core
         {
             lock (SyncRoot)
             {
-                GridKey key = new GridKey(name);
+                Ignite result;
 
-                if (!Grids.ContainsKey(key))
+                if (!Grids.TryGetValue(new GridKey(name), out result))
                     throw new IgniteException("Grid instance was not properly started or was already stopped: " + name);
 
-                return Grids[key].Grid;
+                return result;
             }
         }
 

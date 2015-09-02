@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
             ClusterGroup = prj;
 
-            _grid = (Ignite) prj.Grid;
+            _grid = (Ignite) prj.Ignite;
         }
 
         /** <inheritdoc /> */
