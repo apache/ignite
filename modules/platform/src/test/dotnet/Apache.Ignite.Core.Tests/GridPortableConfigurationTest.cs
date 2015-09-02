@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests
         {
             Ignition.StopAll(true);
 
-            var grid = Ignition.Start(new GridConfiguration
+            var grid = Ignition.Start(new IgniteConfiguration
             {
                 SpringConfigUrl = "config\\cache-portables.xml",
                 JvmClasspath = GridTestUtils.CreateTestClasspath(),

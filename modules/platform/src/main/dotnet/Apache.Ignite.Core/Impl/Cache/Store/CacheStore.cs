@@ -108,9 +108,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                 var convertPortable = reader.ReadBoolean();
                 var propertyMap = reader.ReadGenericDictionary<string, object>();
 
-                var store = (ICacheStore) GridUtils.CreateInstance(assemblyName, className);
+                var store = (ICacheStore) IgniteUtils.CreateInstance(assemblyName, className);
 
-                GridUtils.SetProperties(store, propertyMap);
+                IgniteUtils.SetProperties(store, propertyMap);
 
                 return new CacheStore(store, convertPortable, registry);
             }

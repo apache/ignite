@@ -293,7 +293,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public virtual void StartGrids() {
             GridTestUtils.KillProcesses();
 
-            GridConfigurationEx cfg = new GridConfigurationEx();
+            IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
             PortableConfiguration portCfg = new PortableConfiguration();
 

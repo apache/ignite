@@ -478,9 +478,9 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the grid configuration.
         /// </summary>
-        private static GridConfiguration Configuration(string springConfigUrl)
+        private static IgniteConfiguration Configuration(string springConfigUrl)
         {
-            return new GridConfiguration
+            return new IgniteConfiguration
             {
                 SpringConfigUrl = springConfigUrl,
                 JvmClasspath = GridTestUtils.CreateTestClasspath(),

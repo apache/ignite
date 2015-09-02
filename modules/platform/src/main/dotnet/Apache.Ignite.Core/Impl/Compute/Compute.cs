@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
-    using U = GridUtils;
 
     /// <summary>
     /// Synchronous Compute facade.
@@ -59,13 +58,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public IFuture GetFuture()
         {
-            throw U.GetAsyncModeDisabledException();
+            throw IgniteUtils.GetAsyncModeDisabledException();
         }
 
         /** <inheritDoc /> */
         public IFuture<TResult> GetFuture<TResult>()
         {
-            throw U.GetAsyncModeDisabledException();
+            throw IgniteUtils.GetAsyncModeDisabledException();
         }
 
         /** <inheritDoc /> */

@@ -129,7 +129,7 @@
     <Compile Include="Events\LicenseEvent.cs" />
     <Compile Include="Events\SwapSpaceEvent.cs" />
     <Compile Include="Events\TaskEvent.cs" />
-    <Compile Include="GridConfiguration.cs" />
+    <Compile Include="IgniteConfiguration.cs" />
     <Compile Include="Ignition.cs" />
     <Compile Include="Common\AsyncSupportedAttribute.cs" />
     <Compile Include="IIgnite.cs" />
@@ -210,12 +210,12 @@
     <Compile Include="Impl\Events\EventsAsync.cs" />
     <Compile Include="Impl\Events\RemoteListenEventFilter.cs" />
     <Compile Include="Impl\ExceptionUtils.cs" />
-    <Compile Include="Impl\GridConfigurationEx.cs" />
+    <Compile Include="Impl\IgniteConfigurationEx.cs" />
     <Compile Include="Impl\Ignite.cs" />
     <Compile Include="Impl\GridManager.cs" />
-    <Compile Include="Impl\GridProxy.cs" />
+    <Compile Include="Impl\IgniteProxy.cs" />
     <Compile Include="Impl\GridTarget.cs" />
-    <Compile Include="Impl\GridUtils.cs" />
+    <Compile Include="Impl\IgniteUtils.cs" />
     <Compile Include="Impl\Handle\Handle.cs" />
     <Compile Include="Impl\Handle\HandleRegistry.cs" />
     <Compile Include="Impl\Handle\IHandle.cs" />

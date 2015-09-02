@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 "-J-DIGNITE_QUIET=false"
                 );
 
-            _grid = Ignition.Start(new GridConfiguration
+            _grid = Ignition.Start(new IgniteConfiguration
             {
                 JvmClasspath = GridTestUtils.CreateTestClasspath(),
                 JvmOptions = GridTestUtils.TestJavaOptions(),

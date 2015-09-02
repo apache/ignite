@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Cache.Store
     /// <summary>
     /// API for cache persistent storage for read-through and write-through behavior.
     ///
-    /// Persistent store is configured in GridGain's Spring XML configuration file via
+    /// Persistent store is configured in Ignite's Spring XML configuration file via
     /// <c>CacheConfiguration.setStore()</c> property. If you have an implementation
     /// of cache store in .NET, you should use special Java wrapper which accepts assembly name and
     /// class name of .NET store implementation (both properties are mandatory).

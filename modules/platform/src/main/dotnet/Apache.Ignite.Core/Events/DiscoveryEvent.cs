@@ -20,10 +20,10 @@ namespace Apache.Ignite.Core.Events
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Portable;
-    using U = Apache.Ignite.Core.Impl.GridUtils;
 
-	/// <summary>
+    /// <summary>
     /// Grid discovery event.
     /// </summary>
     public sealed class DiscoveryEvent : EventBase
@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Events
             _eventNode = ReadNode(r);
             _topologyVersion = r.ReadLong();
 
-            var nodes = U.ReadNodes(r);
+            var nodes = IgniteUtils.ReadNodes(r);
 
             _topologyNodes = nodes == null ? null : new ReadOnlyCollection<IClusterNode>(nodes);
         }

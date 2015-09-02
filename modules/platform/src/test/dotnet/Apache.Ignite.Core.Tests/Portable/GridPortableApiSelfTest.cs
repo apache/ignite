@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             GridTestUtils.KillProcesses();
 
-            var cfg = new GridConfiguration
+            var cfg = new IgniteConfiguration
             {
                 PortableConfiguration = new PortableConfiguration
                 {

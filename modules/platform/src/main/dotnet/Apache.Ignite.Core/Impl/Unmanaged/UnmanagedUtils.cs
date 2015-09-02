@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
-    using U = GridUtils;
 
     /// <summary>
     /// Unmanaged utility classes.
@@ -401,12 +400,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
         static UnmanagedUtils()
         {
-            var path = U.UnpackEmbeddedResource(U.FileGgJniDll);
+            var path = IgniteUtils.UnpackEmbeddedResource(IgniteUtils.FileGgJniDll);
 
             Ptr = NativeMethods.LoadLibrary(path);
 
             if (Ptr == IntPtr.Zero)
-                throw new IgniteException("Failed to load " + U.FileGgJniDll + ": " + Marshal.GetLastWin32Error());
+                throw new IgniteException("Failed to load " + IgniteUtils.FileGgJniDll + ": " + Marshal.GetLastWin32Error());
 
             REALLOCATE = CreateDelegate<ReallocateDelegate>(ProcReallocate);
 
@@ -533,8 +532,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 mem.WriteBool(clientMode);
 
-                sbyte* cfgPath0 = GridUtils.StringToUtf8Unmanaged(cfgPath);
-                sbyte* gridName0 = GridUtils.StringToUtf8Unmanaged(gridName);
+                sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfgPath);
+                sbyte* gridName0 = IgniteUtils.StringToUtf8Unmanaged(gridName);
 
                 try
                 {
@@ -553,7 +552,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static bool IgnitionStop(void* ctx, string gridName, bool cancel)
         {
-            sbyte* gridName0 = GridUtils.StringToUtf8Unmanaged(gridName);
+            sbyte* gridName0 = IgniteUtils.StringToUtf8Unmanaged(gridName);
 
             try
             {
@@ -584,7 +583,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static IUnmanagedTarget ProcessorCache(IUnmanagedTarget target, string name)
         {
-            sbyte* name0 = GridUtils.StringToUtf8Unmanaged(name);
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
 
             try
             {
@@ -600,7 +599,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static IUnmanagedTarget ProcessorCreateCache(IUnmanagedTarget target, string name)
         {
-            sbyte* name0 = GridUtils.StringToUtf8Unmanaged(name);
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
 
             try
             {
@@ -616,7 +615,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static IUnmanagedTarget ProcessorGetOrCreateCache(IUnmanagedTarget target, string name)
         {
-            sbyte* name0 = GridUtils.StringToUtf8Unmanaged(name);
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
 
             try
             {
@@ -632,7 +631,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static IUnmanagedTarget ProcessorAffinity(IUnmanagedTarget target, string name)
         {
-            sbyte* name0 = GridUtils.StringToUtf8Unmanaged(name);
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
 
             try
             {
@@ -648,7 +647,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static IUnmanagedTarget ProcessorDataStreamer(IUnmanagedTarget target, string name, bool keepPortable)
         {
-            sbyte* name0 = GridUtils.StringToUtf8Unmanaged(name);
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
 
             try
             {
@@ -1114,7 +1113,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static void ThrowToJava(void* ctx, Exception e)
         {
-            char* msgChars = (char*)U.StringToUtf8Unmanaged(e.Message);
+            char* msgChars = (char*)IgniteUtils.StringToUtf8Unmanaged(e.Message);
 
             try
             {
@@ -1188,7 +1187,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static void ServicesCancel(IUnmanagedTarget target, string name)
         {
-            var nameChars = (char*)U.StringToUtf8Unmanaged(name);
+            var nameChars = (char*)IgniteUtils.StringToUtf8Unmanaged(name);
 
             try
             {
@@ -1207,7 +1206,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static IUnmanagedTarget ServicesGetServiceProxy(IUnmanagedTarget target, string name, bool sticky)
         {
-            var nameChars = (char*)U.StringToUtf8Unmanaged(name);
+            var nameChars = (char*)IgniteUtils.StringToUtf8Unmanaged(name);
 
             try
             {

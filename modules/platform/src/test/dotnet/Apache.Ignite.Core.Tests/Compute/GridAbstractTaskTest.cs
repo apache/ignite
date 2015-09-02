@@ -161,9 +161,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         /// <param name="path">Path to Java XML configuration.</param>
         /// <returns>Node configuration.</returns>
-        protected GridConfiguration Configuration(string path)
+        protected IgniteConfiguration Configuration(string path)
         {
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             if (!_fork)
             {

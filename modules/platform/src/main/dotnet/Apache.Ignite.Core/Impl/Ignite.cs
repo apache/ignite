@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl
     internal class Ignite : IIgnite, IClusterGroupEx, ICluster
     {
         /** */
-        private readonly GridConfiguration _cfg;
+        private readonly IgniteConfiguration _cfg;
 
         /** Grid name. */
         private readonly string _name;
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl
         private readonly PortablesImpl _portables;
 
         /** Cached proxy. */
-        private readonly GridProxy _proxy;
+        private readonly IgniteProxy _proxy;
 
         /** Lifecycle beans. */
         private readonly IList<LifecycleBeanHolder> _lifecycleBeans;
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="marsh">Marshaller.</param>
         /// <param name="lifecycleBeans">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
-        public Ignite(GridConfiguration cfg, string name, IUnmanagedTarget proc, PortableMarshaller marsh,
+        public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, PortableMarshaller marsh,
             IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs)
         {
             _cfg = cfg;
@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Impl
 
             _portables = new PortablesImpl(marsh);
 
-            _proxy = new GridProxy(this);
+            _proxy = new IgniteProxy(this);
 
             cbs.Initialize(this);
 
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Impl
         /// Gets grid proxy.
         /// </summary>
         /// <returns>Proxy.</returns>
-        public GridProxy Proxy
+        public IgniteProxy Proxy
         {
             get { return _proxy; }
         }
@@ -470,7 +470,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Configuration.
         /// </summary>
-        internal GridConfiguration Configuration
+        internal IgniteConfiguration Configuration
         {
             get { return _cfg; }
         }

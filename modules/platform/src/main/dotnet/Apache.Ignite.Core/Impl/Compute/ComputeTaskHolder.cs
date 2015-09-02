@@ -184,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                 Debug.Assert(nodes != null, "At least one topology update should have occurred.");
 
-                subgrid = GridUtils.Shuffle(nodes);
+                subgrid = IgniteUtils.Shuffle(nodes);
             }
 
             // 2. Perform map.

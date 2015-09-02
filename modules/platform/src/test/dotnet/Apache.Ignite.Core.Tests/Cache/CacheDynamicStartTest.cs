@@ -78,9 +78,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <param name="name">Grid name.</param>
         /// <param name="springCfg">Spring configuration.</param>
         /// <returns>Configuration.</returns>
-        private static GridConfigurationEx CreateConfiguration(String name, String springCfg)
+        private static IgniteConfigurationEx CreateConfiguration(String name, String springCfg)
         {
-            GridConfigurationEx cfg = new GridConfigurationEx();
+            IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
             PortableConfiguration portCfg = new PortableConfiguration();
 

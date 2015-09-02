@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests
         {
             Assert.False(IsLoaded("System.Data.Linq"));
 
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = "config\\start-test-grid3.xml";
             cfg.Assemblies = new List<string> { "System.Data.Linq,Culture=neutral,Version=1.0.0.0,PublicKeyToken=b77a5c561934e089" };
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Tests
 
             GenerateDll("testDll.dll");
 
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = "config\\start-test-grid3.xml";
             cfg.Assemblies = new List<string> { "testDll.dll" };
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Tests
             GenerateDll(dirInfo.FullName + "/dllFromDir2.dll");
             File.WriteAllText(dirInfo.FullName + "/notADll.txt", "notADll");
 
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = "config\\start-test-grid3.xml";
             cfg.Assemblies = new List<string> { dirInfo.FullName };
@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Tests
 
             GenerateDll("testDllByName.dll");
 
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = "config\\start-test-grid3.xml";
             cfg.Assemblies = new List<string> { "testDllByName" };
@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Tests
 
             GenerateDll(dllPath);
 
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = "config\\start-test-grid3.xml";
             cfg.Assemblies = new List<string> { dllPath };
@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestLoadUnexistingLibrary()
         {
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = "config\\start-test-grid3.xml";
             cfg.Assemblies = new List<string> { "unexistingAssembly.820482.dll" };

@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             GridTestUtils.JvmDebug = true;
 
-            GridConfigurationEx cfg = new GridConfigurationEx
+            IgniteConfigurationEx cfg = new IgniteConfigurationEx
             {
                 GridName = Grid,
                 JvmClasspath = GridTestUtils.CreateTestClasspath(),

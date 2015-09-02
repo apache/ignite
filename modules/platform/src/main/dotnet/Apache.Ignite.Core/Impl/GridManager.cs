@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="cfg">Configuration.</param>
         /// <param name="cbs">Callbacks.</param>
         /// <returns>Context.</returns>
-        internal static void* GetContext(GridConfiguration cfg, UnmanagedCallbacks cbs)
+        internal static void* GetContext(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
         {
             lock (Mux)
             {
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Impl
         /// Create JVM.
         /// </summary>
         /// <returns>JVM.</returns>
-        private static void* CreateJvm(GridConfiguration cfg, UnmanagedCallbacks cbs)
+        private static void* CreateJvm(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
         {
             var ggHome = GridGainHome(cfg);
 
@@ -159,13 +159,13 @@ namespace Apache.Ignite.Core.Impl
 
             int idx = 0;
                 
-            opts[idx++] = GridUtils.StringToUtf8Unmanaged(cp);
+            opts[idx++] = IgniteUtils.StringToUtf8Unmanaged(cp);
 
             if (hasGgHome)
-                opts[idx++] = GridUtils.StringToUtf8Unmanaged("-DGRIDGAIN_HOME=" + ggHome);
+                opts[idx++] = IgniteUtils.StringToUtf8Unmanaged("-DGRIDGAIN_HOME=" + ggHome);
 
             foreach (string cfgOpt in jvmOpts)
-                opts[idx++] = GridUtils.StringToUtf8Unmanaged(cfgOpt);
+                opts[idx++] = IgniteUtils.StringToUtf8Unmanaged(cfgOpt);
 
             try
             {
@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets JvmOptions collection merged with individual properties (Min/Max mem, etc) according to priority.
         /// </summary>
-        private static IList<string> GetMergedJvmOptions(GridConfiguration cfg)
+        private static IList<string> GetMergedJvmOptions(IgniteConfiguration cfg)
         {
             var jvmOpts = cfg.JvmOptions == null ? new List<string>() : cfg.JvmOptions.ToList();
 
@@ -214,7 +214,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <returns>JVM configuration.</returns>
-        private static JvmConfiguration JvmConfig(GridConfiguration cfg)
+        private static JvmConfiguration JvmConfig(IgniteConfiguration cfg)
         {
             JvmConfiguration jvmCfg = new JvmConfiguration();
 
@@ -248,14 +248,14 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <returns></returns>
-        internal static string GridGainHome(GridConfiguration cfg)
+        internal static string GridGainHome(IgniteConfiguration cfg)
         {
             var home = cfg == null ? null : cfg.GridGainHome;
 
             if (string.IsNullOrWhiteSpace(home))
                 home = Environment.GetEnvironmentVariable(EnvGridgainHome);
             else if (!IsGridGainHome(new DirectoryInfo(home)))
-                throw new IgniteException(string.Format("GridConfiguration.GridGainHome is not valid: '{0}'", home));
+                throw new IgniteException(string.Format("IgniteConfiguration.GridGainHome is not valid: '{0}'", home));
 
             if (string.IsNullOrWhiteSpace(home))
                 home = ResolveGridGainHome();
@@ -311,7 +311,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// Classpath string.
         /// </returns>
-        internal static string CreateClasspath(GridConfiguration cfg = null, bool forceTestClasspath = false)
+        internal static string CreateClasspath(IgniteConfiguration cfg = null, bool forceTestClasspath = false)
         {
             return CreateClasspath(GridGainHome(cfg), cfg, forceTestClasspath);
         }
@@ -326,7 +326,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// Classpath string.
         /// </returns>
-        private static string CreateClasspath(string ggHome, GridConfiguration cfg, bool forceTestClasspath)
+        private static string CreateClasspath(string ggHome, IgniteConfiguration cfg, bool forceTestClasspath)
         {
             var cpStr = new StringBuilder();
 

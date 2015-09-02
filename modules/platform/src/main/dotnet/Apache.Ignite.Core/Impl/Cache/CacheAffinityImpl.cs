@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Unmanaged;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
-    using U = GridUtils;
 
     /// <summary>
     /// Cache affinity implementation.
@@ -253,7 +252,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         private IList<IClusterNode> ReadNodes(IPortableStream reader)
         {
-            return U.ReadNodes(Marshaller.StartUnmarshal(reader, _keepPortable));
+            return IgniteUtils.ReadNodes(Marshaller.StartUnmarshal(reader, _keepPortable));
         }
 
         /// <summary>

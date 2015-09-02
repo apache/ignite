@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Cache.Query
     using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
-    /// Base class for all GridGain cache entry queries.
+    /// Base class for all Ignite cache entry queries.
     /// </summary>
     public abstract class QueryBase
     {

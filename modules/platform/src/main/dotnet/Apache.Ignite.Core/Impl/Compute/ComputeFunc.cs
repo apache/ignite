@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         public void InjectGrid(IIgnite grid)
         {
             // Propagate injection
-            ResourceProcessor.Inject(_func, (GridProxy) grid);
+            ResourceProcessor.Inject(_func, (IgniteProxy) grid);
         }
     }    
     

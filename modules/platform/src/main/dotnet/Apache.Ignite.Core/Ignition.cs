@@ -35,7 +35,6 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
-    using U = Apache.Ignite.Core.Impl.GridUtils;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
     using PU = Apache.Ignite.Core.Impl.Portable.PortableUtils;
@@ -47,11 +46,11 @@ namespace Apache.Ignite.Core
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// <example>
-    /// You can also use <see cref="GridConfiguration"/> to override some default configuration.
+    /// You can also use <see cref="IgniteConfiguration"/> to override some default configuration.
     /// Below is an example on how to start grid with custom configuration for portable types and
     /// provide path to Spring XML configuration file:
     /// <code>
-    /// GridConfiguration cfg = new GridConfiguration();
+    /// IgniteConfiguration cfg = new IgniteConfiguration();
     ///
     /// // Create portable type configuration.
     /// PortableConfiguration portableCfg = new PortableConfiguration();
@@ -122,7 +121,7 @@ namespace Apache.Ignite.Core
         /// <returns>Started grid.</returns>
         public static IIgnite Start()
         {
-            return Start(new GridConfiguration());
+            return Start(new IgniteConfiguration());
         }
 
         /// <summary>
@@ -136,21 +135,21 @@ namespace Apache.Ignite.Core
         /// found instance is returned.</returns>
         public static IIgnite Start(string springCfgPath)
         {
-            return Start(new GridConfiguration {SpringConfigUrl = springCfgPath});
+            return Start(new IgniteConfiguration {SpringConfigUrl = springCfgPath});
         }
 
         /// <summary>
         /// Starts grid with given configuration.
         /// </summary>
         /// <returns>Started grid.</returns>
-        public unsafe static IIgnite Start(GridConfiguration cfg)
+        public unsafe static IIgnite Start(IgniteConfiguration cfg)
         {
             A.NotNull(cfg, "cfg");
 
             // Copy configuration to avoid changes to user-provided instance.
-            GridConfigurationEx cfgEx = cfg as GridConfigurationEx;
+            IgniteConfigurationEx cfgEx = cfg as IgniteConfigurationEx;
 
-            cfg = cfgEx == null ? new GridConfiguration(cfg) : new GridConfigurationEx(cfgEx);
+            cfg = cfgEx == null ? new IgniteConfiguration(cfg) : new IgniteConfigurationEx(cfgEx);
 
             // Set default Spring config if needed.
             if (cfg.SpringConfigUrl == null)
@@ -162,16 +161,16 @@ namespace Apache.Ignite.Core
                 CheckServerGc(cfg);
 
                 // 2. Create context.
-                GridUtils.LoadDlls(cfg.JvmDllPath);
+                IgniteUtils.LoadDlls(cfg.JvmDllPath);
 
                 var cbs = new UnmanagedCallbacks();
 
                 void* ctx = GridManager.GetContext(cfg, cbs);
 
-                sbyte* cfgPath0 = GridUtils.StringToUtf8Unmanaged(cfg.SpringConfigUrl ?? DefaultCfg);
+                sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfg.SpringConfigUrl ?? DefaultCfg);
 
                 string gridName = cfgEx != null ? cfgEx.GridName : null;
-                sbyte* gridName0 = GridUtils.StringToUtf8Unmanaged(gridName);
+                sbyte* gridName0 = IgniteUtils.StringToUtf8Unmanaged(gridName);
 
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg) { Context = ctx };
@@ -237,7 +236,7 @@ namespace Apache.Ignite.Core
         /// Check whether GC is set to server mode.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
-        private static void CheckServerGc(GridConfiguration cfg)
+        private static void CheckServerGc(IgniteConfiguration cfg)
         {
             if (!cfg.SuppressWarnings && !GCSettings.IsServerGC && Interlocked.CompareExchange(ref _gcWarn, 1, 0) == 0)
                 Console.WriteLine("GC server mode is not enabled, this could lead to less " +
@@ -277,7 +276,7 @@ namespace Apache.Ignite.Core
         private static void PrepareConfiguration(InteropDotNetConfiguration dotNetCfg)
         {
             // 1. Load assemblies.
-            GridConfiguration cfg = _startup.Configuration;
+            IgniteConfiguration cfg = _startup.Configuration;
 
             LoadAssemblies(cfg.Assemblies);
 
@@ -340,12 +339,12 @@ namespace Apache.Ignite.Core
             string assemblyName = reader.ReadString();
             string clsName = reader.ReadString();
 
-            object bean = U.CreateInstance(assemblyName, clsName);
+            object bean = IgniteUtils.CreateInstance(assemblyName, clsName);
 
             // 2. Set properties.
             IDictionary<string, object> props = reader.ReadGenericDictionary<string, object>();
 
-            U.SetProperties(bean, props);
+            IgniteUtils.SetProperties(bean, props);
 
             return bean as ILifecycleBean;
         }
@@ -606,7 +605,7 @@ namespace Apache.Ignite.Core
             /// Constructor.
             /// </summary>
             /// <param name="cfg">Configuration.</param>
-            internal Startup(GridConfiguration cfg)
+            internal Startup(IgniteConfiguration cfg)
             {
                 Configuration = cfg;
             }
@@ -614,7 +613,7 @@ namespace Apache.Ignite.Core
             /// <summary>
             /// Configuration.
             /// </summary>
-            internal GridConfiguration Configuration
+            internal IgniteConfiguration Configuration
             {
                 get;
                 private set;

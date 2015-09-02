@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests
         [TestFixtureSetUp]
         public void SetUp()
         {
-            var cfg = new GridConfigurationEx
+            var cfg = new IgniteConfigurationEx
             {
                 GridName = GridName,
                 JvmClasspath = GridTestUtils.CreateTestClasspath(),

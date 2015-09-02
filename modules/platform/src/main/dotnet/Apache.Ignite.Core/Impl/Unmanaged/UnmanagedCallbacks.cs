@@ -42,7 +42,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Services;
-    using U = GridUtils;
     using UU = UnmanagedUtils;
 
     /// <summary>
@@ -995,8 +994,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private void Error(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars,
             int errMsgCharsLen, void* errData, int errDataLen)
         {
-            string errCls = U.Utf8UnmanagedToString(errClsChars, errClsCharsLen);
-            string errMsg = U.Utf8UnmanagedToString(errMsgChars, errMsgCharsLen);
+            string errCls = IgniteUtils.Utf8UnmanagedToString(errClsChars, errClsCharsLen);
+            string errMsg = IgniteUtils.Utf8UnmanagedToString(errMsgChars, errMsgCharsLen);
 
             switch (errType)
             {

@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Tests
         {
             GridTestUtils.JvmDebug = true;
 
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
             cfg.JvmOptions = GridTestUtils.TestJavaOptions();
@@ -204,11 +204,11 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="expProp2">Expected property 2.</param>
         private static void CheckEvent(Event evt, IIgnite expGrid1, IIgnite expGrid2, int expProp1, string expProp2)
         {
-            if (evt.Grid1 != null && evt.Grid1 is GridProxy)
-                evt.Grid1 = (evt.Grid1 as GridProxy).Target;
+            if (evt.Grid1 != null && evt.Grid1 is IgniteProxy)
+                evt.Grid1 = (evt.Grid1 as IgniteProxy).Target;
 
-            if (evt.Grid2 != null && evt.Grid2 is GridProxy)
-                evt.Grid2 = (evt.Grid2 as GridProxy).Target;
+            if (evt.Grid2 != null && evt.Grid2 is IgniteProxy)
+                evt.Grid2 = (evt.Grid2 as IgniteProxy).Target;
 
             Assert.AreEqual(expGrid1, evt.Grid1);
             Assert.AreEqual(expGrid2, evt.Grid2);

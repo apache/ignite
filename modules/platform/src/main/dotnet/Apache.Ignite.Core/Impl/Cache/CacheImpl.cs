@@ -34,7 +34,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Portable;
-    using U = GridUtils;
     using AC = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -134,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         internal IFuture<TResult> GetFuture<TResult>(int lastAsyncOpId)
         {
             if (!_flagAsync)
-                throw U.GetAsyncModeDisabledException();
+                throw IgniteUtils.GetAsyncModeDisabledException();
 
             var converter = GetFutureResultConverter<TResult>(lastAsyncOpId);
 

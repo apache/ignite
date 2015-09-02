@@ -461,9 +461,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Gets the grid configuration.
         /// </summary>
         /// <param name="gridName">Grid name.</param>
-        private static GridConfigurationEx GetGridConfiguration(string gridName)
+        private static IgniteConfigurationEx GetGridConfiguration(string gridName)
         {
-            return new GridConfigurationEx
+            return new IgniteConfigurationEx
             {
                 GridName = gridName,
                 SpringConfigUrl = "config\\native-client-test-cache.xml",

@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             GridTestUtils.JvmDebug = true;
             GridTestUtils.KillProcesses();
 
-            GridConfigurationEx cfg = new GridConfigurationEx
+            IgniteConfigurationEx cfg = new IgniteConfigurationEx
             {
                 PortableConfiguration = new PortableConfiguration
                 {

@@ -31,7 +31,6 @@ namespace Apache.Ignite.Core.Impl.Events
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Portable;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
-    using U = GridUtils;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
@@ -93,13 +92,13 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public virtual IFuture GetFuture()
         {
-            throw U.GetAsyncModeDisabledException();
+            throw IgniteUtils.GetAsyncModeDisabledException();
         }
 
         /** <inheritDoc /> */
         public virtual IFuture<TResult> GetFuture<TResult>()
         {
-            throw U.GetAsyncModeDisabledException();
+            throw IgniteUtils.GetAsyncModeDisabledException();
         }
 
         /** <inheritDoc /> */

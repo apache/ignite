@@ -1088,9 +1088,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Create configuration.
         /// </summary>
         /// <param name="path">XML config path.</param>
-        private GridConfiguration Configuration(string path)
+        private IgniteConfiguration Configuration(string path)
         {
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             PortableConfiguration portCfg = new PortableConfiguration();
 

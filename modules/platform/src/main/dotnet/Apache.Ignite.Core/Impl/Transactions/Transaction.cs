@@ -3,7 +3,6 @@
     using System;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Transactions;
-    using U = GridUtils;
 
     /// <summary>
     /// Grid transaction facade.
@@ -43,13 +42,13 @@
         /** <inheritDoc /> */
         public virtual IFuture GetFuture()
         {
-            throw U.GetAsyncModeDisabledException();
+            throw IgniteUtils.GetAsyncModeDisabledException();
         }
         
         /** <inheritDoc /> */
         public virtual IFuture<TResult> GetFuture<TResult>()
         {
-            throw U.GetAsyncModeDisabledException();
+            throw IgniteUtils.GetAsyncModeDisabledException();
         }
 
         /** <inheritDoc /> */

@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             GridTestUtils.KillProcesses();
 
-            GridConfigurationEx cfg = new GridConfigurationEx();
+            IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
             cfg.JvmOptions = GridTestUtils.TestJavaOptions();

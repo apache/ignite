@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             GC.Collect();
             GridTestUtils.JvmDebug = true;
 
-            GridConfigurationEx cfg = new GridConfigurationEx();
+            IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
             PortableConfiguration portCfg = new PortableConfiguration();
 

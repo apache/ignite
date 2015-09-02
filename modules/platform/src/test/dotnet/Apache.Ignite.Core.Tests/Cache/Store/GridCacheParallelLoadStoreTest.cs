@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             GridTestUtils.KillProcesses();
             GridTestUtils.JvmDebug = true;
 
-            Ignition.Start(new GridConfiguration
+            Ignition.Start(new IgniteConfiguration
             {
                 JvmClasspath = GridTestUtils.CreateTestClasspath(),
                 JvmOptions = GridTestUtils.TestJavaOptions(),

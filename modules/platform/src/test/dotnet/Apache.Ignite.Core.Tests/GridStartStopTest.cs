@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStartDefault()
         {
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
 
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStartWithConfigPath()
         {
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = "config/default-config.xml";
             cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests
         {
             List<string> cfgs = new List<string> { "config\\start-test-grid1.xml", "config\\start-test-grid2.xml", "config\\start-test-grid3.xml" };
 
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = cfgs[0];
             cfg.JvmOptions = GridTestUtils.TestJavaOptions();
@@ -194,7 +194,7 @@ namespace Apache.Ignite.Core.Tests
         {
             GridGain.Impl.GridManager.DestroyJvm();
 
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.NativeXmlConfig = "config\\start-test-grid1.xml";
             cfg.NativeJvmOptions = new List<string> { "invalid_option"};
@@ -222,7 +222,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStartTheSameName()
         {
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = "config\\start-test-grid1.xml";
             cfg.JvmOptions = GridTestUtils.TestJavaOptions();
@@ -250,7 +250,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestUsageAfterStop()
         {
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = "config\\start-test-grid1.xml";
             cfg.JvmOptions = GridTestUtils.TestJavaOptions();
@@ -280,7 +280,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStartStopLeak()
         {
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = "config\\start-test-grid1.xml";
             cfg.JvmOptions = new List<string> { "-Xcheck:jni", "-Xms256m", "-Xmx256m", "-XX:+HeapDumpOnOutOfMemoryError" };
@@ -317,14 +317,14 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestClientMode()
         {
-            var servCfg = new GridConfiguration
+            var servCfg = new IgniteConfiguration
             {
                 SpringConfigUrl = "config\\start-test-grid1.xml",
                 JvmOptions = GridTestUtils.TestJavaOptions(),
                 JvmClasspath = GridTestUtils.CreateTestClasspath()
             };
 
-            var clientCfg = new GridConfiguration
+            var clientCfg = new IgniteConfiguration
             {
                 SpringConfigUrl = "config\\start-test-grid2.xml",
                 JvmOptions = GridTestUtils.TestJavaOptions(),

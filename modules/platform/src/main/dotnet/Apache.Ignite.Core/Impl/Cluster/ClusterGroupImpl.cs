@@ -39,7 +39,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Services;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
-    using U = GridUtils;
 
     /// <summary>
     /// Grid projection implementation.
@@ -426,7 +425,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         internal ICollection<IClusterNode> Topology(long version)
         {
             return DoOutInOp(OpTopology, writer => writer.WriteLong(version), 
-                input => U.ReadNodes(Marsh.StartUnmarshal(input)));
+                input => IgniteUtils.ReadNodes(Marsh.StartUnmarshal(input)));
         }
 
         /// <summary>
@@ -503,7 +502,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
                     // Topology has been updated.
                     long newTopVer = reader.ReadLong();
 
-                    newNodes = U.ReadNodes(reader, _pred);
+                    newNodes = IgniteUtils.ReadNodes(reader, _pred);
 
                     UpdateTopology(newTopVer, newNodes);
                 }

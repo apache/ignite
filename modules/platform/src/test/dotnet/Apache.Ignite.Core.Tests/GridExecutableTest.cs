@@ -280,9 +280,9 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         /// <param name="path">Path to Java XML configuration.</param>
         /// <returns>Node configuration.</returns>
-        private static GridConfiguration Configuration(string path)
+        private static IgniteConfiguration Configuration(string path)
         {
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             
             PortableConfiguration portCfg = new PortableConfiguration();
@@ -357,9 +357,9 @@ namespace Apache.Ignite.Core.Tests
             /** <inheritDoc /> */
             public RemoteConfiguration Invoke()
             {
-                Ignite grid0 = (Ignite) ((GridProxy) _grid).Target;
+                Ignite grid0 = (Ignite) ((IgniteProxy) _grid).Target;
 
-                GridConfiguration cfg = grid0.Configuration;
+                IgniteConfiguration cfg = grid0.Configuration;
 
                 RemoteConfiguration res = new RemoteConfiguration
                 {

@@ -29,7 +29,6 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
-    using U = GridUtils;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
     using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
@@ -240,13 +239,13 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public virtual IFuture GetFuture()
         {
-            throw U.GetAsyncModeDisabledException();
+            throw IgniteUtils.GetAsyncModeDisabledException();
         }
 
         /** <inheritdoc /> */
         public virtual IFuture<TResult> GetFuture<TResult>()
         {
-            throw U.GetAsyncModeDisabledException();
+            throw IgniteUtils.GetAsyncModeDisabledException();
         }
 
         /// <summary>

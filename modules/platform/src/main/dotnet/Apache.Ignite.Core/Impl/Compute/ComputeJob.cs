@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         public void InjectGrid(IIgnite grid)
         {
             // Propagate injection
-            ResourceProcessor.Inject(Job, (GridProxy)grid);
+            ResourceProcessor.Inject(Job, (IgniteProxy)grid);
         }
 
         /// <summary>
