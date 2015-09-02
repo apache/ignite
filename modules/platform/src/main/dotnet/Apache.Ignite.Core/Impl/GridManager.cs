@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Native interface manager.
     /// </summary>
-    public static unsafe class GridManager
+    internal static unsafe class GridManager
     {
         /** Environment variable: GRIDGAIN_HOME. */
         internal const string EnvGridgainHome = "GRIDGAIN_HOME";
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl
         private const string CmdJvmMaxMemJava = "-Xmx";
 
         /** Monitor for DLL load synchronization. */
-        private static readonly object Mux = new object();
+        private static readonly object SyncRoot = new object();
 
         /** First created context. */
         private static void* _ctx;
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Context.</returns>
         internal static void* GetContext(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
         {
-            lock (Mux)
+            lock (SyncRoot)
             {
                 // 1. Warn about possible configuration inconsistency.
                 JvmConfiguration jvmCfg = JvmConfig(cfg);
@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         public static void DestroyJvm()
         {
-            lock (Mux)
+            lock (SyncRoot)
             {
                 if (_ctx != null)
                 {
@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>JVM.</returns>
         private static void* CreateJvm(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
         {
-            var ggHome = GridGainHome(cfg);
+            var ggHome = GetIgniteHome(cfg);
 
             var cp = CreateClasspath(ggHome, cfg, false);
 
@@ -216,14 +216,13 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>JVM configuration.</returns>
         private static JvmConfiguration JvmConfig(IgniteConfiguration cfg)
         {
-            JvmConfiguration jvmCfg = new JvmConfiguration();
-
-            jvmCfg.Home = cfg.GridGainHome;
-            jvmCfg.Dll = cfg.JvmDllPath;
-            jvmCfg.Cp = cfg.JvmClasspath;
-            jvmCfg.Options = cfg.JvmOptions;
-
-            return jvmCfg;
+            return new JvmConfiguration
+            {
+                Home = cfg.IgniteHome,
+                Dll = cfg.JvmDllPath,
+                Classpath = cfg.JvmClasspath,
+                Options = cfg.JvmOptions
+            };
         }
 
         /// <summary>
@@ -248,18 +247,18 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <returns></returns>
-        internal static string GridGainHome(IgniteConfiguration cfg)
+        internal static string GetIgniteHome(IgniteConfiguration cfg)
         {
-            var home = cfg == null ? null : cfg.GridGainHome;
+            var home = cfg == null ? null : cfg.IgniteHome;
 
             if (string.IsNullOrWhiteSpace(home))
                 home = Environment.GetEnvironmentVariable(EnvGridgainHome);
-            else if (!IsGridGainHome(new DirectoryInfo(home)))
-                throw new IgniteException(string.Format("IgniteConfiguration.GridGainHome is not valid: '{0}'", home));
+            else if (!IsIgniteHome(new DirectoryInfo(home)))
+                throw new IgniteException(string.Format("IgniteConfiguration.IgniteHome is not valid: '{0}'", home));
 
             if (string.IsNullOrWhiteSpace(home))
                 home = ResolveGridGainHome();
-            else if (!IsGridGainHome(new DirectoryInfo(home)))
+            else if (!IsIgniteHome(new DirectoryInfo(home)))
                 throw new IgniteException(string.Format("{0} is not valid: '{1}'", EnvGridgainHome, home));
 
             return home;
@@ -283,7 +282,7 @@ namespace Apache.Ignite.Core.Impl
 
                 while (dir != null)
                 {
-                    if (IsGridGainHome(dir))
+                    if (IsIgniteHome(dir))
                         return dir.FullName;
 
                     dir = dir.Parent;
@@ -298,7 +297,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="dir">Directory.</param>
         /// <returns>Value indicating whether specified dir looks like a GridGain home.</returns>
-        private static bool IsGridGainHome(DirectoryInfo dir)
+        private static bool IsIgniteHome(DirectoryInfo dir)
         {
             return dir.Exists && dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2;
         }
@@ -313,7 +312,7 @@ namespace Apache.Ignite.Core.Impl
         /// </returns>
         internal static string CreateClasspath(IgniteConfiguration cfg = null, bool forceTestClasspath = false)
         {
-            return CreateClasspath(GridGainHome(cfg), cfg, forceTestClasspath);
+            return CreateClasspath(GetIgniteHome(cfg), cfg, forceTestClasspath);
         }
 
         /// <summary>
@@ -418,40 +417,24 @@ namespace Apache.Ignite.Core.Impl
         private class JvmConfiguration
         {
             /// <summary>
-            ///
+            /// Gets or sets the home.
             /// </summary>
-            public string Home
-            {
-                get;
-                set;
-            }
+            public string Home { get; set; }
 
             /// <summary>
-            ///
+            /// Gets or sets the DLL.
             /// </summary>
-            public string Dll
-            {
-                get;
-                set;
-            }
+            public string Dll { get; set; }
 
             /// <summary>
-            ///
+            /// Gets or sets the cp.
             /// </summary>
-            public string Cp
-            {
-                get;
-                set;
-            }
+            public string Classpath { get; set; }
 
             /// <summary>
-            ///
+            /// Gets or sets the options.
             /// </summary>
-            public ICollection<string> Options
-            {
-                get;
-                set;
-            }
+            public ICollection<string> Options { get; set; }
 
             /** <inheritDoc /> */
             public override int GetHashCode()
@@ -465,13 +448,13 @@ namespace Apache.Ignite.Core.Impl
             {
                 JvmConfiguration other = obj as JvmConfiguration;
 
-                if (other == null) 
+                if (other == null)
                     return false;
 
                 if (!string.Equals(Home, other.Home, StringComparison.OrdinalIgnoreCase))
                     return false;
 
-                if (!string.Equals(Cp, other.Cp, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(Classpath, other.Classpath, StringComparison.OrdinalIgnoreCase))
                     return false;
 
                 if (!string.Equals(Dll, other.Dll, StringComparison.OrdinalIgnoreCase))
@@ -485,7 +468,7 @@ namespace Apache.Ignite.Core.Impl
             /** <inheritDoc /> */
             public override string ToString()
             {
-                StringBuilder sb = new StringBuilder("[GridGainHome=" + Home + ", JvmDllPath=" + Dll);
+                var sb = new StringBuilder("[IgniteHome=" + Home + ", JvmDllPath=" + Dll);
 
                 if (Options != null && Options.Count > 0)
                 {
@@ -506,7 +489,7 @@ namespace Apache.Ignite.Core.Impl
                     sb.Append(']');
                 }
 
-                sb.Append(", Classpath=" + Cp + ']');
+                sb.Append(", Classpath=" + Classpath + ']');
 
                 return sb.ToString();
             }

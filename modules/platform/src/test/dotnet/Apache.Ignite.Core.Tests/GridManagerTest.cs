@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                Assert.IsTrue(Directory.Exists(GridManager.GridGainHome(null)));
+                Assert.IsTrue(Directory.Exists(GridManager.GetIgniteHome(null)));
             }
             finally
             {

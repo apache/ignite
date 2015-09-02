@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core
         {
             SpringConfigUrl = cfg.SpringConfigUrl;
             JvmDllPath = cfg.JvmDllPath;
-            GridGainHome = cfg.GridGainHome;
+            IgniteHome = cfg.IgniteHome;
             JvmClasspath = cfg.JvmClasspath;
             SuppressWarnings = cfg.SuppressWarnings;
 
@@ -94,10 +94,9 @@ namespace Apache.Ignite.Core
         public string JvmDllPath { get; set; }
 
         /// <summary>
-        /// Path to GridGain home. If not set environment variable GRIDGAIN_HOME
-        /// will be used.
+        /// Path to GridGain home. If not set environment variable IGNITE_HOME will be used.
         /// </summary>
-        public string GridGainHome { get; set; }
+        public string IgniteHome { get; set; }
 
         /// <summary>
         /// Classpath used by JVM on Ignite start.

@@ -377,7 +377,7 @@ namespace Apache.Ignite.Core.Tests
 
                 RemoteConfiguration res = new RemoteConfiguration
                 {
-                    IgniteHome = cfg.GridGainHome,
+                    IgniteHome = cfg.IgniteHome,
                     SpringConfigUrl = cfg.SpringConfigUrl,
                     JvmDll = cfg.JvmDllPath,
                     JvmClasspath = cfg.JvmClasspath,
