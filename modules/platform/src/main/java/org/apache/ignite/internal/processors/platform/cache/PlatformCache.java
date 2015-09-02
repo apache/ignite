@@ -704,7 +704,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /**
      * Clears the contents of the cache, without notifying listeners or
-     * {@link javax.cache.integration.CacheWriter}s.
+     * {@ignitelink javax.cache.integration.CacheWriter}s.
      *
      * @throws IllegalStateException if the cache is closed.
      * @throws javax.cache.CacheException if there is a problem during the clear
