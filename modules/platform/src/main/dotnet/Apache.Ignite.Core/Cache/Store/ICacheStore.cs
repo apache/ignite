@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Cache.Store
     /// <bean class="org.apache.ignite.configuration.CacheConfiguration">
     ///     ...
     ///     <property name="cacheStoreFactory">
-    ///         <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetCacheStoreFactory">
+    ///         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
     ///             <property name="assemblyName" value="MyAssembly"/>
     ///             <property name="className" value="MyApp.MyCacheStore"/>
     ///             <property name="properties">
