@@ -59,12 +59,12 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritDoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            PortableWriterImpl writer0 = writer.RawWriter() as PortableWriterImpl;
+            var writer0 = (PortableWriterImpl) writer.RawWriter();
 
             if (writer0.IsPortable(_err))
             {
                 writer0.WriteBoolean(true);
-                writer0.WriteObject<Exception>(_err);
+                writer0.WriteObject(_err);
             }
             else
             {

@@ -558,7 +558,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             foreach (object obj in newObjList)
                 newList.Add((string)obj);
 
-            CompareCollections<string>(list, newList);
+            CompareCollections(list, newList);
         }
 
         /**
@@ -1652,10 +1652,10 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             public void WritePortable(IPortableWriter writer)
             {
-                writer.WriteObjectArray<Guid>("a", GuidArr);
-                writer.WriteObjectArray<Guid?>("b", NGuidArr);
-                writer.WriteObjectArray<DateTime>("c", DateArr);
-                writer.WriteObjectArray<DateTime?>("d", NDateArr);
+                writer.WriteObjectArray("a", GuidArr);
+                writer.WriteObjectArray("b", NGuidArr);
+                writer.WriteObjectArray("c", DateArr);
+                writer.WriteObjectArray("d", NDateArr);
             }
 
             public void ReadPortable(IPortableReader reader)
@@ -2093,13 +2093,13 @@ namespace Apache.Ignite.Core.Tests.Portable
             virtual public void WritePortable(IPortableWriter writer)
             {
                 writer.WriteString("before", Before);
-                writer.WriteObject<HandleInner>("inner", Inner);
+                writer.WriteObject("inner", Inner);
                 writer.WriteString("after", After);
 
                 IPortableRawWriter rawWriter = writer.RawWriter();
 
                 rawWriter.WriteString(RawBefore);
-                rawWriter.WriteObject<HandleInner>(RawInner);
+                rawWriter.WriteObject(RawInner);
                 rawWriter.WriteString(RawAfter);
             }
 
@@ -2132,13 +2132,13 @@ namespace Apache.Ignite.Core.Tests.Portable
             virtual public void WritePortable(IPortableWriter writer)
             {
                 writer.WriteString("before", Before);
-                writer.WriteObject<HandleOuter>("outer", Outer);
+                writer.WriteObject("outer", Outer);
                 writer.WriteString("after", After);
 
                 IPortableRawWriter rawWriter = writer.RawWriter();
 
                 rawWriter.WriteString(RawBefore);
-                rawWriter.WriteObject<HandleOuter>(RawOuter);
+                rawWriter.WriteObject(RawOuter);
                 rawWriter.WriteString(RawAfter);
             }
 
