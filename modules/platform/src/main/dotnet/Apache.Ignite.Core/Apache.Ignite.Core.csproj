@@ -225,6 +225,8 @@
     <Compile Include="Impl\Interop\InteropDotNetPortableConfiguration.cs" />
     <Compile Include="Impl\Interop\InteropDotNetPortableTypeConfiguration.cs" />
     <Compile Include="Impl\LifecycleBeanHolder.cs" />
+    <Compile Include="Impl\Memory\InteropExternalMemory.cs" />
+    <Compile Include="Impl\Memory\InteropMemoryUtils.cs" />
     <Compile Include="Impl\Memory\IPlatformMemory.cs" />
     <Compile Include="Impl\Memory\PlatformBigEndianMemoryStream.cs" />
     <Compile Include="Impl\Memory\PlatformMemory.cs" />
@@ -363,7 +365,7 @@
     <EmbeddedResource Include="..\Win32\Release\ignite.common.dll">
       <Link>resources\release\x86\ignite.common.dll</Link>
     </EmbeddedResource>
-  </ItemGroup>  
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
