@@ -167,6 +167,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         
         private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, void* errData, int errDataLen);
 
+        private delegate long ExtensionCallbackInLongOutLongDelegate(void* target, int typ, long arg1);
+        private delegate long ExtensionCallbackInLongLongOutLongDelegate(void* target, int typ, long arg1, long arg2);
+
         /// <summary>
         /// constructor.
         /// </summary>
@@ -243,7 +246,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 
                 onStart = CreateFunctionPointer((OnStartCallbackDelegate)OnStart),
                 onStop = CreateFunctionPointer((OnStopCallbackDelegate)OnStop),
-                error = CreateFunctionPointer((ErrorCallbackDelegate)Error)
+                error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
+                
+                extensionCbInLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongOutLongDelegate)ExtensionCallbackInLongOutLong),
+                extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -818,6 +824,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
         
+        #endregion
+
+        #region IMPLEMENTATION: EXTENSIONS
+
+        private long ExtensionCallbackInLongOutLong(void* target, int op, long arg1)
+        {
+            return 0;
+        }
+
+        private long ExtensionCallbackInLongLongOutLong(void* target, int op, long arg1, long arg2)
+        {
+            return 0;
+        }
+
         #endregion
 
         #region IMPLEMENTATION: EVENTS
