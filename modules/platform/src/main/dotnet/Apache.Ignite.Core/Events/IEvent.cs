@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Events
         /// Gets locally unique ID that is atomically incremented for each event. Unlike global <see cref="Id" />
         /// this local ID can be used for ordering events on this node. 
         /// <para/> 
-        /// Note that for performance considerations GridGain doesn't order events globally.
+        /// Note that for performance considerations Ignite doesn't order events globally.
         /// </summary>
         long LocalOrder { get; }
 

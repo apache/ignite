@@ -29,8 +29,8 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
-    /// Main entry point for all GridGain APIs.
-    /// You can obtain an instance of <c>IGrid</c> through <see cref="Ignition.GetIgnite"/>,
+    /// Main entry point for all Ignite APIs.
+    /// You can obtain an instance of <c>IGrid</c> through <see cref="Ignition.GetIgnite()"/>,
     /// or for named grids you can use <see cref="Ignition.GetIgnite(string)"/>. Note that you
     /// can have multiple instances of <c>IGrid</c> running in the same process by giving
     /// each instance a different name.

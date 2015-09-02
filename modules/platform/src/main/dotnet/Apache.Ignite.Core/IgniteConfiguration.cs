@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core
         public string JvmDllPath { get; set; }
 
         /// <summary>
-        /// Path to GridGain home. If not set environment variable IGNITE_HOME will be used.
+        /// Path to Ignite home. If not set environment variable IGNITE_HOME will be used.
         /// </summary>
         public string IgniteHome { get; set; }
 

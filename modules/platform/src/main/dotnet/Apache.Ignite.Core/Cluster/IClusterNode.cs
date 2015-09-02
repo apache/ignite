@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Cluster
         /// visible on the main APIs, i.e. they are not part of any projections.
         /// <p/>
         /// Daemon nodes are used primarily for management and monitoring functionality that
-        /// is build on GridGain and needs to participate in the topology but should be
+        /// is build on Ignite and needs to participate in the topology but should be
         /// excluded from "normal" topology so that it won't participate in task execution
         /// or in-memory database.
         /// <p/>

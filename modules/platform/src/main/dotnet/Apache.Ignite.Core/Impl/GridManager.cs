@@ -38,12 +38,6 @@ namespace Apache.Ignite.Core.Impl
         /** Environment variable: IGNITE_HOME. */
         internal const string EnvIgniteHome = "IGNITE_HOME";
 
-        /** Environment variable: platform. */
-        private const string EnvPlatformKey = "gridgain.client.platform";
-
-        /** Environment variable value: platform. */
-        private const string EvnPlatformVal = "dotnet";
-
         /** Environment variable: whether to set test classpath or not. */
         private const string EnvIgniteNativeTestClasspath = "IGNITE_NATIVE_TEST_CLASSPATH";
         
@@ -73,7 +67,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         static GridManager()
         {
-            Environment.SetEnvironmentVariable(EnvPlatformKey, EvnPlatformVal);
+            // No-op.
         }
 
         /// <summary>
