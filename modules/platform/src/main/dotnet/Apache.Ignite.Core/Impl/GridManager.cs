@@ -35,8 +35,8 @@ namespace Apache.Ignite.Core.Impl
     /// </summary>
     internal static unsafe class GridManager
     {
-        /** Environment variable: GRIDGAIN_HOME. */
-        internal const string EnvGridgainHome = "GRIDGAIN_HOME";
+        /** Environment variable: IGNITE_HOME. */
+        internal const string EnvIgniteHome = "IGNITE_HOME";
 
         /** Environment variable: platform. */
         private const string EnvPlatformKey = "gridgain.client.platform";
@@ -252,14 +252,14 @@ namespace Apache.Ignite.Core.Impl
             var home = cfg == null ? null : cfg.IgniteHome;
 
             if (string.IsNullOrWhiteSpace(home))
-                home = Environment.GetEnvironmentVariable(EnvGridgainHome);
+                home = Environment.GetEnvironmentVariable(EnvIgniteHome);
             else if (!IsIgniteHome(new DirectoryInfo(home)))
                 throw new IgniteException(string.Format("IgniteConfiguration.IgniteHome is not valid: '{0}'", home));
 
             if (string.IsNullOrWhiteSpace(home))
                 home = ResolveGridGainHome();
             else if (!IsIgniteHome(new DirectoryInfo(home)))
-                throw new IgniteException(string.Format("{0} is not valid: '{1}'", EnvGridgainHome, home));
+                throw new IgniteException(string.Format("{0} is not valid: '{1}'", EnvIgniteHome, home));
 
             return home;
         }

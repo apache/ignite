@@ -31,11 +31,11 @@ namespace Apache.Ignite.Core.Tests
         /// Tests home dir resolver.
         /// </summary>
         [Test]
-        public void TestGridGainHome()
+        public void TestIgniteHome()
         {
-            var env = Environment.GetEnvironmentVariable(GridManager.EnvGridgainHome);
+            var env = Environment.GetEnvironmentVariable(GridManager.EnvIgniteHome);
             
-            Environment.SetEnvironmentVariable(GridManager.EnvGridgainHome, null);
+            Environment.SetEnvironmentVariable(GridManager.EnvIgniteHome, null);
 
             try
             {
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Tests
             finally
             {
                 // Restore
-                Environment.SetEnvironmentVariable(GridManager.EnvGridgainHome, env);
+                Environment.SetEnvironmentVariable(GridManager.EnvIgniteHome, env);
             }
         }
     }

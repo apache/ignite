@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Full type descriptor.
     /// </summary> 
-    public class PortableFullTypeDescriptor : IPortableTypeDescriptor
+    internal class PortableFullTypeDescriptor : IPortableTypeDescriptor
     {
         /** Type. */
         private readonly Type _type;
