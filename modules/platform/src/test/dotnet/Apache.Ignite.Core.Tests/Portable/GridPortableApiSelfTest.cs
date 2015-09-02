@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnassignedField.Global
+// ReSharper disable CollectionNeverUpdated.Global
 namespace Apache.Ignite.Core.Tests.Portable
 {
     using System;
@@ -1143,12 +1145,13 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestRawData()
         {
-            WithRaw raw = new WithRaw();
+            var raw = new WithRaw
+            {
+                A = 1,
+                B = 2
+            };
 
-            raw.A = 1;
-            raw.B = 2;
-
-            IPortableObject portObj = _marsh.Unmarshal<IPortableObject>(_marsh.Marshal(raw), PortableMode.ForcePortable);
+            var portObj = _marsh.Unmarshal<IPortableObject>(_marsh.Marshal(raw), PortableMode.ForcePortable);
 
             raw = portObj.Deserialize<WithRaw>();
 
@@ -1172,8 +1175,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             // 1. Create from scratch.
             IPortableBuilder builder = _grid.Portables().Builder(typeof(NestedOuter));
 
-            NestedInner inner1 = new NestedInner();
-            inner1.Val = 1;
+            NestedInner inner1 = new NestedInner {Val = 1};
             builder.SetField("inner1", inner1);
 
             IPortableObject outerPortObj = builder.Build();
@@ -1203,8 +1205,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             // 2. Add another field over existing portable object.
             builder = _grid.Portables().Builder(outerPortObj);
 
-            NestedInner inner2 = new NestedInner();
-            inner2.Val = 2;
+            NestedInner inner2 = new NestedInner {Val = 2};
             builder.SetField("inner2", inner2);
 
             outerPortObj = builder.Build();
@@ -1234,12 +1235,13 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestHandleMigration()
         {
             // 1. Simple comparison of results.
-            MigrationInner inner = new MigrationInner();
-            inner.Val = 1;
+            MigrationInner inner = new MigrationInner {Val = 1};
 
-            MigrationOuter outer = new MigrationOuter();
-            outer.Inner1 = inner;
-            outer.Inner2 = inner;
+            MigrationOuter outer = new MigrationOuter
+            {
+                Inner1 = inner,
+                Inner2 = inner
+            };
 
             byte[] outerBytes = _marsh.Marshal(outer);
 
@@ -1259,8 +1261,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(outerBytes, portOuterBytes);
 
             // 2. Change the first inner object so that the handle must migrate.
-            MigrationInner inner1 = new MigrationInner();
-            inner1.Val = 2;
+            MigrationInner inner1 = new MigrationInner {Val = 2};
 
             IPortableObject portOuterMigrated =
                 _grid.Portables().Builder(portOuter).SetField<object>("inner1", inner1).Build();
@@ -1424,11 +1425,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         /// <returns>Configuration.</returns>
         private static PortableTypeConfiguration TypeConfigurationNoMeta(Type typ)
         {
-            PortableTypeConfiguration cfg = new PortableTypeConfiguration(typ);
-
-            cfg.MetadataEnabled = false;
-
-            return cfg;
+            return new PortableTypeConfiguration(typ) {MetadataEnabled = false};
         }
     }
 
