@@ -193,7 +193,7 @@ namespace Apache.Ignite.Core.Tests.Process
             if (workDir != null)
                 procStart.WorkingDirectory = workDir;
 
-            Console.WriteLine("About to run GridGain.exe process [exePath=" + exePath + ", arguments=" + sb + ']');
+            Console.WriteLine("About to run Ignite.exe process [exePath=" + exePath + ", arguments=" + sb + ']');
 
             // 2. Start.
             var proc = Process.Start(procStart);

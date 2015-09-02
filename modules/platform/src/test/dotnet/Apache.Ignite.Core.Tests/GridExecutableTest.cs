@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestConfig()
         {
-            GridProcess.ReplaceConfiguration("config\\GridGain.exe.config.test");
+            GridProcess.ReplaceConfiguration("config\\Ignite.exe.config.test");
 
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
@@ -210,7 +210,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestJvmMemoryOptsAppConfig()
         {
-            GridProcess.ReplaceConfiguration("config\\GridGain.exe.config.test");
+            GridProcess.ReplaceConfiguration("config\\Ignite.exe.config.test");
 
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
