@@ -15,8 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.builder;
 
+import org.apache.ignite.internal.portable.PortableObjectImpl;
+import org.apache.ignite.internal.portable.PortableObjectOffheapImpl;
+import org.apache.ignite.internal.portable.PortableWriterExImpl;
 import org.apache.ignite.portable.PortableObject;
 
 /**

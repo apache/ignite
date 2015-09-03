@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.builder;
 
 import java.util.Collection;
 import java.util.Set;
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.PortableUtils;
+import org.apache.ignite.internal.portable.PortableWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**

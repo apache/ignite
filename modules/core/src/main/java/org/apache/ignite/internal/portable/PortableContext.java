@@ -794,10 +794,10 @@ public class PortableContext implements Externalizable {
      * @param typeId Type ID.
      * @return Whether meta data is enabled.
      */
-    boolean isMetaDataEnabled(int typeId) {
+    public boolean isMetaDataEnabled(int typeId) {
         Boolean enabled = metaEnabled.get(typeId);
 
-        return enabled != null ? enabled : true;
+        return enabled != null ? enabled : metaDataEnabled;
     }
 
     /**
@@ -827,7 +827,7 @@ public class PortableContext implements Externalizable {
      * @param fields Fields map.
      * @throws PortableException In case of error.
      */
-    void updateMetaData(int typeId, String typeName, Map<String, String> fields) throws PortableException {
+    public void updateMetaData(int typeId, String typeName, Map<String, String> fields) throws PortableException {
         updateMetaData(typeId, new PortableMetaDataImpl(typeName, fields, null));
     }
 

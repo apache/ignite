@@ -20,6 +20,7 @@ import java.util.Arrays;
 import org.apache.ignite.IgnitePortables;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.portable.PortableBuilder;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableMarshalAware;
 import org.apache.ignite.portable.PortableReader;
@@ -68,9 +69,17 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
 
             portables().toPortable(new TestObject1());
             portables().toPortable(new TestObject2());
+            portables().toPortable(new TestObject3());
 
             assertEquals(0, portables().metadata(TestObject1.class).fields().size());
             assertEquals(0, portables().metadata(TestObject2.class).fields().size());
+
+            PortableBuilder bldr = portables().builder("FakeType");
+
+            bldr.setField("field1", 0).setField("field2", "value").build();
+
+            assertNull(portables().metadata("FakeType"));
+            assertNull(portables().metadata(TestObject3.class));
         }
         finally {
             stopGrid();
@@ -217,5 +226,13 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
         @Override public void readPortable(PortableReader reader) throws PortableException {
             // No-op.
         }
+    }
+
+    /**
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    private static class TestObject3 {
+        /** */
+        private int field;
     }
 }
