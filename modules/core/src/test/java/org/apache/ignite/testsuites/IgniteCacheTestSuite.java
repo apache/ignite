@@ -28,6 +28,7 @@ import org.apache.ignite.cache.affinity.fair.GridFairAffinityFunctionSelfTest;
 import org.apache.ignite.cache.affinity.fair.IgniteFairAffinityDynamicCacheSelfTest;
 import org.apache.ignite.cache.store.GridCacheBalancingStoreSelfTest;
 import org.apache.ignite.cache.store.GridCacheLoadOnlyStoreAdapterSelfTest;
+import org.apache.ignite.cache.store.StoreResourceInjectionSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreMultitreadedSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreTest;
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreMultithreadedSelfTest;
@@ -220,6 +221,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheObjectToStringSelfTest.class);
         suite.addTestSuite(GridCacheLoadOnlyStoreAdapterSelfTest.class);
         suite.addTestSuite(GridCacheGetStoreErrorSelfTest.class);
+        suite.addTestSuite(StoreResourceInjectionSelfTest.class);
         suite.addTestSuite(CacheFutureExceptionSelfTest.class);
         suite.addTestSuite(GridCacheAsyncOperationsLimitSelfTest.class);
         suite.addTestSuite(IgniteCacheManyAsyncOperationsTest.class);

@@ -1252,7 +1252,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     {
         assert cfg != null;
 
-        prepare(cfg, cfg.getCacheStoreFactory(), false);
+        if (cfg.getCacheStoreFactory() instanceof GridCacheLoaderWriterStoreFactory) {
+            GridCacheLoaderWriterStoreFactory factory = (GridCacheLoaderWriterStoreFactory)cfg.getCacheStoreFactory();
+
+            prepare(cfg, factory.loaderFactory(), false);
+            prepare(cfg, factory.writerFactory(), false);
+        }
+        else
+            prepare(cfg, cfg.getCacheStoreFactory(), false);
+
 
         CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
 
