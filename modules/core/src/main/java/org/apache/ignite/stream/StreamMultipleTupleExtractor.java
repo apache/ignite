@@ -20,19 +20,19 @@ package org.apache.ignite.stream;
 import java.util.Map;
 
 /**
- * Stream tuple extractor to convert messages to Ignite key-value tuples.
+ * Stream tuple extractor to convert a single message to zero, one or many tuples.
  * <p>
- * Alternatively, {@link StreamMultipleTupleExtractor} can be employed in cases where a single message/event may
- * produce more than one tuple.
+ * For cases where cardinality will always be 1:1 (or 0:1), you may consider {@link StreamTupleExtractor}.
  *
- * @see StreamMultipleTupleExtractor
+ * @see StreamTupleExtractor
  */
-public interface StreamTupleExtractor<T, K, V> {
+public interface StreamMultipleTupleExtractor<T, K, V> {
+
     /**
-     * Extracts a key-value tuple from a message.
+     * Extracts a set of key-values from a message.
      *
      * @param msg Message.
-     * @return Key-value tuple.
+     * @return Map containing resulting tuples.
      */
-    public Map.Entry<K, V> extract(T msg);
+    public Map<K, V> extract(T msg);
 }
