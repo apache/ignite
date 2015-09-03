@@ -62,12 +62,6 @@
             </list>
         </property>
 
-        <property name="pluginConfigurations">
-            <list>
-                <bean class="org.apache.ignite.configuration.PlatformConfiguration"/>
-            </list>
-        </property>
-
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">

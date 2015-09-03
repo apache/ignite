@@ -29,31 +29,25 @@
         <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
 
-        <property name="pluginConfigurations">
-            <list>
-                <bean class="org.apache.ignite.configuration.PlatformConfiguration">
-                    <property name="interopConfiguration">
-                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
-                            <property name="portableConfiguration">
-                                <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
-                                    <property name="types">
-                                        <list>
-                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64]</value>
-                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Type]</value>
-                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[GridGain.Client.TestGenericPortable[System.Int64]]</value>
-                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Collections.Generic.List[System.Tuple[System.Int64,System.String]]]</value>
-                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String]</value>
-                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,GridGain.Client.TestGenericPortable[System.String]]</value>
-                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String,System.Type]</value>
-                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String,GridGain.Client.TestGenericPortable[System.Int64,System.String,System.Type]]</value>
-                                        </list>
-                                    </property>
-                                </bean>
-                            </property>
-                        </bean>
-                    </property>
-                </bean>
-            </list>
+        <property name="platformConfiguration">
+            <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
+                <property name="portableConfiguration">
+                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
+                        <property name="types">
+                            <list>
+                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Type]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[GridGain.Client.TestGenericPortable[System.Int64]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Collections.Generic.List[System.Tuple[System.Int64,System.String]]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,GridGain.Client.TestGenericPortable[System.String]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String,System.Type]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String,GridGain.Client.TestGenericPortable[System.Int64,System.String,System.Type]]</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
         </property>
 
         <property name="includeEventTypes">

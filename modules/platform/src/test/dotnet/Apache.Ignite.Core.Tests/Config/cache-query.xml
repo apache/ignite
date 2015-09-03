@@ -29,24 +29,18 @@
         <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
 
-        <property name="pluginConfigurations">
-            <list>
-                <bean class="org.apache.ignite.configuration.PlatformConfiguration">
-                    <property name="interopConfiguration">
-                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
-                            <property name="portableConfiguration">
-                                <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
-                                    <property name="types">
-                                        <list>
-                                            <value>GridGain.Cache.Query.QueryPerson</value>
-                                        </list>
-                                    </property>
-                                </bean>
-                            </property>
-                        </bean>
-                    </property>
-                </bean>
-            </list>
+        <property name="platformConfiguration">
+            <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
+                <property name="portableConfiguration">
+                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
+                        <property name="types">
+                            <list>
+                                <value>GridGain.Cache.Query.QueryPerson</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
         </property>
 
         <property name="includeEventTypes">
