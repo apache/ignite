@@ -72,9 +72,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestReferencedAssemblyLoading()
         {
-            const string dllName = "GridGainTestDll";
+            const string dllName = "Apache.Ignite.Core.Tests.TestDll";
 
-            const string typeName = "GridGain.TestDll.TestClass";
+            const string typeName = "Apache.Ignite.Core.Tests.TestDll.TestClass";
 
             // Check that the dll is not yet loaded
             Assert.IsFalse(AppDomain.CurrentDomain.GetAssemblies().Any(x => x.FullName.StartsWith(dllName)));
