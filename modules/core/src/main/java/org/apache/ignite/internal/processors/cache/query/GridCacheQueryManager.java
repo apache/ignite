@@ -182,12 +182,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 if (futs != null) {
                     for (Map.Entry<Long, GridFutureAdapter<QueryResult<K, V>>> entry : futs.entrySet()) {
-                        final Object recipient = recipient(nodeId, entry.getKey());
+                        final Object rcpt = recipient(nodeId, entry.getKey());
 
                         entry.getValue().listen(new CIX1<IgniteInternalFuture<QueryResult<K, V>>>() {
                             @Override public void applyx(IgniteInternalFuture<QueryResult<K, V>> f)
                                 throws IgniteCheckedException {
-                                f.get().closeIfNotShared(recipient);
+                                f.get().closeIfNotShared(rcpt);
                             }
                         });
                     }
@@ -197,12 +197,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 if (fieldsFuts != null) {
                     for (Map.Entry<Long, GridFutureAdapter<FieldsResult>> entry : fieldsFuts.entrySet()) {
-                        final Object recipient = recipient(nodeId, entry.getKey());
+                        final Object rcpt = recipient(nodeId, entry.getKey());
 
                         entry.getValue().listen(new CIX1<IgniteInternalFuture<FieldsResult>>() {
                             @Override public void applyx(IgniteInternalFuture<FieldsResult> f)
                                 throws IgniteCheckedException {
-                                f.get().closeIfNotShared(recipient);
+                                f.get().closeIfNotShared(rcpt);
                             }
                         });
                     }
@@ -281,16 +281,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * Rebuilds all search indexes of given value type.
      *
-     * @param valType Value type.
-     * @return Future that will be completed when rebuilding of all indexes is finished.
-     */
-    public IgniteInternalFuture<?> rebuildIndexes(Class<?> valType) {
-        return rebuildIndexes(valType.getName());
-    }
-
-    /**
-     * Rebuilds all search indexes of given value type.
-     *
      * @param typeName Value type name.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
@@ -300,23 +290,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         try {
             return qryProc.rebuildIndexes(space, typeName);
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
-     * Rebuilds all search indexes of all types.
-     *
-     * @return Future that will be completed when rebuilding of all indexes is finished.
-     */
-    public IgniteInternalFuture<?> rebuildAllIndexes() {
-        if (!enterBusy())
-            throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
-
-        try {
-            return qryProc.rebuildAllIndexes();
         }
         finally {
             leaveBusy();
@@ -531,12 +504,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param loc Local query or not.
      * @param subjId Security subject ID.
      * @param taskName Task name.
-     * @param recipient ID of the recipient.
+     * @param rcpt ID of the recipient.
      * @return Collection of found keys.
      * @throws IgniteCheckedException In case of error.
      */
+    @SuppressWarnings("unchecked")
     private QueryResult<K, V> executeQuery(GridCacheQueryAdapter<?> qry,
-        @Nullable Object[] args, boolean loc, @Nullable UUID subjId, @Nullable String taskName, Object recipient)
+        @Nullable Object[] args, boolean loc, @Nullable UUID subjId, @Nullable String taskName, Object rcpt)
         throws IgniteCheckedException {
         if (qry.type() == null) {
             assert !loc;
@@ -555,16 +529,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             res = (QueryResult<K, V>)qryResCache.get(resKey);
 
-            if (res != null && res.addRecipient(recipient))
+            if (res != null && res.addRecipient(rcpt))
                 return res;
 
-            res = new QueryResult<>(qry.type(), recipient);
+            res = new QueryResult<>(qry.type(), rcpt);
 
             if (qryResCache.putIfAbsent(resKey, res) != null)
                 resKey = null;
         }
         else
-            res = new QueryResult<>(qry.type(), recipient);
+            res = new QueryResult<>(qry.type(), rcpt);
 
         GridCloseableIterator<IgniteBiTuple<K, V>> iter;
 
@@ -667,12 +641,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param loc Local query or not.
      * @param subjId Security subject ID.
      * @param taskName Task name.
-     * @param recipient ID of the recipient.
+     * @param rcpt ID of the recipient.
      * @return Collection of found keys.
      * @throws IgniteCheckedException In case of error.
      */
     private FieldsResult executeFieldsQuery(GridCacheQueryAdapter<?> qry, @Nullable Object[] args,
-        boolean loc, @Nullable UUID subjId, @Nullable String taskName, Object recipient) throws IgniteCheckedException {
+        boolean loc, @Nullable UUID subjId, @Nullable String taskName, Object rcpt) throws IgniteCheckedException {
         assert qry != null;
 
         FieldsResult res;
@@ -709,10 +683,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             res = (FieldsResult)qryResCache.get(resKey);
 
-            if (res != null && res.addRecipient(recipient))
+            if (res != null && res.addRecipient(rcpt))
                 return res; // Cached result found.
 
-            res = new FieldsResult(recipient);
+            res = new FieldsResult(rcpt);
 
             if (qryResCache.putIfAbsent(resKey, res) != null)
                 resKey = null; // Failed to cache result.
@@ -736,7 +710,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     taskName));
             }
 
-            res = new FieldsResult(recipient);
+            res = new FieldsResult(rcpt);
         }
 
         try {
@@ -1191,7 +1165,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 // If metadata needs to be returned to user and cleaned from internal fields - copy it.
                 List<GridQueryFieldMetadata> meta = qryInfo.includeMetaData() ?
-                    (res.metaData() != null ? new ArrayList<GridQueryFieldMetadata>(res.metaData()) : null) :
+                    (res.metaData() != null ? new ArrayList<>(res.metaData()) : null) :
                     res.metaData();
 
                 if (!qryInfo.includeMetaData())
@@ -2347,10 +2321,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /**
          * @param type Query type.
-         * @param recipient ID of the recipient.
+         * @param rcpt ID of the recipient.
          */
-        private QueryResult(GridCacheQueryType type, Object recipient) {
-            super(recipient);
+        private QueryResult(GridCacheQueryType type, Object rcpt) {
+            super(rcpt);
 
             this.type = type;
         }
@@ -2374,10 +2348,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private List<GridQueryFieldMetadata> meta;
 
         /**
-         * @param recipient ID of the recipient.
+         * @param rcpt ID of the recipient.
          */
-        FieldsResult(Object recipient) {
-            super(recipient);
+        FieldsResult(Object rcpt) {
+            super(rcpt);
         }
 
         /**
@@ -2720,10 +2694,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private final Map<Object, QueueIterator> recipients = new GridLeanMap<>(1);
 
         /**
-         * @param recipient ID of the recipient.
+         * @param rcpt ID of the recipient.
          */
-        protected CachedResult(Object recipient) {
-            boolean res = addRecipient(recipient);
+        protected CachedResult(Object rcpt) {
+            boolean res = addRecipient(rcpt);
 
             assert res;
         }
@@ -2731,17 +2705,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /**
          * Close if this result does not have any other recipients.
          *
-         * @param recipient ID of the recipient.
+         * @param rcpt ID of the recipient.
          * @throws IgniteCheckedException If failed.
          */
-        public void closeIfNotShared(Object recipient) throws IgniteCheckedException {
+        public void closeIfNotShared(Object rcpt) throws IgniteCheckedException {
             assert isDone();
 
             synchronized (recipients) {
                 if (recipients.isEmpty())
                     return;
 
-                recipients.remove(recipient);
+                recipients.remove(rcpt);
 
                 if (recipients.isEmpty())
                     get().close();
@@ -2749,17 +2723,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /**
-         * @param recipient ID of the recipient.
+         * @param rcpt ID of the recipient.
          * @return {@code true} If the recipient successfully added.
          */
-        public boolean addRecipient(Object recipient) {
+        public boolean addRecipient(Object rcpt) {
             synchronized (recipients) {
                 if (isDone())
                     return false;
 
-                assert !recipients.containsKey(recipient) : recipient + " -> " + recipients;
+                assert !recipients.containsKey(rcpt) : rcpt + " -> " + recipients;
 
-                recipients.put(recipient, new QueueIterator(recipient));
+                recipients.put(rcpt, new QueueIterator(rcpt));
             }
 
             return true;
@@ -2798,18 +2772,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /**
-         * @param recipient ID of the recipient.
+         * @param rcpt ID of the recipient.
          * @throws IgniteCheckedException If failed.
          */
-        public IgniteSpiCloseableIterator<R> iterator(Object recipient) throws IgniteCheckedException {
-            assert recipient != null;
+        public IgniteSpiCloseableIterator<R> iterator(Object rcpt) throws IgniteCheckedException {
+            assert rcpt != null;
 
             IgniteSpiCloseableIterator<R> it = get();
 
             assert it != null;
 
             synchronized (recipients) {
-                return queue == null ? it : recipients.get(recipient);
+                return queue == null ? it : recipients.get(rcpt);
             }
         }
 
@@ -2825,7 +2799,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             private static final int NEXT_SIZE = 64;
 
             /** */
-            private final Object recipient;
+            private final Object rcpt;
 
             /** */
             private int pos;
@@ -2834,10 +2808,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             private Queue<R> next;
 
             /**
-             * @param recipient ID of the recipient.
+             * @param rcpt ID of the recipient.
              */
-            private QueueIterator(Object recipient) {
-                this.recipient = recipient;
+            private QueueIterator(Object rcpt) {
+                this.rcpt = rcpt;
             }
 
             /**
@@ -2850,7 +2824,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             /** {@inheritDoc} */
             @Override public void close() throws IgniteCheckedException {
-                closeIfNotShared(recipient);
+                closeIfNotShared(rcpt);
             }
 
             /** {@inheritDoc} */
