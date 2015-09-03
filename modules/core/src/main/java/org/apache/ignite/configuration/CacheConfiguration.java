@@ -17,26 +17,10 @@
 
 package org.apache.ignite.configuration;
 
-import java.io.Serializable;
-import java.util.Collection;
-import javax.cache.Cache;
-import javax.cache.CacheException;
-import javax.cache.configuration.CompleteConfiguration;
-import javax.cache.configuration.Factory;
-import javax.cache.configuration.MutableConfiguration;
-import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cache.CacheTypeMetadata;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictionFilter;
@@ -51,6 +35,15 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import javax.cache.configuration.CompleteConfiguration;
+import javax.cache.configuration.Factory;
+import javax.cache.configuration.MutableConfiguration;
+import javax.cache.expiry.ExpiryPolicy;
+import java.io.Serializable;
+import java.util.Collection;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
@@ -1806,7 +1799,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Following validator allows to put data only in case topology contains exactly 2 nodes:
      * <pre>{@code
      * new TopologyValidator() {
-     *    @Override public boolean validate(Collection<ClusterNode> nodes) {
+     *    public boolean validate(Collection<ClusterNode> nodes) {
      *       return nodes.size() == 2;
      *    }
      * }
@@ -1835,7 +1828,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Following validator allows to put data only in case topology contains exactly 2 nodes:
      * <pre>{@code
      * new TopologyValidator() {
-     *    @Override public boolean validate(Collection<ClusterNode> nodes) {
+     *    public boolean validate(Collection<ClusterNode> nodes) {
      *       return nodes.size() == 2;
      *    }
      * }
