@@ -41,7 +41,7 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <property name="cacheStoreFactory">
-                        <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetCacheStoreFactory">
+                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
                             <property name="assemblyName" value="GridGainTest"/>
                             <property name="className" value="GridGain.Cache.Store.GridCacheTestParallelLoadStore"/>
                         </bean>
@@ -59,7 +59,7 @@
 
         <property name="pluginConfigurations">
             <list>
-                <bean class="org.gridgain.grid.configuration.GridGainConfiguration"/>
+                <bean class="org.apache.ignite.configuration.PlatformConfiguration"/>
             </list>
         </property>
 

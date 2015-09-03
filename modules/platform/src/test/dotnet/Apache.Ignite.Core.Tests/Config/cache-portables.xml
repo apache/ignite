@@ -31,11 +31,11 @@
 
         <property name="pluginConfigurations">
             <list>
-                <bean class="org.gridgain.grid.configuration.GridGainConfiguration">
+                <bean class="org.apache.ignite.configuration.PlatformConfiguration">
                     <property name="interopConfiguration">
-                        <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetConfiguration">
+                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
                             <property name="portableConfiguration">
-                                <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetPortableConfiguration">
+                                <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
                                     <property name="types">
                                         <list>
                                             <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64]</value>

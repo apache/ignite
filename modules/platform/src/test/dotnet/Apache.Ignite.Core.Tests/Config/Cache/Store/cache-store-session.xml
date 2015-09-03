@@ -25,7 +25,7 @@
         http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
-    <bean id="storeFactory" class="org.gridgain.grid.interop.dotnet.InteropDotNetCacheStoreFactory">
+    <bean id="storeFactory" class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
         <property name="assemblyName" value="GridGainTest"/>
         <property name="className" value="GridGain.Cache.Store.GridCacheStoreSessionTest+Store"/>
     </bean>
@@ -48,12 +48,6 @@
                     <property name="readThrough" value="true"/>
 
                     <property name="cacheStoreFactory" ref="storeFactory" />
-                    
-                    <property name="pluginConfigurations">
-                        <list>
-                            <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration" />
-                        </list>
-                    </property>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -64,19 +58,13 @@
                     <property name="readThrough" value="true"/>
 
                     <property name="cacheStoreFactory" ref="storeFactory" />
-
-                    <property name="pluginConfigurations">
-                        <list>
-                            <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration" />
-                        </list>
-                    </property>
                 </bean>
             </list>
         </property>
 
         <property name="pluginConfigurations">
             <list>
-                <bean class="org.gridgain.grid.configuration.GridGainConfiguration"/>
+                <bean class="org.apache.ignite.configuration.PlatformConfiguration"/>
             </list>
         </property>
 

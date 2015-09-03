@@ -43,7 +43,7 @@
                     <property name="readThrough" value="true"/>
 
                     <property name="cacheStoreFactory">
-                        <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetCacheStoreFactory">
+                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
                             <property name="assemblyName" value="GridGainTest"/>
                             <property name="className" value="GridGain.Cache.Store.GridCacheTestStore"/>
                         </bean>
@@ -64,7 +64,7 @@
                     <property name="readThrough" value="true"/>
 
                     <property name="cacheStoreFactory">
-                        <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetCacheStoreFactory">
+                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
                             <property name="assemblyName" value="GridGainTest"/>
                             <property name="className" value="GridGain.Cache.Store.GridCacheTestStore"/>
                         </bean>
@@ -86,7 +86,7 @@
                     <property name="readThrough" value="true"/>
 
                     <property name="cacheStoreFactory">
-                        <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetCacheStoreFactory">
+                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
                             <property name="assemblyName" value="GridGainTest"/>
                             <property name="className" value="GridGain.Cache.Store.GridCacheTestStore"/>
                         </bean>
@@ -114,7 +114,7 @@
                     </property>
 
                     <property name="cacheStoreFactory">
-                        <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetCacheStoreFactory">
+                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
                             <property name="assemblyName" value="GridGainTest"/>
                             <property name="className" value="GridGain.Cache.Store.GridCacheTestStore"/>
                             <property name="properties">
@@ -133,7 +133,7 @@
 
         <property name="pluginConfigurations">
             <list>
-                <bean class="org.gridgain.grid.configuration.GridGainConfiguration"/>
+                <bean class="org.apache.ignite.configuration.PlatformConfiguration"/>
             </list>
         </property>
 
