@@ -17,9 +17,12 @@
 
 namespace Apache.Ignite.Core.Tests.Compute.Forked
 {
+    using NUnit.Framework;
+
     /// <summary>
     /// Forked closure execution tests for serializable objects.
     /// </summary>
+    [Ignore("IGNITE-1367")]
     public class GridForkedSerializableClosureTaskTest : GridSerializableClosureTaskTest
     {
         /// <summary>

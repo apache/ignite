@@ -17,9 +17,12 @@
 
 namespace Apache.Ignite.Core.Tests.Compute.Forked
 {
+    using NUnit.Framework;
+
     /// <summary>
     /// Forked task adapter test.
     /// </summary>
+    [Ignore("IGNITE-1367")]
     public class GridForkedTaskAdapterTest : GridTaskAdapterTest
     {
         /// <summary>
