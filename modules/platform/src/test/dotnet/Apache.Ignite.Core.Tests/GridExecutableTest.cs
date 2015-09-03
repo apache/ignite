@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Tests for executable.
     /// </summary>
+    [Ignore("IGNITE-1367")]
     public class GridExecutableTest
     {
         /** Spring configuration path. */
