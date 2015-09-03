@@ -92,6 +92,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             AddPredefinedType(typeof(DateTime), PortableUtils.TypeDate, PortableSystemHandlers.WriteHndDateTyped, PortableSystemHandlers.WriteHndDate);
             AddPredefinedType(typeof(Guid), PortableUtils.TypeGuid, PortableSystemHandlers.WriteHndGuidTyped, PortableSystemHandlers.WriteHndGuid);
 
+            // TODO: Remove this registration
             AddPredefinedType(typeof(PortableUserObject), PortableUtils.TypePortable, PortableSystemHandlers.WriteHndPortableTyped, 
                 PortableSystemHandlers.WriteHndPortable);
 

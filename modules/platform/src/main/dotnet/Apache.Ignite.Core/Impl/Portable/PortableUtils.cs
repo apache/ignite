@@ -153,13 +153,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         public const byte TypePortableJobResHolder = 76;
 
         /** Type: .Net configuration. */
-        public const byte TypeDotNetCfg = 71;
+        public const byte TypeDotNetCfg = 202;
 
         /** Type: .Net portable configuration. */
-        public const byte TypeDotNetPortableCfg = 72;
+        public const byte TypeDotNetPortableCfg = 203;
 
         /** Type: .Net portable type configuration. */
-        public const byte TypeDotNetPortableTypCfg = 73;
+        public const byte TypeDotNetPortableTypCfg = 204;
 
         /** Type: Grid proxy. */
         public const byte TypeGridProxy = 74;
