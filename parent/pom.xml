@@ -748,6 +748,11 @@
                                         <exclude>**/*.vcxproj.filters</exclude>
                                         <exclude>**/module.def</exclude>
                                         <exclude>**/ignite-common.pc.in</exclude>
+                                        <exclude>**/*.csproj</exclude>
+                                        <exclude>**/*.fxcop</exclude>
+                                        <exclude>**/*.metaproj</exclude>
+                                        <exclude>**/*.metaproj.tmp</exclude>
+                                        <exclude>**/x64/Debug/**</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
