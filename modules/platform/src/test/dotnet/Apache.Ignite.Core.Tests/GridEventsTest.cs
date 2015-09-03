@@ -486,10 +486,6 @@ namespace Apache.Ignite.Core.Tests
 
                 var reader = grid.Marshaller.StartUnmarshal(inStream);
 
-                var licEvent = EventReader.Read<LicenseEvent>(reader);
-                Assert.AreEqual(expectedGuid, licEvent.LicenseId);
-                CheckEventBase(licEvent);
-
                 var cacheEvent = EventReader.Read<CacheEvent>(reader);
                 CheckEventBase(cacheEvent);
                 Assert.AreEqual("cacheName", cacheEvent.CacheName);
@@ -579,7 +575,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(locNode, evt.Node);
             Assert.AreEqual("msg", evt.Message);
-            Assert.AreEqual(EventType.EvtLicCleared, evt.Type);
+            Assert.AreEqual(EventType.EvtSwapSpaceCleared, evt.Type);
             Assert.IsNotNullOrEmpty(evt.Name);
             Assert.AreNotEqual(Guid.Empty, evt.Id.GlobalId);
             Assert.IsTrue((evt.TimeStamp - DateTime.Now).TotalSeconds < 10);

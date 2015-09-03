@@ -99,7 +99,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
                 PlatformOutputStream out = mem.output();
                 PortableRawWriterEx writer = ctx.writer(out);
 
-                int evtType = EventType.EVT_IGFS_DIR_CREATED;
+                int evtType = EventType.EVT_SWAP_SPACE_CLEARED;
                 String msg = "msg";
                 UUID uuid = new UUID(1, 2);
                 IgniteUuid igniteUuid = new IgniteUuid(uuid, 3);

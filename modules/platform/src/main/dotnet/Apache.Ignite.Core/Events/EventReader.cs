@@ -55,7 +55,6 @@ namespace Apache.Ignite.Core.Events
         {
             switch (clsId)
             {
-                case 1: return new LicenseEvent(reader);
                 case 2: return new CacheEvent(reader);
                 case 3: return new CacheQueryExecutedEvent(reader);
                 case 4: return new CacheQueryReadEvent(reader);

@@ -327,45 +327,6 @@ namespace Apache.Ignite.Core.Events
         public static readonly int EvtCacheNodesLeft = 100;
 
         /// <summary>
-        /// Built-in event type: license violation detected.
-        /// </summary>
-        public static readonly int EvtLicViolation = 1008;
-
-        /// <summary>
-        /// Built-in event type: license violation cleared.
-        /// </summary>
-        public static readonly int EvtLicCleared = 1009;
-
-        /// <summary>
-        /// Built-in event type: license violation grace period is expired.
-        /// </summary>
-        public static readonly int EvtLicGraceExpired = 1010;
-
-        /// <summary>
-        /// Built-in event type: license violation detected.
-        /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EvtsLicense =
-        {
-            EvtLicCleared,
-            EvtLicViolation,
-            EvtLicGraceExpired
-        };
-
-        /// <summary>
-        /// All checkpoint events.
-        /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EvtsCheckpoint =
-        {
-            EvtCheckpointSaved,
-            EvtCheckpointLoaded,
-            EvtCheckpointRemoved
-        };
-
-        /// <summary>
         /// All events indicating an error or failure condition. It is convenient to use when fetching all events 
         /// indicating error or failure.
         /// </summary>
