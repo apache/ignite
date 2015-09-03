@@ -20,7 +20,7 @@ package org.apache.ignite.platform;
 /**
  * Portable object defined only in Java.
  */
-public class PlatformComputeJavaPortable extends GridInteropComputePortable {
+public class PlatformComputeJavaPortable extends PlatformComputePortable {
     /**
      * Constructor.
      */

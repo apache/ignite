@@ -155,29 +155,29 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                     return Collections.singletonMap(1, 1);
 
                 case TYPE_PORTABLE:
-                    return new GridInteropComputePortable(1);
+                    return new PlatformComputePortable(1);
 
                 case TYPE_PORTABLE_JAVA:
-                    return new GridInteropComputeJavaPortable(1);
+                    return new PlatformComputeJavaPortable(1);
 
                 case TYPE_OBJ_ARRAY:
                     return new String[] { "foo", "bar", "baz" };
 
                 case TYPE_PORTABLE_ARRAY:
-                    return new GridInteropComputePortable[] {
-                        new GridInteropComputePortable(1),
-                        new GridInteropComputePortable(2),
-                        new GridInteropComputePortable(3)
+                    return new PlatformComputePortable[] {
+                        new PlatformComputePortable(1),
+                        new PlatformComputePortable(2),
+                        new PlatformComputePortable(3)
                     };
 
                 case TYPE_ENUM:
-                    return GridInteropComputeEnum.BAR;
+                    return PlatformComputeEnum.BAR;
 
                 case TYPE_ENUM_ARRAY:
-                    return new GridInteropComputeEnum[] {
-                        GridInteropComputeEnum.BAR,
-                        GridInteropComputeEnum.BAZ,
-                        GridInteropComputeEnum.FOO
+                    return new PlatformComputeEnum[] {
+                        PlatformComputeEnum.BAR,
+                        PlatformComputeEnum.BAZ,
+                        PlatformComputeEnum.FOO
                     };
 
                 default:
