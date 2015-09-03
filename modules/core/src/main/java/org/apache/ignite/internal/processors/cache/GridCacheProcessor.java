@@ -102,6 +102,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -340,7 +341,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Suppress warning if at least one ATOMIC cache found.
         perf.add("Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)",
-            cfg.getAtomicityMode() == ATOMIC);
+                cfg.getAtomicityMode() == ATOMIC);
 
         // Suppress warning if at least one non-FULL_SYNC mode found.
         perf.add("Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)",
@@ -500,7 +501,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cc.getAtomicityMode() == ATOMIC)
             assertParameter(cc.getTransactionManagerLookupClassName() == null,
-                "transaction manager can not be used with ATOMIC cache");
+                    "transaction manager can not be used with ATOMIC cache");
     }
 
     /**
@@ -1521,6 +1522,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             });
     }
 
+    /**
+     * Gets a collection of currently started cache names
+     * @return
+     */
+    public Collection<String> publicCacheNames() {
+        return F.viewReadOnly(
+                F.view(registeredCaches.values(),
+                        new IgnitePredicate<DynamicCacheDescriptor>() {
+                            @Override
+                            public boolean apply(DynamicCacheDescriptor desc) {
+                                return desc.cacheType().userCache();
+                            }
+                        }),
+                new C1<DynamicCacheDescriptor, String>() {
+                    @Override public String apply(DynamicCacheDescriptor desc) {
+                        return desc.cacheConfiguration().getName();
+                    }
+                });
+    }
     /**
      * Gets cache mode.
      *

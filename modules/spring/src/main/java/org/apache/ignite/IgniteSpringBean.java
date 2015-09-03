@@ -444,4 +444,9 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
 
         cfg = g.configuration();
     }
+
+    @Override
+    public Collection<String> cacheNames() {
+        return g.cacheNames();
+    }
 }

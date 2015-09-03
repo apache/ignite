@@ -32,12 +32,15 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
-
+import java.util.Collection;
 /**
  * Tests for projection metrics.
  */
@@ -48,6 +51,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final int ITER_CNT = 30;
+    static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -63,6 +67,11 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+
+        if (gridName.equals(getTestGridName(NODES_CNT - 1)))
+            cfg.setClientMode(true);
 
         cfg.setCacheConfiguration();
         cfg.setIncludeProperties();
@@ -103,6 +112,43 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    public void testAllCachesNamesInCluster() throws InterruptedException {
+        Ignite g0 = grid(0);
+        Ignite g1 = grid(1);
+        Ignite g2 = grid(2);
+        Ignite g3 = grid(3);
+
+
+        g0.getOrCreateCache("Cache1");
+        g1.getOrCreateCache("Cache2");
+        g1.getOrCreateCache("Cache3");
+
+        // Sleep 20 ms, otherwise this test case would fail sporadic.
+        Thread.sleep(20);
+        Collection<String> caches = g0.cacheNames();
+        assertTrue(caches.contains("Cache1"));
+        assertTrue(caches.contains("Cache2"));
+        assertTrue(caches.contains("Cache3"));
+        assertEquals(3, g0.cacheNames().size());
+
+        caches = g1.cacheNames();
+        assertTrue(caches.contains("Cache1"));
+        assertTrue(caches.contains("Cache2"));
+        assertTrue(caches.contains("Cache3"));
+        assertEquals(3, g1.cacheNames().size());
+
+        caches = g2.cacheNames();
+        assertTrue(caches.contains("Cache1"));
+        assertTrue(caches.contains("Cache2"));
+        assertTrue(caches.contains("Cache3"));
+        assertEquals(3, g2.cacheNames().size());
+
+        caches = g3.cacheNames();
+        assertTrue(caches.contains("Cache1"));
+        assertTrue(caches.contains("Cache2"));
+        assertTrue(caches.contains("Cache3"));
+        assertEquals(3, g3.cacheNames().size());
+    }
     /**
      * @throws Exception In case of error.
      */

@@ -3200,4 +3200,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public String toString() {
         return S.toString(IgniteKernal.class, this);
     }
+
+    @Override
+    public Collection<String> cacheNames() {
+        GridCacheProcessor cacheProcessor = ctx.cache();
+        return cacheProcessor.publicCacheNames();
+    }
 }
