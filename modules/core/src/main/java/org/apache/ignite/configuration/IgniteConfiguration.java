@@ -150,7 +150,7 @@ public class IgniteConfiguration {
     public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
 
     /** Default limit of threads used at rebalance. 1 demand + 1 supply thread. */
-    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 1;
+    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 2;
 
     /** Default max queue capacity of public thread pool. */
     public static final int DFLT_PUBLIC_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
