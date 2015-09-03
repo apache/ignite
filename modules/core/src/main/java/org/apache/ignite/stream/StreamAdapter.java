@@ -18,6 +18,7 @@
 package org.apache.ignite.stream;
 
 import java.util.Map;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 
@@ -26,10 +27,21 @@ import org.apache.ignite.IgniteDataStreamer;
  * streaming from different data sources. The purpose of adapters is to
  * convert different message formats into Ignite stream key-value tuples
  * and feed the tuples into the provided {@link org.apache.ignite.IgniteDataStreamer}.
+ * <p>
+ * Two types of tuple extractors are supported:
+ * <ol>
+ *     <li>A single tuple extractor, which extracts either no or 1 tuple out of a message. See
+ *     see {@link #setTupleExtractor(StreamTupleExtractor)}.</li>
+ *     <li>A multiple tuple extractor, which is capable of extracting multiple tuples out of a single message, in the
+ *     form of a {@link Map<K, V>}. See {@link #setMultipleTupleExtractor(StreamMultipleTupleExtractor)}.</li>
+ * </ol>
  */
 public abstract class StreamAdapter<T, K, V> {
     /** Tuple extractor. */
     private StreamTupleExtractor<T, K, V> extractor;
+
+    /** Tuple extractor that supports extracting N tuples from a single event (1:n cardinality). */
+    private StreamMultipleTupleExtractor<T, K, V> multipleTupleExtractor;
 
     /** Streamer. */
     private IgniteDataStreamer<K, V> stmr;
@@ -84,6 +96,20 @@ public abstract class StreamAdapter<T, K, V> {
     }
 
     /**
+     * @return Provided tuple extractor (for 1:n cardinality).
+     */
+    public StreamMultipleTupleExtractor<T, K, V> getMultipleTupleExtractor() {
+        return multipleTupleExtractor;
+    }
+
+    /**
+     * @param multipleTupleExtractor Extractor for 1:n tuple extraction.
+     */
+    public void setMultipleTupleExtractor(StreamMultipleTupleExtractor<T, K, V> multipleTupleExtractor) {
+        this.multipleTupleExtractor = multipleTupleExtractor;
+    }
+
+    /**
      * @return Provided {@link Ignite} instance.
      */
     public Ignite getIgnite() {
@@ -98,14 +124,28 @@ public abstract class StreamAdapter<T, K, V> {
     }
 
     /**
-     * Converts given message to a tuple and adds it to the underlying streamer.
+     * Converts given message to 1 or many tuples (depending on the type of extractor) and adds it/them to the
+     * underlying streamer.
+     * <p>
+     * If both a {@link #multipleTupleExtractor} and a {@link #extractor} have been set, the former will take precedence
+     * and the latter will be ignored.
      *
      * @param msg Message to convert.
      */
     protected void addMessage(T msg) {
-        Map.Entry<K, V> e = extractor.extract(msg);
+        if (multipleTupleExtractor == null) {
+            Map.Entry<K, V> e = extractor.extract(msg);
 
-        if (e != null)
-            stmr.addData(e);
+            if (e != null)
+                stmr.addData(e);
+
+        } else {
+            Map<K, V> m = multipleTupleExtractor.extract(msg);
+
+            if (m != null)
+                stmr.addData(m);
+
+        }
     }
+
 }
