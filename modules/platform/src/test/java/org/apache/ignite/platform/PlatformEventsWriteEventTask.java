@@ -39,14 +39,11 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStrea
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.events.*;
+
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.gridgain.grid.events.AuthenticationEvent;
-import org.gridgain.grid.events.AuthorizationEvent;
-import org.gridgain.grid.events.EventType;
-import org.gridgain.grid.events.LicenseEvent;
-import org.gridgain.grid.internal.processors.security.SecuritySubjectAdapter;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -102,14 +99,10 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
                 PlatformOutputStream out = mem.output();
                 PortableRawWriterEx writer = ctx.writer(out);
 
-                int evtType = EventType.EVT_LIC_CLEARED;
+                int evtType = EventType.EVT_IGFS_DIR_CREATED;
                 String msg = "msg";
                 UUID uuid = new UUID(1, 2);
                 IgniteUuid igniteUuid = new IgniteUuid(uuid, 3);
-
-                LicenseEvent licEvt = new LicenseEvent(node, msg, evtType);
-                licEvt.licenseId(uuid);
-                ctx.writeEvent(writer, licEvt);
 
                 ctx.writeEvent(writer, new CacheEvent("cacheName", node, node, "msg", evtType, 1, true, 2,
                     igniteUuid, 3, 4, true, 5, true, uuid, "cloClsName", "taskName"));
@@ -143,12 +136,6 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
 
                 ctx.writeEvent(writer, new TaskEvent(node, msg, evtType, igniteUuid, "taskName", "taskClsName",
                     true, uuid));
-
-                ctx.writeEvent(writer, new AuthenticationEvent(node, msg, evtType, SecuritySubjectType.REMOTE_NODE,
-                    uuid, "login"));
-
-                ctx.writeEvent(writer, new AuthorizationEvent(node, msg, evtType, SecurityPermission.CACHE_READ,
-                    new SecuritySubjectAdapter(SecuritySubjectType.REMOTE_CLIENT, uuid)));
 
                 out.synchronize();
             }

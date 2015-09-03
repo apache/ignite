@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.platform;
+
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;

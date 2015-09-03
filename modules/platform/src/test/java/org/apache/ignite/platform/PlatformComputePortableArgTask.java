@@ -25,10 +25,9 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableObject;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.gridgain.grid.GridGain;
-import org.gridgain.grid.portables.PortableMetadata;
-import org.gridgain.grid.portables.PortableObject;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
@@ -90,9 +89,7 @@ public class PlatformComputePortableArgTask extends ComputeTaskAdapter<Object, I
         @Nullable @Override public Object execute() {
             PortableObject arg0 = ((PortableObject)arg);
 
-            GridGain gg = ignite.plugin(GridGain.PLUGIN_NAME);
-
-            PortableMetadata meta = gg.portables().metadata(arg0.typeId());
+            PortableMetadata meta = ignite.portables().metadata(arg0.typeId());
 
             if (meta == null)
                 throw new IgniteException("Metadata doesn't exist.");
