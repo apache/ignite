@@ -78,7 +78,7 @@
                     <property name="name" value="partitioned"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    </bean>
+                </bean>
 
                 <bean parent="cache-template">
                     <property name="name" value="partitioned_atomic"/>
@@ -147,24 +147,18 @@
             </bean>
         </property>
 
-        <property name="pluginConfigurations">
-            <list>
-                <bean class="org.apache.ignite.configuration.PlatformConfiguration">
-                    <property name="interopConfiguration">
-                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
-                            <property name="portableConfiguration">
-                                <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
-                                    <property name="types">
-                                        <util:list value-type="java.lang.String">
+        <property name="platformConfiguration">
+            <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
+                <property name="portableConfiguration">
+                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
+                        <property name="types">
+                            <util:list value-type="java.lang.String">
 
-                                        </util:list>
-                                    </property>
-                                </bean>
-                            </property>
-                        </bean>
-                    </property>
-                </bean>
-            </list>
+                            </util:list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
         </property>
     </bean>
 

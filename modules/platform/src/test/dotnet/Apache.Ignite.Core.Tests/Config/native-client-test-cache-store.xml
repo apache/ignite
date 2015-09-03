@@ -44,15 +44,9 @@
 
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
-                            <property name="assemblyName" value="GridGainTest"/>
-                            <property name="className" value="GridGain.Cache.Store.GridCacheTestStore"/>
+                            <property name="assemblyName" value="Apache.Ignite.Core.Tests"/>
+                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.GridCacheTestStore"/>
                         </bean>
-                    </property>
-                    
-                    <property name="pluginConfigurations">
-                        <list>
-                            <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration" />
-                        </list>
                     </property>
                 </bean>
 
@@ -62,19 +56,13 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeThrough" value="true"/>
                     <property name="readThrough" value="true"/>
+                    <property name="keepPortableInStore" value="false"/>
 
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
-                            <property name="assemblyName" value="GridGainTest"/>
-                            <property name="className" value="GridGain.Cache.Store.GridCacheTestStore"/>
+                            <property name="assemblyName" value="Apache.Ignite.Core.Tests"/>
+                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.GridCacheTestStore"/>
                         </bean>
-                    </property>
-                    <property name="pluginConfigurations">
-                        <list>
-                            <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration">
-                                <property name="keepPortableInStore" value="false"/>
-                            </bean>
-                        </list>
                     </property>
                 </bean>
 
@@ -84,19 +72,13 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeThrough" value="true"/>
                     <property name="readThrough" value="true"/>
+                    <property name="keepPortableInStore" value="false"/>
 
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
-                            <property name="assemblyName" value="GridGainTest"/>
-                            <property name="className" value="GridGain.Cache.Store.GridCacheTestStore"/>
+                            <property name="assemblyName" value="Apache.Ignite.Core.Tests"/>
+                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.GridCacheTestStore"/>
                         </bean>
-                    </property>
-                    <property name="pluginConfigurations">
-                        <list>
-                            <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration">
-                                <property name="keepPortableInStore" value="false"/>
-                            </bean>
-                        </list>
                     </property>
                 </bean>
 
@@ -107,16 +89,10 @@
                     <property name="writeThrough" value="true"/>
                     <property name="readThrough" value="true"/>
                     
-                    <property name="pluginConfigurations">
-                        <list>
-                            <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration" />
-                        </list>
-                    </property>
-
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
-                            <property name="assemblyName" value="GridGainTest"/>
-                            <property name="className" value="GridGain.Cache.Store.GridCacheTestStore"/>
+                            <property name="assemblyName" value="Apache.Ignite.Core.Tests"/>
+                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.GridCacheTestStore"/>
                             <property name="properties">
                                 <map>
                                     <entry key="IntProperty">
@@ -128,12 +104,6 @@
                         </bean>
                     </property>
                 </bean>
-            </list>
-        </property>
-
-        <property name="pluginConfigurations">
-            <list>
-                <bean class="org.apache.ignite.configuration.PlatformConfiguration"/>
             </list>
         </property>
 

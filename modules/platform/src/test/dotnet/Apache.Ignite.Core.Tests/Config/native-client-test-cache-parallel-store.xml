@@ -39,27 +39,15 @@
                     <property name="name" value="object_store_parallel"/>
                     <property name="cacheMode" value="LOCAL"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="keepPortableInStore" value="false"/>
 
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
-                            <property name="assemblyName" value="GridGainTest"/>
-                            <property name="className" value="GridGain.Cache.Store.GridCacheTestParallelLoadStore"/>
+                            <property name="assemblyName" value="Apache.Ignite.Core.Tests"/>
+                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.GridCacheTestParallelLoadStore"/>
                         </bean>
                     </property>
-                    <property name="pluginConfigurations">
-                        <list>
-                            <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration">
-                                <property name="keepPortableInStore" value="false"/>
-                            </bean>
-                        </list>
-                    </property>
                 </bean>
-            </list>
-        </property>
-
-        <property name="pluginConfigurations">
-            <list>
-                <bean class="org.apache.ignite.configuration.PlatformConfiguration"/>
             </list>
         </property>
 

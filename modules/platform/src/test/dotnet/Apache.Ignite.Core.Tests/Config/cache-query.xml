@@ -35,7 +35,7 @@
                     <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
                         <property name="types">
                             <list>
-                                <value>GridGain.Cache.Query.QueryPerson</value>
+                                <value>Apache.Ignite.Core.Tests.Cache.Query.QueryPerson</value>
                             </list>
                         </property>
                     </bean>
