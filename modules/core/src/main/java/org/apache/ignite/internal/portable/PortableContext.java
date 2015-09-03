@@ -241,6 +241,7 @@ public class PortableContext implements Externalizable {
         registerPredefinedType(PortableMetaDataImpl.class, 201);
 
         // TODO: Where do we put this??
+        // TODO: move required classes to Core
         registerPredefinedType(PlatformDotNetConfiguration.class);
     }
 
