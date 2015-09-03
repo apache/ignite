@@ -120,6 +120,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             var genericType = ResolveNonGenericType(assemblyName,
                 string.Format("{0}`{1}", match.Groups[1].Value, genericArgs.Length), assemblies);
 
+            if (genericType == null)
+                return null;
+
             return genericType.MakeGenericType(genericArgs);
         }
 

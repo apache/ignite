@@ -37,12 +37,12 @@
                             <list>
                                 <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64]</value>
                                 <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Type]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[GridGain.Client.TestGenericPortable[System.Int64]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64]]</value>
                                 <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Collections.Generic.List[System.Tuple[System.Int64,System.String]]]</value>
                                 <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,GridGain.Client.TestGenericPortable[System.String]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,Apache.Ignite.Core.Tests.TestGenericPortable[System.String]]</value>
                                 <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String,System.Type]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String,GridGain.Client.TestGenericPortable[System.Int64,System.String,System.Type]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String,Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String,System.Type]]</value>
                             </list>
                         </property>
                     </bean>
