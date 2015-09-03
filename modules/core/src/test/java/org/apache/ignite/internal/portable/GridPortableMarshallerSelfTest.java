@@ -2258,6 +2258,11 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertTrue(map.size() > 0);
 
         for (Map.Entry<String, Integer> entry : map.entrySet()) {
+            int id = entry.getValue();
+
+            if (id == GridPortableMarshaller.UNREGISTERED_TYPE_ID)
+                continue;
+
             PortableClassDescriptor desc = pCtx.descriptorForTypeId(false, entry.getValue(), null);
 
             assertEquals(desc.typeId(), pCtx.typeId(desc.describedClass().getName()));

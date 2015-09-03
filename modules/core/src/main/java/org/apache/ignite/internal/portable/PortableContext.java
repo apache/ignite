@@ -218,18 +218,18 @@ public class PortableContext implements Externalizable {
         registerPredefinedType(Date[].class, GridPortableMarshaller.DATE_ARR);
         registerPredefinedType(Object[].class, GridPortableMarshaller.OBJ_ARR);
 
-        registerPredefinedType(ArrayList.class, GridPortableMarshaller.ARR_LIST);
-        registerPredefinedType(LinkedList.class, GridPortableMarshaller.LINKED_LIST);
-        registerPredefinedType(HashSet.class, GridPortableMarshaller.HASH_SET);
-        registerPredefinedType(LinkedHashSet.class, GridPortableMarshaller.LINKED_HASH_SET);
-        registerPredefinedType(TreeSet.class, GridPortableMarshaller.TREE_SET);
-        registerPredefinedType(ConcurrentSkipListSet.class, GridPortableMarshaller.CONC_SKIP_LIST_SET);
+        registerPredefinedType(ArrayList.class, 0);
+        registerPredefinedType(LinkedList.class, 0);
+        registerPredefinedType(HashSet.class, 0);
+        registerPredefinedType(LinkedHashSet.class, 0);
+        registerPredefinedType(TreeSet.class, 0);
+        registerPredefinedType(ConcurrentSkipListSet.class, 0);
 
-        registerPredefinedType(HashMap.class, GridPortableMarshaller.HASH_MAP);
-        registerPredefinedType(LinkedHashMap.class, GridPortableMarshaller.LINKED_HASH_MAP);
-        registerPredefinedType(TreeMap.class, GridPortableMarshaller.TREE_MAP);
-        registerPredefinedType(ConcurrentHashMap.class, GridPortableMarshaller.CONC_HASH_MAP);
-        registerPredefinedType(ConcurrentHashMap8.class, GridPortableMarshaller.CONC_HASH_MAP);
+        registerPredefinedType(HashMap.class, 0);
+        registerPredefinedType(LinkedHashMap.class, 0);
+        registerPredefinedType(TreeMap.class, 0);
+        registerPredefinedType(ConcurrentHashMap.class, 0);
+        registerPredefinedType(ConcurrentHashMap8.class, 0);
 
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
