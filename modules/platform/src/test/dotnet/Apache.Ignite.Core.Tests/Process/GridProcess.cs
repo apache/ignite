@@ -73,6 +73,8 @@ namespace Apache.Ignite.Core.Tests.Process
 
             FileInfo[] exe = dir.GetFiles(ExeName);
 
+
+            // TODO: IGNITE-1367
             /*
             if (exe.Length == 0)
                 throw new Exception(ExeName + " is not found in test output directory: " + dir.FullName);
