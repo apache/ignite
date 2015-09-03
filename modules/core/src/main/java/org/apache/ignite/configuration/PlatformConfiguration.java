@@ -20,6 +20,6 @@ package org.apache.ignite.configuration;
 /**
  * Platform configuration marker interface.
  */
-public class PlatformConfiguration {
+public interface PlatformConfiguration {
     // No-op.
 }

@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.builder;
 
 /**
  *
  */
-interface PortableBuilderSerializationAware {
+public interface PortableLazyValue extends PortableBuilderSerializationAware {
     /**
-     * @param writer Writer.
-     * @param ctx Context.
+     * @return Value.
      */
-    public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx);
+    public Object value();
 }

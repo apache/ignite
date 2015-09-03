@@ -42,6 +42,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.portable.builder.PortableBuilderImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -2267,6 +2268,53 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testCyclicReferencesMarshalling() throws Exception {
+        PortableMarshaller marsh = new PortableMarshaller();
+
+        SimpleObject obj = simpleObject();
+
+        obj.bArr = obj.inner.bArr;
+        obj.cArr = obj.inner.cArr;
+        obj.boolArr = obj.inner.boolArr;
+        obj.sArr = obj.inner.sArr;
+        obj.strArr = obj.inner.strArr;
+        obj.iArr = obj.inner.iArr;
+        obj.lArr = obj.inner.lArr;
+        obj.fArr = obj.inner.fArr;
+        obj.dArr = obj.inner.dArr;
+        obj.dateArr = obj.inner.dateArr;
+        obj.uuidArr = obj.inner.uuidArr;
+        obj.objArr = obj.inner.objArr;
+        obj.bdArr = obj.inner.bdArr;
+        obj.map = obj.inner.map;
+        obj.col = obj.inner.col;
+        obj.mEntry = obj.inner.mEntry;
+
+        SimpleObject res = (SimpleObject)marshalUnmarshal(obj, marsh);
+
+        assertEquals(obj, res);
+
+        assertTrue(res.bArr == res.inner.bArr);
+        assertTrue(res.cArr == res.inner.cArr);
+        assertTrue(res.boolArr == res.inner.boolArr);
+        assertTrue(res.sArr == res.inner.sArr);
+        assertTrue(res.strArr == res.inner.strArr);
+        assertTrue(res.iArr == res.inner.iArr);
+        assertTrue(res.lArr == res.inner.lArr);
+        assertTrue(res.fArr == res.inner.fArr);
+        assertTrue(res.dArr == res.inner.dArr);
+        assertTrue(res.dateArr == res.inner.dateArr);
+        assertTrue(res.uuidArr == res.inner.uuidArr);
+        assertTrue(res.objArr == res.inner.objArr);
+        assertTrue(res.bdArr == res.inner.bdArr);
+        assertTrue(res.map == res.inner.map);
+        assertTrue(res.col == res.inner.col);
+        assertTrue(res.mEntry == res.inner.mEntry);
+    }
+
+    /**
      *
      */
     private static class ObjectWithClassFields {
@@ -2452,6 +2500,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         inner.map = new HashMap<>();
         inner.enumVal = TestEnum.A;
         inner.enumArr = new TestEnum[] {TestEnum.A, TestEnum.B};
+        inner.bdArr = new BigDecimal[] {new BigDecimal(1000), BigDecimal.ONE};
 
         inner.col.add("str1");
         inner.col.add("str2");
@@ -2460,6 +2509,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         inner.map.put(1, "str1");
         inner.map.put(2, "str2");
         inner.map.put(3, "str3");
+
+        inner.mEntry = inner.map.entrySet().iterator().next();
 
         SimpleObject outer = new SimpleObject();
 
@@ -2492,6 +2543,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         outer.enumVal = TestEnum.B;
         outer.enumArr = new TestEnum[] {TestEnum.B, TestEnum.C};
         outer.inner = inner;
+        outer.bdArr = new BigDecimal[] {new BigDecimal(5000), BigDecimal.TEN};
+
 
         outer.col.add("str4");
         outer.col.add("str5");
@@ -2500,6 +2553,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         outer.map.put(4, "str4");
         outer.map.put(5, "str5");
         outer.map.put(6, "str6");
+
+        outer.mEntry = outer.map.entrySet().iterator().next();
 
         return outer;
     }
@@ -2785,6 +2840,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         private Object[] objArr;
 
         /** */
+        private BigDecimal[] bdArr;
+
+        /** */
         private Collection<String> col;
 
         /** */
@@ -2795,6 +2853,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** */
         private TestEnum[] enumArr;
+
+        /** */
+        private Map.Entry<Integer, String> mEntry;
 
         /** */
         private SimpleObject inner;

@@ -15,33 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.processors.platform.cpp;
+
+import org.apache.ignite.internal.processors.platform.PlatformBootstrap;
+import org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory;
 
 /**
- *
+ * Platform .Net bootstrap factory.
  */
-class PortablePlainLazyValue extends PortableAbstractLazyValue {
-    /** */
-    protected final int len;
+public class PlatformCppBootstrapFactory implements PlatformBootstrapFactory {
+    /** Bootstrap ID. */
+    public static final int ID = 2;
 
-    /**
-     * @param reader Reader
-     * @param valOff Offset
-     * @param len Length.
-     */
-    protected PortablePlainLazyValue(PortableBuilderReader reader, int valOff, int len) {
-        super(reader, valOff);
-
-        this.len = len;
+    /** {@inheritDoc} */
+    @Override public int id() {
+        return ID;
     }
 
     /** {@inheritDoc} */
-    @Override protected Object init() {
-        return reader.reader().unmarshal(valOff);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
-        writer.write(reader.array(), valOff, len);
+    @Override public PlatformBootstrap create() {
+        return new PlatformCppBootstrap();
     }
 }

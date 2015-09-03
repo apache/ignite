@@ -28,6 +28,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgnitePortables;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.portable.builder.PortableBuilderImpl;
 import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectAllTypes;
 import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectContainer;
 import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectInner;
