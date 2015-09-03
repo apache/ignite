@@ -2249,20 +2249,19 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         PortableContext pCtx = initPortableContext(marsh);
 
-        Field field = pCtx.getClass().getDeclaredField("predefinedClasses");
+        Field field = pCtx.getClass().getDeclaredField("predefinedTypeNames");
 
         field.setAccessible(true);
 
-        Set<Class> value = (Set<Class>)field.get(pCtx);
+        Map<String, Integer> map = (Map<String, Integer>)field.get(pCtx);
 
-        assertTrue(value.size() > 0);
+        assertTrue(map.size() > 0);
 
-        for (Class pCls : value) {
-            PortableClassDescriptor desc = pCtx.descriptorForClass(pCls);
+        for (Map.Entry<String, Integer> entry : map.entrySet()) {
+            PortableClassDescriptor desc = pCtx.descriptorForTypeId(false, entry.getValue(), null);
 
-            assertEquals(desc.typeId(), pCtx.typeId(pCls).id());
-            assertEquals(desc.typeId(), pCtx.typeId(pCls.getName()));
-            assertEquals(desc.typeId(), pCtx.typeId(pCtx.typeName(pCls.getName())));
+            assertEquals(desc.typeId(), pCtx.typeId(desc.describedClass().getName()));
+            assertEquals(desc.typeId(), pCtx.typeId(pCtx.typeName(desc.describedClass().getName())));
         }
     }
 

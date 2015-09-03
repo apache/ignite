@@ -112,9 +112,6 @@ public class PortableContext implements Externalizable {
     private final Map<Integer, PortableClassDescriptor> predefinedTypes = new HashMap<>();
 
     /** */
-    private final Set<Class> predefinedClasses = new HashSet<>();
-
-    /** */
     private final Map<String, Integer> predefinedTypeNames = new HashMap<>();
 
     /** */
@@ -221,18 +218,18 @@ public class PortableContext implements Externalizable {
         registerPredefinedType(Date[].class, GridPortableMarshaller.DATE_ARR);
         registerPredefinedType(Object[].class, GridPortableMarshaller.OBJ_ARR);
 
-        registerPredefinedType(ArrayList.class, 0);
-        registerPredefinedType(LinkedList.class, 0);
-        registerPredefinedType(HashSet.class, 0);
-        registerPredefinedType(LinkedHashSet.class, 0);
-        registerPredefinedType(TreeSet.class, 0);
-        registerPredefinedType(ConcurrentSkipListSet.class, 0);
+        registerPredefinedType(ArrayList.class, GridPortableMarshaller.ARR_LIST);
+        registerPredefinedType(LinkedList.class, GridPortableMarshaller.LINKED_LIST);
+        registerPredefinedType(HashSet.class, GridPortableMarshaller.HASH_SET);
+        registerPredefinedType(LinkedHashSet.class, GridPortableMarshaller.LINKED_HASH_SET);
+        registerPredefinedType(TreeSet.class, GridPortableMarshaller.TREE_SET);
+        registerPredefinedType(ConcurrentSkipListSet.class, GridPortableMarshaller.CONC_SKIP_LIST_SET);
 
-        registerPredefinedType(HashMap.class, 0);
-        registerPredefinedType(LinkedHashMap.class, 0);
-        registerPredefinedType(TreeMap.class, 0);
-        registerPredefinedType(ConcurrentHashMap.class, 0);
-        registerPredefinedType(ConcurrentHashMap8.class, 0);
+        registerPredefinedType(HashMap.class, GridPortableMarshaller.HASH_MAP);
+        registerPredefinedType(LinkedHashMap.class, GridPortableMarshaller.LINKED_HASH_MAP);
+        registerPredefinedType(TreeMap.class, GridPortableMarshaller.TREE_MAP);
+        registerPredefinedType(ConcurrentHashMap.class, GridPortableMarshaller.CONC_HASH_MAP);
+        registerPredefinedType(ConcurrentHashMap8.class, GridPortableMarshaller.CONC_HASH_MAP);
 
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
@@ -508,7 +505,10 @@ public class PortableContext implements Externalizable {
                 null,
                 useTs,
                 metaDataEnabled,
-                keepDeserialized);
+                keepDeserialized,
+                true, /* registered */
+                false /* predefined */
+            );
 
             PortableClassDescriptor old = descByCls.putIfAbsent(cls, desc);
 
@@ -556,7 +556,9 @@ public class PortableContext implements Externalizable {
             useTs,
             metaDataEnabled,
             keepDeserialized,
-            registered);
+            registered,
+            false /* predefined */
+        );
 
         // perform put() instead of putIfAbsent() because "registered" flag may have been changed.
         userTypes.put(typeId, desc);
@@ -608,31 +610,6 @@ public class PortableContext implements Externalizable {
             return typeName.hashCode();
 
         return idMapper(shortTypeName).typeId(shortTypeName);
-    }
-
-    /**
-     * @param cls Class.
-     * @return Type ID.
-     * @throws PortableException In case of error.
-     */
-    public Type typeId(Class cls) throws PortableException {
-        String clsName = cls.getName();
-
-        if (predefinedClasses.contains(cls))
-            return new Type(descByCls.get(cls).typeId(), true);
-
-        if (marshCtx.isSystemType(clsName))
-            return new Type(clsName.hashCode(), true);
-
-        PortableClassDescriptor desc = descByCls.get(cls);
-
-        boolean registered = desc != null && desc.registered();
-
-        if (!registered)
-            // forces to register the class and fill up all required data structures
-            desc = registerUserClassDescriptor(cls);
-
-        return new Type(desc.typeId(), desc.registered());
     }
 
     /**
@@ -716,10 +693,11 @@ public class PortableContext implements Externalizable {
             null,
             false,
             false,
-            false
+            false,
+            true, /* registered */
+            true /* predefined */
         );
 
-        predefinedClasses.add(cls);
         predefinedTypeNames.put(typeName, id);
         predefinedTypes.put(id, desc);
 
@@ -789,7 +767,10 @@ public class PortableContext implements Externalizable {
                 serializer,
                 useTs,
                 metaDataEnabled,
-                keepDeserialized);
+                keepDeserialized,
+                true, /* registered */
+                false /* predefined */
+            );
 
             fieldsMeta = desc.fieldsMeta();
 
@@ -879,16 +860,6 @@ public class PortableContext implements Externalizable {
      */
     public boolean isConvertString() {
         return convertStrings;
-    }
-
-    /**
-     * Returns whether {@code cls} is predefined in the context or not.
-     *
-     * @param cls Class.
-     * @return {@code true} if predefined, {@code false} otherwise.
-     */
-    public boolean isPredefinedClass(Class<?> cls) {
-        return predefinedClasses.contains(cls);
     }
 
     /**
