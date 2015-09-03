@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var ex = Assert.Throws<InvalidOperationException>(() => prx.MissingMethod());
 
             Assert.AreEqual("Failed to invoke proxy: there is no method 'MissingMethod'" +
-                            " in type 'GridGain.Client.Services.ServiceProxyTest+TestGridService'", ex.Message);
+                            " in type 'Apache.Ignite.Core.Tests.Services.ServiceProxyTest+TestGridService'", ex.Message);
         }
 
         /// <summary>
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var ex = Assert.Throws<InvalidOperationException>(() => prx.AmbiguousMethod(1));
 
             Assert.AreEqual("Failed to invoke proxy: there are 2 methods 'AmbiguousMethod' in type " +
-                            "'GridGain.Client.Services.ServiceProxyTest+TestGridService' with (Int32) arguments, " +
+                            "'Apache.Ignite.Core.Tests.Services.ServiceProxyTest+TestGridService' with (Int32) arguments, " +
                             "can't resolve ambiguity.", ex.Message);
         }
 
