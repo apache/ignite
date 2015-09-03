@@ -3076,13 +3076,19 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (cls.equals(DiscoveryNodeValidationProcessor.class))
             return (T)new OsDiscoveryNodeValidationProcessor(ctx);
 
-        if (cls.equals(PlatformProcessor.class))
-            return (T)new PlatformNoopProcessor(ctx);
-
         Class<T> implCls = null;
 
         try {
-            implCls = (Class<T>)Class.forName(componentClassName(cls));
+            String clsName;
+
+            // Handle special case for PlatformProcessor
+            if (cls.equals(PlatformProcessor.class))
+                clsName = ctx.config().getPlatformConfiguration() == null ?
+                    PlatformNoopProcessor.class.getName() : cls.getName() + "Impl";
+            else
+                clsName = componentClassName(cls);
+
+            implCls = (Class<T>)Class.forName(clsName);
         }
         catch (ClassNotFoundException ignore) {
             // No-op.
