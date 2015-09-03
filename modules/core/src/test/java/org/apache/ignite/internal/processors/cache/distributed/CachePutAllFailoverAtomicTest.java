@@ -15,36 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
  *
  */
-public class PortablePlainPortableObject implements PortableLazyValue {
-    /** */
-    private final PortableObject portableObj;
-
-    /**
-     * @param portableObj Portable object.
-     */
-    public PortablePlainPortableObject(PortableObject portableObj) {
-        this.portableObj = portableObj;
-    }
-
+public class CachePutAllFailoverAtomicTest extends CachePutAllFailoverAbstractTest {
     /** {@inheritDoc} */
-    @Override public Object value() {
-        return portableObj;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
-        PortableObject val = portableObj;
-
-        if (val instanceof PortableObjectOffheapImpl)
-            val = ((PortableObjectOffheapImpl)val).heapCopy();
-
-        writer.doWritePortableObject((PortableObjectImpl)val);
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 }

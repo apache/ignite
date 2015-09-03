@@ -33,6 +33,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import org.apache.ignite.internal.portable.builder.PortableLazyValue;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.portable.PortableObject;
 import org.jetbrains.annotations.Nullable;
@@ -356,6 +357,16 @@ public class PortableUtils {
      */
     public static boolean isPlainType(int type) {
         return type > 0 && type < PLAIN_TYPE_FLAG.length && PLAIN_TYPE_FLAG[type];
+    }
+
+    /**
+     * Checks whether an array type values can or can not contain references to other object.
+     *
+     * @param type Array type.
+     * @return {@code true} if content of serialized array value cannot contain references to other object.
+     */
+    public static boolean isPlainArrayType(int type) {
+        return type >= BYTE_ARR && type <= DATE_ARR;
     }
 
     /**

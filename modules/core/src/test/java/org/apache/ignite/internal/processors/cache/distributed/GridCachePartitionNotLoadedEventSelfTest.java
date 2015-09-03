@@ -89,7 +89,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testPrimaryAndBackupDead() throws Exception {
         backupCnt = 1;
@@ -131,11 +131,13 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testPrimaryDead() throws Exception {
         startGrid(0);
         startGrid(1);
+
+        awaitPartitionMapExchange();
 
         PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
 

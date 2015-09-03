@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.builder;
+
+import org.apache.ignite.internal.portable.*;
 
 import java.util.AbstractList;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 
 /**
  *
  */
-class PortableLazyLinkedList extends AbstractList<Object> implements PortableBuilderSerializationAware {
+class PortableLazyArrayList extends AbstractList<Object> implements PortableBuilderSerializationAware {
     /** */
     private final PortableBuilderReader reader;
 
@@ -41,7 +41,7 @@ class PortableLazyLinkedList extends AbstractList<Object> implements PortableBui
      * @param reader Reader.
      * @param size Size,
      */
-    PortableLazyLinkedList(PortableBuilderReader reader, int size) {
+    PortableLazyArrayList(PortableBuilderReader reader, int size) {
         this.reader = reader;
         off = reader.position() - 1/* flag */ - 4/* size */ - 1/* col type */;
 
@@ -60,7 +60,7 @@ class PortableLazyLinkedList extends AbstractList<Object> implements PortableBui
 
             reader.position(off + 1/* flag */ + 4/* size */ + 1/* col type */);
 
-            delegate = new LinkedList<>();
+            delegate = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++)
                 delegate.add(reader.parseValue());
@@ -105,15 +105,13 @@ class PortableLazyLinkedList extends AbstractList<Object> implements PortableBui
     /** {@inheritDoc} */
     @Override public void clear() {
         if (delegate == null)
-            delegate = new LinkedList<>();
+            delegate = new ArrayList<>();
         else
             delegate.clear();
     }
 
     /** {@inheritDoc} */
     @Override public boolean addAll(int idx, Collection<?> c) {
-        ensureDelegateInit();
-
         return delegate.addAll(idx, c);
     }
 
@@ -133,64 +131,12 @@ class PortableLazyLinkedList extends AbstractList<Object> implements PortableBui
     }
 
     /** {@inheritDoc} */
-    @Override public ListIterator<Object> listIterator(final int idx) {
-        ensureDelegateInit();
-
-        return new ListIterator<Object>() {
-            /** */
-            private final ListIterator<Object> delegate = PortableLazyLinkedList.super.listIterator(idx);
-
-            @Override public boolean hasNext() {
-                return delegate.hasNext();
-            }
-
-            @Override public Object next() {
-                return PortableUtils.unwrapLazy(delegate.next());
-            }
-
-            @Override public boolean hasPrevious() {
-                return delegate.hasPrevious();
-            }
-
-            @Override public Object previous() {
-                return PortableUtils.unwrapLazy(delegate.previous());
-            }
-
-            @Override public int nextIndex() {
-                return delegate.nextIndex();
-            }
-
-            @Override public int previousIndex() {
-                return delegate.previousIndex();
-            }
-
-            @Override public void remove() {
-                delegate.remove();
-            }
-
-            @Override public void set(Object o) {
-                delegate.set(o);
-            }
-
-            @Override public void add(Object o) {
-                delegate.add(o);
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<Object> iterator() {
-        ensureDelegateInit();
-
-        return PortableUtils.unwrapLazyIterator(super.iterator());
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
         if (delegate == null) {
             int size = reader.readIntAbsolute(off + 1);
 
             int hdrSize = 1 /* flag */ + 4 /* size */ + 1 /* col type */;
+
             writer.write(reader.array(), off, hdrSize);
 
             reader.position(off + hdrSize);
@@ -208,8 +154,13 @@ class PortableLazyLinkedList extends AbstractList<Object> implements PortableBui
             byte colType = reader.array()[off + 1 /* flag */ + 4 /* size */];
             writer.writeByte(colType);
 
+            int oldPos = reader.position();
+
             for (Object o : delegate)
                 ctx.writeValue(writer, o);
+
+            // PortableBuilderImpl might have been written. It could override reader's position.
+            reader.position(oldPos);
         }
     }
 }

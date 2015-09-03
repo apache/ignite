@@ -21,12 +21,15 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTaskCancelledException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -78,8 +81,11 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        if (gridName.equals(getTestGridName(SERVERS_COUNT)))
+        if (gridName.equals(getTestGridName(SERVERS_COUNT))) {
             cfg.setClientMode(true);
+
+            spi.setForceServerMode(true);
+        }
 
         return cfg;
     }
@@ -93,21 +99,35 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinityCallRestartNode() throws Exception {
-        startGrids(4);
+        startGridsMultiThreaded(SERVERS_COUNT);
 
-        Integer key = primaryKey(grid(0).cache(CACHE_NAME));
+        final int ITERS = 5;
 
-        IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                U.sleep(500);
-                stopGrid(0);
+        for (int i = 0; i < ITERS; i++) {
+            log.info("Iteration: " + i);
 
-                return null;
-            }
-        });
+            Integer key = primaryKey(grid(0).cache(CACHE_NAME));
 
-        while (!fut.isDone())
-            grid(1).compute().affinityCall(CACHE_NAME, key, new CheckCallable(key));
+            long topVer = grid(0).cluster().topologyVersion();
+
+            IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    U.sleep(500);
+
+                    stopGrid(0);
+
+                    return null;
+                }
+            });
+
+            while (!fut.isDone())
+                grid(1).compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, topVer, topVer + 1));
+
+            fut.get();
+
+            if (i < ITERS - 1)
+                startGrid(0);
+        }
 
         stopAllGrids();
     }
@@ -116,11 +136,13 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinityCallNoServerNode() throws Exception {
-        startGrids(SERVERS_COUNT + 1);
+        startGridsMultiThreaded(SERVERS_COUNT + 1);
 
         final Integer key = 1;
 
         final Ignite client = grid(SERVERS_COUNT);
+
+        assertTrue(client.configuration().isClientMode());
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -136,15 +158,10 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
                 client.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key));
         }
         catch (ComputeTaskCancelledException e) {
-            assertTrue(e.getMessage().contains("stopping"));
+            assertTrue("Unexpected error: " + e, e.getMessage().contains("stopping"));
         }
         catch(ClusterGroupEmptyException e) {
-            assertTrue(e.getMessage().contains("Topology projection is empty"));
-        }
-        catch(IgniteException e) {
-            assertTrue(e.getMessage().contains("Client node disconnected") ||
-                e.getMessage().contains("Failed to reconnect to cluster") ||
-                e.getMessage().contains("Failed to execute task, client node disconnected."));
+            assertTrue("Unexpected error: " + e, e.getMessage().contains("Topology projection is empty"));
         }
 
         stopAllGrids();
@@ -161,16 +178,38 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         @IgniteInstanceResource
         private Ignite ignite;
 
+        /** */
+        private long[] topVers;
+
         /**
          * @param key Key.
+         * @param topVers Topology versions to check.
          */
-        public CheckCallable(Object key) {
+        public CheckCallable(Object key, long... topVers) {
             this.key = key;
+            this.topVers = topVers;
         }
 
         /** {@inheritDoc} */
         @Override public Object call() throws IgniteCheckedException {
-            assert ignite.cluster().localNode().id().equals(ignite.cluster().mapKeyToNode(CACHE_NAME, key).id());
+            if (topVers.length > 0) {
+                boolean pass = false;
+
+                GridCacheAffinityManager aff =
+                    ((IgniteKernal)ignite).context().cache().internalCache(CACHE_NAME).context().affinity();
+
+                ClusterNode loc = ignite.cluster().localNode();
+
+                for (long topVer : topVers) {
+                    if (loc.equals(aff.primary(key, new AffinityTopologyVersion(topVer, 0)))) {
+                        pass = true;
+
+                        break;
+                    }
+                }
+
+                assertTrue(pass);
+            }
 
             return null;
         }
