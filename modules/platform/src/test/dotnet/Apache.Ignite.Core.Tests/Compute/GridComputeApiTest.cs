@@ -35,16 +35,16 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class GridComputeApiTest
     {
         /** Echo task name. */
-        private const string EchoTask = "org.gridgain.interop.GridInteropComputeEchoTask";
+        private const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
 
         /** Portable argument task name. */
-        private const string PortableArgTask = "org.gridgain.interop.GridInteropComputePortableArgTask";
+        private const string PortableArgTask = "org.apache.ignite.platform.PlatformComputePortableArgTask";
 
         /** Broadcast task name. */
-        private const string BroadcastTask = "org.gridgain.interop.GridInteropComputeBroadcastTask";
+        private const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
 
         /** Broadcast task name. */
-        private const string DecimalTask = "org.gridgain.interop.GridInteropComputeDecimalTask";
+        private const string DecimalTask = "org.apache.ignite.platform.PlatformComputeDecimalTask";
 
         /** Java portable class name. */
         private const string JavaPortableCls = "GridInteropComputeJavaPortable";

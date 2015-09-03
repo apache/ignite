@@ -38,14 +38,14 @@
                                 <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetPortableConfiguration">
                                     <property name="types">
                                         <list>
-                                            <value>GridGain.Client.TestGenericPortable[System.Int64]</value>
-                                            <value>GridGain.Client.TestGenericPortable[System.Type]</value>
-                                            <value>GridGain.Client.TestGenericPortable[GridGain.Client.TestGenericPortable[System.Int64]]</value>
-                                            <value>GridGain.Client.TestGenericPortable[System.Collections.Generic.List[System.Tuple[System.Int64,System.String]]]</value>
-                                            <value>GridGain.Client.TestGenericPortable[System.Int64,System.String]</value>
-                                            <value>GridGain.Client.TestGenericPortable[System.Int64,GridGain.Client.TestGenericPortable[System.String]]</value>
-                                            <value>GridGain.Client.TestGenericPortable[System.Int64,System.String,System.Type]</value>
-                                            <value>GridGain.Client.TestGenericPortable[System.Int64,System.String,GridGain.Client.TestGenericPortable[System.Int64,System.String,System.Type]]</value>
+                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64]</value>
+                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Type]</value>
+                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[GridGain.Client.TestGenericPortable[System.Int64]]</value>
+                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Collections.Generic.List[System.Tuple[System.Int64,System.String]]]</value>
+                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String]</value>
+                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,GridGain.Client.TestGenericPortable[System.String]]</value>
+                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String,System.Type]</value>
+                                            <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String,GridGain.Client.TestGenericPortable[System.Int64,System.String,System.Type]]</value>
                                         </list>
                                     </property>
                                 </bean>

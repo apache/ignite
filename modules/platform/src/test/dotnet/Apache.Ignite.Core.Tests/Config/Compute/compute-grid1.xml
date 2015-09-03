@@ -73,13 +73,13 @@
                 <property name="typeConfigurations">
                     <list>
                         <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.interop.GridInteropComputePortable"/>
+                            <property name="className" value="org.apache.ignite.platform.PlatformComputePortable"/>
                         </bean>
                         <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.interop.GridInteropComputeJavaPortable"/>
+                            <property name="className" value="org.apache.ignite.platform.PlatformComputeJavaPortable"/>
                         </bean>
                         <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.interop.GridInteropComputeEnum"/>
+                            <property name="className" value="org.apache.ignite.platform.PlatformComputeEnum"/>
                         </bean>
                     </list>
                 </property>

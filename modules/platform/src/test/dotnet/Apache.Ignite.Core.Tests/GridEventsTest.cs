@@ -477,7 +477,7 @@ namespace Apache.Ignite.Core.Tests
 
             using (var inStream = GridManager.Memory.Allocate().Stream())
             {
-                var result = comp.ExecuteJavaTask<bool>("org.gridgain.interop.GridInteropEventsWriteEventTask",
+                var result = comp.ExecuteJavaTask<bool>("org.apache.ignite.platform.PlatformEventsWriteEventTask",
                     inStream.MemoryPointer);
 
                 Assert.IsTrue(result);

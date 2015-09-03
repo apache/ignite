@@ -45,11 +45,11 @@
             <list>
                 <bean class="org.gridgain.interop.lifecycle.GridInteropJavaLifecycleBean" />
                 <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetLifecycleBean">
-                    <property name="className" value="GridGain.Client.Bean" />
+                    <property name="className" value="Apache.Ignite.Core.Tests.Bean" />
                 </bean>
                 <bean class="org.gridgain.interop.lifecycle.GridInteropJavaLifecycleBean" />
                 <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetLifecycleBean">
-                    <property name="className" value="GridGain.Client.Bean" />
+                    <property name="className" value="Apache.Ignite.Core.Tests.Bean" />
                     <property name="properties">
                         <map>
                             <entry key="Property1">

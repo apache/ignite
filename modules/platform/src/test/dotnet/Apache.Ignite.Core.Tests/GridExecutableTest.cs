@@ -39,10 +39,10 @@ namespace Apache.Ignite.Core.Tests
         private static readonly string SpringCfgPath = "config\\compute\\compute-standalone.xml";
 
         /** Min memory Java task. */
-        private const string MinMemTask = "org.gridgain.interop.GridInteropMinMemoryTask";
+        private const string MinMemTask = "org.apache.ignite.platform.PlatformMinMemoryTask";
 
         /** Max memory Java task. */
-        private const string MaxMemTask = "org.gridgain.interop.GridInteropMaxMemoryTask";
+        private const string MaxMemTask = "org.apache.ignite.platform.PlatformMaxMemoryTask";
 
         /** Grid. */
         private IIgnite _grid;
