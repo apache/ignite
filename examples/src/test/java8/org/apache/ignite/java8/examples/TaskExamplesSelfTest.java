@@ -19,6 +19,8 @@ package org.apache.ignite.java8.examples;
 
 //import org.apache.ignite.examples.java8.computegrid.*;
 
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+
 /**
  * Hello world examples self test.
  */

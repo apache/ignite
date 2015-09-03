@@ -19,14 +19,16 @@ package org.apache.ignite.java8.examples;
 
 //import org.apache.ignite.examples.java8.misc.lifecycle.*;
 
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+
 /**
  * LifecycleExample self test.
  */
 public class LifecycleExamplesSelfTest extends GridAbstractExamplesTest {
     /**
-     * TODO: IGNITE-711 next example(s) should be implemented for java 8 
+     * TODO: IGNITE-711 next example(s) should be implemented for java 8
      * or testing method(s) should be removed if example(s) does not applicable for java 8.
-     * 
+     *
      * @throws Exception If failed.
      */
 //    public void testLifecycleExample() throws Exception {
