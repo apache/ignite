@@ -18,22 +18,27 @@
 -->
 
 <!--
-    Ignite configuration with all defaults and enabled p2p deployment and enabled events.
+    Ignite configuration with all defaults and enabled p2p deployment, events and portable marshaller.
+
+    Use this configuration file when running HTTP REST examples (see 'examples/rest' folder).
+
+    When starting a standalone node, you need to execute the following command:
+    {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/portable/example-ignite-portable.xml
+
+    When starting Ignite from Java IDE, pass path to this file to Ignition:
+    Ignition.start("examples/config/portable/example-ignite-portable.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
     <!-- Imports default Ignite configuration -->
-    <import resource="example-default.xml"/>
+    <import resource="../example-default.xml"/>
 
     <bean parent="ignite.cfg">
-        <!-- Enabled optimized marshaller -->
+        <!-- Enables portable marshaller -->
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <!-- Set to false to allow non-serializable objects in examples, default is true. -->
-                <property name="requireSerializable" value="false"/>
-            </bean>
+            <bean class="org.apache.ignite.marshaller.portable.PortableMarshaller"/>
         </property>
     </bean>
 </beans>
