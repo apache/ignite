@@ -278,7 +278,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             IPortableObject v = (IPortableObject)map[1];
 
-            Assert.AreEqual(1, v.Field<int>("idx"));
+            Assert.AreEqual(1, v.Field<int>("_idx"));
 
             cache.LocalEvict(new[] { 1 });
 
