@@ -802,7 +802,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskPortable()
         {
-            GridInteropComputePortable res = _grid1.Compute().ExecuteJavaTask<GridInteropComputePortable>(EchoTask, EchoTypePortable);
+            PlatformComputePortable res = _grid1.Compute().ExecuteJavaTask<PlatformComputePortable>(EchoTask, EchoTypePortable);
 
             Assert.AreEqual(1, res.Field);
         }
@@ -845,7 +845,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskPortableArray()
         {
-            var res = _grid1.Compute().ExecuteJavaTask<GridInteropComputePortable[]>(EchoTask, EchoTypePortableArray);
+            var res = _grid1.Compute().ExecuteJavaTask<PlatformComputePortable[]>(EchoTask, EchoTypePortableArray);
             
             Assert.AreEqual(3, res.Length);
 
@@ -890,7 +890,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             compute.WithKeepPortable();
 
-            GridInteropComputeNetPortable arg = new GridInteropComputeNetPortable();
+            PlatformComputeNetPortable arg = new PlatformComputeNetPortable();
 
             arg.Field = 100;
 
@@ -1096,8 +1096,8 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(GridInteropComputePortable)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(GridInteropComputeNetPortable)));
+            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PlatformComputePortable)));
+            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PlatformComputeNetPortable)));
             portTypeCfgs.Add(new PortableTypeConfiguration(JavaPortableCls));
 
             portCfg.TypeConfigurations = portTypeCfgs;
@@ -1114,7 +1114,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class GridInteropComputePortable
+    class PlatformComputePortable
     {
         public int Field
         {
@@ -1123,7 +1123,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class GridInteropComputeNetPortable : GridInteropComputePortable
+    class PlatformComputeNetPortable : PlatformComputePortable
     {
 
     }
