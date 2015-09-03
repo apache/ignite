@@ -17,7 +17,15 @@
 
 package org.apache.ignite.java8.testsuites;
 
-import org.apache.ignite.java8.examples.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.java8.examples.BasicExamplesMultiNodeSelfTest;
+import org.apache.ignite.java8.examples.BasicExamplesSelfTest;
+import org.apache.ignite.java8.examples.CacheExamplesMultiNodeSelfTest;
+import org.apache.ignite.java8.examples.CacheExamplesSelfTest;
+import org.apache.ignite.java8.examples.EventsExamplesMultiNodeSelfTest;
+import org.apache.ignite.java8.examples.EventsExamplesSelfTest;
+import org.apache.ignite.java8.examples.MessagingExamplesSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 

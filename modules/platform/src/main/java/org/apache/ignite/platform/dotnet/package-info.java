@@ -15,43 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
-
 /**
- *
+ * <!-- Package description. -->
+ * Contains .Net platform-related classes.
  */
-abstract class PortableAbstractLazyValue implements PortableLazyValue {
-    /** */
-    protected Object val;
-
-    /** */
-    protected final PortableBuilderReader reader;
-
-    /** */
-    protected final int valOff;
-
-    /**
-     * @param reader Reader.
-     * @param valOff Value.
-     */
-    protected PortableAbstractLazyValue(PortableBuilderReader reader, int valOff) {
-        this.reader = reader;
-        this.valOff = valOff;
-    }
-
-    /**
-     * @return Value.
-     */
-    protected abstract Object init();
-
-    /** {@inheritDoc} */
-    @Override public Object value() {
-        if (val == null) {
-            val = init();
-
-            assert val != null;
-        }
-
-        return val;
-    }
-}
+package org.apache.ignite.platform.dotnet;

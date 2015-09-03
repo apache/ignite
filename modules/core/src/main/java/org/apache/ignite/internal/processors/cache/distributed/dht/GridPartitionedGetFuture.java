@@ -290,7 +290,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(IgniteInternalFuture<Map<K, V>> f) {
+    private boolean isMini(IgniteInternalFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 
@@ -598,7 +598,22 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridPartitionedGetFuture.class, this, super.toString());
+        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
+            @SuppressWarnings("unchecked")
+            @Override public String apply(IgniteInternalFuture<?> f) {
+                if (isMini(f)) {
+                    return "[node=" + ((MiniFuture)f).node().id() +
+                        ", loc=" + ((MiniFuture)f).node().isLocal() +
+                        ", done=" + f.isDone() + "]";
+                }
+                else
+                    return "[loc=true, done=" + f.isDone() + "]";
+            }
+        });
+
+        return S.toString(GridPartitionedGetFuture.class, this,
+            "innerFuts", futs,
+            "super", super.toString());
     }
 
     /**

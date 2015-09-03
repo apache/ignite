@@ -27,8 +27,8 @@ import org.apache.ignite.cluster.ClusterNode;
 public interface TopologyValidator extends Serializable {
     /**
      * Validates topology.
-     * @param nodes nodes collection to be validated.
-     * @return is topology valid or not.
+     * @param nodes Collection of nodes.
+     * @return {@code true} in case topology is valid for specific cache, otherwise {@code false}
      */
     boolean validate(Collection<ClusterNode> nodes);
 }

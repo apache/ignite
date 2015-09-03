@@ -15,13 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.builder;
 
-import java.util.Collection;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.PortableObjectEx;
+import org.apache.ignite.internal.portable.PortableUtils;
+import org.apache.ignite.internal.portable.PortableWriterExImpl;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.portable.*;
+
+import java.util.*;
 
 /**
  *

@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.processors.cache.distributed;
+
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
  *
  */
-interface PortableBuilderSerializationAware {
-    /**
-     * @param writer Writer.
-     * @param ctx Context.
-     */
-    public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx);
+public class CachePutAllFailoverAtomicTest extends CachePutAllFailoverAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
+    }
 }

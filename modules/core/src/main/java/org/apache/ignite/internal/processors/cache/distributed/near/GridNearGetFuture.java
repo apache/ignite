@@ -291,7 +291,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(IgniteInternalFuture<Map<K, V>> f) {
+    private boolean isMini(IgniteInternalFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 
@@ -719,6 +719,26 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         }
 
         return map;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
+            @SuppressWarnings("unchecked")
+            @Override public String apply(IgniteInternalFuture<?> f) {
+                if (isMini(f)) {
+                    return "[node=" + ((MiniFuture)f).node().id() +
+                        ", loc=" + ((MiniFuture)f).node().isLocal() +
+                        ", done=" + f.isDone() + "]";
+                }
+                else
+                    return "[loc=true, done=" + f.isDone() + "]";
+            }
+        });
+
+        return S.toString(GridNearGetFuture.class, this,
+            "innerFuts", futs,
+            "super", super.toString());
     }
 
     /**

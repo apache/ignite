@@ -24,7 +24,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
@@ -32,18 +31,12 @@ import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
@@ -166,41 +159,6 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
                     assertEquals("value-" + i, cache.get("key-" + base + "-" + i));
                     assertTrue(set.contains("value-" + i));
                 }
-            }
-        }
-    }
-
-    /**
-     * @param ignite Ignite instance.
-     * @param clo Closure.
-     * @return Result of closure execution.
-     * @throws Exception If failed.
-     */
-    private <T> T doInTransaction(Ignite ignite, Callable<T> clo) throws Exception {
-        while (true) {
-            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                T res = clo.call();
-
-                tx.commit();
-
-                return res;
-            }
-            catch (CacheException e) {
-                if (e.getCause() instanceof ClusterTopologyException) {
-                    ClusterTopologyException topEx = (ClusterTopologyException)e.getCause();
-
-                    topEx.retryReadyFuture().get();
-                }
-                else
-                    throw e;
-            }
-            catch (ClusterTopologyException e) {
-                IgniteFuture<?> fut = e.retryReadyFuture();
-
-                fut.get();
-            }
-            catch (TransactionRollbackException ignore) {
-                // Safe to retry right away.
             }
         }
     }

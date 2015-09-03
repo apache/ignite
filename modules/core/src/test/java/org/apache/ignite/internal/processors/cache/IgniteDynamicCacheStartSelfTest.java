@@ -1133,8 +1133,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartStopSameCacheMultinode() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-993");
-
         final AtomicInteger idx = new AtomicInteger();
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
