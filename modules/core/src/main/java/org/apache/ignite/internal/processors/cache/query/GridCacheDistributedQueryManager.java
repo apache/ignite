@@ -566,7 +566,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 false,
                 qry.query().keepPortable(),
                 qry.query().subjectId(),
-                qry.query().taskHash());
+                qry.query().taskHash(),
+                queryTopologyVersion());
 
             addQueryFuture(req.id(), fut);
 
@@ -610,7 +611,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 all,
                 qry.keepPortable(),
                 qry.subjectId(),
-                qry.taskHash());
+                qry.taskHash(),
+                queryTopologyVersion());
 
             sendRequest(fut, req, nodes);
         }
@@ -675,7 +677,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().includeMetadata(),
                 qry.query().keepPortable(),
                 qry.query().subjectId(),
-                qry.query().taskHash());
+                qry.query().taskHash(),
+                queryTopologyVersion());
 
             addQueryFuture(req.id(), fut);
 

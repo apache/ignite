@@ -168,6 +168,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /** */
     private boolean enabled;
 
+    /** */
+    private AffinityTopologyVersion qryTopVer;
+
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         qryProc = cctx.kernalContext().query();
@@ -213,6 +216,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         cctx.events().addListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         enabled = GridQueryProcessor.isEnabled(cctx.config());
+
+        qryTopVer = cctx.startTopologyVersion();
+
+        if (qryTopVer == null)
+            qryTopVer = new AffinityTopologyVersion(cctx.localNode().order(), 0);
     }
 
     /**
@@ -1970,6 +1978,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * @return Topology version for query requests.
+     */
+    public AffinityTopologyVersion queryTopologyVersion() {
+        return qryTopVer;
+    }
+
+    /**
      * @param qry Query.
      * @return Filter.
      */
@@ -2648,39 +2663,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     *
-     */
-    private class GridCacheScanSwapEntry implements Cache.Entry<K, V> {
-        /** */
-        private final AbstractLazySwapEntry e;
-
-        /**
-         * @param e Entry.
-         */
-        private GridCacheScanSwapEntry(AbstractLazySwapEntry e) {
-            this.e = e;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public V getValue() {
-            return e.value();
-        }
-
-        /** {@inheritDoc} */
-        @Override public K getKey() {
-            return e.key();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> T unwrap(Class<T> clazz) {
-            if (clazz.isAssignableFrom(getClass()))
-                return clazz.cast(this);
-
-            throw new IllegalArgumentException();
-        }
-    }
-
-    /**
      * Cached result.
      */
     private abstract static class CachedResult<R> extends GridFutureAdapter<IgniteSpiCloseableIterator<R>> {
@@ -3073,27 +3055,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             null,
             false,
-            keepPortable);
-    }
-
-    /**
-     * Creates SQL fields query which will include results metadata if needed.
-     *
-     * @param qry SQL query.
-     * @param incMeta Whether to include results metadata.
-     * @param keepPortable Keep portable flag.
-     * @return Created query.
-     */
-    public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta, boolean keepPortable) {
-        assert qry != null;
-
-        return new GridCacheQueryAdapter<>(cctx,
-            SQL_FIELDS,
-            null,
-            qry,
-            null,
-            null,
-            incMeta,
             keepPortable);
     }
 }
