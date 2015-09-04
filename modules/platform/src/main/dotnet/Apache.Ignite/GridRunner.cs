@@ -1,0 +1,165 @@
+/*
+ *  Copyright (C) GridGain Systems. All Rights Reserved.
+ *  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+namespace GridGain.Impl.Runner
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Configuration;
+    using System.ServiceProcess;
+
+    using GridGain;
+    using GridGain.Impl.Runner.Config;
+    using GridGain.Impl.Runner.Service;    
+
+    /// <summary>
+    /// Runner class.
+    /// </summary>
+    public class GridRunner
+    {
+        /** Help commands. */
+        private static readonly IList<string> HELP = new List<string> { "/help", "-help", "--help" };
+
+        /** Argument meaning that this is service call. */
+        internal static readonly string SVC = "/service";
+
+        /** Service install command. */
+        internal static readonly string SVC_INSTALL = "/install";
+
+        /** Service uninstall command. */
+        internal static readonly string SVC_UNINSTALL = "/uninstall";
+
+        /// <summary>
+        /// Application entry point.
+        /// </summary>
+        internal static void Main(string[] args)
+        {
+            GridConfiguration cfg;
+
+            bool svc = false;
+            bool install = false;
+
+            try
+            {
+                // Check for special cases.
+                if (args.Length > 0)
+                {
+                    string first = args[0].ToLower();
+
+                    if (HELP.Contains(first))
+                    {
+                        PrintHelp();
+
+                        return;
+                    }
+                    else if (SVC.Equals(first))
+                    {
+                        args = RemoveFirstArg(args);
+
+                        svc = true;
+                    }
+
+                    else if (SVC_INSTALL.Equals(first))
+                    {
+                        args = RemoveFirstArg(args);
+
+                        install = true;
+                    }
+                    else if (SVC_UNINSTALL.Equals(first))
+                    {
+                        GridService.Uninstall();
+
+                        return;
+                    }
+                }
+
+                if (!svc)
+                {
+                    // Pick application configuration.
+                    cfg = new GridConfiguration();
+
+                    new GridAppSettingsConfigurator().Configure(cfg, ConfigurationManager.AppSettings);
+
+                    // Pick command line arguments.
+                    new GridArgsConfigurator().Configure(cfg, args);
+
+                    if (install)
+                        GridService.DoInstall(cfg);
+                    else
+                    {
+                        GridFactory.Start(cfg);
+
+                        GridManager.DestroyJvm();
+                    }
+
+                    return;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("ERROR: " + e.Message);
+
+                Environment.Exit(-1);
+            }
+
+            // If we are here, then this is a service call.
+            cfg = new GridConfiguration();
+
+            // Use only arguments, not app.config.
+            new GridArgsConfigurator().Configure(cfg, args);
+
+            ServiceBase.Run(new GridService(cfg));
+        }
+
+        /// <summary>
+        /// Prints help.
+        /// </summary>
+        private static void PrintHelp()
+        {
+            Console.WriteLine("Usage: gridgain.exe [/install] [/uninstall] [-options]");
+            Console.WriteLine("");
+            Console.WriteLine("\t/install [-options]    installs GridGain Windows service with provided options");
+            Console.WriteLine("\t/uninstall             uninstalls GridGain Windows service");
+            Console.WriteLine("");
+            Console.WriteLine("Options:");
+            Console.WriteLine("\t-gridGainHome          path to GridGain installation directory (if not provided GRIDGAIN_HOME environment variable is used)");
+            Console.WriteLine("\t-springConfigUrl       path to spring configuration file (if not provided \"config/default-config.xml\" is used)");
+            Console.WriteLine("\t-jvmDllPath            path to JVM library jvm.dll (if not provided JAVA_HOME environment variable is used)");
+            Console.WriteLine("\t-jvmClasspath          classpath passed to JVM (enlist additional jar files here)");
+            Console.WriteLine("\t-suppressWarnings      whether to print warnings");
+            Console.WriteLine("\t-J<javaOption>         JVM options passed to created JVM");
+            Console.WriteLine("\t-assembly=userLib.dll  additional .Net assemblies");
+            Console.WriteLine("\t-jvmInitialMemoryMB    Initial Java heap size, in megabytes. Maps to -Xms Java parameter. Defaults to 512.");
+            Console.WriteLine("\t-jvmMaxMemoryMB        Maximum Java heap size, in megabytes. Maps to -Xmx Java parameter. Defaults to 1024.");
+            Console.WriteLine("");
+            Console.WriteLine("Examples:");
+            Console.WriteLine("\tgridgain.exe -J-Xms1024m -J-Xmx1024m -springConfigUrl=C:/woer/gg-test/my-test-gg-confignative.xml");
+            Console.WriteLine("\tgridgain.exe -gridGainHome=c:/programs/gridgain-7.0.0 -jvmClasspath=libs/myLib1.jar;libs/myLib2.jar");
+            Console.WriteLine("\tgridgain.exe -assembly=c:/myProject/libs/lib1.dll -assembly=c:/myProject/libs/lib2.dll");
+            Console.WriteLine("\tgridgain.exe -jvmInitialMemoryMB=1024 -jvmMaxMemoryMB=4096");
+            Console.WriteLine("");
+            Console.WriteLine("Note:");
+            Console.WriteLine("Command line settings have priority over gridgain.exe.config settings. JVM options and assemblies are concatenated; data from config file comes first, then data from command line.");
+        }
+
+        /// <summary>
+        /// Remove the first argument.
+        /// </summary>
+        /// <param name="args">Arguments.</param>
+        /// <returns>New arguments.</returns>
+        private static string[] RemoveFirstArg(string[] args)
+        {
+            string[] args0 = new string[args.Length - 1];
+
+            Array.Copy(args, 1, args0, 0, args0.Length);
+
+            return args0;
+        }
+    }
+}

@@ -38,14 +38,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config\GridAppSettingsConfigurator.cs" />
+    <Compile Include="Config\GridArgsConfigurator.cs" />
+    <Compile Include="Config\GridConfigValueParser.cs" />
+    <Compile Include="Config\IGridConfigurator.cs" />
+    <Compile Include="GridRunner.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Service\GridService.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
       <Project>{4cd2f726-7e2b-46c4-a5ba-057bb82eecb6}</Project>
       <Name>Apache.Ignite.Core</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
