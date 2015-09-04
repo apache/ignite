@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     internal abstract class ComputeAbstractClosureTask<TA, T, TR> : IComputeTask<TA, T, TR>
     {
         /// <summary>
-        /// This method is called to map or split grid task into multiple grid jobs. This is the
+        /// This method is called to map or split grid task into multiple Ignite jobs. This is the
         /// first method that gets called when task execution starts.
         /// </summary>
         /// <param name="subgrid">Nodes available for this task execution. Note that order of nodes is
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <param name="arg">Task execution argument. Can be <c>null</c>. This is the same argument
         /// as the one passed into <c>ICompute.Execute()</c> methods.</param>
         /// <returns>
-        /// Map of grid jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
+        /// Map of Ignite jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
         /// exception will be thrown.
         /// </returns>
         /// <exception cref="System.NotSupportedException">Map step should not be called on this task.</exception>
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// received so far, or failover this job to another node. See
         /// <see cref="ComputeJobResultPolicy" /> for more information.
         /// </summary>
-        /// <param name="res">Received remote grid executable result.</param>
+        /// <param name="res">Received remote Ignite executable result.</param>
         /// <param name="rcvd">All previously received results. Note that if task class has
         /// <see cref="ComputeTaskNoResultCacheAttribute" /> attribute, then this list will be empty.</param>
         /// <returns>

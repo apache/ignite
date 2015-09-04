@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Events
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Grid job event.
+    /// Ignite job event.
     /// </summary>
     public sealed class JobEvent : EventBase
 	{

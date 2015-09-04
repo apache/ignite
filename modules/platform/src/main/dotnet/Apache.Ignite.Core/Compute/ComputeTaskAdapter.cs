@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Compute
         /// remote node either failed or job execution was rejected before it got a chance to start. In all
         /// other cases the exception will be rethrown which will ultimately cause task to fail.
         /// </summary>
-        /// <param name="res">Received remote grid executable result.</param>
+        /// <param name="res">Received remote Ignite executable result.</param>
         /// <param name="rcvd">All previously received results.</param>
         /// <returns>Result policy that dictates how to process further upcoming job results.</returns>
         public virtual ComputeJobResultPolicy Result(IComputeJobResult<T> res, IList<IComputeJobResult<T>> rcvd)
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Compute
         }
 
         /// <summary>
-        /// This method is called to map or split grid task into multiple grid jobs. This is the
+        /// This method is called to map or split grid task into multiple Ignite jobs. This is the
         /// first method that gets called when task execution starts.
         /// </summary>
         /// <param name="subgrid">Nodes available for this task execution. Note that order of nodes is
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="arg">Task execution argument. Can be <c>null</c>. This is the same argument
         /// as the one passed into <c>ICompute.Execute()</c> methods.</param>
         /// <returns>
-        /// Map of grid jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
+        /// Map of Ignite jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
         /// exception will be thrown.
         /// </returns>
         public abstract IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, TA arg);

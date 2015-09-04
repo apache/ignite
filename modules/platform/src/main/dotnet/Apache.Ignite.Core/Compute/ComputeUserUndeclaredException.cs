@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Compute
 
     /// <summary>
     /// This exception is thrown when user's code throws undeclared runtime exception. By user core it is
-    /// assumed the code in grid task, grid job or SPI. In most cases it should be an indication of unrecoverable
+    /// assumed the code in grid task, Ignite job or SPI. In most cases it should be an indication of unrecoverable
     /// error condition such as assertion, out of memory error, etc.
     /// </summary>
     [Serializable]

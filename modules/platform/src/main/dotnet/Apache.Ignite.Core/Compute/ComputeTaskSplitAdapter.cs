@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Compute
         protected abstract ICollection<IComputeJob<T>> Split(int gridSize, TA arg);
 
         /// <summary>
-        /// This method is called to map or split grid task into multiple grid jobs. This is the
+        /// This method is called to map or split grid task into multiple Ignite jobs. This is the
         /// first method that gets called when task execution starts.
         /// </summary>
         /// <param name="subgrid">Nodes available for this task execution. Note that order of nodes is
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="arg">Task execution argument. Can be <c>null</c>. This is the same argument
         /// as the one passed into <c>ICompute.Execute()</c> methods.</param>
         /// <returns>
-        /// Map of grid jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
+        /// Map of Ignite jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
         /// exception will be thrown.
         /// </returns>
         /// <exception cref="IgniteException">Split returned no jobs.</exception>
