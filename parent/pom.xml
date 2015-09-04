@@ -339,6 +339,10 @@
                                 <packages>org.apache.ignite.yarn*</packages>
                             </group>
                             <group>
+                                <title>Platforms</title>
+                                <packages>org.apache.ignite.platform*</packages>
+                            </group>
+                            <group>
                                 <title>Spark Integration</title>
                                 <packages>org.apache.ignite.spark.examples.java</packages>
                             </group>

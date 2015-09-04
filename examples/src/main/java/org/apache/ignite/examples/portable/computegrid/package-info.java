@@ -15,19 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.java8.examples;
-
-import org.apache.ignite.examples.java8.events.EventsExample;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-
 /**
- * Events examples self test.
+ * Demonstrates the usage of portable objects with task execution.
  */
-public class EventsExamplesSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testEventsExample() throws Exception {
-        EventsExample.main(EMPTY_ARGS);
-    }
-}
+package org.apache.ignite.examples.portable.computegrid;

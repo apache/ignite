@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.java8.examples;
-
-import org.apache.ignite.examples.java8.events.EventsExample;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+package org.apache.ignite.examples.portable;
 
 /**
- * Events examples self test.
+ * Organization type enum.
  */
-public class EventsExamplesSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testEventsExample() throws Exception {
-        EventsExample.main(EMPTY_ARGS);
-    }
+public enum OrganizationType {
+    /** Non-profit organization. */
+    NON_PROFIT,
+
+    /** Private organization. */
+    PRIVATE,
+
+    /** Government organization. */
+    GOVERNMENT
 }

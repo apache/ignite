@@ -14,20 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.examples;
 
-package org.apache.ignite.java8.examples;
-
-import org.apache.ignite.examples.java8.events.EventsExample;
+import org.apache.ignite.examples.portable.computegrid.ComputeClientPortableTaskExecutionExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
- * Events examples self test.
+ *
  */
-public class EventsExamplesSelfTest extends GridAbstractExamplesTest {
+public class ComputeClientPortableExampleTest extends GridAbstractExamplesTest {
+    /** {@inheritDoc} */
+    @Override protected String defaultConfig() {
+        return "examples/config/portable/example-ignite-portable.xml";
+    }
+
     /**
      * @throws Exception If failed.
      */
-    public void testEventsExample() throws Exception {
-        EventsExample.main(EMPTY_ARGS);
+    public void testPortableTaskExecutionExample() throws Exception {
+        ComputeClientPortableTaskExecutionExample.main(new String[] {});
     }
 }
