@@ -48,8 +48,8 @@ public class PlatformJavaLifecycleTask extends ComputeTaskAdapter<Object, List<I
         @Nullable @Override public Object execute() {
             List<Integer> res = new ArrayList<Integer>();
 
-            res.add(GridInteropJavaLifecycleBean.beforeStartCnt);
-            res.add(GridInteropJavaLifecycleBean.afterStartCnt);
+            res.add(PlatformJavaLifecycleBean.beforeStartCnt);
+            res.add(PlatformJavaLifecycleBean.afterStartCnt);
 
             return res;
         }
