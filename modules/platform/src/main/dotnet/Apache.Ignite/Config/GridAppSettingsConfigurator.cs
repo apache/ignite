@@ -7,11 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Runner.Config
+namespace Apache.Ignite.Config
 {
     using System.Collections.Generic;
     using System.Collections.Specialized;
-    using Apache.Ignite.Config;
     using Apache.Ignite.Core;
 
     /// <summary>
@@ -20,34 +19,34 @@ namespace GridGain.Impl.Runner.Config
     internal class GridAppSettingsConfigurator : IGridConfigurator<NameValueCollection>
     {
         /** Common configuration property prefix. */
-        private static readonly string CFG_PREFIX = "GridGain.".ToLower();
+        private static readonly string CfgPrefix = "GridGain.".ToLower();
 
         /** Configuration property: GridGain home. */
-        private static readonly string CFG_HOME = "Home".ToLower();
+        private static readonly string CfgHome = "Home".ToLower();
 
         /** Configuration property: Spring config URL. */
-        private static readonly string CFG_SPRING_CFG_URL = "SpringConfigUrl".ToLower();
+        private static readonly string CfgSpringCfgUrl = "SpringConfigUrl".ToLower();
 
         /** Configuration property: Path to JVM dll. */
-        private static readonly string CFG_JVM_DLL = "JvmDll".ToLower();
+        private static readonly string CfgJvmDll = "JvmDll".ToLower();
 
         /** Configuration property: JVM classpath. */
-        private static readonly string CFG_JVM_CLASSPATH = "JvmClasspath".ToLower();
+        private static readonly string CfgJvmClasspath = "JvmClasspath".ToLower();
 
         /** Configuration property: suppress warnings flag. */
-        private static readonly string CFG_SUPPRESS_WARN = "SuppressWarnings".ToLower();
+        private static readonly string CfgSuppressWarn = "SuppressWarnings".ToLower();
 
         /** Configuration property: JVM option prefix. */
-        private static readonly string CFG_JVM_OPT_PREFIX = "JvmOption".ToLower();
+        private static readonly string CfgJvmOptPrefix = "JvmOption".ToLower();
 
         /** Configuration property: assembly prefix. */
-        private static readonly string CFG_ASSEMBLY_PREFIX = "Assembly".ToLower();
+        private static readonly string CfgAssemblyPrefix = "Assembly".ToLower();
 
         /** Configuration property: JVM min memory. */
-        private static readonly string CFG_JVM_MIN_MEM = "JvmInitialMemoryMB".ToLower();
+        private static readonly string CfgJvmMinMem = "JvmInitialMemoryMB".ToLower();
 
         /** Configuration property: JVM max memory. */
-        private static readonly string CFG_JVM_MAX_MEM = "JvmMaxMemoryMB".ToLower();
+        private static readonly string CfgJvmMaxMem = "JvmMaxMemoryMB".ToLower();
 
         /** <inheritDoc /> */
         public void Configure(IgniteConfiguration cfg, NameValueCollection src)
@@ -59,29 +58,29 @@ namespace GridGain.Impl.Runner.Config
             {
                 string key0 = key.ToLower();
 
-                if (key0.StartsWith(CFG_PREFIX))
+                if (key0.StartsWith(CfgPrefix))
                 {
-                    key0 = key0.Substring(CFG_PREFIX.Length);
+                    key0 = key0.Substring(CfgPrefix.Length);
 
                     string val = src[key];
 
-                    if (CFG_HOME.Equals(key0))
+                    if (CfgHome.Equals(key0))
                         cfg.IgniteHome = val;
-                    else if (CFG_SPRING_CFG_URL.Equals(key0))
+                    else if (CfgSpringCfgUrl.Equals(key0))
                         cfg.SpringConfigUrl = val;
-                    else if (CFG_JVM_DLL.Equals(key0))
+                    else if (CfgJvmDll.Equals(key0))
                         cfg.JvmDllPath = val;
-                    else if (CFG_JVM_CLASSPATH.Equals(key0))
+                    else if (CfgJvmClasspath.Equals(key0))
                         cfg.JvmClasspath = val;
-                    else if (CFG_SUPPRESS_WARN.Equals(key0))
+                    else if (CfgSuppressWarn.Equals(key0))
                         cfg.SuppressWarnings = val != null && bool.TrueString.ToLower().Equals(val.ToLower());
-                    else if (key0.StartsWith(CFG_JVM_OPT_PREFIX))
+                    else if (key0.StartsWith(CfgJvmOptPrefix))
                         jvmOpts.Add(val);
-                    else if (key0.StartsWith(CFG_ASSEMBLY_PREFIX))
+                    else if (key0.StartsWith(CfgAssemblyPrefix))
                         assemblies.Add(val);
-                    else if (CFG_JVM_MIN_MEM.Equals(key0))
+                    else if (CfgJvmMinMem.Equals(key0))
                         cfg.JvmInitialMemoryMb = GridConfigValueParser.ParseInt(val, key);
-                    else if (CFG_JVM_MAX_MEM.Equals(key0))
+                    else if (CfgJvmMaxMem.Equals(key0))
                         cfg.JvmMaxMemoryMb = GridConfigValueParser.ParseInt(val, key);
                 }
             }

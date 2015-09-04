@@ -7,10 +7,9 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Runner.Config
+namespace Apache.Ignite.Config
 {
     using System.Collections.Generic;
-    using Apache.Ignite.Config;
     using Apache.Ignite.Core;
 
     /// <summary>
@@ -19,31 +18,31 @@ namespace GridGain.Impl.Runner.Config
     internal class GridArgsConfigurator : IGridConfigurator<string[]>
     {
         /** Command line argument: GridGain home. */
-        private static readonly string CMD_GRIDGAIN_HOME = "-IgniteHome=".ToLower();
+        private static readonly string CmdGridgainHome = "-IgniteHome=".ToLower();
 
         /** Command line argument: Spring config URL. */
-        private static readonly string CMD_SPRING_CFG_URL = "-SpringConfigUrl=".ToLower();
+        private static readonly string CmdSpringCfgUrl = "-SpringConfigUrl=".ToLower();
 
         /** Command line argument: Path to JVM dll. */
-        private static readonly string CMD_JVM_DLL = "-JvmDll=".ToLower();
+        private static readonly string CmdJvmDll = "-JvmDll=".ToLower();
 
         /** Command line argument: JVM classpath. */
-        private static readonly string CMD_JVM_CLASSPATH = "-JvmClasspath=".ToLower();
+        private static readonly string CmdJvmClasspath = "-JvmClasspath=".ToLower();
 
         /** Command line argument: suppress warnings flag. */
-        private static readonly string CMD_SUPPRESS_WARN = "-SuppressWarnings=".ToLower();
+        private static readonly string CmdSuppressWarn = "-SuppressWarnings=".ToLower();
 
         /** Command line argument: JVM option prefix. */
-        private static readonly string CMD_JVM_OPT = "-J".ToLower();
+        private static readonly string CmdJvmOpt = "-J".ToLower();
 
         /** Command line argument: assembly. */
-        private static readonly string CMD_ASSEMBLY = "-Assembly=".ToLower();
+        private static readonly string CmdAssembly = "-Assembly=".ToLower();
 
         /** Command line argument: JvmInitialMemoryMB. */
-        private static readonly string CMD_JVM_MIN_MEM = "-JvmInitialMemoryMB=".ToLower();
+        private static readonly string CmdJvmMinMem = "-JvmInitialMemoryMB=".ToLower();
 
         /** Command line argument: JvmMaxMemoryMB. */
-        private static readonly string CMD_JVM_MAX_MEM = "-JvmMaxMemoryMB=".ToLower();
+        private static readonly string CmdJvmMaxMem = "-JvmMaxMemoryMB=".ToLower();
 
         /// <summary>
         /// Convert configuration to arguments.
@@ -55,34 +54,34 @@ namespace GridGain.Impl.Runner.Config
             List<string> args = new List<string>();
 
             if (cfg.IgniteHome != null)
-                args.Add(CMD_GRIDGAIN_HOME + cfg.IgniteHome);
+                args.Add(CmdGridgainHome + cfg.IgniteHome);
 
             if (cfg.SpringConfigUrl != null)
-                args.Add(CMD_SPRING_CFG_URL + cfg.SpringConfigUrl);
+                args.Add(CmdSpringCfgUrl + cfg.SpringConfigUrl);
 
             if (cfg.JvmDllPath != null)
-                args.Add(CMD_JVM_DLL + cfg.JvmDllPath);
+                args.Add(CmdJvmDll + cfg.JvmDllPath);
 
             if (cfg.JvmClasspath != null)
-                args.Add(CMD_JVM_CLASSPATH + cfg.JvmClasspath);
+                args.Add(CmdJvmClasspath + cfg.JvmClasspath);
             
             if (cfg.SuppressWarnings)
-                args.Add(CMD_SUPPRESS_WARN + bool.TrueString);
+                args.Add(CmdSuppressWarn + bool.TrueString);
 
             if (cfg.JvmOptions != null)
             {
                 foreach (string jvmOpt in cfg.JvmOptions)
-                    args.Add(CMD_JVM_OPT + jvmOpt);
+                    args.Add(CmdJvmOpt + jvmOpt);
             }
 
             if (cfg.Assemblies != null)
             {
                 foreach (string assembly in cfg.Assemblies)
-                    args.Add(CMD_ASSEMBLY + assembly);
+                    args.Add(CmdAssembly + assembly);
             }
 
-            args.Add(CMD_JVM_MIN_MEM + cfg.JvmInitialMemoryMb);
-            args.Add(CMD_JVM_MAX_MEM + cfg.JvmMaxMemoryMb);
+            args.Add(CmdJvmMinMem + cfg.JvmInitialMemoryMb);
+            args.Add(CmdJvmMaxMem + cfg.JvmMaxMemoryMb);
 
             return args.ToArray();
         }
@@ -111,30 +110,30 @@ namespace GridGain.Impl.Runner.Config
             {
                 string argLow = arg.ToLower();
 
-                if (argLow.StartsWith(CMD_GRIDGAIN_HOME))
-                    cfg.IgniteHome = arg.Substring(CMD_GRIDGAIN_HOME.Length);
-                else if (argLow.StartsWith(CMD_SPRING_CFG_URL))
-                    cfg.SpringConfigUrl = arg.Substring(CMD_SPRING_CFG_URL.Length);
-                else if (argLow.StartsWith(CMD_JVM_DLL))
-                    cfg.JvmDllPath = arg.Substring(CMD_JVM_DLL.Length);
-                else if (argLow.StartsWith(CMD_JVM_CLASSPATH))
-                    cfg.JvmClasspath = arg.Substring(CMD_JVM_CLASSPATH.Length);
-                else if (argLow.StartsWith(CMD_SUPPRESS_WARN))
+                if (argLow.StartsWith(CmdGridgainHome))
+                    cfg.IgniteHome = arg.Substring(CmdGridgainHome.Length);
+                else if (argLow.StartsWith(CmdSpringCfgUrl))
+                    cfg.SpringConfigUrl = arg.Substring(CmdSpringCfgUrl.Length);
+                else if (argLow.StartsWith(CmdJvmDll))
+                    cfg.JvmDllPath = arg.Substring(CmdJvmDll.Length);
+                else if (argLow.StartsWith(CmdJvmClasspath))
+                    cfg.JvmClasspath = arg.Substring(CmdJvmClasspath.Length);
+                else if (argLow.StartsWith(CmdSuppressWarn))
                 {
-                    string val = arg.Substring(CMD_SUPPRESS_WARN.Length);
+                    string val = arg.Substring(CmdSuppressWarn.Length);
 
                     cfg.SuppressWarnings = bool.TrueString.ToLower().Equals(val.ToLower());
                 }
-                else if (argLow.StartsWith(CMD_JVM_MIN_MEM))
-                    cfg.JvmInitialMemoryMb = GridConfigValueParser.ParseInt(arg.Substring(CMD_JVM_MIN_MEM.Length),
-                        CMD_JVM_MIN_MEM);
-                else if (argLow.StartsWith(CMD_JVM_MAX_MEM))
-                    cfg.JvmMaxMemoryMb = GridConfigValueParser.ParseInt(arg.Substring(CMD_JVM_MAX_MEM.Length),
-                        CMD_JVM_MAX_MEM);
-                else if (argLow.StartsWith(CMD_JVM_OPT))
-                    jvmOpts.Add(arg.Substring(CMD_JVM_OPT.Length));
-                else if (argLow.StartsWith(CMD_ASSEMBLY))
-                    assemblies.Add(arg.Substring(CMD_ASSEMBLY.Length));
+                else if (argLow.StartsWith(CmdJvmMinMem))
+                    cfg.JvmInitialMemoryMb = GridConfigValueParser.ParseInt(arg.Substring(CmdJvmMinMem.Length),
+                        CmdJvmMinMem);
+                else if (argLow.StartsWith(CmdJvmMaxMem))
+                    cfg.JvmMaxMemoryMb = GridConfigValueParser.ParseInt(arg.Substring(CmdJvmMaxMem.Length),
+                        CmdJvmMaxMem);
+                else if (argLow.StartsWith(CmdJvmOpt))
+                    jvmOpts.Add(arg.Substring(CmdJvmOpt.Length));
+                else if (argLow.StartsWith(CmdAssembly))
+                    assemblies.Add(arg.Substring(CmdAssembly.Length));
             }
 
             if (jvmOpts.Count > 0)

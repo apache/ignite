@@ -7,17 +7,16 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Runner
+namespace Apache.Ignite
 {
     using System;
     using System.Collections.Generic;
     using System.Configuration;
     using System.ServiceProcess;
+    using Apache.Ignite.Config;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Impl;
-    using GridGain;
-    using GridGain.Impl.Runner.Config;
-    using GridGain.Impl.Runner.Service;    
+    using Apache.Ignite.Service;
 
     /// <summary>
     /// Runner class.
@@ -25,16 +24,16 @@ namespace GridGain.Impl.Runner
     public class GridRunner
     {
         /** Help commands. */
-        private static readonly IList<string> HELP = new List<string> { "/help", "-help", "--help" };
+        private static readonly IList<string> Help = new List<string> { "/help", "-help", "--help" };
 
         /** Argument meaning that this is service call. */
-        internal static readonly string SVC = "/service";
+        internal static readonly string Svc = "/service";
 
         /** Service install command. */
-        internal static readonly string SVC_INSTALL = "/install";
+        internal static readonly string SvcInstall = "/install";
 
         /** Service uninstall command. */
-        internal static readonly string SVC_UNINSTALL = "/uninstall";
+        internal static readonly string SvcUninstall = "/uninstall";
 
         /// <summary>
         /// Application entry point.
@@ -53,26 +52,26 @@ namespace GridGain.Impl.Runner
                 {
                     string first = args[0].ToLower();
 
-                    if (HELP.Contains(first))
+                    if (Help.Contains(first))
                     {
                         PrintHelp();
 
                         return;
                     }
-                    else if (SVC.Equals(first))
+                    else if (Svc.Equals(first))
                     {
                         args = RemoveFirstArg(args);
 
                         svc = true;
                     }
 
-                    else if (SVC_INSTALL.Equals(first))
+                    else if (SvcInstall.Equals(first))
                     {
                         args = RemoveFirstArg(args);
 
                         install = true;
                     }
-                    else if (SVC_UNINSTALL.Equals(first))
+                    else if (SvcUninstall.Equals(first))
                     {
                         IgniteService.Uninstall();
 
