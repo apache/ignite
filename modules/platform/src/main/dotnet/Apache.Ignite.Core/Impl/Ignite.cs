@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
@@ -32,6 +33,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Services;
@@ -94,6 +96,12 @@ namespace Apache.Ignite.Core.Impl
         public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, PortableMarshaller marsh,
             IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs)
         {
+            Debug.Assert(cfg != null);
+            Debug.Assert(proc != null);
+            Debug.Assert(marsh != null);
+            Debug.Assert(lifecycleBeans != null);
+            Debug.Assert(cbs != null);
+
             _cfg = cfg;
             _name = name;
             _proc = proc;
@@ -309,6 +317,9 @@ namespace Apache.Ignite.Core.Impl
             UU.IgnitionStop(_proc.Context, Name, cancel);
 
             _cbs.Cleanup();
+
+            foreach (var bean in _lifecycleBeans)
+                bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
         }
 
         /** <inheritdoc /> */
