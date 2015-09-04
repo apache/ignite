@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable SpecifyACultureInStringConversionExplicitly
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
@@ -859,9 +860,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskEnum()
         {
-            var res = _grid1.Compute().ExecuteJavaTask<GridInteropComputeEnum>(EchoTask, EchoTypeEnum);
+            var res = _grid1.Compute().ExecuteJavaTask<InteropComputeEnum>(EchoTask, EchoTypeEnum);
 
-            Assert.AreEqual(GridInteropComputeEnum.Bar, res);
+            Assert.AreEqual(InteropComputeEnum.Bar, res);
         }
 
         /// <summary>
@@ -870,13 +871,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskEnumArray()
         {
-            var res = _grid1.Compute().ExecuteJavaTask<GridInteropComputeEnum[]>(EchoTask, EchoTypeEnumArray);
+            var res = _grid1.Compute().ExecuteJavaTask<InteropComputeEnum[]>(EchoTask, EchoTypeEnumArray);
 
             Assert.AreEqual(new[]
             {
-                GridInteropComputeEnum.Bar,
-                GridInteropComputeEnum.Baz,
-                GridInteropComputeEnum.Foo
+                InteropComputeEnum.Bar,
+                InteropComputeEnum.Baz,
+                InteropComputeEnum.Foo
             }, res);
         }
 
@@ -1271,7 +1272,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    public enum GridInteropComputeEnum
+    public enum InteropComputeEnum
     {
         Foo,
         Bar,

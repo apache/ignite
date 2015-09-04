@@ -423,7 +423,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Extension methods for IGridCache.
     /// </summary>
-    public static class GridCacheExtensions
+    public static class CacheExtensions
     {
         /// <summary>
         /// Wraps specified instance into GridCacheTestAsyncWrapper.
