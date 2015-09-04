@@ -463,7 +463,7 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Gets a named Ignite instance. If Ignite name is {@code null} or empty string,
-        /// then default no-name grid will be returned. Note that caller of this method
+        /// then default no-name Ignite will be returned. Note that caller of this method
         /// should not assume that it will return the same instance every time.
         /// <p/>
         /// Note that single process can run multiple grid instances and every grid instance (and its
@@ -471,7 +471,7 @@ namespace Apache.Ignite.Core
         /// instance (and correspondingly its node) belongs to.
         /// </summary>
         /// <param name="name">Ignite name to which requested grid instance belongs. If <code>null</code>,
-        /// then grid instance belonging to a default no-name grid will be returned.
+        /// then grid instance belonging to a default no-name Ignite will be returned.
         /// </param>
         /// <returns>An instance of named grid.</returns>
         public static IIgnite GetIgnite(string name)
@@ -501,9 +501,9 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Stops named grid. If <code>cancel</code> flag is set to <code>true</code> then
         /// all jobs currently executing on local node will be interrupted. If
-        /// grid name is <code>null</code>, then default no-name grid will be stopped.
+        /// grid name is <code>null</code>, then default no-name Ignite will be stopped.
         /// </summary>
-        /// <param name="name">Grid name. If <code>null</code>, then default no-name grid will be stopped.</param>
+        /// <param name="name">Grid name. If <code>null</code>, then default no-name Ignite will be stopped.</param>
         /// <param name="cancel">If <code>true</code> then all jobs currently executing will be cancelled
         /// by calling <code>ComputeJob.cancel</code>method.</param>
         /// <returns><code>true</code> if named grid instance was indeed found and stopped, <code>false</code>

@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Services
         /// <summary>
         /// Deploys a cluster-wide singleton service. Grid guarantees that there is always
         /// one instance of the service in the cluster. In case if Ignite node on which the service
-        /// was deployed crashes or stops, grid will automatically redeploy it on another node.
+        /// was deployed crashes or stops, Ignite will automatically redeploy it on another node.
         /// However, if the node on which the service is deployed remains in topology, then the
         /// service will always be deployed on that node only, regardless of topology changes.
         /// <para />
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Services
         /// <summary>
         /// Deploys a per-node singleton service. Grid guarantees that there is always
         /// one instance of the service running on each node. Whenever new nodes are started
-        /// within the underlying cluster group, grid will automatically deploy one instance of
+        /// within the underlying cluster group, Ignite will automatically deploy one instance of
         /// the service on every new node.        
         /// </summary>
         /// <param name="name">Service name.</param>
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Services
         /// Deploys multiple instances of the service on the grid. Grid will deploy a
         /// maximum amount of services equal to <paramref name="totalCount" /> parameter making sure that
         /// there are no more than <paramref name="maxPerNodeCount" /> service instances running
-        /// on each node. Whenever topology changes, grid will automatically rebalance
+        /// on each node. Whenever topology changes, Ignite will automatically rebalance
         /// the deployed services within cluster to make sure that each node will end up with
         /// about equal number of deployed instances whenever possible.
         /// </summary>
