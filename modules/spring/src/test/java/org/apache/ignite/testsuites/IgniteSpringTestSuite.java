@@ -28,6 +28,7 @@ import org.apache.ignite.p2p.GridP2PUserVersionChangeSelfTest;
 import org.apache.ignite.spring.GridSpringCacheManagerSelfTest;
 import org.apache.ignite.spring.IgniteExcludeInConfigurationTest;
 import org.apache.ignite.spring.IgniteStartFromStreamConfigurationTest;
+import org.apache.ignite.spring.autowired.SpringAutowiredSelfTest;
 
 /**
  * Spring tests.
