@@ -262,7 +262,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
     /** {@inheritDoc} */
     @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer;
+        return topVer != null ? topVer : AffinityTopologyVersion.NONE;
     }
 
     /** {@inheritDoc} */
