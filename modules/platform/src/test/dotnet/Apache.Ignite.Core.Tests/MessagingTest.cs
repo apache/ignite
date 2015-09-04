@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// <see cref="IMessaging"/> tests.
     /// </summary>
-    public class GridMessagingTest
+    public class MessagingTest
     {
         /** */
         private IIgnite _grid1;

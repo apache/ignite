@@ -525,7 +525,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <returns>Native projection.</returns>
         private IUnmanagedTarget DoProjetionOutOp(int type, Action<PortableWriterImpl> action)
         {
-            using (var stream = GridManager.Memory.Allocate().Stream())
+            using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
                 var writer = Marsh.StartMarshal(stream);
 

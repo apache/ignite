@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Test marshaller initialization.
     /// </summary>
-    public class GridMarshallerTest
+    public class MarshallerTest
     {
         /// <summary>
         /// Tests the default marhsaller.

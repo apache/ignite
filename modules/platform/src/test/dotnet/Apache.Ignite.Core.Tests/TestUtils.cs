@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Tests
         /// <returns></returns>
         public static string CreateTestClasspath()
         {
-            return GridManager.CreateClasspath(forceTestClasspath: true);
+            return IgniteManager.CreateClasspath(forceTestClasspath: true);
         }
 
         /// <summary>

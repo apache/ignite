@@ -1104,7 +1104,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             cfg.PortableConfiguration = portCfg;
 
-            cfg.JvmClasspath = GridManager.CreateClasspath(cfg, true);
+            cfg.JvmClasspath = IgniteManager.CreateClasspath(cfg, true);
 
             cfg.JvmOptions = TestUtils.TestJavaOptions();
 

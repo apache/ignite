@@ -23,9 +23,9 @@ namespace Apache.Ignite.Core.Tests
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests GridManager class.
+    /// Tests IgniteManager class.
     /// </summary>
-    public class GridManagerTest
+    public class IgniteManagerTest
     {
         /// <summary>
         /// Tests home dir resolver.
@@ -33,18 +33,18 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestIgniteHome()
         {
-            var env = Environment.GetEnvironmentVariable(GridManager.EnvIgniteHome);
+            var env = Environment.GetEnvironmentVariable(IgniteManager.EnvIgniteHome);
             
-            Environment.SetEnvironmentVariable(GridManager.EnvIgniteHome, null);
+            Environment.SetEnvironmentVariable(IgniteManager.EnvIgniteHome, null);
 
             try
             {
-                Assert.IsTrue(Directory.Exists(GridManager.GetIgniteHome(null)));
+                Assert.IsTrue(Directory.Exists(IgniteManager.GetIgniteHome(null)));
             }
             finally
             {
                 // Restore
-                Environment.SetEnvironmentVariable(GridManager.EnvIgniteHome, env);
+                Environment.SetEnvironmentVariable(IgniteManager.EnvIgniteHome, env);
             }
         }
     }

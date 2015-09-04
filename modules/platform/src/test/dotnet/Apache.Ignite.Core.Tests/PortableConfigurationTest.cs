@@ -24,7 +24,10 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Portable;
     using NUnit.Framework;
 
-    public class GridPortableConfigurationTest
+    /// <summary>
+    /// Portable configuration tests.
+    /// </summary>
+    public class PortableConfigurationTest
     {
         /** Cache. */
         private ICache<int, TestGenericPortableBase> _cache;

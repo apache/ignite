@@ -644,7 +644,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IUnmanagedTarget cursor;
 
-            using (var stream = GridManager.Memory.Allocate().Stream())
+            using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
                 var writer = Marsh.StartMarshal(stream);
 
@@ -669,7 +669,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IUnmanagedTarget cursor;
 
-            using (var stream = GridManager.Memory.Allocate().Stream())
+            using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
                 var writer = Marsh.StartMarshal(stream);
 
@@ -728,7 +728,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var hnd = new ContinuousQueryHandleImpl<TK, TV>(qry, Marsh, _flagKeepPortable);
 
-            using (var stream = GridManager.Memory.Allocate().Stream())
+            using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
                 var writer = Marsh.StartMarshal(stream);
 

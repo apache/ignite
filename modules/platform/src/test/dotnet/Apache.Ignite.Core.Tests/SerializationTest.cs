@@ -32,10 +32,10 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Tests for native serialization.
     /// </summary>
-    public class GridSerializationTest
+    public class SerializationTest
     {
         /** Grid name. */
-        private const string GridName = "GridSerializationTest";
+        private const string GridName = "SerializationTest";
 
         /// <summary>
         /// Set up routine.

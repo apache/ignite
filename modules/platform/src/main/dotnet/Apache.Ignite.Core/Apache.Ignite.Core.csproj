@@ -211,7 +211,7 @@
     <Compile Include="Impl\ExceptionUtils.cs" />
     <Compile Include="Impl\IgniteConfigurationEx.cs" />
     <Compile Include="Impl\Ignite.cs" />
-    <Compile Include="Impl\GridManager.cs" />
+    <Compile Include="Impl\IgniteManager.cs" />
     <Compile Include="Impl\IgniteProxy.cs" />
     <Compile Include="Impl\GridTarget.cs" />
     <Compile Include="Impl\IgniteUtils.cs" />

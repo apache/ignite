@@ -528,7 +528,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static IUnmanagedTarget IgnitionStart(UnmanagedContext ctx, string cfgPath, string gridName, 
             bool clientMode)
         {
-            using (var mem = GridManager.Memory.Allocate().Stream())
+            using (var mem = IgniteManager.Memory.Allocate().Stream())
             {
                 mem.WriteBool(clientMode);
 

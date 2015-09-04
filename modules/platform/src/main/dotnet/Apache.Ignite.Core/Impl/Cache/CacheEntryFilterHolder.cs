@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Deserialized instance of <see cref="CacheEntryFilterHolder"/></returns>
         public static CacheEntryFilterHolder CreateInstance(long memPtr, Ignite grid)
         {
-            var stream = GridManager.Memory.Get(memPtr).Stream();
+            var stream = IgniteManager.Memory.Get(memPtr).Stream();
 
             Debug.Assert(grid != null);
 

@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core
 
                 var cbs = new UnmanagedCallbacks();
 
-                void* ctx = GridManager.GetContext(cfg, cbs);
+                void* ctx = IgniteManager.GetContext(cfg, cbs);
 
                 sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfg.SpringConfigUrl ?? DefaultCfg);
 

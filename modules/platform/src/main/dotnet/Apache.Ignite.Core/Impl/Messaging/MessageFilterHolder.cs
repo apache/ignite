@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             Debug.Assert(grid != null);
             
-            var stream = GridManager.Memory.Get(memPtr).Stream();
+            var stream = IgniteManager.Memory.Get(memPtr).Stream();
 
             var holder = grid.Marshaller.Unmarshal<MessageFilterHolder>(stream);
 
