@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\src\cache_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\concurrent_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ignition_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\handle_registry_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\portable_reader_writer_raw_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\portable_reader_writer_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\portable_session_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\portable_test_defs.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cache_query_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\teamcity_boost.cpp">
+      <Filter>TeamCity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\teamcity_messages.cpp">
+      <Filter>TeamCity</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\portable_test_defs.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\portable_test_utils.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\teamcity_messages.h">
+      <Filter>TeamCity</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Code">
+      <UniqueIdentifier>{486c367c-57e9-430a-80f0-39fd5b09bc64}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Configs">
+      <UniqueIdentifier>{a46d9d4c-44eb-40da-b4f6-89cc43b70c12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TeamCity">
+      <UniqueIdentifier>{76bceab0-e251-445f-88c3-3f6f8739423b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\config\cache-test.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-query.xml">
+      <Filter>Configs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

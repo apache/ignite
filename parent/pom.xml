@@ -743,15 +743,23 @@
                                         <exclude>src/main/dotnet/Apache.Ignite.sln</exclude>
                                         <exclude>src/main/dotnet/Apache.Ignite.sln.DotSettings</exclude>
                                         <exclude>src/main/java/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
+                                        <exclude>src/main/resources/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
                                         <exclude>src/test/dotnet/Apache.Ignite.Core.Tests/Apache.Ignite.Core.Tests.csproj</exclude>
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/1.1/test1-1.1.jar</exclude>
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/1.1/test2-1.1.jar</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
+                                        <exclude>**/*.pc.in</exclude>
                                         <exclude>**/*.vcxproj</exclude>
+                                        <exclude>**/*.vcxprojrel</exclude>
                                         <exclude>**/*.vcxproj.filters</exclude>
+                                        <exclude>**/*.sln</exclude>
+                                        <exclude>**/*.slnrel</exclude>
+                                        <exclude>**/*.opensdf</exclude>
                                         <exclude>**/module.def</exclude>
-                                        <exclude>**/ignite-common.pc.in</exclude>
+                                        <exclude>**/teamcity_boost.cpp</exclude>
+                                        <exclude>**/teamcity_messages.h</exclude>
+                                        <exclude>**/teamcity_messages.cpp</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>

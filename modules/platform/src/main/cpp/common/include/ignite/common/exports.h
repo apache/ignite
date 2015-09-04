@@ -25,10 +25,10 @@ namespace gcj = ignite::common::java;
 extern "C" {
     int IGNITE_CALL IgniteReallocate(long long memPtr, int cap);
 
-    void* IGNITE_CALL IgniteIgnitionStart(gcj::JniContext* ctx, char* cfgPath, char* gridName, int factoryId, long long dataPtr);
-    void* IGNITE_CALL IgniteIgnitionInstance(gcj::JniContext* ctx, char* gridName);
-    long long IGNITE_CALL IgniteIgnitionEnvironmentPointer(gcj::JniContext* ctx, char* gridName);
-    bool IGNITE_CALL IgniteIgnitionStop(gcj::JniContext* ctx, char* gridName, bool cancel);
+    void* IGNITE_CALL IgniteIgnitionStart(gcj::JniContext* ctx, char* cfgPath, char* name, int factoryId, long long dataPtr);
+    void* IGNITE_CALL IgniteIgnitionInstance(gcj::JniContext* ctx, char* name);
+    long long IGNITE_CALL IgniteIgnitionEnvironmentPointer(gcj::JniContext* ctx, char* name);
+    bool IGNITE_CALL IgniteIgnitionStop(gcj::JniContext* ctx, char* name, bool cancel);
     void IGNITE_CALL IgniteIgnitionStopAll(gcj::JniContext* ctx, bool cancel);
 
     void IGNITE_CALL IgniteProcessorReleaseStart(gcj::JniContext* ctx, void* obj);
