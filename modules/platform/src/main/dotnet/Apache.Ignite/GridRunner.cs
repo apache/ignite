@@ -66,7 +66,8 @@ namespace Apache.Ignite
 
                         return;
                     }
-                    else if (Svc.Equals(first))
+                    
+                    if (Svc.Equals(first))
                     {
                         args = RemoveFirstArg(args);
 
