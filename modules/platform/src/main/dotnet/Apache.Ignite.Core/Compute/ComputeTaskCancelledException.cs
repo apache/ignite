@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Compute
     using Apache.Ignite.Core.Common;
 
     /// <summary>
-    /// This exception indicates that grid task was cancelled.
+    /// This exception indicates that Ignite task was cancelled.
     /// </summary>
     [Serializable]
     public class ComputeTaskCancelledException : IgniteException

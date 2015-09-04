@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     internal abstract class ComputeAbstractClosureTask<TA, T, TR> : IComputeTask<TA, T, TR>
     {
         /// <summary>
-        /// This method is called to map or split grid task into multiple Ignite jobs. This is the
+        /// This method is called to map or split Ignite task into multiple Ignite jobs. This is the
         /// first method that gets called when task execution starts.
         /// </summary>
         /// <param name="subgrid">Nodes available for this task execution. Note that order of nodes is

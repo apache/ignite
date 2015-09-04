@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Events
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Grid task event.
+    /// Ignite task event.
     /// </summary>
     public sealed class TaskEvent : EventBase
 	{

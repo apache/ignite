@@ -22,10 +22,10 @@ namespace Apache.Ignite.Core.Compute
     using Apache.Ignite.Core.Cluster;
 
     /// <summary>
-    /// Grid task interface defines a task that can be executed on the grid. Grid task
+    /// Ignite task interface defines a task that can be executed on the grid. Ignite task
     /// is responsible for splitting business logic into multiple Ignite jobs, receiving
     /// results from individual Ignite jobs executing on remote nodes, and reducing
-    /// (aggregating) received jobs' results into final grid task result.
+    /// (aggregating) received jobs' results into final Ignite task result.
     /// <para />
     /// Upon request to execute a task, the system will do the following:
     /// <list type="bullet">
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Compute
     ///         method returned <see cref="ComputeJobResultPolicy.Reduce"/> policy, method 
     ///         <see cref="IComputeTask{A,T,R}.Reduce(IList{IComputeJobResult{T}})"/>
     ///         is called to aggregate received results into one final result. Once this method is finished the 
-    ///         execution of the grid task is complete. This result will be returned to the user through future.
+    ///         execution of the Ignite task is complete. This result will be returned to the user through future.
     ///         </description>    
     ///     </item>
     /// </list>
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Compute
     public interface IComputeTask<in TA, T, out TR>
     {
         /// <summary>
-        /// This method is called to map or split grid task into multiple Ignite jobs. This is the
+        /// This method is called to map or split Ignite task into multiple Ignite jobs. This is the
         /// first method that gets called when task execution starts.
         /// </summary>
         /// <param name="subgrid">Nodes available for this task execution. Note that order of nodes is

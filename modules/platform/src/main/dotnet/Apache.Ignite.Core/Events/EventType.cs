@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Events
         };
 
         /// <summary>
-        /// All grid task execution events.
+        /// All Ignite task execution events.
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]

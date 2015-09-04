@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Compute
     using Apache.Ignite.Core.Common;
 
     /// <summary>
-    /// Defines compute grid functionality for executing tasks and closures over nodes
+    /// Defines Ignite functionality for executing tasks and closures over nodes
     /// in the <see cref="IClusterGroup"/>. Instance of <see cref="ICompute"/>
     /// is obtained from grid projection using <see cref="IClusterGroup.Compute()"/> method.
     /// <para />
