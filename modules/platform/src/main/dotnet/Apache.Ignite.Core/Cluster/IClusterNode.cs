@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Cluster
     /// You can get a list of all nodes in grid by calling <see cref="IClusterGroup.Nodes()"/> 
     /// on <see cref="IIgnite"/> instance.
     /// <para />
-    /// You can use grid node attributes to provide static information about a node.
+    /// You can use Ignite node attributes to provide static information about a node.
     /// This information is initialized once within grid, during node startup, and
     /// remains the same throughout the lifetime of a node. 
     /// <para/>
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Cluster
         /// <summary>
         /// Tests whether or not this node is a daemon.
         /// <p/>
-        /// Daemon nodes are the usual grid nodes that participate in topology but not
+        /// Daemon nodes are the usual Ignite nodes that participate in topology but not
         /// visible on the main APIs, i.e. they are not part of any projections.
         /// <p/>
         /// Daemon nodes are used primarily for management and monitoring functionality that

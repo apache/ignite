@@ -65,12 +65,12 @@ namespace Apache.Ignite.Core.Compute
         /// </summary>
         /// <param name="subgrid">Nodes available for this task execution. Note that order of nodes is
         /// guaranteed to be randomized by container. This ensures that every time you simply iterate
-        /// through grid nodes, the order of nodes will be random which over time should result into
+        /// through Ignite nodes, the order of nodes will be random which over time should result into
         /// all nodes being used equally.</param>
         /// <param name="arg">Task execution argument. Can be <c>null</c>. This is the same argument
         /// as the one passed into <c>ICompute.Execute()</c> methods.</param>
         /// <returns>
-        /// Map of grid jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
+        /// Map of grid jobs assigned to subIgnite node. If <c>null</c> or empty map is returned,
         /// exception will be thrown.
         /// </returns>
         public abstract IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, TA arg);

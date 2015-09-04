@@ -64,8 +64,8 @@ namespace Apache.Ignite.Core
     ///
     /// cfg.PortableConfiguration = portableCfg;
     ///
-    /// // Start grid node with grid configuration.
-    /// IGrid grid = Ignition.Start(cfg);
+    /// // Start Ignite node with Ignite configuration.
+    /// var ignite = Ignition.Start(cfg);
     /// </code>
     /// </example>
     /// </summary>
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Starts grid with default configuration. By default this method will
-        /// use grid configuration defined in <code>IGNITE/config/default-config.xml</code>
+        /// use Ignite configuration defined in <code>IGNITE/config/default-config.xml</code>
         /// configuration file. If such file is not found, then all system defaults will be used.
         /// </summary>
         /// <returns>Started grid.</returns>
@@ -206,7 +206,7 @@ namespace Apache.Ignite.Core
                             Nodes.Remove(key);
                     }
 
-                    // 2. Stop Grid node if it was started.
+                    // 2. Stop Ignite node if it was started.
                     if (interopProc != null)
                         UU.IgnitionStop(interopProc.Context, gridName, true);
 

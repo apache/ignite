@@ -713,7 +713,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Test whether nested Grid API call from callback works fine.
+        /// Test whether nested Ignite API call from callback works fine.
         /// </summary>
         [Test]
         public void TestNestedCallFromCallback()
@@ -1101,7 +1101,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Listener with nested Grid API call.
+        /// Listener with nested Ignite API call.
         /// </summary>
         public class NestedCallListener : ICacheEntryEventListener<int, IPortableObject>
         {

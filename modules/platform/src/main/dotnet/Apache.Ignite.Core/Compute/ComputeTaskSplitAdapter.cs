@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Compute
 
     /// <summary>
     /// This class defines simplified adapter for <see cref="IComputeTask{A,T,R}"/>. This adapter can be used
-    /// when jobs can be randomly assigned to available grid nodes. This adapter is sufficient
+    /// when jobs can be randomly assigned to available Ignite nodes. This adapter is sufficient
     /// in most homogeneous environments where all nodes are equally suitable for executing grid
     /// job, see <see cref="Split"/> method for more details.
     /// </summary>
@@ -42,11 +42,11 @@ namespace Apache.Ignite.Core.Compute
         /// <p/>
         /// This method basically takes given argument and splits it into a collection
         /// of <see cref="IComputeJob"/> using provided grid size as indication of how many node are
-        /// available. These jobs will be randomly mapped to available grid nodes. Note that
-        /// if number of jobs is greater than number of grid nodes (i.e, grid size), the grid
-        /// nodes will be reused and some jobs will end up on the same grid nodes.
+        /// available. These jobs will be randomly mapped to available Ignite nodes. Note that
+        /// if number of jobs is greater than number of Ignite nodes (i.e, grid size), the grid
+        /// nodes will be reused and some jobs will end up on the same Ignite nodes.
         /// </summary>
-        /// <param name="gridSize">Number of available grid nodes. Note that returned number of jobs can be less, 
+        /// <param name="gridSize">Number of available Ignite nodes. Note that returned number of jobs can be less, 
         ///  equal or greater than this grid size.</param>
         /// <param name="arg">Task execution argument. Can be <c>null</c>.</param>
         protected abstract ICollection<IComputeJob<T>> Split(int gridSize, TA arg);
@@ -57,12 +57,12 @@ namespace Apache.Ignite.Core.Compute
         /// </summary>
         /// <param name="subgrid">Nodes available for this task execution. Note that order of nodes is
         /// guaranteed to be randomized by container. This ensures that every time you simply iterate
-        /// through grid nodes, the order of nodes will be random which over time should result into
+        /// through Ignite nodes, the order of nodes will be random which over time should result into
         /// all nodes being used equally.</param>
         /// <param name="arg">Task execution argument. Can be <c>null</c>. This is the same argument
         /// as the one passed into <c>ICompute.Execute()</c> methods.</param>
         /// <returns>
-        /// Map of grid jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
+        /// Map of grid jobs assigned to subIgnite node. If <c>null</c> or empty map is returned,
         /// exception will be thrown.
         /// </returns>
         /// <exception cref="IgniteException">Split returned no jobs.</exception>

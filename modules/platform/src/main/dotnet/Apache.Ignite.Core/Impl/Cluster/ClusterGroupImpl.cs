@@ -417,7 +417,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// specified topology version (history currently keeps the last 1000 snapshots).
         /// </summary>
         /// <param name="version">Topology version.</param>
-        /// <returns>Collection of grid nodes which represented by specified topology version, 
+        /// <returns>Collection of Ignite nodes which represented by specified topology version, 
         /// if it is present in history storage, {@code null} otherwise.</returns>
         /// <exception cref="IgniteException">If underlying SPI implementation does not support 
         /// topology history. Currently only {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}

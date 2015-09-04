@@ -416,7 +416,7 @@ namespace Apache.Ignite.Core.Cluster
         }
 
         /// <summary>
-        /// Start time of the grid node in milliseconds.
+        /// Start time of the Ignite node in milliseconds.
         /// </summary>
         DateTime NodeStartTime
         {

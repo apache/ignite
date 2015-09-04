@@ -613,7 +613,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Gets the grid configuration.
+        /// Gets the Ignite configuration.
         /// </summary>
         private static IgniteConfiguration Configuration(string springConfigUrl)
         {

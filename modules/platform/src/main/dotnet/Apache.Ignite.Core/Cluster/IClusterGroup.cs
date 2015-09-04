@@ -26,13 +26,13 @@ namespace Apache.Ignite.Core.Cluster
 
     /// <summary>
     /// Defines grid projection which represents a common functionality over a group of nodes.
-    /// Grid projection allows to group grid nodes into various subgroups to perform distributed
+    /// Grid projection allows to group Ignite nodes into various subgroups to perform distributed
     /// operations on them. All ForXXX(...)' methods will create a child grid projection
     /// from existing projection. If you create a new projection from current one, then the resulting
     /// projection will include a subset of nodes from current projection. The following code snippet
     /// shows how to create grid projections:
     /// <code>
-    /// var g = Ignition.Grid();
+    /// var g = Ignition.GetIgnite();
     /// 
     /// // Projection over remote nodes.
     /// var remoteNodes = g.ForRemotes();
@@ -72,28 +72,28 @@ namespace Apache.Ignite.Core.Cluster
         /// Creates a grid projection over a given set of nodes.
         /// </summary>
         /// <param name="nodes">Collection of nodes to create a projection from.</param>
-        /// <returns>Projection over provided grid nodes.</returns>
+        /// <returns>Projection over provided Ignite nodes.</returns>
         IClusterGroup ForNodes(IEnumerable<IClusterNode> nodes);
 
         /// <summary>
         /// Creates a grid projection over a given set of nodes.
         /// </summary>
         /// <param name="nodes">Collection of nodes to create a projection from.</param>
-        /// <returns>Projection over provided grid nodes.</returns>
+        /// <returns>Projection over provided Ignite nodes.</returns>
         IClusterGroup ForNodes(params IClusterNode[] nodes);
 
         /// <summary>
         /// Creates a grid projection over a given set of node IDs.
         /// </summary>
         /// <param name="ids">Collection of node IDs to create a projection from.</param>
-        /// <returns>Projection over provided grid node IDs.</returns>
+        /// <returns>Projection over provided Ignite node IDs.</returns>
         IClusterGroup ForNodeIds(IEnumerable<Guid> ids);
 
         /// <summary>
         /// Creates a grid projection over a given set of node IDs.
         /// </summary>
         /// <param name="ids">Collection of node IDs to create a projection from.</param>
-        /// <returns>Projection over provided grid node IDs.</returns>
+        /// <returns>Projection over provided Ignite node IDs.</returns>
         IClusterGroup ForNodeIds(params Guid[] ids);
 
         /// <summary>

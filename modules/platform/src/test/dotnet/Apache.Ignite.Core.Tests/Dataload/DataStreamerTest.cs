@@ -458,7 +458,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         }
 
         /// <summary>
-        /// Gets the grid configuration.
+        /// Gets the Ignite configuration.
         /// </summary>
         /// <param name="gridName">Grid name.</param>
         private static IgniteConfigurationEx GetGridConfiguration(string gridName)

@@ -336,7 +336,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /// <summary>
-        /// Executes collection of jobs on grid nodes within this grid projection.
+        /// Executes collection of jobs on Ignite nodes within this grid projection.
         /// </summary>
         /// <param name="actions">Jobs to execute.</param>
         public IFuture<object> Run(IEnumerable<IComputeAction> actions)

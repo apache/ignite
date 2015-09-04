@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Services
 
         /// <summary>
         /// Starts execution of this service. This method is automatically invoked whenever an instance of the service
-        /// is deployed on a grid node. Note that service is considered deployed even after it exits the Execute
+        /// is deployed on a Ignite node. Note that service is considered deployed even after it exits the Execute
         /// method and can be cancelled (or undeployed) only by calling any of the Cancel methods on 
         /// <see cref="IServices"/> API. Also note that service is not required to exit from Execute method until
         /// Cancel method was called.

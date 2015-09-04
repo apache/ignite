@@ -33,10 +33,10 @@ namespace Apache.Ignite.Core.Compute
     /// Ignite must select a node for a computation to be executed. The node will be selected based on the
     /// underlying <c>GridLoadBalancingSpi</c>, which by default sequentially picks next available node from
     /// grid projection. Other load balancing policies, such as <c>random</c> or <c>adaptive</c>, can be
-    /// configured as well by selecting different load balancing SPI in grid configuration. If your logic requires
+    /// configured as well by selecting different load balancing SPI in Ignite configuration. If your logic requires
     /// some custom load balancing behavior, consider implementing <c>ComputeTask</c> in Java directly.
     /// <para />
-    /// Ignite guarantees that as long as there is at least one grid node standing, every job will be
+    /// Ignite guarantees that as long as there is at least one Ignite node standing, every job will be
     /// executed. Jobs will automatically failover to another node if a remote node crashed or has rejected
     /// execution due to lack of resources. By default, in case of failover, next load balanced node will be
     /// picked for job execution. Also jobs will never be re-routed to the nodes they have failed on. This
@@ -225,7 +225,7 @@ namespace Apache.Ignite.Core.Compute
         void AffinityRun(string cacheName, object affinityKey, IComputeAction action);
 
         /// <summary>
-        /// Executes collection of jobs on grid nodes within this grid projection.
+        /// Executes collection of jobs on Ignite nodes within this grid projection.
         /// </summary>
         /// <param name="actions">Jobs to execute.</param>
         [AsyncSupported]

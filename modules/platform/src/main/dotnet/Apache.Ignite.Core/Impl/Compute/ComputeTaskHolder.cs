@@ -174,7 +174,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                 // Update parent projection to help other task callers avoid this overhead.
                 // Note that there is a chance that topology changed even further and this update fails.
-                // It means that some of subgrid nodes could have left the Grid. This is not critical
+                // It means that some of subIgnite nodes could have left the Grid. This is not critical
                 // for us, because Java will handle it gracefully.
                 prj.UpdateTopology(topVer, nodes);
             }
