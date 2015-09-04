@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether grids should be started in client mode.
+        /// Gets or sets a value indicating whether Ignite should be started in client mode.
         /// Client nodes cannot hold data in caches.
         /// </summary>
         public static bool ClientMode
@@ -113,24 +113,24 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Starts grid with default configuration. By default this method will
+        /// Starts Ignite with default configuration. By default this method will
         /// use Ignite configuration defined in <code>IGNITE/config/default-config.xml</code>
         /// configuration file. If such file is not found, then all system defaults will be used.
         /// </summary>
-        /// <returns>Started grid.</returns>
+        /// <returns>Started Ignite.</returns>
         public static IIgnite Start()
         {
             return Start(new IgniteConfiguration());
         }
 
         /// <summary>
-        /// Starts all grids specified within given Spring XML configuration file. If grid with given name
+        /// Starts all grids specified within given Spring XML configuration file. If Ignite with given name
         /// is already started, then exception is thrown. In this case all instances that may
         /// have been started so far will be stopped too.
         /// </summary>
         /// <param name="springCfgPath">Spring XML configuration file path or URL. Note, that the path can be
         /// absolute or relative to IGNITE_HOME.</param>
-        /// <returns>Started grid. If Spring configuration contains multiple grid instances, then the 1st
+        /// <returns>Started Ignite. If Spring configuration contains multiple Ignite instances, then the 1st
         /// found instance is returned.</returns>
         public static IIgnite Start(string springCfgPath)
         {
@@ -138,9 +138,9 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Starts grid with given configuration.
+        /// Starts Ignite with given configuration.
         /// </summary>
-        /// <returns>Started grid.</returns>
+        /// <returns>Started Ignite.</returns>
         public unsafe static IIgnite Start(IgniteConfiguration cfg)
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core
 
                 try
                 {
-                    // 4. Initiate Grid start.
+                    // 4. Initiate Ignite start.
                     interopProc = UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl ?? DefaultCfg, 
                         cfgEx != null ? cfgEx.GridName : null, ClientMode);
 
@@ -466,12 +466,12 @@ namespace Apache.Ignite.Core
         /// then default no-name Ignite will be returned. Note that caller of this method
         /// should not assume that it will return the same instance every time.
         /// <p/>
-        /// Note that single process can run multiple grid instances and every grid instance (and its
-        /// node) can belong to a different grid. Grid name defines what grid a particular grid
+        /// Note that single process can run multiple Ignite instances and every Ignite instance (and its
+        /// node) can belong to a different grid. Grid name defines what grid a particular Ignite
         /// instance (and correspondingly its node) belongs to.
         /// </summary>
-        /// <param name="name">Ignite name to which requested grid instance belongs. If <code>null</code>,
-        /// then grid instance belonging to a default no-name Ignite will be returned.
+        /// <param name="name">Ignite name to which requested Ignite instance belongs. If <code>null</code>,
+        /// then Ignite instance belonging to a default no-name Ignite will be returned.
         /// </param>
         /// <returns>An instance of named grid.</returns>
         public static IIgnite GetIgnite(string name)
@@ -481,7 +481,7 @@ namespace Apache.Ignite.Core
                 Ignite result;
 
                 if (!Nodes.TryGetValue(new NodeKey(name), out result))
-                    throw new IgniteException("Grid instance was not properly started or was already stopped: " + name);
+                    throw new IgniteException("Ignite instance was not properly started or was already stopped: " + name);
 
                 return result;
             }
@@ -506,7 +506,7 @@ namespace Apache.Ignite.Core
         /// <param name="name">Grid name. If <code>null</code>, then default no-name Ignite will be stopped.</param>
         /// <param name="cancel">If <code>true</code> then all jobs currently executing will be cancelled
         /// by calling <code>ComputeJob.cancel</code>method.</param>
-        /// <returns><code>true</code> if named grid instance was indeed found and stopped, <code>false</code>
+        /// <returns><code>true</code> if named Ignite instance was indeed found and stopped, <code>false</code>
         /// othwerwise (the instance with given <code>name</code> was not found).</returns>
         public static bool Stop(string name, bool cancel)
         {
