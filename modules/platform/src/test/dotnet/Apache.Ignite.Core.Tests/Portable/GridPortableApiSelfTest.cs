@@ -242,8 +242,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(typeof(ToPortable).Name, portObj.Metadata().TypeName);
             Assert.AreEqual(1, portObj.Metadata().Fields.Count);
-            Assert.AreEqual("val", portObj.Metadata().Fields.First());
-            Assert.AreEqual(PortableTypeNames.TypeNameInt, portObj.Metadata().FieldTypeName("val"));
+            Assert.AreEqual("Val", portObj.Metadata().Fields.First());
+            Assert.AreEqual(PortableTypeNames.TypeNameInt, portObj.Metadata().FieldTypeName("Val"));
 
             Assert.AreEqual(1, portObj.Field<int>("val"));
             Assert.AreEqual(1, portObj.Deserialize<ToPortable>().Val);
@@ -252,14 +252,14 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(0, portObj.Metadata().Fields.Count);
 
-            Assert.AreEqual(1, portObj.Field<int>("val"));
+            Assert.AreEqual(1, portObj.Field<int>("Val"));
             Assert.AreEqual(1, portObj.Deserialize<ToPortableNoMeta>().Val);
 
             // 5. Object array.
             IPortableObject[] portObjArr = api.ToPortable<IPortableObject[]>(new[] { new ToPortable(1) });
 
             Assert.AreEqual(1, portObjArr.Length);
-            Assert.AreEqual(1, portObjArr[0].Field<int>("val"));
+            Assert.AreEqual(1, portObjArr[0].Field<int>("Val"));
             Assert.AreEqual(1, portObjArr[0].Deserialize<ToPortable>().Val);
         }
 
@@ -1192,7 +1192,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(typeof(NestedInner).Name, innerMeta.TypeName);
             Assert.AreEqual(1, innerMeta.Fields.Count);
-            Assert.AreEqual(PortableTypeNames.TypeNameInt, innerMeta.FieldTypeName("val"));
+            Assert.AreEqual(PortableTypeNames.TypeNameInt, innerMeta.FieldTypeName("Val"));
 
             inner1 = innerPortObj1.Deserialize<NestedInner>();
 
