@@ -20,14 +20,14 @@ namespace Apache.Ignite.Core.Tests.Compute.Forked
     using NUnit.Framework;
 
     /// <summary>
-    /// Forked closure execution tests for portable objects.
+    /// Forked resource task test.
     /// </summary>
     [Ignore("IGNITE-1367")]
-    public class GridForkedPortableClosureTaskTest : GridPortableClosureTaskTest
+    public class ForkedResourceTaskTest : ResourceTaskTest
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GridForkedPortableClosureTaskTest() : base(true) { }
+        public ForkedResourceTaskTest() : base(true) { }
     }
 }

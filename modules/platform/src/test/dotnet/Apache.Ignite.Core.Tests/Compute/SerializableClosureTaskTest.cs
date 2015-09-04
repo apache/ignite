@@ -25,18 +25,18 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Closure execution tests for serializable objects.
     /// </summary>
-    public class GridSerializableClosureTaskTest : GridClosureTaskTest
+    public class SerializableClosureTaskTest : ClosureTaskTest
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GridSerializableClosureTaskTest() : base(false) { }
+        public SerializableClosureTaskTest() : base(false) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="fork">Fork flag.</param>
-        protected GridSerializableClosureTaskTest(bool fork) : base(fork) { }
+        protected SerializableClosureTaskTest(bool fork) : base(fork) { }
 
         /** <inheritDoc /> */
         protected override IComputeFunc<object> OutFunc(bool err)

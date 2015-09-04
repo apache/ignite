@@ -22,29 +22,16 @@ namespace Apache.Ignite.Core.Tests.Query
     /// <summary>
     /// Test person.
     /// </summary>
-    internal class GridPortablePerson : IPortableMarshalAware
+    internal class PortablePerson : IPortableMarshalAware
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="GridPortablePerson"/> class.
+        /// Initializes a new instance of the <see cref="PortablePerson"/> class.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="age">The age.</param>
-        public GridPortablePerson(string name, int age)
+        public PortablePerson(string name, int age)
         {
             Name = name;
-            Age = age;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="GridPortablePerson"/> class.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="age">The age.</param>
-        /// <param name="address">The address.</param>
-        public GridPortablePerson(string name, int age, string address)
-        {
-            Name = name;
-            Address = address;
             Age = age;
         }
 

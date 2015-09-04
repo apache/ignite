@@ -108,17 +108,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.GetIgnite(GridData).Cache<CacheTestKey, GridPortablePerson>(CacheDummy);
+                Ignition.GetIgnite(GridData).Cache<CacheTestKey, PortablePerson>(CacheDummy);
             });
 
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.GetIgnite(GridDataNoCfg).Cache<CacheTestKey, GridPortablePerson>(CacheDummy);
+                Ignition.GetIgnite(GridDataNoCfg).Cache<CacheTestKey, PortablePerson>(CacheDummy);
             });
 
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.GetIgnite(GridClient).Cache<CacheTestKey, GridPortablePerson>(CacheDummy);
+                Ignition.GetIgnite(GridClient).Cache<CacheTestKey, PortablePerson>(CacheDummy);
             });
         }
 

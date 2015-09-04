@@ -27,18 +27,18 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Task test result.
     /// </summary>
-    public class GridPortableTaskTest : GridAbstractTaskTest
+    public class PortableTaskTest : AbstractTaskTest
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GridPortableTaskTest() : base(false) { }
+        public PortableTaskTest() : base(false) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="fork">Fork flag.</param>
-        protected GridPortableTaskTest(bool fork) : base(fork) { }
+        protected PortableTaskTest(bool fork) : base(fork) { }
 
         /// <summary>
         /// Test for task result.

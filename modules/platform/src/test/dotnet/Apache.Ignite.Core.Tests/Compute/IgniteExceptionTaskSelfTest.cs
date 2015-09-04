@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Tests for exception handling on various task execution stages.
     /// </summary>
-    public class IgniteExceptionTaskSelfTest : GridAbstractTaskTest
+    public class IgniteExceptionTaskSelfTest : AbstractTaskTest
     {
         /** Error mode. */
         public static ErrorMode Mode;
@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, JobErrs.Count);
             Assert.IsNotNull(JobErrs.First() as GoodException);
-            Assert.AreEqual(ErrorMode.LocJobErr, (JobErrs.First() as GoodException).Mode);
+            Assert.AreEqual(ErrorMode.LocJobErr, ((GoodException) JobErrs.First()).Mode);
         }
 
         /// <summary>
@@ -152,13 +152,13 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(2, JobErrs.Count());
+            Assert.AreEqual(2, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as GoodException);
             Assert.IsNotNull(JobErrs.ElementAt(1) as GoodException);
 
-            Assert.AreEqual(ErrorMode.RmtJobErr, (JobErrs.ElementAt(0) as GoodException).Mode);
-            Assert.AreEqual(ErrorMode.RmtJobErr, (JobErrs.ElementAt(1) as GoodException).Mode);
+            Assert.AreEqual(ErrorMode.RmtJobErr, ((GoodException) JobErrs.ElementAt(0)).Mode);
+            Assert.AreEqual(ErrorMode.RmtJobErr, ((GoodException) JobErrs.ElementAt(1)).Mode);
         }
 
         /// <summary>
@@ -173,7 +173,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res);
 
-            Assert.AreEqual(2, JobErrs.Count());
+            Assert.AreEqual(2, JobErrs.Count);
 
             Assert.IsNotNull(JobErrs.ElementAt(0) as IgniteException);
             Assert.IsNotNull(JobErrs.ElementAt(1) as IgniteException);

@@ -15,19 +15,21 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Compute.Forked
+namespace Apache.Ignite.Core.Tests.Query
 {
-    using NUnit.Framework;
-
     /// <summary>
-    /// Forked task adapter test.
+    /// Test person.
     /// </summary>
-    [Ignore("IGNITE-1367")]
-    public class GridForkedTaskAdapterTest : GridTaskAdapterTest
+    internal class NoDefPortablePerson
     {
         /// <summary>
-        /// Constructor.
+        /// Gets or sets the name.
         /// </summary>
-        public GridForkedTaskAdapterTest() : base(true) { }
+        public string Name { get; set; }
+
+        /// <summary>
+        /// Gets or sets the age.
+        /// </summary>
+        public int Age { get; set; }
     }
 }

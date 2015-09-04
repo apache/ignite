@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Tests task result.
     /// </summary>
-    public class GridTaskResultTest : GridAbstractTaskTest
+    public class TaskResultTest : AbstractTaskTest
     {
         /** Grid name. */
         private static volatile string _gridName;
@@ -36,13 +36,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GridTaskResultTest() : base(false) { }
+        public TaskResultTest() : base(false) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="forked">Fork flag.</param>
-        protected GridTaskResultTest(bool forked) : base(forked) { }
+        protected TaskResultTest(bool forked) : base(forked) { }
 
         /// <summary>
         /// Test for task result.

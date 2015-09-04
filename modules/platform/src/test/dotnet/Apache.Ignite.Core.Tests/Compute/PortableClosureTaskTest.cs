@@ -26,18 +26,18 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Closure execution tests for portable objects.
     /// </summary>
-    public class GridPortableClosureTaskTest : GridClosureTaskTest
+    public class PortableClosureTaskTest : ClosureTaskTest
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GridPortableClosureTaskTest() : base(false) { }
+        public PortableClosureTaskTest() : base(false) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="fork">Fork flag.</param>
-        protected GridPortableClosureTaskTest(bool fork) : base(fork) { }
+        protected PortableClosureTaskTest(bool fork) : base(fork) { }
 
         /** <inheritDoc /> */
         protected override void PortableTypeConfigurations(ICollection<PortableTypeConfiguration> portTypeCfgs)

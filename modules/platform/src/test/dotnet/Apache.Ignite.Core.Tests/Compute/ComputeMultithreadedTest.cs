@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// Tests class.
     /// </summary>
     [Category(TestUtils.CategoryIntensive)]
-    public class GridComputeMultithreadedTest : GridAbstractTaskTest
+    public class ComputeMultithreadedTest : AbstractTaskTest
     {
         /** */
         private static IList<Action<ICompute>> _actions;
@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GridComputeMultithreadedTest() : base(false) { }
+        public ComputeMultithreadedTest() : base(false) { }
 
         /// <summary>
         /// Set-up routine.

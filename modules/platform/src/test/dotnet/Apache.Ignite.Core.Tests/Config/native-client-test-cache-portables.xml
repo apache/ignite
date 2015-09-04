@@ -47,13 +47,13 @@
                             <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
                         </bean>
                         <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.model.GridPortablePerson"/>
+                            <property name="className" value="org.gridgain.client.model.PortablePerson"/>
                         </bean>
                         <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
                             <property name="className" value="org.gridgain.client.model.ImplicitPortablePerson"/>
                         </bean>
                         <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
-                            <property name="className" value="GridNoDefPortablePerson"/>
+                            <property name="className" value="NoDefPortablePerson"/>
                         </bean>
                     </list>
                 </property>
@@ -177,7 +177,7 @@
         <property name="typeMetadata">
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                    <property name="valueType" value="GridPortablePerson"/>
+                    <property name="valueType" value="PortablePerson"/>
                     <property name="ascendingFields">
                         <map>
                             <entry key="age" value="java.lang.Integer"/>
@@ -208,7 +208,7 @@
                     </property>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                    <property name="valueType" value="GridNoDefPortablePerson"/>
+                    <property name="valueType" value="NoDefPortablePerson"/>
                     <property name="ascendingFields">
                         <map>
                             <entry key="age" value="java.lang.Integer"/>

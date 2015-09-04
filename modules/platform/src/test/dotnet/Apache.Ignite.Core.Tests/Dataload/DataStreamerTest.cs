@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
     /// <summary>
     /// Data streamer tests.
     /// </summary>
-    public class GridDataStreamerTest
+    public class DataStreamerTest
     {
         /** Node name. */
         protected const string GridName = "grid";

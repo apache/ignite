@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Test for task and job adapter.
     /// </summary>
-    public class GridFailoverTaskSelfTest : GridAbstractTaskTest
+    public class FailoverTaskSelfTest : AbstractTaskTest
     {
         /** */
         static volatile string _gridName;
@@ -39,13 +39,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GridFailoverTaskSelfTest() : base(false) { }
+        public FailoverTaskSelfTest() : base(false) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="fork">Fork flag.</param>
-        protected GridFailoverTaskSelfTest(bool fork) : base(fork) { }
+        protected FailoverTaskSelfTest(bool fork) : base(fork) { }
 
         /// <summary>
         /// Test for GridComputeJobFailoverException.

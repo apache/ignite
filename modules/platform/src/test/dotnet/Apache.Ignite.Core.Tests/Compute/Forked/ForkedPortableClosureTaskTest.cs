@@ -15,36 +15,19 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Query
+namespace Apache.Ignite.Core.Tests.Compute.Forked
 {
-    /**
-     * 
-     */
-    class GridNoDefPortablePerson {
-        /**
-         * 
-         */
-        public GridNoDefPortablePerson(string name, int age) {
-            Name = name;
-            Age = age;
-        }
+    using NUnit.Framework;
 
-        /**
-         * 
-         */
-        public string Name
-        {
-            get;
-            set;
-        }
-
-        /**
-         * 
-         */
-        public int Age
-        {
-            get;
-            set;
-        }
+    /// <summary>
+    /// Forked closure execution tests for portable objects.
+    /// </summary>
+    [Ignore("IGNITE-1367")]
+    public class ForkedPortableClosureTaskTest : PortableClosureTaskTest
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public ForkedPortableClosureTaskTest() : base(true) { }
     }
 }

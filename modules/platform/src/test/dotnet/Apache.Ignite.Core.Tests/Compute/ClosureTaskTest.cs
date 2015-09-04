@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Tests for distributed closure executions.
     /// </summary>
-    public abstract class GridClosureTaskTest : GridAbstractTaskTest
+    public abstract class ClosureTaskTest : AbstractTaskTest
     {
         /** Amount of multiple clousres. */
         private const int MultiCloCnt = 5;
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Constructor.
         /// </summary>
         /// <param name="fork">Fork mode.</param>
-        protected GridClosureTaskTest(bool fork) : base(fork) { }
+        protected ClosureTaskTest(bool fork) : base(fork) { }
 
         /// <summary>
         /// Test for single closure returning result.

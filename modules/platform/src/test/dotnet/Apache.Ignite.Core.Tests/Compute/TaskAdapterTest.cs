@@ -27,18 +27,18 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Test for task and job adapter.
     /// </summary>
-    public class GridTaskAdapterTest : GridAbstractTaskTest
+    public class TaskAdapterTest : AbstractTaskTest
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GridTaskAdapterTest() : base(false) { }
+        public TaskAdapterTest() : base(false) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="fork">Fork flag.</param>
-        protected GridTaskAdapterTest(bool fork) : base(fork) { }
+        protected TaskAdapterTest(bool fork) : base(fork) { }
 
         /// <summary>
         /// Test for task adapter.

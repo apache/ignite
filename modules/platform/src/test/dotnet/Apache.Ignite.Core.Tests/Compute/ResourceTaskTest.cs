@@ -29,18 +29,18 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Test resource injections in tasks and jobs.
     /// </summary>
-    public class GridResourceTaskTest : GridAbstractTaskTest
+    public class ResourceTaskTest : AbstractTaskTest
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GridResourceTaskTest() : base(false) { }
+        public ResourceTaskTest() : base(false) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="fork">Fork flag.</param>
-        protected GridResourceTaskTest(bool fork) : base(fork) { }
+        protected ResourceTaskTest(bool fork) : base(fork) { }
 
         /// <summary>
         /// Test Grid injection into the task.

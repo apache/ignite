@@ -61,11 +61,11 @@
                             <list>
                                 <value>Apache.Ignite.Core.Tests.ExecutableTest+RemoteConfiguration</value>
                                 <value>Apache.Ignite.Core.Tests.ExecutableTest+RemoteConfigurationClosure</value>
-                                <value>Apache.Ignite.Core.Tests.Compute.GridTaskAdapterTest+PortableJob</value>
-                                <value>Apache.Ignite.Core.Tests.Compute.GridPortableClosureTaskTest+PortableOutFunc</value>
-                                <value>Apache.Ignite.Core.Tests.Compute.GridPortableClosureTaskTest+PortableFunc</value>
-                                <value>Apache.Ignite.Core.Tests.Compute.GridPortableClosureTaskTest+PortableResult</value>
-                                <value>Apache.Ignite.Core.Tests.Compute.GridPortableClosureTaskTest+PortableException</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.TaskAdapterTest+PortableJob</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.PortableClosureTaskTest+PortableOutFunc</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.PortableClosureTaskTest+PortableFunc</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.PortableClosureTaskTest+PortableResult</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.PortableClosureTaskTest+PortableException</value>
                             </list>
                         </property>
                         <property name="typesConfiguration">

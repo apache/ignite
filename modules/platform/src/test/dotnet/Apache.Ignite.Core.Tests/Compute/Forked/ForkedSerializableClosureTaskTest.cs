@@ -23,11 +23,11 @@ namespace Apache.Ignite.Core.Tests.Compute.Forked
     /// Forked closure execution tests for serializable objects.
     /// </summary>
     [Ignore("IGNITE-1367")]
-    public class GridForkedSerializableClosureTaskTest : GridSerializableClosureTaskTest
+    public class ForkedSerializableClosureTaskTest : SerializableClosureTaskTest
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GridForkedSerializableClosureTaskTest() : base(true) { }
+        public ForkedSerializableClosureTaskTest() : base(true) { }
     }
 }

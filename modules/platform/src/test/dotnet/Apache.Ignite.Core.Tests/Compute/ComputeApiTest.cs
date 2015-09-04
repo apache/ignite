@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Tests for compute.
     /// </summary>
-    public class GridComputeApiTest
+    public class ComputeApiTest
     {
         /** Echo task name. */
         private const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";

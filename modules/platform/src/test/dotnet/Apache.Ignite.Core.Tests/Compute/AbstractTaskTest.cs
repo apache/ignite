@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Base class for all task-related tests.
     /// </summary>
-    public abstract class GridAbstractTaskTest
+    public abstract class AbstractTaskTest
     {
         /** */
         protected const string Grid1Name = "grid1";
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Constructor.
         /// </summary>
         /// <param name="fork">Fork flag.</param>
-        protected GridAbstractTaskTest(bool fork)
+        protected AbstractTaskTest(bool fork)
         {
             _fork = fork;
         }
