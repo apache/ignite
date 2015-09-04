@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Query
 {
-    using System;
-
     /**
      * 
      */
@@ -26,9 +24,9 @@ namespace Apache.Ignite.Core.Tests.Query
         /**
          * 
          */
-        public GridNoDefPortablePerson(string _name, int _age) {
-            Name = _name;
-            Age = _age;
+        public GridNoDefPortablePerson(string name, int age) {
+            Name = name;
+            Age = age;
         }
 
         /**

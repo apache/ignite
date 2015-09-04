@@ -854,9 +854,9 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual("str", obj.FStr);
             Assert.AreEqual(date, obj.FDate);
-            Assert.AreEqual(nDate, obj.FNDate);
+            Assert.AreEqual(nDate, obj.FnDate);
             Assert.AreEqual(guid, obj.FGuid);
-            Assert.AreEqual(nGuid, obj.FNGuid);
+            Assert.AreEqual(nGuid, obj.FnGuid);
             Assert.AreEqual(TestEnum.One, obj.FEnum);
             Assert.AreEqual(new[] { "str" }, obj.FStrArr);
             Assert.AreEqual(new[] { nDate }, obj.FDateArr);
@@ -901,9 +901,9 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual("str2", obj.FStr);
             Assert.AreEqual(date, obj.FDate);
-            Assert.AreEqual(nDate, obj.FNDate);
+            Assert.AreEqual(nDate, obj.FnDate);
             Assert.AreEqual(guid, obj.FGuid);
-            Assert.AreEqual(nGuid, obj.FNGuid);
+            Assert.AreEqual(nGuid, obj.FnGuid);
             Assert.AreEqual(TestEnum.Two, obj.FEnum);
             Assert.AreEqual(new[] { "str2" }, obj.FStrArr);
             Assert.AreEqual(new[] { nDate }, obj.FDateArr);
@@ -1482,9 +1482,9 @@ namespace Apache.Ignite.Core.Tests.Portable
     {
         public string FStr;
         public DateTime FDate;
-        public DateTime? FNDate;
+        public DateTime? FnDate;
         public Guid FGuid;
-        public Guid? FNGuid;
+        public Guid? FnGuid;
         public TestEnum FEnum;
 
         public string[] FStrArr;

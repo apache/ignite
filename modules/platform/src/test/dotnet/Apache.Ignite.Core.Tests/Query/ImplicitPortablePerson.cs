@@ -17,36 +17,30 @@
 
 namespace Apache.Ignite.Core.Tests.Query
 {
-    using System;
-
     /// <summary>
-    /// 
+    /// Test person.
     /// </summary>
-    internal class ImplicitPortablePerson {
-        /**
-         * 
-         */
-        public ImplicitPortablePerson(string _name, int _age) {
-            Name = _name;
-            Age = _age;
+    internal class ImplicitPortablePerson
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImplicitPortablePerson"/> class.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="age">The age.</param>
+        public ImplicitPortablePerson(string name, int age)
+        {
+            Name = name;
+            Age = age;
         }
 
-        /**
-         * 
-         */
-        public string Name
-        {
-            get;
-            set;
-        }
+        /// <summary>
+        /// Gets or sets the name.
+        /// </summary>
+        public string Name { get; set; }
 
-        /**
-         * 
-         */
-        public int Age
-        {
-            get;
-            set;
-        }
+        /// <summary>
+        /// Gets or sets the age.
+        /// </summary>
+        public int Age { get; set; }
     }
 }

@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Interop
 {
-    using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Portable;

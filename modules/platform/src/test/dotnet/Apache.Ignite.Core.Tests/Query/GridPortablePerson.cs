@@ -17,78 +17,63 @@
 
 namespace Apache.Ignite.Core.Tests.Query
 {
-    using System;
     using Apache.Ignite.Core.Portable;
 
-    /**
-     * 
-     */
-    class GridPortablePerson : IPortableMarshalAware {
-        /**
-         * 
-         */
-        public GridPortablePerson(string _name, int _age) 
+    /// <summary>
+    /// Test person.
+    /// </summary>
+    internal class GridPortablePerson : IPortableMarshalAware
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GridPortablePerson"/> class.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="age">The age.</param>
+        public GridPortablePerson(string name, int age)
         {
-            Name = _name;
-            Age = _age;
+            Name = name;
+            Age = age;
         }
 
-        /**
-         * 
-         */
-        public GridPortablePerson(string _name, int _age, string _address)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GridPortablePerson"/> class.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="age">The age.</param>
+        /// <param name="address">The address.</param>
+        public GridPortablePerson(string name, int age, string address)
         {
-            Name = _name;
-            Address = _address;
-            Age = _age;
+            Name = name;
+            Address = address;
+            Age = age;
         }
 
-        /**
-         * 
-         */
-        public string Name 
-        { 
-            get; 
-            set; 
-        }
+        /// <summary>
+        /// Gets or sets the name.
+        /// </summary>
+        public string Name { get; set; }
 
-        /**
-         * 
-         */
-        public string Address
+        /// <summary>
+        /// Gets or sets the address.
+        /// </summary>
+        public string Address { get; set; }
+
+        /// <summary>
+        /// Gets or sets the age.
+        /// </summary>
+        public int Age { get; set; }
+
+        /** <ineritdoc /> */
+        public void WritePortable(IPortableWriter writer)
         {
-            get;
-            set;
-        }
-
-        /**
-         * 
-         */
-        public int Age 
-        {
-            get;
-            set;
-        }
-
-        /**
-         * <summary>Writes this object to the given writer.</summary>
-         *
-         * <param name="writer">Writer.</param>
-         * <exception cref="System.IO.IOException">If write failed.</exception>
-         */
-        public void WritePortable(IPortableWriter writer) {
             writer.WriteString("name", Name);
             writer.WriteString("address", Address);
             writer.WriteInt("age", Age);
         }
 
-        /**
-         * <summary>Reads this object from the given reader.</summary>
-         *
-         * <param name="reader">Reader.</param>
-         * <exception cref="System.IO.IOException">If read failed.</exception>
-         */
-        public void ReadPortable(IPortableReader reader) {
+        /** <ineritdoc /> */
+        public void ReadPortable(IPortableReader reader)
+        {
             Name = reader.ReadString("name");
             Address = reader.ReadString("address");
             Age = reader.ReadInt("age");

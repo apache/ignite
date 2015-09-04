@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Portable
 {
-    using System;
     using System.Collections.Generic;
 
     /// <summary>
