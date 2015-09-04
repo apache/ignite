@@ -87,11 +87,11 @@ namespace Apache.Ignite.Service
             if (ServiceController.GetServices().Any(svc => SvcName.Equals(svc.ServiceName)))
             {
                 throw new IgniteException("Ignite service is already installed (uninstall it using \"" +
-                                          ExeName + " " + GridRunner.SvcUninstall + "\" first)");
+                                          ExeName + " " + IgniteRunner.SvcUninstall + "\" first)");
             }
 
             // 2. Create startup arguments.
-            var args = GridArgsConfigurator.ToArgs(cfg);
+            var args = ArgsConfigurator.ToArgs(cfg);
 
             if (args.Length > 0)
             {
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Service
         private static void Install0(string[] args)
         {
             // 1. Prepare arguments.
-            var binPath = new StringBuilder(FullExeName).Append(" ").Append(GridRunner.Svc);
+            var binPath = new StringBuilder(FullExeName).Append(" ").Append(IgniteRunner.Svc);
 
             foreach (var arg in args)
                 binPath.Append(" ").Append(arg);

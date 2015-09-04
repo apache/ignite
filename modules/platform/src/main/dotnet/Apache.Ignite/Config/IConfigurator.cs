@@ -17,26 +17,18 @@
 
 namespace Apache.Ignite.Config
 {
-    using System;
+    using Apache.Ignite.Core;
 
     /// <summary>
-    /// Parses grid config values.
+    /// Configurator which is capable of setting configuration properties taken from somewhere.
     /// </summary>
-    internal class GridConfigValueParser
+    internal interface IConfigurator<in T>
     {
         /// <summary>
-        /// Parses provided string to int. Throws a custom exception if failed.
+        /// Set configuration.
         /// </summary>
-        public static int ParseInt(string value, string propertyName)
-        {
-            int result;
-
-            if (int.TryParse(value, out result))
-                return result;
-
-            throw new InvalidOperationException(
-                string.Format("Failed to configure Grid: property '{0}' has value '{1}', which is not an integer.",
-                    propertyName, value));
-        }
+        /// <param name="cfg">Configuration.</param>
+        /// <param name="src">Source.</param>
+        void Configure(IgniteConfiguration cfg, T src);
     }
 }

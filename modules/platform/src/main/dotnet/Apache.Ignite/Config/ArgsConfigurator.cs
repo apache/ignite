@@ -23,7 +23,7 @@ namespace Apache.Ignite.Config
     /// <summary>
     /// Configurator which uses arguments array.
     /// </summary>
-    internal class GridArgsConfigurator : IGridConfigurator<string[]>
+    internal class ArgsConfigurator : IConfigurator<string[]>
     {
         /** Command line argument: GridGain home. */
         private static readonly string CmdGridgainHome = "-IgniteHome=".ToLower();
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Config
         {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
-            new GridArgsConfigurator().Configure(cfg, args);
+            new ArgsConfigurator().Configure(cfg, args);
 
             return cfg;
         }
@@ -133,10 +133,10 @@ namespace Apache.Ignite.Config
                     cfg.SuppressWarnings = bool.TrueString.ToLower().Equals(val.ToLower());
                 }
                 else if (argLow.StartsWith(CmdJvmMinMem))
-                    cfg.JvmInitialMemoryMb = GridConfigValueParser.ParseInt(arg.Substring(CmdJvmMinMem.Length),
+                    cfg.JvmInitialMemoryMb = ConfigValueParser.ParseInt(arg.Substring(CmdJvmMinMem.Length),
                         CmdJvmMinMem);
                 else if (argLow.StartsWith(CmdJvmMaxMem))
-                    cfg.JvmMaxMemoryMb = GridConfigValueParser.ParseInt(arg.Substring(CmdJvmMaxMem.Length),
+                    cfg.JvmMaxMemoryMb = ConfigValueParser.ParseInt(arg.Substring(CmdJvmMaxMem.Length),
                         CmdJvmMaxMem);
                 else if (argLow.StartsWith(CmdJvmOpt))
                     jvmOpts.Add(arg.Substring(CmdJvmOpt.Length));

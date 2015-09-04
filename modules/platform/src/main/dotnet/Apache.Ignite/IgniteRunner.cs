@@ -29,7 +29,7 @@ namespace Apache.Ignite
     /// <summary>
     /// Runner class.
     /// </summary>
-    public class GridRunner
+    public class IgniteRunner
     {
         /** Help commands. */
         private static readonly IList<string> Help = new List<string> { "/help", "-help", "--help" };
@@ -93,10 +93,10 @@ namespace Apache.Ignite
                     // Pick application configuration.
                     cfg = new IgniteConfiguration();
 
-                    new GridAppSettingsConfigurator().Configure(cfg, ConfigurationManager.AppSettings);
+                    new AppSettingsConfigurator().Configure(cfg, ConfigurationManager.AppSettings);
 
                     // Pick command line arguments.
-                    new GridArgsConfigurator().Configure(cfg, args);
+                    new ArgsConfigurator().Configure(cfg, args);
 
                     if (install)
                         IgniteService.DoInstall(cfg);
@@ -121,7 +121,7 @@ namespace Apache.Ignite
             cfg = new IgniteConfiguration();
 
             // Use only arguments, not app.config.
-            new GridArgsConfigurator().Configure(cfg, args);
+            new ArgsConfigurator().Configure(cfg, args);
 
             ServiceBase.Run(new IgniteService(cfg));
         }

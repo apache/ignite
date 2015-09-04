@@ -24,7 +24,7 @@ namespace Apache.Ignite.Config
     /// <summary>
     /// Configurator which uses application configuration.
     /// </summary>
-    internal class GridAppSettingsConfigurator : IGridConfigurator<NameValueCollection>
+    internal class AppSettingsConfigurator : IConfigurator<NameValueCollection>
     {
         /** Common configuration property prefix. */
         private static readonly string CfgPrefix = "GridGain.".ToLower();
@@ -87,9 +87,9 @@ namespace Apache.Ignite.Config
                     else if (key0.StartsWith(CfgAssemblyPrefix))
                         assemblies.Add(val);
                     else if (CfgJvmMinMem.Equals(key0))
-                        cfg.JvmInitialMemoryMb = GridConfigValueParser.ParseInt(val, key);
+                        cfg.JvmInitialMemoryMb = ConfigValueParser.ParseInt(val, key);
                     else if (CfgJvmMaxMem.Equals(key0))
-                        cfg.JvmMaxMemoryMb = GridConfigValueParser.ParseInt(val, key);
+                        cfg.JvmMaxMemoryMb = ConfigValueParser.ParseInt(val, key);
                 }
             }
 
