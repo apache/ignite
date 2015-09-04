@@ -86,6 +86,10 @@ public class CacheClientPortablePutGetExample {
 
                 System.out.println();
             }
+            finally {
+                // Delete cache with its content completely.
+                ignite.destroyCache(CACHE_NAME);
+            }
         }
     }
 

@@ -821,7 +821,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
 
                     // Setup periodic version check.
-                    updateNtfTimer.scheduleAtFixedRate(new UpdateNotifierTimerTask(this, verChecker),
+                    updateNtfTimer.scheduleAtFixedRate(new UpdateNotifierTimerTask(this, execSvc, verChecker),
                         0, PERIODIC_VER_CHECK_DELAY);
                 }
                 catch (IgniteCheckedException e) {
@@ -876,8 +876,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new GridAffinityProcessor(ctx));
             startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
             startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
-            startProcessor(new GridQueryProcessor(ctx));
             startProcessor(new GridCacheProcessor(ctx));
+            startProcessor(new GridQueryProcessor(ctx));
             startProcessor(new GridTaskSessionProcessor(ctx));
             startProcessor(new GridJobProcessor(ctx));
             startProcessor(new GridTaskProcessor(ctx));
@@ -3199,15 +3199,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
          * Constructor.
          *
          * @param kernal Kernal.
+         * @param execSvc Executor service.
          * @param verChecker Version checker.
          */
-        private UpdateNotifierTimerTask(IgniteKernal kernal, GridUpdateNotifier verChecker) {
+        private UpdateNotifierTimerTask(IgniteKernal kernal, ExecutorService execSvc, GridUpdateNotifier verChecker) {
             kernalRef = new WeakReference<>(kernal);
 
             log = kernal.log.getLogger(UpdateNotifierTimerTask.class);
 
-            execSvc = kernal.executorService();
-
+            this.execSvc = execSvc;
             this.verChecker = verChecker;
         }
 
