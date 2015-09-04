@@ -21,9 +21,9 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Collections.Generic;
     using System.IO;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>
     /// Portables implementation.
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableBuilder Builder(Type type)
         {
-            A.NotNull(type, "type");
+            IgniteArgumentCheck.NotNull(type, "type");
 
             IPortableTypeDescriptor desc = _marsh.Descriptor(type);
 
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableBuilder Builder(string typeName)
         {
-            A.NotNullOrEmpty(typeName, "typeName");
+            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
             IPortableTypeDescriptor desc = _marsh.Descriptor(typeName);
             
@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableBuilder Builder(IPortableObject obj)
         {
-            A.NotNull(obj, "obj");
+            IgniteArgumentCheck.NotNull(obj, "obj");
 
             PortableUserObject obj0 = obj as PortableUserObject;
 
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public int GetTypeId(string typeName)
         {
-            A.NotNullOrEmpty(typeName, "typeName");
+            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
             return Marshaller.Descriptor(typeName).TypeId;
         }
@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableMetadata GetMetadata(string typeName)
         {
-            A.NotNullOrEmpty(typeName, "typeName");
+            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
             return GetMetadata(GetTypeId(typeName));
         }
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableMetadata GetMetadata(Type type)
         {
-            A.NotNull(type, "type");
+            IgniteArgumentCheck.NotNull(type, "type");
 
             var desc = Marshaller.Descriptor(type);
 

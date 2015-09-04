@@ -25,12 +25,12 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Collections;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>
     /// Messaging functionality.
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public void Send(object message, object topic = null)
         {
-            A.NotNull(message, "message");
+            IgniteArgumentCheck.NotNull(message, "message");
 
             DoOutOp((int) Op.SEND, topic, message);
         }
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public void Send(IEnumerable messages, object topic = null)
         {
-            A.NotNull(messages, "messages");
+            IgniteArgumentCheck.NotNull(messages, "messages");
 
             DoOutOp((int) Op.SendMulti, writer =>
             {
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public void SendOrdered(object message, object topic = null, TimeSpan? timeout = null)
         {
-            A.NotNull(message, "message");
+            IgniteArgumentCheck.NotNull(message, "message");
 
             DoOutOp((int) Op.SEND_ORDERED, writer =>
             {
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public void LocalListen<T>(IMessageFilter<T> filter, object topic = null)
         {
-            A.NotNull(filter, "filter");
+            IgniteArgumentCheck.NotNull(filter, "filter");
 
             ResourceProcessor.Inject(filter, _grid);
 
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public void StopLocalListen<T>(IMessageFilter<T> filter, object topic = null)
         {
-            A.NotNull(filter, "filter");
+            IgniteArgumentCheck.NotNull(filter, "filter");
 
             long filterHnd;
             bool removed;
@@ -180,7 +180,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public Guid RemoteListen<T>(IMessageFilter<T> filter, object topic = null)
         {
-            A.NotNull(filter, "filter");
+            IgniteArgumentCheck.NotNull(filter, "filter");
 
             var filter0 = MessageFilterHolder.CreateLocal(_grid, filter);
             var filterHnd = _grid.HandleRegistry.AllocateSafe(filter0);

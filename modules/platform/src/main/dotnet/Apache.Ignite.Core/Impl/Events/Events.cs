@@ -25,12 +25,12 @@ namespace Apache.Ignite.Core.Impl.Events
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Portable;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Impl.Events
         public virtual List<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types)
             where T : IEvent
         {
-            A.NotNull(filter, "filter");
+            IgniteArgumentCheck.NotNull(filter, "filter");
 
             return DoOutInOp((int) Op.REMOTE_QUERY,
                 writer =>
@@ -127,8 +127,8 @@ namespace Apache.Ignite.Core.Impl.Events
             IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types)
             where T : IEvent
         {
-            A.Ensure(bufSize > 0, "bufSize", "should be > 0");
-            A.Ensure(interval == null || interval.Value.TotalMilliseconds > 0, "interval", "should be null or >= 0");
+            IgniteArgumentCheck.Ensure(bufSize > 0, "bufSize", "should be > 0");
+            IgniteArgumentCheck.Ensure(interval == null || interval.Value.TotalMilliseconds > 0, "interval", "should be null or >= 0");
 
             return DoOutInOp((int) Op.REMOTE_LISTEN,
                 writer =>
@@ -203,8 +203,8 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public void LocalListen<T>(IEventFilter<T> listener, params int[] types) where T : IEvent
         {
-            A.NotNull(listener, "listener");
-            A.NotNullOrEmpty(types, "types");
+            IgniteArgumentCheck.NotNull(listener, "listener");
+            IgniteArgumentCheck.NotNullOrEmpty(types, "types");
 
             foreach (var type in types)
                 LocalListen(listener, type);
@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public void EnableLocal(params int[] types)
         {
-            A.NotNullOrEmpty(types, "types");
+            IgniteArgumentCheck.NotNullOrEmpty(types, "types");
 
             DoOutOp((int)Op.ENABLE_LOCAL, writer => WriteEventTypes(types, writer));
         }
@@ -242,7 +242,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public void DisableLocal(params int[] types)
         {
-            A.NotNullOrEmpty(types, "types");
+            IgniteArgumentCheck.NotNullOrEmpty(types, "types");
 
             DoOutOp((int)Op.DISABLE_LOCAL, writer => WriteEventTypes(types, writer));
         }

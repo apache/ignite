@@ -21,8 +21,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Collections;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Portable;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>
     /// Cluster node implementation.
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public T Attribute<T>(string name)
         {
-            A.NotNull(name, "name");
+            IgniteArgumentCheck.NotNull(name, "name");
 
             return (T)_attrs[name];
         }
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public bool TryGetAttribute<T>(string name, out T attr)
         {
-            A.NotNull(name, "name");
+            IgniteArgumentCheck.NotNull(name, "name");
 
             object val;
 

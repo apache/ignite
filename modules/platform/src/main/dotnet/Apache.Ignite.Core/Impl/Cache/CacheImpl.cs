@@ -34,7 +34,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Portable;
-    using AC = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
@@ -192,7 +191,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public ICache<TK, TV> WithExpiryPolicy(IExpiryPolicy plc)
         {
-            AC.NotNull(plc, "plc");
+            IgniteArgumentCheck.NotNull(plc, "plc");
 
             long create = ConvertDuration(plc.GetExpiryForCreate());
             long update = ConvertDuration(plc.GetExpiryForUpdate());
@@ -272,7 +271,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public bool ContainsKey(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutOp((int)CacheOp.ContainsKey, key) == True;
         }        
@@ -280,7 +279,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public bool ContainsKeys(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             return DoOutOp((int)CacheOp.ContainsKeys, writer => WriteEnumerable(writer, keys)) == True;
         }        
@@ -288,7 +287,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public TV LocalPeek(TK key, params CachePeekMode[] modes)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOp<TV>((int)CacheOp.Peek, writer =>
             {
@@ -300,7 +299,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public TV Get(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOp<TK, TV>((int)CacheOp.Get, key);
         }
@@ -308,7 +307,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             return DoOutInOp((int)CacheOp.GetAll,
                 writer => WriteEnumerable(writer, keys),
@@ -323,9 +322,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Put(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             DoOutOp((int)CacheOp.Put, key, val);
         }
@@ -333,9 +332,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public TV GetAndPut(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             return DoOutInOp<TK, TV, TV>((int)CacheOp.GetAndPut, key, val);
         }
@@ -343,9 +342,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public TV GetAndReplace(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             return DoOutInOp<TK, TV, TV>((int)CacheOp.GetAndReplace, key, val);
         }
@@ -353,7 +352,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public TV GetAndRemove(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOp<TK, TV>((int)CacheOp.GetAndRemove, key);
         }
@@ -361,9 +360,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public bool PutIfAbsent(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             return DoOutOp((int) CacheOp.PutIfAbsent, key, val) == True;
         }
@@ -371,9 +370,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public TV GetAndPutIfAbsent(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             return DoOutInOp<TK, TV, TV>((int)CacheOp.GetAndPutIfAbsent, key, val);
         }
@@ -381,9 +380,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public bool Replace(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             return DoOutOp((int)CacheOp.Replace2, key, val) == True;
         }
@@ -391,11 +390,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public bool Replace(TK key, TV oldVal, TV newVal)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(oldVal, "oldVal");
+            IgniteArgumentCheck.NotNull(oldVal, "oldVal");
 
-            AC.NotNull(newVal, "newVal");
+            IgniteArgumentCheck.NotNull(newVal, "newVal");
 
             return DoOutOp((int)CacheOp.Replace3, key, oldVal, newVal) == True;
         }
@@ -403,7 +402,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void PutAll(IDictionary<TK, TV> vals)
         {
-            AC.NotNull(vals, "vals");
+            IgniteArgumentCheck.NotNull(vals, "vals");
 
             DoOutOp((int) CacheOp.PutAll, writer => WriteDictionary(writer, vals));
         }
@@ -411,7 +410,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void LocalEvict(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             DoOutOp((int) CacheOp.LocEvict, writer => WriteEnumerable(writer, keys));
         }
@@ -425,7 +424,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Clear(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             DoOutOp((int)CacheOp.Clear, key);
         }
@@ -433,7 +432,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void ClearAll(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             DoOutOp((int)CacheOp.ClearAll, writer => WriteEnumerable(writer, keys));
         }
@@ -441,7 +440,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void LocalClear(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             DoOutOp((int) CacheOp.LocalClear, key);
         }
@@ -449,7 +448,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void LocalClearAll(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             DoOutOp((int)CacheOp.LocalClearAll, writer => WriteEnumerable(writer, keys));
         }
@@ -457,7 +456,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public bool Remove(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutOp((int)CacheOp.RemoveObj, key) == True;
         }
@@ -465,9 +464,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public bool Remove(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             return DoOutOp((int)CacheOp.RemoveBool, key, val) == True;
         }
@@ -475,7 +474,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void RemoveAll(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             DoOutOp((int)CacheOp.RemoveAll, writer => WriteEnumerable(writer, keys));
         }
@@ -514,7 +513,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void LocalPromote(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             DoOutOp((int)CacheOp.LocPromote, writer => WriteEnumerable(writer, keys));
         }
@@ -522,9 +521,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public TR Invoke<TR, TA>(TK key, ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(processor, "processor");
+            IgniteArgumentCheck.NotNull(processor, "processor");
 
             var holder = new CacheEntryProcessorHolder(processor, arg,
                 (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TA)a), typeof(TK), typeof(TV));
@@ -541,9 +540,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         public IDictionary<TK, ICacheEntryProcessorResult<TR>> InvokeAll<TR, TA>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
-            AC.NotNull(processor, "processor");
+            IgniteArgumentCheck.NotNull(processor, "processor");
 
             var holder = new CacheEntryProcessorHolder(processor, arg,
                 (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TA)a), typeof(TK), typeof(TV));
@@ -566,7 +565,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public ICacheLock Lock(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOp((int)CacheOp.Lock, writer =>
             {
@@ -577,7 +576,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public ICacheLock LockAll(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             return DoOutInOp((int)CacheOp.LockAll, writer =>
             {
@@ -588,7 +587,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public bool IsLocalLocked(TK key, bool byCurrentThread)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutOp((int)CacheOp.IsLocalLocked, writer =>
             {
@@ -637,7 +636,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
-            AC.NotNull(qry, "qry");
+            IgniteArgumentCheck.NotNull(qry, "qry");
 
             if (string.IsNullOrEmpty(qry.Sql))
                 throw new ArgumentException("Sql cannot be null or empty");
@@ -665,7 +664,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry)
         {
-            AC.NotNull(qry, "qry");
+            IgniteArgumentCheck.NotNull(qry, "qry");
 
             IUnmanagedTarget cursor;
 
@@ -704,7 +703,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> qry)
         {
-            AC.NotNull(qry, "qry");
+            IgniteArgumentCheck.NotNull(qry, "qry");
 
             return QueryContinuousImpl(qry, null);
         }
@@ -712,8 +711,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, QueryBase initialQry)
         {
-            AC.NotNull(qry, "qry");
-            AC.NotNull(initialQry, "initialQry");
+            IgniteArgumentCheck.NotNull(qry, "qry");
+            IgniteArgumentCheck.NotNull(initialQry, "initialQry");
 
             return QueryContinuousImpl(qry, initialQry);
         }

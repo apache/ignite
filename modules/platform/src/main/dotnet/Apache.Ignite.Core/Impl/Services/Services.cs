@@ -24,10 +24,10 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Reflection;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Services;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
@@ -129,8 +129,8 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public void DeployClusterSingleton(string name, IService service)
         {
-            A.NotNullOrEmpty(name, "name");
-            A.NotNull(service, "service");
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(service, "service");
 
             DeployMultiple(name, service, 1, 1);
         }
@@ -138,8 +138,8 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public void DeployNodeSingleton(string name, IService service)
         {
-            A.NotNullOrEmpty(name, "name");
-            A.NotNull(service, "service");
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(service, "service");
 
             DeployMultiple(name, service, 0, 1);
         }
@@ -147,9 +147,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public void DeployKeyAffinitySingleton<TK>(string name, IService service, string cacheName, TK affinityKey)
         {
-            A.NotNullOrEmpty(name, "name");
-            A.NotNull(service, "service");
-            A.NotNull(affinityKey, "affinityKey");
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(service, "service");
+            IgniteArgumentCheck.NotNull(affinityKey, "affinityKey");
 
             Deploy(new ServiceConfiguration
             {
@@ -165,8 +165,8 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public void DeployMultiple(string name, IService service, int totalCount, int maxPerNodeCount)
         {
-            A.NotNullOrEmpty(name, "name");
-            A.NotNull(service, "service");
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNull(service, "service");
 
             DoOutOp(OpDeployMultiple, w =>
             {
@@ -180,7 +180,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public void Deploy(ServiceConfiguration configuration)
         {
-            A.NotNull(configuration, "configuration");
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp(OpDeploy, w =>
             {
@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public void Cancel(string name)
         {
-            A.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
             UU.ServicesCancel(target, name);
         }
@@ -237,7 +237,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public T GetService<T>(string name)
         {
-            A.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
             var services = GetServices<T>(name);
 
@@ -250,7 +250,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public ICollection<T> GetServices<T>(string name)
         {
-            A.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
             return DoOutInOp<ICollection<T>>(OpDotnetServices, w => w.WriteString(name),
                 r =>
@@ -281,8 +281,8 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public T GetServiceProxy<T>(string name, bool sticky) where T : class
         {
-            A.NotNullOrEmpty(name, "name");
-            A.Ensure(typeof(T).IsInterface, "T", "Service proxy type should be an interface: " + typeof(T));
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", "Service proxy type should be an interface: " + typeof(T));
 
             // In local scenario try to return service instance itself instead of a proxy
             // Get as object because proxy interface may be different from real interface

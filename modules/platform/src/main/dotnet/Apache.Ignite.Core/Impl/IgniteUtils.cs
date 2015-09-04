@@ -27,10 +27,10 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cluster;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Portable;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>
     /// Native utility methods.
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>New Instance.</returns>
         public static object CreateInstance(string assemblyName, string clsName)
         {
-            A.NotNullOrEmpty(clsName, "clsName");
+            IgniteArgumentCheck.NotNullOrEmpty(clsName, "clsName");
 
             var type = new TypeResolver().ResolveType(clsName, assemblyName);
 
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Impl
             if (props == null)
                 return;
 
-            A.NotNull(target, "target");
+            IgniteArgumentCheck.NotNull(target, "target");
 
             Type typ = target.GetType();
 

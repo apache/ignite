@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cluster;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Portable;
@@ -39,7 +40,6 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>
     /// Native grid wrapper.
@@ -173,7 +173,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICompute Compute(IClusterGroup clusterGroup)
         {
-            A.NotNull(clusterGroup, "clusterGroup");
+            IgniteArgumentCheck.NotNull(clusterGroup, "clusterGroup");
 
             return clusterGroup.Compute();
         }
@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IClusterGroup ForPredicate(Func<IClusterNode, bool> p)
         {
-            A.NotNull(p, "p");
+            IgniteArgumentCheck.NotNull(p, "p");
 
             return _prj.ForPredicate(p);
         }
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IClusterGroup ForHost(IClusterNode node)
         {
-            A.NotNull(node, "node");
+            IgniteArgumentCheck.NotNull(node, "node");
 
             return _prj.ForHost(node);
         }
@@ -435,7 +435,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IMessaging Message(IClusterGroup clusterGroup)
         {
-            A.NotNull(clusterGroup, "clusterGroup");
+            IgniteArgumentCheck.NotNull(clusterGroup, "clusterGroup");
 
             return clusterGroup.Message();
         }

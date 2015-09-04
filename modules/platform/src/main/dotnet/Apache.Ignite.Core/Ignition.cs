@@ -36,7 +36,6 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
     using PU = Apache.Ignite.Core.Impl.Portable.PortableUtils;
     
     /// <summary>
@@ -144,7 +143,7 @@ namespace Apache.Ignite.Core
         /// <returns>Started grid.</returns>
         public unsafe static IIgnite Start(IgniteConfiguration cfg)
         {
-            A.NotNull(cfg, "cfg");
+            IgniteArgumentCheck.NotNull(cfg, "cfg");
 
             // Copy configuration to avoid changes to user-provided instance.
             IgniteConfigurationEx cfgEx = cfg as IgniteConfigurationEx;

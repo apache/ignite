@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Impl.Messaging;
@@ -38,7 +39,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Services;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>
     /// Grid projection implementation.
@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForNodes(IEnumerable<IClusterNode> nodes)
         {
-            A.NotNull(nodes, "nodes");
+            IgniteArgumentCheck.NotNull(nodes, "nodes");
 
             return ForNodeIds0(nodes, node => node.Id);
         }
@@ -174,7 +174,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForNodes(params IClusterNode[] nodes)
         {
-            A.NotNull(nodes, "nodes");
+            IgniteArgumentCheck.NotNull(nodes, "nodes");
 
             return ForNodeIds0(nodes, node => node.Id);
         }
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForNodeIds(IEnumerable<Guid> ids)
         {
-            A.NotNull(ids, "ids");
+            IgniteArgumentCheck.NotNull(ids, "ids");
 
             return ForNodeIds0(ids, null);
         }
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForNodeIds(params Guid[] ids)
         {
-            A.NotNull(ids, "ids");
+            IgniteArgumentCheck.NotNull(ids, "ids");
 
             return ForNodeIds0(ids, null);
         }
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForAttribute(string name, string val)
         {
-            A.NotNull(name, "name");
+            IgniteArgumentCheck.NotNull(name, "name");
 
             IUnmanagedTarget prj = DoProjetionOutOp(OpForAttribute, writer =>
             {
@@ -280,7 +280,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForHost(IClusterNode node)
         {
-            A.NotNull(node, "node");
+            IgniteArgumentCheck.NotNull(node, "node");
 
             IUnmanagedTarget prj = DoProjetionOutOp(OpForHost, writer =>
             {

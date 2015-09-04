@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>
     /// Data streamer internal interface to get rid of generics.
@@ -347,7 +346,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             }
             set
             {
-                A.NotNull(value, "value");
+                IgniteArgumentCheck.NotNull(value, "value");
 
                 var handleRegistry = Marsh.Grid.HandleRegistry;
 
@@ -400,7 +399,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             ThrowIfDisposed(); 
             
-            A.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return Add0(new DataStreamerEntry<TK, TV>(key, val), 1);
         }
@@ -418,7 +417,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             ThrowIfDisposed();
 
-            A.NotNull(entries, "entries");
+            IgniteArgumentCheck.NotNull(entries, "entries");
 
             return Add0(entries, entries.Count);
         }
@@ -428,7 +427,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             ThrowIfDisposed();
 
-            A.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return Add0(new DataStreamerRemoveEntry<TK>(key), 1);
         }
