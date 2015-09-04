@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         public ITransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
             TimeSpan timeout, int txSize)
         {
-            var id = UU.TransactionsStart(target, (int)concurrency, (int)isolation, (long)timeout.TotalMilliseconds,
+            var id = UU.TransactionsStart(Target, (int)concurrency, (int)isolation, (long)timeout.TotalMilliseconds,
                 txSize);
 
             var innerTx = new TransactionImpl(id, this, concurrency, isolation, timeout, _localNodeId);
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         {
             return DoInOp(OpMetrics, stream =>
             {
-                IPortableRawReader reader = Marsh.StartUnmarshal(stream, false);
+                IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                 return new TransactionMetricsImpl(reader);
             });
@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inheritDoc /> */
         public void ResetMetrics()
         {
-            UU.TransactionsResetMetrics(target);
+            UU.TransactionsResetMetrics(Target);
         }
 
         /// <summary>
@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Final transaction state.</returns>
         internal TransactionState TxCommit(TransactionImpl tx)
         {
-            return (TransactionState) UU.TransactionsCommit(target, tx.Id);
+            return (TransactionState) UU.TransactionsCommit(Target, tx.Id);
         }
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Final transaction state.</returns>
         internal TransactionState TxRollback(TransactionImpl tx)
         {
-            return (TransactionState)UU.TransactionsRollback(target, tx.Id);
+            return (TransactionState)UU.TransactionsRollback(Target, tx.Id);
         }
 
         /// <summary>
@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Final transaction state.</returns>
         internal int TxClose(TransactionImpl tx)
         {
-            return UU.TransactionsClose(target, tx.Id);
+            return UU.TransactionsClose(Target, tx.Id);
         }
 
         /// <summary>
@@ -161,7 +161,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns>Transaction current state.</returns>
         internal TransactionState TxState(TransactionImpl tx)
         {
-            return GetTransactionState(UU.TransactionsState(target, tx.Id));
+            return GetTransactionState(UU.TransactionsState(Target, tx.Id));
         }
 
         /// <summary>
@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <returns><c>true</c> if the flag was set.</returns>
         internal bool TxSetRollbackOnly(TransactionImpl tx)
         {
-            return UU.TransactionsSetRollbackOnly(target, tx.Id);
+            return UU.TransactionsSetRollbackOnly(Target, tx.Id);
         }
 
         /// <summary>
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal IFuture CommitAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => UU.TransactionsCommitAsync(target, tx.Id, futId));
+            return GetFuture<object>((futId, futTyp) => UU.TransactionsCommitAsync(Target, tx.Id, futId));
         }
 
         /// <summary>
@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal IFuture RollbackAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => UU.TransactionsRollbackAsync(target, tx.Id, futId));
+            return GetFuture<object>((futId, futTyp) => UU.TransactionsRollbackAsync(Target, tx.Id, futId));
         }
  
         /// <summary>

@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public virtual IMessaging WithAsync()
         {
-            return new MessagingAsync(UU.MessagingWithASync(target), Marshaller, ClusterGroup);
+            return new MessagingAsync(UU.MessagingWithASync(Target), Marshaller, ClusterGroup);
         }
 
         /** <inheritdoc /> */

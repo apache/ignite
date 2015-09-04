@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (KeepPortable)
                 return this;
 
-            return new ServicesAsync(target, Marsh, clusterGroup, true, SrvKeepPortable);
+            return new ServicesAsync(Target, Marshaller, ClusterGroup, true, SrvKeepPortable);
         }
 
         /** <inheritDoc /> */
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (SrvKeepPortable)
                 return this;
 
-            return new ServicesAsync(target, Marsh, clusterGroup, KeepPortable, true);
+            return new ServicesAsync(Target, Marshaller, ClusterGroup, KeepPortable, true);
         }
 
         /** <inheritDoc /> */
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public override IFuture<T> GetFuture<T>()
         {
-            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(target, futId, futTyp));
+            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp));
         }
     }
 }

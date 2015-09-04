@@ -692,7 +692,7 @@ namespace Apache.Ignite.Core.Impl
         /// </param>
         protected virtual void Dispose(bool disposing)
         {
-            target.Dispose();
+            Target.Dispose();
         }
 
         /// <summary>
