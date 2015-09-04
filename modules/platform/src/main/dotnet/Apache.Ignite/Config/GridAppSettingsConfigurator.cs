@@ -12,6 +12,7 @@ namespace GridGain.Impl.Runner.Config
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using Apache.Ignite.Config;
+    using Apache.Ignite.Core;
 
     /// <summary>
     /// Configurator which uses application configuration.
@@ -79,9 +80,9 @@ namespace GridGain.Impl.Runner.Config
                     else if (key0.StartsWith(CFG_ASSEMBLY_PREFIX))
                         assemblies.Add(val);
                     else if (CFG_JVM_MIN_MEM.Equals(key0))
-                        cfg.JvmInitialMemoryMB = GridConfigValueParser.ParseInt(val, key);
+                        cfg.JvmInitialMemoryMb = GridConfigValueParser.ParseInt(val, key);
                     else if (CFG_JVM_MAX_MEM.Equals(key0))
-                        cfg.JvmMaxMemoryMB = GridConfigValueParser.ParseInt(val, key);
+                        cfg.JvmMaxMemoryMb = GridConfigValueParser.ParseInt(val, key);
                 }
             }
 

@@ -37,6 +37,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("1.4.1.0")]
 
 [assembly: CLSCompliant(true)]
+[assembly: InternalsVisibleTo("Apache.Ignite")]
 
 #if !EXCLUDE_TESTS
 

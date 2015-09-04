@@ -13,7 +13,8 @@ namespace GridGain.Impl.Runner
     using System.Collections.Generic;
     using System.Configuration;
     using System.ServiceProcess;
-
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Impl;
     using GridGain;
     using GridGain.Impl.Runner.Config;
     using GridGain.Impl.Runner.Service;    
@@ -93,9 +94,9 @@ namespace GridGain.Impl.Runner
                         IgniteService.DoInstall(cfg);
                     else
                     {
-                        GridFactory.Start(cfg);
+                        Ignition.Start(cfg);
 
-                        GridManager.DestroyJvm();
+                        IgniteManager.DestroyJvm();
                     }
 
                     return;

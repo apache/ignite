@@ -81,8 +81,8 @@ namespace GridGain.Impl.Runner.Config
                     args.Add(CMD_ASSEMBLY + assembly);
             }
 
-            args.Add(CMD_JVM_MIN_MEM + cfg.JvmInitialMemoryMB);
-            args.Add(CMD_JVM_MAX_MEM + cfg.JvmMaxMemoryMB);
+            args.Add(CMD_JVM_MIN_MEM + cfg.JvmInitialMemoryMb);
+            args.Add(CMD_JVM_MAX_MEM + cfg.JvmMaxMemoryMb);
 
             return args.ToArray();
         }
@@ -126,10 +126,10 @@ namespace GridGain.Impl.Runner.Config
                     cfg.SuppressWarnings = bool.TrueString.ToLower().Equals(val.ToLower());
                 }
                 else if (argLow.StartsWith(CMD_JVM_MIN_MEM))
-                    cfg.JvmInitialMemoryMB = GridConfigValueParser.ParseInt(arg.Substring(CMD_JVM_MIN_MEM.Length),
+                    cfg.JvmInitialMemoryMb = GridConfigValueParser.ParseInt(arg.Substring(CMD_JVM_MIN_MEM.Length),
                         CMD_JVM_MIN_MEM);
                 else if (argLow.StartsWith(CMD_JVM_MAX_MEM))
-                    cfg.JvmMaxMemoryMB = GridConfigValueParser.ParseInt(arg.Substring(CMD_JVM_MAX_MEM.Length),
+                    cfg.JvmMaxMemoryMb = GridConfigValueParser.ParseInt(arg.Substring(CMD_JVM_MAX_MEM.Length),
                         CMD_JVM_MAX_MEM);
                 else if (argLow.StartsWith(CMD_JVM_OPT))
                     jvmOpts.Add(arg.Substring(CMD_JVM_OPT.Length));
