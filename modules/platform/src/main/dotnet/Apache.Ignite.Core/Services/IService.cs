@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Services
 {
     /// <summary>
-    /// Represents grid-managed service.
+    /// Represents Ignite-managed service.
     /// </summary>
     public interface IService
     {
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Services
         /// <summary>
         /// Cancels this instance.
         /// <para/>
-        /// Note that grid cannot guarantee that the service exits from <see cref="IService.Execute"/>
+        /// Note that Ignite cannot guarantee that the service exits from <see cref="IService.Execute"/>
         /// method whenever <see cref="IService.Cancel"/> is called. It is up to the user to
         /// make sure that the service code properly reacts to cancellations.
         /// </summary>

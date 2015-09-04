@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         protected ResourceTaskTest(bool fork) : base(fork) { }
 
         /// <summary>
-        /// Test Grid injection into the task.
+        /// Test Ignite injection into the task.
         /// </summary>
         [Test]
         public void TestTaskGridInjection()
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test Grid injection into the closure.
+        /// Test Ignite injection into the closure.
         /// </summary>
         [Test]
         public void TestClosureGridInjection()
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test Grid injection into reducer.
+        /// Test Ignite injection into reducer.
         /// </summary>
         [Test]
         public void TestReducerGridInjection()
@@ -277,7 +277,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /// <summary>
-            /// Check Grid injections.
+            /// Check Ignite injections.
             /// </summary>
             protected void CheckInjection()
             {
@@ -469,7 +469,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /// <summary>
-            /// Check Grid injections.
+            /// Check Ignite injections.
             /// </summary>
             protected void CheckInjection()
             {

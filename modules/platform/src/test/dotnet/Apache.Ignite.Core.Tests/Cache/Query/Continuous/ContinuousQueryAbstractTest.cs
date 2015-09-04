@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         } 
         
         /// <summary>
-        /// Test Grid injection into callback.
+        /// Test Ignite injection into callback.
         /// </summary>
         [Test]
         public void TestCallbackInjection()
@@ -561,7 +561,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Test grid injection into filters.
+        /// Test Ignite injection into filters.
         /// </summary>
         [Test]
         public void TestFilterInjection()

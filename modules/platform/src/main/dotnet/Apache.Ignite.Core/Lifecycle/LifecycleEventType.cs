@@ -18,8 +18,8 @@
 namespace Apache.Ignite.Core.Lifecycle
 {
     /// <summary>
-    /// Grid lifecycle event types. These events are used to notify lifecycle beans
-    /// about changes in grid lifecycle state.
+    /// Ignite lifecycle event types. These events are used to notify lifecycle beans
+    /// about changes in Ignite lifecycle state.
     /// <para />
     /// For more information and detailed examples refer to <see cref="ILifecycleBean"/>
     /// documentation.

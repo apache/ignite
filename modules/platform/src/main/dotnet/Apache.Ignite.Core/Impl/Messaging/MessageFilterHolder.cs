@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** Invoker function that takes key and value and invokes wrapped IMessageFilter */
         private readonly Func<Guid, object, bool> _invoker;
 
-        /** Current grid instance. */
+        /** Current Ignite instance. */
         private readonly Ignite _ignite;
         
         /** Underlying filter. */
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <summary>
         /// Creates local holder instance.
         /// </summary>
-        /// <param name="grid">Grid instance.</param>
+        /// <param name="grid">Ignite instance.</param>
         /// <param name="filter">Filter.</param>
         /// <returns>
         /// New instance of <see cref="MessageFilterHolder" />

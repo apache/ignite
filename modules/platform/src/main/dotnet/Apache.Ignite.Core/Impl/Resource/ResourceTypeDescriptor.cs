@@ -49,10 +49,10 @@ namespace Apache.Ignite.Core.Impl.Resource
         private static readonly BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public |
             BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
-        /** Grid instance gridInjectors. */
+        /** Ignite injectors. */
         private readonly IList<IResourceInjector> _igniteInjectors;
 
-        /** Session gridInjectors. */
+        /** Session injectors. */
         private readonly IList<IResourceInjector> _storeSesInjectors;
         
         /** Task "no result cache" flag. */

@@ -228,7 +228,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     try
                     {
-                        // Do a lot of puts so that one fails during grid stop
+                        // Do a lot of puts so that one fails during Ignite stop
                         for (var i = 0; i < 1000000; i++)
                         {
                             cache.PutAll(Enumerable.Range(1, 100).ToDictionary(k => keyFunc(k, grid), k => i));

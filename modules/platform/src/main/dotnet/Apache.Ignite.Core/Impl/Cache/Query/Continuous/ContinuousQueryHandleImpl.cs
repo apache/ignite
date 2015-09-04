@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <summary>
         /// Start execution.
         /// </summary>
-        /// <param name="grid">Grid instance.</param>
+        /// <param name="grid">Ignite instance.</param>
         /// <param name="writer">Writer.</param>
         /// <param name="cb">Callback invoked when all necessary data is written to stream.</param>
         /// <param name="qry">Query.</param>

@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Transactions
     using Apache.Ignite.Core.Common;
 
     /// <summary> 
-    /// Exception thrown whenever grid transaction enters an unknown state.
+    /// Exception thrown whenever Ignite transaction enters an unknown state.
     /// This exception is usually thrown whenever commit partially succeeds.
     /// Cache will still resolve this situation automatically to ensure data
     /// integrity, by invalidating all values participating in this transaction

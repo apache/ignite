@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
-    /// Grid projection implementation.
+    /// Ignite projection implementation.
     /// </summary>
     internal class ClusterGroupImpl : PlatformTarget, IClusterGroupEx
     {
@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpTopology = 14;
 
-        /** Initial grid instance. */
+        /** Initial Ignite instance. */
         private readonly Ignite _ignite;
         
         /** Predicate. */
@@ -471,7 +471,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /// <summary>
-        /// Creates new Grid Cluster Group from given native projection.
+        /// Creates new Cluster Group from given native projection.
         /// </summary>
         /// <param name="prj">Native projection.</param>
         /// <returns>New cluster group.</returns>

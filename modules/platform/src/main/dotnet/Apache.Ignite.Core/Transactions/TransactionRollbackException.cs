@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Transactions
     using Apache.Ignite.Core.Common;
 
     /// <summary>
-    /// Exception thrown whenever grid transactions has been automatically rolled back.  
+    /// Exception thrown whenever Ignite transactions has been automatically rolled back.  
     /// </summary>
     [Serializable]
     public class TransactionRollbackException : IgniteException

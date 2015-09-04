@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Cluster
         /// <summary>
         /// Gets first node from the list of nodes in this projection.
         /// </summary>
-        /// <returns>Grid instance.</returns>
+        /// <returns>Node.</returns>
         IClusterNode Node();
 
         /// <summary>

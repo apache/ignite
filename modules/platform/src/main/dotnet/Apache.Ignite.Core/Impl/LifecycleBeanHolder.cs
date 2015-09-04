@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Grid start callback.
         /// </summary>
-        /// <param name="grid">Grid instance.</param>
+        /// <param name="grid">Ignite instance.</param>
         internal void OnStart(Ignite grid)
         {
             ResourceProcessor.Inject(_target, grid);
