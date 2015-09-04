@@ -213,7 +213,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Config\GridGain.exe.config.test">
+    <Content Include="Config\Ignite.exe.config.test">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
