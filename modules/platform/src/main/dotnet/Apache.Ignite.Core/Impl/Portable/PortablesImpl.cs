@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public ICollection<IPortableMetadata> GetMetadata()
         {
-            return Marshaller.Grid.ClusterGroup.Metadata();
+            return Marshaller.Ignite.ClusterGroup.Metadata();
         }
 
         /** <inheritDoc /> */

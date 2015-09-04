@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             // Allocate GC handle so that this data streamer could be easily dereferenced from native code.
             WeakReference thisRef = new WeakReference(this);
 
-            _hnd = marsh.Grid.HandleRegistry.Allocate(thisRef);
+            _hnd = marsh.Ignite.HandleRegistry.Allocate(thisRef);
 
             // Start topology listening. This call will ensure that buffer size member is updated.
             UU.DataStreamerListenTopology(target, _hnd);
@@ -348,7 +348,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             {
                 IgniteArgumentCheck.NotNull(value, "value");
 
-                var handleRegistry = Marshaller.Grid.HandleRegistry;
+                var handleRegistry = Marshaller.Ignite.HandleRegistry;
 
                 _rwLock.EnterWriteLock();
 
@@ -487,7 +487,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                         base.Dispose(true);
 
                         if (_rcv != null)
-                            Marshaller.Grid.HandleRegistry.Release(_rcvHnd);
+                            Marshaller.Ignite.HandleRegistry.Release(_rcvHnd);
 
                         _closedEvt.Set();
                     }
@@ -496,7 +496,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                         _rwLock.ExitWriteLock();
                     }
 
-                    Marshaller.Grid.HandleRegistry.Release(_hnd);
+                    Marshaller.Ignite.HandleRegistry.Release(_hnd);
 
                     break;
                 }
@@ -518,7 +518,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 return result;
             }
 
-            return new DataStreamerImpl<TK1, TV1>(UU.ProcessorDataStreamer(Marshaller.Grid.InteropProcessor,
+            return new DataStreamerImpl<TK1, TV1>(UU.ProcessorDataStreamer(Marshaller.Ignite.InteropProcessor,
                 _cacheName, true), Marshaller, _cacheName, true);
         }
 
@@ -540,8 +540,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     // Finalizers should never throw
                 }
 
-                Marshaller.Grid.HandleRegistry.Release(_hnd, true);
-                Marshaller.Grid.HandleRegistry.Release(_rcvHnd, true);
+                Marshaller.Ignite.HandleRegistry.Release(_hnd, true);
+                Marshaller.Ignite.HandleRegistry.Release(_rcvHnd, true);
 
                 base.Dispose(false);
             }

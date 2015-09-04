@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl
             _lifecycleBeans = lifecycleBeans;
             _cbs = cbs;
 
-            marsh.Grid = this;
+            marsh.Ignite = this;
 
             _prj = new ClusterGroupImpl(proc, UU.ProcessorProjection(proc), marsh, this, null);
 

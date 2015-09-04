@@ -43,15 +43,15 @@ namespace Apache.Ignite.Core.Impl.Events
         /// </summary>
         protected enum Op
         {
-            REMOTE_QUERY = 1,
-            REMOTE_LISTEN = 2,
-            STOP_REMOTE_LISTEN = 3,
-            WAIT_FOR_LOCAL = 4,
-            LOCAL_QUERY = 5,
-            RECORD_LOCAL = 6,
-            ENABLE_LOCAL = 8,
-            DISABLE_LOCAL = 9,
-            GET_ENABLED_EVENTS = 10
+            RemoteQuery = 1,
+            RemoteListen = 2,
+            StopRemoteListen = 3,
+            WaitForLocal = 4,
+            LocalQuery = 5,
+            RecordLocal = 6,
+            EnableLocal = 8,
+            DisableLocal = 9,
+            GetEnabledEvents = 10
         }
 
         /** Map from user func to local wrapper, needed for invoke/unsubscribe. */
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Events
             = new Dictionary<object, Dictionary<int, LocalHandledEventFilter>>();
 
         /** Grid. */
-        protected readonly Ignite Grid;
+        protected readonly Ignite Ignite;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Events"/> class.
@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
             ClusterGroup = clusterGroup;
 
-            Grid = (Ignite) clusterGroup.Ignite;
+            Ignite = (Ignite) clusterGroup.Ignite;
         }
 
         /** <inheritDoc /> */
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             IgniteArgumentCheck.NotNull(filter, "filter");
 
-            return DoOutInOp((int) Op.REMOTE_QUERY,
+            return DoOutInOp((int) Op.RemoteQuery,
                 writer =>
                 {
                     writer.Write(new PortableOrSerializableObjectHolder(filter));
@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Impl.Events
             IgniteArgumentCheck.Ensure(bufSize > 0, "bufSize", "should be > 0");
             IgniteArgumentCheck.Ensure(interval == null || interval.Value.TotalMilliseconds > 0, "interval", "should be null or >= 0");
 
-            return DoOutInOp((int) Op.REMOTE_LISTEN,
+            return DoOutInOp((int) Op.RemoteListen,
                 writer =>
                 {
                     writer.WriteInt(bufSize);
@@ -141,8 +141,8 @@ namespace Apache.Ignite.Core.Impl.Events
 
                     if (localListener != null)
                     {
-                        var listener = new RemoteListenEventFilter(Grid, (id, e) => localListener.Invoke(id, (T) e));
-                        writer.WriteLong(Grid.HandleRegistry.Allocate(listener));
+                        var listener = new RemoteListenEventFilter(Ignite, (id, e) => localListener.Invoke(id, (T) e));
+                        writer.WriteLong(Ignite.HandleRegistry.Allocate(listener));
                     }
 
                     writer.WriteBoolean(remoteFilter != null);
@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public virtual void StopRemoteListen(Guid opId)
         {
-            DoOutOp((int) Op.STOP_REMOTE_LISTEN, writer =>
+            DoOutOp((int) Op.StopRemoteListen, writer =>
             {
                 Marshaller.StartMarshal(writer).WriteGuid(opId);
             });
@@ -182,14 +182,14 @@ namespace Apache.Ignite.Core.Impl.Events
             finally
             {
                 if (filter != null)
-                    Grid.HandleRegistry.Release(hnd);
+                    Ignite.HandleRegistry.Release(hnd);
             }
         }
 
         /** <inheritDoc /> */
         public List<IEvent> LocalQuery(params int[] types)
         {
-            return DoOutInOp((int) Op.LOCAL_QUERY,
+            return DoOutInOp((int) Op.LocalQuery,
                 writer => WriteEventTypes(types, writer),
                 reader => ReadEvents<IEvent>(reader));
         }
@@ -236,7 +236,7 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             IgniteArgumentCheck.NotNullOrEmpty(types, "types");
 
-            DoOutOp((int)Op.ENABLE_LOCAL, writer => WriteEventTypes(types, writer));
+            DoOutOp((int)Op.EnableLocal, writer => WriteEventTypes(types, writer));
         }
 
         /** <inheritDoc /> */
@@ -244,13 +244,13 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             IgniteArgumentCheck.NotNullOrEmpty(types, "types");
 
-            DoOutOp((int)Op.DISABLE_LOCAL, writer => WriteEventTypes(types, writer));
+            DoOutOp((int)Op.DisableLocal, writer => WriteEventTypes(types, writer));
         }
 
         /** <inheritDoc /> */
         public int[] GetEnabledEvents()
         {
-            return DoInOp((int)Op.GET_ENABLED_EVENTS, reader => ReadEventTypes(reader));
+            return DoInOp((int)Op.GetEnabledEvents, reader => ReadEventTypes(reader));
         }
 
         /** <inheritDoc /> */
@@ -271,14 +271,14 @@ namespace Apache.Ignite.Core.Impl.Events
         protected T WaitForLocal0<T>(IEventFilter<T> filter, ref long handle, params int[] types) where T : IEvent
         {
             if (filter != null)
-                handle = Grid.HandleRegistry.Allocate(new LocalEventFilter
+                handle = Ignite.HandleRegistry.Allocate(new LocalEventFilter
                 {
                     InvokeFunc = stream => InvokeLocalFilter(stream, filter)
                 });
 
             var hnd = handle;
 
-            return DoOutInOp((int)Op.WAIT_FOR_LOCAL,
+            return DoOutInOp((int)Op.WaitForLocal,
                 writer =>
                 {
                     if (filter != null)
@@ -411,7 +411,7 @@ namespace Apache.Ignite.Core.Impl.Events
                     }
                 });
 
-            result.Handle = Grid.HandleRegistry.Allocate(result);
+            result.Handle = Ignite.HandleRegistry.Allocate(result);
 
             return result;
         }

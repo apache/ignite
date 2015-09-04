@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** <inheritdoc /> */
         public void Release()
         {
-            _marsh.Grid.HandleRegistry.Release(_hnd);
+            _marsh.Ignite.HandleRegistry.Release(_hnd);
         }
 
         /** <inheritdoc /> */

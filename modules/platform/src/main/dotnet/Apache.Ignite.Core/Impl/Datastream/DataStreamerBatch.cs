@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 _rwLock.ExitWriteLock();
             }
 
-            var handleRegistry = ldr.Marshaller.Grid.HandleRegistry;
+            var handleRegistry = ldr.Marshaller.Ignite.HandleRegistry;
 
             long futHnd = 0;
 

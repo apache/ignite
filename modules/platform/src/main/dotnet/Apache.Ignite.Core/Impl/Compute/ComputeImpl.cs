@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             var holder = new ComputeTaskHolder<TA, T, TR>((Ignite) _prj.Ignite, this, task, taskArg);
 
-            long ptr = Marshaller.Grid.HandleRegistry.Allocate(holder);
+            long ptr = Marshaller.Ignite.HandleRegistry.Allocate(holder);
 
             UU.ComputeExecuteNative(Target, ptr, _prj.TopologyVersion);
 
@@ -507,7 +507,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             var holder = new ComputeTaskHolder<TA, T, TR>((Ignite) _prj.Ignite, this, task, default(TA));
 
-            var taskHandle = Marshaller.Grid.HandleRegistry.Allocate(holder);
+            var taskHandle = Marshaller.Ignite.HandleRegistry.Allocate(holder);
 
             var jobHandles = new List<long>(job != null ? 1 : jobsCount);
 
@@ -551,7 +551,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                 {
                     // Manual job handles release because they were not assigned to the task yet.
                     foreach (var hnd in jobHandles) 
-                        Marshaller.Grid.HandleRegistry.Release(hnd);
+                        Marshaller.Ignite.HandleRegistry.Release(hnd);
 
                     holder.CompleteWithError(taskHandle, err);
                 }
@@ -575,7 +575,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var jobHolder = new ComputeJobHolder(_prj.Ignite as Ignite, job);
 
-            var jobHandle = Marshaller.Grid.HandleRegistry.Allocate(jobHolder);
+            var jobHandle = Marshaller.Ignite.HandleRegistry.Allocate(jobHolder);
 
             writer.WriteLong(jobHandle);
             writer.WriteObject(jobHolder);

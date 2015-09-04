@@ -405,7 +405,7 @@ namespace Apache.Ignite.Core.Impl
 
             var res = new List<IClusterNode>(cnt);
 
-            var grid = ((PortableReaderImpl)reader).Marshaller.Grid;
+            var grid = ((PortableReaderImpl)reader).Marshaller.Ignite;
 
             if (pred == null)
             {

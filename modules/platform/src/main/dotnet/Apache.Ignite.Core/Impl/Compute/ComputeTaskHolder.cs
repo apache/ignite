@@ -472,7 +472,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var handles = _jobHandles;
 
-            var handleRegistry = _compute.Marshaller.Grid.HandleRegistry;
+            var handleRegistry = _compute.Marshaller.Ignite.HandleRegistry;
 
             if (handles != null)
                 foreach (var handle in handles) 

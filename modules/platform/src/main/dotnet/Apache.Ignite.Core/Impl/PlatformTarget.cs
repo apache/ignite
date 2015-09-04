@@ -640,7 +640,7 @@ namespace Apache.Ignite.Core.Impl
                 ? new Future<T>()
                 : new Future<T>(new FutureConverter<T>(Marsh, keepPortable, convertFunc));
 
-            var futHnd = Marsh.Grid.HandleRegistry.Allocate(fut);
+            var futHnd = Marsh.Ignite.HandleRegistry.Allocate(fut);
 
             listenAction(futHnd, (int)futType);
 

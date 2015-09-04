@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var reader0 = (PortableReaderImpl) reader.RawReader();
 
-            _grid = reader0.Marshaller.Grid;
+            _grid = reader0.Marshaller.Ignite;
 
             _job = PortableUtils.ReadPortableOrSerializable<IComputeJob>(reader0);
         }

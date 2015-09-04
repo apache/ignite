@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
             _invoker = GetInvoker(_filter);
 
-            _grid = reader0.Marshaller.Grid;
+            _grid = reader0.Marshaller.Ignite;
 
             ResourceProcessor.Inject(_filter, _grid);
         }

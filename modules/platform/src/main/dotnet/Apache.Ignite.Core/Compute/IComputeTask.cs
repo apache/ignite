@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Compute
     ///         <description>Inject annotated resources into task instance.</description>
     ///     </item>
     ///     <item>
-    ///         <description>Apply <see cref="IComputeTask{A,T,R}.Map(IList{IClusterNode}, A)"/>.
+    ///         <description>Apply <see cref="IComputeTask{A,T,R}.Map(IList{IClusterNode}, TA)"/>.
     ///         This method is responsible for splitting business logic into multiple jobs 
     ///         (units of execution) and mapping them to grid nodes.</description>
     ///     </item>
@@ -75,10 +75,10 @@ namespace Apache.Ignite.Core.Compute
     ///     </item>
     /// </list>
     /// </summary>
-    /// <typeparam name="A">Argument type.</typeparam>
+    /// <typeparam name="TA">Argument type.</typeparam>
     /// <typeparam name="T">Type of job result.</typeparam>
     /// <typeparam name="TR">Type of reduce result.</typeparam>
-    public interface IComputeTask<in A, T, out TR>
+    public interface IComputeTask<in TA, T, out TR>
     {
         /// <summary>
         /// This method is called to map or split grid task into multiple grid jobs. This is the
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Compute
         /// as the one passed into <c>ICompute.Execute()</c> methods.</param>
         /// <returns>Map of grid jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
         /// exception will be thrown.</returns>
-        IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, A arg);
+        IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, TA arg);
 
         /// <summary>
         /// Asynchronous callback invoked every time a result from remote execution is

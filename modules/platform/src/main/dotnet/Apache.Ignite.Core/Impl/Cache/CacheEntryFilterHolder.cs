@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             _marsh = marsh;
             _keepPortable = keepPortable;
 
-            _handle = marsh.Grid.HandleRegistry.Allocate(this);
+            _handle = marsh.Ignite.HandleRegistry.Allocate(this);
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             _invoker = GetInvoker(_pred);
 
-            _handle = _marsh.Grid.HandleRegistry.Allocate(this);
+            _handle = _marsh.Ignite.HandleRegistry.Allocate(this);
         }
 
         /// <summary>

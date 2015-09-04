@@ -42,13 +42,13 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// </summary>
         private enum Op
         {
-            LocListen = 1,
-            REMOTE_LISTEN = 2,
-            SEND = 3,
+            LocalListen = 1,
+            RemoteListen = 2,
+            Send = 3,
             SendMulti = 4,
-            SEND_ORDERED = 5,
-            StopLocListen = 6,
-            STOP_REMOTE_LISTEN = 7
+            SendOrdered = 5,
+            StopLocalListen = 6,
+            StopRemoteListen = 7
         }
 
         /** Map from user (func+topic) -> id, needed for unsubscription. */
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             IgniteArgumentCheck.NotNull(message, "message");
 
-            DoOutOp((int) Op.SEND, topic, message);
+            DoOutOp((int) Op.Send, topic, message);
         }
 
         /** <inheritdoc /> */
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             IgniteArgumentCheck.NotNull(message, "message");
 
-            DoOutOp((int) Op.SEND_ORDERED, writer =>
+            DoOutOp((int) Op.SendOrdered, writer =>
             {
                 writer.Write(topic);
                 writer.Write(message);
@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
                 try
                 {
-                    DoOutOp((int) Op.LocListen, writer =>
+                    DoOutOp((int) Op.LocalListen, writer =>
                     {
                         writer.WriteLong(filterHnd);
                         writer.Write(topic);
@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
             if (removed)
             {
-                DoOutOp((int) Op.StopLocListen, writer =>
+                DoOutOp((int) Op.StopLocalListen, writer =>
                 {
                     writer.WriteLong(filterHnd);
                     writer.Write(topic);
@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
             {
                 Guid id = Guid.Empty;
 
-                DoOutInOp((int) Op.REMOTE_LISTEN, writer =>
+                DoOutInOp((int) Op.RemoteListen, writer =>
                 {
                     writer.Write(filter0);
                     writer.WriteLong(filterHnd);
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public void StopRemoteListen(Guid opId)
         {
-            DoOutOp((int) Op.STOP_REMOTE_LISTEN, writer =>
+            DoOutOp((int) Op.StopRemoteListen, writer =>
             {
                 writer.WriteGuid(opId);
             });
