@@ -36,13 +36,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureSetUp]
         public virtual void BeforeTests()
         {
-            GridTestUtils.KillProcesses();
-            GridTestUtils.JvmDebug = true;
+            TestUtils.KillProcesses();
+            TestUtils.JvmDebug = true;
 
             Ignition.Start(new IgniteConfiguration
             {
-                JvmClasspath = GridTestUtils.CreateTestClasspath(),
-                JvmOptions = GridTestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = "config\\native-client-test-cache-parallel-store.xml",
                 PortableConfiguration = new PortableConfiguration
                 {

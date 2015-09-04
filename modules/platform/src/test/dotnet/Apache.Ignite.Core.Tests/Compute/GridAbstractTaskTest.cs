@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureSetUp]
         public void InitClient()
         {
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
 
             if (_fork)
             {
@@ -178,9 +178,9 @@ namespace Apache.Ignite.Core.Tests.Compute
                 cfg.PortableConfiguration = portCfg;
             }
 
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
 
-            cfg.JvmOptions = GridTestUtils.TestJavaOptions();
+            cfg.JvmOptions = TestUtils.TestJavaOptions();
 
             cfg.SpringConfigUrl = path;
 

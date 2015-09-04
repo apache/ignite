@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [TestFixtureSetUp]
         public void SetUp()
         {
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
 
             var cfg = new IgniteConfiguration
             {
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                     },
                     DefaultIdMapper = new IdMapper()
                 },
-                JvmClasspath = GridTestUtils.CreateTestClasspath(),
+                JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = new List<string>
                 {
                     "-ea",

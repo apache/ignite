@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Tests.Services
     /// <summary>
     /// Services async tests.
     /// </summary>
-    public class GridServicesTestAsync : GridServicesTest
+    public class ServicesTestAsync : ServicesTest
     {
         /** <inheritdoc /> */
         protected override IServices Services

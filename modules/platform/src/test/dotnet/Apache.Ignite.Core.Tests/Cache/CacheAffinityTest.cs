@@ -34,12 +34,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TestFixtureSetUp]
         public virtual void StartGrids()
         {
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
 
             IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
-            cfg.JvmOptions = GridTestUtils.TestJavaOptions();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
+            cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = "config\\native-client-test-cache-affinity.xml";
 
             for (int i = 0; i < 3; i++)

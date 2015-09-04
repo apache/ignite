@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Services
     /// <summary>
     /// Services tests.
     /// </summary>
-    public class GridServicesTest
+    public class ServicesTest
     {
         /** */
         private const string SvcName = "Service1";
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 Services.Cancel(SvcName);
 
-                GridTestUtils.AssertHandleRegistryIsEmpty(1000, Grid1, Grid2, Grid3);
+                TestUtils.AssertHandleRegistryIsEmpty(1000, Grid1, Grid2, Grid3);
             }
             catch (Exception)
             {
@@ -564,8 +564,8 @@ namespace Apache.Ignite.Core.Tests.Services
             return new IgniteConfiguration
             {
                 SpringConfigUrl = springConfigUrl,
-                JvmClasspath = GridTestUtils.CreateTestClasspath(),
-                JvmOptions = GridTestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
                 PortableConfiguration = new PortableConfiguration
                 {
                     TypeConfigurations = new List<PortableTypeConfiguration>

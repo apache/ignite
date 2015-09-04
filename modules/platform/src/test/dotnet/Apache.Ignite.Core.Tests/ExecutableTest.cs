@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Tests
     /// Tests for executable.
     /// </summary>
     [Ignore("IGNITE-1367")]
-    public class GridExecutableTest
+    public class ExecutableTest
     {
         /** Spring configuration path. */
         private static readonly string SpringCfgPath = "config\\compute\\compute-standalone.xml";
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests
         [TestFixtureSetUp]
         public void TestFixtureSetUp()
         {
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
 
             _grid = Ignition.Start(Configuration(SpringCfgPath));
         }
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests
         {
             Ignition.StopAll(true);
 
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Tests
         [SetUp]
         public void SetUp()
         {
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
 
             Assert.IsTrue(_grid.WaitTopology(1, 30000));
 
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests
             GenerateDll("test-2.dll");
 
             IgniteProcess proc = new IgniteProcess(
-                "-jvmClasspath=" + GridTestUtils.CreateTestClasspath()
+                "-jvmClasspath=" + TestUtils.CreateTestClasspath()
                 );
 
             Assert.IsTrue(_grid.WaitTopology(2, 30000));
@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Tests
             GenerateDll("test-2.dll");
 
             IgniteProcess proc = new IgniteProcess(
-                "-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
+                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-assembly=test-1.dll",
                 "-assembly=test-2.dll"
@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestJvmOptsCmd()
         {
             IgniteProcess proc = new IgniteProcess(
-                "-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
+                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-J-DOPT1",
                 "-J-DOPT2"
@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestJvmMemoryOptsCmdRaw()
         {
             var proc = new IgniteProcess(
-                "-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
+                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-J-Xms506m",
                 "-J-Xmx607m"
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestJvmMemoryOptsCmdCustom()
         {
             var proc = new IgniteProcess(
-                "-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
+                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-JvmInitialMemoryMB=615",
                 "-JvmMaxMemoryMB=863"
@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Tests
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
 
-            var proc = new IgniteProcess("-jvmClasspath=" + GridTestUtils.CreateTestClasspath());
+            var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath());
 
             Assert.IsTrue(_grid.WaitTopology(2, 30000));
 
@@ -232,7 +232,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Command line options overwrite config file options
             // ReSharper disable once RedundantAssignment
-            proc = new IgniteProcess("-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
+            proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-J-Xms605m", "-J-Xmx706m");
 
             Assert.IsTrue(_grid.WaitTopology(2, 30000));
@@ -251,7 +251,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestJvmMemoryOptsCmdCombined()
         {
             var proc = new IgniteProcess(
-                "-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
+                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-J-Xms555m",
                 "-J-Xmx666m",
@@ -299,7 +299,7 @@ namespace Apache.Ignite.Core.Tests
 
             cfg.PortableConfiguration = portCfg;
 
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
 
             cfg.JvmOptions = new List<string>
             {

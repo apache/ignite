@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// 
     /// </summary>
-    [Category(GridTestUtils.CategoryIntensive)]
+    [Category(TestUtils.CategoryIntensive)]
     public class GridStartStopTest
     {
         /// <summary>
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests
         [SetUp]
         public void SetUp()
         {
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
         }
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests
         {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
 
             IIgnite grid = Ignition.Start(cfg);
 
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests
             IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = "config/default-config.xml";
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
 
             IIgnite grid = Ignition.Start(cfg);
 
@@ -95,8 +95,8 @@ namespace Apache.Ignite.Core.Tests
             IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = cfgs[0];
-            cfg.JvmOptions = GridTestUtils.TestJavaOptions();
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
+            cfg.JvmOptions = TestUtils.TestJavaOptions();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
 
             IIgnite grid1 = Ignition.Start(cfg);
 
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Tests
             foreach (string cfgName in cfgs)
             {
                 cfg.SpringConfigUrl = cfgName;
-                cfg.JvmOptions = GridTestUtils.TestJavaOptions();
+                cfg.JvmOptions = TestUtils.TestJavaOptions();
 
                 Ignition.Start(cfg);
             }
@@ -225,8 +225,8 @@ namespace Apache.Ignite.Core.Tests
             IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = "config\\start-test-grid1.xml";
-            cfg.JvmOptions = GridTestUtils.TestJavaOptions();
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
+            cfg.JvmOptions = TestUtils.TestJavaOptions();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
 
             IIgnite grid1 = Ignition.Start(cfg);
 
@@ -253,8 +253,8 @@ namespace Apache.Ignite.Core.Tests
             IgniteConfiguration cfg = new IgniteConfiguration();
 
             cfg.SpringConfigUrl = "config\\start-test-grid1.xml";
-            cfg.JvmOptions = GridTestUtils.TestJavaOptions();
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
+            cfg.JvmOptions = TestUtils.TestJavaOptions();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
 
             IIgnite grid = Ignition.Start(cfg);
 
@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Tests
 
             cfg.SpringConfigUrl = "config\\start-test-grid1.xml";
             cfg.JvmOptions = new List<string> { "-Xcheck:jni", "-Xms256m", "-Xmx256m", "-XX:+HeapDumpOnOutOfMemoryError" };
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
 
             for (int i = 0; i < 20; i++)
             {
@@ -320,15 +320,15 @@ namespace Apache.Ignite.Core.Tests
             var servCfg = new IgniteConfiguration
             {
                 SpringConfigUrl = "config\\start-test-grid1.xml",
-                JvmOptions = GridTestUtils.TestJavaOptions(),
-                JvmClasspath = GridTestUtils.CreateTestClasspath()
+                JvmOptions = TestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
             var clientCfg = new IgniteConfiguration
             {
                 SpringConfigUrl = "config\\start-test-grid2.xml",
-                JvmOptions = GridTestUtils.TestJavaOptions(),
-                JvmClasspath = GridTestUtils.CreateTestClasspath()
+                JvmOptions = TestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
             try

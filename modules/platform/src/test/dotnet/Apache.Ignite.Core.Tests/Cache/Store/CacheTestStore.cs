@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             {
                 int cnt = 0;
 
-                GridTestUtils.RunMultiThreaded(() => {
+                TestUtils.RunMultiThreaded(() => {
                     int i;
 
                     while ((i = Interlocked.Increment(ref cnt) - 1) < 1000)

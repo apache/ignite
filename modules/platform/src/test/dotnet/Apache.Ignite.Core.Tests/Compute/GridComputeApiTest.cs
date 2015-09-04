@@ -118,8 +118,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureSetUp]
         public void InitClient()
         {
-            //GridTestUtils.JVM_DEBUG = true;
-            GridTestUtils.KillProcesses();
+            //TestUtils.JVM_DEBUG = true;
+            TestUtils.KillProcesses();
 
             _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
             _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TearDown]
         public void AfterTest()
         {
-            GridTestUtils.AssertHandleRegistryIsEmpty(1000, _grid1, _grid2, _grid3);
+            TestUtils.AssertHandleRegistryIsEmpty(1000, _grid1, _grid2, _grid3);
         }
 
         /// <summary>
@@ -1106,7 +1106,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             cfg.JvmClasspath = GridManager.CreateClasspath(cfg, true);
 
-            cfg.JvmOptions = GridTestUtils.TestJavaOptions();
+            cfg.JvmOptions = TestUtils.TestJavaOptions();
 
             cfg.SpringConfigUrl = path;
 

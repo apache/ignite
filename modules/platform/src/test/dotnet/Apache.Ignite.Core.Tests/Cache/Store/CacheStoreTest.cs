@@ -112,17 +112,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureSetUp]
         public void BeforeTests()
         {
-            //GridTestUtils.JVM_DEBUG = true;
+            //TestUtils.JVM_DEBUG = true;
 
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
 
-            GridTestUtils.JvmDebug = true;
+            TestUtils.JvmDebug = true;
 
             IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
             cfg.GridName = GridName();
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
-            cfg.JvmOptions = GridTestUtils.TestJavaOptions();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
+            cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = "config\\native-client-test-cache-store.xml";
 
             PortableConfiguration portCfg = new PortableConfiguration();

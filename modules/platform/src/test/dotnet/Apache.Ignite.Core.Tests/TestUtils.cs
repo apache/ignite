@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Test utility methods.
     /// </summary>
-    public static class GridTestUtils
+    public static class TestUtils
     {
         /** Indicates long running and/or memory/cpu intensive test. */
         public const string CategoryIntensive = "LONG_TEST";

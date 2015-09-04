@@ -53,8 +53,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureSetUp]
         public virtual void StartGrids()
         {
-            GridTestUtils.JvmDebug = true;
-            GridTestUtils.KillProcesses();
+            TestUtils.JvmDebug = true;
+            TestUtils.KillProcesses();
 
             IgniteConfigurationEx cfg = new IgniteConfigurationEx
             {
@@ -67,8 +67,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         new PortableTypeConfiguration(typeof (PortableScanQueryFilter<PortableUserObject>))
                     }
                 },
-                JvmClasspath = GridTestUtils.CreateTestClasspath(),
-                JvmOptions = GridTestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = CfgPath
             };
 

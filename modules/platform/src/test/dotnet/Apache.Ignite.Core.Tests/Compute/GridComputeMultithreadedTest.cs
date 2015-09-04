@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Tests class.
     /// </summary>
-    [Category(GridTestUtils.CategoryIntensive)]
+    [Category(TestUtils.CategoryIntensive)]
     public class GridComputeMultithreadedTest : GridAbstractTaskTest
     {
         /** */
@@ -77,9 +77,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             var compute = Grid1.Compute();
 
-            GridTestUtils.RunMultiThreaded(() =>
+            TestUtils.RunMultiThreaded(() =>
             {
-                _actions[GridTestUtils.Random.Next(_actions.Count)](compute);
+                _actions[TestUtils.Random.Next(_actions.Count)](compute);
             }, 4, 60);
         }
 
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.AreEqual(_actions.Count, 6);
 
-            GridTestUtils.RunMultiThreaded(() => _actions[0](Grid1.Compute()), 4, 20);
+            TestUtils.RunMultiThreaded(() => _actions[0](Grid1.Compute()), 4, 20);
         }
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.AreEqual(_actions.Count, 6);
 
-            GridTestUtils.RunMultiThreaded(() => _actions[1](Grid1.Compute()), 4, 20);
+            TestUtils.RunMultiThreaded(() => _actions[1](Grid1.Compute()), 4, 20);
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.AreEqual(_actions.Count, 6);
 
-            GridTestUtils.RunMultiThreaded(() => _actions[2](Grid1.Compute()), 4, 20);
+            TestUtils.RunMultiThreaded(() => _actions[2](Grid1.Compute()), 4, 20);
         }
 
         /// <summary>
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.AreEqual(_actions.Count, 6);
 
-            GridTestUtils.RunMultiThreaded(() => _actions[3](Grid1.Compute()), 4, 20);
+            TestUtils.RunMultiThreaded(() => _actions[3](Grid1.Compute()), 4, 20);
         }
         /// <summary>
         ///
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.AreEqual(_actions.Count, 6);
 
-            GridTestUtils.RunMultiThreaded(() => _actions[4](Grid1.Compute()), 4, 20);
+            TestUtils.RunMultiThreaded(() => _actions[4](Grid1.Compute()), 4, 20);
         }
 
         /// <summary>
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.AreEqual(_actions.Count, 6);
 
-            GridTestUtils.RunMultiThreaded(() => _actions[5](Grid1.Compute()), 4, 20);
+            TestUtils.RunMultiThreaded(() => _actions[5](Grid1.Compute()), 4, 20);
         }
     }
 
@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             var job = new StringLengthEmptyJob(arg);
 
-            IClusterNode node = subgrid[GridTestUtils.Random.Next(subgrid.Count)];
+            IClusterNode node = subgrid[TestUtils.Random.Next(subgrid.Count)];
 
             res.Add(job, node);
 

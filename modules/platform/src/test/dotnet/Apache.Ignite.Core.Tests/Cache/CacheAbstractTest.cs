@@ -291,7 +291,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// </summary>
         [TestFixtureSetUp]
         public virtual void StartGrids() {
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
 
             IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
@@ -308,8 +308,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             portCfg.TypeConfigurations = portTypeCfgs;
 
             cfg.PortableConfiguration = portCfg;
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
-            cfg.JvmOptions = GridTestUtils.TestJavaOptions();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
+            cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = "config\\native-client-test-cache.xml";
 
             for (int i = 0; i < GridCount(); i++) {
@@ -1611,7 +1611,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        [Category(GridTestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestGetAsyncMultithreaded()
         {
             var cache = Cache().WithAsync();
@@ -1623,7 +1623,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 cache.GetFuture<object>().Get();
             }
 
-            GridTestUtils.RunMultiThreaded(() =>
+            TestUtils.RunMultiThreaded(() =>
             {
                 for (int i = 0; i < 100; i++)
                 {
@@ -1643,12 +1643,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        [Category(GridTestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestPutxAsyncMultithreaded()
         {
             var cache = Cache().WithAsync();
 
-            GridTestUtils.RunMultiThreaded(() =>
+            TestUtils.RunMultiThreaded(() =>
             {
                 Random rnd = new Random();
 
@@ -1670,7 +1670,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        [Category(GridTestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestPutGetAsyncMultithreaded()
         {
             var cache = Cache<CacheTestKey, GridPortablePerson>().WithAsync();
@@ -1680,7 +1680,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             int cntr = 0;
 
-            GridTestUtils.RunMultiThreaded(() =>
+            TestUtils.RunMultiThreaded(() =>
             {
                 // ReSharper disable once AccessToModifiedClosure
                 int threadIdx = Interlocked.Increment(ref cntr);
@@ -1723,7 +1723,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cntr = 0;
 
-            GridTestUtils.RunMultiThreaded(() =>
+            TestUtils.RunMultiThreaded(() =>
             {
                 int threadIdx = Interlocked.Increment(ref cntr);
 
@@ -1739,7 +1739,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cntr = 0;
 
-            GridTestUtils.RunMultiThreaded(() =>
+            TestUtils.RunMultiThreaded(() =>
             {
                 int threadIdx = Interlocked.Increment(ref cntr);
 
@@ -1770,7 +1770,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         //[Test]
-        //[Category(GridTestUtils.CATEGORY_INTENSIVE)]
+        //[Category(TestUtils.CATEGORY_INTENSIVE)]
         public void TestAsyncMultithreadedKeepPortable()
         {
             var cache = Cache().WithAsync().WithKeepPortable<CacheTestKey, GridPortablePerson>();
@@ -1781,7 +1781,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             int cntr = 0;
 
-            GridTestUtils.RunMultiThreaded(() =>
+            TestUtils.RunMultiThreaded(() =>
             {
                 // ReSharper disable once AccessToModifiedClosure
                 int threadIdx = Interlocked.Increment(ref cntr);
@@ -1819,7 +1819,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cntr = 0;
 
-            GridTestUtils.RunMultiThreaded(() =>
+            TestUtils.RunMultiThreaded(() =>
             {
                 int threadIdx = Interlocked.Increment(ref cntr);
 
@@ -1850,7 +1850,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cntr = 0;
 
-            GridTestUtils.RunMultiThreaded(() =>
+            TestUtils.RunMultiThreaded(() =>
             {
                 int threadIdx = Interlocked.Increment(ref cntr);
 
@@ -2409,7 +2409,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test thraed-locals leak.
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestThreadLocalLeak()
         {
             var cache = Cache<string, string>();
@@ -2542,7 +2542,7 @@ namespace Apache.Ignite.Core.Tests.Cache
          * futures pinning works.
          */
         [Test]
-        [Category(GridTestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestFuturesGc()
         {
             var cache = Cache().WithAsync();
@@ -2551,7 +2551,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             for (int i = 0; i < 10; i++)
             {
-                GridTestUtils.RunMultiThreaded(() =>
+                TestUtils.RunMultiThreaded(() =>
                 {
                     for (int j = 0; j < 1000; j++)
                         cache.Get(1);

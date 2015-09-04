@@ -26,7 +26,10 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Portable;
     using NUnit.Framework;
 
-    public class GridFutureTest
+    /// <summary>
+    /// Future tests.
+    /// </summary>
+    public class FutureTest
     {
         /** */
         private ICache<object, object> _cache;
@@ -40,13 +43,13 @@ namespace Apache.Ignite.Core.Tests
         [TestFixtureSetUp]
         public void TestFixtureSetUp()
         {
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
 
             var grid = Ignition.Start(new IgniteConfiguration
             {
                 SpringConfigUrl = "config\\compute\\compute-standalone.xml",
-                JvmClasspath = GridTestUtils.CreateTestClasspath(),
-                JvmOptions = GridTestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
                 PortableConfiguration = new PortableConfiguration
                 {
                     TypeConfigurations =
@@ -65,7 +68,7 @@ namespace Apache.Ignite.Core.Tests
         [TestFixtureTearDown]
         public void TestFixtureTearDown()
         {
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
         }
 
         [Test]

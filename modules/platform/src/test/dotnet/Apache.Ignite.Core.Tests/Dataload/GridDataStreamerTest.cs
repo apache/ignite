@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [TearDown]
         public void AfterTest()
         {
-            GridTestUtils.AssertHandleRegistryIsEmpty(_grid, 1000);
+            TestUtils.AssertHandleRegistryIsEmpty(_grid, 1000);
         }
 
         /// <summary>
@@ -328,7 +328,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Test multithreaded behavior. 
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestMultithreaded()
         {
             int entriesPerThread = 100000;
@@ -350,7 +350,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                     int ctr = 0;
 
-                    GridTestUtils.RunMultiThreaded(() =>
+                    TestUtils.RunMultiThreaded(() =>
                     {
                         int threadIdx = Interlocked.Increment(ref ctr);
 
@@ -467,7 +467,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             {
                 GridName = gridName,
                 SpringConfigUrl = "config\\native-client-test-cache.xml",
-                JvmClasspath = GridTestUtils.CreateTestClasspath(),
+                JvmClasspath = TestUtils.CreateTestClasspath(),
                 PortableConfiguration = new PortableConfiguration
                 {
                     TypeConfigurations = new List<PortableTypeConfiguration>
@@ -479,7 +479,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                         new PortableTypeConfiguration(typeof (PortableEntry))
                     }
                 },
-                JvmOptions = GridTestUtils.TestJavaOptions().Concat(new[]
+                JvmOptions = TestUtils.TestJavaOptions().Concat(new[]
                 {
                     "-Xms3096m",
                     "-Xmx3096m",

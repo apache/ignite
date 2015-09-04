@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// <see cref="IEvents"/> tests.
     /// </summary>
-    public class GridEventsTest
+    public class EventsTest
     {
         /** */
         private IIgnite _grid1;
@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Tests
         {
             try
             {
-                GridTestUtils.AssertHandleRegistryIsEmpty(1000, _grid1, _grid2, _grid3);
+                TestUtils.AssertHandleRegistryIsEmpty(1000, _grid1, _grid2, _grid3);
             }
             catch (Exception)
             {
@@ -620,8 +620,8 @@ namespace Apache.Ignite.Core.Tests
             return new IgniteConfiguration
             {
                 SpringConfigUrl = springConfigUrl,
-                JvmClasspath = GridTestUtils.CreateTestClasspath(),
-                JvmOptions = GridTestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
                 PortableConfiguration = new PortableConfiguration
                 {
                     TypeConfigurations = new List<PortableTypeConfiguration>

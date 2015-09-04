@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         public void SetUp()
         {
             GC.Collect();
-            GridTestUtils.JvmDebug = true;
+            TestUtils.JvmDebug = true;
 
             IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
@@ -108,8 +108,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             portCfg.TypeConfigurations = portTypeCfgs;
 
             cfg.PortableConfiguration = portCfg;
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
-            cfg.JvmOptions = GridTestUtils.TestJavaOptions();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
+            cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = "config\\cache-query-continuous.xml";
 
             cfg.GridName = "grid-1";

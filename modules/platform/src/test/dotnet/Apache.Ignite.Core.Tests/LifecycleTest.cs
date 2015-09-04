@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Lifecycle beans test.
     /// </summary>
-    public class GridLifecycleTest
+    public class LifecycleTest
     {
         /** Configuration: without Java beans. */
         private const string CfgNoBeans = "config//lifecycle//lifecycle-no-beans.xml";
@@ -181,12 +181,12 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>Grid.</returns>
         private static IIgnite Start(string cfgPath)
         {
-            GridTestUtils.JvmDebug = true;
+            TestUtils.JvmDebug = true;
 
             IgniteConfiguration cfg = new IgniteConfiguration();
 
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
-            cfg.JvmOptions = GridTestUtils.TestJavaOptions();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
+            cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = cfgPath;
 
             cfg.LifecycleBeans = new List<ILifecycleBean> { new Bean(), new Bean() };
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Tests
         /** <inheritDoc /> */
         public void OnLifecycleEvent(LifecycleEventType evtType)
         {
-            if (GridLifecycleTest.ThrowErr)
+            if (LifecycleTest.ThrowErr)
                 throw new Exception("Lifecycle exception.");
 
             Event evt = new Event();
@@ -256,22 +256,22 @@ namespace Apache.Ignite.Core.Tests
             switch (evtType)
             {
                 case LifecycleEventType.BeforeNodeStart:
-                    GridLifecycleTest.BeforeStartEvts.Add(evt);
+                    LifecycleTest.BeforeStartEvts.Add(evt);
 
                     break;
 
                 case LifecycleEventType.AfterNodeStart:
-                    GridLifecycleTest.AfterStartEvts.Add(evt);
+                    LifecycleTest.AfterStartEvts.Add(evt);
 
                     break;
 
                 case LifecycleEventType.BeforeNodeStop:
-                    GridLifecycleTest.BeforeStopEvts.Add(evt);
+                    LifecycleTest.BeforeStopEvts.Add(evt);
 
                     break;
 
                 case LifecycleEventType.AfterNodeStop:
-                    GridLifecycleTest.AfterStopEvts.Add(evt);
+                    LifecycleTest.AfterStopEvts.Add(evt);
 
                     break;
             }

@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             
             // ReSharper disable once UnusedVariable
             var proc = new IgniteProcess(
-                "-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
+                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + Path.GetFullPath(springConfigUrl),
                 "-J-ea",
                 "-J-Xcheck:jni",
@@ -51,8 +51,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             _grid = Ignition.Start(new IgniteConfiguration
             {
-                JvmClasspath = GridTestUtils.CreateTestClasspath(),
-                JvmOptions = GridTestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = springConfigUrl
             });
 

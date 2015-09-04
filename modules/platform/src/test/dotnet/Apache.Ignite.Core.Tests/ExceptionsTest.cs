@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Tests grid exceptions propagation.
     /// </summary>
-    public class IgniteExceptionsTest
+    public class ExceptionsTest
     {
         /// <summary>
         /// Before test.
@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests
         [SetUp]
         public void SetUp()
         {
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
         }
         
         /// <summary>
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateException()
         {
             // Primitive type
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests CachePartialUpdateException keys propagation in portable mode.
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionPortable()
         {
             // User type
@@ -188,7 +188,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionAsync()
         {
             // Primitive type
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests CachePartialUpdateException keys propagation in portable mode.
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionAsyncPortable()
         {
             TestPartialUpdateException(true, (x, g) => g.Portables().ToPortable<IPortableObject>(new PortableEntry(x)));
@@ -275,8 +275,8 @@ namespace Apache.Ignite.Core.Tests
             return Ignition.Start(new IgniteConfigurationEx
             {
                 SpringConfigUrl = "config\\native-client-test-cache.xml",
-                JvmOptions = GridTestUtils.TestJavaOptions(),
-                JvmClasspath = GridTestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath(),
                 GridName = gridName,
                 PortableConfiguration = new PortableConfiguration
                 {

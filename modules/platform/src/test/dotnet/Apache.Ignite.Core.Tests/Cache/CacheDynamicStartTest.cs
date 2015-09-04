@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [SetUp]
         public void SetUp()
         {
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
 
             Ignition.Start(CreateConfiguration(GridData, @"config/dynamic/dynamic-data.xml"));
             Ignition.Start(CreateConfiguration(GridDataNoCfg, @"config/dynamic/dynamic-data-no-cfg.xml"));
@@ -93,8 +93,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cfg.GridName = name;
             cfg.PortableConfiguration = portCfg;
-            cfg.JvmClasspath = GridTestUtils.CreateTestClasspath();
-            cfg.JvmOptions = GridTestUtils.TestJavaOptions();
+            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
+            cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = springCfg;
 
             return cfg;

@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests
 
             //TestOne(typeof(ContinuousQueryAtomiclBackupTest), "TestInitialQuery");
 
-            TestAll(typeof (GridExecutableTest));
+            TestAll(typeof (ExecutableTest));
             //TestAllInAssembly();
         }
 

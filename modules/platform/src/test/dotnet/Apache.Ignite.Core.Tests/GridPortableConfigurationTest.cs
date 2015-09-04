@@ -67,8 +67,8 @@ namespace Apache.Ignite.Core.Tests
             var grid = Ignition.Start(new IgniteConfiguration
             {
                 SpringConfigUrl = "config\\cache-portables.xml",
-                JvmClasspath = GridTestUtils.CreateTestClasspath(),
-                JvmOptions = GridTestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
                 PortableConfiguration = portableConfiguration
             });
 
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests
         [TestFixtureTearDown]
         public void TestFixtureTearDown()
         {
-            GridTestUtils.KillProcesses();
+            TestUtils.KillProcesses();
         }
 
         /// <summary>

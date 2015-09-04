@@ -46,8 +46,8 @@ namespace Apache.Ignite.Core.Tests
             var cfg = new IgniteConfigurationEx
             {
                 GridName = GridName,
-                JvmClasspath = GridTestUtils.CreateTestClasspath(),
-                JvmOptions = GridTestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = "config\\native-client-test-cache.xml"
             };
 

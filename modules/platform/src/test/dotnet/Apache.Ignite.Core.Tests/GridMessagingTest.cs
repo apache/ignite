@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests
         {
             try
             {
-                GridTestUtils.AssertHandleRegistryIsEmpty(1000, _grid1, _grid2, _grid3);
+                TestUtils.AssertHandleRegistryIsEmpty(1000, _grid1, _grid2, _grid3);
 
                 MessagingTestHelper.AssertFailures();
             }
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         [Test]
         [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
-        [Category(GridTestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestLocalListenMultithreaded()
         {
             const int threadCnt = 20;
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Tests
 
             var messaging = _grid1.Message();
 
-            var senders = Task.Factory.StartNew(() => GridTestUtils.RunMultiThreaded(() =>
+            var senders = Task.Factory.StartNew(() => TestUtils.RunMultiThreaded(() =>
             {
                 messaging.Send((object) NextMessage());
                 Thread.Sleep(50);
@@ -206,7 +206,7 @@ namespace Apache.Ignite.Core.Tests
                 return true;
             });
 
-            GridTestUtils.RunMultiThreaded(() =>
+            TestUtils.RunMultiThreaded(() =>
             {
                 // Check that listen/stop work concurrently
                 messaging.LocalListen(sharedListener);
@@ -360,7 +360,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests LocalListen in multithreaded mode.
         /// </summary>
         [Test]
-        [Category(GridTestUtils.CategoryIntensive)]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestRemoteListenMultithreaded()
         {
             const int threadCnt = 20;
@@ -368,7 +368,7 @@ namespace Apache.Ignite.Core.Tests
 
             var messaging = _grid1.Message();
 
-            var senders = Task.Factory.StartNew(() => GridTestUtils.RunMultiThreaded(() =>
+            var senders = Task.Factory.StartNew(() => TestUtils.RunMultiThreaded(() =>
             {
                 MessagingTestHelper.ClearReceived(int.MaxValue);
                 messaging.Send((object) NextMessage());
@@ -381,7 +381,7 @@ namespace Apache.Ignite.Core.Tests
             for (int i = 0; i < 100; i++)
                 messaging.RemoteListen(sharedListener);  // add some listeners to be stopped by filter result
 
-            GridTestUtils.RunMultiThreaded(() =>
+            TestUtils.RunMultiThreaded(() =>
             {
                 // Check that listen/stop work concurrently
                 messaging.StopRemoteListen(messaging.RemoteListen(sharedListener));
@@ -483,8 +483,8 @@ namespace Apache.Ignite.Core.Tests
             return new IgniteConfiguration
             {
                 SpringConfigUrl = springConfigUrl,
-                JvmClasspath = GridTestUtils.CreateTestClasspath(),
-                JvmOptions = GridTestUtils.TestJavaOptions()
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions()
             };
         }
 
