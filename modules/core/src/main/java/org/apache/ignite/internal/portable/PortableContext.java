@@ -433,7 +433,7 @@ public class PortableContext implements Externalizable {
         PortableClassDescriptor desc = descByCls.get(cls);
 
         if (desc == null || !desc.isRegistered())
-            desc = registerClassDescriptor(cls);
+            desc = registerClassDescriptor(cls, true);
 
         return desc;
     }
@@ -467,7 +467,7 @@ public class PortableContext implements Externalizable {
         }
 
         if (desc == null) {
-            desc = registerClassDescriptor(cls);
+            desc = registerClassDescriptor(cls, false);
 
             assert desc.typeId() == typeId;
         }
@@ -481,7 +481,7 @@ public class PortableContext implements Externalizable {
      * @param cls Class.
      * @return Class descriptor.
      */
-    private PortableClassDescriptor registerClassDescriptor(Class<?> cls) {
+    private PortableClassDescriptor registerClassDescriptor(Class<?> cls, boolean registerMetadata) {
         PortableClassDescriptor desc;
 
         String clsName = cls.getName();
@@ -504,7 +504,7 @@ public class PortableContext implements Externalizable {
                 desc = old;
         }
         else
-            desc = registerUserClassDescriptor(cls);
+            desc = registerUserClassDescriptor(cls, registerMetadata);
 
         return desc;
     }
@@ -515,9 +515,7 @@ public class PortableContext implements Externalizable {
      * @param cls Class.
      * @return Class descriptor.
      */
-    private PortableClassDescriptor registerUserClassDescriptor(Class<?> cls) {
-        PortableClassDescriptor desc;
-
+    private PortableClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean registerMetadata) {
         boolean registered;
 
         String typeName = typeName(cls.getName());
@@ -533,7 +531,7 @@ public class PortableContext implements Externalizable {
             throw new PortableException("Failed to register class.", e);
         }
 
-        desc = new PortableClassDescriptor(this,
+        PortableClassDescriptor desc = new PortableClassDescriptor(this,
             cls,
             true,
             typeId,
@@ -548,6 +546,9 @@ public class PortableContext implements Externalizable {
         // perform put() instead of putIfAbsent() because "registered" flag may have been changed.
         userTypes.put(typeId, desc);
         descByCls.put(cls, desc);
+
+        if (registerMetadata && isMetaDataEnabled(typeId))
+            metaHnd.addMeta(typeId, new PortableMetaDataImpl(typeName, desc.fieldsMeta(), null));
 
         return desc;
     }
@@ -612,13 +613,7 @@ public class PortableContext implements Externalizable {
         if (predefinedClasses.contains(cls))
             return new Type(DFLT_ID_MAPPER.typeId(typeName(clsName)), true);
 
-        PortableClassDescriptor desc = descByCls.get(cls);
-
-        boolean registered = desc != null && desc.isRegistered();
-
-        if (!registered)
-            // forces to register the class and fill up all required data structures
-            desc = registerUserClassDescriptor(cls);
+        PortableClassDescriptor desc = descriptorForClass(cls);
 
         return new Type(desc.typeId(), desc.isRegistered());
     }
