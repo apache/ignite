@@ -30,7 +30,7 @@ public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final IgniteProductVersion CLIENT_ACK_SINCE_VERSION = IgniteProductVersion.fromString("1.4.1");
+    public static final IgniteProductVersion CLIENT_ACK_SINCE_VERSION = IgniteProductVersion.fromString("1.4.0");
 
     /** */
     private final IgniteUuid msgId;
