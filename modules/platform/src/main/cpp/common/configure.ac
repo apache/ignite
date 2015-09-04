@@ -19,7 +19,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([Ignite JNI bridge for C++], [7.4.1], [dev@ignite.apache.org], [ignite-common], [ignite.apache.org])
+AC_INIT([Apache Ignite JNI bridge for C++], [1.4.0], [dev@ignite.apache.org], [ignite-common], [ignite.apache.org])
 AC_CONFIG_SRCDIR(src)
 
 AC_CANONICAL_SYSTEM

@@ -919,22 +919,22 @@ namespace ignite
                 }
             }
 
-            jobject JniContext::IgnitionStart(char* cfgPath, char* gridName, int factoryId, long long dataPtr) {
-                return IgnitionStart(cfgPath, gridName, factoryId, dataPtr, NULL);
+            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr) {
+                return IgnitionStart(cfgPath, name, factoryId, dataPtr, NULL);
             }
             
-            jobject JniContext::IgnitionStart(char* cfgPath, char* gridName, int factoryId, long long dataPtr, JniErrorInfo* errInfo)
+            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
                 jstring cfgPath0 = env->NewStringUTF(cfgPath);
-                jstring gridName0 = env->NewStringUTF(gridName);
+                jstring name0 = env->NewStringUTF(name);
 
                 jobject interop = env->CallStaticObjectMethod(
                     jvm->GetMembers().c_PlatformIgnition,
                     jvm->GetMembers().m_PlatformIgnition_start,
                     cfgPath0,
-                    gridName0,
+                    name0,
                     factoryId,
                     reinterpret_cast<long long>(&hnds),
                     dataPtr
@@ -946,57 +946,57 @@ namespace ignite
             }
 
 
-            jobject JniContext::IgnitionInstance(char* gridName)
+            jobject JniContext::IgnitionInstance(char* name)
             {
-                return IgnitionInstance(gridName, NULL);
+                return IgnitionInstance(name, NULL);
             }
 
-            jobject JniContext::IgnitionInstance(char* gridName, JniErrorInfo* errInfo)
+            jobject JniContext::IgnitionInstance(char* name, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
-                jstring gridName0 = env->NewStringUTF(gridName);
+                jstring name0 = env->NewStringUTF(name);
 
                 jobject interop = env->CallStaticObjectMethod(jvm->GetMembers().c_PlatformIgnition,
-                    jvm->GetMembers().m_PlatformIgnition_instance, gridName0);
+                    jvm->GetMembers().m_PlatformIgnition_instance, name0);
 
                 ExceptionCheck(env, errInfo);
 
                 return LocalToGlobal(env, interop);
             }
 
-            long long JniContext::IgnitionEnvironmentPointer(char* gridName)
+            long long JniContext::IgnitionEnvironmentPointer(char* name)
             {
-                return IgnitionEnvironmentPointer(gridName, NULL);
+                return IgnitionEnvironmentPointer(name, NULL);
             }
 
-            long long JniContext::IgnitionEnvironmentPointer(char* gridName, JniErrorInfo* errInfo)
+            long long JniContext::IgnitionEnvironmentPointer(char* name, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
-                jstring gridName0 = env->NewStringUTF(gridName);
+                jstring name0 = env->NewStringUTF(name);
 
                 long long res = env->CallStaticLongMethod(jvm->GetMembers().c_PlatformIgnition,
-                    jvm->GetMembers().m_PlatformIgnition_environmentPointer, gridName0);
+                    jvm->GetMembers().m_PlatformIgnition_environmentPointer, name0);
 
                 ExceptionCheck(env, errInfo);
 
                 return res;
             }
 
-            bool JniContext::IgnitionStop(char* gridName, bool cancel)
+            bool JniContext::IgnitionStop(char* name, bool cancel)
             {
-                return IgnitionStop(gridName, cancel, NULL);
+                return IgnitionStop(name, cancel, NULL);
             }
 
-            bool JniContext::IgnitionStop(char* gridName, bool cancel, JniErrorInfo* errInfo)
+            bool JniContext::IgnitionStop(char* name, bool cancel, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
-                jstring gridName0 = env->NewStringUTF(gridName);
+                jstring name0 = env->NewStringUTF(name);
 
-                jboolean res = env->CallStaticBooleanMethod(jvm->GetMembers().c_PlatformIgnition, jvm->GetMembers().m_PlatformIgnition_stop,
-                    gridName0, cancel);
+                jboolean res = env->CallStaticBooleanMethod(jvm->GetMembers().c_PlatformIgnition,
+                    jvm->GetMembers().m_PlatformIgnition_stop, name0, cancel);
 
                 ExceptionCheck(env, errInfo);
 
@@ -1012,7 +1012,8 @@ namespace ignite
             {
                 JNIEnv* env = Attach();
 
-                env->CallStaticVoidMethod(jvm->GetMembers().c_PlatformIgnition, jvm->GetMembers().m_PlatformIgnition_stopAll, cancel);
+                env->CallStaticVoidMethod(jvm->GetMembers().c_PlatformIgnition,
+                    jvm->GetMembers().m_PlatformIgnition_stopAll, cancel);
 
                 ExceptionCheck(env, errInfo);
             }
