@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.java8.examples;
+package org.apache.ignite.examples.portable;
 
-import org.apache.ignite.examples.java8.events.EventsExample;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 
 /**
- * Events examples self test.
+ * Starts up an empty node with example configuration and portable marshaller enabled.
  */
-public class EventsExamplesSelfTest extends GridAbstractExamplesTest {
+public class ExamplePortableNodeStartup {
     /**
-     * @throws Exception If failed.
+     * Start up an empty node with example configuration and portable marshaller enabled.
+     *
+     * @param args Command line arguments, none required.
+     * @throws IgniteException If failed.
      */
-    public void testEventsExample() throws Exception {
-        EventsExample.main(EMPTY_ARGS);
+    public static void main(String[] args) throws IgniteException {
+        Ignition.start("examples/config/portable/example-ignite-portable.xml");
     }
 }

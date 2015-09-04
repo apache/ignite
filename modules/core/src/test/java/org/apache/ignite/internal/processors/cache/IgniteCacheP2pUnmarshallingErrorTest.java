@@ -42,6 +42,11 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     protected static int key = 0;
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1366");
+    }
+
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
     }

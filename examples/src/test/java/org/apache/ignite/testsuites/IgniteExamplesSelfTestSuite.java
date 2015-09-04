@@ -20,10 +20,12 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.examples.BasicExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.BasicExamplesSelfTest;
+import org.apache.ignite.examples.CacheClientPortableExampleTest;
 import org.apache.ignite.examples.CacheExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.CacheExamplesSelfTest;
 import org.apache.ignite.examples.CheckpointExamplesSelfTest;
 import org.apache.ignite.examples.ClusterGroupExampleSelfTest;
+import org.apache.ignite.examples.ComputeClientPortableExampleTest;
 import org.apache.ignite.examples.ContinuationExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.ContinuationExamplesSelfTest;
 import org.apache.ignite.examples.ContinuousMapperExamplesMultiNodeSelfTest;
@@ -92,6 +94,10 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(MemcacheRestExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(MonteCarloExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(HibernateL2CacheExampleMultiNodeSelfTest.class));
+
+        // Portable.
+        suite.addTest(new TestSuite(CacheClientPortableExampleTest.class));
+        suite.addTest(new TestSuite(ComputeClientPortableExampleTest.class));
 
         return suite;
     }

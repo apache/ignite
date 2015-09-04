@@ -15,42 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.java8.examples;
+package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.java8.messaging.MessagingExample;
-import org.apache.ignite.examples.java8.messaging.MessagingPingPongExample;
+import org.apache.ignite.examples.portable.datagrid.CacheClientPortablePutGetExample;
+import org.apache.ignite.examples.portable.datagrid.CacheClientPortableQueryExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
- * Messaging examples self test.
+ *
  */
-public class MessagingExamplesSelfTest extends GridAbstractExamplesTest {
+public class CacheClientPortableExampleTest extends GridAbstractExamplesTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        startGrid("companion", DFLT_CFG);
+    @Override protected String defaultConfig() {
+        return "examples/config/portable/example-ignite-portable.xml";
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testMessagingExample() throws Exception {
-        MessagingExample.main(EMPTY_ARGS);
+    public void testPortablePutGetExample() throws Exception {
+        CacheClientPortablePutGetExample.main(new String[] {});
     }
 
     /**
-     * TODO IGNITE-533
      * @throws Exception If failed.
      */
-    public void testMessagingPingPongExample() throws Exception {
-        MessagingPingPongExample.main(EMPTY_ARGS);
+    public void testPortableQueryExample() throws Exception {
+        CacheClientPortableQueryExample.main(new String[] {});
     }
-
-//    TODO: IGNITE-711 next example(s) should be implemented for java 8
-//    or testing method(s) should be removed if example(s) does not applicable for java 8.
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testMessagingPingPongListenActorExample() throws Exception {
-//        MessagingPingPongListenActorExample.main(EMPTY_ARGS);
-//    }
 }
