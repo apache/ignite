@@ -405,18 +405,18 @@ namespace Apache.Ignite.Core.Impl
 
             var res = new List<IClusterNode>(cnt);
 
-            var grid = ((PortableReaderImpl)reader).Marshaller.Ignite;
+            var ignite = ((PortableReaderImpl)reader).Marshaller.Ignite;
 
             if (pred == null)
             {
                 for (var i = 0; i < cnt; i++)
-                    res.Add(grid.GetNode(reader.ReadGuid()));
+                    res.Add(ignite.GetNode(reader.ReadGuid()));
             }
             else
             {
                 for (var i = 0; i < cnt; i++)
                 {
-                    var node = grid.GetNode(reader.ReadGuid());
+                    var node = ignite.GetNode(reader.ReadGuid());
                     
                     if (pred(node))
                         res.Add(node);

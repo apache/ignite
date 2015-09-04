@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Events
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
-    /// Grid events.
+    /// Ignite events.
     /// </summary>
     internal class Events : PlatformTarget, IEvents
     {
@@ -267,7 +267,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="handle">The filter handle, if applicable.</param>
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
-        /// <returns>Grid event.</returns>
+        /// <returns>Ignite event.</returns>
         protected T WaitForLocal0<T>(IEventFilter<T> filter, ref long handle, params int[] types) where T : IEvent
         {
             if (filter != null)

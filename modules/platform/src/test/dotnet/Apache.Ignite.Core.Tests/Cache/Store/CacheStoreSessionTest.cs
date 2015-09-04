@@ -84,13 +84,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             _dumps = new ConcurrentBag<ICollection<Operation>>();
 
-            var grid = Ignition.GetIgnite(IgniteName);
+            var ignite = Ignition.GetIgnite(IgniteName);
 
             var cache1 = Ignition.GetIgnite(IgniteName).Cache<int, int>(Cache1);
             var cache2 = Ignition.GetIgnite(IgniteName).Cache<int, int>(Cache2);
 
             // 1. Test rollback.
-            using (var tx = grid.Transactions.TxStart())
+            using (var tx = ignite.Transactions.TxStart())
             {
                 cache1.Put(1, 1);
                 cache2.Put(2, 2);
@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             _dumps = new ConcurrentBag<ICollection<Operation>>();
 
             // 2. Test puts.
-            using (var tx = grid.Transactions.TxStart())
+            using (var tx = ignite.Transactions.TxStart())
             {
                 cache1.Put(1, 1);
                 cache2.Put(2, 2);
@@ -126,7 +126,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             _dumps = new ConcurrentBag<ICollection<Operation>>();
 
             // 3. Test removes.
-            using (var tx = grid.Transactions.TxStart())
+            using (var tx = ignite.Transactions.TxStart())
             {
                 cache1.Remove(1);
                 cache2.Remove(2);

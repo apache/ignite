@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Events
     using Apache.Ignite.Core.Common;
 
     /// <summary>
-    /// Represents a grid event.
+    /// Represents a Ignite event.
     /// </summary>
     public interface IEvent
     {

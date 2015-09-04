@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="filter">Predicate filter used to query events on remote nodes.</param>
         /// <param name="timeout">Maximum time to wait for result, null or 0 to wait forever.</param>
         /// <param name="types">Event types to be queried.</param>
-        /// <returns>Collection of grid events returned from specified nodes.</returns>
+        /// <returns>Collection of Ignite events returned from specified nodes.</returns>
         [AsyncSupported]
         [SuppressMessage("Microsoft.Design", "CA1002:DoNotExposeGenericLists")]
         List<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types) 
@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
-        /// <returns>Grid event.</returns>
+        /// <returns>Ignite event.</returns>
         [AsyncSupported]
         IEvent WaitForLocal(params int[] types);
 
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="filter">Optional filtering predicate. Event wait will end as soon as it returns false.</param>
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
-        /// <returns>Grid event.</returns>
+        /// <returns>Ignite event.</returns>
         [AsyncSupported]
         T WaitForLocal<T>(IEventFilter<T> filter, params int[] types) where T : IEvent;
 
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Events
         /// Queries local node for events using of specified types.
         /// </summary>
         /// <param name="types">Event types to be queried. Optional.</param>
-        /// <returns>Collection of grid events found on local node.</returns>
+        /// <returns>Collection of Ignite events found on local node.</returns>
         [SuppressMessage("Microsoft.Design", "CA1002:DoNotExposeGenericLists")]
         List<IEvent> LocalQuery(params int[] types);
 

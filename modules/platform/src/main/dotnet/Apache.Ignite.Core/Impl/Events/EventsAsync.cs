@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Events
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
-    /// Async grid events.
+    /// Async Ignite events.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
     internal class EventsAsync : Events

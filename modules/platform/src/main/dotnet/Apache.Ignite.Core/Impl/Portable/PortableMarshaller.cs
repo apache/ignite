@@ -200,10 +200,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var meta = ((PortableWriterImpl) writer).Metadata();
 
-            var grid0 = Ignite;
+            var ignite = Ignite;
 
-            if (grid0 != null && meta != null && meta.Count > 0)
-                grid0.PutMetadata(meta);
+            if (ignite != null && meta != null && meta.Count > 0)
+                ignite.PutMetadata(meta);
         }
 
         /// <summary>

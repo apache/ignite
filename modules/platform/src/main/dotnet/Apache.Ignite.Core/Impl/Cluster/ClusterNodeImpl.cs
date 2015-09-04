@@ -160,16 +160,16 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterMetrics Metrics()
         {
-            var grid = (Ignite)_igniteRef.Target;
+            var ignite = (Ignite)_igniteRef.Target;
 
-            if (grid == null)
+            if (ignite == null)
                 return _metrics;
 
             ClusterMetricsImpl oldMetrics = _metrics;
 
             long lastUpdateTime = oldMetrics.LastUpdateTimeRaw;
 
-            ClusterMetricsImpl newMetrics = grid.ClusterGroup.RefreshClusterNodeMetrics(_id, lastUpdateTime);
+            ClusterMetricsImpl newMetrics = ignite.ClusterGroup.RefreshClusterNodeMetrics(_id, lastUpdateTime);
 
             if (newMetrics != null)
             {

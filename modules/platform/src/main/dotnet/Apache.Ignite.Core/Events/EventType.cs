@@ -486,14 +486,14 @@ namespace Apache.Ignite.Core.Events
         };
 
         /// <summary>
-        /// All grid events.
+        /// All Ignite events.
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
         public static readonly int[] EvtsAll = GetAllEvents();
 
         /// <summary>
-        /// All grid events (<b>excluding</b> metric update event).
+        /// All Ignite events (<b>excluding</b> metric update event).
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]

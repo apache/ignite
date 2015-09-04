@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Impl
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
-    /// Native grid wrapper.
+    /// Native Ignite wrapper.
     /// </summary>
     internal class Ignite : IIgnite, IClusterGroupEx, ICluster
     {
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl
         /** Lifecycle beans. */
         private readonly IList<LifecycleBeanHolder> _lifecycleBeans;
 
-        /** Grid local node. */
+        /** Local node. */
         private IClusterNode _locNode;
 
         /** Transactions facade. */
@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Gets grid proxy.
+        /// Gets Ignite proxy.
         /// </summary>
         /// <returns>Proxy.</returns>
         public IgniteProxy Proxy
