@@ -780,41 +780,40 @@
                                             setClientVersion('new.ignite.version.fixed', 'new.client.version');
                                         </script>
 
-                                        <echo message="Update ignite.version in dotnet client"/>
-                                        <echo message="${new.client.version}"/>
+                                        <echo message="Update ignite.version in dotnet client" />
+                                        <echo message="${new.client.version}" />
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp
-                                                pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d.\d.\d(.\d)?(&quot;\)\])"/>
-                                            <substitution expression="\1${new.client.version}\3"/>
+                                            <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d.\d.\d(.\d)?(&quot;\)\])" />
+                                            <substitution expression="\1${new.client.version}\3" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/AssemblyInfo.cs"/>
-                                                <include name="**/AssemblyInfo.cpp"/>
+                                                <include name="**/AssemblyInfo.cs" />
+                                                <include name="**/AssemblyInfo.cpp" />
                                             </fileset>
                                         </replaceregexp>
 
-                                        <echo message="Update ignite.version in cpp client"/>
+                                        <echo message="Update ignite.version in cpp client" />
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(AC_INIT.+\[)\d.\d.\d(.\d)?(\].+)"/>
-                                            <substitution expression="\1${new.client.version}\3"/>
+                                            <regexp pattern="(AC_INIT.+\[)\d.\d.\d(.\d)?(\].+)" />
+                                            <substitution expression="\1${new.client.version}\3" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/configure.ac"/>
+                                                <include name="**/configure.ac" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(define GG_VERSION_STR_WIN &quot;)\d.\d.\d(.\d)?(&quot;)"/>
-                                            <substitution expression="\1${new.client.version}\3"/>
+                                            <regexp pattern="(define GG_VERSION_STR_WIN &quot;)\d.\d.\d(.\d)?(&quot;)" />
+                                            <substitution expression="\1${new.client.version}\3" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/resource.h"/>
+                                                <include name="**/resource.h" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-16">
-                                            <regexp pattern="(Version&quot;, &quot;)\d.\d.\d.\d(&quot;)"/>
-                                            <substitution expression="\1${new.client.version}\2"/>
+                                            <regexp pattern="(Version&quot;, &quot;)\d.\d.\d.\d(&quot;)" />
+                                            <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/Resource.rc"/>
+                                                <include name="**/Resource.rc" />
                                             </fileset>
                                         </replaceregexp>
 
@@ -833,18 +832,18 @@
                                         </script>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(define GG_VERSION_BIN_WIN )\d,\d,\d,\d"/>
-                                            <substitution expression="\1${new.bin.version}"/>
+                                            <regexp pattern="(define GG_VERSION_BIN_WIN )\d,\d,\d,\d" />
+                                            <substitution expression="\1${new.bin.version}" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/resource.h"/>
+                                                <include name="**/resource.h" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-16">
-                                            <regexp pattern="(VERSION )\d,\d,\d,\d"/>
-                                            <substitution expression="\1${new.bin.version}"/>
+                                            <regexp pattern="(VERSION )\d,\d,\d,\d" />
+                                            <substitution expression="\1${new.bin.version}" />
                                             <fileset dir="${basedir}/">
-                                                <include name="**/Resource.rc"/>
+                                                <include name="**/Resource.rc" />
                                             </fileset>
                                         </replaceregexp>
                                     </target>
