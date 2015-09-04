@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="arg">Task execution argument. Can be <c>null</c>. This is the same argument
         /// as the one passed into <c>ICompute.Execute()</c> methods.</param>
         /// <returns>
-        /// Map of grid jobs assigned to subIgnite node. If <c>null</c> or empty map is returned,
+        /// Map of grid jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
         /// exception will be thrown.
         /// </returns>
         public abstract IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, TA arg);
