@@ -47,9 +47,6 @@ import org.apache.ignite.portable.PortableObject;
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables the portable marshaller: {@code 'ignite.{sh|bat} examples/config/portable/example-ignite-portable.xml'}.
- * <p>
- * Alternatively you can run {@link ExamplePortableNodeStartup} in another JVM which will
- * start node with {@code examples/config/portable/example-ignite-portable.xml} configuration.
  */
 public class CacheClientPortableQueryExample {
     /** Organization cache name. */
@@ -116,6 +113,11 @@ public class CacheClientPortableQueryExample {
                 textQuery(portableCache);
 
                 System.out.println();
+            }
+            finally {
+                // Delete caches with their content completely.
+                ignite.destroyCache(ORGANIZATION_CACHE_NAME);
+                ignite.destroyCache(EMPLOYEE_CACHE_NAME);
             }
         }
     }

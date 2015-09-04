@@ -770,6 +770,18 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 if (log.isDebugEnabled())
                     log.debug("Remapping mini get future [invalidParts=" + invalidParts + ", fut=" + this + ']');
 
+                if (!canRemap) {
+                    map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
+                        @Override public boolean apply(KeyCacheObject key) {
+                            return invalidParts.contains(cctx.affinity().partition(key));
+                        }
+                    }), F.t(node, keys), topVer);
+
+                    onDone(createResultMap(res.entries()));
+
+                    return;
+                }
+
                 // Need to wait for next topology version to remap.
                 IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer.topologyVersion());
 
@@ -779,7 +791,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         AffinityTopologyVersion topVer = new AffinityTopologyVersion(fut.get());
 
                         // This will append new futures to compound list.
-                        map(F.view(keys.keySet(),  new P1<KeyCacheObject>() {
+                        map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
                             @Override public boolean apply(KeyCacheObject key) {
                                 return invalidParts.contains(cctx.affinity().partition(key));
                             }
