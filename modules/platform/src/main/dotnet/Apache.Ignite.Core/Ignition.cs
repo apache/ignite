@@ -41,12 +41,12 @@ namespace Apache.Ignite.Core
     /// <summary>
     /// This class defines a factory for the main Ignite API.
     /// <p/>
-    /// Use <see cref="Ignition.Start()"/> method to start grid with default configuration.
+    /// Use <see cref="Ignition.Start()"/> method to start Ignite with default configuration.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// <example>
     /// You can also use <see cref="IgniteConfiguration"/> to override some default configuration.
-    /// Below is an example on how to start grid with custom configuration for portable types and
+    /// Below is an example on how to start Ignite with custom configuration for portable types and
     /// provide path to Spring XML configuration file:
     /// <code>
     /// IgniteConfiguration cfg = new IgniteConfiguration();
@@ -366,7 +366,7 @@ namespace Apache.Ignite.Core
                 _startup.Name = name;
 
                 if (Nodes.ContainsKey(new NodeKey(name)))
-                    throw new IgniteException("Grid with the same name already started: " + name);
+                    throw new IgniteException("Ignite with the same name already started: " + name);
 
             }
             catch (Exception e)
@@ -467,7 +467,7 @@ namespace Apache.Ignite.Core
         /// should not assume that it will return the same instance every time.
         /// <p/>
         /// Note that single process can run multiple Ignite instances and every Ignite instance (and its
-        /// node) can belong to a different grid. Grid name defines what grid a particular Ignite
+        /// node) can belong to a different grid. Ignite name defines what grid a particular Ignite
         /// instance (and correspondingly its node) belongs to.
         /// </summary>
         /// <param name="name">Ignite name to which requested Ignite instance belongs. If <code>null</code>,
