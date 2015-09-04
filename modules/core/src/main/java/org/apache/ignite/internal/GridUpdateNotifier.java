@@ -256,13 +256,6 @@ class GridUpdateNotifier {
     }
 
     /**
-     * Stops all work referenced with an instance.
-     */
-    public void stop() {
-        verCheckerExec.stop();
-    }
-
-    /**
      *
      * @param log Logger to use.
      * @param warn Whether or not this is a warning.
@@ -519,19 +512,6 @@ class GridUpdateNotifier {
 
                 if (workerThread0 != null)
                     workerThread0.interrupt();
-            }
-        }
-
-        /**
-         * Stops worker thread.
-         */
-        public void stop() {
-            Thread workerThread0 = workerThread;
-
-            while (workerThread0 != null) {
-                workerThread0.interrupt();
-
-                workerThread0 = workerThread;
             }
         }
     }
