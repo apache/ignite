@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
     /// <summary>
     /// Messaging functionality.
     /// </summary>
-    internal class Messaging : GridTarget, IMessaging
+    internal class Messaging : PlatformTarget, IMessaging
     {
         /// <summary>
         /// Opcodes.

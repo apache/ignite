@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     /// Compute implementation.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
-    internal class ComputeImpl : GridTarget
+    internal class ComputeImpl : PlatformTarget
     {
         /** */
         private const int OpAffinity = 1;
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         public void WithNoFailover()
         {
-            UU.ComputeWithNoFailover(target);
+            UU.ComputeWithNoFailover(Target);
         }
 
         /// <summary>
@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="timeout">Computation timeout in milliseconds.</param>
         public void WithTimeout(long timeout)
         {
-            UU.ComputeWithTimeout(target, timeout);
+            UU.ComputeWithTimeout(Target, timeout);
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                     WriteTask(writer, taskName, taskArg, nodes);
                 }, input =>
                 {
-                    fut = GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(target, futId, futTyp), _keepPortable.Value);
+                    fut = GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp), _keepPortable.Value);
                 });
 
                 return fut;
@@ -189,9 +189,9 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             var holder = new ComputeTaskHolder<TA, T, TR>((Ignite) _prj.Ignite, this, task, taskArg);
 
-            long ptr = Marsh.Grid.HandleRegistry.Allocate(holder);
+            long ptr = Marshaller.Grid.HandleRegistry.Allocate(holder);
 
-            UU.ComputeExecuteNative(target, ptr, _prj.TopologyVersion);
+            UU.ComputeExecuteNative(Target, ptr, _prj.TopologyVersion);
 
             return holder.Future;
         }
@@ -454,7 +454,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="affinityKey">Affinity key.</param>
         /// <param name="clo">Job to execute.</param>
         /// <returns>Job result for this execution.</returns>
-        /// <typeparam name="R">Type of job result.</typeparam>
+        /// <typeparam name="TR">Type of job result.</typeparam>
         public IFuture<TR> AffinityCall<TR>(string cacheName, object affinityKey, IComputeFunc<TR> clo)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
@@ -469,7 +469,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             bool keep = _keepPortable.Value;
 
-            return Marsh.Unmarshal<T>(stream, keep);
+            return Marshaller.Unmarshal<T>(stream, keep);
         }
 
         /// <summary>
@@ -507,7 +507,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             var holder = new ComputeTaskHolder<TA, T, TR>((Ignite) _prj.Ignite, this, task, default(TA));
 
-            var taskHandle = Marsh.Grid.HandleRegistry.Allocate(holder);
+            var taskHandle = Marshaller.Grid.HandleRegistry.Allocate(holder);
 
             var jobHandles = new List<long>(job != null ? 1 : jobsCount);
 
@@ -551,7 +551,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                 {
                     // Manual job handles release because they were not assigned to the task yet.
                     foreach (var hnd in jobHandles) 
-                        Marsh.Grid.HandleRegistry.Release(hnd);
+                        Marshaller.Grid.HandleRegistry.Release(hnd);
 
                     holder.CompleteWithError(taskHandle, err);
                 }
@@ -575,7 +575,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var jobHolder = new ComputeJobHolder(_prj.Ignite as Ignite, job);
 
-            var jobHandle = Marsh.Grid.HandleRegistry.Allocate(jobHolder);
+            var jobHandle = Marshaller.Grid.HandleRegistry.Allocate(jobHolder);
 
             writer.WriteLong(jobHandle);
             writer.WriteObject(jobHolder);

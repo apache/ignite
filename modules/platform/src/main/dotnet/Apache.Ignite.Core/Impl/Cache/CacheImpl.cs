@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// Native cache wrapper.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
-    internal class CacheImpl<TK, TV> : GridTarget, ICache<TK, TV>
+    internal class CacheImpl<TK, TV> : PlatformTarget, ICache<TK, TV>
     {
         /** Duration: unchanged. */
         private const long DurUnchanged = -2;
@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             _invokeAllConverter.Value = null;
 
-            return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(target, futId, futTypeId, lastAsyncOpId), 
+            return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, lastAsyncOpId), 
                 _flagKeepPortable, converter);
         }
 
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagSkipStore)
                 return this;
 
-            return new CacheImpl<TK, TV>(_grid, UU.CacheWithSkipStore(target), Marshaller, 
+            return new CacheImpl<TK, TV>(_grid, UU.CacheWithSkipStore(Target), Marshaller, 
                 true, _flagKeepPortable, _flagAsync, true);
         }
 
@@ -184,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return result;
             }
 
-            return new CacheImpl<TK1, TV1>(_grid, UU.CacheWithKeepPortable(target), Marsh, 
+            return new CacheImpl<TK1, TV1>(_grid, UU.CacheWithKeepPortable(Target), Marshaller, 
                 _flagSkipStore, true, _flagAsync, _flagNoRetries);
         }
 
@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             long update = ConvertDuration(plc.GetExpiryForUpdate());
             long access = ConvertDuration(plc.GetExpiryForAccess());
 
-            IUnmanagedTarget cache0 = UU.CacheWithExpiryPolicy(target, create, update, access);
+            IUnmanagedTarget cache0 = UU.CacheWithExpiryPolicy(Target, create, update, access);
 
             return new CacheImpl<TK, TV>(_grid, cache0, Marshaller, _flagSkipStore, _flagKeepPortable, _flagAsync, _flagNoRetries);
         }
@@ -225,7 +225,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public ICache<TK, TV> WithAsync()
         {
-            return _flagAsync ? this : new CacheImpl<TK, TV>(_grid, UU.CacheWithAsync(target), Marshaller,
+            return _flagAsync ? this : new CacheImpl<TK, TV>(_grid, UU.CacheWithAsync(Target), Marshaller,
                 _flagSkipStore, _flagKeepPortable, true, _flagNoRetries);
         }
 
@@ -313,7 +313,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 writer => WriteEnumerable(writer, keys),
                 input =>
                 {
-                    var reader = Marsh.StartUnmarshal(input, _flagKeepPortable);
+                    var reader = Marshaller.StartUnmarshal(input, _flagKeepPortable);
 
                     return ReadGetAllDictionary(reader);
                 });
@@ -418,7 +418,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Clear()
         {
-            UU.CacheClear(target);
+            UU.CacheClear(Target);
         }
 
         /** <inheritdoc /> */
@@ -482,7 +482,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void RemoveAll()
         {
-            UU.CacheRemoveAll(target);
+            UU.CacheRemoveAll(Target);
         }
 
         /** <inheritDoc /> */
@@ -507,7 +507,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             int modes0 = EncodePeekModes(modes);
 
-            return UU.CacheSize(target, modes0, loc);
+            return UU.CacheSize(Target, modes0, loc);
         }
 
         /** <inheritDoc /> */
@@ -570,7 +570,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutInOp((int)CacheOp.Lock, writer =>
             {
                 writer.Write(key);
-            }, input => new CacheLock(input.ReadInt(), target));
+            }, input => new CacheLock(input.ReadInt(), Target));
         }
 
         /** <inheritdoc /> */
@@ -581,7 +581,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutInOp((int)CacheOp.LockAll, writer =>
             {
                 WriteEnumerable(writer, keys);
-            }, input => new CacheLock(input.ReadInt(), target));
+            }, input => new CacheLock(input.ReadInt(), Target));
         }
 
         /** <inheritdoc /> */
@@ -601,7 +601,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             return DoInOp((int)CacheOp.Metrics, stream =>
             {
-                IPortableRawReader reader = Marsh.StartUnmarshal(stream, false);
+                IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                 return new CacheMetricsImpl(reader);
             });
@@ -610,7 +610,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IFuture Rebalance()
         {
-            return GetFuture<object>((futId, futTyp) => UU.CacheRebalance(target, futId));
+            return GetFuture<object>((futId, futTyp) => UU.CacheRebalance(Target, futId));
         }
 
         /** <inheritDoc /> */
@@ -619,7 +619,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagNoRetries)
                 return this;
 
-            return new CacheImpl<TK, TV>(_grid, UU.CacheWithNoRetries(target), Marshaller,
+            return new CacheImpl<TK, TV>(_grid, UU.CacheWithNoRetries(Target), Marshaller,
                 _flagSkipStore, _flagKeepPortable, _flagAsync, true);
         }
 
@@ -645,7 +645,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
-                var writer = Marsh.StartMarshal(stream);
+                var writer = Marshaller.StartMarshal(stream);
 
                 writer.WriteBoolean(qry.Local);
                 writer.WriteString(qry.Sql);
@@ -655,10 +655,10 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 FinishMarshal(writer);
 
-                cursor = UU.CacheOutOpQueryCursor(target, (int) CacheOp.QrySqlFields, stream.SynchronizeOutput());
+                cursor = UU.CacheOutOpQueryCursor(Target, (int) CacheOp.QrySqlFields, stream.SynchronizeOutput());
             }
         
-            return new FieldsQueryCursor(cursor, Marsh, _flagKeepPortable);
+            return new FieldsQueryCursor(cursor, Marshaller, _flagKeepPortable);
         }
 
         /** <inheritDoc /> */
@@ -670,16 +670,16 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
-                var writer = Marsh.StartMarshal(stream);
+                var writer = Marshaller.StartMarshal(stream);
 
                 qry.Write(writer, KeepPortable);
 
                 FinishMarshal(writer);
 
-                cursor = UU.CacheOutOpQueryCursor(target, (int)qry.OpId, stream.SynchronizeOutput()); 
+                cursor = UU.CacheOutOpQueryCursor(Target, (int)qry.OpId, stream.SynchronizeOutput()); 
             }
 
-            return new QueryCursor<TK, TV>(cursor, Marsh, _flagKeepPortable);
+            return new QueryCursor<TK, TV>(cursor, Marshaller, _flagKeepPortable);
         }
                 
         /// <summary>
@@ -725,11 +725,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             qry.Validate();
 
-            var hnd = new ContinuousQueryHandleImpl<TK, TV>(qry, Marsh, _flagKeepPortable);
+            var hnd = new ContinuousQueryHandleImpl<TK, TV>(qry, Marshaller, _flagKeepPortable);
 
             using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
-                var writer = Marsh.StartMarshal(stream);
+                var writer = Marshaller.StartMarshal(stream);
 
                 hnd.Start(_grid, writer, () =>
                 {
@@ -745,7 +745,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                     FinishMarshal(writer);
 
                     // ReSharper disable once AccessToDisposedClosure
-                    return UU.CacheOutOpContinuousQuery(target, (int)CacheOp.QryContinuous, stream.SynchronizeOutput());
+                    return UU.CacheOutOpContinuousQuery(Target, (int)CacheOp.QryContinuous, stream.SynchronizeOutput());
                 }, qry);
             }
 
@@ -783,9 +783,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         internal CacheEnumerator<TK, TV> CreateEnumerator(bool loc, int peekModes)
         {
             if (loc)
-                return new CacheEnumerator<TK, TV>(UU.CacheLocalIterator(target, peekModes), Marsh, _flagKeepPortable);
+                return new CacheEnumerator<TK, TV>(UU.CacheLocalIterator(Target, peekModes), Marshaller, _flagKeepPortable);
 
-            return new CacheEnumerator<TK, TV>(UU.CacheIterator(target), Marsh, _flagKeepPortable);
+            return new CacheEnumerator<TK, TV>(UU.CacheIterator(Target), Marshaller, _flagKeepPortable);
         }
 
         #endregion
@@ -793,7 +793,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         protected override T Unmarshal<T>(IPortableStream stream)
         {
-            return Marsh.Unmarshal<T>(stream, _flagKeepPortable);
+            return Marshaller.Unmarshal<T>(stream, _flagKeepPortable);
         }
 
         /// <summary>

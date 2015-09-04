@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl
     /// Base class for interop targets.
     /// </summary>
     [SuppressMessage("ReSharper", "LocalVariableHidesMember")]
-    internal abstract class GridTarget
+    internal abstract class PlatformTarget
     {
         /** */
         protected const int True = 1;
@@ -61,17 +61,17 @@ namespace Apache.Ignite.Core.Impl
             };
         
         /** Unmanaged target. */
-        protected readonly IUnmanagedTarget target;
+        private readonly IUnmanagedTarget target;
 
         /** Marshaller. */
-        protected readonly PortableMarshaller Marsh;
+        private readonly PortableMarshaller Marsh;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        protected GridTarget(IUnmanagedTarget target, PortableMarshaller marsh)
+        protected PlatformTarget(IUnmanagedTarget target, PortableMarshaller marsh)
         {
             this.target = target;
             Marsh = marsh;
@@ -651,9 +651,9 @@ namespace Apache.Ignite.Core.Impl
     }
 
     /// <summary>
-    /// GridTarget with IDisposable pattern.
+    /// PlatformTarget with IDisposable pattern.
     /// </summary>
-    internal abstract class GridDisposableTarget : GridTarget, IDisposable
+    internal abstract class PlatformDisposableTarget : PlatformTarget, IDisposable
     {
         /** Disposed flag. */
         private volatile bool _disposed;
@@ -663,7 +663,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        protected GridDisposableTarget(IUnmanagedTarget target, PortableMarshaller marsh) : base(target, marsh)
+        protected PlatformDisposableTarget(IUnmanagedTarget target, PortableMarshaller marsh) : base(target, marsh)
         {
             // No-op.
         }

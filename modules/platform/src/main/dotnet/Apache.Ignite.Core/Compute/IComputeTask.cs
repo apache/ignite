@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Compute
     /// </summary>
     /// <typeparam name="A">Argument type.</typeparam>
     /// <typeparam name="T">Type of job result.</typeparam>
-    /// <typeparam name="R">Type of reduce result.</typeparam>
+    /// <typeparam name="TR">Type of reduce result.</typeparam>
     public interface IComputeTask<in A, T, out TR>
     {
         /// <summary>

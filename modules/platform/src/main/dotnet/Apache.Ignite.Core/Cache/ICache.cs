@@ -97,8 +97,8 @@ namespace Apache.Ignite.Core.Cache
         /// You can only change key/value types when transitioning from non-portable to portable cache;
         /// Changing type of portable cache is not allowed and will throw an <see cref="InvalidOperationException"/>
         /// </summary>
-        /// <typeparam name="K1">Key type in portable mode.</typeparam>
-        /// <typeparam name="V1">Value type in protable mode.</typeparam>
+        /// <typeparam name="TK1">Key type in portable mode.</typeparam>
+        /// <typeparam name="TV1">Value type in protable mode.</typeparam>
         /// <returns>Cache instance with portable mode enabled.</returns>
         ICache<TK1, TV1> WithKeepPortable<TK1, TV1>();
 
@@ -449,8 +449,8 @@ namespace Apache.Ignite.Core.Cache
         /// If an entry does not exist for the specified key, an attempt is made to load it (if a loader is configured) 
         /// or a surrogate entry, consisting of the key with a null value is used instead.
         /// </summary>
-        /// <typeparam name="R">The type of the result.</typeparam>
-        /// <typeparam name="A">The type of the argument.</typeparam>
+        /// <typeparam name="TR">The type of the result.</typeparam>
+        /// <typeparam name="TA">The type of the argument.</typeparam>
         /// <param name="key">The key.</param>
         /// <param name="processor">The processor.</param>
         /// <param name="arg">The argument.</param>
@@ -469,8 +469,8 @@ namespace Apache.Ignite.Core.Cache
         /// Furthermore there is no guarantee implementations will use the same processor instance 
         /// to process each entry, as the case may be in a non-local cache topology.
         /// </summary>
-        /// <typeparam name="R">The type of the result.</typeparam>
-        /// <typeparam name="A">The type of the argument.</typeparam>
+        /// <typeparam name="TR">The type of the result.</typeparam>
+        /// <typeparam name="TA">The type of the argument.</typeparam>
         /// <param name="keys">The keys.</param>
         /// <param name="processor">The processor.</param>
         /// <param name="arg">The argument.</param>

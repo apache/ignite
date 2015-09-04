@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     /// <summary>
     /// Grid projection implementation.
     /// </summary>
-    internal class ClusterGroupImpl : GridTarget, IClusterGroupEx
+    internal class ClusterGroupImpl : PlatformTarget, IClusterGroupEx
     {
         /** Attribute: platform. */
         private const string AttrPlatform = "org.apache.ignite.platform";
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             var newPred = _pred == null ? p : node => _pred(node) && p(node);
 
-            return new ClusterGroupImpl(_proc, target, Marsh, _grid, newPred);
+            return new ClusterGroupImpl(_proc, Target, Marshaller, _grid, newPred);
         }
 
         /** <inheritDoc /> */
@@ -274,7 +274,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForRemotes()
         {
-            return GetClusterGroup(UU.ProjectionForRemotes(target));
+            return GetClusterGroup(UU.ProjectionForRemotes(Target));
         }
 
         /** <inheritDoc /> */
@@ -293,19 +293,19 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterGroup ForRandom()
         {
-            return GetClusterGroup(UU.ProjectionForRandom(target));
+            return GetClusterGroup(UU.ProjectionForRandom(Target));
         }
 
         /** <inheritDoc /> */
         public IClusterGroup ForOldest()
         {
-            return GetClusterGroup(UU.ProjectionForOldest(target));
+            return GetClusterGroup(UU.ProjectionForOldest(Target));
         }
 
         /** <inheritDoc /> */
         public IClusterGroup ForYoungest()
         {
-            return GetClusterGroup(UU.ProjectionForYoungest(target));
+            return GetClusterGroup(UU.ProjectionForYoungest(Target));
         }
 
         /** <inheritDoc /> */
@@ -339,7 +339,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             {
                 return DoInOp(OpMetrics, stream =>
                 {
-                    IPortableRawReader reader = Marsh.StartUnmarshal(stream, false);
+                    IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                     return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
                 });
@@ -349,7 +349,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
                 WriteEnumerable(writer, Nodes().Select(node => node.Id));
             }, stream =>
             {
-                IPortableRawReader reader = Marsh.StartUnmarshal(stream, false);
+                IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                 return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
             });
@@ -405,7 +405,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
                     writer.WriteLong(lastUpdateTime);
                 }, stream =>
                 {
-                    IPortableRawReader reader = Marsh.StartUnmarshal(stream, false);
+                    IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                     return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
                 }
@@ -425,7 +425,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         internal ICollection<IClusterNode> Topology(long version)
         {
             return DoOutInOp(OpTopology, writer => writer.WriteLong(version), 
-                input => IgniteUtils.ReadNodes(Marsh.StartUnmarshal(input)));
+                input => IgniteUtils.ReadNodes(Marshaller.StartUnmarshal(input)));
         }
 
         /// <summary>
@@ -477,7 +477,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <returns>New cluster group.</returns>
         private IClusterGroup GetClusterGroup(IUnmanagedTarget prj)
         {
-            return new ClusterGroupImpl(_proc, prj, Marsh, _grid, _pred);
+            return new ClusterGroupImpl(_proc, prj, Marshaller, _grid, _pred);
         }
 
         /// <summary>
@@ -495,7 +495,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
                 writer.WriteLong(oldTopVer);
             }, input =>
             {
-                PortableReaderImpl reader = Marsh.StartUnmarshal(input);
+                PortableReaderImpl reader = Marshaller.StartUnmarshal(input);
 
                 if (reader.ReadBoolean())
                 {
@@ -527,13 +527,13 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
-                var writer = Marsh.StartMarshal(stream);
+                var writer = Marshaller.StartMarshal(stream);
 
                 action(writer);
 
                 FinishMarshal(writer);
 
-                return UU.ProjectionOutOpRet(target, type, stream.SynchronizeOutput());
+                return UU.ProjectionOutOpRet(Target, type, stream.SynchronizeOutput());
             }
         }
         
@@ -547,7 +547,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
                 },
                 stream =>
                 {
-                    PortableReaderImpl reader = Marsh.StartUnmarshal(stream, false);
+                    PortableReaderImpl reader = Marshaller.StartUnmarshal(stream, false);
 
                     return reader.ReadBoolean() ? new PortableMetadataImpl(reader) : null;
                 }
@@ -561,7 +561,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             return DoInOp(OpAllMetadata, s =>
             {
-                var reader = Marsh.StartUnmarshal(s);
+                var reader = Marshaller.StartUnmarshal(s);
 
                 var size = reader.ReadInt();
 

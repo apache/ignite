@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Events
     /// <summary>
     /// Grid events.
     /// </summary>
-    internal class Events : GridTarget, IEvents
+    internal class Events : PlatformTarget, IEvents
     {
         /// <summary>
         /// Opcodes.
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public virtual IEvents WithAsync()
         {
-            return new EventsAsync(UU.EventsWithAsync(target), Marshaller, ClusterGroup);
+            return new EventsAsync(UU.EventsWithAsync(Target), Marshaller, ClusterGroup);
         }
 
         /** <inheritDoc /> */
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
                     WriteEventTypes(types, writer);
                 },
-                reader => Marsh.StartUnmarshal(reader).ReadGuid() ?? Guid.Empty);
+                reader => Marshaller.StartUnmarshal(reader).ReadGuid() ?? Guid.Empty);
         }
 
         /** <inheritDoc /> */
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             DoOutOp((int) Op.STOP_REMOTE_LISTEN, writer =>
             {
-                Marsh.StartMarshal(writer).WriteGuid(opId);
+                Marshaller.StartMarshal(writer).WriteGuid(opId);
             });
         }
 
@@ -225,7 +225,7 @@ namespace Apache.Ignite.Core.Impl.Events
                 // Should do this inside lock to avoid race with subscription
                 // ToArray is required because we are going to modify underlying dictionary during enumeration
                 foreach (var filter in GetLocalFilters(listener, types).ToArray())
-                    success |= UU.EventsStopLocalListen(target, filter.Handle);
+                    success |= UU.EventsStopLocalListen(Target, filter.Handle);
 
                 return success;
             }
@@ -256,7 +256,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public bool IsEnabled(int type)
         {
-            return UU.EventsIsEnabled(target, type);
+            return UU.EventsIsEnabled(Target, type);
         }
 
         /// <summary>
@@ -380,7 +380,7 @@ namespace Apache.Ignite.Core.Impl.Events
                     filters[type] = localFilter;
                 }
 
-                UU.EventsLocalListen(target, localFilter.Handle, type);
+                UU.EventsLocalListen(Target, localFilter.Handle, type);
             }
         }
 
@@ -450,7 +450,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="reader">Reader.</param>
         private int[] ReadEventTypes(IPortableStream reader)
         {
-            return Marsh.StartUnmarshal(reader).ReadIntArray();
+            return Marshaller.StartUnmarshal(reader).ReadIntArray();
         }
 
         /// <summary>

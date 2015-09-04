@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Services
     /// <summary>
     /// Services implementation.
     /// </summary>
-    internal class Services : GridTarget, IServices
+    internal class Services : PlatformTarget, IServices
     {
         /** */
         private const int OpDeploy = 1;

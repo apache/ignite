@@ -198,8 +198,8 @@ namespace Apache.Ignite.Core.Datastream
         /// You can only change key/value types when transitioning from non-portable to portable streamer;
         /// Changing type of portable streamer is not allowed and will throw an <see cref="InvalidOperationException"/>
         /// </summary>
-        /// <typeparam name="K1">Key type in portable mode.</typeparam>
-        /// <typeparam name="V1">Value type in protable mode.</typeparam>
+        /// <typeparam name="TK1">Key type in portable mode.</typeparam>
+        /// <typeparam name="TV1">Value type in protable mode.</typeparam>
         /// <returns>Streamer instance with portable mode enabled.</returns>
         IDataStreamer<TK1, TV1> WithKeepPortable<TK1, TV1>();
     }

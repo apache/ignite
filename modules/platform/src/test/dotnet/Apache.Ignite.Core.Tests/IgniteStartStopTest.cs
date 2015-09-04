@@ -293,9 +293,9 @@ namespace Apache.Ignite.Core.Tests
 
                 var grid = Ignition.Start(cfg);
 
-                UseGrid(grid);
+                UseIgnite(grid);
 
-                if (i % 2 == 0) // Try to stop grid from another thread.
+                if (i % 2 == 0) // Try to stop ignite from another thread.
                 {
                     var t = new Thread(() => {
                         grid.Dispose();
@@ -334,13 +334,13 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                using (Ignition.Start(servCfg))  // start server-mode grid first
+                using (Ignition.Start(servCfg))  // start server-mode ignite first
                 {
                     Ignition.ClientMode = true;
 
                     using (var grid = Ignition.Start(clientCfg))
                     {
-                        UseGrid(grid);
+                        UseIgnite(grid);
                     }
                 }
             }
@@ -351,24 +351,24 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        ///
+        /// Uses the ignite.
         /// </summary>
-        /// <param name="grid"></param>
-        private void UseGrid(IIgnite grid)
+        /// <param name="ignite">The ignite.</param>
+        private static void UseIgnite(IIgnite ignite)
         {
             // Create objects holding references to java objects.
-            var comp = grid.Compute();
+            var comp = ignite.Compute();
 
             // ReSharper disable once RedundantAssignment
             comp = comp.WithKeepPortable();
 
-            var prj = grid.Cluster.ForOldest();
+            var prj = ignite.Cluster.ForOldest();
 
             Assert.IsTrue(prj.Nodes().Count > 0);
 
             Assert.IsNotNull(prj.Compute());
 
-            var cache = grid.Cache<int, int>("cache1");
+            var cache = ignite.Cache<int, int>("cache1");
 
             Assert.IsNotNull(cache);
 

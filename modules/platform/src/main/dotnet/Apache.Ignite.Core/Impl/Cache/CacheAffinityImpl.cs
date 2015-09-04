@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// <summary>
     /// Cache affinity implementation.
     /// </summary>
-    internal class CacheAffinityImpl : GridTarget, ICacheAffinity
+    internal class CacheAffinityImpl : PlatformTarget, ICacheAffinity
     {
         /** */
         private const int OpAffinityKey = 1;
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public int Partitions
         {
-            get { return UU.AffinityPartitions(target); }
+            get { return UU.AffinityPartitions(Target); }
         }
 
         /** <inheritDoc /> */

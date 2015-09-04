@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core
         private static int _gcWarn;
 
         /** */
-        private static readonly IDictionary<GridKey, Ignite> Grids = new Dictionary<GridKey, Ignite>();
+        private static readonly IDictionary<NodeKey, Ignite> Nodes = new Dictionary<NodeKey, Ignite>();
         
         /** Current DLL name. */
         private static readonly string IgniteDllName = Path.GetFileName(Assembly.GetExecutingAssembly().Location);
@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core
                     // 6. On-start callback (notify lifecycle components).
                     node.OnStart();
 
-                    Grids[new GridKey(_startup.Name)] = node;
+                    Nodes[new NodeKey(_startup.Name)] = node;
 
                     return node;
                 }
@@ -200,10 +200,10 @@ namespace Apache.Ignite.Core
 
                     if (name != null)
                     {
-                        GridKey key = new GridKey(name);
+                        NodeKey key = new NodeKey(name);
 
-                        if (Grids.ContainsKey(key))
-                            Grids.Remove(key);
+                        if (Nodes.ContainsKey(key))
+                            Nodes.Remove(key);
                     }
 
                     // 2. Stop Grid node if it was started.
@@ -365,7 +365,7 @@ namespace Apache.Ignite.Core
                 // 2. Set ID and name so that Start() method can use them later.
                 _startup.Name = name;
 
-                if (Grids.ContainsKey(new GridKey(name)))
+                if (Nodes.ContainsKey(new NodeKey(name)))
                     throw new IgniteException("Grid with the same name already started: " + name);
 
             }
@@ -480,7 +480,7 @@ namespace Apache.Ignite.Core
             {
                 Ignite result;
 
-                if (!Grids.TryGetValue(new GridKey(name), out result))
+                if (!Nodes.TryGetValue(new NodeKey(name), out result))
                     throw new IgniteException("Grid instance was not properly started or was already stopped: " + name);
 
                 return result;
@@ -512,16 +512,16 @@ namespace Apache.Ignite.Core
         {
             lock (SyncRoot)
             {
-                GridKey key = new GridKey(name);
+                NodeKey key = new NodeKey(name);
 
                 Ignite node;
 
-                if (!Grids.TryGetValue(key, out node))
+                if (!Nodes.TryGetValue(key, out node))
                     return false;
 
                 node.Stop(cancel);
 
-                Grids.Remove(key);
+                Nodes.Remove(key);
                 
                 GC.Collect();
 
@@ -539,13 +539,13 @@ namespace Apache.Ignite.Core
         {
             lock (SyncRoot)
             {
-                while (Grids.Count > 0)
+                while (Nodes.Count > 0)
                 {
-                    var entry = Grids.First();
+                    var entry = Nodes.First();
                     
                     entry.Value.Stop(cancel);
 
-                    Grids.Remove(entry.Key);
+                    Nodes.Remove(entry.Key);
                 }
             }
 
@@ -566,16 +566,16 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Grid key.
         /// </summary>
-        private class GridKey
+        private class NodeKey
         {
             /** */
             private readonly string _name;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="GridKey"/> class.
+            /// Initializes a new instance of the <see cref="NodeKey"/> class.
             /// </summary>
             /// <param name="name">The name.</param>
-            internal GridKey(string name)
+            internal NodeKey(string name)
             {
                 _name = name;
             }
@@ -583,7 +583,7 @@ namespace Apache.Ignite.Core
             /** <inheritdoc /> */
             public override bool Equals(object obj)
             {
-                var other = obj as GridKey;
+                var other = obj as NodeKey;
 
                 return other != null && Equals(_name, other._name);
             }

@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
             // Result is a List<T> so we can't create proper converter later in GetFuture call from user.
             // ReSharper disable once RedundantTypeArgumentsOfMethod (otherwise won't compile in VS2010 / TC)
-            _curFut.Value = GetFuture<List<T>>((futId, futTyp) => UU.TargetListenFutureForOperation(target, futId, futTyp,
+            _curFut.Value = GetFuture<List<T>>((futId, futTyp) => UU.TargetListenFutureForOperation(Target, futId, futTyp,
                 (int) Op.REMOTE_QUERY), convertFunc: ReadEvents<T>);
 
             return result;
@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Impl.Events
             if (_lastAsyncOp.Value == (int) Op.WAIT_FOR_LOCAL)
                 converter = reader => (T) EventReader.Read<IEvent>(reader);
 
-            return GetFuture((futId, futTyp) => UU.TargetListenFutureForOperation(target, futId, futTyp, _lastAsyncOp.Value),
+            return GetFuture((futId, futTyp) => UU.TargetListenFutureForOperation(Target, futId, futTyp, _lastAsyncOp.Value),
                 convertFunc: converter);
         }
     }
