@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.*;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Types;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.*;
-import org.h2.message.*;
-import org.h2.util.*;
-import org.h2.value.*;
-
-import java.sql.*;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.h2.message.DbException;
+import org.h2.util.Utils;
+import org.h2.value.CompareMode;
+import org.h2.value.Value;
+import org.h2.value.ValueJavaObject;
 
 /**
  * H2 Value over {@link CacheObject}. Replacement for {@link ValueJavaObject}.
@@ -188,4 +192,3 @@ public class GridH2ValueCacheObject extends Value {
         return 0;
     }
 }
-

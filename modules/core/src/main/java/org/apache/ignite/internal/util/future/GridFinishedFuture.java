@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.util.future;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Future that is completed at creation time.
@@ -122,6 +123,11 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
 
     /** {@inheritDoc} */
     @Override public T get(long timeout, TimeUnit unit) throws IgniteCheckedException {
+        return get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public T getUninterruptibly() throws IgniteCheckedException {
         return get();
     }
 

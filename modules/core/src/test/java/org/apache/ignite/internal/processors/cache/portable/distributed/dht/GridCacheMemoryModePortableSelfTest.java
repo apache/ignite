@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.marshaller.portable.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheMemoryModeSelfTest;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
  * Memory models test.

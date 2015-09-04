@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.portable.streams.*;
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.portable.streams.PortableInputStream;
+import org.apache.ignite.internal.portable.streams.PortableOutputStream;
+import org.apache.ignite.portable.PortableException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Portable objects marshaller.
@@ -142,67 +142,67 @@ public class GridPortableMarshaller {
     public static final byte OBJ = (byte)103;
 
     /** */
-    static final byte USER_SET = -1;
+    public static final byte USER_SET = -1;
 
     /** */
-    static final byte USER_COL = 0;
+    public static final byte USER_COL = 0;
 
     /** */
-    static final byte ARR_LIST = 1;
+    public static final byte ARR_LIST = 1;
 
     /** */
-    static final byte LINKED_LIST = 2;
+    public static final byte LINKED_LIST = 2;
 
     /** */
-    static final byte HASH_SET = 3;
+    public static final byte HASH_SET = 3;
 
     /** */
-    static final byte LINKED_HASH_SET = 4;
+    public static final byte LINKED_HASH_SET = 4;
 
     /** */
-    static final byte TREE_SET = 5;
+    public static final byte TREE_SET = 5;
 
     /** */
-    static final byte CONC_SKIP_LIST_SET = 6;
+    public static final byte CONC_SKIP_LIST_SET = 6;
 
     /** */
-    static final byte HASH_MAP = 1;
+    public static final byte HASH_MAP = 1;
 
     /** */
-    static final byte LINKED_HASH_MAP = 2;
+    public static final byte LINKED_HASH_MAP = 2;
 
     /** */
-    static final byte TREE_MAP = 3;
+    public static final byte TREE_MAP = 3;
 
     /** */
-    static final byte CONC_HASH_MAP = 4;
+    public static final byte CONC_HASH_MAP = 4;
 
     /** */
-    static final byte PROPERTIES_MAP = 5;
+    public static final byte PROPERTIES_MAP = 5;
 
     /** */
-    static final int OBJECT_TYPE_ID = -1;
+    public static final int OBJECT_TYPE_ID = -1;
 
     /** */
-    static final int UNREGISTERED_TYPE_ID = 0;
+    public static final int UNREGISTERED_TYPE_ID = 0;
 
     /** */
-    static final int TYPE_ID_POS = 2;
+    public static final int TYPE_ID_POS = 2;
 
     /** */
-    static final int HASH_CODE_POS = 6;
+    public static final int HASH_CODE_POS = 6;
 
     /** */
-    static final int TOTAL_LEN_POS = 10;
+    public static final int TOTAL_LEN_POS = 10;
 
     /** */
-    static final byte RAW_DATA_OFF_POS = 14;
+    public static final byte RAW_DATA_OFF_POS = 14;
 
     /** */
-    static final int CLS_NAME_POS = 18;
+    public static final int CLS_NAME_POS = 18;
 
     /** */
-    static final byte DFLT_HDR_LEN = 18;
+    public static final byte DFLT_HDR_LEN = 18;
 
     /** */
     private final PortableContext ctx;

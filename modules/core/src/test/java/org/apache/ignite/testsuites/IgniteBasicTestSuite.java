@@ -17,21 +17,36 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.closure.*;
-import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.processors.service.*;
-import org.apache.ignite.internal.product.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.messaging.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.testframework.*;
-
-import java.util.*;
+import java.util.Set;
+import junit.framework.TestSuite;
+import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
+import org.apache.ignite.internal.ClusterGroupSelfTest;
+import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
+import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
+import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
+import org.apache.ignite.internal.GridProjectionForCachesSelfTest;
+import org.apache.ignite.internal.GridReduceSelfTest;
+import org.apache.ignite.internal.GridReleaseTypeSelfTest;
+import org.apache.ignite.internal.GridSelfTest;
+import org.apache.ignite.internal.GridStartStopSelfTest;
+import org.apache.ignite.internal.GridStopWithCancelSelfTest;
+import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
+import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
+import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
+import org.apache.ignite.internal.processors.cache.OffHeapTieredTransactionSelfTest;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
+import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
+import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
+import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
+import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
+import org.apache.ignite.messaging.GridMessagingSelfTest;
+import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
+import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Basic test suite.

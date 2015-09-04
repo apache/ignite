@@ -17,17 +17,17 @@
 
 package org.apache.ignite.cache.store.hibernate;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.spring.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
-import org.hibernate.*;
-
-import javax.cache.configuration.*;
-import java.util.*;
+import java.util.Properties;
+import javax.cache.configuration.Factory;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteComponentType;
+import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.resources.SpringApplicationContextResource;
+import org.hibernate.SessionFactory;
 
 /**
  * {@link Factory} implementation for {@link CacheHibernateBlobStore}.
@@ -116,7 +116,7 @@ import java.util.*;
  *     ...
  * </pre>
  * <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */

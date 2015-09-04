@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.lucene.store.*;
-
-import java.io.*;
+import java.io.IOException;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.LockFactory;
 
 /**
  * Lucene {@link LockFactory} implementation.

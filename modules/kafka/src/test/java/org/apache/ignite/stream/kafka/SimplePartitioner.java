@@ -17,8 +17,8 @@
 
 package org.apache.ignite.stream.kafka;
 
-import kafka.producer.*;
-import kafka.utils.*;
+import kafka.producer.Partitioner;
+import kafka.utils.VerifiableProperties;
 
 /**
  * Simple partitioner for Kafka.

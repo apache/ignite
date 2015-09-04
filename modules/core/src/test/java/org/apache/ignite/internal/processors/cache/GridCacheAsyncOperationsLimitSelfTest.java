@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.GridAtomicInteger;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Checks that number of concurrent asynchronous operations is limited when configuration parameter is set.

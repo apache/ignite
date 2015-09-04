@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.lifecycle;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.platform.callback.*;
-import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
 
 /**
  * Lifecycle aware bean for interop.
@@ -56,7 +57,9 @@ public class PlatformLifecycleBean implements LifecycleBean {
 
         assert ptr != 0;
 
-        gate.lifecycleEvent(ptr, evt.ordinal());
+        // Do not send after-stop events because gate will fail due to grid being stopped.
+        if (evt != LifecycleEventType.AFTER_NODE_STOP)
+            gate.lifecycleEvent(ptr, evt.ordinal());
     }
 
     /**

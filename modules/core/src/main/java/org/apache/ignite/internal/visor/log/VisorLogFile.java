@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.visor.log;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.File;
+import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Visor log file.

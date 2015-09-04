@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
-import org.apache.ignite.internal.portable.*;
+import org.apache.ignite.internal.portable.PortableRawReaderEx;
 
 /**
  * Reader closure.

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.client;
 
-import org.jetbrains.annotations.*;
-
-import java.net.*;
-import java.util.*;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Descriptor of remote grid node. Use {@link GridClientCompute#nodes()} to

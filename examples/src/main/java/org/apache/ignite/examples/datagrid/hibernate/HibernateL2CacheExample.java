@@ -17,21 +17,28 @@
 
 package org.apache.ignite.examples.datagrid.hibernate;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.examples.*;
-import org.hibernate.*;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.ExamplesUtils;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cfg.*;
-import org.hibernate.service.*;
-import org.hibernate.stat.*;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.service.ServiceRegistryBuilder;
+import org.hibernate.stat.SecondLevelCacheStatistics;
 
-import java.net.*;
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * This example demonstrates the use of Ignite In-Memory Data Ignite cluster as a Hibernate
@@ -192,7 +199,7 @@ public class HibernateL2CacheExample {
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        return Ignition.ignite().createCache(ccfg);
+        return Ignition.ignite().getOrCreateCache(ccfg);
     }
 
     /**

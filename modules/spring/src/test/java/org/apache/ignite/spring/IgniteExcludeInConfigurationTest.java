@@ -17,17 +17,16 @@
 
 package org.apache.ignite.spring;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.spring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.net.URL;
+import java.util.Collection;
+import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.net.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.IgniteComponentType.*;
+import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
 /**
  * Checks excluding properties, beans with not existing classes in spring.

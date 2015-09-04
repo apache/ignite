@@ -17,15 +17,25 @@
 
 package org.apache.ignite.internal.jdbc;
 
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.RowIdLifetime;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.sql.*;
-import java.util.*;
-
-import static java.sql.Connection.*;
-import static java.sql.ResultSet.*;
-import static java.sql.RowIdLifetime.*;
+import static java.sql.Connection.TRANSACTION_NONE;
+import static java.sql.ResultSet.CONCUR_READ_ONLY;
+import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
+import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
 
 /**
  * JDBC database metadata implementation.

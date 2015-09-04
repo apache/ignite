@@ -17,12 +17,18 @@
 
 package org.apache.ignite.examples.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Collection;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsInputStream;
+import org.apache.ignite.igfs.IgfsPath;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Example that shows usage of {@link org.apache.ignite.IgniteFileSystem} API. It starts a node with {@code IgniteFs}

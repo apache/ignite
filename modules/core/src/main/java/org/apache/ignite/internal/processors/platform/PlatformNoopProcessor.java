@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * No-op processor.
@@ -37,5 +40,86 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public long environmentPointer() {
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformContext context() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void releaseStart() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void awaitStart() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget cache(@Nullable String name) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget createCache(@Nullable String name) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget getOrCreateCache(@Nullable String name) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget affinity(@Nullable String name) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepPortable) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget transactions() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget projection() throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget compute(PlatformTarget grp) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget message(PlatformTarget grp) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget events(PlatformTarget grp) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget services(PlatformTarget grp) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget extensions() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerStore(PlatformCacheStore store, boolean convertPortable)
+        throws IgniteCheckedException {
+        // No-op.
     }
 }

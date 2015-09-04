@@ -17,11 +17,13 @@
 
 package org.apache.ignite.java8.examples;
 
-import org.apache.ignite.examples.java8.datagrid.*;
+import org.apache.ignite.examples.java8.datagrid.CacheAffinityExample;
+import org.apache.ignite.examples.java8.datagrid.CacheApiExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+
 //import org.apache.ignite.examples.java8.datagrid.starschema.*;
 //import org.apache.ignite.examples.java8.datagrid.store.dummy.*;
 //import org.apache.ignite.examples.java8.datastructures.*;
-import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Cache examples self test.
@@ -34,7 +36,7 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
         CacheAffinityExample.main(EMPTY_ARGS);
     }
 
-//    TODO: IGNITE-711 next example(s) should be implemented for java 8 
+//    TODO: IGNITE-711 next example(s) should be implemented for java 8
 //    or testing method(s) should be removed if example(s) does not applicable for java 8.
 //    /**
 //     * @throws Exception If failed.

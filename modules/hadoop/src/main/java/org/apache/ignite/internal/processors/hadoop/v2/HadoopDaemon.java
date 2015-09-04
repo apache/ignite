@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.v2;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedList;
 
 /**
  * Replacement for Hadoop {@code org.apache.hadoop.util.Daemon} class.

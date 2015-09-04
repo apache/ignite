@@ -1,8 +1,15 @@
-﻿Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Core", "Apache.Ignite.Core\Apache.Ignite.Core.csproj", "{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Core.Tests", "..\..\test\dotnet\Apache.Ignite.Core.Tests\Apache.Ignite.Core.Tests.csproj", "{6A62F66C-DA5B-4FBB-8CE7-A95F740FDC7A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "common", "..\cpp\common\project\vs\common.vcxproj", "{4F7E4917-4612-4B96-9838-025711ADE391}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Core.Tests.TestDll", "..\..\test\dotnet\Apache.Ignite.Core.Tests.TestDll\Apache.Ignite.Core.Tests.TestDll.csproj", "{F4A69E2D-908E-4F0F-A794-84D508D60E5F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -28,6 +35,22 @@ Global
 		{6A62F66C-DA5B-4FBB-8CE7-A95F740FDC7A}.Release|x64.Build.0 = Release|x64
 		{6A62F66C-DA5B-4FBB-8CE7-A95F740FDC7A}.Release|x86.ActiveCfg = Release|x86
 		{6A62F66C-DA5B-4FBB-8CE7-A95F740FDC7A}.Release|x86.Build.0 = Release|x86
+		{4F7E4917-4612-4B96-9838-025711ADE391}.Debug|x64.ActiveCfg = Debug|x64
+		{4F7E4917-4612-4B96-9838-025711ADE391}.Debug|x64.Build.0 = Debug|x64
+		{4F7E4917-4612-4B96-9838-025711ADE391}.Debug|x86.ActiveCfg = Debug|Win32
+		{4F7E4917-4612-4B96-9838-025711ADE391}.Debug|x86.Build.0 = Debug|Win32
+		{4F7E4917-4612-4B96-9838-025711ADE391}.Release|x64.ActiveCfg = Release|x64
+		{4F7E4917-4612-4B96-9838-025711ADE391}.Release|x64.Build.0 = Release|x64
+		{4F7E4917-4612-4B96-9838-025711ADE391}.Release|x86.ActiveCfg = Release|Win32
+		{4F7E4917-4612-4B96-9838-025711ADE391}.Release|x86.Build.0 = Release|Win32
+		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Debug|x64.ActiveCfg = Debug|x64
+		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Debug|x64.Build.0 = Debug|x64
+		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Debug|x86.ActiveCfg = Debug|x86
+		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Debug|x86.Build.0 = Debug|x86
+		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Release|x64.ActiveCfg = Release|x64
+		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Release|x64.Build.0 = Release|x64
+		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Release|x86.ActiveCfg = Release|x86
+		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

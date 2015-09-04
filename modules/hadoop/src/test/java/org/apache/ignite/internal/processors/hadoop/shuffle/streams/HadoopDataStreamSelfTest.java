@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle.streams;
 
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.Arrays;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *

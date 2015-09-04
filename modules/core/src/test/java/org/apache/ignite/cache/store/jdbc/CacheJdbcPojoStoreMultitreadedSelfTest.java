@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import org.h2.jdbcx.*;
+import org.h2.jdbcx.JdbcConnectionPool;
 
 /**
  * Test for JDBC POJO store from multiple threads.

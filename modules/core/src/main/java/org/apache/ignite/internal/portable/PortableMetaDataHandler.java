@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.portable.*;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableMetadata;
 
 /**
  * Portable meta data handler.

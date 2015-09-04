@@ -17,11 +17,38 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.testframework.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.examples.BasicExamplesMultiNodeSelfTest;
+import org.apache.ignite.examples.BasicExamplesSelfTest;
+import org.apache.ignite.examples.CacheClientPortableExampleTest;
+import org.apache.ignite.examples.CacheExamplesMultiNodeSelfTest;
+import org.apache.ignite.examples.CacheExamplesSelfTest;
+import org.apache.ignite.examples.CheckpointExamplesSelfTest;
+import org.apache.ignite.examples.ClusterGroupExampleSelfTest;
+import org.apache.ignite.examples.ComputeClientPortableExampleTest;
+import org.apache.ignite.examples.ContinuationExamplesMultiNodeSelfTest;
+import org.apache.ignite.examples.ContinuationExamplesSelfTest;
+import org.apache.ignite.examples.ContinuousMapperExamplesMultiNodeSelfTest;
+import org.apache.ignite.examples.ContinuousMapperExamplesSelfTest;
+import org.apache.ignite.examples.DeploymentExamplesMultiNodeSelfTest;
+import org.apache.ignite.examples.DeploymentExamplesSelfTest;
+import org.apache.ignite.examples.EventsExamplesMultiNodeSelfTest;
+import org.apache.ignite.examples.EventsExamplesSelfTest;
+import org.apache.ignite.examples.HibernateL2CacheExampleMultiNodeSelfTest;
+import org.apache.ignite.examples.HibernateL2CacheExampleSelfTest;
+import org.apache.ignite.examples.IgfsExamplesSelfTest;
+import org.apache.ignite.examples.LifecycleExamplesSelfTest;
+import org.apache.ignite.examples.MemcacheRestExamplesMultiNodeSelfTest;
+import org.apache.ignite.examples.MemcacheRestExamplesSelfTest;
+import org.apache.ignite.examples.MessagingExamplesSelfTest;
+import org.apache.ignite.examples.MonteCarloExamplesMultiNodeSelfTest;
+import org.apache.ignite.examples.MonteCarloExamplesSelfTest;
+import org.apache.ignite.examples.SpringBeanExamplesSelfTest;
+import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
+import org.apache.ignite.examples.TaskExamplesSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Examples test suite.
@@ -67,6 +94,10 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(MemcacheRestExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(MonteCarloExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(HibernateL2CacheExampleMultiNodeSelfTest.class));
+
+        // Portable.
+        suite.addTest(new TestSuite(CacheClientPortableExampleTest.class));
+        suite.addTest(new TestSuite(ComputeClientPortableExampleTest.class));
 
         return suite;
     }

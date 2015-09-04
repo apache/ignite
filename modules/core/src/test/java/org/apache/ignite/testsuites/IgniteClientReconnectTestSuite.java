@@ -17,8 +17,18 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.IgniteClientReconnectApiExceptionTest;
+import org.apache.ignite.internal.IgniteClientReconnectAtomicsTest;
+import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
+import org.apache.ignite.internal.IgniteClientReconnectCollectionsTest;
+import org.apache.ignite.internal.IgniteClientReconnectComputeTest;
+import org.apache.ignite.internal.IgniteClientReconnectContinuousProcessorTest;
+import org.apache.ignite.internal.IgniteClientReconnectDiscoveryStateTest;
+import org.apache.ignite.internal.IgniteClientReconnectFailoverTest;
+import org.apache.ignite.internal.IgniteClientReconnectServicesTest;
+import org.apache.ignite.internal.IgniteClientReconnectStopTest;
+import org.apache.ignite.internal.IgniteClientReconnectStreamerTest;
 
 /**
  *

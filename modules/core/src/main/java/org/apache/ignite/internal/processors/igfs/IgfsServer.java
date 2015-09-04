@@ -17,23 +17,34 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.igfs.common.*;
-import org.apache.ignite.internal.util.ipc.*;
-import org.apache.ignite.internal.util.ipc.loopback.*;
-import org.apache.ignite.internal.util.ipc.shmem.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
-import org.apache.ignite.thread.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.io.BufferedOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.igfs.IgfsIpcEndpointType;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.igfs.common.IgfsControlResponse;
+import org.apache.ignite.internal.igfs.common.IgfsDataInputStream;
+import org.apache.ignite.internal.igfs.common.IgfsDataOutputStream;
+import org.apache.ignite.internal.igfs.common.IgfsIpcCommand;
+import org.apache.ignite.internal.igfs.common.IgfsMarshaller;
+import org.apache.ignite.internal.igfs.common.IgfsMessage;
+import org.apache.ignite.internal.util.ipc.IpcEndpoint;
+import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
+import org.apache.ignite.internal.util.ipc.loopback.IpcServerTcpEndpoint;
+import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
+import org.apache.ignite.internal.util.typedef.CIX1;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedDeque8;
 
-import java.io.*;
-
-import static org.apache.ignite.spi.IgnitePortProtocol.*;
+import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 
 /**
  * IGFS server. Handles requests passed from IGFS clients.

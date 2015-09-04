@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.processors.query.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**
  * Extended query cursor interface allowing for "getAll" to output data into destination other than Collection.

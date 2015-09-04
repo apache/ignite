@@ -17,8 +17,9 @@
 
 package org.apache.ignite.startup.cmdline;
 
-import java.io.*;
-import java.util.*;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class is a workaround for a versatile problems with passing arguments to the Ignite Windows batch launcher

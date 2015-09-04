@@ -17,9 +17,8 @@
 
 package org.apache.ignite.gridify;
 
-import org.apache.ignite.compute.gridify.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.compute.gridify.Gridify;
 
 /**
  * Test AOP target interface.

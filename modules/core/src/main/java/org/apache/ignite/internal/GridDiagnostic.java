@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
-
-import java.io.*;
-import java.lang.management.*;
-import java.net.*;
-import java.util.concurrent.*;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.net.InetAddress;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 
 /**
  * This class run some basic network diagnostic tests in the background and

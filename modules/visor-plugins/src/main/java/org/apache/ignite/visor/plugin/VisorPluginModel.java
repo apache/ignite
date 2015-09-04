@@ -17,11 +17,11 @@
 
 package org.apache.ignite.visor.plugin;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeTask;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Gateway to Visor functionality from plugins.

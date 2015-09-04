@@ -18,16 +18,17 @@
 package org.apache.ignite.java8.examples;
 
 //import org.apache.ignite.examples.java8.misc.springbean.*;
-import org.apache.ignite.testframework.junits.common.*;
+
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * Spring bean examples self test.
  */
 public class SpringBeanExamplesSelfTest extends GridAbstractExamplesTest {
     /**
-     * TODO: IGNITE-711 next example(s) should be implemented for java 8 
+     * TODO: IGNITE-711 next example(s) should be implemented for java 8
      * or testing method(s) should be removed if example(s) does not applicable for java 8.
-     *  
+     *
      * @throws Exception If failed.
      */
 //    public void testSpringBeanHelloWorldExample() throws Exception {

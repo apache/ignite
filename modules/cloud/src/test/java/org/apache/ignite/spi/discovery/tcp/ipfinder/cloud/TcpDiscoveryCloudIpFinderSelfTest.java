@@ -17,13 +17,12 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.cloud;
 
-import com.google.common.collect.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.testsuites.*;
-
-import java.net.*;
-import java.util.*;
+import com.google.common.collect.ImmutableList;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
+import org.apache.ignite.testsuites.IgniteCloudTestSuite;
 
 /**
  * TcpDiscoveryCloudIpFinder test.

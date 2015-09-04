@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import java.io.*;
+import java.io.Externalizable;
 
 /**
  * Abstract fragment of an input data source.

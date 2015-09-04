@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.visor.igfs;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * IGFS endpoint descriptor.

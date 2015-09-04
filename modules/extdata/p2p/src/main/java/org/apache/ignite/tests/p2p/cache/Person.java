@@ -17,7 +17,7 @@
 
 package org.apache.ignite.tests.p2p.cache;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  *

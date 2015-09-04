@@ -1,0 +1,2 @@
+org.apache.ignite.internal.processors.platform.cpp.PlatformCppBootstrapFactory
+org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetBootstrapFactory

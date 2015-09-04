@@ -17,22 +17,33 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.*;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.CachePartialUpdateException;
+import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
 /**
  *
@@ -46,7 +57,9 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
     /**
      * @return Keys count for the test.
      */
-    protected abstract int keysCount();
+    private int keysCount() {
+        return 10_000;
+    }
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
@@ -54,7 +67,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
 
         cfg.setAtomicWriteOrderMode(writeOrderMode());
         cfg.setBackups(1);
-        cfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+        cfg.setRebalanceMode(SYNC);
 
         return cfg;
     }
@@ -78,25 +91,47 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
     protected CacheAtomicWriteOrderMode writeOrderMode() {
         return CLOCK;
     }
+
     /**
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        checkPut(false);
+        checkRetry(Test.PUT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAll() throws Exception {
+        checkRetry(Test.PUT_ALL);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAsync() throws Exception {
-        checkPut(true);
+        checkRetry(Test.PUT_ASYNC);
     }
 
     /**
-     * @param async If {@code true} tests asynchronous put.
      * @throws Exception If failed.
      */
-    private void checkPut(boolean async) throws Exception {
+    public void testInvoke() throws Exception {
+        checkRetry(Test.INVOKE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAll() throws Exception {
+        checkRetry(Test.INVOKE_ALL);
+    }
+
+    /**
+     * @param test Test type.
+     * @throws Exception If failed.
+     */
+    private void checkRetry(Test test) throws Exception {
         final AtomicBoolean finished = new AtomicBoolean();
 
         int keysCnt = keysCount();
@@ -115,52 +150,151 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
             }
         });
 
-
-        IgniteCache<Object, Object> cache = ignite(0).cache(null);
-
-        if (atomicityMode() == ATOMIC)
-            assertEquals(writeOrderMode(), cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode());
+        IgniteCache<Integer, Integer> cache = ignite(0).cache(null);
 
         int iter = 0;
 
-        long stopTime = System.currentTimeMillis() + 60_000;
+        try {
+            if (atomicityMode() == ATOMIC)
+                assertEquals(writeOrderMode(), cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode());
 
-        if (async) {
-            IgniteCache<Object, Object> cache0 = cache.withAsync();
+            long stopTime = System.currentTimeMillis() + 60_000;
 
-            while (System.currentTimeMillis() < stopTime) {
-                Integer val = ++iter;
+            switch (test) {
+                case PUT: {
+                    while (System.currentTimeMillis() < stopTime) {
+                        Integer val = ++iter;
 
-                for (int i = 0; i < keysCnt; i++) {
-                    cache0.put(i, val);
+                        for (int i = 0; i < keysCnt; i++)
+                            cache.put(i, val);
 
-                    cache0.future().get();
+                        for (int i = 0; i < keysCnt; i++)
+                            assertEquals(val, cache.get(i));
+                    }
+
+                    break;
                 }
 
-                for (int i = 0; i < keysCnt; i++) {
-                    cache0.get(i);
+                case PUT_ALL: {
+                    while (System.currentTimeMillis() < stopTime) {
+                        Integer val = ++iter;
 
-                    assertEquals(val, cache0.future().get());
+                        Map<Integer, Integer> map = new LinkedHashMap<>();
+
+                        for (int i = 0; i < keysCnt; i++) {
+                            map.put(i, val);
+
+                            if (map.size() == 100 || i == keysCnt - 1) {
+                                cache.putAll(map);
+
+                                map.clear();
+                            }
+                        }
+
+                        for (int i = 0; i < keysCnt; i++)
+                            assertEquals(val, cache.get(i));
+                    }
                 }
+
+                case PUT_ASYNC: {
+                    IgniteCache<Integer, Integer> cache0 = cache.withAsync();
+
+                    while (System.currentTimeMillis() < stopTime) {
+                        Integer val = ++iter;
+
+                        for (int i = 0; i < keysCnt; i++) {
+                            cache0.put(i, val);
+
+                            cache0.future().get();
+                        }
+
+                        for (int i = 0; i < keysCnt; i++) {
+                            cache0.get(i);
+
+                            assertEquals(val, cache0.future().get());
+                        }
+                    }
+
+                    break;
+                }
+
+                case INVOKE: {
+                    while (System.currentTimeMillis() < stopTime) {
+                        Integer val = ++iter;
+
+                        Integer expOld = iter - 1;
+
+                        for (int i = 0; i < keysCnt; i++) {
+                            Integer old = cache.invoke(i, new SetEntryProcessor(val));
+
+                            assertNotNull(old);
+                            assertTrue(old.equals(expOld) || old.equals(val));
+                        }
+
+                        for (int i = 0; i < keysCnt; i++)
+                            assertEquals(val, cache.get(i));
+                    }
+
+                    break;
+                }
+
+                case INVOKE_ALL: {
+                    while (System.currentTimeMillis() < stopTime) {
+                        Integer val = ++iter;
+
+                        Integer expOld = iter - 1;
+
+                        Set<Integer> keys = new LinkedHashSet<>();
+
+                        for (int i = 0; i < keysCnt; i++) {
+                            keys.add(i);
+
+                            if (keys.size() == 100 || i == keysCnt - 1) {
+                                Map<Integer, EntryProcessorResult<Integer>> resMap =
+                                    cache.invokeAll(keys, new SetEntryProcessor(val));
+
+                                for (Integer key : keys) {
+                                    EntryProcessorResult<Integer> res = resMap.get(key);
+
+                                    assertNotNull(res);
+
+                                    Integer old = res.get();
+
+                                    assertTrue(old.equals(expOld) || old.equals(val));
+                                }
+
+                                assertEquals(keys.size(), resMap.size());
+
+                                keys.clear();
+                            }
+                        }
+
+                        for (int i = 0; i < keysCnt; i++)
+                            assertEquals(val, cache.get(i));
+                    }
+
+                    break;
+                }
+
+                default:
+                    assert false : test;
             }
         }
-        else {
-            while (System.currentTimeMillis() < stopTime) {
-                Integer val = ++iter;
-
-                for (int i = 0; i < keysCnt; i++)
-                    cache.put(i, val);
-
-                for (int i = 0; i < keysCnt; i++)
-                    assertEquals(val, cache.get(i));
-            }
+        finally {
+            finished.set(true);
+            fut.get();
         }
-
-        finished.set(true);
-        fut.get();
 
         for (int i = 0; i < keysCnt; i++)
-            assertEquals(iter, cache.get(i));
+            assertEquals((Integer)iter, cache.get(i));
+
+        for (int i = 0; i < gridCount(); i++) {
+            IgniteKernal ignite = (IgniteKernal)grid(i);
+
+            Collection<?> futs = ignite.context().cache().context().mvcc().atomicFutures();
+
+            assertTrue("Unexpected atomic futures: " + futs, futs.isEmpty());
+        }
     }
 
     /**
@@ -201,34 +335,41 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
         try {
             int keysCnt = keysCount();
 
-        boolean eThrown = false;
+            boolean eThrown = false;
 
-        IgniteCache<Object, Object> cache = ignite(0).cache(null).withNoRetries();
+            IgniteCache<Object, Object> cache = ignite(0).cache(null).withNoRetries();
 
-        if (async)
-            cache = cache.withAsync();
+            if (async)
+                cache = cache.withAsync();
 
-        for (int i = 0; i < keysCnt; i++) {
-            try {
-                if (async) {
-                    cache.put(i, i);
+            long stopTime = System.currentTimeMillis() + 60_000;
 
-                    cache.future().get();
+            while (System.currentTimeMillis() < stopTime) {
+                for (int i = 0; i < keysCnt; i++) {
+                    try {
+                        if (async) {
+                            cache.put(i, i);
+
+                            cache.future().get();
+                        }
+                        else
+                            cache.put(i, i);
+                    }
+                    catch (Exception e) {
+                        assertTrue("Invalid exception: " + e,
+                            X.hasCause(e, ClusterTopologyCheckedException.class, CachePartialUpdateException.class));
+
+                        eThrown = true;
+
+                        break;
+                    }
                 }
-                else
-                    cache.put(i, i);
-            }
-            catch (Exception e) {
-                assertTrue("Invalid exception: " + e,
-                    X.hasCause(e, ClusterTopologyCheckedException.class, CachePartialUpdateException.class));
 
-                eThrown = true;
-
+                if (eThrown)
                     break;
-                }
             }
 
-        assertTrue(eThrown);
+            assertTrue(eThrown);
 
             finished.set(true);
 
@@ -242,5 +383,49 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 3 * 60 * 1000;
+    }
+
+    /**
+     *
+     */
+    enum Test {
+        /** */
+        PUT,
+
+        /** */
+        PUT_ALL,
+
+        /** */
+        PUT_ASYNC,
+
+        /** */
+        INVOKE,
+
+        /** */
+        INVOKE_ALL
+    }
+
+    /**
+     *
+     */
+    class SetEntryProcessor implements CacheEntryProcessor<Integer, Integer, Integer> {
+        /** */
+        private Integer val;
+
+        /**
+         * @param val Value.
+         */
+        public SetEntryProcessor(Integer val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer process(MutableEntry<Integer, Integer> e, Object... args) {
+            Integer old = e.getValue();
+
+            e.setValue(val);
+
+            return old == null ? 0 : old;
+        }
     }
 }

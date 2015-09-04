@@ -16,10 +16,10 @@
  */
 package org.apache.ignite.spi;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.net.*;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Object that incorporates logic that determines a timeout value for the next network related operation and checks

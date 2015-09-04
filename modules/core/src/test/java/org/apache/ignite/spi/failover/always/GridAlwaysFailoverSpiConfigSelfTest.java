@@ -17,7 +17,8 @@
 
 package org.apache.ignite.spi.failover.always;
 
-import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
 /**
  * Always-failover SPI config test.

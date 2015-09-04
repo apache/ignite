@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Attach this annotation to a field to provide its order in

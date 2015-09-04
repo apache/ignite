@@ -17,13 +17,22 @@
 
 package org.apache.ignite.internal.jdbc;
 
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLWarning;
+import java.sql.Statement;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.sql.*;
-import java.util.*;
-
-import static java.sql.ResultSet.*;
+import static java.sql.ResultSet.CONCUR_READ_ONLY;
+import static java.sql.ResultSet.FETCH_FORWARD;
+import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 /**
  * JDBC statement implementation.

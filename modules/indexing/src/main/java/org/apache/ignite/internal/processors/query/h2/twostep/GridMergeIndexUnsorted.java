@@ -17,15 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.h2.index.*;
-import org.h2.result.*;
-import org.h2.table.*;
-import org.h2.value.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
+import org.h2.index.Cursor;
+import org.h2.index.IndexType;
+import org.h2.result.Row;
+import org.h2.result.SearchRow;
+import org.h2.table.IndexColumn;
+import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Unsorted merge index.

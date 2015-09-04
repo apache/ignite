@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.configuration.*;
-import javax.cache.integration.*;
+import javax.cache.configuration.Factory;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheWriter;
+import org.apache.ignite.cache.store.CacheStore;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -60,5 +58,19 @@ class GridCacheLoaderWriterStoreFactory<K, V> implements Factory<CacheStore<K, V
         CacheWriter<K, V> writer = CU.create(cctx, writerFactory);
 
         return new GridCacheLoaderWriterStore<>(ldr, writer);
+    }
+
+    /**
+     * @return Loader factory.
+     */
+    Factory<CacheLoader<K, V>> loaderFactory() {
+        return ldrFactory;
+    }
+
+    /**
+     * @return Writer factory.
+     */
+    Factory<CacheWriter<K, V>> writerFactory() {
+        return writerFactory;
     }
 }

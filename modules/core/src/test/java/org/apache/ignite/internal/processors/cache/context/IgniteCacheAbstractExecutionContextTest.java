@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.context;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.config.*;
-
-import java.net.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.apache.ignite.testframework.GridTestExternalClassLoader;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
  *

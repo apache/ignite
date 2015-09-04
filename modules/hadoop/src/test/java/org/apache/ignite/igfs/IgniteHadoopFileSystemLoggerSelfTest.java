@@ -17,15 +17,37 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.ignite.internal.igfs.common.*;
-import org.apache.ignite.internal.processors.igfs.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FilenameFilter;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.internal.igfs.common.IgfsLogger;
+import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
+import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
+import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.io.*;
-import java.util.*;
-
-import static org.apache.ignite.igfs.IgfsMode.*;
-import static org.apache.ignite.internal.igfs.common.IgfsLogger.*;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.DELIM_FIELD;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.DELIM_FIELD_VAL;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.HDR;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_CLOSE_IN;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_CLOSE_OUT;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_DELETE;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_DIR_LIST;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_DIR_MAKE;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_MARK;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_OPEN_IN;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_OPEN_OUT;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_RANDOM_READ;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_RENAME;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_RESET;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_SEEK;
+import static org.apache.ignite.internal.igfs.common.IgfsLogger.TYPE_SKIP;
 
 /**
  * Grid IGFS client logger test.

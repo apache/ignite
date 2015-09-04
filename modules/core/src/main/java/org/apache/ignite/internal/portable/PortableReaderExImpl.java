@@ -17,26 +17,97 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.portable.streams.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.ObjectInput;
 import java.lang.reflect.Array;
-import java.lang.reflect.*;
-import java.math.*;
-import java.sql.*;
-import java.util.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
-import java.util.concurrent.*;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Properties;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
+import org.apache.ignite.internal.portable.streams.PortableInputStream;
+import org.apache.ignite.internal.util.GridEnumCache;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableInvalidClassException;
+import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.portable.PortableRawReader;
+import org.apache.ignite.portable.PortableReader;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import static java.nio.charset.StandardCharsets.*;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.*;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.ARR_LIST;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLS_NAME_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_HASH_MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_SKIP_LIST_SET;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.HANDLE;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_SET;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.LINKED_HASH_MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.LINKED_HASH_SET;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.LINKED_LIST;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJECT_TYPE_ID;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.OPTM_MARSH;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROPERTIES_MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.RAW_DATA_OFF_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TREE_MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TREE_SET;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.USER_COL;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.USER_SET;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_ARR;
 
 /**
  * Portable reader implementation.
@@ -85,7 +156,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @param start Start.
      * @param ldr Class loader.
      */
-    PortableReaderExImpl(PortableContext ctx, byte[] arr, int start, ClassLoader ldr) {
+    public PortableReaderExImpl(PortableContext ctx, byte[] arr, int start, ClassLoader ldr) {
         this(ctx, new PortableHeapInputStream(arr), start, ldr, new PortableReaderContext());
     }
 
@@ -185,7 +256,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Unmarshalled value.
      * @throws PortableException In case of error.
      */
-    Object unmarshal(int offset) throws PortableException {
+    public Object unmarshal(int offset) throws PortableException {
         off = offset;
 
         return off >= 0 ? unmarshal(false) : null;
@@ -515,6 +586,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (flag == NULL)
                 return null;
 
+            if (flag == HANDLE)
+                return readHandleField();
+
             if (flag != BYTE_ARR)
                 throw new PortableException("Invalid flag value: " + flag);
 
@@ -537,6 +611,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             if (flag == NULL)
                 return null;
+
+            if (flag == HANDLE)
+                return readHandleField();
 
             if (flag != SHORT_ARR)
                 throw new PortableException("Invalid flag value: " + flag);
@@ -561,6 +638,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (flag == NULL)
                 return null;
 
+            if (flag == HANDLE)
+                return readHandleField();
+
             if (flag != INT_ARR)
                 throw new PortableException("Invalid flag value: " + flag);
 
@@ -583,6 +663,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             if (flag == NULL)
                 return null;
+
+            if (flag == HANDLE)
+                return readHandleField();
 
             if (flag != LONG_ARR)
                 throw new PortableException("Invalid flag value: " + flag);
@@ -607,6 +690,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (flag == NULL)
                 return null;
 
+            if (flag == HANDLE)
+                return readHandleField();
+
             if (flag != FLOAT_ARR)
                 throw new PortableException("Invalid flag value: " + flag);
 
@@ -629,6 +715,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             if (flag == NULL)
                 return null;
+
+            if (flag == HANDLE)
+                return readHandleField();
 
             if (flag != DOUBLE_ARR)
                 throw new PortableException("Invalid flag value: " + flag);
@@ -653,6 +742,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (flag == NULL)
                 return null;
 
+            if (flag == HANDLE)
+                return readHandleField();
+
             if (flag != CHAR_ARR)
                 throw new PortableException("Invalid flag value: " + flag);
 
@@ -675,6 +767,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             if (flag == NULL)
                 return null;
+
+            if (flag == HANDLE)
+                return readHandleField();
 
             if (flag != BOOLEAN_ARR)
                 throw new PortableException("Invalid flag value: " + flag);
@@ -699,6 +794,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (flag == NULL)
                 return null;
 
+            if (flag == HANDLE)
+                return readHandleField();
+
             if (flag != DECIMAL_ARR)
                 throw new PortableException("Invalid flag value: " + flag);
 
@@ -721,6 +819,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             if (flag == NULL)
                 return null;
+
+            if (flag == HANDLE)
+                return readHandleField();
 
             if (flag != STRING_ARR)
                 throw new PortableException("Invalid flag value: " + flag);
@@ -745,6 +846,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (flag == NULL)
                 return null;
 
+            if (flag == HANDLE)
+                return readHandleField();
+
             if (flag != UUID_ARR)
                 throw new PortableException("Invalid flag value: " + flag);
 
@@ -768,6 +872,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (flag == NULL)
                 return null;
 
+            if (flag == HANDLE)
+                return readHandleField();
+
             if (flag != DATE_ARR)
                 throw new PortableException("Invalid flag value: " + flag);
 
@@ -790,6 +897,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             if (flag == NULL)
                 return null;
+
+            if (flag == HANDLE)
+                return readHandleField();
 
             if (flag != OBJ_ARR)
                 throw new PortableException("Invalid flag value: " + flag);
@@ -816,6 +926,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (flag == NULL)
                 return null;
 
+            if (flag == HANDLE)
+                return readHandleField();
+
             if (flag != COL)
                 throw new PortableException("Invalid flag value: " + flag);
 
@@ -841,6 +954,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (flag == NULL)
                 return null;
 
+            if (flag == HANDLE)
+                return readHandleField();
+
             if (flag != MAP)
                 throw new PortableException("Invalid flag value: " + flag);
 
@@ -864,10 +980,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (flag == NULL)
                 return null;
 
+            if (flag == HANDLE)
+                return readHandleField();
+
             if (flag != MAP_ENTRY)
                 throw new PortableException("Invalid flag value: " + flag);
 
-            return new GridMapEntry<>(doReadObject(false), doReadObject(false));
+            return doReadMapEntry(false, true);
         }
         else
             return null;
@@ -988,6 +1107,33 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         rCtx.setObjectHandler(start, obj);
     }
 
+    /**
+     * @param obj Object.
+     * @param pos Position.
+     */
+    void setHandler(Object obj, int pos) {
+        rCtx.setObjectHandler(pos, obj);
+    }
+
+    /**
+     * Recreating field value from a handle.
+     *
+     * @param <T> Field type.
+     * @return Field.
+     */
+    private <T> T readHandleField() {
+        int handle = (off - 1) - doReadInt(false);
+
+        Object obj = rCtx.getObjectByHandle(handle);
+
+        if (obj == null) {
+            off = handle;
+
+            obj = doReadObject(false);
+        }
+
+        return (T)obj;
+    }
     /** {@inheritDoc} */
     @Override public byte readByte(String fieldName) throws PortableException {
         Byte val = readByte(fieldId(fieldName));
@@ -1605,7 +1751,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 else
                     po = in.offheapPointer() > 0
                         ? new PortableObjectOffheapImpl(ctx, in.offheapPointer(), start,
-                                                            in.remaining() + in.position())
+                        in.remaining() + in.position())
                         : new PortableObjectImpl(ctx, in.array(), start);
 
                 rCtx.setPortableHandler(start, po);
@@ -1733,7 +1879,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                     off += len;
 
                 return obj;
-
 
             default:
                 throw new PortableException("Invalid flag value: " + flag);
@@ -2235,11 +2380,15 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private byte[] doReadByteArray(boolean raw) {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int len = doReadInt(raw);
 
         in.position(raw ? rawOff : off);
 
         byte[] arr = in.readByteArray(len);
+
+        setHandler(arr, hPos);
 
         if (raw)
             rawOff += len;
@@ -2254,11 +2403,15 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private short[] doReadShortArray(boolean raw) {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int len = doReadInt(raw);
 
         in.position(raw ? rawOff : off);
 
         short[] arr = in.readShortArray(len);
+
+        setHandler(arr, hPos);
 
         int bytes = len << 1;
 
@@ -2275,11 +2428,15 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private int[] doReadIntArray(boolean raw) {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int len = doReadInt(raw);
 
         in.position(raw ? rawOff : off);
 
         int[] arr = in.readIntArray(len);
+
+        setHandler(arr, hPos);
 
         int bytes = len << 2;
 
@@ -2296,11 +2453,15 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private long[] doReadLongArray(boolean raw) {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int len = doReadInt(raw);
 
         in.position(raw ? rawOff : off);
 
         long[] arr = in.readLongArray(len);
+
+        setHandler(arr, hPos);
 
         int bytes = len << 3;
 
@@ -2317,11 +2478,15 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private float[] doReadFloatArray(boolean raw) {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int len = doReadInt(raw);
 
         in.position(raw ? rawOff : off);
 
         float[] arr = in.readFloatArray(len);
+
+        setHandler(arr, hPos);
 
         int bytes = len << 2;
 
@@ -2338,11 +2503,15 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private double[] doReadDoubleArray(boolean raw) {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int len = doReadInt(raw);
 
         in.position(raw ? rawOff : off);
 
         double[] arr = in.readDoubleArray(len);
+
+        setHandler(arr, hPos);
 
         int bytes = len << 3;
 
@@ -2359,11 +2528,15 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private char[] doReadCharArray(boolean raw) {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int len = doReadInt(raw);
 
         in.position(raw ? rawOff : off);
 
         char[] arr = in.readCharArray(len);
+
+        setHandler(arr, hPos);
 
         int bytes = len << 1;
 
@@ -2380,11 +2553,15 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private boolean[] doReadBooleanArray(boolean raw) {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int len = doReadInt(raw);
 
         in.position(raw ? rawOff : off);
 
         boolean[] arr = in.readBooleanArray(len);
+
+        setHandler(arr, hPos);
 
         if (raw)
             rawOff += len;
@@ -2400,9 +2577,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     private BigDecimal[] doReadDecimalArray(boolean raw) throws PortableException {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int len = doReadInt(raw);
 
         BigDecimal[] arr = new BigDecimal[len];
+
+        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
             byte flag = doReadByte(raw);
@@ -2426,9 +2607,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     private String[] doReadStringArray(boolean raw) throws PortableException {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int len = doReadInt(raw);
 
         String[] arr = new String[len];
+
+        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
             byte flag = doReadByte(raw);
@@ -2452,9 +2637,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     private UUID[] doReadUuidArray(boolean raw) throws PortableException {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int len = doReadInt(raw);
 
         UUID[] arr = new UUID[len];
+
+        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
             byte flag = doReadByte(raw);
@@ -2478,9 +2667,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     private Date[] doReadDateArray(boolean raw) throws PortableException {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int len = doReadInt(raw);
 
         Date[] arr = new Date[len];
+
+        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
             byte flag = doReadByte(raw);
@@ -2505,11 +2698,15 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     private Object[] doReadObjectArray(boolean raw, boolean deep) throws PortableException {
+        int hPos = (raw ? rawOff : off) - 1;
+
         Class compType = doReadClass(raw);
 
         int len = doReadInt(raw);
 
         Object[] arr = deep ? (Object[])Array.newInstance(compType, len) : new Object[len];
+
+        setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++)
             arr[i] = deep ? doReadObject(raw) : unmarshal(raw);
@@ -2527,6 +2724,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     @SuppressWarnings("unchecked")
     private Collection<?> doReadCollection(boolean raw, boolean deep, @Nullable Class<? extends Collection> cls)
         throws PortableException {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int size = doReadInt(raw);
 
         assert size >= 0;
@@ -2596,6 +2795,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             }
         }
 
+        setHandler(col, hPos);
+
         for (int i = 0; i < size; i++)
             col.add(deep ? doReadObject(raw) : unmarshal(raw));
 
@@ -2612,6 +2813,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     @SuppressWarnings("unchecked")
     private Map<?, ?> doReadMap(boolean raw, boolean deep, @Nullable Class<? extends Map> cls)
         throws PortableException {
+        int hPos = (raw ? rawOff : off) - 1;
+
         int size = doReadInt(raw);
 
         assert size >= 0;
@@ -2671,6 +2874,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             }
         }
 
+        setHandler(map, hPos);
+
         for (int i = 0; i < size; i++)
             map.put(deep ? doReadObject(raw) : unmarshal(raw), deep ? doReadObject(raw) : unmarshal(raw));
 
@@ -2684,10 +2889,16 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     private Map.Entry<?, ?> doReadMapEntry(boolean raw, boolean deep) throws PortableException {
+        int hPos = (raw ? rawOff : off) - 1;
+
         Object val1 = deep ? doReadObject(raw) : unmarshal(raw);
         Object val2 = deep ? doReadObject(raw) : unmarshal(raw);
 
-        return new GridMapEntry<>(val1, val2);
+        GridMapEntry entry = new GridMapEntry<>(val1, val2);
+
+        setHandler(entry, hPos);
+
+        return entry;
     }
 
     /**

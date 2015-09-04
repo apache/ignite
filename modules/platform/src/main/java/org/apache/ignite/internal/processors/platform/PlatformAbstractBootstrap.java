@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.platform.memory.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.platform.memory.PlatformExternalMemory;
+import org.apache.ignite.lang.IgniteClosure;
 
 /**
  * Base interop bootstrap implementation.

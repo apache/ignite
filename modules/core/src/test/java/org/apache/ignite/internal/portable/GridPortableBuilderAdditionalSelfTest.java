@@ -17,26 +17,52 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.portable.mutabletest.*;
-import org.apache.ignite.internal.processors.cache.portable.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.portable.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import com.google.common.collect.*;
-import org.junit.*;
-
-import java.lang.reflect.*;
-import java.sql.*;
-import java.util.*;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.portable.builder.PortableBuilderEnum;
+import org.apache.ignite.internal.portable.builder.PortableBuilderImpl;
+import org.apache.ignite.internal.portable.mutabletest.GridPortableMarshalerAwareTestClass;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.processors.cache.portable.IgnitePortablesImpl;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.portable.PortableBuilder;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.*;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.Address;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.AddressBook;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.Company;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectAllTypes;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectArrayList;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectContainer;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectEnum;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectInner;
+import static org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectOuter;
 
 /**
  *
@@ -214,10 +240,214 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
-    public void testSimpleArrayModification() {
+    public void testDateArrayModification() {
         TestObjectAllTypes obj = new TestObjectAllTypes();
 
-        obj.strArr = new String[]{"a", "a", "a"};
+        obj.dateArr =  new Date[] {new Date(11111), new Date(11111), new Date(11111)};
+
+        PortableBuilderImpl mutObj = wrap(obj);
+
+        Date[] arr = mutObj.getField("dateArr");
+        arr[0] = new Date(22222);
+
+        TestObjectAllTypes res = mutObj.build().deserialize();
+
+        Assert.assertArrayEquals(new Date[] {new Date(22222), new Date(11111), new Date(11111)}, res.dateArr);
+    }
+
+    /**
+     *
+     */
+    public void testUUIDArrayModification() {
+        TestObjectAllTypes obj = new TestObjectAllTypes();
+
+        obj.uuidArr = new UUID[] {new UUID(1, 1), new UUID(1, 1), new UUID(1, 1)};
+
+        PortableBuilderImpl mutObj = wrap(obj);
+
+        UUID[] arr = mutObj.getField("uuidArr");
+        arr[0] = new UUID(2, 2);
+
+        TestObjectAllTypes res = mutObj.build().deserialize();
+
+        Assert.assertArrayEquals(new UUID[] {new UUID(2, 2), new UUID(1, 1), new UUID(1, 1)}, res.uuidArr);
+    }
+
+    /**
+     *
+     */
+    public void testDecimalArrayModification() {
+        TestObjectAllTypes obj = new TestObjectAllTypes();
+
+        obj.bdArr = new BigDecimal[] {new BigDecimal(1000), new BigDecimal(1000), new BigDecimal(1000)};
+
+        PortableBuilderImpl mutObj = wrap(obj);
+
+        BigDecimal[] arr = mutObj.getField("bdArr");
+        arr[0] = new BigDecimal(2000);
+
+        TestObjectAllTypes res = mutObj.build().deserialize();
+
+        Assert.assertArrayEquals(new BigDecimal[] {new BigDecimal(1000), new BigDecimal(1000), new BigDecimal(1000)},
+            res.bdArr);
+    }
+
+    /**
+     *
+     */
+    public void testBooleanArrayModification() {
+        TestObjectAllTypes obj = new TestObjectAllTypes();
+
+        obj.zArr = new boolean[] {false, false, false};
+
+        PortableBuilderImpl mutObj = wrap(obj);
+
+        boolean[] arr = mutObj.getField("zArr");
+        arr[0] = true;
+
+        TestObjectAllTypes res = mutObj.build().deserialize();
+
+        boolean[] expected = new boolean[] {true, false, false};
+
+        assertEquals(expected.length, res.zArr.length);
+
+        for (int i = 0; i < expected.length; i++)
+            assertEquals(expected[i], res.zArr[i]);
+    }
+
+    /**
+     *
+     */
+    public void testCharArrayModification() {
+        TestObjectAllTypes obj = new TestObjectAllTypes();
+
+        obj.cArr = new char[] {'a', 'a', 'a'};
+
+        PortableBuilderImpl mutObj = wrap(obj);
+
+        char[] arr = mutObj.getField("cArr");
+        arr[0] = 'b';
+
+        TestObjectAllTypes res = mutObj.build().deserialize();
+
+        Assert.assertArrayEquals(new char[] {'b', 'a', 'a'}, res.cArr);
+    }
+
+    /**
+     *
+     */
+    public void testDoubleArrayModification() {
+        TestObjectAllTypes obj = new TestObjectAllTypes();
+
+        obj.dArr = new double[] {1.0, 1.0, 1.0};
+
+        PortableBuilderImpl mutObj = wrap(obj);
+
+        double[] arr = mutObj.getField("dArr");
+        arr[0] = 2.0;
+
+        TestObjectAllTypes res = mutObj.build().deserialize();
+
+        Assert.assertArrayEquals(new double[] {2.0, 1.0, 1.0}, res.dArr, 0);
+    }
+
+    /**
+     *
+     */
+    public void testFloatArrayModification() {
+        TestObjectAllTypes obj = new TestObjectAllTypes();
+
+        obj.fArr = new float[] {1.0f, 1.0f, 1.0f};
+
+        PortableBuilderImpl mutObj = wrap(obj);
+
+        float[] arr = mutObj.getField("fArr");
+        arr[0] = 2.0f;
+
+        TestObjectAllTypes res = mutObj.build().deserialize();
+
+        Assert.assertArrayEquals(new float[] {2.0f, 1.0f, 1.0f}, res.fArr, 0);
+    }
+
+    /**
+     *
+     */
+    public void testLongArrayModification() {
+        TestObjectAllTypes obj = new TestObjectAllTypes();
+
+        obj.lArr = new long[] {1, 1, 1};
+
+        PortableBuilderImpl mutObj = wrap(obj);
+
+        long[] arr = mutObj.getField("lArr");
+        arr[0] = 2;
+
+        TestObjectAllTypes res = mutObj.build().deserialize();
+
+        Assert.assertArrayEquals(new long[] {2, 1, 1}, res.lArr);
+    }
+
+    /**
+     *
+     */
+    public void testIntArrayModification() {
+        TestObjectAllTypes obj = new TestObjectAllTypes();
+
+        obj.iArr = new int[] {1, 1, 1};
+
+        PortableBuilderImpl mutObj = wrap(obj);
+
+        int[] arr = mutObj.getField("iArr");
+        arr[0] = 2;
+
+        TestObjectAllTypes res = mutObj.build().deserialize();
+
+        Assert.assertArrayEquals(new int[] {2, 1, 1}, res.iArr);
+    }
+
+    /**
+     *
+     */
+    public void testShortArrayModification() {
+        TestObjectAllTypes obj = new TestObjectAllTypes();
+
+        obj.sArr = new short[] {1, 1, 1};
+
+        PortableBuilderImpl mutObj = wrap(obj);
+
+        short[] arr = mutObj.getField("sArr");
+        arr[0] = 2;
+
+        TestObjectAllTypes res = mutObj.build().deserialize();
+
+        Assert.assertArrayEquals(new short[] {2, 1, 1}, res.sArr);
+    }
+
+    /**
+     *
+     */
+    public void testByteArrayModification() {
+        TestObjectAllTypes obj = new TestObjectAllTypes();
+
+        obj.bArr = new byte[] {1, 1, 1};
+
+        PortableBuilderImpl mutObj = wrap(obj);
+
+        byte[] arr = mutObj.getField("bArr");
+        arr[0] = 2;
+
+        TestObjectAllTypes res = mutObj.build().deserialize();
+
+        Assert.assertArrayEquals(new byte[] {2, 1, 1}, res.bArr);
+    }
+
+    /**
+     *
+     */
+    public void testStringArrayModification() {
+        TestObjectAllTypes obj = new TestObjectAllTypes();
+
+        obj.strArr = new String[] {"a", "a", "a"};
 
         PortableBuilderImpl mutObj = wrap(obj);
 
@@ -226,29 +456,27 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         TestObjectAllTypes res = mutObj.build().deserialize();
 
-        Assert.assertArrayEquals(obj.strArr, res.strArr);
+        Assert.assertArrayEquals(new String[] {"b", "a", "a"}, res.strArr);
     }
 
     /**
      *
      */
     public void testModifyObjectArray() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1273");
-
         TestObjectContainer obj = new TestObjectContainer();
-        obj.foo = new Object[]{"a"};
+        obj.foo = new Object[] {"a"};
 
         PortableBuilderImpl mutObj = wrap(obj);
 
         Object[] arr = mutObj.getField("foo");
 
-        Assert.assertArrayEquals(new Object[]{"a"}, arr);
+        Assert.assertArrayEquals(new Object[] {"a"}, arr);
 
         arr[0] = "b";
 
         TestObjectContainer res = mutObj.build().deserialize();
 
-        Assert.assertArrayEquals(new Object[] {"a"}, (Object[])res.foo);
+        Assert.assertArrayEquals(new Object[] {"b"}, (Object[])res.foo);
     }
 
     /**
@@ -257,7 +485,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testOverrideObjectArrayField() {
         PortableBuilderImpl mutObj = wrap(new TestObjectContainer());
 
-        Object[] createdArr = {mutObj, "a", 1, new String[] {"s", "s"}, new byte[]{1, 2}, new UUID(3, 0)};
+        Object[] createdArr = {mutObj, "a", 1, new String[] {"s", "s"}, new byte[] {1, 2}, new UUID(3, 0)};
 
         mutObj.setField("foo", createdArr.clone());
 
@@ -273,7 +501,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
      */
     public void testDeepArray() {
         TestObjectContainer obj = new TestObjectContainer();
-        obj.foo = new Object[]{new Object[]{"a", obj}};
+        obj.foo = new Object[] {new Object[] {"a", obj}};
 
         PortableBuilderImpl mutObj = wrap(obj);
 
@@ -610,7 +838,7 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testEnumArrayModification() {
         TestObjectAllTypes obj = new TestObjectAllTypes();
 
-        obj.enumArr = new TestObjectEnum[]{TestObjectEnum.A, TestObjectEnum.B};
+        obj.enumArr = new TestObjectEnum[] {TestObjectEnum.A, TestObjectEnum.B};
 
         PortableBuilderImpl mutObj = wrap(obj);
 
@@ -930,12 +1158,10 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
      *
      */
     public void testCyclicArrays() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1273");
-
         TestObjectContainer obj = new TestObjectContainer();
 
         Object[] arr1 = new Object[1];
-        Object[] arr2 = new Object[]{arr1};
+        Object[] arr2 = new Object[] {arr1};
 
         arr1[0] = arr2;
 
@@ -953,7 +1179,6 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings("TypeMayBeWeakened")
     public void testCyclicArrayList() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1273");
         TestObjectContainer obj = new TestObjectContainer();
 
         List<Object> arr1 = new ArrayList<>();

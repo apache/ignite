@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.processors.hadoop.v1;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import org.apache.hadoop.mapred.Counters;
-import org.apache.hadoop.mapreduce.*;
-import org.apache.ignite.internal.processors.hadoop.counter.*;
-import org.apache.ignite.internal.processors.hadoop.v2.*;
+import org.apache.hadoop.mapreduce.Counter;
+import org.apache.ignite.internal.processors.hadoop.counter.HadoopLongCounter;
+import org.apache.ignite.internal.processors.hadoop.v2.HadoopV2Counter;
 
-import java.io.*;
-
-import static org.apache.hadoop.mapreduce.util.CountersStrings.*;
+import static org.apache.hadoop.mapreduce.util.CountersStrings.toEscapedCompactString;
 
 /**
  * Hadoop counter implementation for v1 API.

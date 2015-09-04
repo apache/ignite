@@ -17,7 +17,7 @@
 
 package org.apache.ignite.startup.cmdline;
 
-import java.util.*;
+import java.util.UUID;
 
 /**
  * Generates a random number and prints it to the console.

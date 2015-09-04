@@ -17,10 +17,9 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.*;
-
-import java.net.*;
-import java.util.*;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Provides resolution between external and internal addresses. In some cases

@@ -42,4 +42,3 @@ public class Person {
         throw new IllegalStateException("Please run Ignite Schema Import Utility as described in README.txt");
     }
 }
-

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Exception thrown if service is not found.

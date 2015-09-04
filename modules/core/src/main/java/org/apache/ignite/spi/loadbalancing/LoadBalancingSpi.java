@@ -17,12 +17,12 @@
 
 package org.apache.ignite.spi.loadbalancing;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.spi.*;
-
-import java.util.*;
+import java.util.List;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.spi.IgniteSpi;
 
 /**
  * Load balancing SPI provides the next best balanced node for job

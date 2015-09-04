@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="localHost" value="127.0.0.1"/>
+        <property name="connectorConfiguration"><null/></property>
+
+        <property name="metricsLogFrequency" value="0"/>
+
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration" />
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache1"/>
+                </bean>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache2"/>
+                </bean>
+            </list>
+        </property>
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>127.0.0.1:47500..47502</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
+        <property name="platformConfiguration">
+            <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
+                <property name="portableConfiguration">
+                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
+                        <property name="types">
+                            <list>
+                                <value>Apache.Ignite.Core.Tests.ExecutableTest+RemoteConfiguration</value>
+                                <value>Apache.Ignite.Core.Tests.ExecutableTest+RemoteConfigurationClosure</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.TaskAdapterTest+PortableJob</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.PortableClosureTaskTest+PortableOutFunc</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.PortableClosureTaskTest+PortableFunc</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.PortableClosureTaskTest+PortableResult</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.PortableClosureTaskTest+PortableException</value>
+                            </list>
+                        </property>
+                        <property name="typesConfiguration">
+                            <list>
+                                <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableTypeConfiguration">
+                                    <property name="typeName" value="org.apache.ignite.platform.PlatformComputePortable"/>
+                                </bean>
+                                <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableTypeConfiguration">
+                                    <property name="typeName" value="org.apache.ignite.platform.PlatformComputeJavaPortable"/>
+                                </bean>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+
+        </property>
+    </bean>
+</beans>

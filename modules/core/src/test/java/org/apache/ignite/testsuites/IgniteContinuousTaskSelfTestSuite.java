@@ -17,8 +17,11 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.GridContinuousJobAnnotationSelfTest;
+import org.apache.ignite.internal.GridContinuousJobSiblingsSelfTest;
+import org.apache.ignite.internal.GridContinuousTaskSelfTest;
+import org.apache.ignite.internal.GridTaskContinuousMapperSelfTest;
 
 /**
  * Continuous task self-test suite.

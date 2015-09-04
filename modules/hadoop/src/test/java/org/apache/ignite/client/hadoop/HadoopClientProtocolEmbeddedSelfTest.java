@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client.hadoop;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.HadoopConfiguration;
 
 /**
  * Hadoop client protocol tests in embedded process mode.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.thread.*;
+import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Utility class that allows to ignore back-pressure control for threads that are processing messages.

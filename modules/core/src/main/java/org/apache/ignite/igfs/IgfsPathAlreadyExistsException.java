@@ -17,8 +17,7 @@
 
 package org.apache.ignite.igfs;
 
-import org.apache.ignite.internal.processors.igfs.*;
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception thrown when target path supposed to be created already exists.

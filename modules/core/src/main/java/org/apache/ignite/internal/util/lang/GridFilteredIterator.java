@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Filtered iterator.

@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.util.ipc;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.ipc.loopback.*;
-import org.apache.ignite.internal.util.ipc.shmem.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
+import org.apache.ignite.internal.util.ipc.loopback.IpcServerTcpEndpoint;
+import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryClientEndpoint;
+import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Igfs endpoint factory for inter-process communication.

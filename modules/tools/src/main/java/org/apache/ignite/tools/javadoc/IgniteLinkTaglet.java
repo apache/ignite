@@ -17,11 +17,10 @@
 
 package org.apache.ignite.tools.javadoc;
 
-import com.sun.javadoc.*;
-import com.sun.tools.doclets.*;
-
-import java.io.*;
-import java.util.*;
+import com.sun.javadoc.Tag;
+import com.sun.tools.doclets.Taglet;
+import java.io.File;
+import java.util.Map;
 
 /**
  * Represents {@ignitelink Class} tag. This tag can

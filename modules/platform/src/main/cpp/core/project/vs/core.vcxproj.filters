@@ -1,0 +1,246 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\src\impl\cache\cache_impl.cpp">
+      <Filter>Code\impl\cache</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\interop\interop_input_stream.cpp">
+      <Filter>Code\impl\interop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\interop\interop_memory.cpp">
+      <Filter>Code\impl\interop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\interop\interop_output_stream.cpp">
+      <Filter>Code\impl\interop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\ignite_environment.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\ignite_impl.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\portable\portable_containers.cpp">
+      <Filter>Code\portable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\portable\portable_raw_reader.cpp">
+      <Filter>Code\portable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\portable\portable_raw_writer.cpp">
+      <Filter>Code\portable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\portable\portable_reader.cpp">
+      <Filter>Code\portable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\portable\portable_writer.cpp">
+      <Filter>Code\portable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\portable\portable_reader_impl.cpp">
+      <Filter>Code\impl\portable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\portable\portable_utils.cpp">
+      <Filter>Code\impl\portable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\portable\portable_writer_impl.cpp">
+      <Filter>Code\impl\portable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\impl\utils.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ignite.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ignite_error.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ignition.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\guid.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\handle_registry.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\query\query_impl.cpp">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\portable\portable_metadata_snapshot.cpp">
+      <Filter>Code\impl\portable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\portable\portable_metadata_handler.cpp">
+      <Filter>Code\impl\portable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\portable\portable_type.cpp">
+      <Filter>Code\portable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\portable\portable_metadata_manager.cpp">
+      <Filter>Code\impl\portable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\portable\portable_metadata_updater.cpp">
+      <Filter>Code\impl\portable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\portable\portable_metadata_updater_impl.cpp">
+      <Filter>Code\impl\portable</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">
+      <Filter>Code\impl\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\cache.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\cache_peek_mode.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_input_stream.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_memory.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_output_stream.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\ignite_impl.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\operations.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\portable\portable_common.h">
+      <Filter>Code\impl\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\portable\portable_consts.h">
+      <Filter>Code\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\portable\portable.h">
+      <Filter>Code\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\portable\portable_containers.h">
+      <Filter>Code\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\portable\portable_id_resolver.h">
+      <Filter>Code\impl\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\portable\portable_raw_reader.h">
+      <Filter>Code\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\portable\portable_raw_writer.h">
+      <Filter>Code\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\portable\portable_reader.h">
+      <Filter>Code\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\portable\portable_writer.h">
+      <Filter>Code\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\portable\portable_reader_impl.h">
+      <Filter>Code\impl\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\portable\portable_utils.h">
+      <Filter>Code\impl\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\portable\portable_writer_impl.h">
+      <Filter>Code\impl\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\impl\utils.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignite.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignite_configuration.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignite_error.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignition.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\guid.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\handle_registry.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\cache_entry.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_impl.h">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\portable\portable_metadata_snapshot.h">
+      <Filter>Code\impl\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\portable\portable_metadata_handler.h">
+      <Filter>Code\impl\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\portable\portable_metadata_manager.h">
+      <Filter>Code\impl\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\portable\portable_type.h">
+      <Filter>Code\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\portable\portable_metadata_updater.h">
+      <Filter>Code\impl\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\portable\portable_metadata_updater_impl.h">
+      <Filter>Code\impl\portable</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_argument.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_cursor.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_sql.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_text.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_scan.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Code">
+      <UniqueIdentifier>{91873c79-a64f-4786-ab25-d03ef2db9dc8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl">
+      <UniqueIdentifier>{9bede404-e1b1-44d6-b54d-e9b2441c5f13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\cache">
+      <UniqueIdentifier>{b013b0f6-c4b8-4b88-89bc-8b394971788e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\portable">
+      <UniqueIdentifier>{883773bd-085d-4eb5-81ee-f11188134faf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\interop">
+      <UniqueIdentifier>{d4cc8aeb-6e7b-47e6-9b83-cba925844d96}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\cache">
+      <UniqueIdentifier>{8b7e32c0-e222-4f3a-af31-19df380c369f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\portable">
+      <UniqueIdentifier>{24b7134c-9335-44e1-9604-4093d0e3bbf5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\cache\query">
+      <UniqueIdentifier>{4658a0ff-0d2d-45a6-b8de-93eeec0cc081}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\cache\query">
+      <UniqueIdentifier>{b6e57294-120a-46f2-b0ad-c3595e2cf789}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

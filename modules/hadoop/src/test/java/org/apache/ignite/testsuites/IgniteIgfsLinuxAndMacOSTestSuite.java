@@ -17,11 +17,21 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.processors.igfs.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.igfs.HadoopIgfs20FileSystemShmemPrimarySelfTest;
+import org.apache.ignite.igfs.IgfsEventsTestSuite;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemIpcCacheSelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemShmemEmbeddedDualAsyncSelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemShmemEmbeddedDualSyncSelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemShmemEmbeddedPrimarySelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemShmemEmbeddedSecondarySelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemShmemExternalDualAsyncSelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemShmemExternalDualSyncSelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemShmemExternalPrimarySelfTest;
+import org.apache.ignite.igfs.IgniteHadoopFileSystemShmemExternalSecondarySelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest;
 
-import static org.apache.ignite.testsuites.IgniteHadoopTestSuite.*;
+import static org.apache.ignite.testsuites.IgniteHadoopTestSuite.downloadHadoop;
 
 /**
  * Test suite for Hadoop file system over Ignite cache.

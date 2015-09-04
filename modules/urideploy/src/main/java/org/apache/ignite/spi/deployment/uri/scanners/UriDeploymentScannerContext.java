@@ -17,11 +17,11 @@
 
 package org.apache.ignite.spi.deployment.uri.scanners;
 
-import org.apache.ignite.*;
-import org.apache.ignite.spi.deployment.uri.scanners.*;
-
-import java.io.*;
-import java.net.*;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.net.URI;
+import org.apache.ignite.IgniteLogger;
 
 /**
  * Deployment scanner context.

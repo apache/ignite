@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.proto;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.processors.hadoop.*;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.internal.processors.hadoop.Hadoop;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
-
-import java.util.*;
 
 /**
  * Task to get job counters.

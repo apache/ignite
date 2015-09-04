@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.portable.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.portable.PortableIdMapper;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Wildcards test.
@@ -93,11 +95,11 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
-                    return 100;
-                else if (clsName.endsWith("2"))
-                    return 200;
-                else if (clsName.endsWith("InnerClass"))
                     return 300;
+                else if (clsName.endsWith("2"))
+                    return 400;
+                else if (clsName.endsWith("InnerClass"))
+                    return 500;
                 else
                     return -500;
             }
@@ -118,9 +120,9 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(100, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
-        assertEquals(200, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
-        assertEquals(300, typeMappers.get("InnerClass").typeId("InnerClass"));
+        assertEquals(300, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
+        assertEquals(400, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(500, typeMappers.get("InnerClass").typeId("InnerClass"));
     }
 
     /**
@@ -159,11 +161,11 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
-                    return 100;
-                else if (clsName.endsWith("2"))
-                    return 200;
-                else if (clsName.endsWith("InnerClass"))
                     return 300;
+                else if (clsName.endsWith("2"))
+                    return 400;
+                else if (clsName.endsWith("InnerClass"))
+                    return 500;
                 else
                     return -500;
             }
@@ -184,9 +186,9 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(100, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
-        assertEquals(200, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
-        assertEquals(300, typeMappers.get("InnerClass").typeId("InnerClass"));
+        assertEquals(300, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
+        assertEquals(400, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(500, typeMappers.get("InnerClass").typeId("InnerClass"));
     }
 
     /**
@@ -201,11 +203,11 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
-                    return 100;
-                else if (clsName.endsWith("2"))
-                    return 200;
-                else if (clsName.endsWith("InnerClass"))
                     return 300;
+                else if (clsName.endsWith("2"))
+                    return 400;
+                else if (clsName.endsWith("InnerClass"))
+                    return 500;
                 else
                     return -500;
             }
@@ -226,9 +228,9 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(100, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
-        assertEquals(200, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
-        assertEquals(300, typeMappers.get("InnerClass").typeId("InnerClass"));
+        assertEquals(300, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
+        assertEquals(400, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(500, typeMappers.get("InnerClass").typeId("InnerClass"));
     }
 
     /**
@@ -308,9 +310,9 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
-                    return 100;
+                    return 300;
                 else if (clsName.endsWith("2"))
-                    return 200;
+                    return 400;
                 else
                     return -500;
             }
@@ -331,8 +333,8 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(100, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
-        assertEquals(200, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(300, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
+        assertEquals(400, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
     }
 
     /**
@@ -370,9 +372,9 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
-                    return 100;
+                    return 300;
                 else if (clsName.endsWith("2"))
-                    return 200;
+                    return 400;
                 else
                     return -500;
             }
@@ -393,8 +395,8 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(100, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
-        assertEquals(200, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(300, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
+        assertEquals(400, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
     }
 
     /**
@@ -409,9 +411,9 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
-                    return 100;
+                    return 300;
                 else if (clsName.endsWith("2"))
-                    return 200;
+                    return 400;
                 else
                     return -500;
             }
@@ -432,8 +434,8 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(100, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
-        assertEquals(200, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
+        assertEquals(300, typeMappers.get("GridPortableTestClass1").typeId("GridPortableTestClass1"));
+        assertEquals(400, typeMappers.get("GridPortableTestClass2").typeId("GridPortableTestClass2"));
     }
 
     /**

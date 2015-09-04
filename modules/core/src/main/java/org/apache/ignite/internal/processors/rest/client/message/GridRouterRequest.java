@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.UUID;
 
 /**
  * Container for routed message information.

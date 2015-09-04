@@ -17,8 +17,9 @@
 
 package org.apache.ignite.mxbean;
 
-import javax.management.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.UUID;
+import javax.management.JMException;
 
 /**
  * This interface defines JMX view on kernal.

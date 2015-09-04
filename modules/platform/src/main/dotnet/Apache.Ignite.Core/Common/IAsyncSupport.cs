@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Common
 {
     /// <summary>
-    /// Allows to enable asynchronous mode on Grid APIs.
+    /// Allows to enable asynchronous mode on Ignite APIs.
     /// </summary>
     /// <typeparam name="TWithAsync">Type of WithAsync method result.</typeparam>
     public interface IAsyncSupport<out TWithAsync> where TWithAsync : IAsyncSupport<TWithAsync>

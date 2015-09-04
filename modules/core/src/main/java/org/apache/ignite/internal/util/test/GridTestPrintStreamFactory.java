@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.test;
 
-import java.io.*;
+import java.io.PrintStream;
 
 /**
  * Factory that allow to acquire/release Print Stream for test logging.

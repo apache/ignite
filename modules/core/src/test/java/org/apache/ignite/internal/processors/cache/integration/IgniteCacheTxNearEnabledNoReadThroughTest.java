@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.integration;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
 /**
  *

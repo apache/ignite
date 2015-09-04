@@ -17,14 +17,23 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.portable.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.math.*;
-import java.util.*;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableMarshalAware;
+import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.portable.PortableRawWriter;
+import org.apache.ignite.portable.PortableReader;
+import org.apache.ignite.portable.PortableWriter;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Portable meta data test.
@@ -133,6 +142,15 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
                     assert false : meta.typeName();
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoConfiguration() throws Exception {
+        portables().toPortable(new TestObject3());
+
+        assertNotNull(portables().metadata(TestObject3.class));
     }
 
     /**
@@ -339,5 +357,13 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
         @Override public void readPortable(PortableReader reader) throws PortableException {
             // No-op.
         }
+    }
+
+    /**
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    private static class TestObject3 {
+        /** */
+        private int intVal;
     }
 }

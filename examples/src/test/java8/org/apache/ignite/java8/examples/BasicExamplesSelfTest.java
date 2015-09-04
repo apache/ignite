@@ -17,9 +17,12 @@
 
 package org.apache.ignite.java8.examples;
 
-import org.apache.ignite.examples.java8.computegrid.*;
-import org.apache.ignite.examples.java8.datastructures.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.examples.java8.computegrid.ComputeBroadcastExample;
+import org.apache.ignite.examples.java8.computegrid.ComputeCallableExample;
+import org.apache.ignite.examples.java8.computegrid.ComputeClosureExample;
+import org.apache.ignite.examples.java8.computegrid.ComputeRunnableExample;
+import org.apache.ignite.examples.java8.datastructures.IgniteExecutorServiceExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * Closure examples self test.

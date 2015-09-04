@@ -31,7 +31,8 @@
     </parent>
 
     <artifactId>ignite-yardstick</artifactId>
-    <version>1.4.1-SNAPSHOT</version>
+    <version>1.5.0-SNAPSHOT</version>
+    <url>http://ignite.apache.org</url>
 
     <properties>
         <yardstick.version>0.7.0</yardstick.version>

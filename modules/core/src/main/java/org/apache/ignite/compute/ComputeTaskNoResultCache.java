@@ -17,8 +17,12 @@
 
 package org.apache.ignite.compute;
 
-import java.lang.annotation.*;
-import java.util.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.List;
 
 /**
  * This annotation disables caching of task results when attached to {@link ComputeTask} class

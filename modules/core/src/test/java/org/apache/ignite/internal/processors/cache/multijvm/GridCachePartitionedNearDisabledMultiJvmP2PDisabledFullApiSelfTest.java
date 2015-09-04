@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.multijvm;
 
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledMultiNodeP2PDisabledFullApiSelfTest;
 
 /**
  * Multi-JVM tests.

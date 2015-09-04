@@ -12,7 +12,7 @@ With LGPL dependencies:
 With LGPL dependencies and Scala 2.10:
   mvn clean package -DskipTests -Prelease,lgpl -Dscala-2.10
 
-Look for incubator-ignite-<version>-bin.zip in ./target/bin directory.
+Look for apache-ignite-fabric-<version>-bin.zip in ./target/bin directory.
 
 NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
       Schema Import module use JavaFX, under OpenJDK may be compiled and run only on OpenJDK 8 with installed OpenJFX.
@@ -23,7 +23,7 @@ mvn clean package -DskipTests -Dignite.edition=hadoop [-Dhadoop.version=X.X.X]
 
 Use 'hadoop.version' parameter to build Ignite against a specific Hadoop version.
 
-Look for incubator-ignite-<version>-bin.zip in ./target/bin directory.
+Look for apache-ignite-hadoop-<version>-bin.zip in ./target/bin directory.
 
 NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
 
@@ -31,7 +31,7 @@ NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
 Ignite Release Instructions
 ===========================
 Use your people.apache.org/keys/committer/<username>.asc key to generate KEYS file.
-Download https://dist.apache.org/repos/dist/release/incubator/ignite/KEYS and append you key using commands:
+Download https://dist.apache.org/repos/dist/release/ignite/KEYS and append you key using commands:
 
 gpg --list-sigs <keyname> >> KEYS
 gpg --armor --export <keyname> >> KEYS
@@ -68,21 +68,21 @@ Deploy Ignite release candidate to maven repository and dev-svn, make tag:
    Nexus staging (repository.apache.org) should be closed with appropriate comment contains release version and
    release candidate number, for example "Apache Ignite 1.0.0-rc7", when mvn deploy finished.
 
-   Checkout https://dist.apache.org/repos/dist/dev/incubator/ignite svn. Create release candidate folder with name
+   Checkout https://dist.apache.org/repos/dist/dev/ignite svn. Create release candidate folder with name
    equals to release version with "-rc*" ending, for example "1.0.0-rc7", at svn root.
    Copy /target/site folder content to svn/ignite/<rc-version> folder and commit with appropriate comment.
 
-   Make appropriate git tag for release candidate, for example "ignite-1.0.0-incubating-rc7".
+   Make appropriate git tag for release candidate, for example "ignite-X.Y.Z-rc1".
 
-Start vote based on https://dist.apache.org/repos/dist/dev/incubator/ignite/<rc-version>.
+Start vote based on https://dist.apache.org/repos/dist/dev/ignite/<rc-version>.
 
-Release nexus staging, move binaries and sources from https://dist.apache.org/repos/dist/dev/incubator/ignite/<rc-version>
-to https://dist.apache.org/repos/dist/release/incubator/ignite/<version> when version accepted.
-Use svn mv ^/dev/incubator/ignite/<rc-version> ^/release/incubator/ignite/<version> command for proper moving.
+Release nexus staging, move binaries and sources from https://dist.apache.org/repos/dist/dev/ignite/<rc-version>
+to https://dist.apache.org/repos/dist/release/ignite/<version> when version accepted.
+Use svn mv ^/dev/ignite/<rc-version> ^/release/ignite/<version> command for proper moving.
 
-Make appropriate git tag for released version, for example "ignite-1.0.0-incubating".
+Make appropriate git tag for released version, for example "ignite-X.Y.Z".
 
-Send an email to dev@ignite.incubator.apache.org contains release svn url.
+Send an email to dev@ignite.apache.org contains release svn url.
 
 
 JCache TCK compliance

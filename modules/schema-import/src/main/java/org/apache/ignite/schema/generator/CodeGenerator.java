@@ -17,15 +17,31 @@
 
 package org.apache.ignite.schema.generator;
 
-import org.apache.ignite.schema.model.*;
-import org.apache.ignite.schema.ui.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
+import org.apache.ignite.schema.model.IndexItem;
+import org.apache.ignite.schema.model.PojoDescriptor;
+import org.apache.ignite.schema.model.PojoField;
+import org.apache.ignite.schema.ui.ConfirmCallable;
+import org.apache.ignite.schema.ui.MessageBox;
 
-import java.io.*;
-import java.text.*;
-import java.util.*;
-import java.util.regex.*;
-
-import static org.apache.ignite.schema.ui.MessageBox.Result.*;
+import static org.apache.ignite.schema.ui.MessageBox.Result.CANCEL;
+import static org.apache.ignite.schema.ui.MessageBox.Result.NO;
+import static org.apache.ignite.schema.ui.MessageBox.Result.NO_TO_ALL;
 
 /**
  * Code generator of POJOs for key and value classes and configuration snippet.
