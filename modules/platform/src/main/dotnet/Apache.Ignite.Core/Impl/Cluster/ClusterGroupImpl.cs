@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpTopology = 14;
 
         /** Initial grid instance. */
-        private readonly Ignite _grid;
+        private readonly Ignite _ignite;
         
         /** Predicate. */
         private readonly Func<IClusterNode, bool> _pred;
@@ -130,14 +130,14 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="proc">Processor.</param>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="grid">Grid.</param>
+        /// <param name="ignite">Grid.</param>
         /// <param name="pred">Predicate.</param>
         public ClusterGroupImpl(IUnmanagedTarget proc, IUnmanagedTarget target, PortableMarshaller marsh,
-            Ignite grid, Func<IClusterNode, bool> pred)
+            Ignite ignite, Func<IClusterNode, bool> pred)
             : base(target, marsh)
         {
             _proc = proc;
-            _grid = grid;
+            _ignite = ignite;
             _pred = pred;
 
             _comp = new Lazy<Compute>(() => 
@@ -154,7 +154,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IIgnite Ignite
         {
-            get { return _grid; }
+            get { return _ignite; }
         }
 
         /** <inheritDoc /> */
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             var newPred = _pred == null ? p : node => _pred(node) && p(node);
 
-            return new ClusterGroupImpl(_proc, Target, Marshaller, _grid, newPred);
+            return new ClusterGroupImpl(_proc, Target, Marshaller, _ignite, newPred);
         }
 
         /** <inheritDoc /> */
@@ -477,7 +477,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <returns>New cluster group.</returns>
         private IClusterGroup GetClusterGroup(IUnmanagedTarget prj)
         {
-            return new ClusterGroupImpl(_proc, prj, Marshaller, _grid, _pred);
+            return new ClusterGroupImpl(_proc, prj, Marshaller, _ignite, _pred);
         }
 
         /// <summary>

@@ -53,8 +53,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** Metrics. */
         private volatile ClusterMetricsImpl _metrics;
         
-        /** Grid. */
-        private WeakReference _gridRef;
+        /** Ignite reference. */
+        private WeakReference _igniteRef;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClusterNodeImpl"/> class.
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterMetrics Metrics()
         {
-            var grid = (Ignite)_gridRef.Target;
+            var grid = (Ignite)_igniteRef.Target;
 
             if (grid == null)
                 return _metrics;
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="grid">The grid.</param>
         internal void Init(Ignite grid)
         {
-            _gridRef = new WeakReference(grid);
+            _igniteRef = new WeakReference(grid);
         }
     }
 }

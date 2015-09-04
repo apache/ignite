@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             if (injector != null)
                 injector.Inject(grid);
             else
-                resDesc.InjectGrid(task, grid);
+                resDesc.InjectIgnite(task, grid);
 
             _resCache = !resDesc.TaskNoResultCache;
         }

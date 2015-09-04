@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         private readonly Func<Guid, object, bool> _invoker;
 
         /** Current grid instance. */
-        private readonly Ignite _grid;
+        private readonly Ignite _ignite;
         
         /** Underlying filter. */
         private readonly object _filter;
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
             // 1. Set fields.
             Debug.Assert(grid != null);
 
-            _grid = grid;
+            _ignite = grid;
             _invoker = invoker;
 
             // 2. Perform injections.
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <returns></returns>
         public int Invoke(IPortableStream input)
         {
-            var rawReader = _grid.Marshaller.StartUnmarshal(input).RawReader();
+            var rawReader = _ignite.Marshaller.StartUnmarshal(input).RawReader();
 
             var nodeId = rawReader.ReadGuid();
 
@@ -171,9 +171,9 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
             _invoker = GetInvoker(_filter);
 
-            _grid = reader0.Marshaller.Ignite;
+            _ignite = reader0.Marshaller.Ignite;
 
-            ResourceProcessor.Inject(_filter, _grid);
+            ResourceProcessor.Inject(_filter, _ignite);
         }
     }
 }

@@ -568,7 +568,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             AddSystemType(PortableUtils.TypeDotNetCfg, w => new InteropDotNetConfiguration(w));
             AddSystemType(PortableUtils.TypeDotNetPortableCfg, w => new InteropDotNetPortableConfiguration(w));
             AddSystemType(PortableUtils.TypeDotNetPortableTypCfg, w => new InteropDotNetPortableTypeConfiguration(w));
-            AddSystemType(PortableUtils.TypeGridProxy, w => new IgniteProxy());
+            AddSystemType(PortableUtils.TypeIgniteProxy, w => new IgniteProxy());
             AddSystemType(PortableUtils.TypeComputeOutFuncJob, w => new ComputeOutFuncJob(w));
             AddSystemType(PortableUtils.TypeComputeOutFuncWrapper, w => new ComputeOutFuncWrapper(w));
             AddSystemType(PortableUtils.TypeComputeFuncWrapper, w => new ComputeFuncWrapper(w));

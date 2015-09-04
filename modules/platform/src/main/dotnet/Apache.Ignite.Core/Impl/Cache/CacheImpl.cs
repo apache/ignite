@@ -51,8 +51,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Duration: zero. */
         private const long DurZero = 0;
 
-        /** Grid instance. */
-        private readonly Ignite _grid;
+        /** Ignite instance. */
+        private readonly Ignite _ignite;
         
         /** Flag: skip store. */
         private readonly bool _flagSkipStore;
@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         public CacheImpl(Ignite grid, IUnmanagedTarget target, PortableMarshaller marsh,
             bool flagSkipStore, bool flagKeepPortable, bool flagAsync, bool flagNoRetries) : base(target, marsh)
         {
-            _grid = grid;
+            _ignite = grid;
             _flagSkipStore = flagSkipStore;
             _flagKeepPortable = flagKeepPortable;
             _flagAsync = flagAsync;
@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             get
             {
-                return _grid;
+                return _ignite;
             }
         }
 
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagSkipStore)
                 return this;
 
-            return new CacheImpl<TK, TV>(_grid, UU.CacheWithSkipStore(Target), Marshaller, 
+            return new CacheImpl<TK, TV>(_ignite, UU.CacheWithSkipStore(Target), Marshaller, 
                 true, _flagKeepPortable, _flagAsync, true);
         }
 
@@ -184,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return result;
             }
 
-            return new CacheImpl<TK1, TV1>(_grid, UU.CacheWithKeepPortable(Target), Marshaller, 
+            return new CacheImpl<TK1, TV1>(_ignite, UU.CacheWithKeepPortable(Target), Marshaller, 
                 _flagSkipStore, true, _flagAsync, _flagNoRetries);
         }
 
@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IUnmanagedTarget cache0 = UU.CacheWithExpiryPolicy(Target, create, update, access);
 
-            return new CacheImpl<TK, TV>(_grid, cache0, Marshaller, _flagSkipStore, _flagKeepPortable, _flagAsync, _flagNoRetries);
+            return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepPortable, _flagAsync, _flagNoRetries);
         }
 
         /// <summary>
@@ -225,7 +225,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public ICache<TK, TV> WithAsync()
         {
-            return _flagAsync ? this : new CacheImpl<TK, TV>(_grid, UU.CacheWithAsync(Target), Marshaller,
+            return _flagAsync ? this : new CacheImpl<TK, TV>(_ignite, UU.CacheWithAsync(Target), Marshaller,
                 _flagSkipStore, _flagKeepPortable, true, _flagNoRetries);
         }
 
@@ -619,7 +619,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagNoRetries)
                 return this;
 
-            return new CacheImpl<TK, TV>(_grid, UU.CacheWithNoRetries(Target), Marshaller,
+            return new CacheImpl<TK, TV>(_ignite, UU.CacheWithNoRetries(Target), Marshaller,
                 _flagSkipStore, _flagKeepPortable, _flagAsync, true);
         }
 
@@ -731,7 +731,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 var writer = Marshaller.StartMarshal(stream);
 
-                hnd.Start(_grid, writer, () =>
+                hnd.Start(_ignite, writer, () =>
                 {
                     if (initialQry != null)
                     {

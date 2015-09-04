@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
             new MultiValueDictionary<KeyValuePair<object, object>, long>();
 
         /** Grid */
-        private readonly Ignite _grid;
+        private readonly Ignite _ignite;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Messaging" /> class.
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
             ClusterGroup = prj;
 
-            _grid = (Ignite) prj.Ignite;
+            _ignite = (Ignite) prj.Ignite;
         }
 
         /** <inheritdoc /> */
@@ -117,15 +117,15 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             IgniteArgumentCheck.NotNull(filter, "filter");
 
-            ResourceProcessor.Inject(filter, _grid);
+            ResourceProcessor.Inject(filter, _ignite);
 
             lock (_funcMap)
             {
                 var key = GetKey(filter, topic);
 
-                MessageFilterHolder filter0 = MessageFilterHolder.CreateLocal(_grid, filter); 
+                MessageFilterHolder filter0 = MessageFilterHolder.CreateLocal(_ignite, filter); 
 
-                var filterHnd = _grid.HandleRegistry.Allocate(filter0);
+                var filterHnd = _ignite.HandleRegistry.Allocate(filter0);
 
                 filter0.DestroyAction = () =>
                 {
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
                 }
                 catch (Exception)
                 {
-                    _grid.HandleRegistry.Release(filterHnd);
+                    _ignite.HandleRegistry.Release(filterHnd);
 
                     throw;
                 }
@@ -182,8 +182,8 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             IgniteArgumentCheck.NotNull(filter, "filter");
 
-            var filter0 = MessageFilterHolder.CreateLocal(_grid, filter);
-            var filterHnd = _grid.HandleRegistry.AllocateSafe(filter0);
+            var filter0 = MessageFilterHolder.CreateLocal(_ignite, filter);
+            var filterHnd = _ignite.HandleRegistry.AllocateSafe(filter0);
 
             try
             {
@@ -209,7 +209,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
             }
             catch (Exception)
             {
-                _grid.HandleRegistry.Release(filterHnd);
+                _ignite.HandleRegistry.Release(filterHnd);
 
                 throw;
             }

@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl
         public const int OpNone = -2;
 
         /** */
-        private static readonly Dictionary<Type, FutureType> GridFutureTypeMap
+        private static readonly Dictionary<Type, FutureType> IgniteFutureTypeMap
             = new Dictionary<Type, FutureType>
             {
                 {typeof(bool), FutureType.Bool},
@@ -634,7 +634,7 @@ namespace Apache.Ignite.Core.Impl
             var type = typeof(T);
 
             if (type.IsPrimitive)
-                GridFutureTypeMap.TryGetValue(type, out futType);
+                IgniteFutureTypeMap.TryGetValue(type, out futType);
 
             var fut = convertFunc == null && futType != FutureType.Object
                 ? new Future<T>()

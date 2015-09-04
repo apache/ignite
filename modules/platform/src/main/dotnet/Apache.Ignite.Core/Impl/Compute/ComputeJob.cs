@@ -109,13 +109,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /// <summary>
-        /// Injects the grid into wrapped object.
+        /// Injects Ignite instance into wrapped object.
         /// </summary>
         [InstanceResource]
-        public void InjectGrid(IIgnite grid)
+        public void InjectIgnite(IIgnite ignite)
         {
             // Propagate injection
-            ResourceProcessor.Inject(Job, (IgniteProxy)grid);
+            ResourceProcessor.Inject(Job, (IgniteProxy)ignite);
         }
 
         /// <summary>

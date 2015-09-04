@@ -262,11 +262,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             Listener<PortableEntry> cb = new Listener<PortableEntry>();
 
-            Assert.IsNull(cb.grid);
+            Assert.IsNull(cb.ignite);
 
             using (cache1.QueryContinuous(new ContinuousQuery<int, PortableEntry>(cb)))
             {
-                Assert.IsNotNull(cb.grid);
+                Assert.IsNotNull(cb.ignite);
             }
         }
         
@@ -569,12 +569,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             Listener<PortableEntry> cb = new Listener<PortableEntry>();
             PortableFilter filter = new PortableFilter();
 
-            Assert.IsNull(filter.grid);
+            Assert.IsNull(filter.ignite);
 
             using (cache1.QueryContinuous(new ContinuousQuery<int, PortableEntry>(cb, filter)))
             {
                 // Local injection.
-                Assert.IsNotNull(filter.grid);
+                Assert.IsNotNull(filter.ignite);
 
                 // Remote injection.
                 cache1.GetAndPut(PrimaryKey(cache2), Entry(1));
@@ -583,7 +583,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
                 Assert.IsTrue(FILTER_EVTS.TryTake(out evt, 500));
 
-                Assert.IsNotNull(evt.grid);
+                Assert.IsNotNull(evt.ignite);
             }
         }
 
@@ -995,7 +995,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             /** Grid. */
             [InstanceResource]
-            public IIgnite grid;
+            public IIgnite ignite;
 
             /** <inheritDoc /> */
             public bool Evaluate(ICacheEntryEvent<int, V> evt)
@@ -1003,7 +1003,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 if (err)
                     throw new Exception("Filter error.");
 
-                FILTER_EVTS.Add(new FilterEvent(grid,
+                FILTER_EVTS.Add(new FilterEvent(ignite,
                     CQU.CreateEvent<object, object>(evt.Key, evt.OldValue, evt.Value)));
 
                 return res;
@@ -1085,7 +1085,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         public class Listener<V> : ICacheEntryEventListener<int, V>
         {
             [InstanceResource]
-            public IIgnite grid;
+            public IIgnite ignite;
             
             /** <inheritDoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<int, V>> evts)
@@ -1129,7 +1129,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         public class FilterEvent
         {
             /** Grid. */
-            public IIgnite grid;
+            public IIgnite ignite;
 
             /** Entry. */
             public ICacheEntryEvent<object, object> entry;
@@ -1137,11 +1137,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             /// <summary>
             /// Constructor.
             /// </summary>
-            /// <param name="grid">Grid.</param>
+            /// <param name="ignite">Grid.</param>
             /// <param name="entry">Entry.</param>
-            public FilterEvent(IIgnite grid, ICacheEntryEvent<object, object> entry)
+            public FilterEvent(IIgnite ignite, ICacheEntryEvent<object, object> entry)
             {
-                this.grid = grid;
+                this.ignite = ignite;
                 this.entry = entry;
             }
         }

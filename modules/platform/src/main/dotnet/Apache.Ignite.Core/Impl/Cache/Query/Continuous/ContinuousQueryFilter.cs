@@ -63,8 +63,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** Keep portable flag. */
         private readonly bool _keepPortable;
 
-        /** Grid hosting the filter. */
-        private volatile Ignite _grid;
+        /** Ignite hosting the filter. */
+        private volatile Ignite _ignite;
 
         /** GC handle. */
         private long? _hnd;
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** <inheritDoc /> */
         public bool Evaluate(IPortableStream stream)
         {
-            ICacheEntryEvent<TK, TV> evt = CQU.ReadEvent<TK, TV>(stream, _grid.Marshaller, _keepPortable);
+            ICacheEntryEvent<TK, TV> evt = CQU.ReadEvent<TK, TV>(stream, _ignite.Marshaller, _keepPortable);
 
             return _filter.Evaluate(evt);
         }
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** <inheritDoc /> */
         public void Inject(Ignite grid)
         {
-            _grid = grid;
+            _ignite = grid;
 
             ResourceProcessor.Inject(_filter, grid);
         }
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
             lock (this)
             {
                 if (!_hnd.HasValue)
-                    _hnd = _grid.HandleRegistry.Allocate(this);
+                    _hnd = _ignite.HandleRegistry.Allocate(this);
 
                 return _hnd.Value;
             }
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
             {
                 if (_hnd.HasValue)
                 {
-                    _grid.HandleRegistry.Release(_hnd.Value);
+                    _ignite.HandleRegistry.Release(_hnd.Value);
 
                     _hnd = null;
                 }

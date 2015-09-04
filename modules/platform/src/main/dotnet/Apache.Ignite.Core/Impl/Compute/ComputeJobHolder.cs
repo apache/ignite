@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         private readonly IComputeJob _job;
         
         /** Owning grid. */
-        private readonly Ignite _grid;
+        private readonly Ignite _ignite;
 
         /** Result (set for local jobs only). */
         private volatile ComputeJobResultImpl _jobRes;
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var reader0 = (PortableReaderImpl) reader.RawReader();
 
-            _grid = reader0.Marshaller.Ignite;
+            _ignite = reader0.Marshaller.Ignite;
 
             _job = PortableUtils.ReadPortableOrSerializable<IComputeJob>(reader0);
         }
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="job">Job.</param>
         public ComputeJobHolder(Ignite grid, IComputeJob job)
         {
-            _grid = grid;
+            _ignite = grid;
             _job = job;
         }
 
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                 success ? res : null, 
                 success ? null : res as Exception, 
                 _job, 
-                _grid.LocalNode.Id, 
+                _ignite.LocalNode.Id, 
                 cancel
             );
         }
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             Execute0(cancel, out res, out success);
 
             // 2. Try writing result to the stream.
-            ClusterGroupImpl prj = _grid.ClusterGroup;
+            ClusterGroupImpl prj = _ignite.ClusterGroup;
 
             PortableWriterImpl writer = prj.Marshaller.StartMarshal(stream);
 
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             Justification = "User job can throw any exception")]
         internal bool Serialize(IPortableStream stream)
         {
-            ClusterGroupImpl prj = _grid.ClusterGroup;
+            ClusterGroupImpl prj = _ignite.ClusterGroup;
 
             PortableWriterImpl writer = prj.Marshaller.StartMarshal(stream);
 
@@ -187,9 +187,9 @@ namespace Apache.Ignite.Core.Impl.Compute
             IComputeResourceInjector injector = _job as IComputeResourceInjector;
 
             if (injector != null)
-                injector.Inject(_grid);
+                injector.Inject(_ignite);
             else
-                ResourceProcessor.Inject(_job, _grid);
+                ResourceProcessor.Inject(_job, _ignite);
 
             // 2. Execute.
             try

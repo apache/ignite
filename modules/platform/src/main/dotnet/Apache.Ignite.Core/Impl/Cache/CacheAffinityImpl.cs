@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly bool _keepPortable;
         
         /** Grid. */
-        private readonly Ignite _grid;
+        private readonly Ignite _ignite;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheAffinityImpl" /> class.
@@ -87,16 +87,15 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
-        /// <param name="grid">Grid.</param>
+        /// <param name="ignite">Grid.</param>
         public CacheAffinityImpl(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable, 
-            Ignite grid)
-            : base(target, marsh)
+            Ignite ignite) : base(target, marsh)
         {
             _keepPortable = keepPortable;
 
-            Debug.Assert(grid != null);
+            Debug.Assert(ignite != null);
             
-            _grid = grid;
+            _ignite = ignite;
         }
 
         /** <inheritDoc /> */
@@ -236,7 +235,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Node.</returns>
         private IClusterNode GetNode(Guid? id)
         {
-            return _grid.GetNode(id);
+            return _ignite.GetNode(id);
         }
 
         /// <summary>
