@@ -117,6 +117,11 @@ public class CacheClientPortableQueryExample {
 
                 System.out.println();
             }
+            finally {
+                // Delete caches with their content completely.
+                ignite.destroyCache(ORGANIZATION_CACHE_NAME);
+                ignite.destroyCache(EMPLOYEE_CACHE_NAME);
+            }
         }
     }
 
