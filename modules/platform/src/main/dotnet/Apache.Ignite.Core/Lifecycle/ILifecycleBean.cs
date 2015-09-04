@@ -27,27 +27,27 @@ namespace Apache.Ignite.Core.Lifecycle
     /// There are four events you can react to:
     /// <list type="bullet">
     ///     <item>
-    ///         <term>BEFORE_GRID_START</term>
+    ///         <term>BeforeNodeStart</term>
     ///         <description>Invoked before Ignite startup routine is initiated. Note that Ignite 
     ///         is not available during this event, therefore if you injected an Ignite instance 
     ///         via <see cref="InstanceResourceAttribute"/> attribute, you cannot 
     ///         use it yet.</description>
     ///     </item>
     ///     <item>
-    ///         <term>AFTER_GRID_START</term>
+    ///         <term>AfterNodeStart</term>
     ///         <description>Invoked right after Ignite has started. At this point, if you injected
     ///         an Ignite instance via <see cref="InstanceResourceAttribute"/> attribute, 
     ///         you can start using it.</description>
     ///     </item>
     ///     <item>
-    ///         <term>BEFORE_GRID_STOP</term>
+    ///         <term>BeforeNodeStop</term>
     ///         <description>Invoked right before Ignite stop routine is initiated. Ignite is still 
     ///         available at this stage, so if you injected an Ignite instance via 
     ///         <see cref="InstanceResourceAttribute"/> attribute, you can use it.
     ///         </description>
     ///     </item>
     ///     <item>
-    ///         <term>AFTER_GRID_STOP</term>
+    ///         <term>AfterNodeStop</term>
     ///         <description>Invoked right after Ignite has stopped. Note that Ignite is not available 
     ///         during this event.</description>
     ///     </item>
