@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,16 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests
+namespace Apache.Ignite.Core.Tests.Process
 {
-    using NUnit.Framework;
+    using System;
+    using System.Diagnostics;
 
-    public class IgnitionTest
+    /// <summary>
+    /// Output reader pushing data to the console.
+    /// </summary>
+    public class IgniteProcessConsoleOutputReader : IIgniteProcessOutputReader
     {
-        [Test]
-        public void Test()
+        /** Out message format. */
+        private static readonly string OutFormat = ">>> {0} OUT: {1}";
+
+        /** Error message format. */
+        private static readonly string ErrFormat = ">>> {0} ERR: {1}";
+
+        /** <inheritDoc /> */
+        public void OnOutput(Process proc, string data, bool err)
         {
-            Assert.IsNotNull(new Ignition());
+            Console.WriteLine(err ? ErrFormat : OutFormat, proc.Id, data);
         }
     }
 }

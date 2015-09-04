@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="memPtr">Memory pointer.</param>
         public PlatformPooledMemory(PlatformMemoryPool pool, long memPtr) : base(memPtr)
         {
-            this._pool = pool;
+            _pool = pool;
         }
 
         /** <inheritdoc /> */
