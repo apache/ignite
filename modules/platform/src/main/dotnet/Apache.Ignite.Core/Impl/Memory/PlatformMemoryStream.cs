@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-using Apache.Ignite.Core.Impl.Portable.IO;
-
 namespace Apache.Ignite.Core.Impl.Memory
 {
     using System;
     using System.IO;
     using System.Text;
+    using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
     /// Platform memory stream.

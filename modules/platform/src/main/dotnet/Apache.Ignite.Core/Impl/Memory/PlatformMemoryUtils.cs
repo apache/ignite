@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Runtime.InteropServices;
-    
+
     /// <summary>
     /// Utility methods for platform memory management.
     /// </summary>

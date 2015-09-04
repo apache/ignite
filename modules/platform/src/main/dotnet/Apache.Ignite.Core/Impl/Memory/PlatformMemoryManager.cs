@@ -17,10 +17,9 @@
 
 namespace Apache.Ignite.Core.Impl.Memory
 {
-    using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
-    
+
     /// <summary>
     /// Memory manager implementation.
     /// </summary>
@@ -100,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns>Memory.</returns>
         protected virtual IPlatformMemory GetExternalMemory(long memPtr)
         {
-            throw new NotSupportedException("Not supported in Ignite yet");
+            return new InteropExternalMemory(memPtr);
         }
     }
 }

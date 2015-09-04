@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// <summary>
     /// Arguments check helpers.
     /// </summary>
-    public static class GridArgumentCheck
+    public static class IgniteArgumentCheck
     {
         /// <summary>
         /// Throws an ArgumentNullException if specified arg is null.
