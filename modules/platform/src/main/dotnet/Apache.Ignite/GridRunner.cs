@@ -40,7 +40,7 @@ namespace GridGain.Impl.Runner
         /// </summary>
         internal static void Main(string[] args)
         {
-            GridConfiguration cfg;
+            IgniteConfiguration cfg;
 
             bool svc = false;
             bool install = false;
@@ -73,7 +73,7 @@ namespace GridGain.Impl.Runner
                     }
                     else if (SVC_UNINSTALL.Equals(first))
                     {
-                        GridService.Uninstall();
+                        IgniteService.Uninstall();
 
                         return;
                     }
@@ -82,7 +82,7 @@ namespace GridGain.Impl.Runner
                 if (!svc)
                 {
                     // Pick application configuration.
-                    cfg = new GridConfiguration();
+                    cfg = new IgniteConfiguration();
 
                     new GridAppSettingsConfigurator().Configure(cfg, ConfigurationManager.AppSettings);
 
@@ -90,7 +90,7 @@ namespace GridGain.Impl.Runner
                     new GridArgsConfigurator().Configure(cfg, args);
 
                     if (install)
-                        GridService.DoInstall(cfg);
+                        IgniteService.DoInstall(cfg);
                     else
                     {
                         GridFactory.Start(cfg);
@@ -109,12 +109,12 @@ namespace GridGain.Impl.Runner
             }
 
             // If we are here, then this is a service call.
-            cfg = new GridConfiguration();
+            cfg = new IgniteConfiguration();
 
             // Use only arguments, not app.config.
             new GridArgsConfigurator().Configure(cfg, args);
 
-            ServiceBase.Run(new GridService(cfg));
+            ServiceBase.Run(new IgniteService(cfg));
         }
 
         /// <summary>
@@ -128,7 +128,7 @@ namespace GridGain.Impl.Runner
             Console.WriteLine("\t/uninstall             uninstalls GridGain Windows service");
             Console.WriteLine("");
             Console.WriteLine("Options:");
-            Console.WriteLine("\t-gridGainHome          path to GridGain installation directory (if not provided GRIDGAIN_HOME environment variable is used)");
+            Console.WriteLine("\t-IgniteHome          path to GridGain installation directory (if not provided GRIDGAIN_HOME environment variable is used)");
             Console.WriteLine("\t-springConfigUrl       path to spring configuration file (if not provided \"config/default-config.xml\" is used)");
             Console.WriteLine("\t-jvmDllPath            path to JVM library jvm.dll (if not provided JAVA_HOME environment variable is used)");
             Console.WriteLine("\t-jvmClasspath          classpath passed to JVM (enlist additional jar files here)");
@@ -140,7 +140,7 @@ namespace GridGain.Impl.Runner
             Console.WriteLine("");
             Console.WriteLine("Examples:");
             Console.WriteLine("\tgridgain.exe -J-Xms1024m -J-Xmx1024m -springConfigUrl=C:/woer/gg-test/my-test-gg-confignative.xml");
-            Console.WriteLine("\tgridgain.exe -gridGainHome=c:/programs/gridgain-7.0.0 -jvmClasspath=libs/myLib1.jar;libs/myLib2.jar");
+            Console.WriteLine("\tgridgain.exe -IgniteHome=c:/programs/gridgain-7.0.0 -jvmClasspath=libs/myLib1.jar;libs/myLib2.jar");
             Console.WriteLine("\tgridgain.exe -assembly=c:/myProject/libs/lib1.dll -assembly=c:/myProject/libs/lib2.dll");
             Console.WriteLine("\tgridgain.exe -jvmInitialMemoryMB=1024 -jvmMaxMemoryMB=4096");
             Console.WriteLine("");

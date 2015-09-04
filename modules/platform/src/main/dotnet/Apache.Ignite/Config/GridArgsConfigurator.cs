@@ -10,6 +10,8 @@
 namespace GridGain.Impl.Runner.Config
 {
     using System.Collections.Generic;
+    using Apache.Ignite.Config;
+    using Apache.Ignite.Core;
 
     /// <summary>
     /// Configurator which uses arguments array.
@@ -17,7 +19,7 @@ namespace GridGain.Impl.Runner.Config
     internal class GridArgsConfigurator : IGridConfigurator<string[]>
     {
         /** Command line argument: GridGain home. */
-        private static readonly string CMD_GRIDGAIN_HOME = "-GridGainHome=".ToLower();
+        private static readonly string CMD_GRIDGAIN_HOME = "-IgniteHome=".ToLower();
 
         /** Command line argument: Spring config URL. */
         private static readonly string CMD_SPRING_CFG_URL = "-SpringConfigUrl=".ToLower();
@@ -48,12 +50,12 @@ namespace GridGain.Impl.Runner.Config
         /// </summary>
         /// <param name="cfg"></param>
         /// <returns></returns>
-        internal static string[] ToArgs(GridConfiguration cfg)
+        internal static string[] ToArgs(IgniteConfiguration cfg)
         {
             List<string> args = new List<string>();
 
-            if (cfg.GridGainHome != null)
-                args.Add(CMD_GRIDGAIN_HOME + cfg.GridGainHome);
+            if (cfg.IgniteHome != null)
+                args.Add(CMD_GRIDGAIN_HOME + cfg.IgniteHome);
 
             if (cfg.SpringConfigUrl != null)
                 args.Add(CMD_SPRING_CFG_URL + cfg.SpringConfigUrl);
@@ -90,9 +92,9 @@ namespace GridGain.Impl.Runner.Config
         /// </summary>
         /// <param name="args">Arguments.</param>
         /// <returns>Configuration.</returns>
-        internal static GridConfiguration FromArgs(string[] args)
+        internal static IgniteConfiguration FromArgs(string[] args)
         {
-            GridConfiguration cfg = new GridConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             new GridArgsConfigurator().Configure(cfg, args);
 
@@ -100,7 +102,7 @@ namespace GridGain.Impl.Runner.Config
         }
 
         /** <inheritDoc /> */
-        public void Configure(GridConfiguration cfg, string[] src)
+        public void Configure(IgniteConfiguration cfg, string[] src)
         {
             List<string> jvmOpts = new List<string>();
             List<string> assemblies = new List<string>();
@@ -110,7 +112,7 @@ namespace GridGain.Impl.Runner.Config
                 string argLow = arg.ToLower();
 
                 if (argLow.StartsWith(CMD_GRIDGAIN_HOME))
-                    cfg.GridGainHome = arg.Substring(CMD_GRIDGAIN_HOME.Length);
+                    cfg.IgniteHome = arg.Substring(CMD_GRIDGAIN_HOME.Length);
                 else if (argLow.StartsWith(CMD_SPRING_CFG_URL))
                     cfg.SpringConfigUrl = arg.Substring(CMD_SPRING_CFG_URL.Length);
                 else if (argLow.StartsWith(CMD_JVM_DLL))

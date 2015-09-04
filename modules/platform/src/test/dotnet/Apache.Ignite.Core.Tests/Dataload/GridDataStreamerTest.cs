@@ -52,9 +52,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [TestFixtureSetUp]
         public virtual void InitClient()
         {
-            _grid = Ignition.Start(GetGridConfiguration(GridName));
+            _grid = Ignition.Start(GetIgniteConfiguration(GridName));
 
-            Ignition.Start(GetGridConfiguration(GridName + "_1"));
+            Ignition.Start(GetIgniteConfiguration(GridName + "_1"));
 
             _cache = _grid.Cache<int, int?>(CacheName);
         }
@@ -461,7 +461,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Gets the grid configuration.
         /// </summary>
         /// <param name="gridName">Grid name.</param>
-        private static IgniteConfigurationEx GetGridConfiguration(string gridName)
+        private static IgniteConfigurationEx GetIgniteConfiguration(string gridName)
         {
             return new IgniteConfigurationEx
             {

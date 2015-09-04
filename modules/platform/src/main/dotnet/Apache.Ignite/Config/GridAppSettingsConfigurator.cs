@@ -11,6 +11,7 @@ namespace GridGain.Impl.Runner.Config
 {
     using System.Collections.Generic;
     using System.Collections.Specialized;
+    using Apache.Ignite.Config;
 
     /// <summary>
     /// Configurator which uses application configuration.
@@ -48,7 +49,7 @@ namespace GridGain.Impl.Runner.Config
         private static readonly string CFG_JVM_MAX_MEM = "JvmMaxMemoryMB".ToLower();
 
         /** <inheritDoc /> */
-        public void Configure(GridConfiguration cfg, NameValueCollection src)
+        public void Configure(IgniteConfiguration cfg, NameValueCollection src)
         {
             List<string> jvmOpts = new List<string>();
             List<string> assemblies = new List<string>();
@@ -64,7 +65,7 @@ namespace GridGain.Impl.Runner.Config
                     string val = src[key];
 
                     if (CFG_HOME.Equals(key0))
-                        cfg.GridGainHome = val;
+                        cfg.IgniteHome = val;
                     else if (CFG_SPRING_CFG_URL.Equals(key0))
                         cfg.SpringConfigUrl = val;
                     else if (CFG_JVM_DLL.Equals(key0))

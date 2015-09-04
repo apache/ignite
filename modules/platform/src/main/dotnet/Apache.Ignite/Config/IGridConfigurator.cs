@@ -7,8 +7,10 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-namespace GridGain.Impl.Runner.Config
+namespace Apache.Ignite.Config
 {
+    using Apache.Ignite.Core;
+
     /// <summary>
     /// Configurator which is capable of setting configuration properties taken from somewhere.
     /// </summary>
@@ -19,6 +21,6 @@ namespace GridGain.Impl.Runner.Config
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <param name="src">Source.</param>
-        void Configure(GridConfiguration cfg, T src);
+        void Configure(IgniteConfiguration cfg, T src);
     }
 }

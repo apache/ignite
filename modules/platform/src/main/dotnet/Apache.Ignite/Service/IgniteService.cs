@@ -17,14 +17,14 @@ namespace GridGain.Impl.Runner.Service
     using System.Runtime.InteropServices;
     using System.ServiceProcess;
     using System.Text;
-
-    using GridGain.Common;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Common;
     using GridGain.Impl.Runner.Config;
 
     /// <summary>
     /// GridGain service.
     /// </summary>
-    internal class GridService : ServiceBase
+    internal class IgniteService : ServiceBase
     {
         /** Service name. */
         internal static readonly string SVC_NAME = "GridGain";
@@ -44,12 +44,12 @@ namespace GridGain.Impl.Runner.Service
         internal static readonly string FULL_EXE_NAME = Assembly.GetExecutingAssembly().CodeBase;
 
         /** Grid configuration to start with. */
-        private readonly GridConfiguration cfg;
+        private readonly IgniteConfiguration cfg;
 
         /// <summary>
         /// Static initilizer.
         /// </summary>
-        static GridService()
+        static IgniteService()
         {
             FULL_EXE_NAME = new FileInfo(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath).FullName;
 
@@ -59,7 +59,7 @@ namespace GridGain.Impl.Runner.Service
         /// <summary>
         /// Constructor.
         /// </summary>
-        public GridService(GridConfiguration cfg)
+        public IgniteService(IgniteConfiguration cfg)
         {
             this.AutoLog = true;
             this.CanStop = true;
@@ -71,27 +71,27 @@ namespace GridGain.Impl.Runner.Service
         /** <inheritDoc /> */
         protected override void OnStart(string[] args)
         {
-            GridFactory.Start(cfg);
+            Ignition.Start(cfg);
         }
 
         /** <inheritDoc /> */
         protected override void OnStop()
         {
-            GridFactory.StopAll(true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
         /// Install service programmatically.
         /// </summary>
         /// <param name="cfg">Grid configuration.</param>
-        internal static void DoInstall(GridConfiguration cfg)
+        internal static void DoInstall(IgniteConfiguration cfg)
         {
             // 1. Check if already defined.
             foreach (ServiceController svc in ServiceController.GetServices())
             {
-                if (GridService.SVC_NAME.Equals(svc.ServiceName))
-                    throw new GridException("GridGain service is already installed (uninstall it using \"" +
-                        GridService.EXE_NAME + " " + GridRunner.SVC_UNINSTALL + "\" first)");
+                if (SVC_NAME.Equals(svc.ServiceName))
+                    throw new IgniteException("Ignite service is already installed (uninstall it using \"" +
+                        EXE_NAME + " " + GridRunner.SVC_UNINSTALL + "\" first)");
             }
 
             // 2. Create startup arguments.
@@ -99,19 +99,19 @@ namespace GridGain.Impl.Runner.Service
 
             if (args.Length > 0)
             {
-                Console.WriteLine("Installing \"" + GridService.SVC_NAME + "\" service with the following startup " +
+                Console.WriteLine("Installing \"" + IgniteService.SVC_NAME + "\" service with the following startup " +
                     "arguments:");
 
                 foreach (string arg in args)
                     Console.WriteLine("\t" + arg);
             }
             else
-                Console.WriteLine("Installing \"" + GridService.SVC_NAME + "\" service ...");
+                Console.WriteLine("Installing \"" + IgniteService.SVC_NAME + "\" service ...");
 
             // 3. Actual installation.
             Install0(args);
 
-            Console.WriteLine("\"" + GridService.SVC_NAME + "\" service installed successfully.");
+            Console.WriteLine("\"" + IgniteService.SVC_NAME + "\" service installed successfully.");
         }
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace GridGain.Impl.Runner.Service
 
             foreach (ServiceController svc in ServiceController.GetServices())
             {
-                if (GridService.SVC_NAME.Equals(svc.ServiceName))
+                if (IgniteService.SVC_NAME.Equals(svc.ServiceName))
                 {
                     if (svc.Status.Equals(ServiceControllerStatus.Stopped))
                     {
@@ -139,14 +139,14 @@ namespace GridGain.Impl.Runner.Service
 
             if (found)
             {
-                Console.WriteLine("Uninstalling \"" + GridService.SVC_NAME + "\" service ...");
+                Console.WriteLine("Uninstalling \"" + IgniteService.SVC_NAME + "\" service ...");
 
                 Uninstall0();
 
-                Console.WriteLine("\"" + GridService.SVC_NAME + "\" service uninstalled successfully.");
+                Console.WriteLine("\"" + IgniteService.SVC_NAME + "\" service uninstalled successfully.");
             }
             else
-                Console.WriteLine("\"" + GridService.SVC_NAME + "\" service is not installed.");
+                Console.WriteLine("\"" + IgniteService.SVC_NAME + "\" service is not installed.");
         }
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace GridGain.Impl.Runner.Service
         private static void Install0(string[] args)
         {
             // 1. Prepare arguments.
-            StringBuilder binPath = new StringBuilder(GridService.FULL_EXE_NAME).Append(" ").Append(GridRunner.SVC);
+            StringBuilder binPath = new StringBuilder(IgniteService.FULL_EXE_NAME).Append(" ").Append(GridRunner.SVC);
 
             foreach (string arg in args)
                 binPath.Append(" ").Append(arg);
@@ -167,8 +167,8 @@ namespace GridGain.Impl.Runner.Service
             // 3. Create service.
             IntPtr svc = CreateService(
                 scMgr,
-                GridService.SVC_NAME,
-                GridService.SVC_DISPLAY_NAME,
+                IgniteService.SVC_NAME,
+                IgniteService.SVC_DISPLAY_NAME,
                 983551, // Access constant. 
                 0x10,   // Service type SERVICE_WIN32_OWN_PROCESS.
                 0x2,    // Start type SERVICE_AUTO_START.
@@ -187,7 +187,7 @@ namespace GridGain.Impl.Runner.Service
             // 4. Set description.
             SERVICE_DESCRIPTION desc = new SERVICE_DESCRIPTION();
 
-            desc.desc = Marshal.StringToHGlobalUni(GridService.SVC_DESC);
+            desc.desc = Marshal.StringToHGlobalUni(IgniteService.SVC_DESC);
 
             try 
             {
@@ -207,7 +207,7 @@ namespace GridGain.Impl.Runner.Service
         {
             IntPtr scMgr = OpenSCManager();
 
-            IntPtr svc = OpenService(scMgr, GridService.SVC_NAME, 65536);
+            IntPtr svc = OpenService(scMgr, IgniteService.SVC_NAME, 65536);
 
             if (svc == IntPtr.Zero)
                 throw new GridException("Failed to uninstall the service.", new Win32Exception());
