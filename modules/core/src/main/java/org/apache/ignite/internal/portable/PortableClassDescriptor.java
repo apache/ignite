@@ -19,10 +19,13 @@ package org.apache.ignite.internal.portable;
 
 import java.io.Externalizable;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -36,6 +39,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableIdMapper;
 import org.apache.ignite.portable.PortableMarshalAware;
@@ -95,6 +100,9 @@ public class PortableClassDescriptor {
     private final boolean registered;
 
     /** */
+    private final boolean useOptMarshaller;
+
+    /** */
     private final boolean excluded;
 
     /**
@@ -108,36 +116,8 @@ public class PortableClassDescriptor {
      * @param useTs Use timestamp flag.
      * @param metaDataEnabled Metadata enabled flag.
      * @param keepDeserialized Keep deserialized flag.
-     * @throws PortableException In case of error.
-     */
-    PortableClassDescriptor(
-        PortableContext ctx,
-        Class<?> cls,
-        boolean userType,
-        int typeId,
-        String typeName,
-        @Nullable PortableIdMapper idMapper,
-        @Nullable PortableSerializer serializer,
-        boolean useTs,
-        boolean metaDataEnabled,
-        boolean keepDeserialized
-    ) throws PortableException {
-        this(ctx, cls, userType, typeId, typeName, idMapper, serializer, useTs, metaDataEnabled, keepDeserialized,
-            true);
-    }
-
-    /**
-     * @param ctx Context.
-     * @param cls Class.
-     * @param userType User type flag.
-     * @param typeId Type ID.
-     * @param typeName Type name.
-     * @param idMapper ID mapper.
-     * @param serializer Serializer.
-     * @param useTs Use timestamp flag.
-     * @param metaDataEnabled Metadata enabled flag.
-     * @param keepDeserialized Keep deserialized flag.
      * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
+     * @param predefined Whether the class is predefined or not.
      * @throws PortableException In case of error.
      */
     PortableClassDescriptor(
@@ -151,7 +131,8 @@ public class PortableClassDescriptor {
         boolean useTs,
         boolean metaDataEnabled,
         boolean keepDeserialized,
-        boolean registered
+        boolean registered,
+        boolean predefined
     ) throws PortableException {
         assert ctx != null;
         assert cls != null;
@@ -167,6 +148,8 @@ public class PortableClassDescriptor {
         this.registered = registered;
 
         excluded = MarshallerExclusions.isExcluded(cls);
+
+        useOptMarshaller = !predefined && initUseOptimizedMarshallerFlag();
 
         if (excluded)
             mode = Mode.EXCLUSION;
@@ -313,8 +296,16 @@ public class PortableClassDescriptor {
     /**
      * @return Whether typeId has been successfully registered by MarshallerContext or not.
      */
-    public boolean isRegistered() {
+    public boolean registered() {
         return registered;
+    }
+
+    /**
+     * @return {@code true} if {@link OptimizedMarshaller} must be used instead of {@link PortableMarshaller}
+     * for object serialization and deserialization.
+     */
+    public boolean useOptimizedMarshaller() {
+        return useOptMarshaller;
     }
 
     /**
@@ -717,6 +708,32 @@ public class PortableClassDescriptor {
         catch (IgniteCheckedException e) {
             throw new PortableException("Failed to get constructor for class: " + cls.getName(), e);
         }
+    }
+
+    /**
+     * Determines whether to use {@link OptimizedMarshaller} for serialization or
+     * not.
+     *
+     * @return {@code true} if to use, {@code false} otherwise.
+     */
+    private boolean initUseOptimizedMarshallerFlag() {
+       boolean use;
+
+        try {
+            Method writeObj = cls.getDeclaredMethod("writeObject", ObjectOutputStream.class);
+            Method readObj = cls.getDeclaredMethod("readObject", ObjectInputStream.class);
+
+            if (!Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
+                writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class)
+                use = true;
+            else
+                use = false;
+        }
+        catch (NoSuchMethodException e) {
+            use = false;
+        }
+
+        return use;
     }
 
     /**

@@ -18,20 +18,27 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <PlatformTarget>x64</PlatformTarget>
     <OutputPath>bin\x64\Debug\</OutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>DEBUG</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <PlatformTarget>x64</PlatformTarget>
     <OutputPath>bin\x64\Release\</OutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>bin\x86\Debug\</OutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>DEBUG</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>bin\x86\Release\</OutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="nunit-console-runner">
       <HintPath>..\libs\nunit-console-runner.dll</HintPath>
     </Reference>
@@ -41,18 +48,174 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="IgnitionTest.cs" />
+    <Compile Include="Cache\CacheDynamicStartTest.cs" />
+    <Compile Include="Cache\CacheTestAsyncWrapper.cs" />
+    <Compile Include="Cache\CacheAbstractTest.cs" />
+    <Compile Include="Cache\CacheAffinityTest.cs" />
+    <Compile Include="Cache\CacheEntryTest.cs" />
+    <Compile Include="Cache\CacheForkedTest.cs" />
+    <Compile Include="Cache\CacheLocalAtomicTest.cs" />
+    <Compile Include="Cache\CacheLocalTest.cs" />
+    <Compile Include="Cache\CachePartitionedAtomicNearEnabledTest.cs" />
+    <Compile Include="Cache\CachePartitionedAtomicTest.cs" />
+    <Compile Include="Cache\CachePartitionedNearEnabledTest.cs" />
+    <Compile Include="Cache\CachePartitionedTest.cs" />
+    <Compile Include="Cache\CacheReplicatedAtomicTest.cs" />
+    <Compile Include="Cache\CacheReplicatedTest.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryAbstractTest.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryAtomicBackupTest.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryAtomicNoBackupTest.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryNoBackupAbstractTest.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryTransactionalBackupTest.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryTransactionalNoBackupTest.cs" />
+    <Compile Include="Cache\Query\CacheQueriesTest.cs" />
+    <Compile Include="Cache\Store\CacheParallelLoadStoreTest.cs" />
+    <Compile Include="Cache\Store\CacheStoreSessionTest.cs" />
+    <Compile Include="Cache\Store\CacheStoreTest.cs" />
+    <Compile Include="Cache\Store\CacheTestParallelLoadStore.cs" />
+    <Compile Include="Cache\Store\CacheTestStore.cs" />
+    <Compile Include="Compute\Forked\ForkedPortableClosureTaskTest.cs" />
+    <Compile Include="Compute\Forked\ForkedResourceTaskTest.cs" />
+    <Compile Include="Compute\Forked\ForkedSerializableClosureTaskTest.cs" />
+    <Compile Include="Compute\Forked\ForkedTaskAdapterTest.cs" />
+    <Compile Include="Compute\AbstractTaskTest.cs" />
+    <Compile Include="Compute\ClosureTaskTest.cs" />
+    <Compile Include="Compute\ComputeApiTest.cs" />
+    <Compile Include="Compute\ComputeMultithreadedTest.cs" />
+    <Compile Include="Compute\IgniteExceptionTaskSelfTest.cs" />
+    <Compile Include="Compute\FailoverTaskSelfTest.cs" />
+    <Compile Include="Compute\PortableClosureTaskTest.cs" />
+    <Compile Include="Compute\PortableTaskTest.cs" />
+    <Compile Include="Compute\ResourceTaskTest.cs" />
+    <Compile Include="Compute\SerializableClosureTaskTest.cs" />
+    <Compile Include="Compute\TaskAdapterTest.cs" />
+    <Compile Include="Compute\TaskResultTest.cs" />
+    <Compile Include="Dataload\DataStreamerTest.cs" />
+    <Compile Include="EventsTest.cs" />
+    <Compile Include="ExceptionsTest.cs" />
+    <Compile Include="ExecutableTest.cs" />
+    <Compile Include="FutureTest.cs" />
+    <Compile Include="LifecycleTest.cs" />
+    <Compile Include="LoadDllTest.cs" />
+    <Compile Include="IgniteManagerTest.cs" />
+    <Compile Include="MarshallerTest.cs" />
+    <Compile Include="MessagingTest.cs" />
+    <Compile Include="PortableConfigurationTest.cs" />
+    <Compile Include="SerializationTest.cs" />
+    <Compile Include="IgniteStartStopTest.cs" />
+    <Compile Include="TestUtils.cs" />
     <Compile Include="Memory\InteropMemoryTest.cs" />
+    <Compile Include="Portable\PortableApiSelfTest.cs" />
+    <Compile Include="Portable\PortableSelfTest.cs" />
+    <Compile Include="Process\IgniteProcess.cs" />
+    <Compile Include="Process\IgniteProcessConsoleOutputReader.cs" />
+    <Compile Include="Process\IIgniteProcessOutputReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Query\ImplicitPortablePerson.cs" />
+    <Compile Include="Query\NoDefPortablePerson.cs" />
+    <Compile Include="Query\PortablePerson.cs" />
+    <Compile Include="Services\ServicesTest.cs" />
+    <Compile Include="Services\ServicesTestAsync.cs" />
+    <Compile Include="Services\ServiceProxyTest.cs" />
+    <Compile Include="Services\ServicesAsyncWrapper.cs" />
     <Compile Include="TestRunner.cs" />
+    <Compile Include="TypeResolverTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\main\dotnet\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
       <Project>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</Project>
       <Name>Apache.Ignite.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Apache.Ignite.Core.Tests.TestDll\Apache.Ignite.Core.Tests.TestDll.csproj">
+      <Project>{F4A69E2D-908E-4F0F-A794-84D508D60E5F}</Project>
+      <Name>Apache.Ignite.Core.Tests.TestDll</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Config\cache-portables.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\cache-query-continuous.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\cache-query.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Cache\Store\cache-store-session.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Compute\compute-grid1.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Compute\compute-grid2.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Compute\compute-grid3.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Compute\compute-standalone.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Dynamic\dynamic-client.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Dynamic\dynamic-data-no-cfg.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Dynamic\dynamic-data.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Lifecycle\lifecycle-beans.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Lifecycle\lifecycle-no-beans.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\marshaller-default.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\marshaller-invalid.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\marshaller-portable.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\native-client-test-cache-affinity.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\native-client-test-cache-parallel-store.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\native-client-test-cache-portables.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\native-client-test-cache-store.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\native-client-test-cache.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\portable.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\start-test-grid1.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\start-test-grid2.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\start-test-grid3.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Config\Ignite.exe.config.test">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
