@@ -43,11 +43,11 @@
 
         <property name="lifecycleBeans">
             <list>
-                <bean class="org.gridgain.interop.lifecycle.GridInteropJavaLifecycleBean" />
+                <bean class="org.apache.ignite.platform.lifecycle.PlatformJavaLifecycleBean" />
                 <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean">
                     <property name="className" value="Apache.Ignite.Core.Tests.Bean" />
                 </bean>
-                <bean class="org.gridgain.interop.lifecycle.GridInteropJavaLifecycleBean" />
+                <bean class="org.apache.ignite.platform.lifecycle.PlatformJavaLifecycleBean" />
                 <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean">
                     <property name="className" value="Apache.Ignite.Core.Tests.Bean" />
                     <property name="properties">
@@ -59,7 +59,7 @@
                         </map>
                     </property>
                 </bean>
-                <bean class="org.gridgain.interop.lifecycle.GridInteropJavaLifecycleBean" />
+                <bean class="org.apache.ignite.platform.lifecycle.PlatformJavaLifecycleBean" />
             </list>
         </property>
     </bean>
