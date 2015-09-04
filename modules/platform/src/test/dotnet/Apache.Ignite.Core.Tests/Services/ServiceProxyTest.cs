@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Services
     public class ServiceProxyTest
     {
         /** */
-        private TestGridService _svc;
+        private TestIgniteService _svc;
 
         /** */
         private readonly PortableMarshaller _marsh = new PortableMarshaller(new PortableConfiguration
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var ex = Assert.Throws<InvalidOperationException>(() => prx.MissingMethod());
 
             Assert.AreEqual("Failed to invoke proxy: there is no method 'MissingMethod'" +
-                            " in type 'Apache.Ignite.Core.Tests.Services.ServiceProxyTest+TestGridService'", ex.Message);
+                            " in type 'Apache.Ignite.Core.Tests.Services.ServiceProxyTest+TestIgniteService'", ex.Message);
         }
 
         /// <summary>
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var ex = Assert.Throws<InvalidOperationException>(() => prx.AmbiguousMethod(1));
 
             Assert.AreEqual("Failed to invoke proxy: there are 2 methods 'AmbiguousMethod' in type " +
-                            "'Apache.Ignite.Core.Tests.Services.ServiceProxyTest+TestGridService' with (Int32) arguments, " +
+                            "'Apache.Ignite.Core.Tests.Services.ServiceProxyTest+TestIgniteService' with (Int32) arguments, " +
                             "can't resolve ambiguity.", ex.Message);
         }
 
@@ -233,9 +233,9 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Creates the proxy.
         /// </summary>
-        protected ITestGridServiceProxyInterface GetProxy()
+        protected ITestIgniteServiceProxyInterface GetProxy()
         {
-            return GetProxy<ITestGridServiceProxyInterface>();
+            return GetProxy<ITestIgniteServiceProxyInterface>();
         }
 
         /// <summary>
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         protected T GetProxy<T>()
         {
-            _svc = new TestGridService(Portables);
+            _svc = new TestIgniteService(Portables);
 
             var prx = new ServiceProxy<T>(InvokeProxyMethod).GetTransparentProxy();
 
@@ -297,7 +297,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface.
         /// </summary>
-        protected interface ITestGridServiceProperties
+        protected interface ITestIgniteServiceProperties
         {
             /** */
             int IntProp { get; set; }
@@ -312,7 +312,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface to check ambiguity handling.
         /// </summary>
-        protected interface ITestGridServiceAmbiguity
+        protected interface ITestIgniteServiceAmbiguity
         {
             /** */
             int AmbiguousMethod(int arg);
@@ -321,7 +321,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface.
         /// </summary>
-        protected interface ITestGridService : ITestGridServiceProperties
+        protected interface ITestIgniteService : ITestIgniteServiceProperties
         {
             /** */
             void VoidMethod();
@@ -372,7 +372,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface. Does not derive from actual interface, but has all the same method signatures.
         /// </summary>
-        protected interface ITestGridServiceProxyInterface
+        protected interface ITestIgniteServiceProxyInterface
         {
             /** */
             int IntProp { get; set; }
@@ -436,16 +436,16 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Test service.
         /// </summary>
         [Serializable]
-        private class TestGridService : ITestGridService, ITestGridServiceAmbiguity
+        private class TestIgniteService : ITestIgniteService, ITestIgniteServiceAmbiguity
         {
             /** */
             private readonly IPortables _portables;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="TestGridService"/> class.
+            /// Initializes a new instance of the <see cref="TestIgniteService"/> class.
             /// </summary>
             /// <param name="portables">The portables.</param>
-            public TestGridService(IPortables portables)
+            public TestIgniteService(IPortables portables)
             {
                 _portables = portables;
             }
@@ -556,13 +556,13 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** <inheritdoc /> */
-            int ITestGridService.AmbiguousMethod(int arg)
+            int ITestIgniteService.AmbiguousMethod(int arg)
             {
                 return arg;
             }
 
             /** <inheritdoc /> */
-            int ITestGridServiceAmbiguity.AmbiguousMethod(int arg)
+            int ITestIgniteServiceAmbiguity.AmbiguousMethod(int arg)
             {
                 return -arg;
             }

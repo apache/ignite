@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         /// <param name="idx"></param>
         /// <returns></returns>
-        public IIgnite Grid(int idx)
+        public IIgnite GetIgnite(int idx)
         {
             return Ignition.GetIgnite("grid-" + idx);
         }
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <returns></returns>
         public ICache<int, QueryPerson> Cache(int idx)
         {
-            return Grid(idx).Cache<int, QueryPerson>(CacheName);
+            return GetIgnite(idx).Cache<int, QueryPerson>(CacheName);
         }
 
         /// <summary>
@@ -591,7 +591,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestIndexingDisabledError()
         {
-            var cache = Grid(0).GetOrCreateCache<int, QueryPerson>("nonindexed_cache");
+            var cache = GetIgnite(0).GetOrCreateCache<int, QueryPerson>("nonindexed_cache");
 
             var queries = new QueryBase[]
             {

@@ -364,7 +364,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
         }
 
-        public IIgnite Grid(int idx)
+        public IIgnite GetIgnite(int idx)
         {
             return Ignition.GetIgnite("grid-" + idx);
         }
@@ -374,7 +374,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         public ICache<TK, TV> Cache<TK, TV>(int idx) {
-            return Grid(idx).Cache<TK, TV>(CacheName());
+            return GetIgnite(idx).Cache<TK, TV>(CacheName());
         }
 
         public ICache<int, int> Cache()
@@ -389,12 +389,12 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         public ICacheAffinity Affinity()
         {
-            return Grid(0).Affinity(CacheName());
+            return GetIgnite(0).Affinity(CacheName());
         }
 
         public ITransactions Transactions
         {
-            get { return Grid(0).Transactions; }
+            get { return GetIgnite(0).Transactions; }
         }
 
         [Test]
@@ -2206,7 +2206,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(2500, tx.Timeout.TotalMilliseconds);
             Assert.AreEqual(TransactionState.Active, tx.State);
             Assert.IsTrue(tx.StartTime.Ticks > 0);
-            Assert.AreEqual(tx.NodeId, Grid(0).Cluster.LocalNode.Id);
+            Assert.AreEqual(tx.NodeId, GetIgnite(0).Cluster.LocalNode.Id);
 
             DateTime startTime1 = tx.StartTime;
 
@@ -2610,7 +2610,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             ICacheAffinity aff = Affinity();
 
-            ICollection<IClusterNode> nodes = Grid(0).Cluster.Nodes();
+            ICollection<IClusterNode> nodes = GetIgnite(0).Cluster.Nodes();
 
             Assert.IsTrue(nodes.Count > 0);
 
@@ -2662,7 +2662,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             ICacheAffinity aff = Affinity();
 
-            ICollection<IClusterNode> nodes = Grid(0).Cluster.Nodes();
+            ICollection<IClusterNode> nodes = GetIgnite(0).Cluster.Nodes();
 
             Assert.IsTrue(nodes.Count > 0);
 
@@ -2728,7 +2728,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.IsNotNull(node);
 
-            Assert.IsTrue(Grid(0).Cluster.Nodes().Contains(node));
+            Assert.IsTrue(GetIgnite(0).Cluster.Nodes().Contains(node));
 
             Assert.IsTrue(aff.IsPrimary(node, key));
 
@@ -2807,7 +2807,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 Assert.AreEqual(parts.Count, map.Count);
 
-                Assert.AreEqual(Grid(0).Cluster.LocalNode, map[0]);
+                Assert.AreEqual(GetIgnite(0).Cluster.LocalNode, map[0]);
             }
             else
             {
@@ -3108,18 +3108,18 @@ namespace Apache.Ignite.Core.Tests.Cache
             var randomName = "template" + Guid.NewGuid();
 
             // Can't get non-existent cache with Cache method
-            Assert.Throws<ArgumentException>(() => Grid(0).Cache<int, int>(randomName));
+            Assert.Throws<ArgumentException>(() => GetIgnite(0).Cache<int, int>(randomName));
 
-            var cache = Grid(0).CreateCache<int, int>(randomName);
+            var cache = GetIgnite(0).CreateCache<int, int>(randomName);
 
             cache.Put(1, 10);
 
             Assert.AreEqual(10, cache.Get(1));
 
             // Can't create again
-            Assert.Throws<IgniteException>(() => Grid(0).CreateCache<int, int>(randomName));
+            Assert.Throws<IgniteException>(() => GetIgnite(0).CreateCache<int, int>(randomName));
 
-            var cache0 = Grid(0).Cache<int, int>(randomName);
+            var cache0 = GetIgnite(0).Cache<int, int>(randomName);
 
             Assert.AreEqual(10, cache0.Get(1));
         }
@@ -3131,19 +3131,19 @@ namespace Apache.Ignite.Core.Tests.Cache
             var randomName = "template" + Guid.NewGuid();
 
             // Can't get non-existent cache with Cache method
-            Assert.Throws<ArgumentException>(() => Grid(0).Cache<int, int>(randomName));
+            Assert.Throws<ArgumentException>(() => GetIgnite(0).Cache<int, int>(randomName));
 
-            var cache = Grid(0).GetOrCreateCache<int, int>(randomName);
+            var cache = GetIgnite(0).GetOrCreateCache<int, int>(randomName);
 
             cache.Put(1, 10);
 
             Assert.AreEqual(10, cache.Get(1));
 
-            var cache0 = Grid(0).GetOrCreateCache<int, int>(randomName);
+            var cache0 = GetIgnite(0).GetOrCreateCache<int, int>(randomName);
 
             Assert.AreEqual(10, cache0.Get(1));
 
-            var cache1 = Grid(0).Cache<int, int>(randomName);
+            var cache1 = GetIgnite(0).Cache<int, int>(randomName);
 
             Assert.AreEqual(10, cache1.Get(1));
         }

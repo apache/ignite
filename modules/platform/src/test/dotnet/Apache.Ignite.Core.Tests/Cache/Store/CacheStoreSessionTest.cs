@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     public class CacheStoreSessionTest
     {
         /** Grid name. */
-        private const string Grid = "grid";
+        private const string IgntieName = "grid";
 
         /** Cache 1 name. */
         private const string Cache1 = "cache1";
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             IgniteConfigurationEx cfg = new IgniteConfigurationEx
             {
-                GridName = Grid,
+                GridName = IgntieName,
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = @"config\cache\store\cache-store-session.xml"
@@ -84,10 +84,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             _dumps = new ConcurrentBag<ICollection<Operation>>();
 
-            var grid = Ignition.GetIgnite(Grid);
+            var grid = Ignition.GetIgnite(IgntieName);
 
-            var cache1 = Ignition.GetIgnite(Grid).Cache<int, int>(Cache1);
-            var cache2 = Ignition.GetIgnite(Grid).Cache<int, int>(Cache2);
+            var cache1 = Ignition.GetIgnite(IgntieName).Cache<int, int>(Cache1);
+            var cache2 = Ignition.GetIgnite(IgntieName).Cache<int, int>(Cache2);
 
             // 1. Test rollback.
             using (var tx = grid.Transactions.TxStart())
