@@ -15,43 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Cache
+namespace Apache.Ignite.Core.Tests.Process
 {
-    public class GridCacheLocalAtomicTest : GridCacheAbstractTest
+    using System;
+    using System.Diagnostics;
+
+    /// <summary>
+    /// Output reader pushing data to the console.
+    /// </summary>
+    public class IgniteProcessConsoleOutputReader : IIgniteProcessOutputReader
     {
-        protected override int CachePartitions()
-        {
-            return 1;
-        }
+        /** Out message format. */
+        private static readonly string OutFormat = ">>> {0} OUT: {1}";
 
-        protected override int GridCount()
-        {
-            return 1;
-        }
+        /** Error message format. */
+        private static readonly string ErrFormat = ">>> {0} ERR: {1}";
 
-        protected override string CacheName()
+        /** <inheritDoc /> */
+        public void OnOutput(Process proc, string data, bool err)
         {
-            return "local_atomic";
-        }
-
-        protected override bool NearEnabled()
-        {
-            return false;
-        }
-
-        protected override bool TxEnabled()
-        {
-            return false;
-        }
-
-        protected override bool LocalCache()
-        {
-            return true;
-        }
-
-        protected override int Backups()
-        {
-            return 0;
+            Console.WriteLine(err ? ErrFormat : OutFormat, proc.Id, data);
         }
     }
 }

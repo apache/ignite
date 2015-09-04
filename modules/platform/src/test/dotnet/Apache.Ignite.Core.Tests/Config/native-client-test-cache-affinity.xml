@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
@@ -34,7 +34,7 @@
                             <list>
                                 <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableTypeConfiguration">
                                     <property name="typeName"
-                                              value="Apache.Ignite.Core.Tests.Cache.GridCacheAffinityTest+AffinityTestKey"/>
+                                              value="Apache.Ignite.Core.Tests.Cache.CacheAffinityTest+AffinityTestKey"/>
                                     <property name="affinityKeyFieldName" value="_affKey"/>
                                 </bean>
                             </list>

@@ -58,11 +58,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         /** Second process. */
         [NonSerialized]
-        private GridProcess _proc2;
+        private IgniteProcess _proc2;
 
         /** Third process. */
         [NonSerialized]
-        private GridProcess _proc3;
+        private IgniteProcess _proc3;
 
         /// <summary>
         /// Constructor.
@@ -192,9 +192,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         /// <param name="path">Path to Java XML configuration.</param>
         /// <returns>Forked process.</returns>
-        private static GridProcess Fork(string path)
+        private static IgniteProcess Fork(string path)
         {
-            return new GridProcess(
+            return new IgniteProcess(
                 "-springConfigUrl=" + path,
                 "-J-ea",
                 "-J-Xcheck:jni",

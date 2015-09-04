@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using Apache.Ignite.Core.Resource;
 
     [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
-    public class GridCacheTestStore : ICacheStore
+    public class CacheTestStore : ICacheStore
     {
         public static readonly IDictionary Map = new ConcurrentDictionary<object, object>();
 

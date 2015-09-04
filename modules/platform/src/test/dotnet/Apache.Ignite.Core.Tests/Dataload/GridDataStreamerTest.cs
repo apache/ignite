@@ -298,7 +298,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 // Test forced flush after frequency change.
                 fut = ldr.AddData(2, 2);
-                ldr.AutoFlushFrequency = Int64.MaxValue;                
+                ldr.AutoFlushFrequency = long.MaxValue;                
                 fut.Get();
 
                 // Test another forced flush after frequency change.
@@ -472,7 +472,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 {
                     TypeConfigurations = new List<PortableTypeConfiguration>
                     {
-                        new PortableTypeConfiguration(typeof (GridCacheTestKey)),
+                        new PortableTypeConfiguration(typeof (CacheTestKey)),
                         new PortableTypeConfiguration(typeof (TestReferenceObject)),
                         new PortableTypeConfiguration(typeof (StreamReceiverPortable)),
                         new PortableTypeConfiguration(typeof (EntryProcessorPortable)),

@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// <see cref="CacheEntry{TK,TV}"/> tests.
     /// </summary>
-    public class GridCacheEntryTest
+    public class CacheEntryTest
     {
         /// <summary>
         /// Tests equality members.

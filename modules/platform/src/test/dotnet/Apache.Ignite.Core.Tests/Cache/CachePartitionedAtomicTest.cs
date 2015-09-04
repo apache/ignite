@@ -15,38 +15,36 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Query
+namespace Apache.Ignite.Core.Tests.Cache
 {
-    using System;
+    using NUnit.Framework;
 
-    /**
-     * 
-     */
-    class GridImplicitPortablePerson {
-        /**
-         * 
-         */
-        public GridImplicitPortablePerson(String _name, int _age) {
-            Name = _name;
-            Age = _age;
+    [Category(GridTestUtils.CategoryIntensive)]
+    public class CachePartitionedAtomicTest : CacheAbstractTest
+    {
+        protected override int GridCount()
+        {
+            return 3;
         }
 
-        /**
-         * 
-         */
-        public String Name
+        protected override string CacheName()
         {
-            get;
-            set;
+            return "partitioned_atomic";
         }
 
-        /**
-         * 
-         */
-        public int Age
+        protected override bool NearEnabled()
         {
-            get;
-            set;
+            return false;
+        }
+
+        protected override bool TxEnabled()
+        {
+            return false;
+        }
+
+        protected override int Backups()
+        {
+            return 1;
         }
     }
 }

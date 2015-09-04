@@ -353,7 +353,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="chars">Char array.</param>
         /// <param name="charsLen">Char array length.</param>
         /// <returns></returns>
-        public static unsafe String Utf8UnmanagedToString(sbyte* chars, int charsLen)
+        public static unsafe string Utf8UnmanagedToString(sbyte* chars, int charsLen)
         {
             IntPtr ptr = new IntPtr(chars);
 

@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Compute
     /// executed. Jobs will automatically failover to another node if a remote node crashed or has rejected
     /// execution due to lack of resources. By default, in case of failover, next load balanced node will be
     /// picked for job execution. Also jobs will never be re-routed to the nodes they have failed on. This
-    /// behavior can be changed by configuring any of the existing or a custom <c>GridFailoverSpi</c> in grid
+    /// behavior can be changed by configuring any of the existing or a custom <c>FailoverSpi</c> in Ignite
     /// configuration.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.

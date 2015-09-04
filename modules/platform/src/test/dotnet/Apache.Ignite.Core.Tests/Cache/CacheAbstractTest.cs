@@ -39,12 +39,12 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     ///
     /// </summary>
-    class GridCacheTestKey
+    class CacheTestKey
     {
         /// <summary>
         /// Default constructor.
         /// </summary>
-        public GridCacheTestKey()
+        public CacheTestKey()
         {
             // No-op.
         }
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Constructor.
         /// </summary>
         /// <param name="id">ID.</param>
-        public GridCacheTestKey(int id)
+        public CacheTestKey(int id)
         {
             Id = id;
         }
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritdoc /> */
         public override bool Equals(object obj)
         {
-            GridCacheTestKey other = obj as GridCacheTestKey;
+            CacheTestKey other = obj as CacheTestKey;
 
             return other != null && Id == other.Id;
         }
@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public override string ToString()
         {
             return new StringBuilder()
-                .Append(typeof(GridCacheTestKey).Name)
+                .Append(typeof(CacheTestKey).Name)
                 .Append(" [id=").Append(Id)
                 .Append(']').ToString();
         }
@@ -285,7 +285,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     ///
     /// </summary>
     [SuppressMessage("ReSharper", "UnusedVariable")]
-    public abstract class GridCacheAbstractTest {
+    public abstract class CacheAbstractTest {
         /// <summary>
         ///
         /// </summary>
@@ -300,7 +300,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
 
             portTypeCfgs.Add(new PortableTypeConfiguration(typeof(GridPortablePerson)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(GridCacheTestKey)));
+            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(CacheTestKey)));
             portTypeCfgs.Add(new PortableTypeConfiguration(typeof(TestReferenceObject)));
             portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableAddArgCacheEntryProcessor)));
             portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableTestException)));
@@ -1571,15 +1571,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestPutGetPortableKey()
         {
-            var cache = Cache<GridCacheTestKey, string>();
+            var cache = Cache<CacheTestKey, string>();
 
             int cnt = 100;
 
             for (int i = 0; i < cnt; i++)
-                cache.Put(new GridCacheTestKey(i), "val-" + i);
+                cache.Put(new CacheTestKey(i), "val-" + i);
 
             for (int i = 0; i < cnt; i++)
-                Assert.AreEqual("val-" + i, cache.Get(new GridCacheTestKey(i)));
+                Assert.AreEqual("val-" + i, cache.Get(new CacheTestKey(i)));
         }
 
         [Test]
@@ -1673,7 +1673,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Category(GridTestUtils.CategoryIntensive)]
         public void TestPutGetAsyncMultithreaded()
         {
-            var cache = Cache<GridCacheTestKey, GridPortablePerson>().WithAsync();
+            var cache = Cache<CacheTestKey, GridPortablePerson>().WithAsync();
 
             const int threads = 10;
             const int objPerThread = 1000;
@@ -1691,7 +1691,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Put(new GridCacheTestKey(key), new GridPortablePerson("Person-" + key, key));
+                    cache.Put(new CacheTestKey(key), new GridPortablePerson("Person-" + key, key));
 
                     futs.Add(cache.GetFuture<object>());
                 }
@@ -1712,7 +1712,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Get(new GridCacheTestKey(key));
+                    cache.Get(new CacheTestKey(key));
                     var p = cache.GetFuture<GridPortablePerson>().Get();
 
                     Assert.IsNotNull(p);
@@ -1731,7 +1731,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Put(new GridCacheTestKey(key), new GridPortablePerson("Person-" + key, key));
+                    cache.Put(new CacheTestKey(key), new GridPortablePerson("Person-" + key, key));
 
                     cache.GetFuture<object>().Get();
                 }
@@ -1749,7 +1749,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Get(new GridCacheTestKey(key));
+                    cache.Get(new CacheTestKey(key));
 
                     futs.Add(cache.GetFuture<GridPortablePerson>());
                 }
@@ -1773,8 +1773,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         //[Category(GridTestUtils.CATEGORY_INTENSIVE)]
         public void TestAsyncMultithreadedKeepPortable()
         {
-            var cache = Cache().WithAsync().WithKeepPortable<GridCacheTestKey, GridPortablePerson>();
-            var portCache = Cache().WithAsync().WithKeepPortable<GridCacheTestKey, IPortableObject>();
+            var cache = Cache().WithAsync().WithKeepPortable<CacheTestKey, GridPortablePerson>();
+            var portCache = Cache().WithAsync().WithKeepPortable<CacheTestKey, IPortableObject>();
 
             const int threads = 10;
             const int objPerThread = 1000;
@@ -1792,7 +1792,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Put(new GridCacheTestKey(key), new GridPortablePerson("Person-" + key, key));
+                    cache.Put(new CacheTestKey(key), new GridPortablePerson("Person-" + key, key));
 
                     futs.Add(cache.GetFuture<object>());
                 }
@@ -1809,7 +1809,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    IPortableObject p = portCache.Get(new GridCacheTestKey(key));
+                    IPortableObject p = portCache.Get(new CacheTestKey(key));
 
                     Assert.IsNotNull(p);
                     Assert.AreEqual(key, p.Field<int>("age"));
@@ -1829,7 +1829,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    portCache.Get(new GridCacheTestKey(key));
+                    portCache.Get(new CacheTestKey(key));
 
                     futs.Add(cache.GetFuture<IPortableObject>());
                 }
@@ -1860,7 +1860,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Remove(new GridCacheTestKey(key));
+                    cache.Remove(new CacheTestKey(key));
 
                     futs.Add(cache.GetFuture<bool>());
                 }

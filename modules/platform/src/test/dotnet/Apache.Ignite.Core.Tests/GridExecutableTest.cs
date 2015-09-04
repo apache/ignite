@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsTrue(_grid.WaitTopology(1, 30000));
 
-            GridProcess.SaveConfigurationBackup();
+            IgniteProcess.SaveConfigurationBackup();
         }
 
         /// <summary>
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
-            GridProcess.RestoreConfigurationBackup();
+            IgniteProcess.RestoreConfigurationBackup();
         }
 
         /// <summary>
@@ -98,12 +98,12 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestConfig()
         {
-            GridProcess.ReplaceConfiguration("config\\Ignite.exe.config.test");
+            IgniteProcess.ReplaceConfiguration("config\\Ignite.exe.config.test");
 
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
 
-            GridProcess proc = new GridProcess(
+            IgniteProcess proc = new IgniteProcess(
                 "-jvmClasspath=" + GridTestUtils.CreateTestClasspath()
                 );
 
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Tests
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
 
-            GridProcess proc = new GridProcess(
+            IgniteProcess proc = new IgniteProcess(
                 "-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-assembly=test-1.dll",
@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestJvmOptsCmd()
         {
-            GridProcess proc = new GridProcess(
+            IgniteProcess proc = new IgniteProcess(
                 "-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-J-DOPT1",
@@ -167,7 +167,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestJvmMemoryOptsCmdRaw()
         {
-            var proc = new GridProcess(
+            var proc = new IgniteProcess(
                 "-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-J-Xms506m",
@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestJvmMemoryOptsCmdCustom()
         {
-            var proc = new GridProcess(
+            var proc = new IgniteProcess(
                 "-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-JvmInitialMemoryMB=615",
@@ -211,12 +211,12 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestJvmMemoryOptsAppConfig()
         {
-            GridProcess.ReplaceConfiguration("config\\Ignite.exe.config.test");
+            IgniteProcess.ReplaceConfiguration("config\\Ignite.exe.config.test");
 
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
 
-            var proc = new GridProcess("-jvmClasspath=" + GridTestUtils.CreateTestClasspath());
+            var proc = new IgniteProcess("-jvmClasspath=" + GridTestUtils.CreateTestClasspath());
 
             Assert.IsTrue(_grid.WaitTopology(2, 30000));
 
@@ -232,7 +232,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Command line options overwrite config file options
             // ReSharper disable once RedundantAssignment
-            proc = new GridProcess("-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
+            proc = new IgniteProcess("-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
                 "-J-Xms605m", "-J-Xmx706m");
 
             Assert.IsTrue(_grid.WaitTopology(2, 30000));
@@ -250,7 +250,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestJvmMemoryOptsCmdCombined()
         {
-            var proc = new GridProcess(
+            var proc = new IgniteProcess(
                 "-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-J-Xms555m",

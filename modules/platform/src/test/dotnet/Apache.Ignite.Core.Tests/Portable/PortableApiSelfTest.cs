@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     /// <summary>
     /// Portable builder self test.
     /// </summary>
-    public class GridPortableApiSelfTest
+    public class PortableApiSelfTest
     {
         /** Undefined type: Empty. */
         private const string TypeEmpty = "EmptyUndefined";

@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Portable
             DefaultKeepDeserialized = cfg.DefaultKeepDeserialized;
             DefaultSerializer = cfg.DefaultSerializer;
 
-            Types = cfg.Types != null ? new List<String>(cfg.Types) : null;
+            Types = cfg.Types != null ? new List<string>(cfg.Types) : null;
 
             if (cfg.TypeConfigurations != null)
             {
@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Portable
         /// <summary>
         /// Portable types. Shorthand for creating PortableTypeConfiguration.
         /// </summary>
-        public ICollection<String> Types
+        public ICollection<string> Types
         {
             get;
             set;

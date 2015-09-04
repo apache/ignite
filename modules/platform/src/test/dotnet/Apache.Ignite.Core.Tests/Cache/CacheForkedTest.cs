@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// Tests cache with a standalone process.
     /// </summary>
     [Ignore("IGNITE-1367")]
-    public class GridCacheForkedTest
+    public class CacheForkedTest
     {
         /** */
         private IIgnite _grid;
@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             const string springConfigUrl = "config\\compute\\compute-grid1.xml";
             
             // ReSharper disable once UnusedVariable
-            var proc = new GridProcess(
+            var proc = new IgniteProcess(
                 "-jvmClasspath=" + GridTestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + Path.GetFullPath(springConfigUrl),
                 "-J-ea",
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TestFixtureTearDown]
         public void TearDown()
         {
-            GridProcess.KillAll();
+            IgniteProcess.KillAll();
 
             Ignition.StopAll(true);
         }

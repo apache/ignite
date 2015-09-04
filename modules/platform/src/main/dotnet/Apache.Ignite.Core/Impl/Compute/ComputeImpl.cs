@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             AC.NotNull(taskType, "taskType");
 
-            Object task = FormatterServices.GetUninitializedObject(taskType);
+            object task = FormatterServices.GetUninitializedObject(taskType);
 
             var task0 = task as IComputeTask<TA, T, TR>;
 

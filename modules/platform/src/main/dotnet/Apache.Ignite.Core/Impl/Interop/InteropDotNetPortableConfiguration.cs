@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Interop
         /// <summary>
         /// Portable types. Shorthand for creating PortableTypeConfiguration.
         /// </summary>
-        public ICollection<String> Types { get; set; }
+        public ICollection<string> Types { get; set; }
 
         /// <summary>
         /// Default name mapper.

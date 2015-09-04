@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     /// <summary>
     /// Tests for store session.
     /// </summary>
-    public class GridCacheStoreSessionTest
+    public class CacheStoreSessionTest
     {
         /** Grid name. */
         private const string Grid = "grid";

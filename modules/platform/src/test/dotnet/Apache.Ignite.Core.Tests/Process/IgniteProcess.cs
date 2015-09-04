@@ -26,9 +26,9 @@ namespace Apache.Ignite.Core.Tests.Process
     using Apache.Ignite.Core.Impl;
 
     /// <summary>
-    /// Defines forked GridGain node.
+    /// Defines forked Ignite node.
     /// </summary>
-    public class GridProcess
+    public class IgniteProcess
     {
         /** Executable file name. */
         private static readonly string ExeName = "Ignite.exe";
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Process
         private static readonly string ExeCfgBakPath;
 
         /** Default process output reader. */
-        private static readonly IGridProcessOutputReader DfltOutReader = new GridProcessConsoleOutputReader();
+        private static readonly IIgniteProcessOutputReader DfltOutReader = new IgniteProcessConsoleOutputReader();
 
         /** Process. */
         private readonly Process _proc;
@@ -63,10 +63,10 @@ namespace Apache.Ignite.Core.Tests.Process
         /// <summary>
         /// Static initializer.
         /// </summary>
-        static GridProcess()
+        static IgniteProcess()
         {
             // 1. Locate executable file and related stuff.
-            DirectoryInfo dir = new FileInfo(new Uri(typeof(GridProcess).Assembly.CodeBase).LocalPath).Directory;
+            DirectoryInfo dir = new FileInfo(new Uri(typeof(IgniteProcess).Assembly.CodeBase).LocalPath).Directory;
 
             // ReSharper disable once PossibleNullReferenceException
             ExeDir = dir.FullName;
@@ -138,14 +138,14 @@ namespace Apache.Ignite.Core.Tests.Process
         /// Construector.
         /// </summary>
         /// <param name="args">Arguments</param>
-        public GridProcess(params string[] args) : this(DfltOutReader, args) { }
+        public IgniteProcess(params string[] args) : this(DfltOutReader, args) { }
 
         /// <summary>
         /// Construector.
         /// </summary>
         /// <param name="outReader">Output reader.</param>
         /// <param name="args">Arguments.</param>
-        public GridProcess(IGridProcessOutputReader outReader, params string[] args)
+        public IgniteProcess(IIgniteProcessOutputReader outReader, params string[] args)
         {
             // Add test dll path
             args = args.Concat(new[] {"-assembly=" + GetType().Assembly.Location}).ToArray();
@@ -161,7 +161,7 @@ namespace Apache.Ignite.Core.Tests.Process
         /// <param name="outReader">Output reader.</param>
         /// <param name="args">Arguments.</param>
         /// <returns>Started process.</returns>
-        public static Process Start(string exePath, string ggHome, IGridProcessOutputReader outReader = null, 
+        public static Process Start(string exePath, string ggHome, IIgniteProcessOutputReader outReader = null, 
             params string[] args)
         {
             Debug.Assert(!string.IsNullOrEmpty(exePath));
@@ -277,7 +277,7 @@ namespace Apache.Ignite.Core.Tests.Process
         /// <param name="reader">Process stream reader.</param>
         /// <param name="outReader">Output reader.</param>
         /// <param name="err">Whether this is error stream.</param>
-        private static void Attach(Process proc, StreamReader reader, IGridProcessOutputReader outReader, bool err)
+        private static void Attach(Process proc, StreamReader reader, IIgniteProcessOutputReader outReader, bool err)
         {
             Thread thread = new Thread(() =>
             {

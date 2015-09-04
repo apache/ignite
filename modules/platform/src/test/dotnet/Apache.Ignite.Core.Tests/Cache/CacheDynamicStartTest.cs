@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <param name="name">Grid name.</param>
         /// <param name="springCfg">Spring configuration.</param>
         /// <returns>Configuration.</returns>
-        private static IgniteConfigurationEx CreateConfiguration(String name, String springCfg)
+        private static IgniteConfigurationEx CreateConfiguration(string name, string springCfg)
         {
             IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
@@ -108,17 +108,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.GetIgnite(GridData).Cache<GridCacheTestKey, GridPortablePerson>(CacheDummy);
+                Ignition.GetIgnite(GridData).Cache<CacheTestKey, GridPortablePerson>(CacheDummy);
             });
 
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.GetIgnite(GridDataNoCfg).Cache<GridCacheTestKey, GridPortablePerson>(CacheDummy);
+                Ignition.GetIgnite(GridDataNoCfg).Cache<CacheTestKey, GridPortablePerson>(CacheDummy);
             });
 
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.GetIgnite(GridClient).Cache<GridCacheTestKey, GridPortablePerson>(CacheDummy);
+                Ignition.GetIgnite(GridClient).Cache<CacheTestKey, GridPortablePerson>(CacheDummy);
             });
         }
 
@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Check routine.
         /// </summary>
         /// <param name="cacheName">Cache name.</param>
-        private void Check(String cacheName)
+        private void Check(string cacheName)
         {
             ICache<DynamicTestKey, DynamicTestValue> cacheData =
                 Ignition.GetIgnite(GridData).Cache<DynamicTestKey, DynamicTestValue>(cacheName);

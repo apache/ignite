@@ -17,24 +17,21 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
-    using NUnit.Framework;
-
-    [Category(GridTestUtils.CategoryIntensive)]
-    public class GridCacheReplicatedAtomicTest : GridCacheAbstractTest
+    public class CacheLocalAtomicTest : CacheAbstractTest
     {
         protected override int CachePartitions()
         {
-            return 512;
+            return 1;
         }
 
         protected override int GridCount()
         {
-            return 3;
+            return 1;
         }
 
         protected override string CacheName()
         {
-            return "replicated_atomic";
+            return "local_atomic";
         }
 
         protected override bool NearEnabled()
@@ -47,14 +44,14 @@ namespace Apache.Ignite.Core.Tests.Cache
             return false;
         }
 
-        protected override int Backups()
-        {
-            return GridCount() - 1;
-        }
-
-        protected override bool ReplicatedCache()
+        protected override bool LocalCache()
         {
             return true;
+        }
+
+        protected override int Backups()
+        {
+            return 0;
         }
     }
 }

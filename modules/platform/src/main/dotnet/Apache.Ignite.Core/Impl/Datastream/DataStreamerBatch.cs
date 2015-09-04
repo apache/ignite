@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="val">Value.</param>
         /// <param name="cnt">Items count.</param>
         /// <returns>Positive value in case batch is active, -1 in case no more additions are allowed.</returns>
-        public int Add(Object val, int cnt)
+        public int Add(object val, int cnt)
         {
             // If we cannot enter read-lock immediately, then send is scheduled and batch is definetely blocked.
             if (!_rwLock.TryEnterReadLock(0))

@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Tests.Query
         /**
          * 
          */
-        public GridPortablePerson(String _name, int _age) 
+        public GridPortablePerson(string _name, int _age) 
         {
             Name = _name;
             Age = _age;
@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.Query
         /**
          * 
          */
-        public GridPortablePerson(String _name, int _age, String _address)
+        public GridPortablePerson(string _name, int _age, string _address)
         {
             Name = _name;
             Address = _address;
@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Query
         /**
          * 
          */
-        public String Name 
+        public string Name 
         { 
             get; 
             set; 
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Query
         /**
          * 
          */
-        public String Address
+        public string Address
         {
             get;
             set;

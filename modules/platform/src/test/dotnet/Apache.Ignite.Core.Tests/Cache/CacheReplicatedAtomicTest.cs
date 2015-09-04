@@ -15,26 +15,46 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Process
+namespace Apache.Ignite.Core.Tests.Cache
 {
-    using System;
-    using System.Diagnostics;
+    using NUnit.Framework;
 
-    /// <summary>
-    /// Output reader pushing data to the console.
-    /// </summary>
-    public class GridProcessConsoleOutputReader : IGridProcessOutputReader
+    [Category(GridTestUtils.CategoryIntensive)]
+    public class CacheReplicatedAtomicTest : CacheAbstractTest
     {
-        /** Out message format. */
-        private static readonly string OutFormat = ">>> {0} OUT: {1}";
-
-        /** Error message format. */
-        private static readonly string ErrFormat = ">>> {0} ERR: {1}";
-
-        /** <inheritDoc /> */
-        public void OnOutput(Process proc, string data, bool err)
+        protected override int CachePartitions()
         {
-            Console.WriteLine(err ? ErrFormat : OutFormat, proc.Id, data);
+            return 512;
+        }
+
+        protected override int GridCount()
+        {
+            return 3;
+        }
+
+        protected override string CacheName()
+        {
+            return "replicated_atomic";
+        }
+
+        protected override bool NearEnabled()
+        {
+            return false;
+        }
+
+        protected override bool TxEnabled()
+        {
+            return false;
+        }
+
+        protected override int Backups()
+        {
+            return GridCount() - 1;
+        }
+
+        protected override bool ReplicatedCache()
+        {
+            return true;
         }
     }
 }

@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     /// <summary>
     ///
     /// </summary>
-    public class GridCacheStoreTest
+    public class CacheStoreTest
     {
         /** */
         private const string PortableStoreCacheName = "portable_store";
@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.IsTrue(cache.IsEmpty, "Cache is not empty: " + cache.Size());
 
-            GridCacheTestStore.Reset();
+            CacheTestStore.Reset();
 
             Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
         }
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestLoadCacheMetadata()
         {
-            GridCacheTestStore.LoadObjects = true;
+            CacheTestStore.LoadObjects = true;
 
             var cache = Cache();
 
@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             using (var tx = cache.Ignite.Transactions.TxStart())
             {
-                GridCacheTestStore.ExpCommit = true;
+                CacheTestStore.ExpCommit = true;
 
                 tx.AddMeta("meta", 100);
 
@@ -418,7 +418,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestLoadCacheMultithreaded()
         {
-            GridCacheTestStore.LoadMultithreaded = true;
+            CacheTestStore.LoadMultithreaded = true;
 
             var cache = Cache();
 
@@ -438,8 +438,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             var cache = CustomStoreCache();
             Assert.IsNotNull(cache);
 
-            Assert.AreEqual(42, GridCacheTestStore.intProperty);
-            Assert.AreEqual("String value", GridCacheTestStore.stringProperty);
+            Assert.AreEqual(42, CacheTestStore.intProperty);
+            Assert.AreEqual("String value", CacheTestStore.stringProperty);
         }
 
         [Test]
@@ -451,21 +451,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             cache.Put(1, cache.Name);
 
-            Assert.AreEqual(cache.Name, GridCacheTestStore.Map[1]);
+            Assert.AreEqual(cache.Name, CacheTestStore.Map[1]);
         }
 
         /// <summary>
         /// Get's grid name for this test.
         /// </summary>
         /// <returns>Grid name.</returns>
-        protected virtual String GridName()
+        protected virtual string GridName()
         {
             return null;
         }
 
         private IDictionary StoreMap()
         {
-            return GridCacheTestStore.Map;
+            return CacheTestStore.Map;
         }
 
         private ICache<int, string> Cache()
@@ -499,7 +499,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     /// <summary>
     /// 
     /// </summary>
-    public class GridNamedNodeCacheStoreTest : GridCacheStoreTest
+    public class NamedNodeCacheStoreTest : CacheStoreTest
     {
         /** <inheritDoc /> */
         protected override string GridName()

@@ -15,36 +15,21 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Cache
+namespace Apache.Ignite.Core.Tests.Process
 {
-    using NUnit.Framework;
+    using System.Diagnostics;
 
-    [Category(GridTestUtils.CategoryIntensive)]
-    public class GridCachePartitionedAtomicNearEnabledTest : GridCacheAbstractTest
+    /// <summary>
+    /// Process output reader.
+    /// </summary>
+    public interface IIgniteProcessOutputReader
     {
-        protected override int GridCount()
-        {
-            return 3;
-        }
-
-        protected override string CacheName()
-        {
-            return "partitioned_atomic_near";
-        }
-
-        protected override bool NearEnabled()
-        {
-            return true;
-        }
-
-        protected override bool TxEnabled()
-        {
-            return false;
-        }
-
-        protected override int Backups()
-        {
-            return 1;
-        }
+        /// <summary>
+        /// Callback invoked when output data appear.
+        /// </summary>
+        /// <param name="proc">Process produced data.</param>
+        /// <param name="data">Data.</param>
+        /// <param name="err">Error flag.</param>
+        void OnOutput(Process proc, string data, bool err);
     }
 }

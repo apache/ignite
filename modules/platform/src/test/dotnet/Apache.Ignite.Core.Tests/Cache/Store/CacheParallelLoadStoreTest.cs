@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     /// <summary>
     /// Tests for GridCacheParallelLoadStoreAdapter.
     /// </summary>
-    public class GridCacheParallelLoadStoreTest
+    public class CacheParallelLoadStoreTest
     {
         // object store name
         private const string ObjectStoreCacheName = "object_store_parallel";
@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 SpringConfigUrl = "config\\native-client-test-cache-parallel-store.xml",
                 PortableConfiguration = new PortableConfiguration
                 {
-                    Types = new[] {typeof (GridCacheTestParallelLoadStore.Record).FullName}
+                    Types = new[] {typeof (CacheTestParallelLoadStore.Record).FullName}
                 }
             });
         }
@@ -80,9 +80,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual(0, cache.Size());
 
             const int minId = 113;
-            const int expectedItemCount = GridCacheTestParallelLoadStore.InputDataLength - minId;
+            const int expectedItemCount = CacheTestParallelLoadStore.InputDataLength - minId;
 
-            GridCacheTestParallelLoadStore.ResetCounters();
+            CacheTestParallelLoadStore.ResetCounters();
 
             cache.LocalLoadCache(null, minId);
 
@@ -96,15 +96,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             }
 
             // check that items were processed in parallel
-            Assert.GreaterOrEqual(GridCacheTestParallelLoadStore.UniqueThreadCount, Environment.ProcessorCount);
+            Assert.GreaterOrEqual(CacheTestParallelLoadStore.UniqueThreadCount, Environment.ProcessorCount);
         }
 
         /// <summary>
         /// Gets the cache.
         /// </summary>
-        private static ICache<int, GridCacheTestParallelLoadStore.Record> GetCache()
+        private static ICache<int, CacheTestParallelLoadStore.Record> GetCache()
         {
-            return Ignition.GetIgnite().Cache<int, GridCacheTestParallelLoadStore.Record>(ObjectStoreCacheName);
+            return Ignition.GetIgnite().Cache<int, CacheTestParallelLoadStore.Record>(ObjectStoreCacheName);
         }
     }
 }

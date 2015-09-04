@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
@@ -50,7 +50,7 @@
                             <property name="className" value="org.gridgain.client.model.GridPortablePerson"/>
                         </bean>
                         <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.model.GridImplicitPortablePerson"/>
+                            <property name="className" value="org.gridgain.client.model.ImplicitPortablePerson"/>
                         </bean>
                         <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
                             <property name="className" value="GridNoDefPortablePerson"/>
@@ -195,7 +195,7 @@
                     </property>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                    <property name="valueType" value="GridImplicitPortablePerson"/>
+                    <property name="valueType" value="ImplicitPortablePerson"/>
                     <property name="ascendingFields">
                         <map>
                             <entry key="age" value="java.lang.Integer"/>

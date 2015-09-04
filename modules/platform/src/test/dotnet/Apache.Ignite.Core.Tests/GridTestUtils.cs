@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public static void KillProcesses()
         {
-            GridProcess.KillAll();
+            IgniteProcess.KillAll();
         }
 
         /// <summary>

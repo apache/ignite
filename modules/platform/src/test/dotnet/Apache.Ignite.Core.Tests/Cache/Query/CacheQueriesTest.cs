@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// <summary>
     /// Queries tests.
     /// </summary>
-    public class GridCacheQueriesTest
+    public class CacheQueriesTest
     {
         /** Grid count. */
         private const int GridCnt = 2;

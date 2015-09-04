@@ -741,13 +741,13 @@ namespace Apache.Ignite.Core.Impl.Datastream
                                     {
                                         ticks = now.AddMilliseconds(curFreq).Ticks - now.Ticks;
 
-                                        if (ticks > Int32.MaxValue)
-                                            ticks = Int32.MaxValue;
+                                        if (ticks > int.MaxValue)
+                                            ticks = int.MaxValue;
                                     }
                                     catch (ArgumentOutOfRangeException)
                                     {
                                         // Handle possible overflow.
-                                        ticks = Int32.MaxValue;
+                                        ticks = int.MaxValue;
                                     }
 
                                     Monitor.Wait(this, TimeSpan.FromTicks(ticks));

@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Affinity key tests.
     /// </summary>
-    public class GridCacheAffinityTest
+    public class CacheAffinityTest
     {
         /// <summary>
         ///

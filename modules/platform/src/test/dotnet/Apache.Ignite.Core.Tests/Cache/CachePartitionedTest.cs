@@ -15,21 +15,36 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Process
+namespace Apache.Ignite.Core.Tests.Cache
 {
-    using System.Diagnostics;
+    using NUnit.Framework;
 
-    /// <summary>
-    /// Process output reader.
-    /// </summary>
-    public interface IGridProcessOutputReader
+    [Category(GridTestUtils.CategoryIntensive)]
+    public class CachePartitionedTest : CacheAbstractTest
     {
-        /// <summary>
-        /// Callback invoked when output data appear.
-        /// </summary>
-        /// <param name="proc">Process produced data.</param>
-        /// <param name="data">Data.</param>
-        /// <param name="err">Error flag.</param>
-        void OnOutput(Process proc, string data, bool err);
+        protected override int GridCount()
+        {
+            return 3;
+        }
+
+        protected override string CacheName()
+        {
+            return "partitioned";
+        }
+
+        protected override bool NearEnabled()
+        {
+            return false;
+        }
+
+        protected override bool TxEnabled()
+        {
+            return true;
+        }
+
+        protected override int Backups()
+        {
+            return 1;
+        }
     }
 }
