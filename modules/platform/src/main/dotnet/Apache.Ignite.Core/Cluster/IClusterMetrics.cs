@@ -456,7 +456,7 @@ namespace Apache.Ignite.Core.Cluster
         }
 
         /// <summary>
-        /// In-Memory Data Grid assigns incremental versions to all cache operations. This property provides
+        /// Ignite assigns incremental versions to all cache operations. This property provides
         /// the latest data version on the node.
         /// </summary>
         long LastDataVersion

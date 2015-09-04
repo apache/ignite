@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Cache
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
-    /// Main entry point for all Data Grid APIs. You can get a named cache by calling
+    /// Main entry point for Ignite cache APIs. You can get a named cache by calling
     /// <see cref="IIgnite.Cache{K, V}(string)"/> method.
     /// <para />
     /// Cache API supports distributed transactions. All <c>Get(...)</c>, <c>Put(...)</c>, <c>Replace(...)</c>,
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Cache
         string Name { get; }
 
         /// <summary>
-        /// Grid hosting this cache.
+        /// Ignite hosting this cache.
         /// </summary>
         IIgnite Ignite { get; }
 

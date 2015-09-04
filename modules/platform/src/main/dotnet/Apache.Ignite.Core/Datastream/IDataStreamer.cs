@@ -45,8 +45,8 @@ namespace Apache.Ignite.Core.Datastream
     /// <list type="bullet">
     ///     <item>
     ///         <term>PerNodeBufferSize</term>
-    ///         <description>When entries are added to data streamer they are not sent to in-memory data 
-    ///         grid right away and are buffered internally for better performance and network utilization. 
+    ///         <description>When entries are added to data streamer they are not sent to Ignite 
+    ///         right away and are buffered internally for better performance and network utilization. 
     ///         This setting controls the size of internal per-node buffer before buffered data is sent to 
     ///         remote node. Default value is 1024.</description>
     ///     </item>

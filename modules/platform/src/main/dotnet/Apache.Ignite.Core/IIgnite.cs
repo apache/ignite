@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Gets a new instance of data streamer associated with given cache name. Data streamer
-        /// is responsible for loading external data into in-memory data grid. For more information
+        /// is responsible for loading external data into Ignite. For more information
         /// refer to <see cref="IDataStreamer{K,V}"/> documentation.
         /// </summary>
         /// <param name="cacheName">Cache name (<c>null</c> for default cache).</param>
