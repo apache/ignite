@@ -98,7 +98,10 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
                 subgrid.clear();
             }
 
-            final GridCacheQueryRequest req = new GridCacheQueryRequest(cctx.cacheId(), reqId, fields());
+            final GridCacheQueryRequest req = new GridCacheQueryRequest(cctx.cacheId(),
+                reqId,
+                fields(),
+                qryMgr.queryTopologyVersion());
 
             // Process cancel query directly (without sending) for local node,
             cctx.closures().callLocalSafe(new Callable<Object>() {
