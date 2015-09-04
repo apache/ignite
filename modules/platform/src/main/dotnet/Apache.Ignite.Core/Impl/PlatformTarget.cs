@@ -61,10 +61,10 @@ namespace Apache.Ignite.Core.Impl
             };
         
         /** Unmanaged target. */
-        private readonly IUnmanagedTarget target;
+        private readonly IUnmanagedTarget _target;
 
         /** Marshaller. */
-        private readonly PortableMarshaller Marsh;
+        private readonly PortableMarshaller _marsh;
 
         /// <summary>
         /// Constructor.
@@ -73,8 +73,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="marsh">Marshaller.</param>
         protected PlatformTarget(IUnmanagedTarget target, PortableMarshaller marsh)
         {
-            this.target = target;
-            Marsh = marsh;
+            _target = target;
+            _marsh = marsh;
         }
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal IUnmanagedTarget Target
         {
-            get { return target; }
+            get { return _target; }
         }
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal PortableMarshaller Marshaller
         {
-            get { return Marsh; }
+            get { return _marsh; }
         }
 
         #region Static Helpers
@@ -259,7 +259,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 action(stream);
 
-                return UU.TargetInStreamOutLong(target, type, stream.SynchronizeOutput());
+                return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
             }
         }
 
@@ -273,13 +273,13 @@ namespace Apache.Ignite.Core.Impl
         {
             using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
-                var writer = Marsh.StartMarshal(stream);
+                var writer = _marsh.StartMarshal(stream);
 
                 action(writer);
 
                 FinishMarshal(writer);
 
-                return UU.TargetInStreamOutLong(target, type, stream.SynchronizeOutput());
+                return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
             }
         }
 
@@ -344,7 +344,7 @@ namespace Apache.Ignite.Core.Impl
         {
             using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
-                UU.TargetOutStream(target, type, stream.MemoryPointer);
+                UU.TargetOutStream(_target, type, stream.MemoryPointer);
                 
                 stream.SynchronizeInput();
 
@@ -362,7 +362,7 @@ namespace Apache.Ignite.Core.Impl
         {
             using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
-                UU.TargetOutStream(target, type, stream.MemoryPointer);
+                UU.TargetOutStream(_target, type, stream.MemoryPointer);
 
                 stream.SynchronizeInput();
 
@@ -379,7 +379,7 @@ namespace Apache.Ignite.Core.Impl
         {
             using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
-                UU.TargetOutStream(target, type, stream.MemoryPointer);
+                UU.TargetOutStream(_target, type, stream.MemoryPointer);
 
                 stream.SynchronizeInput();
 
@@ -403,13 +403,13 @@ namespace Apache.Ignite.Core.Impl
             {
                 using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().Stream())
                 {
-                    PortableWriterImpl writer = Marsh.StartMarshal(outStream);
+                    PortableWriterImpl writer = _marsh.StartMarshal(outStream);
 
                     outAction(writer);
 
                     FinishMarshal(writer);
 
-                    UU.TargetInStreamOutStream(target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
 
                     inStream.SynchronizeInput();
 
@@ -431,13 +431,13 @@ namespace Apache.Ignite.Core.Impl
             {
                 using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().Stream())
                 {
-                    PortableWriterImpl writer = Marsh.StartMarshal(outStream);
+                    PortableWriterImpl writer = _marsh.StartMarshal(outStream);
 
                     outAction(writer);
 
                     FinishMarshal(writer);
 
-                    UU.TargetInStreamOutStream(target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
 
                     inStream.SynchronizeInput();
 
@@ -460,13 +460,13 @@ namespace Apache.Ignite.Core.Impl
             {
                 using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().Stream())
                 {
-                    PortableWriterImpl writer = Marsh.StartMarshal(outStream);
+                    PortableWriterImpl writer = _marsh.StartMarshal(outStream);
 
                     outAction(writer);
 
                     FinishMarshal(writer);
 
-                    UU.TargetInObjectStreamOutStream(target, type, arg, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInObjectStreamOutStream(_target, type, arg, outStream.SynchronizeOutput(), inStream.MemoryPointer);
 
                     inStream.SynchronizeInput();
 
@@ -487,13 +487,13 @@ namespace Apache.Ignite.Core.Impl
             {
                 using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().Stream())
                 {
-                    PortableWriterImpl writer = Marsh.StartMarshal(outStream);
+                    PortableWriterImpl writer = _marsh.StartMarshal(outStream);
 
                     outAction(writer);
 
                     FinishMarshal(writer);
 
-                    UU.TargetInStreamOutStream(target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
 
                     inStream.SynchronizeInput();
 
@@ -514,13 +514,13 @@ namespace Apache.Ignite.Core.Impl
             {
                 using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().Stream())
                 {
-                    PortableWriterImpl writer = Marsh.StartMarshal(outStream);
+                    PortableWriterImpl writer = _marsh.StartMarshal(outStream);
 
                     writer.WriteObject(val);
 
                     FinishMarshal(writer);
 
-                    UU.TargetInStreamOutStream(target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
 
                     inStream.SynchronizeInput();
 
@@ -542,14 +542,14 @@ namespace Apache.Ignite.Core.Impl
             {
                 using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().Stream())
                 {
-                    PortableWriterImpl writer = Marsh.StartMarshal(outStream);
+                    PortableWriterImpl writer = _marsh.StartMarshal(outStream);
 
                     writer.WriteObject(val1);
                     writer.WriteObject(val2);
 
                     FinishMarshal(writer);
 
-                    UU.TargetInStreamOutStream(target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
 
                     inStream.SynchronizeInput();
 
@@ -568,7 +568,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writer">Portable writer.</param>
         internal void FinishMarshal(PortableWriterImpl writer)
         {
-            Marsh.FinishMarshal(writer);
+            _marsh.FinishMarshal(writer);
         }
 
         /// <summary>
@@ -579,7 +579,7 @@ namespace Apache.Ignite.Core.Impl
         {
             DoOutOp(OpMeta, stream =>
             {
-                PortableWriterImpl metaWriter = Marsh.StartMarshal(stream);
+                PortableWriterImpl metaWriter = _marsh.StartMarshal(stream);
 
                 metaWriter.WriteInt(metas.Count);
 
@@ -602,10 +602,10 @@ namespace Apache.Ignite.Core.Impl
                     }
                 }
 
-                Marsh.FinishMarshal(metaWriter);
+                _marsh.FinishMarshal(metaWriter);
             });
 
-            Marsh.OnMetadataSent(metas);
+            _marsh.OnMetadataSent(metas);
         }
 
         /// <summary>
@@ -615,7 +615,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Unmarshalled object.</returns>
         protected virtual T Unmarshal<T>(IPortableStream stream)
         {
-            return Marsh.Unmarshal<T>(stream);
+            return _marsh.Unmarshal<T>(stream);
         }
 
         /// <summary>
@@ -638,9 +638,9 @@ namespace Apache.Ignite.Core.Impl
 
             var fut = convertFunc == null && futType != FutureType.Object
                 ? new Future<T>()
-                : new Future<T>(new FutureConverter<T>(Marsh, keepPortable, convertFunc));
+                : new Future<T>(new FutureConverter<T>(_marsh, keepPortable, convertFunc));
 
-            var futHnd = Marsh.Ignite.HandleRegistry.Allocate(fut);
+            var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
             listenAction(futHnd, (int)futType);
 

@@ -273,6 +273,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region DELEGATE MEMBERS
 
+        // ReSharper disable InconsistentNaming
         private static readonly ReallocateDelegate REALLOCATE;
 
         private static readonly IgnitionStartDelegate IGNITION_START;
@@ -388,6 +389,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ServicesCancelDelegate SERVICES_CANCEL;
         private static readonly ServicesCancelAllDelegate SERVICES_CANCEL_ALL;
         private static readonly ServicesGetServiceProxyDelegate SERVICES_GET_SERVICE_PROXY;
+        // ReSharper restore InconsistentNaming
 
         #endregion
 
