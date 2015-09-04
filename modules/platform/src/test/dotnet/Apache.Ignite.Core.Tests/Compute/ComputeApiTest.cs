@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Test that it is possible to get projection from grid.
         /// </summary>
         [Test]
-        public void TestProjectionGrid()
+        public void TestProjection()
         {
             IClusterGroup prj = _grid1.Cluster;
 

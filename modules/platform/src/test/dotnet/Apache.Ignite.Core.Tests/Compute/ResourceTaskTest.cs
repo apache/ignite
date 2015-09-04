@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Test Ignite injection into the task.
         /// </summary>
         [Test]
-        public void TestTaskGridInjection()
+        public void TestTaskInjection()
         {
             int res = Grid1.Compute().Execute(new InjectionTask(), 0);
 
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Test Ignite injection into the closure.
         /// </summary>
         [Test]
-        public void TestClosureGridInjection()
+        public void TestClosureInjection()
         {
             var res = Grid1.Compute().Broadcast(new InjectionClosure(), 1);
 
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Test Ignite injection into reducer.
         /// </summary>
         [Test]
-        public void TestReducerGridInjection()
+        public void TestReducerInjection()
         {
             int res = Grid1.Compute().Apply(new InjectionClosure(), new List<int> { 1, 1, 1 }, new InjectionReducer());
 
