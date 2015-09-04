@@ -34,7 +34,7 @@ class GridCacheLoaderWriterStoreFactory<K, V> implements Factory<CacheStore<K, V
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final GridKernalContext cctx;
+    private final GridKernalContext ctx;
 
     /** */
     private final Factory<CacheLoader<K, V>> ldrFactory;
@@ -46,9 +46,9 @@ class GridCacheLoaderWriterStoreFactory<K, V> implements Factory<CacheStore<K, V
      * @param ldrFactory Loader factory.
      * @param writerFactory Writer factory.
      */
-    GridCacheLoaderWriterStoreFactory(GridKernalContext cctx, @Nullable Factory<CacheLoader<K, V>> ldrFactory,
+    GridCacheLoaderWriterStoreFactory(GridKernalContext ctx, @Nullable Factory<CacheLoader<K, V>> ldrFactory,
         @Nullable Factory<CacheWriter<K, V>> writerFactory) {
-        this.cctx = cctx;
+        this.ctx = ctx;
         this.ldrFactory = ldrFactory;
         this.writerFactory = writerFactory;
 
@@ -57,8 +57,8 @@ class GridCacheLoaderWriterStoreFactory<K, V> implements Factory<CacheStore<K, V
 
     /** {@inheritDoc} */
     @Override public CacheStore<K, V> create() {
-        CacheLoader<K, V> ldr = CU.create(cctx, ldrFactory);
-        CacheWriter<K, V> writer = CU.create(cctx, writerFactory);
+        CacheLoader<K, V> ldr = CU.create(ctx, ldrFactory);
+        CacheWriter<K, V> writer = CU.create(ctx, writerFactory);
 
         return new GridCacheLoaderWriterStore<>(ldr, writer);
     }
