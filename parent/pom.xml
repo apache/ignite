@@ -42,6 +42,7 @@
         <doxygen.exec>doxygen</doxygen.exec>
         <git.exec>git</git.exec>
         <jetty.version>9.2.11.v20150529</jetty.version>
+        <javadoc.opts>-XDenableSunApiLintControl</javadoc.opts>
     </properties>
 
     <groupId>org.apache.ignite</groupId>
@@ -336,6 +337,10 @@
                             <group>
                                 <title>Yarn Integration</title>
                                 <packages>org.apache.ignite.yarn*</packages>
+                            </group>
+                            <group>
+                                <title>Platforms</title>
+                                <packages>org.apache.ignite.platform*</packages>
                             </group>
                             <group>
                                 <title>Spark Integration</title>
@@ -737,6 +742,7 @@
                                         <exclude>src/main/dotnet/Apache.Ignite.Core/Apache.Ignite.Core.csproj</exclude>
                                         <exclude>src/main/dotnet/Apache.Ignite.sln</exclude>
                                         <exclude>src/main/dotnet/Apache.Ignite.sln.DotSettings</exclude>
+                                        <exclude>src/main/java/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
                                         <exclude>src/test/dotnet/Apache.Ignite.Core.Tests/Apache.Ignite.Core.Tests.csproj</exclude>
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/1.1/test1-1.1.jar</exclude>
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/1.1/test2-1.1.jar</exclude>

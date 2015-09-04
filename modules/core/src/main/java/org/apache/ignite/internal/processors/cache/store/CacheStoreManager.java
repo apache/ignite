@@ -186,4 +186,14 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void forceFlush() throws IgniteCheckedException;
+
+    /**
+     * @return Convert-portable flag.
+     */
+    public boolean convertPortable();
+
+    /**
+     * @return Configured convert portable flag.
+     */
+    public boolean configuredConvertPortable();
 }

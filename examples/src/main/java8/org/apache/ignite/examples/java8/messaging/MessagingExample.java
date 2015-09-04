@@ -17,6 +17,15 @@
 
 package org.apache.ignite.examples.java8.messaging;
 
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.ExamplesUtils;
+
 /**
  * Example that demonstrates how to exchange messages between nodes. Use such
  * functionality for cases when you need to communicate to other nodes outside

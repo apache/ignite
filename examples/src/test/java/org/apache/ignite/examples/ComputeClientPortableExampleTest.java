@@ -14,34 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.examples;
 
-package org.apache.ignite.internal.portable;
+import org.apache.ignite.examples.portable.computegrid.ComputeClientPortableTaskExecutionExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  *
  */
-class PortablePlainLazyValue extends PortableAbstractLazyValue {
-    /** */
-    protected final int len;
+public class ComputeClientPortableExampleTest extends GridAbstractExamplesTest {
+    /** {@inheritDoc} */
+    @Override protected String defaultConfig() {
+        return "examples/config/portable/example-ignite-portable.xml";
+    }
 
     /**
-     * @param reader Reader
-     * @param valOff Offset
-     * @param len Length.
+     * @throws Exception If failed.
      */
-    protected PortablePlainLazyValue(PortableBuilderReader reader, int valOff, int len) {
-        super(reader, valOff);
-
-        this.len = len;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Object init() {
-        return reader.reader().unmarshal(valOff);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
-        writer.write(reader.array(), valOff, len);
+    public void testPortableTaskExecutionExample() throws Exception {
+        ComputeClientPortableTaskExecutionExample.main(new String[] {});
     }
 }

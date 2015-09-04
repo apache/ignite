@@ -858,11 +858,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     protected abstract CacheConfiguration cacheConfiguration();
 
     /**
-     * @return Convert-portable flag.
-     */
-    protected abstract boolean convertPortable();
-
-    /**
      *
      */
     private static class SessionData {

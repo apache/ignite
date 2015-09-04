@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -101,8 +102,8 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
         return null;
     }
 
-    @Override
-    public PlatformTarget events(PlatformTarget grp) {
+    /** {@inheritDoc} */
+    @Override public PlatformTarget events(PlatformTarget grp) {
         return null;
     }
 
@@ -114,5 +115,11 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformTarget extensions() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerStore(PlatformCacheStore store, boolean convertPortable)
+        throws IgniteCheckedException {
+        // No-op.
     }
 }

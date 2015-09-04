@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.builder;
 
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.PortableWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.portable.PortableInvalidClassException;
 
