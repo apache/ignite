@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.portable.PortableRawReaderEx;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -171,7 +171,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param e Exception to convert.
      * @return Converted exception.
      */
-    protected Exception convertException(Exception e) {
+    public Exception convertException(Exception e) {
         return e;
     }
 
@@ -184,12 +184,12 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
     /** {@inheritDoc} */
     @Override public void listenFuture(final long futId, int typ) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, null);
+        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, null, this);
     }
 
     /** {@inheritDoc} */
     @Override public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, futureWriter(opId));
+        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, futureWriter(opId), this);
     }
 
     /**
@@ -199,26 +199,10 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-    protected IgniteFuture currentFutureWrapped() throws IgniteCheckedException {
-        return currentFuture().chain(new IgniteClosure<IgniteFuture, Object>() {
-            @Override public Object apply(IgniteFuture o) {
-                try {
-                    return o.get();
-                }
-                catch (RuntimeException e) {
-                    Exception converted = convertException(e);
+    protected IgniteInternalFuture currentFutureWrapped() throws IgniteCheckedException {
+        IgniteFutureImpl fut = (IgniteFutureImpl)currentFuture();
 
-                    if (converted instanceof RuntimeException)
-                        throw (RuntimeException)converted;
-                    else {
-                        log.error("Interop future result cannot be obtained due to exception.", converted);
-
-                        throw new IgniteException("Interop future result cannot be obtained due to exception " +
-                            "(see log for more details).");
-                    }
-                }
-            }
-        });
+        return fut.internalFuture();
     }
 
     /**

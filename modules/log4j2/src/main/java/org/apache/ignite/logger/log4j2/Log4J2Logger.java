@@ -242,10 +242,10 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
                             Appender innerApp = control.getAppender();
 
                             if (innerApp instanceof FileAppender)
-                                return ((FileAppender)innerApp).getFileName();
+                                return normilize(((FileAppender)innerApp).getFileName());
 
                             if (innerApp instanceof RollingFileAppender)
-                                return ((RollingFileAppender)innerApp).getFileName();
+                                return normilize(((RollingFileAppender)innerApp).getFileName());
                         }
                     }
                     catch (IllegalAccessException | NoSuchFieldException e) {
@@ -256,6 +256,20 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         }
 
         return null;
+    }
+
+    /**
+     * Normalizes given path for windows.
+     * Log4j2 doesn't replace unix directory delimiters which used at 'fileName' to windows.
+     *
+     * @param path Path.
+     * @return Normalized path.
+     */
+    private String normilize(String path) {
+        if (!U.isWindows())
+            return path;
+
+        return path.replace('/', File.separatorChar);
     }
 
     /**

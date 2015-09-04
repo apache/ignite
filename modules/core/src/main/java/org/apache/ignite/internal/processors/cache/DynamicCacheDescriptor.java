@@ -170,20 +170,6 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * Sets cancelled flag.
-     */
-    public void onCancelled() {
-        cancelled = true;
-    }
-
-    /**
-     * @return Cancelled flag.
-     */
-    public boolean cancelled() {
-        return cancelled;
-    }
-
-    /**
      * @param nodeId Remote node ID.
      * @return Configuration.
      */

@@ -17,18 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.cache;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import javax.cache.Cache;
-import javax.cache.expiry.Duration;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheEntryProcessor;
@@ -43,6 +31,7 @@ import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.internal.portable.PortableRawReaderEx;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
@@ -50,13 +39,26 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformQueryCursor;
-import org.apache.ignite.internal.processors.platform.compute.PlatformNativeException;
+import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.Cache;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Native cache wrapper implementation.
@@ -618,9 +620,16 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Exception convertException(Exception e) {
+    @Override public Exception convertException(Exception e) {
         if (e instanceof CachePartialUpdateException)
-            return new PlatformCachePartialUpdateException((CachePartialUpdateException)e, platformCtx, keepPortable);
+            return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e.getCause(),
+                platformCtx, keepPortable);
+
+        if (e instanceof CachePartialUpdateCheckedException)
+            return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e, platformCtx, keepPortable);
+
+        if (e.getCause() instanceof EntryProcessorException)
+            return (EntryProcessorException) e.getCause();
 
         return super.convertException(e);
     }
@@ -695,7 +704,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /**
      * Clears the contents of the cache, without notifying listeners or
-     * {@link javax.cache.integration.CacheWriter}s.
+     * {@ignitelink javax.cache.integration.CacheWriter}s.
      *
      * @throws IllegalStateException if the cache is closed.
      * @throws javax.cache.CacheException if there is a problem during the clear
@@ -788,11 +797,10 @@ public class PlatformCache extends PlatformAbstractTarget {
      */
     public void rebalance(long futId) {
         PlatformFutureUtils.listen(platformCtx, cache.rebalance().chain(new C1<IgniteFuture, Object>() {
-            @Override
-            public Object apply(IgniteFuture fut) {
+            @Override public Object apply(IgniteFuture fut) {
                 return null;
             }
-        }), futId, PlatformFutureUtils.TYP_OBJ);
+        }), futId, PlatformFutureUtils.TYP_OBJ, this);
     }
 
     /**

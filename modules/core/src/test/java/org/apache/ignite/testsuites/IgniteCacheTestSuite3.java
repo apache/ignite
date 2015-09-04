@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.preloa
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadStartStopEventsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheDaemonNodeLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.local.GridCacheLocalByteArrayValuesSelfTest;
 
 /**
  * Test suite.
@@ -137,7 +138,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheOrderedPreloadingSelfTest.class);
 
         // Test for byte array value special case.
-//        suite.addTestSuite(GridCacheLocalByteArrayValuesSelfTest.class);
+        suite.addTestSuite(GridCacheLocalByteArrayValuesSelfTest.class);
         suite.addTestSuite(GridCacheNearPartitionedP2PEnabledByteArrayValuesSelfTest.class);
         suite.addTestSuite(GridCacheNearPartitionedP2PDisabledByteArrayValuesSelfTest.class);
         suite.addTestSuite(GridCachePartitionedOnlyP2PEnabledByteArrayValuesSelfTest.class);

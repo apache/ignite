@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
@@ -216,8 +215,7 @@ public interface PlatformContext {
      * @param cause Native cause.
      * @return Exception.
      */
-    // TODO: Some common interface must be used here.
-    public IgniteCheckedException createNativeException(Object cause);
+    public PlatformNativeException createNativeException(Object cause);
 
     /**
      * Create job.

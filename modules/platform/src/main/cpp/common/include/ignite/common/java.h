@@ -449,14 +449,14 @@ namespace ignite
                 static void Detach();
                 static void Release(jobject obj);
 
-                jobject IgnitionStart(char* cfgPath, char* gridName, int factoryId, long long dataPtr);
-                jobject IgnitionStart(char* cfgPath, char* gridName, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
-                jobject IgnitionInstance(char* gridName);
-                jobject IgnitionInstance(char* gridName, JniErrorInfo* errInfo);
-                long long IgnitionEnvironmentPointer(char* gridName);
-                long long IgnitionEnvironmentPointer(char* gridName, JniErrorInfo* errInfo);
-                bool IgnitionStop(char* gridName, bool cancel);
-                bool IgnitionStop(char* gridName, bool cancel, JniErrorInfo* errInfo);
+                jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
+                jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
+                jobject IgnitionInstance(char* name);
+                jobject IgnitionInstance(char* name, JniErrorInfo* errInfo);
+                long long IgnitionEnvironmentPointer(char* name);
+                long long IgnitionEnvironmentPointer(char* name, JniErrorInfo* errInfo);
+                bool IgnitionStop(char* name, bool cancel);
+                bool IgnitionStop(char* name, bool cancel, JniErrorInfo* errInfo);
                 void IgnitionStopAll(bool cancel);
                 void IgnitionStopAll(bool cancel, JniErrorInfo* errInfo);
                 

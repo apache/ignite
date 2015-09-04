@@ -36,8 +36,8 @@ import org.apache.ignite.internal.portable.PortableRawReaderEx;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
+import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
-import org.apache.ignite.internal.processors.platform.compute.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils;
@@ -48,11 +48,25 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
+
 /**
  * Platform utility methods.
  */
 @SuppressWarnings({"UnusedDeclaration", "unchecked"})
 public class PlatformUtils {
+    /** Node attribute: platform. */
+    public static final String ATTR_PLATFORM = ATTR_PREFIX  + ".platform";
+
+    /** Platform: CPP. */
+    public static final String PLATFORM_CPP = "cpp";
+
+    /** Platform: .Net. */
+    public static final String PLATFORM_DOTNET = "dotnet";
+
+    /** Operation: prepare .Net platform. */
+    public static final int OP_PREPARE_DOT_NET = 1;
+
     /** Amount of peek modes available. */
     private static final int CACHE_PEEK_MODES_CNT = CachePeekMode.values().length;
 

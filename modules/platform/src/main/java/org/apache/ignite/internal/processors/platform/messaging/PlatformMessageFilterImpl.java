@@ -50,7 +50,7 @@ public class PlatformMessageFilterImpl extends PlatformAbstractPredicate impleme
      * @param ptr Pointer to predicate in the native platform.
      * @param ctx Kernal context.
      */
-    protected PlatformMessageFilterImpl(Object pred, long ptr, PlatformContext ctx) {
+    public PlatformMessageFilterImpl(Object pred, long ptr, PlatformContext ctx) {
         super(pred, ptr, ctx);
     }
 

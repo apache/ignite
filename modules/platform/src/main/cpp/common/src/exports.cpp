@@ -26,20 +26,20 @@ extern "C" {
         return gcj::JniContext::Reallocate(memPtr, cap);
     }
 
-    void* IGNITE_CALL IgniteIgnitionStart(gcj::JniContext* ctx, char* cfgPath, char* gridName, int factoryId, long long dataPtr) {
-        return ctx->IgnitionStart(cfgPath, gridName, factoryId, dataPtr);
+    void* IGNITE_CALL IgniteIgnitionStart(gcj::JniContext* ctx, char* cfgPath, char* name, int factoryId, long long dataPtr) {
+        return ctx->IgnitionStart(cfgPath, name, factoryId, dataPtr);
     }
 
-	void* IGNITE_CALL IgniteIgnitionInstance(gcj::JniContext* ctx, char* gridName) {
-        return ctx->IgnitionInstance(gridName);
+	void* IGNITE_CALL IgniteIgnitionInstance(gcj::JniContext* ctx, char* name) {
+        return ctx->IgnitionInstance(name);
     }
 
-    long long IGNITE_CALL IgniteIgnitionEnvironmentPointer(gcj::JniContext* ctx, char* gridName) {
-        return ctx->IgnitionEnvironmentPointer(gridName);
+    long long IGNITE_CALL IgniteIgnitionEnvironmentPointer(gcj::JniContext* ctx, char* name) {
+        return ctx->IgnitionEnvironmentPointer(name);
     }
 
-	bool IGNITE_CALL IgniteIgnitionStop(gcj::JniContext* ctx, char* gridName, bool cancel) {
-        return ctx->IgnitionStop(gridName, cancel);
+	bool IGNITE_CALL IgniteIgnitionStop(gcj::JniContext* ctx, char* name, bool cancel) {
+        return ctx->IgnitionStop(name, cancel);
     }
 
 	void IGNITE_CALL IgniteIgnitionStopAll(gcj::JniContext* ctx, bool cancel) {
