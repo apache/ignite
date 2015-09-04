@@ -4,6 +4,6 @@ libdir=@libdir@
 includedir=@includedir@
 
 Name: ignite-common
-Description: Ignite JNI bridge for C++.
+Description: Apache Ignite JNI bridge for C++.
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lignite-common

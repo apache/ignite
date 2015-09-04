@@ -122,57 +122,57 @@ namespace Apache.Ignite.Core.Events
         public static readonly int EvtTaskReduced = 25;
 
         /// <summary>
-        /// Built-in event type: grid job was mapped in {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} 
+        /// Built-in event type: Ignite job was mapped in {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} 
         /// method.
         /// </summary>
         public static readonly int EvtJobMapped = 40;
 
         /// <summary>
-        /// Built-in event type: grid job result was received by {@link 
+        /// Built-in event type: Ignite job result was received by {@link 
         /// org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method.
         /// </summary>
         public static readonly int EvtJobResulted = 41;
 
         /// <summary>
-        /// Built-in event type: grid job failed over.
+        /// Built-in event type: Ignite job failed over.
         /// </summary>
         public static readonly int EvtJobFailedOver = 43;
 
         /// <summary>
-        /// Built-in event type: grid job started.
+        /// Built-in event type: Ignite job started.
         /// </summary>
         public static readonly int EvtJobStarted = 44;
 
         /// <summary>
-        /// Built-in event type: grid job finished. Job has successfully completed and produced a result which from the 
+        /// Built-in event type: Ignite job finished. Job has successfully completed and produced a result which from the 
         /// user perspective can still be either negative or positive.
         /// </summary>
         public static readonly int EvtJobFinished = 45;
 
         /// <summary>
-        /// Built-in event type: grid job timed out.
+        /// Built-in event type: Ignite job timed out.
         /// </summary>
         public static readonly int EvtJobTimedout = 46;
 
         /// <summary>
-        /// Built-in event type: grid job rejected during collision resolution.
+        /// Built-in event type: Ignite job rejected during collision resolution.
         /// </summary>
         public static readonly int EvtJobRejected = 47;
 
         /// <summary>
-        /// Built-in event type: grid job failed. Job has failed. This means that there was some error event during job 
+        /// Built-in event type: Ignite job failed. Job has failed. This means that there was some error event during job 
         /// execution and job did not produce a result.
         /// </summary>
         public static readonly int EvtJobFailed = 48;
 
         /// <summary>
-        /// Built-in event type: grid job queued. Job arrived for execution and has been queued (added to passive queue 
+        /// Built-in event type: Ignite job queued. Job arrived for execution and has been queued (added to passive queue 
         /// during collision resolution).
         /// </summary>
         public static readonly int EvtJobQueued = 49;
 
         /// <summary>
-        /// Built-in event type: grid job cancelled.
+        /// Built-in event type: Ignite job cancelled.
         /// </summary>
         public static readonly int EvtJobCancelled = 50;
 
@@ -380,7 +380,7 @@ namespace Apache.Ignite.Core.Events
         };
 
         /// <summary>
-        /// All grid job execution events.
+        /// All Ignite job execution events.
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Events
         };
 
         /// <summary>
-        /// All grid task execution events.
+        /// All Ignite task execution events.
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
@@ -486,14 +486,14 @@ namespace Apache.Ignite.Core.Events
         };
 
         /// <summary>
-        /// All grid events.
+        /// All Ignite events.
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
         public static readonly int[] EvtsAll = GetAllEvents();
 
         /// <summary>
-        /// All grid events (<b>excluding</b> metric update event).
+        /// All Ignite events (<b>excluding</b> metric update event).
         /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
             Justification = "Breaking change. Should be fixed in the next non-compatible release.")]

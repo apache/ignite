@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cluster
 {
     using System;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Represents whole cluster (group of all nodes in a cluster).
@@ -34,9 +35,9 @@ namespace Apache.Ignite.Core.Cluster
         IClusterGroup ForLocal();
 
         /// <summary>
-        /// Gets local grid node.
+        /// Gets local Ignite node.
         /// </summary>
-        /// <returns>Local grid node.</returns>
+        /// <returns>Local Ignite node.</returns>
         IClusterNode LocalNode
         {
             get;
@@ -64,7 +65,7 @@ namespace Apache.Ignite.Core.Cluster
         /// specified topology version (history currently keeps the last 1000 snapshots).
         /// </summary>
         /// <param name="ver">Topology version.</param>
-        /// <returns>Collection of grid nodes which represented by specified topology version, 
+        /// <returns>Collection of Ignite nodes which represented by specified topology version, 
         /// if it is present in history storage, null otherwise.</returns>
         /// <exception cref="IgniteException">If underlying SPI implementation does not support 
         /// topology history. Currently only <code>org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi</code>

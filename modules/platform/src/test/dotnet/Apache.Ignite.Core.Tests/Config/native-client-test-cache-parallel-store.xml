@@ -44,7 +44,7 @@
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
                             <property name="assemblyName" value="Apache.Ignite.Core.Tests"/>
-                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.GridCacheTestParallelLoadStore"/>
+                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.CacheTestParallelLoadStore"/>
                         </bean>
                     </property>
                 </bean>

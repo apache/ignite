@@ -158,15 +158,44 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             // Check results.
             assertEquals(1, columnQuery(c, qry + "where a = 1 and b = 1").size());
+            assertEquals(0, columnQuery(c, qry + "where a = 1 and b = 2").size());
+            assertEquals(1, columnQuery(c, qry + "where a = 1 and b = 3").size());
             assertEquals(2, columnQuery(c, qry + "where a = 1 and b < 4").size());
             assertEquals(2, columnQuery(c, qry + "where a = 1 and b <= 3").size());
             assertEquals(1, columnQuery(c, qry + "where a = 1 and b < 3").size());
             assertEquals(2, columnQuery(c, qry + "where a = 1 and b > 0").size());
             assertEquals(1, columnQuery(c, qry + "where a = 1 and b > 1").size());
             assertEquals(2, columnQuery(c, qry + "where a = 1 and b >= 1").size());
-            assertEquals(4, columnQuery(c, qry + "where a > 0 and b > 0").size());
-            assertEquals(4, columnQuery(c, qry + "where a > 0 and b >= 1").size());
-            assertEquals(3, columnQuery(c, qry + "where a > 0 and b > 1").size());
+
+            assertEquals(4, columnQuery(c, qry + "where a > 0").size());
+            assertEquals(4, columnQuery(c, qry + "where a >= 1").size());
+            assertEquals(4, columnQuery(c, qry + "where b > 0").size());
+            assertEquals(4, columnQuery(c, qry + "where b >= 1").size());
+
+            assertEquals(4, columnQuery(c, qry + "where a < 2").size());
+            assertEquals(4, columnQuery(c, qry + "where a <= 1").size());
+            assertEquals(4, columnQuery(c, qry + "where b < 3").size());
+            assertEquals(5, columnQuery(c, qry + "where b <= 3").size());
+
+            assertEquals(3, columnQuery(c, qry + "where a > 0 and b > 0").size());
+            assertEquals(2, columnQuery(c, qry + "where a > 0 and b >= 2").size());
+            assertEquals(3, columnQuery(c, qry + "where a >= 1 and b > 0").size());
+            assertEquals(2, columnQuery(c, qry + "where a >= 1 and b >= 2").size());
+
+            assertEquals(3, columnQuery(c, qry + "where a > 0 and b < 3").size());
+            assertEquals(2, columnQuery(c, qry + "where a > 0 and b <= 1").size());
+            assertEquals(3, columnQuery(c, qry + "where a >= 1 and b < 3").size());
+            assertEquals(2, columnQuery(c, qry + "where a >= 1 and b <= 1").size());
+
+            assertEquals(2, columnQuery(c, qry + "where a < 2 and b < 3").size());
+            assertEquals(2, columnQuery(c, qry + "where a < 2 and b <= 1").size());
+            assertEquals(2, columnQuery(c, qry + "where a <= 1 and b < 3").size());
+            assertEquals(2, columnQuery(c, qry + "where a <= 1 and b <= 1").size());
+
+            assertEquals(3, columnQuery(c, qry + "where a < 2 and b > 0").size());
+            assertEquals(2, columnQuery(c, qry + "where a < 2 and b >= 3").size());
+            assertEquals(3, columnQuery(c, qry + "where a <= 1 and b > 0").size());
+            assertEquals(2, columnQuery(c, qry + "where a <= 1 and b >= 3").size());
         }
         finally {
             c.destroy();

@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Gets or sets the backing grid.
         /// </summary>
-        public Ignite Grid { get; set; }
+        public Ignite Ignite { get; set; }
 
         /// <summary>
         /// Marshal object.
@@ -200,10 +200,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var meta = ((PortableWriterImpl) writer).Metadata();
 
-            var grid0 = Grid;
+            var ignite = Ignite;
 
-            if (grid0 != null && meta != null && meta.Count > 0)
-                grid0.PutMetadata(meta);
+            if (ignite != null && meta != null && meta.Count > 0)
+                ignite.PutMetadata(meta);
         }
 
         /// <summary>
@@ -305,9 +305,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Metadata or null.</returns>
         public IPortableMetadata Metadata(int typeId)
         {
-            if (Grid != null)
+            if (Ignite != null)
             {
-                IPortableMetadata meta = Grid.Metadata(typeId);
+                IPortableMetadata meta = Ignite.Metadata(typeId);
 
                 if (meta != null)
                     return meta;
@@ -568,7 +568,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             AddSystemType(PortableUtils.TypeDotNetCfg, w => new InteropDotNetConfiguration(w));
             AddSystemType(PortableUtils.TypeDotNetPortableCfg, w => new InteropDotNetPortableConfiguration(w));
             AddSystemType(PortableUtils.TypeDotNetPortableTypCfg, w => new InteropDotNetPortableTypeConfiguration(w));
-            AddSystemType(PortableUtils.TypeGridProxy, w => new IgniteProxy());
+            AddSystemType(PortableUtils.TypeIgniteProxy, w => new IgniteProxy());
             AddSystemType(PortableUtils.TypeComputeOutFuncJob, w => new ComputeOutFuncJob(w));
             AddSystemType(PortableUtils.TypeComputeOutFuncWrapper, w => new ComputeOutFuncWrapper(w));
             AddSystemType(PortableUtils.TypeComputeFuncWrapper, w => new ComputeFuncWrapper(w));

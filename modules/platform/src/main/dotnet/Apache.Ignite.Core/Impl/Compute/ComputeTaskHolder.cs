@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             if (injector != null)
                 injector.Inject(grid);
             else
-                resDesc.InjectGrid(task, grid);
+                resDesc.InjectIgnite(task, grid);
 
             _resCache = !resDesc.TaskNoResultCache;
         }
@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             ClusterGroupImpl prj = (ClusterGroupImpl)_compute.ClusterGroup;
 
-            var grid = (Ignite) prj.Ignite;
+            var ignite = (Ignite) prj.Ignite;
 
             // 1. Unmarshal topology info if topology changed.
             var reader = prj.Marshaller.StartUnmarshal(inStream);
@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                 for (int i = 0; i < nodesCnt; i++)
                 {
-                    IClusterNode node = grid.GetNode(reader.ReadGuid());
+                    IClusterNode node = ignite.GetNode(reader.ReadGuid());
 
                     nodes.Add(node);
 
@@ -231,7 +231,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                             IClusterNode node = mapEntry.Value;
 
-                            var jobHandle = grid.HandleRegistry.Allocate(job);
+                            var jobHandle = ignite.HandleRegistry.Allocate(job);
 
                             jobHandles.Add(jobHandle);
 
@@ -472,7 +472,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var handles = _jobHandles;
 
-            var handleRegistry = _compute.Marshaller.Grid.HandleRegistry;
+            var handleRegistry = _compute.Marshaller.Ignite.HandleRegistry;
 
             if (handles != null)
                 foreach (var handle in handles) 

@@ -161,8 +161,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: .Net portable type configuration. */
         public const byte TypeDotNetPortableTypCfg = 204;
 
-        /** Type: Grid proxy. */
-        public const byte TypeGridProxy = 74;
+        /** Type: Ignite proxy. */
+        public const byte TypeIgniteProxy = 74;
 
         /** Type: function wrapper. */
         public const byte TypeComputeOutFuncJob = 80;

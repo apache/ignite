@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Resource
             if (target != null) {
                 var desc = Descriptor(target.GetType());
     
-                desc.InjectGrid(target, grid);
+                desc.InjectIgnite(target, grid);
             }
         }
 

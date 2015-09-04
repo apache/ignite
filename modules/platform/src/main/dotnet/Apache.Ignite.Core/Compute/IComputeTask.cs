@@ -22,10 +22,10 @@ namespace Apache.Ignite.Core.Compute
     using Apache.Ignite.Core.Cluster;
 
     /// <summary>
-    /// Grid task interface defines a task that can be executed on the grid. Grid task
-    /// is responsible for splitting business logic into multiple grid jobs, receiving
-    /// results from individual grid jobs executing on remote nodes, and reducing
-    /// (aggregating) received jobs' results into final grid task result.
+    /// Ignite task interface defines a task that can be executed on the grid. Ignite task
+    /// is responsible for splitting business logic into multiple Ignite jobs, receiving
+    /// results from individual Ignite jobs executing on remote nodes, and reducing
+    /// (aggregating) received jobs' results into final Ignite task result.
     /// <para />
     /// Upon request to execute a task, the system will do the following:
     /// <list type="bullet">
@@ -33,12 +33,12 @@ namespace Apache.Ignite.Core.Compute
     ///         <description>Inject annotated resources into task instance.</description>
     ///     </item>
     ///     <item>
-    ///         <description>Apply <see cref="IComputeTask{A,T,R}.Map(IList{IClusterNode}, A)"/>.
+    ///         <description>Apply <see cref="IComputeTask{A,T,R}.Map(IList{IClusterNode}, TA)"/>.
     ///         This method is responsible for splitting business logic into multiple jobs 
-    ///         (units of execution) and mapping them to grid nodes.</description>
+    ///         (units of execution) and mapping them to Ignite nodes.</description>
     ///     </item>
     ///     <item>
-    ///         <description>System will send mapped grid jobs to their respective nodes.</description>
+    ///         <description>System will send mapped Ignite jobs to their respective nodes.</description>
     ///     </item>
     ///     <item>
     ///         <description>Once job execution results become available method 
@@ -70,29 +70,29 @@ namespace Apache.Ignite.Core.Compute
     ///         method returned <see cref="ComputeJobResultPolicy.Reduce"/> policy, method 
     ///         <see cref="IComputeTask{A,T,R}.Reduce(IList{IComputeJobResult{T}})"/>
     ///         is called to aggregate received results into one final result. Once this method is finished the 
-    ///         execution of the grid task is complete. This result will be returned to the user through future.
+    ///         execution of the Ignite task is complete. This result will be returned to the user through future.
     ///         </description>    
     ///     </item>
     /// </list>
     /// </summary>
-    /// <typeparam name="A">Argument type.</typeparam>
+    /// <typeparam name="TA">Argument type.</typeparam>
     /// <typeparam name="T">Type of job result.</typeparam>
-    /// <typeparam name="R">Type of reduce result.</typeparam>
-    public interface IComputeTask<in A, T, out TR>
+    /// <typeparam name="TR">Type of reduce result.</typeparam>
+    public interface IComputeTask<in TA, T, out TR>
     {
         /// <summary>
-        /// This method is called to map or split grid task into multiple grid jobs. This is the
+        /// This method is called to map or split Ignite task into multiple Ignite jobs. This is the
         /// first method that gets called when task execution starts.
         /// </summary>
         /// <param name="subgrid">Nodes available for this task execution. Note that order of nodes is
         /// guaranteed to be randomized by container. This ensures that every time you simply iterate 
-        /// through grid nodes, the order of nodes will be random which over time should result into 
+        /// through Ignite nodes, the order of nodes will be random which over time should result into 
         /// all nodes being used equally.</param>
         /// <param name="arg">Task execution argument. Can be <c>null</c>. This is the same argument
         /// as the one passed into <c>ICompute.Execute()</c> methods.</param>
-        /// <returns>Map of grid jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
+        /// <returns>Map of Ignite jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
         /// exception will be thrown.</returns>
-        IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, A arg);
+        IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, TA arg);
 
         /// <summary>
         /// Asynchronous callback invoked every time a result from remote execution is
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Compute
         /// received so far, or failover this job to another node. See 
         /// <see cref="ComputeJobResultPolicy"/> for more information.
         /// </summary>
-        /// <param name="res">Received remote grid executable result.</param>
+        /// <param name="res">Received remote Ignite executable result.</param>
         /// <param name="rcvd">All previously received results. Note that if task class has
         /// <see cref="ComputeTaskNoResultCacheAttribute"/> attribute, then this list will be empty.</param>
         /// <returns>Result policy that dictates how to process further upcoming job results.</returns>

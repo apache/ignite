@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Portable
         /// <returns>
         /// A string that represents the current object.
         /// </returns>
-        override public String ToString()
+        override public string ToString()
         {
             return typeof(PortableTypeConfiguration).Name + " [TypeName=" + TypeName + 
                 ", NameMapper=" +  NameMapper + ", IdMapper=" + IdMapper + ", Serializer=" + Serializer +

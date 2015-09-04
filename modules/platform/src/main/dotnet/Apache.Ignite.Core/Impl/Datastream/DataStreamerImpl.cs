@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>
     /// Data streamer internal interface to get rid of generics.
@@ -44,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
     /// <summary>
     /// Data streamer implementation.
     /// </summary>
-    internal class DataStreamerImpl<TK, TV> : GridDisposableTarget, IDataStreamer, IDataStreamer<TK, TV>
+    internal class DataStreamerImpl<TK, TV> : PlatformDisposableTarget, IDataStreamer, IDataStreamer<TK, TV>
     {
 
 #pragma warning disable 0420
@@ -125,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             // Allocate GC handle so that this data streamer could be easily dereferenced from native code.
             WeakReference thisRef = new WeakReference(this);
 
-            _hnd = marsh.Grid.HandleRegistry.Allocate(thisRef);
+            _hnd = marsh.Ignite.HandleRegistry.Allocate(thisRef);
 
             // Start topology listening. This call will ensure that buffer size member is updated.
             UU.DataStreamerListenTopology(target, _hnd);
@@ -156,7 +155,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return UU.DataStreamerAllowOverwriteGet(target);
+                    return UU.DataStreamerAllowOverwriteGet(Target);
                 }
                 finally
                 {
@@ -171,7 +170,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    UU.DataStreamerAllowOverwriteSet(target, value);
+                    UU.DataStreamerAllowOverwriteSet(Target, value);
                 }
                 finally
                 {
@@ -191,7 +190,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return UU.DataStreamerSkipStoreGet(target);
+                    return UU.DataStreamerSkipStoreGet(Target);
                 }
                 finally
                 {
@@ -206,7 +205,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    UU.DataStreamerSkipStoreSet(target, value);
+                    UU.DataStreamerSkipStoreSet(Target, value);
                 }
                 finally
                 {
@@ -226,7 +225,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return UU.DataStreamerPerNodeBufferSizeGet(target);
+                    return UU.DataStreamerPerNodeBufferSizeGet(Target);
                 }
                 finally
                 {
@@ -241,7 +240,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    UU.DataStreamerPerNodeBufferSizeSet(target, value);
+                    UU.DataStreamerPerNodeBufferSizeSet(Target, value);
 
                     _bufSndSize = _topSize * value;
                 }
@@ -263,7 +262,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    return UU.DataStreamerPerNodeParallelOperationsGet(target);
+                    return UU.DataStreamerPerNodeParallelOperationsGet(Target);
                 }
                 finally
                 {
@@ -279,7 +278,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    UU.DataStreamerPerNodeParallelOperationsSet(target, value);
+                    UU.DataStreamerPerNodeParallelOperationsSet(Target, value);
                 }
                 finally
                 {
@@ -347,9 +346,9 @@ namespace Apache.Ignite.Core.Impl.Datastream
             }
             set
             {
-                A.NotNull(value, "value");
+                IgniteArgumentCheck.NotNull(value, "value");
 
-                var handleRegistry = Marsh.Grid.HandleRegistry;
+                var handleRegistry = Marshaller.Ignite.HandleRegistry;
 
                 _rwLock.EnterWriteLock();
 
@@ -400,7 +399,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             ThrowIfDisposed(); 
             
-            A.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return Add0(new DataStreamerEntry<TK, TV>(key, val), 1);
         }
@@ -418,7 +417,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             ThrowIfDisposed();
 
-            A.NotNull(entries, "entries");
+            IgniteArgumentCheck.NotNull(entries, "entries");
 
             return Add0(entries, entries.Count);
         }
@@ -428,7 +427,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             ThrowIfDisposed();
 
-            A.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return Add0(new DataStreamerRemoveEntry<TK>(key), 1);
         }
@@ -488,7 +487,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                         base.Dispose(true);
 
                         if (_rcv != null)
-                            Marsh.Grid.HandleRegistry.Release(_rcvHnd);
+                            Marshaller.Ignite.HandleRegistry.Release(_rcvHnd);
 
                         _closedEvt.Set();
                     }
@@ -497,7 +496,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                         _rwLock.ExitWriteLock();
                     }
 
-                    Marsh.Grid.HandleRegistry.Release(_hnd);
+                    Marshaller.Ignite.HandleRegistry.Release(_hnd);
 
                     break;
                 }
@@ -519,8 +518,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 return result;
             }
 
-            return new DataStreamerImpl<TK1, TV1>(UU.ProcessorDataStreamer(Marsh.Grid.InteropProcessor, _cacheName, true), 
-                Marsh, _cacheName, true);
+            return new DataStreamerImpl<TK1, TV1>(UU.ProcessorDataStreamer(Marshaller.Ignite.InteropProcessor,
+                _cacheName, true), Marshaller, _cacheName, true);
         }
 
         /** <inheritDoc /> */
@@ -541,8 +540,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     // Finalizers should never throw
                 }
 
-                Marsh.Grid.HandleRegistry.Release(_hnd, true);
-                Marsh.Grid.HandleRegistry.Release(_rcvHnd, true);
+                Marshaller.Ignite.HandleRegistry.Release(_hnd, true);
+                Marshaller.Ignite.HandleRegistry.Release(_rcvHnd, true);
 
                 base.Dispose(false);
             }
@@ -568,7 +567,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     _topVer = topVer;
                     _topSize = topSize;
 
-                    _bufSndSize = topSize * UU.DataStreamerPerNodeBufferSizeGet(target);
+                    _bufSndSize = topSize * UU.DataStreamerPerNodeBufferSizeGet(Target);
                 }
             }
             finally
@@ -697,7 +696,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             /// <summary>
             /// Main flusher routine.
             /// </summary>
-            public void Run()
+            private void Run()
             {
                 bool force = false;
                 long curFreq = 0;
@@ -741,13 +740,13 @@ namespace Apache.Ignite.Core.Impl.Datastream
                                     {
                                         ticks = now.AddMilliseconds(curFreq).Ticks - now.Ticks;
 
-                                        if (ticks > Int32.MaxValue)
-                                            ticks = Int32.MaxValue;
+                                        if (ticks > int.MaxValue)
+                                            ticks = int.MaxValue;
                                     }
                                     catch (ArgumentOutOfRangeException)
                                     {
                                         // Handle possible overflow.
-                                        ticks = Int32.MaxValue;
+                                        ticks = int.MaxValue;
                                     }
 
                                     Monitor.Wait(this, TimeSpan.FromTicks(ticks));

@@ -34,14 +34,13 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Portable;
-    using AC = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Native cache wrapper.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
-    internal class CacheImpl<TK, TV> : GridTarget, ICache<TK, TV>
+    internal class CacheImpl<TK, TV> : PlatformTarget, ICache<TK, TV>
     {
         /** Duration: unchanged. */
         private const long DurUnchanged = -2;
@@ -52,8 +51,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Duration: zero. */
         private const long DurZero = 0;
 
-        /** Grid instance. */
-        private readonly Ignite _grid;
+        /** Ignite instance. */
+        private readonly Ignite _ignite;
         
         /** Flag: skip store. */
         private readonly bool _flagSkipStore;
@@ -88,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         public CacheImpl(Ignite grid, IUnmanagedTarget target, PortableMarshaller marsh,
             bool flagSkipStore, bool flagKeepPortable, bool flagAsync, bool flagNoRetries) : base(target, marsh)
         {
-            _grid = grid;
+            _ignite = grid;
             _flagSkipStore = flagSkipStore;
             _flagKeepPortable = flagKeepPortable;
             _flagAsync = flagAsync;
@@ -100,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             get
             {
-                return _grid;
+                return _ignite;
             }
         }
 
@@ -139,7 +138,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             _invokeAllConverter.Value = null;
 
-            return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(target, futId, futTypeId, lastAsyncOpId), 
+            return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, lastAsyncOpId), 
                 _flagKeepPortable, converter);
         }
 
@@ -161,7 +160,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagSkipStore)
                 return this;
 
-            return new CacheImpl<TK, TV>(_grid, UU.CacheWithSkipStore(target), Marshaller, 
+            return new CacheImpl<TK, TV>(_ignite, UU.CacheWithSkipStore(Target), Marshaller, 
                 true, _flagKeepPortable, _flagAsync, true);
         }
 
@@ -185,22 +184,22 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return result;
             }
 
-            return new CacheImpl<TK1, TV1>(_grid, UU.CacheWithKeepPortable(target), Marsh, 
+            return new CacheImpl<TK1, TV1>(_ignite, UU.CacheWithKeepPortable(Target), Marshaller, 
                 _flagSkipStore, true, _flagAsync, _flagNoRetries);
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> WithExpiryPolicy(IExpiryPolicy plc)
         {
-            AC.NotNull(plc, "plc");
+            IgniteArgumentCheck.NotNull(plc, "plc");
 
             long create = ConvertDuration(plc.GetExpiryForCreate());
             long update = ConvertDuration(plc.GetExpiryForUpdate());
             long access = ConvertDuration(plc.GetExpiryForAccess());
 
-            IUnmanagedTarget cache0 = UU.CacheWithExpiryPolicy(target, create, update, access);
+            IUnmanagedTarget cache0 = UU.CacheWithExpiryPolicy(Target, create, update, access);
 
-            return new CacheImpl<TK, TV>(_grid, cache0, Marshaller, _flagSkipStore, _flagKeepPortable, _flagAsync, _flagNoRetries);
+            return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepPortable, _flagAsync, _flagNoRetries);
         }
 
         /// <summary>
@@ -226,7 +225,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public ICache<TK, TV> WithAsync()
         {
-            return _flagAsync ? this : new CacheImpl<TK, TV>(_grid, UU.CacheWithAsync(target), Marshaller,
+            return _flagAsync ? this : new CacheImpl<TK, TV>(_ignite, UU.CacheWithAsync(Target), Marshaller,
                 _flagSkipStore, _flagKeepPortable, true, _flagNoRetries);
         }
 
@@ -272,7 +271,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public bool ContainsKey(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutOp((int)CacheOp.ContainsKey, key) == True;
         }        
@@ -280,7 +279,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public bool ContainsKeys(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             return DoOutOp((int)CacheOp.ContainsKeys, writer => WriteEnumerable(writer, keys)) == True;
         }        
@@ -288,7 +287,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public TV LocalPeek(TK key, params CachePeekMode[] modes)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOp<TV>((int)CacheOp.Peek, writer =>
             {
@@ -300,7 +299,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public TV Get(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOp<TK, TV>((int)CacheOp.Get, key);
         }
@@ -308,13 +307,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             return DoOutInOp((int)CacheOp.GetAll,
                 writer => WriteEnumerable(writer, keys),
                 input =>
                 {
-                    var reader = Marsh.StartUnmarshal(input, _flagKeepPortable);
+                    var reader = Marshaller.StartUnmarshal(input, _flagKeepPortable);
 
                     return ReadGetAllDictionary(reader);
                 });
@@ -323,9 +322,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Put(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             DoOutOp((int)CacheOp.Put, key, val);
         }
@@ -333,9 +332,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public TV GetAndPut(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             return DoOutInOp<TK, TV, TV>((int)CacheOp.GetAndPut, key, val);
         }
@@ -343,9 +342,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public TV GetAndReplace(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             return DoOutInOp<TK, TV, TV>((int)CacheOp.GetAndReplace, key, val);
         }
@@ -353,7 +352,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public TV GetAndRemove(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOp<TK, TV>((int)CacheOp.GetAndRemove, key);
         }
@@ -361,9 +360,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public bool PutIfAbsent(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             return DoOutOp((int) CacheOp.PutIfAbsent, key, val) == True;
         }
@@ -371,9 +370,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public TV GetAndPutIfAbsent(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             return DoOutInOp<TK, TV, TV>((int)CacheOp.GetAndPutIfAbsent, key, val);
         }
@@ -381,9 +380,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public bool Replace(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             return DoOutOp((int)CacheOp.Replace2, key, val) == True;
         }
@@ -391,11 +390,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public bool Replace(TK key, TV oldVal, TV newVal)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(oldVal, "oldVal");
+            IgniteArgumentCheck.NotNull(oldVal, "oldVal");
 
-            AC.NotNull(newVal, "newVal");
+            IgniteArgumentCheck.NotNull(newVal, "newVal");
 
             return DoOutOp((int)CacheOp.Replace3, key, oldVal, newVal) == True;
         }
@@ -403,7 +402,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void PutAll(IDictionary<TK, TV> vals)
         {
-            AC.NotNull(vals, "vals");
+            IgniteArgumentCheck.NotNull(vals, "vals");
 
             DoOutOp((int) CacheOp.PutAll, writer => WriteDictionary(writer, vals));
         }
@@ -411,7 +410,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void LocalEvict(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             DoOutOp((int) CacheOp.LocEvict, writer => WriteEnumerable(writer, keys));
         }
@@ -419,13 +418,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void Clear()
         {
-            UU.CacheClear(target);
+            UU.CacheClear(Target);
         }
 
         /** <inheritdoc /> */
         public void Clear(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             DoOutOp((int)CacheOp.Clear, key);
         }
@@ -433,7 +432,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void ClearAll(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             DoOutOp((int)CacheOp.ClearAll, writer => WriteEnumerable(writer, keys));
         }
@@ -441,7 +440,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void LocalClear(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             DoOutOp((int) CacheOp.LocalClear, key);
         }
@@ -449,7 +448,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void LocalClearAll(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             DoOutOp((int)CacheOp.LocalClearAll, writer => WriteEnumerable(writer, keys));
         }
@@ -457,7 +456,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public bool Remove(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutOp((int)CacheOp.RemoveObj, key) == True;
         }
@@ -465,9 +464,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public bool Remove(TK key, TV val)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(val, "val");
+            IgniteArgumentCheck.NotNull(val, "val");
 
             return DoOutOp((int)CacheOp.RemoveBool, key, val) == True;
         }
@@ -475,7 +474,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void RemoveAll(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             DoOutOp((int)CacheOp.RemoveAll, writer => WriteEnumerable(writer, keys));
         }
@@ -483,7 +482,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void RemoveAll()
         {
-            UU.CacheRemoveAll(target);
+            UU.CacheRemoveAll(Target);
         }
 
         /** <inheritDoc /> */
@@ -508,13 +507,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             int modes0 = EncodePeekModes(modes);
 
-            return UU.CacheSize(target, modes0, loc);
+            return UU.CacheSize(Target, modes0, loc);
         }
 
         /** <inheritDoc /> */
         public void LocalPromote(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             DoOutOp((int)CacheOp.LocPromote, writer => WriteEnumerable(writer, keys));
         }
@@ -522,9 +521,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public TR Invoke<TR, TA>(TK key, ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
-            AC.NotNull(processor, "processor");
+            IgniteArgumentCheck.NotNull(processor, "processor");
 
             var holder = new CacheEntryProcessorHolder(processor, arg,
                 (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TA)a), typeof(TK), typeof(TV));
@@ -541,9 +540,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         public IDictionary<TK, ICacheEntryProcessorResult<TR>> InvokeAll<TR, TA>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
-            AC.NotNull(processor, "processor");
+            IgniteArgumentCheck.NotNull(processor, "processor");
 
             var holder = new CacheEntryProcessorHolder(processor, arg,
                 (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TA)a), typeof(TK), typeof(TV));
@@ -566,29 +565,29 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public ICacheLock Lock(TK key)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOp((int)CacheOp.Lock, writer =>
             {
                 writer.Write(key);
-            }, input => new CacheLock(input.ReadInt(), target));
+            }, input => new CacheLock(input.ReadInt(), Target));
         }
 
         /** <inheritdoc /> */
         public ICacheLock LockAll(IEnumerable<TK> keys)
         {
-            AC.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             return DoOutInOp((int)CacheOp.LockAll, writer =>
             {
                 WriteEnumerable(writer, keys);
-            }, input => new CacheLock(input.ReadInt(), target));
+            }, input => new CacheLock(input.ReadInt(), Target));
         }
 
         /** <inheritdoc /> */
         public bool IsLocalLocked(TK key, bool byCurrentThread)
         {
-            AC.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutOp((int)CacheOp.IsLocalLocked, writer =>
             {
@@ -602,7 +601,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             return DoInOp((int)CacheOp.Metrics, stream =>
             {
-                IPortableRawReader reader = Marsh.StartUnmarshal(stream, false);
+                IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                 return new CacheMetricsImpl(reader);
             });
@@ -611,7 +610,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IFuture Rebalance()
         {
-            return GetFuture<object>((futId, futTyp) => UU.CacheRebalance(target, futId));
+            return GetFuture<object>((futId, futTyp) => UU.CacheRebalance(Target, futId));
         }
 
         /** <inheritDoc /> */
@@ -620,7 +619,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagNoRetries)
                 return this;
 
-            return new CacheImpl<TK, TV>(_grid, UU.CacheWithNoRetries(target), Marshaller,
+            return new CacheImpl<TK, TV>(_ignite, UU.CacheWithNoRetries(Target), Marshaller,
                 _flagSkipStore, _flagKeepPortable, _flagAsync, true);
         }
 
@@ -637,16 +636,16 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
-            AC.NotNull(qry, "qry");
+            IgniteArgumentCheck.NotNull(qry, "qry");
 
             if (string.IsNullOrEmpty(qry.Sql))
                 throw new ArgumentException("Sql cannot be null or empty");
 
             IUnmanagedTarget cursor;
 
-            using (var stream = GridManager.Memory.Allocate().Stream())
+            using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
-                var writer = Marsh.StartMarshal(stream);
+                var writer = Marshaller.StartMarshal(stream);
 
                 writer.WriteBoolean(qry.Local);
                 writer.WriteString(qry.Sql);
@@ -656,31 +655,31 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 FinishMarshal(writer);
 
-                cursor = UU.CacheOutOpQueryCursor(target, (int) CacheOp.QrySqlFields, stream.SynchronizeOutput());
+                cursor = UU.CacheOutOpQueryCursor(Target, (int) CacheOp.QrySqlFields, stream.SynchronizeOutput());
             }
         
-            return new FieldsQueryCursor(cursor, Marsh, _flagKeepPortable);
+            return new FieldsQueryCursor(cursor, Marshaller, _flagKeepPortable);
         }
 
         /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry)
         {
-            AC.NotNull(qry, "qry");
+            IgniteArgumentCheck.NotNull(qry, "qry");
 
             IUnmanagedTarget cursor;
 
-            using (var stream = GridManager.Memory.Allocate().Stream())
+            using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
-                var writer = Marsh.StartMarshal(stream);
+                var writer = Marshaller.StartMarshal(stream);
 
                 qry.Write(writer, KeepPortable);
 
                 FinishMarshal(writer);
 
-                cursor = UU.CacheOutOpQueryCursor(target, (int)qry.OpId, stream.SynchronizeOutput()); 
+                cursor = UU.CacheOutOpQueryCursor(Target, (int)qry.OpId, stream.SynchronizeOutput()); 
             }
 
-            return new QueryCursor<TK, TV>(cursor, Marsh, _flagKeepPortable);
+            return new QueryCursor<TK, TV>(cursor, Marshaller, _flagKeepPortable);
         }
                 
         /// <summary>
@@ -704,7 +703,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TK, TV> qry)
         {
-            AC.NotNull(qry, "qry");
+            IgniteArgumentCheck.NotNull(qry, "qry");
 
             return QueryContinuousImpl(qry, null);
         }
@@ -712,8 +711,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuous(ContinuousQuery<TK, TV> qry, QueryBase initialQry)
         {
-            AC.NotNull(qry, "qry");
-            AC.NotNull(initialQry, "initialQry");
+            IgniteArgumentCheck.NotNull(qry, "qry");
+            IgniteArgumentCheck.NotNull(initialQry, "initialQry");
 
             return QueryContinuousImpl(qry, initialQry);
         }
@@ -726,13 +725,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             qry.Validate();
 
-            var hnd = new ContinuousQueryHandleImpl<TK, TV>(qry, Marsh, _flagKeepPortable);
+            var hnd = new ContinuousQueryHandleImpl<TK, TV>(qry, Marshaller, _flagKeepPortable);
 
-            using (var stream = GridManager.Memory.Allocate().Stream())
+            using (var stream = IgniteManager.Memory.Allocate().Stream())
             {
-                var writer = Marsh.StartMarshal(stream);
+                var writer = Marshaller.StartMarshal(stream);
 
-                hnd.Start(_grid, writer, () =>
+                hnd.Start(_ignite, writer, () =>
                 {
                     if (initialQry != null)
                     {
@@ -746,7 +745,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                     FinishMarshal(writer);
 
                     // ReSharper disable once AccessToDisposedClosure
-                    return UU.CacheOutOpContinuousQuery(target, (int)CacheOp.QryContinuous, stream.SynchronizeOutput());
+                    return UU.CacheOutOpContinuousQuery(Target, (int)CacheOp.QryContinuous, stream.SynchronizeOutput());
                 }, qry);
             }
 
@@ -784,9 +783,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         internal CacheEnumerator<TK, TV> CreateEnumerator(bool loc, int peekModes)
         {
             if (loc)
-                return new CacheEnumerator<TK, TV>(UU.CacheLocalIterator(target, peekModes), Marsh, _flagKeepPortable);
+                return new CacheEnumerator<TK, TV>(UU.CacheLocalIterator(Target, peekModes), Marshaller, _flagKeepPortable);
 
-            return new CacheEnumerator<TK, TV>(UU.CacheIterator(target), Marsh, _flagKeepPortable);
+            return new CacheEnumerator<TK, TV>(UU.CacheIterator(Target), Marshaller, _flagKeepPortable);
         }
 
         #endregion
@@ -794,7 +793,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         protected override T Unmarshal<T>(IPortableStream stream)
         {
-            return Marsh.Unmarshal<T>(stream, _flagKeepPortable);
+            return Marshaller.Unmarshal<T>(stream, _flagKeepPortable);
         }
 
         /// <summary>

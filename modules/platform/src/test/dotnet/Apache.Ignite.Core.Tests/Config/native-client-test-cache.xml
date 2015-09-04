@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,13 +37,13 @@
                             <property name="className" value="org.gridgain.client.ClientTestPortable"/>
                         </bean>
                         <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.internal.client.model.GridPortablePerson"/>
+                            <property name="className" value="org.gridgain.internal.client.model.PortablePerson"/>
                         </bean>
                         <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.internal.client.model.GridImplicitPortablePerson"/>
+                            <property name="className" value="org.gridgain.internal.client.model.ImplicitPortablePerson"/>
                         </bean>
                         <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
-                            <property name="className" value="GridNoDefPortablePerson"/>
+                            <property name="className" value="NoDefPortablePerson"/>
                         </bean>
                     </list>
                 </property>

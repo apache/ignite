@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
-    /// Grid transaction facade.
+    /// Ignite transaction facade.
     /// </summary>
     internal class Transaction : ITransaction
     {

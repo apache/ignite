@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc/> */
         public void Listen(Action<IFuture<T>> callback)
         {
-            GridArgumentCheck.NotNull(callback, "callback");
+            IgniteArgumentCheck.NotNull(callback, "callback");
 
             if (!_done)
             {

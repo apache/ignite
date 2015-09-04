@@ -35,8 +35,8 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** Invoker function that takes key and value and invokes wrapped IMessageFilter */
         private readonly Func<Guid, object, bool> _invoker;
 
-        /** Current grid instance. */
-        private readonly Ignite _grid;
+        /** Current Ignite instance. */
+        private readonly Ignite _ignite;
         
         /** Underlying filter. */
         private readonly object _filter;
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
             // 1. Set fields.
             Debug.Assert(grid != null);
 
-            _grid = grid;
+            _ignite = grid;
             _invoker = invoker;
 
             // 2. Perform injections.
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <returns></returns>
         public int Invoke(IPortableStream input)
         {
-            var rawReader = _grid.Marshaller.StartUnmarshal(input).RawReader();
+            var rawReader = _ignite.Marshaller.StartUnmarshal(input).RawReader();
 
             var nodeId = rawReader.ReadGuid();
 
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <summary>
         /// Creates local holder instance.
         /// </summary>
-        /// <param name="grid">Grid instance.</param>
+        /// <param name="grid">Ignite instance.</param>
         /// <param name="filter">Filter.</param>
         /// <returns>
         /// New instance of <see cref="MessageFilterHolder" />
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             Debug.Assert(grid != null);
             
-            var stream = GridManager.Memory.Get(memPtr).Stream();
+            var stream = IgniteManager.Memory.Get(memPtr).Stream();
 
             var holder = grid.Marshaller.Unmarshal<MessageFilterHolder>(stream);
 
@@ -171,9 +171,9 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
             _invoker = GetInvoker(_filter);
 
-            _grid = reader0.Marshaller.Grid;
+            _ignite = reader0.Marshaller.Ignite;
 
-            ResourceProcessor.Inject(_filter, _grid);
+            ResourceProcessor.Inject(_filter, _ignite);
         }
     }
 }

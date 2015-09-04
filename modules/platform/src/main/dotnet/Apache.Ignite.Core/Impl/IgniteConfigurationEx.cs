@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         public IgniteConfigurationEx(IgniteConfigurationEx cfg)
-            : this((IgniteConfiguration)cfg)
+            : this((IgniteConfiguration) cfg)
         {
             GridName = cfg.GridName;
         }
@@ -52,10 +52,6 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Grid name which is used if not provided in configuration file.
         /// </summary>
-        public string GridName
-        {
-            get;
-            set;
-        }
+        public string GridName { get; set; }
     }
 }

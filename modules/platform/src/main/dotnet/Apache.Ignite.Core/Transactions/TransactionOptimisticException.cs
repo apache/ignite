@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Transactions
     using Apache.Ignite.Core.Common;
 
     /// <summary> 
-    /// Exception thrown whenever grid transactions fail optimistically.  
+    /// Exception thrown whenever Ignite transactions fail optimistically.  
     /// </summary>
     [Serializable]
     public class TransactionOptimisticException : IgniteException

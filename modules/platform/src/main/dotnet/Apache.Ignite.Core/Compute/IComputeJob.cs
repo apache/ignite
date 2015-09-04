@@ -21,9 +21,9 @@ namespace Apache.Ignite.Core.Compute
     using Apache.Ignite.Core.Resource;
 
     /// <summary>
-    /// Defines executable unit for <see cref="IComputeTask{A,T,R}"/>. Grid task gets split into jobs
+    /// Defines executable unit for <see cref="IComputeTask{A,T,R}"/>. Ignite task gets split into jobs
     /// when <see cref="IComputeTask{A,T,R}.Map(IList{IClusterNode}, A)"/> method is called. This
-    /// method returns all jobs for the task mapped to their corresponding grid nodes for execution. 
+    /// method returns all jobs for the task mapped to their corresponding Ignite nodes for execution. 
     /// Grid will then serialize this jobs and send them to requested nodes for execution.
     /// <para />
     /// Once job execution is complete, the return value will be sent back to parent task and will 
@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Compute
     /// <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{T}, IList{IComputeJobResult{T}})"/>
     /// method via <see cref="IComputeJobResult{T}"/> instance. 
     /// <para />
-    /// Grid job implementation can be injected with <see cref="IIgnite"/> using 
+    /// Ignite job implementation can be injected with <see cref="IIgnite"/> using 
     /// <see cref="InstanceResourceAttribute"/> attribute.
     /// </summary>
     public interface IComputeJob<out T>

@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Common
     using System.Runtime.Serialization;
 
     /// <summary>
-    /// General grid exception. Indicates any error condition within Grid.
+    /// General Ignite exception. Indicates any error condition within Ignite.
     /// </summary>
     [Serializable]
     public class IgniteException : Exception

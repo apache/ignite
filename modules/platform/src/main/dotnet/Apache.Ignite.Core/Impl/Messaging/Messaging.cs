@@ -25,30 +25,30 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Collections;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>
     /// Messaging functionality.
     /// </summary>
-    internal class Messaging : GridTarget, IMessaging
+    internal class Messaging : PlatformTarget, IMessaging
     {
         /// <summary>
         /// Opcodes.
         /// </summary>
         private enum Op
         {
-            LocListen = 1,
-            REMOTE_LISTEN = 2,
-            SEND = 3,
+            LocalListen = 1,
+            RemoteListen = 2,
+            Send = 3,
             SendMulti = 4,
-            SEND_ORDERED = 5,
-            StopLocListen = 6,
-            STOP_REMOTE_LISTEN = 7
+            SendOrdered = 5,
+            StopLocalListen = 6,
+            StopRemoteListen = 7
         }
 
         /** Map from user (func+topic) -> id, needed for unsubscription. */
@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
             new MultiValueDictionary<KeyValuePair<object, object>, long>();
 
         /** Grid */
-        private readonly Ignite _grid;
+        private readonly Ignite _ignite;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Messaging" /> class.
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
             ClusterGroup = prj;
 
-            _grid = (Ignite) prj.Ignite;
+            _ignite = (Ignite) prj.Ignite;
         }
 
         /** <inheritdoc /> */
@@ -80,15 +80,15 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public void Send(object message, object topic = null)
         {
-            A.NotNull(message, "message");
+            IgniteArgumentCheck.NotNull(message, "message");
 
-            DoOutOp((int) Op.SEND, topic, message);
+            DoOutOp((int) Op.Send, topic, message);
         }
 
         /** <inheritdoc /> */
         public void Send(IEnumerable messages, object topic = null)
         {
-            A.NotNull(messages, "messages");
+            IgniteArgumentCheck.NotNull(messages, "messages");
 
             DoOutOp((int) Op.SendMulti, writer =>
             {
@@ -101,9 +101,9 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public void SendOrdered(object message, object topic = null, TimeSpan? timeout = null)
         {
-            A.NotNull(message, "message");
+            IgniteArgumentCheck.NotNull(message, "message");
 
-            DoOutOp((int) Op.SEND_ORDERED, writer =>
+            DoOutOp((int) Op.SendOrdered, writer =>
             {
                 writer.Write(topic);
                 writer.Write(message);
@@ -115,17 +115,17 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public void LocalListen<T>(IMessageFilter<T> filter, object topic = null)
         {
-            A.NotNull(filter, "filter");
+            IgniteArgumentCheck.NotNull(filter, "filter");
 
-            ResourceProcessor.Inject(filter, _grid);
+            ResourceProcessor.Inject(filter, _ignite);
 
             lock (_funcMap)
             {
                 var key = GetKey(filter, topic);
 
-                MessageFilterHolder filter0 = MessageFilterHolder.CreateLocal(_grid, filter); 
+                MessageFilterHolder filter0 = MessageFilterHolder.CreateLocal(_ignite, filter); 
 
-                var filterHnd = _grid.HandleRegistry.Allocate(filter0);
+                var filterHnd = _ignite.HandleRegistry.Allocate(filter0);
 
                 filter0.DestroyAction = () =>
                 {
@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
                 try
                 {
-                    DoOutOp((int) Op.LocListen, writer =>
+                    DoOutOp((int) Op.LocalListen, writer =>
                     {
                         writer.WriteLong(filterHnd);
                         writer.Write(topic);
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
                 }
                 catch (Exception)
                 {
-                    _grid.HandleRegistry.Release(filterHnd);
+                    _ignite.HandleRegistry.Release(filterHnd);
 
                     throw;
                 }
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public void StopLocalListen<T>(IMessageFilter<T> filter, object topic = null)
         {
-            A.NotNull(filter, "filter");
+            IgniteArgumentCheck.NotNull(filter, "filter");
 
             long filterHnd;
             bool removed;
@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
             if (removed)
             {
-                DoOutOp((int) Op.StopLocListen, writer =>
+                DoOutOp((int) Op.StopLocalListen, writer =>
                 {
                     writer.WriteLong(filterHnd);
                     writer.Write(topic);
@@ -180,16 +180,16 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public Guid RemoteListen<T>(IMessageFilter<T> filter, object topic = null)
         {
-            A.NotNull(filter, "filter");
+            IgniteArgumentCheck.NotNull(filter, "filter");
 
-            var filter0 = MessageFilterHolder.CreateLocal(_grid, filter);
-            var filterHnd = _grid.HandleRegistry.AllocateSafe(filter0);
+            var filter0 = MessageFilterHolder.CreateLocal(_ignite, filter);
+            var filterHnd = _ignite.HandleRegistry.AllocateSafe(filter0);
 
             try
             {
                 Guid id = Guid.Empty;
 
-                DoOutInOp((int) Op.REMOTE_LISTEN, writer =>
+                DoOutInOp((int) Op.RemoteListen, writer =>
                 {
                     writer.Write(filter0);
                     writer.WriteLong(filterHnd);
@@ -209,7 +209,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
             }
             catch (Exception)
             {
-                _grid.HandleRegistry.Release(filterHnd);
+                _ignite.HandleRegistry.Release(filterHnd);
 
                 throw;
             }
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public void StopRemoteListen(Guid opId)
         {
-            DoOutOp((int) Op.STOP_REMOTE_LISTEN, writer =>
+            DoOutOp((int) Op.StopRemoteListen, writer =>
             {
                 writer.WriteGuid(opId);
             });
@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public virtual IMessaging WithAsync()
         {
-            return new MessagingAsync(UU.MessagingWithASync(target), Marshaller, ClusterGroup);
+            return new MessagingAsync(UU.MessagingWithASync(Target), Marshaller, ClusterGroup);
         }
 
         /** <inheritdoc /> */

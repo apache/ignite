@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// <summary>
     /// Real cache enumerator communicating with Java.
     /// </summary>
-    internal class CacheEnumerator<TK, TV> : GridDisposableTarget, IEnumerator<ICacheEntry<TK, TV>>
+    internal class CacheEnumerator<TK, TV> : PlatformDisposableTarget, IEnumerator<ICacheEntry<TK, TV>>
     {
         /** Operation: next value. */
         private const int OpNext = 1;
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoInOp(OpNext, stream =>
             {
-                var reader = Marsh.StartUnmarshal(stream, _keepPortable);
+                var reader = Marshaller.StartUnmarshal(stream, _keepPortable);
 
                 bool hasNext = reader.ReadBoolean();
 

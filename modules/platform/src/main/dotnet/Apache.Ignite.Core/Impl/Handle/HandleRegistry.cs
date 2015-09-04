@@ -253,7 +253,7 @@ namespace Apache.Ignite.Core.Impl.Handle
             }
 
             if (throwOnAbsent)
-                throw new InvalidOperationException("Resource handle has been released (is grid stopping?).");
+                throw new InvalidOperationException("Resource handle has been released (is Ignite stopping?).");
 
             return default(T);
         }
@@ -333,7 +333,7 @@ namespace Apache.Ignite.Core.Impl.Handle
         /// <returns>Exception.</returns>
         private static Exception ClosedException()
         {
-            return new InvalidOperationException("Cannot allocate a resource handle because grid is stopping.");
+            return new InvalidOperationException("Cannot allocate a resource handle because Ignite is stopping.");
         }
     }
 }

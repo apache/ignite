@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Transactions
     ///         Note that in this mode, optimistic failures are only possible in conjunction with
     ///         <see cref="TransactionIsolation.Serializable"/> isolation level. In all other cases, 
     ///         optimistic transactions will never fail optimistically and will always be identically ordered on all 
-    ///         participating grid nodes.</description>
+    ///         participating Ignite nodes.</description>
     ///     </item>
     ///     <item>
     ///         <description><see cref="TransactionConcurrency.Pessimistic"/> - in this mode a lock is 

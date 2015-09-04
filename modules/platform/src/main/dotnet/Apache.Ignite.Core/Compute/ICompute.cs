@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Compute
     using Apache.Ignite.Core.Common;
 
     /// <summary>
-    /// Defines compute grid functionality for executing tasks and closures over nodes
+    /// Defines Ignite functionality for executing tasks and closures over nodes
     /// in the <see cref="IClusterGroup"/>. Instance of <see cref="ICompute"/>
     /// is obtained from grid projection using <see cref="IClusterGroup.Compute()"/> method.
     /// <para />
@@ -33,14 +33,14 @@ namespace Apache.Ignite.Core.Compute
     /// Ignite must select a node for a computation to be executed. The node will be selected based on the
     /// underlying <c>GridLoadBalancingSpi</c>, which by default sequentially picks next available node from
     /// grid projection. Other load balancing policies, such as <c>random</c> or <c>adaptive</c>, can be
-    /// configured as well by selecting different load balancing SPI in grid configuration. If your logic requires
+    /// configured as well by selecting different load balancing SPI in Ignite configuration. If your logic requires
     /// some custom load balancing behavior, consider implementing <c>ComputeTask</c> in Java directly.
     /// <para />
-    /// Ignite guarantees that as long as there is at least one grid node standing, every job will be
+    /// Ignite guarantees that as long as there is at least one Ignite node standing, every job will be
     /// executed. Jobs will automatically failover to another node if a remote node crashed or has rejected
     /// execution due to lack of resources. By default, in case of failover, next load balanced node will be
     /// picked for job execution. Also jobs will never be re-routed to the nodes they have failed on. This
-    /// behavior can be changed by configuring any of the existing or a custom <c>GridFailoverSpi</c> in grid
+    /// behavior can be changed by configuring any of the existing or a custom <c>FailoverSpi</c> in Ignite
     /// configuration.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
@@ -97,9 +97,9 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="task">Task to execute.</param>
         /// <param name="taskArg">Optional task argument.</param>
         /// <returns>Task result.</returns>
-        /// <typeparam name="A">Argument type.</typeparam>
+        /// <typeparam name="TA">Argument type.</typeparam>
         /// <typeparam name="T">Type of job result.</typeparam>
-        /// <typeparam name="R">Type of reduce result.</typeparam>
+        /// <typeparam name="TR">Type of reduce result.</typeparam>
         [AsyncSupported]
         TR Execute<TA, T, TR>(IComputeTask<TA, T, TR> task, TA taskArg);
         
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="task">Task to execute.</param>
         /// <returns>Task result.</returns>
         /// <typeparam name="T">Type of job result.</typeparam>
-        /// <typeparam name="R">Type of reduce result.</typeparam>
+        /// <typeparam name="TR">Type of reduce result.</typeparam>
         [AsyncSupported]
         TR Execute<T, TR>(IComputeTask<T, TR> task);
 
@@ -121,9 +121,9 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="taskType">Task type.</param>
         /// <param name="taskArg">Optional task argument.</param>
         /// <returns>Task result.</returns>
-        /// <typeparam name="A">Argument type.</typeparam>
+        /// <typeparam name="TA">Argument type.</typeparam>
         /// <typeparam name="T">Type of job result.</typeparam>
-        /// <typeparam name="R">Type of reduce result.</typeparam>
+        /// <typeparam name="TR">Type of reduce result.</typeparam>
         [AsyncSupported]
         TR Execute<TA, T, TR>(Type taskType, TA taskArg);
         
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="taskType">Task type.</param>
         /// <returns>Task result.</returns>
         /// <typeparam name="T">Type of job result.</typeparam>
-        /// <typeparam name="R">Type of reduce result.</typeparam>
+        /// <typeparam name="TR">Type of reduce result.</typeparam>
         [AsyncSupported]
         TR Execute<T, TR>(Type taskType);
 
@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Compute
         /// </summary>
         /// <param name="clo">Job to execute.</param>
         /// <returns>Job result for this execution.</returns>
-        /// <typeparam name="R">Type of job result.</typeparam>
+        /// <typeparam name="TR">Type of job result.</typeparam>
         [AsyncSupported]
         TR Call<TR>(IComputeFunc<TR> clo);
 
@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="affinityKey">Affinity key.</param>
         /// <param name="clo">Job to execute.</param>
         /// <returns>Job result for this execution.</returns>
-        /// <typeparam name="R">Type of job result.</typeparam>
+        /// <typeparam name="TR">Type of job result.</typeparam>
         [AsyncSupported]
         TR AffinityCall<TR>(string cacheName, object affinityKey, IComputeFunc<TR> clo);
 
@@ -166,8 +166,8 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="clos">Collection of jobs to execute.</param>
         /// <param name="rdc">Reducer to reduce all job results into one individual return value.</param>
         /// <returns>Reduced job result for this execution.</returns>
-        /// <typeparam name="R1">Type of job result.</typeparam>
-        /// <typeparam name="R2">Type of reduced result.</typeparam>
+        /// <typeparam name="TR1">Type of job result.</typeparam>
+        /// <typeparam name="TR2">Type of reduced result.</typeparam>
         [AsyncSupported]
         TR2 Call<TR1, TR2>(IEnumerable<IComputeFunc<TR1>> clos, IComputeReducer<TR1, TR2> rdc);
         
@@ -176,7 +176,7 @@ namespace Apache.Ignite.Core.Compute
         /// </summary>
         /// <param name="clos">Collection of jobs to execute.</param>
         /// <returns>Collection of job results for this execution.</returns>
-        /// <typeparam name="R">Type of job result.</typeparam>
+        /// <typeparam name="TR">Type of job result.</typeparam>
         [AsyncSupported]
         ICollection<TR> Call<TR>(IEnumerable<IComputeFunc<TR>> clos);
 
@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="arg">Job closure argument.</param>
         /// <returns>Collection of results for this execution.</returns>
         /// <typeparam name="T">Type of argument.</typeparam>
-        /// <typeparam name="R">Type of job result.</typeparam>
+        /// <typeparam name="TR">Type of job result.</typeparam>
         [AsyncSupported]
         ICollection<TR> Broadcast<T, TR>(IComputeFunc<T, TR> clo, T arg);
 
@@ -225,7 +225,7 @@ namespace Apache.Ignite.Core.Compute
         void AffinityRun(string cacheName, object affinityKey, IComputeAction action);
 
         /// <summary>
-        /// Executes collection of jobs on grid nodes within this grid projection.
+        /// Executes collection of jobs on Ignite nodes within this grid projection.
         /// </summary>
         /// <param name="actions">Jobs to execute.</param>
         [AsyncSupported]
@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="arg">Job argument.</param>
         /// <returns>Job result for this execution.</returns>
         /// <typeparam name="T">Type of argument.</typeparam>
-        /// <typeparam name="R">Type of job result.</typeparam>
+        /// <typeparam name="TR">Type of job result.</typeparam>
         [AsyncSupported]
         TR Apply<T, TR>(IComputeFunc<T, TR> clo, T arg);
 
@@ -251,7 +251,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="args">Job arguments.</param>
         /// <returns>Сollection of job results.</returns>
         /// <typeparam name="T">Type of argument.</typeparam>
-        /// <typeparam name="R">Type of job result.</typeparam>
+        /// <typeparam name="TR">Type of job result.</typeparam>
         [AsyncSupported]
         ICollection<TR> Apply<T, TR>(IComputeFunc<T, TR> clo, IEnumerable<T> args);
 
@@ -266,8 +266,8 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="rdc">Reducer to reduce all job results into one individual return value.</param>
         /// <returns>Reduced job result for this execution.</returns>
         /// <typeparam name="T">Type of argument.</typeparam>
-        /// <typeparam name="R1">Type of job result.</typeparam>
-        /// <typeparam name="R2">Type of reduced result.</typeparam>
+        /// <typeparam name="TR1">Type of job result.</typeparam>
+        /// <typeparam name="TR2">Type of reduced result.</typeparam>
         [AsyncSupported]
         TR2 Apply<T, TR1, TR2>(IComputeFunc<T, TR1> clo, IEnumerable<T> args, IComputeReducer<TR1, TR2> rdc);
     }

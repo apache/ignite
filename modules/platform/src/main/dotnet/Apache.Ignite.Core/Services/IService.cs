@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Services
 {
     /// <summary>
-    /// Represents grid-managed service.
+    /// Represents Ignite-managed service.
     /// </summary>
     public interface IService
     {
@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Services
 
         /// <summary>
         /// Starts execution of this service. This method is automatically invoked whenever an instance of the service
-        /// is deployed on a grid node. Note that service is considered deployed even after it exits the Execute
+        /// is deployed on a Ignite node. Note that service is considered deployed even after it exits the Execute
         /// method and can be cancelled (or undeployed) only by calling any of the Cancel methods on 
         /// <see cref="IServices"/> API. Also note that service is not required to exit from Execute method until
         /// Cancel method was called.
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Services
         /// <summary>
         /// Cancels this instance.
         /// <para/>
-        /// Note that grid cannot guarantee that the service exits from <see cref="IService.Execute"/>
+        /// Note that Ignite cannot guarantee that the service exits from <see cref="IService.Execute"/>
         /// method whenever <see cref="IService.Cancel"/> is called. It is up to the user to
         /// make sure that the service code properly reacts to cancellations.
         /// </summary>

@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private readonly HandleRegistry _handleRegistry = new HandleRegistry();
         
         /** Grid. */
-        private volatile Ignite _grid;
+        private volatile Ignite _ignite;
 
         /** Keep references to created delegates. */
         // ReSharper disable once CollectionNeverQueried.Local
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Initialized flag. */
         private readonly ManualResetEventSlim _initEvent = new ManualResetEventSlim(false);
 
-        /** Actions to be called upon grid initialisation. */
+        /** Actions to be called upon Ignite initialisation. */
         private readonly List<Action<Ignite>> _initActions = new List<Action<Ignite>>();
 
         /** GC handle to UnmanagedCallbacks instance to prevent it from being GCed. */
@@ -266,14 +266,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var cacheStore = CacheStore.CreateInstance(memPtr, _handleRegistry);
 
-                if (_grid != null)
-                    cacheStore.Init(_grid);
+                if (_ignite != null)
+                    cacheStore.Init(_ignite);
                 else
                 {
                     lock (_initActions)
                     {
-                        if (_grid != null)
-                            cacheStore.Init(_grid);
+                        if (_ignite != null)
+                            cacheStore.Init(_ignite);
                         else
                             _initActions.Add(g => cacheStore.Init(g));
                     }
@@ -294,35 +294,35 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 if ((long) cb != 0)
                     cb0 = new UnmanagedNonReleaseableTarget(_ctx.NativeContext, cb);
 
-                using (PlatformMemoryStream stream = GridManager.Memory.Get(memPtr).Stream())
+                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).Stream())
                 {
-                    return t.Invoke(stream, cb0, _grid);
+                    return t.Invoke(stream, cb0, _ignite);
                 }
             });
         }
 
         private void CacheStoreDestroy(void* target, long objPtr)
         {
-            SafeCall(() => _grid.HandleRegistry.Release(objPtr));
+            SafeCall(() => _ignite.HandleRegistry.Release(objPtr));
         }
 
         private long CacheStoreSessionCreate(void* target, long storePtr)
         {
-            return SafeCall(() => _grid.HandleRegistry.Allocate(new CacheStoreSession()));
+            return SafeCall(() => _ignite.HandleRegistry.Allocate(new CacheStoreSession()));
         }
 
         private long CacheEntryFilterCreate(void* target, long memPtr)
         {
-            return SafeCall(() => CacheEntryFilterHolder.CreateInstance(memPtr, _grid).Handle);
+            return SafeCall(() => CacheEntryFilterHolder.CreateInstance(memPtr, _ignite).Handle);
         }
 
         private int CacheEntryFilterApply(void* target, long objPtr, long memPtr)
         {
             return SafeCall(() =>
             {
-                var t = _grid.HandleRegistry.Get<CacheEntryFilterHolder>(objPtr);
+                var t = _ignite.HandleRegistry.Get<CacheEntryFilterHolder>(objPtr);
 
-                using (PlatformMemoryStream stream = GridManager.Memory.Get(memPtr).Stream())
+                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).Stream())
                 {
                     return t.Invoke(stream);
                 }
@@ -331,20 +331,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private void CacheEntryFilterDestroy(void* target, long objPtr)
         {
-            SafeCall(() => _grid.HandleRegistry.Release(objPtr));
+            SafeCall(() => _ignite.HandleRegistry.Release(objPtr));
         }
 
         private void CacheInvoke(void* target, long inMemPtr, long outMemPtr)
         {
             SafeCall(() =>
             {
-                using (PlatformMemoryStream inStream = GridManager.Memory.Get(inMemPtr).Stream())
+                using (PlatformMemoryStream inStream = IgniteManager.Memory.Get(inMemPtr).Stream())
                 {
-                    var result = ReadAndRunCacheEntryProcessor(inStream, _grid);
+                    var result = ReadAndRunCacheEntryProcessor(inStream, _ignite);
 
-                    using (PlatformMemoryStream outStream = GridManager.Memory.Get(outMemPtr).Stream())
+                    using (PlatformMemoryStream outStream = IgniteManager.Memory.Get(outMemPtr).Stream())
                     {
-                        result.Write(outStream, _grid.Marshaller);
+                        result.Write(outStream, _ignite.Marshaller);
 
                         outStream.SynchronizeOutput();
                     }
@@ -382,9 +382,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                using (PlatformMemoryStream inStream = GridManager.Memory.Get(inMemPtr).Stream())
+                using (PlatformMemoryStream inStream = IgniteManager.Memory.Get(inMemPtr).Stream())
                 {
-                    using (PlatformMemoryStream outStream = GridManager.Memory.Get(outMemPtr).Stream())
+                    using (PlatformMemoryStream outStream = IgniteManager.Memory.Get(outMemPtr).Stream())
                     {
                         Task(taskPtr).Map(inStream, outStream);
                     }
@@ -403,7 +403,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     return task.JobResultLocal(Job(jobPtr));
                 }
                 
-                using (var stream = GridManager.Memory.Get(memPtr).Stream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
                 {
                     return task.JobResultRemote(Job(jobPtr), stream);
                 }
@@ -430,7 +430,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     task.Complete(taskPtr);
                 else
                 {
-                    using (PlatformMemoryStream stream = GridManager.Memory.Get(memPtr).Stream())
+                    using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).Stream())
                     {
                         task.CompleteWithError(taskPtr, stream);
                     }
@@ -442,7 +442,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                using (PlatformMemoryStream stream = GridManager.Memory.Get(memPtr).Stream())
+                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).Stream())
                 {
                     return Job(jobPtr).Serialize(stream) ? 1 : 0;
                 }
@@ -453,9 +453,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                using (PlatformMemoryStream stream = GridManager.Memory.Get(memPtr).Stream())
+                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).Stream())
                 {
-                    ComputeJobHolder job = ComputeJobHolder.CreateJob(_grid, stream);
+                    ComputeJobHolder job = ComputeJobHolder.CreateJob(_ignite, stream);
 
                     return _handleRegistry.Allocate(job);
                 }
@@ -472,7 +472,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     job.ExecuteLocal(cancel == 1);
                 else
                 {
-                    using (PlatformMemoryStream stream = GridManager.Memory.Get(memPtr).Stream())
+                    using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).Stream())
                     {
                         job.ExecuteRemote(stream, cancel == 1);
                     }
@@ -526,7 +526,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var hnd = _handleRegistry.Get<IContinuousQueryHandleImpl>(lsnrPtr);
 
-                hnd.Apply(GridManager.Memory.Get(memPtr).Stream());
+                hnd.Apply(IgniteManager.Memory.Get(memPtr).Stream());
             });
         }
 
@@ -536,9 +536,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return SafeCall(() =>
             {
                 // 1. Unmarshal filter holder.
-                IPortableStream stream = GridManager.Memory.Get(memPtr).Stream();
+                IPortableStream stream = IgniteManager.Memory.Get(memPtr).Stream();
 
-                var reader = _grid.Marshaller.StartUnmarshal(stream);
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
                 ContinuousQueryFilterHolder filterHolder = reader.ReadObject<ContinuousQueryFilterHolder>();
 
@@ -554,7 +554,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     .Invoke(new[] { filterHolder.Filter, filterHolder.KeepPortable });
 
                 // 3. Inject grid.
-                filter.Inject(_grid);
+                filter.Inject(_ignite);
 
                 // 4. Allocate GC handle.
                 return filter.Allocate();
@@ -567,7 +567,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var holder = _handleRegistry.Get<IContinuousQueryFilter>(filterPtr);
 
-                return holder.Evaluate(GridManager.Memory.Get(memPtr).Stream()) ? 1 : 0;
+                return holder.Evaluate(IgniteManager.Memory.Get(memPtr).Stream()) ? 1 : 0;
             });
         }
 
@@ -608,9 +608,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                var stream = GridManager.Memory.Get(memPtr).Stream();
+                var stream = IgniteManager.Memory.Get(memPtr).Stream();
 
-                var reader = _grid.Marshaller.StartUnmarshal(stream, PortableMode.ForcePortable);
+                var reader = _ignite.Marshaller.StartUnmarshal(stream, PortableMode.ForcePortable);
 
                 var portableReceiver = reader.ReadObject<PortableUserObject>();
 
@@ -618,7 +618,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     portableReceiver.Deserialize<StreamReceiverHolder>();
 
                 if (receiver != null)
-                    receiver.Receive(_grid, new UnmanagedNonReleaseableTarget(_ctx.NativeContext, cache), stream,
+                    receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx.NativeContext, cache), stream,
                         keepPortable != 0);
             });
         }
@@ -697,7 +697,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 ProcessFuture(futPtr, fut =>
                 {
-                    IPortableStream stream = GridManager.Memory.Get(memPtr).Stream();
+                    IPortableStream stream = IgniteManager.Memory.Get(memPtr).Stream();
 
                     fut.OnResult(stream);
                 });
@@ -716,9 +716,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                IPortableStream stream = GridManager.Memory.Get(memPtr).Stream();
+                IPortableStream stream = IgniteManager.Memory.Get(memPtr).Stream();
 
-                PortableReaderImpl reader = _grid.Marshaller.StartUnmarshal(stream);
+                PortableReaderImpl reader = _ignite.Marshaller.StartUnmarshal(stream);
 
                 string errCls = reader.ReadString();
                 string errMsg = reader.ReadString();
@@ -785,9 +785,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                MessageFilterHolder holder = MessageFilterHolder.CreateRemote(_grid, memPtr);
+                MessageFilterHolder holder = MessageFilterHolder.CreateRemote(_ignite, memPtr);
 
-                return _grid.HandleRegistry.AllocateSafe(holder);
+                return _ignite.HandleRegistry.AllocateSafe(holder);
             });
         }
 
@@ -795,12 +795,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                var holder = _grid.HandleRegistry.Get<MessageFilterHolder>(ptr, false);
+                var holder = _ignite.HandleRegistry.Get<MessageFilterHolder>(ptr, false);
                 
                 if (holder == null)
                     return 0;
 
-                using (var stream = GridManager.Memory.Get(memPtr).Stream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
                 {
                     return holder.Invoke(stream);
                 }
@@ -811,7 +811,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                _grid.HandleRegistry.Release(ptr);
+                _ignite.HandleRegistry.Release(ptr);
             });
         }
         
@@ -831,8 +831,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 switch (op)
                 {
                     case OpPrepareDotNet:
-                        var inMem = GridManager.Memory.Get(arg1);
-                        var outMem = GridManager.Memory.Get(arg2);
+                        var inMem = IgniteManager.Memory.Get(arg1);
+                        var outMem = IgniteManager.Memory.Get(arg2);
 
                         PlatformMemoryStream inStream = inMem.Stream();
                         PlatformMemoryStream outStream = outMem.Stream();
@@ -853,19 +853,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long EventFilterCreate(void* target, long memPtr)
         {
-            return SafeCall(() => _handleRegistry.Allocate(RemoteListenEventFilter.CreateInstance(memPtr, _grid)));
+            return SafeCall(() => _handleRegistry.Allocate(RemoteListenEventFilter.CreateInstance(memPtr, _ignite)));
         }
 
         private int EventFilterApply(void* target, long ptr, long memPtr)
         {
             return SafeCall(() =>
             {
-                var holder = _grid.HandleRegistry.Get<IInteropCallback>(ptr, false);
+                var holder = _ignite.HandleRegistry.Get<IInteropCallback>(ptr, false);
 
                 if (holder == null)
                     return 0;
 
-                using (var stream = GridManager.Memory.Get(memPtr).Stream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
                 {
                     return holder.Invoke(stream);
                 }
@@ -876,7 +876,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                _grid.HandleRegistry.Release(ptr);
+                _ignite.HandleRegistry.Release(ptr);
             });
         }
         
@@ -888,16 +888,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                using (var stream = GridManager.Memory.Get(memPtr).Stream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
                 {
-                    var reader = _grid.Marshaller.StartUnmarshal(stream);
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
                     bool srvKeepPortable = reader.ReadBoolean();
                     var svc = reader.ReadObject<IService>();
 
-                    ResourceProcessor.Inject(svc, _grid);
+                    ResourceProcessor.Inject(svc, _ignite);
 
-                    svc.Init(new ServiceContext(_grid.Marshaller.StartUnmarshal(stream, srvKeepPortable)));
+                    svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepPortable)));
 
                     return _handleRegistry.Allocate(svc);
                 }
@@ -910,14 +910,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var svc = _handleRegistry.Get<IService>(svcPtr, true);
 
-                using (var stream = GridManager.Memory.Get(memPtr).Stream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
                 {
-                    var reader = _grid.Marshaller.StartUnmarshal(stream);
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
                     bool srvKeepPortable = reader.ReadBoolean();
 
                     svc.Execute(new ServiceContext(
-                        _grid.Marshaller.StartUnmarshal(stream, srvKeepPortable)));
+                        _ignite.Marshaller.StartUnmarshal(stream, srvKeepPortable)));
                 }
             });
         }
@@ -930,18 +930,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 try
                 {
-                    using (var stream = GridManager.Memory.Get(memPtr).Stream())
+                    using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
                     {
-                        var reader = _grid.Marshaller.StartUnmarshal(stream);
+                        var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
                         bool srvKeepPortable = reader.ReadBoolean();
 
-                        svc.Cancel(new ServiceContext(_grid.Marshaller.StartUnmarshal(stream, srvKeepPortable)));
+                        svc.Cancel(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepPortable)));
                     }
                 }
                 finally
                 {
-                    _grid.HandleRegistry.Release(svcPtr);
+                    _ignite.HandleRegistry.Release(svcPtr);
                 }
             });
         }
@@ -950,19 +950,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                using (var inStream = GridManager.Memory.Get(inMemPtr).Stream())
-                using (var outStream = GridManager.Memory.Get(outMemPtr).Stream())
+                using (var inStream = IgniteManager.Memory.Get(inMemPtr).Stream())
+                using (var outStream = IgniteManager.Memory.Get(outMemPtr).Stream())
                 {
                     var svc = _handleRegistry.Get<IService>(svcPtr, true);
 
                     string mthdName;
                     object[] mthdArgs;
 
-                    ServiceProxySerializer.ReadProxyMethod(inStream, _grid.Marshaller, out mthdName, out mthdArgs);
+                    ServiceProxySerializer.ReadProxyMethod(inStream, _ignite.Marshaller, out mthdName, out mthdArgs);
 
                     var result = ServiceProxyInvoker.InvokeServiceMethod(svc, mthdName, mthdArgs);
 
-                    ServiceProxySerializer.WriteInvocationResult(outStream, _grid.Marshaller, result.Key, result.Value);
+                    ServiceProxySerializer.WriteInvocationResult(outStream, _ignite.Marshaller, result.Key, result.Value);
 
                     outStream.SynchronizeOutput();
                 }
@@ -973,13 +973,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                using (var stream = GridManager.Memory.Get(memPtr).Stream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
                 {
-                    var reader = _grid.Marshaller.StartUnmarshal(stream);
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
                     var filter = (IClusterNodeFilter) reader.ReadObject<PortableOrSerializableObjectHolder>().Item;
 
-                    return filter.Invoke(_grid.GetNode(reader.ReadGuid())) ? 1 : 0;
+                    return filter.Invoke(_ignite.GetNode(reader.ReadGuid())) ? 1 : 0;
                 }
             });
         }
@@ -990,14 +990,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private void NodeInfo(void* target, long memPtr)
         {
-            SafeCall(() => _grid.UpdateNodeInfo(memPtr));
+            SafeCall(() => _ignite.UpdateNodeInfo(memPtr));
         }
 
         private void MemoryReallocate(void* target, long memPtr, int cap)
         {
             SafeCall(() =>
             {
-                GridManager.Memory.Get(memPtr).Reallocate(cap);
+                IgniteManager.Memory.Get(memPtr).Reallocate(cap);
             }, true);
         }
 
@@ -1005,7 +1005,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                Ignition.OnStart(GridManager.Memory.Get(memPtr).Stream());
+                Ignition.OnStart(IgniteManager.Memory.Get(memPtr).Stream());
             }, true);
         }
 
@@ -1029,9 +1029,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             switch (errType)
             {
                 case ErrGeneric:
-                    if (_grid != null && errDataLen > 0)
+                    if (_ignite != null && errDataLen > 0)
                         throw ExceptionUtils.GetException(errCls, errMsg,
-                            _grid.Marshaller.StartUnmarshal(new PlatformRawMemory(errData, errDataLen).Stream()));
+                            _ignite.Marshaller.StartUnmarshal(new PlatformRawMemory(errData, errDataLen).Stream()));
 
                     throw ExceptionUtils.GetException(errCls, errMsg);
 
@@ -1127,7 +1127,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             Debug.Assert(grid != null);
 
-            _grid = grid;
+            _ignite = grid;
 
             lock (_initActions)
             {
@@ -1144,7 +1144,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         public void Cleanup()
         {
-            _grid = null;
+            _ignite = null;
             
             _handleRegistry.Close();
         }

@@ -19,10 +19,10 @@ namespace Apache.Ignite.Core.Datastream
 {
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Portable;
-    using AC = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>
     /// Convenience adapter to transform update existing values in streaming cache 
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Datastream
         /// <param name="proc">Entry processor.</param>
         public StreamTransformer(ICacheEntryProcessor<TK, TV, TA, TR> proc)
         {
-            AC.NotNull(proc, "proc");
+            IgniteArgumentCheck.NotNull(proc, "proc");
 
             _proc = proc;
         }

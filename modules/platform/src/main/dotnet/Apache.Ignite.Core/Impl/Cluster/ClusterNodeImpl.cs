@@ -21,8 +21,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Collections;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Portable;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>
     /// Cluster node implementation.
@@ -53,8 +53,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** Metrics. */
         private volatile ClusterMetricsImpl _metrics;
         
-        /** Grid. */
-        private WeakReference _gridRef;
+        /** Ignite reference. */
+        private WeakReference _igniteRef;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClusterNodeImpl"/> class.
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public T Attribute<T>(string name)
         {
-            A.NotNull(name, "name");
+            IgniteArgumentCheck.NotNull(name, "name");
 
             return (T)_attrs[name];
         }
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public bool TryGetAttribute<T>(string name, out T attr)
         {
-            A.NotNull(name, "name");
+            IgniteArgumentCheck.NotNull(name, "name");
 
             object val;
 
@@ -160,16 +160,16 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IClusterMetrics Metrics()
         {
-            var grid = (Ignite)_gridRef.Target;
+            var ignite = (Ignite)_igniteRef.Target;
 
-            if (grid == null)
+            if (ignite == null)
                 return _metrics;
 
             ClusterMetricsImpl oldMetrics = _metrics;
 
             long lastUpdateTime = oldMetrics.LastUpdateTimeRaw;
 
-            ClusterMetricsImpl newMetrics = grid.ClusterGroup.RefreshClusterNodeMetrics(_id, lastUpdateTime);
+            ClusterMetricsImpl newMetrics = ignite.ClusterGroup.RefreshClusterNodeMetrics(_id, lastUpdateTime);
 
             if (newMetrics != null)
             {
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="grid">The grid.</param>
         internal void Init(Ignite grid)
         {
-            _gridRef = new WeakReference(grid);
+            _igniteRef = new WeakReference(grid);
         }
     }
 }

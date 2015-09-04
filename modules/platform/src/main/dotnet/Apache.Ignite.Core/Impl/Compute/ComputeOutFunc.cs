@@ -100,10 +100,10 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Injects the grid.
         /// </summary>
         [InstanceResource]
-        public void InjectGrid(IIgnite grid)
+        public void InjectIgnite(IIgnite ignite)
         {
             // Propagate injection
-            ResourceProcessor.Inject(_func, (IgniteProxy)grid);
+            ResourceProcessor.Inject(_func, (IgniteProxy)ignite);
         }
     }
 

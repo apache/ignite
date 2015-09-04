@@ -27,10 +27,10 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cluster;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Portable;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
 
     /// <summary>
     /// Native utility methods.
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>New Instance.</returns>
         public static object CreateInstance(string assemblyName, string clsName)
         {
-            A.NotNullOrEmpty(clsName, "clsName");
+            IgniteArgumentCheck.NotNullOrEmpty(clsName, "clsName");
 
             var type = new TypeResolver().ResolveType(clsName, assemblyName);
 
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Impl
             if (props == null)
                 return;
 
-            A.NotNull(target, "target");
+            IgniteArgumentCheck.NotNull(target, "target");
 
             Type typ = target.GetType();
 
@@ -353,7 +353,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="chars">Char array.</param>
         /// <param name="charsLen">Char array length.</param>
         /// <returns></returns>
-        public static unsafe String Utf8UnmanagedToString(sbyte* chars, int charsLen)
+        public static unsafe string Utf8UnmanagedToString(sbyte* chars, int charsLen)
         {
             IntPtr ptr = new IntPtr(chars);
 
@@ -405,18 +405,18 @@ namespace Apache.Ignite.Core.Impl
 
             var res = new List<IClusterNode>(cnt);
 
-            var grid = ((PortableReaderImpl)reader).Marshaller.Grid;
+            var ignite = ((PortableReaderImpl)reader).Marshaller.Ignite;
 
             if (pred == null)
             {
                 for (var i = 0; i < cnt; i++)
-                    res.Add(grid.GetNode(reader.ReadGuid()));
+                    res.Add(ignite.GetNode(reader.ReadGuid()));
             }
             else
             {
                 for (var i = 0; i < cnt; i++)
                 {
-                    var node = grid.GetNode(reader.ReadGuid());
+                    var node = ignite.GetNode(reader.ReadGuid());
                     
                     if (pred(node))
                         res.Add(node);

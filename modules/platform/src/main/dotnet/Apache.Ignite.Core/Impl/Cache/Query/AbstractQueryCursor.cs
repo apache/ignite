@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     /// <summary>
     /// Abstract query cursor implementation.
     /// </summary>
-    internal abstract class AbstractQueryCursor<T> : GridDisposableTarget, IQueryCursor<T>, IEnumerator<T>
+    internal abstract class AbstractQueryCursor<T> : PlatformDisposableTarget, IQueryCursor<T>, IEnumerator<T>
     {
         /** */
         private const int OpGetAll = 1;
@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         {
             try
             {
-                UU.QueryCursorClose(target);
+                UU.QueryCursorClose(Target);
             }
             finally 
             {
@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                 throw new InvalidOperationException("Failed to get enumerator entries because " + 
                     "GetAll() method has already been called.");
 
-            UU.QueryCursorIterator(target);
+            UU.QueryCursorIterator(Target);
 
             _iterCalled = true;
 
@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** <inheritdoc /> */
         protected override T1 Unmarshal<T1>(IPortableStream stream)
         {
-            return Marsh.Unmarshal<T1>(stream, _keepPortable);
+            return Marshaller.Unmarshal<T1>(stream, _keepPortable);
         }
 
         /// <summary>
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <returns>Result.</returns>
         private IList<T> ConvertGetAll(IPortableStream stream)
         {
-            var reader = Marsh.StartUnmarshal(stream, _keepPortable);
+            var reader = Marshaller.StartUnmarshal(stream, _keepPortable);
 
             var size = reader.ReadInt();
 
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <returns>Result.</returns>
         private T[] ConvertGetBatch(IPortableStream stream)
         {
-            var reader = Marsh.StartUnmarshal(stream, _keepPortable);
+            var reader = Marshaller.StartUnmarshal(stream, _keepPortable);
 
             var size = reader.ReadInt();
 

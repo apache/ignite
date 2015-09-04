@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Transactions
     using Apache.Ignite.Core.Common;
 
     /// <summary>
-    /// Exception thrown whenever grid transactions time out.  
+    /// Exception thrown whenever Ignite transactions time out.  
     /// </summary>
     [Serializable]
     public class TransactionTimeoutException : IgniteException

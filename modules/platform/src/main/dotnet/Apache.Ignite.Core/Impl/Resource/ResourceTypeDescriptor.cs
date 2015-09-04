@@ -31,13 +31,13 @@ namespace Apache.Ignite.Core.Impl.Resource
     internal class ResourceTypeDescriptor
     {
         /** Attribute type: InstanceResourceAttribute. */
-        private static readonly Type TypAttrGrid = typeof(InstanceResourceAttribute);
+        private static readonly Type TypAttrIgnite = typeof(InstanceResourceAttribute);
 
         /** Attribute type: StoreSessionResourceAttribute. */
         private static readonly Type TypAttrStoreSes = typeof(StoreSessionResourceAttribute);
 
         /** Type: IGrid. */
-        private static readonly Type TypGrid = typeof(IIgnite);
+        private static readonly Type TypIgnite = typeof(IIgnite);
 
         /** Type: ICacheStoreSession. */
         private static readonly Type TypStoreSes = typeof (ICacheStoreSession);
@@ -49,10 +49,10 @@ namespace Apache.Ignite.Core.Impl.Resource
         private static readonly BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public |
             BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
-        /** Grid instance gridInjectors. */
-        private readonly IList<IResourceInjector> _gridInjectors;
+        /** Ignite injectors. */
+        private readonly IList<IResourceInjector> _igniteInjectors;
 
-        /** Session gridInjectors. */
+        /** Session injectors. */
         private readonly IList<IResourceInjector> _storeSesInjectors;
         
         /** Task "no result cache" flag. */
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Resource
         /// <param name="type">Type.</param>
         internal ResourceTypeDescriptor(Type type)
         {
-            Collector gridCollector = new Collector(TypAttrGrid, TypGrid);
+            Collector gridCollector = new Collector(TypAttrIgnite, TypIgnite);
             Collector storeSesCollector = new Collector(TypAttrStoreSes, TypStoreSes);
 
             Type curType = type;
@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Resource
                 curType = curType.BaseType;
             }
 
-            _gridInjectors = gridCollector.Injectors;
+            _igniteInjectors = gridCollector.Injectors;
             _storeSesInjectors = storeSesCollector.Injectors;
 
             _taskNoResCache = ContainsAttribute(type, TypComputeTaskNoResCache, true);
@@ -86,20 +86,20 @@ namespace Apache.Ignite.Core.Impl.Resource
         /// Inject resources to the given object.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="grid">Grid.</param>
-        public void InjectGrid(object target, Ignite grid)
+        /// <param name="ignite">Grid.</param>
+        public void InjectIgnite(object target, Ignite ignite)
         {
-            InjectGrid(target, grid.Proxy);
+            InjectIgnite(target, ignite.Proxy);
         }
 
         /// <summary>
         /// Inject resources to the given object.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="grid">Grid proxy.</param>
-        public void InjectGrid(object target, IgniteProxy grid)
+        /// <param name="igniteProxy">Grid proxy.</param>
+        public void InjectIgnite(object target, IgniteProxy igniteProxy)
         {
-            Inject0(target, grid, _gridInjectors);
+            Inject0(target, igniteProxy, _igniteInjectors);
         }
 
         /// <summary>

@@ -22,16 +22,16 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Diagnostics;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Cache affinity implementation.
     /// </summary>
-    internal class CacheAffinityImpl : GridTarget, ICacheAffinity
+    internal class CacheAffinityImpl : PlatformTarget, ICacheAffinity
     {
         /** */
         private const int OpAffinityKey = 1;
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly bool _keepPortable;
         
         /** Grid. */
-        private readonly Ignite _grid;
+        private readonly Ignite _ignite;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheAffinityImpl" /> class.
@@ -87,28 +87,27 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
-        /// <param name="grid">Grid.</param>
+        /// <param name="ignite">Grid.</param>
         public CacheAffinityImpl(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable, 
-            Ignite grid)
-            : base(target, marsh)
+            Ignite ignite) : base(target, marsh)
         {
             _keepPortable = keepPortable;
 
-            Debug.Assert(grid != null);
+            Debug.Assert(ignite != null);
             
-            _grid = grid;
+            _ignite = ignite;
         }
 
         /** <inheritDoc /> */
         public int Partitions
         {
-            get { return UU.AffinityPartitions(target); }
+            get { return UU.AffinityPartitions(Target); }
         }
 
         /** <inheritDoc /> */
         public int Partition<TK>(TK key)
         {
-            A.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return (int)DoOutOp(OpPartition, key);
         }
@@ -116,9 +115,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public bool IsPrimary<TK>(IClusterNode n, TK key)
         {
-            A.NotNull(n, "n");
+            IgniteArgumentCheck.NotNull(n, "n");
             
-            A.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutOp(OpIsPrimary, n.Id, key) == True;
         }
@@ -126,9 +125,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public bool IsBackup<TK>(IClusterNode n, TK key)
         {
-            A.NotNull(n, "n");
+            IgniteArgumentCheck.NotNull(n, "n");
 
-            A.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutOp(OpIsBackup, n.Id, key) == True;
         }
@@ -136,9 +135,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public bool IsPrimaryOrBackup<TK>(IClusterNode n, TK key)
         {
-            A.NotNull(n, "n");
+            IgniteArgumentCheck.NotNull(n, "n");
 
-            A.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutOp(OpIsPrimaryOrBackup, n.Id, key) == True;
         }
@@ -146,7 +145,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public int[] PrimaryPartitions(IClusterNode n)
         {
-            A.NotNull(n, "n");
+            IgniteArgumentCheck.NotNull(n, "n");
 
             return DoOutInOp<Guid, int[]>(OpPrimaryPartitions, n.Id);
         }
@@ -154,7 +153,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public int[] BackupPartitions(IClusterNode n)
         {
-            A.NotNull(n, "n");
+            IgniteArgumentCheck.NotNull(n, "n");
 
             return DoOutInOp<Guid, int[]>(OpBackupPartitions, n.Id);
         }
@@ -162,7 +161,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public int[] AllPartitions(IClusterNode n)
         {
-            A.NotNull(n, "n");
+            IgniteArgumentCheck.NotNull(n, "n");
 
             return DoOutInOp<Guid, int[]>(OpAllPartitions, n.Id);
         }
@@ -170,7 +169,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public TR AffinityKey<TK, TR>(TK key)
         {
-            A.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOp<TK, TR>(OpAffinityKey, key);
         }
@@ -178,7 +177,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IDictionary<IClusterNode, IList<TK>> MapKeysToNodes<TK>(IList<TK> keys)
         {
-            A.NotNull(keys, "keys");
+            IgniteArgumentCheck.NotNull(keys, "keys");
 
             return DoOutInOp(OpMapKeysToNodes, w => w.WriteObject(keys),
                 reader => ReadDictionary(reader, ReadNode, r => r.ReadObject<IList<TK>>()));
@@ -187,7 +186,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IClusterNode MapKeyToNode<TK>(TK key)
         {
-            A.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return GetNode(DoOutInOp<TK, Guid?>(OpMapKeyToNode, key));
         }
@@ -195,7 +194,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IList<IClusterNode> MapKeyToPrimaryAndBackups<TK>(TK key)
         {
-            A.NotNull(key, "key");
+            IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOp(OpMapKeyToPrimaryAndBackups, w => w.WriteObject(key), r => ReadNodes(r));
         }
@@ -209,7 +208,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IDictionary<int, IClusterNode> MapPartitionsToNodes(IList<int> parts)
         {
-            A.NotNull(parts, "parts");
+            IgniteArgumentCheck.NotNull(parts, "parts");
 
             return DoOutInOp(OpMapPartitionsToNodes,
                 w => w.WriteObject(parts),
@@ -236,7 +235,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Node.</returns>
         private IClusterNode GetNode(Guid? id)
         {
-            return _grid.GetNode(id);
+            return _ignite.GetNode(id);
         }
 
         /// <summary>

@@ -36,18 +36,17 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
     using PU = Apache.Ignite.Core.Impl.Portable.PortableUtils;
     
     /// <summary>
     /// This class defines a factory for the main Ignite API.
     /// <p/>
-    /// Use <see cref="Ignition.Start()"/> method to start grid with default configuration.
+    /// Use <see cref="Ignition.Start()"/> method to start Ignite with default configuration.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// <example>
     /// You can also use <see cref="IgniteConfiguration"/> to override some default configuration.
-    /// Below is an example on how to start grid with custom configuration for portable types and
+    /// Below is an example on how to start Ignite with custom configuration for portable types and
     /// provide path to Spring XML configuration file:
     /// <code>
     /// IgniteConfiguration cfg = new IgniteConfiguration();
@@ -65,8 +64,8 @@ namespace Apache.Ignite.Core
     ///
     /// cfg.PortableConfiguration = portableCfg;
     ///
-    /// // Start grid node with grid configuration.
-    /// IGrid grid = Ignition.Start(cfg);
+    /// // Start Ignite node with Ignite configuration.
+    /// var ignite = Ignition.Start(cfg);
     /// </code>
     /// </example>
     /// </summary>
@@ -82,7 +81,7 @@ namespace Apache.Ignite.Core
         private static int _gcWarn;
 
         /** */
-        private static readonly IDictionary<GridKey, Ignite> Grids = new Dictionary<GridKey, Ignite>();
+        private static readonly IDictionary<NodeKey, Ignite> Nodes = new Dictionary<NodeKey, Ignite>();
         
         /** Current DLL name. */
         private static readonly string IgniteDllName = Path.GetFileName(Assembly.GetExecutingAssembly().Location);
@@ -104,7 +103,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether grids should be started in client mode.
+        /// Gets or sets a value indicating whether Ignite should be started in client mode.
         /// Client nodes cannot hold data in caches.
         /// </summary>
         public static bool ClientMode
@@ -114,24 +113,24 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Starts grid with default configuration. By default this method will
-        /// use grid configuration defined in <code>IGNITE/config/default-config.xml</code>
+        /// Starts Ignite with default configuration. By default this method will
+        /// use Ignite configuration defined in <code>IGNITE/config/default-config.xml</code>
         /// configuration file. If such file is not found, then all system defaults will be used.
         /// </summary>
-        /// <returns>Started grid.</returns>
+        /// <returns>Started Ignite.</returns>
         public static IIgnite Start()
         {
             return Start(new IgniteConfiguration());
         }
 
         /// <summary>
-        /// Starts all grids specified within given Spring XML configuration file. If grid with given name
+        /// Starts all grids specified within given Spring XML configuration file. If Ignite with given name
         /// is already started, then exception is thrown. In this case all instances that may
         /// have been started so far will be stopped too.
         /// </summary>
         /// <param name="springCfgPath">Spring XML configuration file path or URL. Note, that the path can be
         /// absolute or relative to IGNITE_HOME.</param>
-        /// <returns>Started grid. If Spring configuration contains multiple grid instances, then the 1st
+        /// <returns>Started Ignite. If Spring configuration contains multiple Ignite instances, then the 1st
         /// found instance is returned.</returns>
         public static IIgnite Start(string springCfgPath)
         {
@@ -139,12 +138,12 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Starts grid with given configuration.
+        /// Starts Ignite with given configuration.
         /// </summary>
-        /// <returns>Started grid.</returns>
+        /// <returns>Started Ignite.</returns>
         public unsafe static IIgnite Start(IgniteConfiguration cfg)
         {
-            A.NotNull(cfg, "cfg");
+            IgniteArgumentCheck.NotNull(cfg, "cfg");
 
             // Copy configuration to avoid changes to user-provided instance.
             IgniteConfigurationEx cfgEx = cfg as IgniteConfigurationEx;
@@ -165,7 +164,7 @@ namespace Apache.Ignite.Core
 
                 var cbs = new UnmanagedCallbacks();
 
-                void* ctx = GridManager.GetContext(cfg, cbs);
+                void* ctx = IgniteManager.GetContext(cfg, cbs);
 
                 sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfg.SpringConfigUrl ?? DefaultCfg);
 
@@ -179,7 +178,7 @@ namespace Apache.Ignite.Core
 
                 try
                 {
-                    // 4. Initiate Grid start.
+                    // 4. Initiate Ignite start.
                     interopProc = UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl ?? DefaultCfg, 
                         cfgEx != null ? cfgEx.GridName : null, ClientMode);
 
@@ -190,7 +189,7 @@ namespace Apache.Ignite.Core
                     // 6. On-start callback (notify lifecycle components).
                     node.OnStart();
 
-                    Grids[new GridKey(_startup.Name)] = node;
+                    Nodes[new NodeKey(_startup.Name)] = node;
 
                     return node;
                 }
@@ -201,13 +200,13 @@ namespace Apache.Ignite.Core
 
                     if (name != null)
                     {
-                        GridKey key = new GridKey(name);
+                        NodeKey key = new NodeKey(name);
 
-                        if (Grids.ContainsKey(key))
-                            Grids.Remove(key);
+                        if (Nodes.ContainsKey(key))
+                            Nodes.Remove(key);
                     }
 
-                    // 2. Stop Grid node if it was started.
+                    // 2. Stop Ignite node if it was started.
                     if (interopProc != null)
                         UU.IgnitionStop(interopProc.Context, gridName, true);
 
@@ -366,8 +365,8 @@ namespace Apache.Ignite.Core
                 // 2. Set ID and name so that Start() method can use them later.
                 _startup.Name = name;
 
-                if (Grids.ContainsKey(new GridKey(name)))
-                    throw new IgniteException("Grid with the same name already started: " + name);
+                if (Nodes.ContainsKey(new NodeKey(name)))
+                    throw new IgniteException("Ignite with the same name already started: " + name);
 
             }
             catch (Exception e)
@@ -464,15 +463,15 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Gets a named Ignite instance. If Ignite name is {@code null} or empty string,
-        /// then default no-name grid will be returned. Note that caller of this method
+        /// then default no-name Ignite will be returned. Note that caller of this method
         /// should not assume that it will return the same instance every time.
         /// <p/>
-        /// Note that single process can run multiple grid instances and every grid instance (and its
-        /// node) can belong to a different grid. Grid name defines what grid a particular grid
+        /// Note that single process can run multiple Ignite instances and every Ignite instance (and its
+        /// node) can belong to a different grid. Ignite name defines what grid a particular Ignite
         /// instance (and correspondingly its node) belongs to.
         /// </summary>
-        /// <param name="name">Ignite name to which requested grid instance belongs. If <code>null</code>,
-        /// then grid instance belonging to a default no-name grid will be returned.
+        /// <param name="name">Ignite name to which requested Ignite instance belongs. If <code>null</code>,
+        /// then Ignite instance belonging to a default no-name Ignite will be returned.
         /// </param>
         /// <returns>An instance of named grid.</returns>
         public static IIgnite GetIgnite(string name)
@@ -481,8 +480,8 @@ namespace Apache.Ignite.Core
             {
                 Ignite result;
 
-                if (!Grids.TryGetValue(new GridKey(name), out result))
-                    throw new IgniteException("Grid instance was not properly started or was already stopped: " + name);
+                if (!Nodes.TryGetValue(new NodeKey(name), out result))
+                    throw new IgniteException("Ignite instance was not properly started or was already stopped: " + name);
 
                 return result;
             }
@@ -502,27 +501,27 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Stops named grid. If <code>cancel</code> flag is set to <code>true</code> then
         /// all jobs currently executing on local node will be interrupted. If
-        /// grid name is <code>null</code>, then default no-name grid will be stopped.
+        /// grid name is <code>null</code>, then default no-name Ignite will be stopped.
         /// </summary>
-        /// <param name="name">Grid name. If <code>null</code>, then default no-name grid will be stopped.</param>
+        /// <param name="name">Grid name. If <code>null</code>, then default no-name Ignite will be stopped.</param>
         /// <param name="cancel">If <code>true</code> then all jobs currently executing will be cancelled
         /// by calling <code>ComputeJob.cancel</code>method.</param>
-        /// <returns><code>true</code> if named grid instance was indeed found and stopped, <code>false</code>
+        /// <returns><code>true</code> if named Ignite instance was indeed found and stopped, <code>false</code>
         /// othwerwise (the instance with given <code>name</code> was not found).</returns>
         public static bool Stop(string name, bool cancel)
         {
             lock (SyncRoot)
             {
-                GridKey key = new GridKey(name);
+                NodeKey key = new NodeKey(name);
 
                 Ignite node;
 
-                if (!Grids.TryGetValue(key, out node))
+                if (!Nodes.TryGetValue(key, out node))
                     return false;
 
                 node.Stop(cancel);
 
-                Grids.Remove(key);
+                Nodes.Remove(key);
                 
                 GC.Collect();
 
@@ -540,13 +539,13 @@ namespace Apache.Ignite.Core
         {
             lock (SyncRoot)
             {
-                while (Grids.Count > 0)
+                while (Nodes.Count > 0)
                 {
-                    var entry = Grids.First();
+                    var entry = Nodes.First();
                     
                     entry.Value.Stop(cancel);
 
-                    Grids.Remove(entry.Key);
+                    Nodes.Remove(entry.Key);
                 }
             }
 
@@ -567,16 +566,16 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Grid key.
         /// </summary>
-        private class GridKey
+        private class NodeKey
         {
             /** */
             private readonly string _name;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="GridKey"/> class.
+            /// Initializes a new instance of the <see cref="NodeKey"/> class.
             /// </summary>
             /// <param name="name">The name.</param>
-            internal GridKey(string name)
+            internal NodeKey(string name)
             {
                 _name = name;
             }
@@ -584,7 +583,7 @@ namespace Apache.Ignite.Core
             /** <inheritdoc /> */
             public override bool Equals(object obj)
             {
-                var other = obj as GridKey;
+                var other = obj as NodeKey;
 
                 return other != null && Equals(_name, other._name);
             }

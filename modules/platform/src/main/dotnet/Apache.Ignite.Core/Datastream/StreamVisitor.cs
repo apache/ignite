@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Datastream
     using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
-    using A = Apache.Ignite.Core.Impl.Common.GridArgumentCheck;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Convenience adapter to visit every key-value tuple in the stream.
@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Datastream
         /// <param name="action">The action to be called on each stream entry.</param>
         public StreamVisitor(Action<ICache<TK, TV>, ICacheEntry<TK, TV>> action)
         {
-            A.NotNull(action, "action");
+            IgniteArgumentCheck.NotNull(action, "action");
 
             _action = action;
         }

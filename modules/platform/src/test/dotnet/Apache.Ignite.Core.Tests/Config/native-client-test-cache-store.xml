@@ -45,7 +45,7 @@
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
                             <property name="assemblyName" value="Apache.Ignite.Core.Tests"/>
-                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.GridCacheTestStore"/>
+                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.CacheTestStore"/>
                         </bean>
                     </property>
                 </bean>
@@ -61,7 +61,7 @@
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
                             <property name="assemblyName" value="Apache.Ignite.Core.Tests"/>
-                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.GridCacheTestStore"/>
+                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.CacheTestStore"/>
                         </bean>
                     </property>
                 </bean>
@@ -77,7 +77,7 @@
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
                             <property name="assemblyName" value="Apache.Ignite.Core.Tests"/>
-                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.GridCacheTestStore"/>
+                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.CacheTestStore"/>
                         </bean>
                     </property>
                 </bean>
@@ -92,7 +92,7 @@
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
                             <property name="assemblyName" value="Apache.Ignite.Core.Tests"/>
-                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.GridCacheTestStore"/>
+                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.CacheTestStore"/>
                             <property name="properties">
                                 <map>
                                     <entry key="IntProperty">

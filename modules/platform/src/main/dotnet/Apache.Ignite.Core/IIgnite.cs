@@ -40,12 +40,12 @@ namespace Apache.Ignite.Core
     public interface IIgnite : IDisposable
     {
         /// <summary>
-        /// Gets the name of the grid this grid instance (and correspondingly its local node) belongs to.
-        /// Note that single process can have multiple grid instances all belonging to different grids. Grid
-        /// name allows to indicate to what grid this particular grid instance (i.e. grid runtime and its
+        /// Gets the name of the grid this Ignite instance (and correspondingly its local node) belongs to.
+        /// Note that single process can have multiple Ignite instances all belonging to different grids. Grid
+        /// name allows to indicate to what grid this particular Ignite instance (i.e. Ignite runtime and its
         /// local node) belongs to.
         /// <p/>
-        /// If default grid instance is used, then <c>null</c> is returned. Refer to <see cref="Ignition"/> documentation
+        /// If default Ignite instance is used, then <c>null</c> is returned. Refer to <see cref="Ignition"/> documentation
         /// for information on how to start named grids.
         /// </summary>
         /// <returns>Name of the grid, or <c>null</c> for default grid.</returns>
@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Gets a new instance of data streamer associated with given cache name. Data streamer
-        /// is responsible for loading external data into in-memory data grid. For more information
+        /// is responsible for loading external data into Ignite. For more information
         /// refer to <see cref="IDataStreamer{K,V}"/> documentation.
         /// </summary>
         /// <param name="cacheName">Cache name (<c>null</c> for default cache).</param>
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core
         ICacheAffinity Affinity(string name);
 
         /// <summary>
-        /// Gets grid transactions facade.
+        /// Gets  Ignite transactions facade.
         /// </summary>
         ITransactions Transactions { get; }
 

@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Services
     using Apache.Ignite.Core.Common;
 
     /// <summary>
-    /// Defines functionality to deploy distributed services on the grid.
+    /// Defines functionality to deploy distributed services in the Ignite.
     /// </summary>
     public interface IServices : IAsyncSupport<IServices>
     {
@@ -35,9 +35,9 @@ namespace Apache.Ignite.Core.Services
         IClusterGroup ClusterGroup { get; }
 
         /// <summary>
-        /// Deploys a cluster-wide singleton service. Grid guarantees that there is always
-        /// one instance of the service in the cluster. In case if grid node on which the service
-        /// was deployed crashes or stops, grid will automatically redeploy it on another node.
+        /// Deploys a cluster-wide singleton service. Ignite guarantees that there is always
+        /// one instance of the service in the cluster. In case if Ignite node on which the service
+        /// was deployed crashes or stops, Ignite will automatically redeploy it on another node.
         /// However, if the node on which the service is deployed remains in topology, then the
         /// service will always be deployed on that node only, regardless of topology changes.
         /// <para />
@@ -50,9 +50,9 @@ namespace Apache.Ignite.Core.Services
         void DeployClusterSingleton(string name, IService service);
 
         /// <summary>
-        /// Deploys a per-node singleton service. Grid guarantees that there is always
+        /// Deploys a per-node singleton service. Ignite guarantees that there is always
         /// one instance of the service running on each node. Whenever new nodes are started
-        /// within the underlying cluster group, grid will automatically deploy one instance of
+        /// within the underlying cluster group, Ignite will automatically deploy one instance of
         /// the service on every new node.        
         /// </summary>
         /// <param name="name">Service name.</param>
@@ -78,10 +78,10 @@ namespace Apache.Ignite.Core.Services
         void DeployKeyAffinitySingleton<TK>(string name, IService service, string cacheName, TK affinityKey);
 
         /// <summary>
-        /// Deploys multiple instances of the service on the grid. Grid will deploy a
+        /// Deploys multiple instances of the service on the grid. Ignite will deploy a
         /// maximum amount of services equal to <paramref name="totalCount" /> parameter making sure that
         /// there are no more than <paramref name="maxPerNodeCount" /> service instances running
-        /// on each node. Whenever topology changes, grid will automatically rebalance
+        /// on each node. Whenever topology changes, Ignite will automatically rebalance
         /// the deployed services within cluster to make sure that each node will end up with
         /// about equal number of deployed instances whenever possible.
         /// </summary>
@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Services
         void DeployMultiple(string name, IService service, int totalCount, int maxPerNodeCount);
 
         /// <summary>
-        /// Deploys instances of the service on the grid according to provided configuration.
+        /// Deploys instances of the service in the Ignite according to provided configuration.
         /// </summary>
         /// <param name="configuration">Service configuration.</param>
         [AsyncSupported]
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Services
         /// Cancels service deployment. If a service with specified name was deployed on the grid, 
         /// then <see cref="IService.Cancel"/> method will be called on it.
         /// <para/>
-        /// Note that grid cannot guarantee that the service exits from <see cref="IService.Execute"/>
+        /// Note that Ignite cannot guarantee that the service exits from <see cref="IService.Execute"/>
         /// method whenever <see cref="IService.Cancel"/> is called. It is up to the user to
         /// make sure that the service code properly reacts to cancellations.
         /// </summary>
@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Services
         /// </summary>
         /// <typeparam name="T">Service type.</typeparam>
         /// <param name="name">Service name.</param>
-        /// <param name="sticky">Whether or not grid should always contact the same remote
+        /// <param name="sticky">Whether or not Ignite should always contact the same remote
         /// service or try to load-balance between services.</param>
         /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
         T GetServiceProxy<T>(string name, bool sticky) where T : class;

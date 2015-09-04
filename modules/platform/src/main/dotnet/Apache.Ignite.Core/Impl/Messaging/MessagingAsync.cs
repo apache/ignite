@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public override IFuture<T> GetFuture<T>()
         {
-            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(target, futId, futTyp));
+            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp));
         }
     }
 }
