@@ -34,6 +34,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -566,28 +567,20 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         startFuts.put(routineId, fut);
 
         try {
+            if (locIncluded && registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true))
+                hnd.onListenerRegistered(routineId, ctx);
+
             ctx.discovery().sendCustomEvent(new StartRoutineDiscoveryMessage(routineId, reqData));
         }
         catch (IgniteCheckedException e) { // Marshaller exception may occurs if user pass unmarshallable filter.
             startFuts.remove(routineId);
-
             locInfos.remove(routineId);
+
+            unregisterHandler(routineId, hnd, true);
 
             fut.onDone(e);
 
             return fut;
-        }
-
-        // Register local handler if needed.
-        if (locIncluded) {
-            try {
-                if (registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true))
-                    hnd.onListenerRegistered(routineId, ctx);
-            }
-            catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(
-                    new IgniteCheckedException("Failed to register handler locally: " + hnd, e));
-            }
         }
 
         // Handler is registered locally.
