@@ -50,6 +50,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Service\NativeMethods.cs" />
+    <Compile Include="Service\ServiceDescription.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">

@@ -45,7 +45,8 @@ namespace Apache.Ignite.Service
         internal static readonly string SvcDesc = "Apache Ignite .Net Service.";
 
         /** Current executable name. */
-        internal static readonly string ExeName = new FileInfo(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath).FullName;
+        internal static readonly string ExeName =
+            new FileInfo(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath).FullName;
 
         /** Current executable fully qualified name. */
         internal static readonly string FullExeName = Path.GetFileName(FullExeName);
@@ -214,15 +215,5 @@ namespace Apache.Ignite.Service
 
             return ptr;
         }
-    }
-
-    /// <summary>
-    /// Service description structure.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct ServiceDescription
-    {
-        /** Pointer to description. */
-        public IntPtr desc;
     }
 }
