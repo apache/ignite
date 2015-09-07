@@ -57,8 +57,6 @@ public interface PluginProvider<C extends PluginConfiguration> {
      */
     public <T extends IgnitePlugin> T plugin();
 
-    public void initConfiguration(IgniteConfiguration cfg);
-
     /**
      * Registers extensions.
      *
