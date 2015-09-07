@@ -186,32 +186,6 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
-        [Test]
-        public void TestStartInvalidJvmOptions()
-        {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = "config\\start-test-grid1.xml",
-                JvmOptions = new List<string> {"invalid_option"},
-                JvmClasspath = TestUtils.CreateTestClasspath()
-            };
-
-            try
-            {
-                Ignition.Start(cfg);
-
-                Assert.Fail("Start should fail.");
-            }
-            catch (IgniteException e)
-            {
-                Console.WriteLine("Expected exception: " + e);
-            }
-
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-
-            Ignition.Start(cfg);
-        }
-
         /// <summary>
         /// 
         /// </summary>
