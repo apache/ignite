@@ -748,6 +748,7 @@
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/1.1/test2-1.1.jar</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
+                                        <exclude>**/*.sln</exclude>
                                         <exclude>**/*.vcxproj</exclude>
                                         <exclude>**/*.vcxproj.filters</exclude>
                                         <exclude>**/module.def</exclude>
