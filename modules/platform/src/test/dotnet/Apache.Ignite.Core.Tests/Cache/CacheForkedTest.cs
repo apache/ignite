@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Tests cache with a standalone process.
     /// </summary>
-    [Ignore("IGNITE-1367")]
     public class CacheForkedTest
     {
         /** */
