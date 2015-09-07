@@ -20,7 +20,7 @@ namespace Apache.Ignite.Config
     using System;
 
     /// <summary>
-    /// Parses grid config values.
+    /// Parses Ignite config values.
     /// </summary>
     internal class ConfigValueParser
     {

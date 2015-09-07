@@ -30,7 +30,7 @@ namespace Apache.Ignite.Service
     using Apache.Ignite.Core.Common;
 
     /// <summary>
-    /// GridGain service.
+    /// Ignite windows service.
     /// </summary>
     internal class IgniteService : ServiceBase
     {
@@ -51,7 +51,7 @@ namespace Apache.Ignite.Service
         /** Current executable fully qualified name. */
         internal static readonly string FullExeName = Path.GetFileName(FullExeName);
 
-        /** Grid configuration to start with. */
+        /** Ignite configuration to start with. */
         private readonly IgniteConfiguration _cfg;
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Service
         /// <summary>
         /// Install service programmatically.
         /// </summary>
-        /// <param name="cfg">Grid configuration.</param>
+        /// <param name="cfg">Ignite configuration.</param>
         internal static void DoInstall(IgniteConfiguration cfg)
         {
             // 1. Check if already defined.
