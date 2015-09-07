@@ -750,6 +750,7 @@
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
                                         <exclude>**/*.pc.in</exclude>
+                                        <exclude>**/*.sln</exclude>
                                         <exclude>**/*.vcxproj</exclude>
                                         <exclude>**/*.vcxprojrel</exclude>
                                         <exclude>**/*.vcxproj.filters</exclude>
