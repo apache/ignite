@@ -186,34 +186,6 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
-        /*
-        [Test]
-        public void TestStartInvalidJvmOptions()
-        {
-            GridGain.Impl.IgniteManager.DestroyJvm();
-
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            cfg.NativeXmlConfig = "config\\start-test-grid1.xml";
-            cfg.NativeJvmOptions = new List<string> { "invalid_option"};
-
-            try
-            {
-                Ignition.Start(cfg);
-
-                Assert.Fail("Start should fail.");
-            }
-            catch (IgniteException e)
-            {
-                Console.WriteLine("Expected exception: " + e);
-            }
-
-            cfg.NativeJvmOptions = new List<string> { "-Xmx1g", "-Xms1g" };
-
-            Ignition.Start(cfg);
-        }
-        */
-
         /// <summary>
         /// 
         /// </summary>

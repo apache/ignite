@@ -48,10 +48,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
         /** */
         private readonly Func<object, object, object, bool> _cacheEntryFilter;
-
-        /** */
-        private readonly Func<object, object, object, byte, bool> _cacheDrEntryFilter;
-
+        
         /** */
         private readonly Tuple<Func<object, IMutableCacheEntryInternal, object, object>, Tuple<Type, Type>> 
             _cacheEntryProcessor;
@@ -110,17 +107,7 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             return Get(type)._cacheEntryFilter;
         }
-
-        /// <summary>
-        /// Gets the <see cref="ICacheDrEntryFilter{K, V}" /> invocator.
-        /// </summary>
-        /// <param name="type">Type.</param>
-        /// <returns>Precompiled invocator delegate.</returns>
-        public static Func<object, object, object, byte, bool> GetCacheDrEntryFilter(Type type)
-        {
-            return Get(type)._cacheDrEntryFilter;
-        }
-
+        
         /// <summary>
         /// Gets the <see cref="ICacheEntryProcessor{K, V, A, R}" /> invocator.
         /// </summary>

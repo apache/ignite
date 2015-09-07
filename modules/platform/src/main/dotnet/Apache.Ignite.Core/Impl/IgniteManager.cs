@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl
         internal const string EnvIgniteHome = "IGNITE_HOME";
 
         /** Environment variable: whether to set test classpath or not. */
-        private const string EnvIgniteNativeTestClasspath = "IGNITE_NATIVE_TEST_CLASSPATH";
+        internal const string EnvIgniteNativeTestClasspath = "IGNITE_NATIVE_TEST_CLASSPATH";
         
         /** Classpath prefix. */
         private const string ClasspathPrefix = "-Djava.class.path=";

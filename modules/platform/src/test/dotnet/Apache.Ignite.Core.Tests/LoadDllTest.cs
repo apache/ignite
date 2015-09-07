@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Tests
                 OutputAssembly = outputPath
             };
 
-            var src = "namespace GridGain.Client.Test { public class Foo {}}";
+            var src = "namespace Apache.Ignite.Client.Test { public class Foo {}}";
 
             var results = icc.CompileAssemblyFromSource(parameters, src);
 

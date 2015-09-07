@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,19 +15,21 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Compute.Forked
-{
-    using NUnit.Framework;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
-    /// <summary>
-    /// Forked closure execution tests for serializable objects.
-    /// </summary>
-    [Ignore("IGNITE-1381")]
-    public class ForkedSerializableClosureTaskTest : SerializableClosureTaskTest
-    {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public ForkedSerializableClosureTaskTest() : base(true) { }
-    }
-}
+[assembly: AssemblyTitle("Apache.Ignite")]
+[assembly: AssemblyDescription("Apache Ignite .NET Executable")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Apache Software Foundation")]
+[assembly: AssemblyProduct("Apache Ignite")]
+[assembly: AssemblyCopyright("Copyright ©  2015")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+
+[assembly: ComVisible(false)]
+
+[assembly: Guid("0f9702ec-da7d-4ce5-b4b7-73310c885355")]
+
+[assembly: AssemblyVersion("1.5.0")]
+[assembly: AssemblyFileVersion("1.5.0")]

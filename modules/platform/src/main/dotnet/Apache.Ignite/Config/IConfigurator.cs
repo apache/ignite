@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Compute.Forked
+namespace Apache.Ignite.Config
 {
-    using NUnit.Framework;
+    using Apache.Ignite.Core;
 
     /// <summary>
-    /// Forked closure execution tests for serializable objects.
+    /// Configurator which is capable of setting configuration properties taken from somewhere.
     /// </summary>
-    [Ignore("IGNITE-1381")]
-    public class ForkedSerializableClosureTaskTest : SerializableClosureTaskTest
+    internal interface IConfigurator<in T>
     {
         /// <summary>
-        /// Constructor.
+        /// Set configuration.
         /// </summary>
-        public ForkedSerializableClosureTaskTest() : base(true) { }
+        /// <param name="cfg">Configuration.</param>
+        /// <param name="src">Source.</param>
+        void Configure(IgniteConfiguration cfg, T src);
     }
 }
