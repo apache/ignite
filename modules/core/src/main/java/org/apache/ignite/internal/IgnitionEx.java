@@ -78,6 +78,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.mxbean.IgnitionMXBean;
+import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.spi.IgniteSpi;
@@ -1509,6 +1510,11 @@ public class IgnitionEx {
 
             IgniteConfiguration myCfg = initializeConfiguration(cfg);
 
+            List<PluginProvider> plugins = U.allPluginProviders();
+
+            for (PluginProvider provider : plugins)
+                provider.initConfiguration(myCfg);
+
             // Set configuration URL, if any, into system property.
             if (startCtx.configUrl() != null)
                 System.setProperty(IGNITE_CONFIG_URL, startCtx.configUrl().toString());
@@ -1620,7 +1626,9 @@ public class IgnitionEx {
                         @Override public void apply() {
                             startLatch.countDown();
                         }
-                    });
+                    },
+                    plugins
+                );
 
                 state = STARTED;
 

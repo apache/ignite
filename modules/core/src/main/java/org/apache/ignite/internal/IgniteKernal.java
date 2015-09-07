@@ -657,6 +657,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc Reset executor service.
      * @param errHnd Error handler to use for notification about startup problems.
+     * @param plugins Plugins.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
@@ -669,7 +670,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
-        GridAbsClosure errHnd)
+        GridAbsClosure errHnd,
+        List<PluginProvider> plugins
+        )
         throws IgniteCheckedException
     {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
@@ -757,8 +760,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         // Ack configuration.
         ackSpis();
-
-        List<PluginProvider> plugins = U.allPluginProviders();
 
         // Spin out SPIs & managers.
         try {
