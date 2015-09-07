@@ -20,6 +20,7 @@ namespace Apache.Ignite
     using System;
     using System.Collections.Generic;
     using System.Configuration;
+    using System.Linq;
     using System.ServiceProcess;
     using Apache.Ignite.Config;
     using Apache.Ignite.Core;
@@ -131,30 +132,30 @@ namespace Apache.Ignite
         /// </summary>
         private static void PrintHelp()
         {
-            Console.WriteLine("Usage: gridgain.exe [/install] [/uninstall] [-options]");
+            Console.WriteLine("Usage: Apache.Ignite.exe [/install] [/uninstall] [-options]");
             Console.WriteLine("");
-            Console.WriteLine("\t/install [-options]    installs GridGain Windows service with provided options");
-            Console.WriteLine("\t/uninstall             uninstalls GridGain Windows service");
+            Console.WriteLine("\t/install [-options]    installs Ignite Windows service with provided options");
+            Console.WriteLine("\t/uninstall             uninstalls Ignite Windows service");
             Console.WriteLine("");
             Console.WriteLine("Options:");
-            Console.WriteLine("\t-IgniteHome          path to GridGain installation directory (if not provided GRIDGAIN_HOME environment variable is used)");
+            Console.WriteLine("\t-IgniteHome            path to Ignite installation directory (if not provided IGNITE_HOME environment variable is used)");
             Console.WriteLine("\t-springConfigUrl       path to spring configuration file (if not provided \"config/default-config.xml\" is used)");
             Console.WriteLine("\t-jvmDllPath            path to JVM library jvm.dll (if not provided JAVA_HOME environment variable is used)");
             Console.WriteLine("\t-jvmClasspath          classpath passed to JVM (enlist additional jar files here)");
-            Console.WriteLine("\t-suppressWarnings      whether to print warnings");
+            Console.WriteLine("\t-suppressWarnings      wether to print warnings");
             Console.WriteLine("\t-J<javaOption>         JVM options passed to created JVM");
             Console.WriteLine("\t-assembly=userLib.dll  additional .Net assemblies");
             Console.WriteLine("\t-jvmInitialMemoryMB    Initial Java heap size, in megabytes. Maps to -Xms Java parameter. Defaults to 512.");
             Console.WriteLine("\t-jvmMaxMemoryMB        Maximum Java heap size, in megabytes. Maps to -Xmx Java parameter. Defaults to 1024.");
             Console.WriteLine("");
             Console.WriteLine("Examples:");
-            Console.WriteLine("\tgridgain.exe -J-Xms1024m -J-Xmx1024m -springConfigUrl=C:/woer/gg-test/my-test-gg-confignative.xml");
-            Console.WriteLine("\tgridgain.exe -IgniteHome=c:/programs/gridgain-7.0.0 -jvmClasspath=libs/myLib1.jar;libs/myLib2.jar");
-            Console.WriteLine("\tgridgain.exe -assembly=c:/myProject/libs/lib1.dll -assembly=c:/myProject/libs/lib2.dll");
-            Console.WriteLine("\tgridgain.exe -jvmInitialMemoryMB=1024 -jvmMaxMemoryMB=4096");
+            Console.WriteLine("\tApache.Ignite.exe -J-Xms1024m -J-Xmx1024m -springConfigUrl=C:/woer/gg-test/my-test-gg-confignative.xml");
+            Console.WriteLine("\tApache.Ignite.exe -IgniteHome=c:/apache-ignite -jvmClasspath=libs/myLib1.jar;libs/myLib2.jar");
+            Console.WriteLine("\tApache.Ignite.exe -assembly=c:/myProject/libs/lib1.dll -assembly=c:/myProject/libs/lib2.dll");
+            Console.WriteLine("\tApache.Ignite.exe -jvmInitialMemoryMB=1024 -jvmMaxMemoryMB=4096");
             Console.WriteLine("");
             Console.WriteLine("Note:");
-            Console.WriteLine("Command line settings have priority over gridgain.exe.config settings. JVM options and assemblies are concatenated; data from config file comes first, then data from command line.");
+            Console.WriteLine("Command line settings have priority over Apache.Ignite.exe.config settings. JVM options and assemblies are concatenated; data from config file comes first, then data from command line.");
         }
 
         /// <summary>
@@ -164,11 +165,7 @@ namespace Apache.Ignite
         /// <returns>New arguments.</returns>
         private static string[] RemoveFirstArg(string[] args)
         {
-            string[] args0 = new string[args.Length - 1];
-
-            Array.Copy(args, 1, args0, 0, args0.Length);
-
-            return args0;
+            return args.Skip(1).ToArray();
         }
     }
 }
