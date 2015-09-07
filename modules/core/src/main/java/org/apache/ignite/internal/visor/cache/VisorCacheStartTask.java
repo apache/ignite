@@ -139,12 +139,12 @@ public class VisorCacheStartTask extends
                 if (arg.near) {
                     NearCacheConfiguration nearCfg = Ignition.loadSpringBean(bais, "nearCacheConfiguration");
 
-                    ignite.createNearCache(VisorTaskUtils.unescapeName(arg.name()), nearCfg);
+                    ignite.getOrCreateNearCache(VisorTaskUtils.unescapeName(arg.name()), nearCfg);
                 }
                 else {
                     CacheConfiguration cacheCfg = Ignition.loadSpringBean(bais, "cacheConfiguration");
 
-                    ignite.createCache(cacheCfg);
+                    ignite.getOrCreateCache(cacheCfg);
                 }
             }
             catch (IOException e) {

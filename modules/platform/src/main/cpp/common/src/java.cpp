@@ -2060,7 +2060,7 @@ namespace ignite
             JNIEXPORT void JNICALL JniComputeJobDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong jobPtr) {
                 IGNITE_SAFE_PROC(env, envPtr, ComputeJobDestroyHandler, computeJobDestroy, jobPtr);
             }
-
+            
             JNIEXPORT void JNICALL JniContinuousQueryListenerApply(JNIEnv *env, jclass cls, jlong envPtr, jlong cbPtr, jlong memPtr) {
                 IGNITE_SAFE_PROC(env, envPtr, ContinuousQueryListenerApplyHandler, contQryLsnrApply, cbPtr, memPtr);
             }
