@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Process
             if (!string.IsNullOrEmpty(ggHome))
                 procStart.EnvironmentVariables[IgniteManager.EnvIgniteHome] = ggHome;
 
-            procStart.EnvironmentVariables["GRIDGAIN_NATIVE_TEST_CLASSPATH"] = "true";
+            procStart.EnvironmentVariables[IgniteManager.EnvIgniteNativeTestClasspath] = "true";
 
             procStart.CreateNoWindow = true;
             procStart.UseShellExecute = false;
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Tests.Process
             if (workDir != null)
                 procStart.WorkingDirectory = workDir;
 
-            Console.WriteLine("About to run Ignite.exe process [exePath=" + exePath + ", arguments=" + sb + ']');
+            Console.WriteLine("About to run Apache.Ignite.exe process [exePath=" + exePath + ", arguments=" + sb + ']');
 
             // 2. Start.
             var proc = Process.Start(procStart);
@@ -213,10 +213,7 @@ namespace Apache.Ignite.Core.Tests.Process
         /// </summary>
         public bool Alive
         {
-            get
-            {
-                return !_proc.HasExited;
-            }
+            get { return !_proc.HasExited; }
         }
 
         /// <summary>
@@ -276,14 +273,11 @@ namespace Apache.Ignite.Core.Tests.Process
         /// <param name="err">Whether this is error stream.</param>
         private static void Attach(Process proc, StreamReader reader, IIgniteProcessOutputReader outReader, bool err)
         {
-            Thread thread = new Thread(() =>
+            new Thread(() =>
             {
                 while (!proc.HasExited)
                     outReader.OnOutput(proc, reader.ReadLine(), err);
-            }) {IsBackground = true};
-
-
-            thread.Start();
+            }) {IsBackground = true}.Start();
         }
     }
 }

@@ -33,7 +33,6 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Tests for executable.
     /// </summary>
-    [Ignore("IGNITE-1367")]
     public class ExecutableTest
     {
         /** Spring configuration path. */
@@ -98,7 +97,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestConfig()
         {
-            IgniteProcess.ReplaceConfiguration("config\\Ignite.exe.config.test");
+            IgniteProcess.ReplaceConfiguration("config\\Apache.Ignite.exe.config.test");
 
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
@@ -211,7 +210,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestJvmMemoryOptsAppConfig()
         {
-            IgniteProcess.ReplaceConfiguration("config\\Ignite.exe.config.test");
+            IgniteProcess.ReplaceConfiguration("config\\Apache.Ignite.exe.config.test");
 
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");

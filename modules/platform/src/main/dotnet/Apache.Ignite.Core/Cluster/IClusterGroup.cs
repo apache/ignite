@@ -174,7 +174,7 @@ namespace Apache.Ignite.Core.Cluster
         IClusterGroup ForYoungest();
 
         /// <summary>
-        /// Creates grid projection for nodes supporting .Net, i.e. for nodes started with Ignite.exe.
+        /// Creates grid projection for nodes supporting .Net, i.e. for nodes started with Apache.Ignite.exe.
         /// </summary>
         /// <returns>Grid projection for nodes supporting .Net.</returns>
         IClusterGroup ForDotNet();
