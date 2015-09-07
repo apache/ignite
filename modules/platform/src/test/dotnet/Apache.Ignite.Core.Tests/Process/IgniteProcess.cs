@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Process
     public class IgniteProcess
     {
         /** Executable file name. */
-        private static readonly string ExeName = "Ignite.exe";
+        private static readonly string ExeName = "Apache.Ignite.exe";
 
         /** Executable process name. */
         private static readonly string ExeProcName = ExeName.Substring(0, ExeName.IndexOf('.'));
@@ -71,17 +71,14 @@ namespace Apache.Ignite.Core.Tests.Process
             // ReSharper disable once PossibleNullReferenceException
             ExeDir = dir.FullName;
 
-            FileInfo[] exe = dir.GetFiles(ExeName);
+            var exe = dir.GetFiles(ExeName);
 
-
-            // TODO: IGNITE-1367
-            /*
             if (exe.Length == 0)
                 throw new Exception(ExeName + " is not found in test output directory: " + dir.FullName);
 
             ExePath = exe[0].FullName;
 
-            FileInfo[] exeCfg = dir.GetFiles(ExeCfgName);
+            var exeCfg = dir.GetFiles(ExeCfgName);
 
             if (exeCfg.Length == 0)
                 throw new Exception(ExeCfgName + " is not found in test output directory: " + dir.FullName);
@@ -90,7 +87,7 @@ namespace Apache.Ignite.Core.Tests.Process
 
             ExeCfgBakPath = Path.Combine(ExeDir, ExeCfgBakName);
 
-            File.Delete(ExeCfgBakPath);*/
+            File.Delete(ExeCfgBakPath);
         }
 
         /// <summary>
