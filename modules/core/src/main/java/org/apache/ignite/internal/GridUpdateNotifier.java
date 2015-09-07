@@ -282,6 +282,13 @@ class GridUpdateNotifier {
     }
 
     /**
+     * Stops update notifier.
+     */
+    public void stop() {
+        verCheckerExec.stop();
+    }
+
+    /**
      * Asynchronous checker of the latest version available.
      */
     private class UpdateChecker extends GridWorker {
@@ -436,6 +443,9 @@ class GridUpdateNotifier {
         /** Worker is busy flag. */
         private volatile boolean workerIsBusy;
 
+        /** Executor has been stopped flag. */
+        private volatile boolean isStopped;
+
         /** Sleep mls. */
         private final long sleepMls;
 
@@ -463,7 +473,7 @@ class GridUpdateNotifier {
             workerThread = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
-                        while(!Thread.currentThread().isInterrupted()) {
+                        while(!Thread.currentThread().isInterrupted() || !isStopped) {
                             Runnable cmd0 = cmd.getAndSet(null);
 
                             if (cmd0 != null) {
@@ -507,12 +517,18 @@ class GridUpdateNotifier {
             if (workerIsBusy) {
                 Thread workerThread0 = workerThread;
 
-                // Order is important.
-                startWorkerThread();
-
                 if (workerThread0 != null)
                     workerThread0.interrupt();
+
+                startWorkerThread();
             }
+        }
+
+        /**
+         * Stops executor threads.
+         */
+        void stop() {
+            isStopped = true;
         }
     }
 }
