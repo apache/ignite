@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// <summary>
     /// Internal future interface.
     /// </summary>
+    [CLSCompliant(false)]
     public interface IFutureInternal
     {
         /// <summary>

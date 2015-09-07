@@ -17,11 +17,13 @@
 
 namespace Apache.Ignite.Core.Impl.Common
 {
+    using System;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
     /// Marshals and converts future value.
     /// </summary>
+    [CLSCompliant(false)]
     public interface IFutureConverter<out T>
     {
         /// <summary>
