@@ -25,8 +25,8 @@ namespace Apache.Ignite.Config
     /// </summary>
     internal class ArgsConfigurator : IConfigurator<string[]>
     {
-        /** Command line argument: GridGain home. */
-        private static readonly string CmdGridgainHome = "-IgniteHome=".ToLower();
+        /** Command line argument: Ignite home. */
+        private static readonly string CmdIgniteHome = "-IgniteHome=".ToLower();
 
         /** Command line argument: Spring config URL. */
         private static readonly string CmdSpringCfgUrl = "-SpringConfigUrl=".ToLower();
@@ -59,10 +59,10 @@ namespace Apache.Ignite.Config
         /// <returns></returns>
         internal static string[] ToArgs(IgniteConfiguration cfg)
         {
-            List<string> args = new List<string>();
+            var args = new List<string>();
 
             if (cfg.IgniteHome != null)
-                args.Add(CmdGridgainHome + cfg.IgniteHome);
+                args.Add(CmdIgniteHome + cfg.IgniteHome);
 
             if (cfg.SpringConfigUrl != null)
                 args.Add(CmdSpringCfgUrl + cfg.SpringConfigUrl);
@@ -78,13 +78,13 @@ namespace Apache.Ignite.Config
 
             if (cfg.JvmOptions != null)
             {
-                foreach (string jvmOpt in cfg.JvmOptions)
+                foreach (var jvmOpt in cfg.JvmOptions)
                     args.Add(CmdJvmOpt + jvmOpt);
             }
 
             if (cfg.Assemblies != null)
             {
-                foreach (string assembly in cfg.Assemblies)
+                foreach (var assembly in cfg.Assemblies)
                     args.Add(CmdAssembly + assembly);
             }
 
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Config
         /// <returns>Configuration.</returns>
         internal static IgniteConfiguration FromArgs(string[] args)
         {
-            IgniteConfiguration cfg = new IgniteConfiguration();
+            var cfg = new IgniteConfiguration();
 
             new ArgsConfigurator().Configure(cfg, args);
 
@@ -111,15 +111,15 @@ namespace Apache.Ignite.Config
         /** <inheritDoc /> */
         public void Configure(IgniteConfiguration cfg, string[] src)
         {
-            List<string> jvmOpts = new List<string>();
-            List<string> assemblies = new List<string>();
+            var jvmOpts = new List<string>();
+            var assemblies = new List<string>();
 
-            foreach (string arg in src)
+            foreach (var arg in src)
             {
-                string argLow = arg.ToLower();
+                var argLow = arg.ToLower();
 
-                if (argLow.StartsWith(CmdGridgainHome))
-                    cfg.IgniteHome = arg.Substring(CmdGridgainHome.Length);
+                if (argLow.StartsWith(CmdIgniteHome))
+                    cfg.IgniteHome = arg.Substring(CmdIgniteHome.Length);
                 else if (argLow.StartsWith(CmdSpringCfgUrl))
                     cfg.SpringConfigUrl = arg.Substring(CmdSpringCfgUrl.Length);
                 else if (argLow.StartsWith(CmdJvmDll))
@@ -128,7 +128,7 @@ namespace Apache.Ignite.Config
                     cfg.JvmClasspath = arg.Substring(CmdJvmClasspath.Length);
                 else if (argLow.StartsWith(CmdSuppressWarn))
                 {
-                    string val = arg.Substring(CmdSuppressWarn.Length);
+                    var val = arg.Substring(CmdSuppressWarn.Length);
 
                     cfg.SuppressWarnings = bool.TrueString.ToLower().Equals(val.ToLower());
                 }

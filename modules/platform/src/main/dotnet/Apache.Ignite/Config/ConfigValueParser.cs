@@ -35,7 +35,7 @@ namespace Apache.Ignite.Config
                 return result;
 
             throw new InvalidOperationException(
-                string.Format("Failed to configure Grid: property '{0}' has value '{1}', which is not an integer.",
+                string.Format("Failed to configure Ignite: property '{0}' has value '{1}', which is not an integer.",
                     propertyName, value));
         }
     }

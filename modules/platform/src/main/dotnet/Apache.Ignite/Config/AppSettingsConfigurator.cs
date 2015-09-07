@@ -27,9 +27,9 @@ namespace Apache.Ignite.Config
     internal class AppSettingsConfigurator : IConfigurator<NameValueCollection>
     {
         /** Common configuration property prefix. */
-        private static readonly string CfgPrefix = "GridGain.".ToLower();
+        private static readonly string CfgPrefix = "Ignite.".ToLower();
 
-        /** Configuration property: GridGain home. */
+        /** Configuration property: Ignite home. */
         private static readonly string CfgHome = "Home".ToLower();
 
         /** Configuration property: Spring config URL. */
@@ -59,18 +59,18 @@ namespace Apache.Ignite.Config
         /** <inheritDoc /> */
         public void Configure(IgniteConfiguration cfg, NameValueCollection src)
         {
-            List<string> jvmOpts = new List<string>();
-            List<string> assemblies = new List<string>();
+            var jvmOpts = new List<string>();
+            var assemblies = new List<string>();
 
             foreach (string key in src.Keys)
             {
-                string key0 = key.ToLower();
+                var key0 = key.ToLower();
 
                 if (key0.StartsWith(CfgPrefix))
                 {
                     key0 = key0.Substring(CfgPrefix.Length);
 
-                    string val = src[key];
+                    var val = src[key];
 
                     if (CfgHome.Equals(key0))
                         cfg.IgniteHome = val;
