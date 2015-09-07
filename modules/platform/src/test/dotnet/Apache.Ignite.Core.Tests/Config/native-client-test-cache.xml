@@ -29,27 +29,6 @@
         <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
 
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.portable.PortableMarshaller">
-                <property name="typeConfigurations">
-                    <list>
-                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.ClientTestPortable"/>
-                        </bean>
-                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.internal.client.model.PortablePerson"/>
-                        </bean>
-                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.internal.client.model.ImplicitPortablePerson"/>
-                        </bean>
-                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
-                            <property name="className" value="NoDefPortablePerson"/>
-                        </bean>
-                    </list>
-                </property>
-            </bean>
-        </property>
-
         <property name="includeEventTypes">
             <util:constant static-field="org.apache.ignite.events.EventType.EVTS_CACHE"/>
         </property>
@@ -131,15 +110,6 @@
         <property name="swapSpaceSpi">
             <bean class="org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi"/>
         </property>
-
-        <!-- TODO: -->
-        <!--<property name="indexingSpi">
-            <list>
-                <bean class="org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi">
-                    <property name="defaultIndexFixedTyping" value="false"/>
-                </bean>
-            </list>
-        </property>-->
 
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
