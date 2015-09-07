@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Tests.Process
         }
 
         /// <summary>
-        /// Kill all GridGain processes.
+        /// Kill all Ignite processes.
         /// </summary>
         public static void KillAll()
         {
@@ -154,7 +154,7 @@ namespace Apache.Ignite.Core.Tests.Process
         /// Starts a grid process.
         /// </summary>
         /// <param name="exePath">Exe path.</param>
-        /// <param name="ggHome">GridGain home.</param>
+        /// <param name="ggHome">Ignite home.</param>
         /// <param name="outReader">Output reader.</param>
         /// <param name="args">Arguments.</param>
         /// <returns>Started process.</returns>

@@ -190,9 +190,6 @@
     <Content Include="Config\native-client-test-cache-parallel-store.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Config\native-client-test-cache-portables.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="Config\native-client-test-cache-store.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
