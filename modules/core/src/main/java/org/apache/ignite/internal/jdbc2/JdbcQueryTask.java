@@ -17,18 +17,28 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteJdbcDriver;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.util.typedef.CAX;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Task for SQL queries execution through {@link IgniteJdbcDriver}.
@@ -71,21 +81,37 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     /** Fetch size. */
     private final int fetchSize;
 
+    /** Local execution flag. */
+    private final boolean loc;
+
+    /** Local query flag. */
+    private final boolean locQry;
+
+    /** Collocated query flag. */
+    private final boolean collocatedQry;
+
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
      * @param sql Sql query.
+     * @param loc Local execution flag.
      * @param args Args.
      * @param fetchSize Fetch size.
      * @param uuid UUID.
+     * @param locQry Local query flag.
+     * @param collocatedQry Collocated query flag.
      */
-    public JdbcQueryTask(Ignite ignite, String cacheName, String sql, Object[] args, int fetchSize, UUID uuid) {
+    public JdbcQueryTask(Ignite ignite, String cacheName, String sql,
+        boolean loc, Object[] args, int fetchSize, UUID uuid, boolean locQry, boolean collocatedQry) {
         this.ignite = ignite;
         this.args = args;
         this.uuid = uuid;
         this.cacheName = cacheName;
         this.sql = sql;
         this.fetchSize = fetchSize;
+        this.loc = loc;
+        this.locQry = locQry;
+        this.collocatedQry = collocatedQry;
     }
 
     /** {@inheritDoc} */
@@ -105,6 +131,10 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
 
             qry.setPageSize(fetchSize);
 
+            qry.setLocal(locQry);
+
+            qry.setCollocated(collocatedQry);
+
             QueryCursor<List<?>> qryCursor = cache.query(qry);
 
             Collection<GridQueryFieldMetadata> meta = ((QueryCursorImpl<List<?>>)qryCursor).fieldsMeta();
@@ -119,7 +149,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
                 types.add(desc.fieldTypeName());
             }
 
-            CURSORS.put(uuid, cursor = new Cursor(qryCursor));
+            CURSORS.put(uuid, cursor = new Cursor(qryCursor, qryCursor.iterator()));
         }
 
         List<List<?>> rows = new ArrayList<>();
@@ -142,19 +172,22 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             remove(uuid, cursor);
         else if (first)
             scheduleRemoval(uuid, RMV_DELAY);
-        else if (!CURSORS.replace(uuid, cursor, new Cursor(cursor.cursor)))
+        else if (!CURSORS.replace(uuid, cursor, new Cursor(cursor.cursor, cursor.iter)))
             assert !CURSORS.containsKey(uuid) : "Concurrent cursor modification.";
 
         return new QueryResult(uuid, finished, rows, cols, tbls, types);
     }
 
     /**
-     * Schedules removal of stored future.
+     * Schedules removal of stored cursor in case of remote query execution.
      *
      * @param uuid Cursor UUID.
      * @param delay Delay in milliseconds.
      */
     private void scheduleRemoval(final UUID uuid, long delay) {
+        if (loc)
+            return;
+
         SCHEDULER.schedule(new CAX() {
             @Override public void applyx() {
                 while (true) {
@@ -183,7 +216,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * @param c Cursor.
      * @return {@code true} If succeeded.
      */
-    private boolean remove(UUID uuid, Cursor c) {
+    private static boolean remove(UUID uuid, Cursor c) {
         boolean rmv = CURSORS.remove(uuid, c);
 
         if (rmv)
@@ -191,6 +224,19 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
 
         return rmv;
     }
+
+    /**
+     * Closes and removes cursor.
+     *
+     * @param uuid Cursor UUID.
+     */
+    static void remove(UUID uuid) {
+        Cursor c = CURSORS.remove(uuid);
+
+        if (c != null)
+            c.cursor.close();
+    }
+
 
     /**
      * Result of query execution.
@@ -293,10 +339,11 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
 
         /**
          * @param cursor Cursor.
+         * @param iter Iterator.
          */
-        private Cursor(QueryCursor<List<?>> cursor) {
+        private Cursor(QueryCursor<List<?>> cursor, Iterator<List<?>> iter) {
             this.cursor = cursor;
-            this.iter = cursor.iterator();
+            this.iter = iter;
             this.lastAccessTime = U.currentTimeMillis();
         }
 

@@ -17,12 +17,24 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import org.apache.ignite.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLWarning;
+import java.sql.Statement;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
 
-import java.sql.*;
-import java.util.*;
-
-import static java.sql.ResultSet.*;
+import static java.sql.ResultSet.CONCUR_READ_ONLY;
+import static java.sql.ResultSet.FETCH_FORWARD;
+import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 /**
  * JDBC statement implementation.
@@ -33,9 +45,6 @@ public class JdbcStatement implements Statement {
 
     /** Connection. */
     private final JdbcConnection conn;
-
-    /** Uuid. */
-    private final UUID uuid = UUID.randomUUID();
 
     /** Closed flag. */
     private boolean closed;
@@ -51,6 +60,9 @@ public class JdbcStatement implements Statement {
 
     /** Fetch size. */
     private int fetchSize = DFLT_FETCH_SIZE;
+
+    /** Result sets. */
+    final Set<JdbcResultSet> resSets = new HashSet<>();
 
     /** Fields indexes. */
     Map<String, Integer> fieldsIdxs = new HashMap<>();
@@ -79,15 +91,25 @@ public class JdbcStatement implements Statement {
 
         UUID nodeId = conn.nodeId();
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(nodeId == null ? ignite : null, conn.cacheName(),
-            sql, args, fetchSize, uuid);
+        UUID uuid = UUID.randomUUID();
+
+        boolean loc = nodeId == null;
+
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(),
+            sql, loc, args, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery());
 
         try {
             JdbcQueryTask.QueryResult res =
-                nodeId == null ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
-            return new JdbcResultSet(this, res.getTbls(), res.getCols(), res.getTypes(),
+            JdbcResultSet rs = new JdbcResultSet(uuid, this, res.getTbls(), res.getCols(), res.getTypes(),
                 res.getRows(), res.isFinished());
+
+            rs.setFetchSize(fetchSize);
+
+            resSets.add(rs);
+
+            return rs;
         }
         catch (Exception e) {
             throw new SQLException("Failed to query Ignite.", e);
@@ -103,6 +125,23 @@ public class JdbcStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
+        conn.statements.remove(this);
+
+        closeInternal();
+    }
+
+    /**
+     * Marks statement as closed and closes all result sets,
+     */
+    void closeInternal() throws SQLException {
+        for (Iterator<JdbcResultSet> it = resSets.iterator(); it.hasNext(); ) {
+            JdbcResultSet rs = it.next();
+
+            rs.closeInternal();
+
+            it.remove();
+        }
+
         closed = true;
     }
 
@@ -413,14 +452,5 @@ public class JdbcStatement implements Statement {
     protected void ensureNotClosed() throws SQLException {
         if (closed)
             throw new SQLException("Statement is closed.");
-    }
-
-    /**
-     * Returns statement UUID.
-     *
-     * @return Statement UUID.
-     */
-    public UUID getUuid() {
-        return uuid;
     }
 }

@@ -17,27 +17,34 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.io.*;
-import java.math.*;
-import java.net.*;
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.Date;
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.IgniteJdbcDriver.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Result set test.
@@ -97,6 +104,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         cache.put(1, o);
         cache.put(2, new TestObject(2));
+        cache.put(3, new TestObject(3));
 
         Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
@@ -489,8 +497,16 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         assertFalse(rs.isBeforeFirst());
         assertFalse(rs.isAfterLast());
         assertFalse(rs.isFirst());
-        assertTrue(rs.isLast());
+        assertFalse(rs.isLast());
         assertEquals(2, rs.getRow());
+
+        assertTrue(rs.next());
+
+        assertFalse(rs.isBeforeFirst());
+        assertFalse(rs.isAfterLast());
+        assertFalse(rs.isFirst());
+        assertTrue(rs.isLast());
+        assertEquals(3, rs.getRow());
 
         assertFalse(rs.next());
 
@@ -509,6 +525,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         ResultSet rs = stmt.executeQuery("select * from TestObject where id > 0");
 
+        assertTrue(rs.next());
         assertTrue(rs.next());
         assertTrue(rs.next());
 

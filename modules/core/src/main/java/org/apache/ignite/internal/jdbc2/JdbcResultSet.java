@@ -17,19 +17,43 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import org.apache.ignite.*;
-
-import java.io.*;
-import java.math.*;
-import java.net.*;
-import java.sql.*;
+import java.io.InputStream;
+import java.io.Reader;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Date;
-import java.util.*;
+import java.sql.NClob;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * JDBC result set implementation.
  */
 public class JdbcResultSet implements ResultSet {
+    /** Uuid. */
+    private final UUID uuid;
+
     /** Statement. */
     private final JdbcStatement stmt;
 
@@ -68,13 +92,14 @@ public class JdbcResultSet implements ResultSet {
      * Result set created with this constructor will
      * never execute remote tasks.
      *
+     * @param uuid Query UUID.
      * @param stmt Statement.
      * @param tbls Table names.
      * @param cols Column names.
      * @param types Types.
      * @param fields Fields.
      */
-    JdbcResultSet(JdbcStatement stmt, List<String> tbls, List<String> cols,
+    JdbcResultSet(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
         List<String> types, Collection<List<?>> fields, boolean finished) {
         assert stmt != null;
         assert tbls != null;
@@ -82,6 +107,7 @@ public class JdbcResultSet implements ResultSet {
         assert types != null;
         assert fields != null;
 
+        this.uuid = uuid;
         this.stmt = stmt;
         this.tbls = tbls;
         this.cols = cols;
@@ -102,12 +128,7 @@ public class JdbcResultSet implements ResultSet {
             return false;
         }
         else if (it.hasNext()) {
-            List<Object> row = (List<Object>)it.next();
-
-            curr = new ArrayList<>(row.size());
-
-            for (Object val : row)
-                curr.add(JdbcUtils.sqlType(val) ? val : val.toString());
+            curr = new ArrayList<>(it.next());
 
             pos++;
 
@@ -123,12 +144,14 @@ public class JdbcResultSet implements ResultSet {
 
             UUID nodeId = conn.nodeId();
 
-            JdbcQueryTask qryTask = new JdbcQueryTask(nodeId == null ? ignite : null, conn.cacheName(),
-                null, null, fetchSize, stmt.getUuid());
+            boolean loc = nodeId == null;
+
+            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(),
+                null, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery());
 
             try {
                 JdbcQueryTask.QueryResult res =
-                    nodeId == null ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+                    loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
                 finished = res.isFinished();
 
@@ -148,6 +171,20 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
+        if (uuid != null)
+            stmt.resSets.remove(this);
+
+        closeInternal();
+    }
+
+    /**
+     * Marks result set as closed.
+     * If this result set is associated with locally executed query then query cursor will also closed.
+     */
+    void closeInternal() throws SQLException  {
+        if (((JdbcConnection)stmt.getConnection()).nodeId() == null)
+            JdbcQueryTask.remove(uuid);
+
         closed = true;
     }
 

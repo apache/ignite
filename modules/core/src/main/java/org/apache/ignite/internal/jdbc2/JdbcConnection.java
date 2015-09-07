@@ -34,8 +34,11 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -65,6 +68,8 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_CACHE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_CFG;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_COLLOCATED;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
 
 /**
@@ -99,6 +104,15 @@ public class JdbcConnection implements Connection {
     /** Node ID. */
     private UUID nodeId;
 
+    /** Local query flag. */
+    private boolean locQry;
+
+    /** Collocated query flag. */
+    private boolean collocatedQry;
+
+    /** Statements. */
+    final Set<JdbcStatement> statements = new HashSet<>();
+
     /**
      * Creates new connection.
      *
@@ -120,6 +134,10 @@ public class JdbcConnection implements Connection {
             this.nodeId = UUID.fromString(nodeIdProp);
 
         this.nodeKey = nodeKey(props);
+
+        this.locQry = Boolean.parseBoolean(props.getProperty(PROP_LOCAL));
+
+        this.collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
 
         try {
             ignite = getIgnite(props.getProperty(PROP_CFG));
@@ -262,6 +280,14 @@ public class JdbcConnection implements Connection {
                 NODES.remove(nodeKey);
 
                 ignite.close();
+        }
+
+        for (Iterator<JdbcStatement> it = statements.iterator(); it.hasNext();) {
+            JdbcStatement stmt = it.next();
+
+            stmt.closeInternal();
+
+            it.remove();
         }
     }
 
@@ -422,7 +448,11 @@ public class JdbcConnection implements Connection {
         if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
-        return new JdbcStatement(this);
+        JdbcStatement stmt = new JdbcStatement(this);
+
+        statements.add(stmt);
+
+        return stmt;
     }
 
     /** {@inheritDoc} */
@@ -439,7 +469,11 @@ public class JdbcConnection implements Connection {
         if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
-        return new JdbcPreparedStatement(this, sql);
+        JdbcPreparedStatement stmt = new JdbcPreparedStatement(this, sql);
+
+        statements.add(stmt);
+
+        return stmt;
     }
 
     /** {@inheritDoc} */
@@ -519,7 +553,7 @@ public class JdbcConnection implements Connection {
                 assert grp.nodes().size() == 1;
 
                 if (grp.node().isDaemon())
-                    throw new SQLException("Failed to establish connection with node " + nodeId + '.');
+                    throw new SQLException("Failed to establish connection with daemon node " + nodeId + '.');
 
                 IgniteCompute compute = ignite.compute(grp).withAsync();
 
@@ -641,6 +675,20 @@ public class JdbcConnection implements Connection {
      */
     UUID nodeId() {
         return nodeId;
+    }
+
+    /**
+     * @return Local query flag.
+     */
+    boolean isLocalQuery() {
+        return locQry;
+    }
+
+    /**
+     * @return Collocated query flag.
+     */
+    boolean isCollocatedQuery() {
+        return collocatedQry;
     }
 
     /**

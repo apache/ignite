@@ -17,12 +17,26 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.math.*;
-import java.net.*;
-import java.sql.*;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Date;
 
-import static java.sql.Types.*;
+import static java.sql.Types.BIGINT;
+import static java.sql.Types.BINARY;
+import static java.sql.Types.BOOLEAN;
+import static java.sql.Types.DATE;
+import static java.sql.Types.DOUBLE;
+import static java.sql.Types.FLOAT;
+import static java.sql.Types.INTEGER;
+import static java.sql.Types.OTHER;
+import static java.sql.Types.SMALLINT;
+import static java.sql.Types.TIME;
+import static java.sql.Types.TIMESTAMP;
+import static java.sql.Types.TINYINT;
+import static java.sql.Types.VARCHAR;
 
 /**
  * Utility methods for JDBC driver.
@@ -57,7 +71,7 @@ public class JdbcUtils {
             return TIME;
         else if (Timestamp.class.getName().equals(cls))
             return TIMESTAMP;
-        else if (Date.class.getName().equals(cls))
+        else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls))
             return DATE;
         else
             return OTHER;
@@ -92,7 +106,7 @@ public class JdbcUtils {
             return "TIME";
         else if (Timestamp.class.getName().equals(cls))
             return "TIMESTAMP";
-        else if (Date.class.getName().equals(cls))
+        else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls))
             return "DATE";
         else
             return "OTHER";

@@ -76,19 +76,35 @@ import org.apache.ignite.logger.java.JavaLogger;
  *
  * <h2 class="header">Configuration of Ignite client node based connection</h2>
  *
- * JDBC connection URL has the following pattern:
- * {@code jdbc:ignite:cfg://[cache=<cache_name>:nodeId=<UUID>@]<config_url>}<br>
+ * JDBC connection URL has the following pattern: {@code jdbc:ignite:cfg://[<params>@]<config_url>}.<br>
  *
- * Note the following:
+ * {@code <config_url>} represents any valid URL which points to Ignite configuration file. It is required.<br>
+ *
+ * {@code <params>} are optional and have format {@code param1=value1:param2=value2:...:paramN=valueN}.<br>
+ *
+ * The following parameters are supported:
  * <ul>
- *     <li>{@code <config_url>} represens any valid URL which points to Ignite configuration file. It is required.</li>
- *     <li>Omit {@code cache_name} parameter if you are connecting to default cache.</li>
+ *     <li>{@code cache} - cache name. If it is not defined than default cache will be used.</li>
  *     <li>
- *         Provide {@code nodeId} parameter only if you want to specify node where to execute your queries.
+ *         {@code nodeId} - ID of node where query will be executed.
  *         It can be useful for querying through local caches.
  *         If node with provided ID doesn't exist, exception is thrown.
  *     </li>
+ *     <li>
+ *         {@code local} - query will be executed only on local node. Use this parameter with {@code nodeId} parameter.
+ *         Default value is {@code false}.
+ *     </li>
+ *     <li>
+ *          {@code collocated} - flag that used for optimization purposes. Whenever Ignite executes
+ *          a distributed query, it sends sub-queries to individual cluster members.
+ *          If you know in advance that the elements of your query selection are collocated
+ *          together on the same node, usually based on some <b>affinity-key</b>, Ignite
+ *          can make significant performance and network optimizations.
+ *          Default value is {@code false}.
+ *     </li>
  * </ul>
+ *
+ * cache=<cache_name>:nodeId=<UUID>
  *
  * <h2 class="header">Configuration of Ignite Java client based connection</h2>
  *
@@ -262,6 +278,12 @@ public class IgniteJdbcDriver implements Driver {
     /** Cache parameter name. */
     private static final String PARAM_CACHE = "cache";
 
+    /** Local parameter name. */
+    private static final String PARAM_LOCAL = "local";
+
+    /** Collocated parameter name. */
+    private static final String PARAM_COLLOCATED = "collocated";
+
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -273,6 +295,12 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Node ID property name. */
     public static final String PROP_NODE_ID = PROP_PREFIX + PARAM_NODE_ID;
+
+    /** Local property name. */
+    public static final String PROP_LOCAL = PROP_PREFIX + PARAM_LOCAL;
+
+    /** Collocated property name. */
+    public static final String PROP_COLLOCATED = PROP_PREFIX + PARAM_COLLOCATED;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
@@ -292,6 +320,7 @@ public class IgniteJdbcDriver implements Driver {
     /** Minor version. */
     private static final int MINOR_VER = 0;
 
+    /** Logger. */
     private static final IgniteLogger LOG = new JavaLogger();
 
     /**
@@ -313,7 +342,7 @@ public class IgniteJdbcDriver implements Driver {
 
         if (url.startsWith(URL_PREFIX)) {
             if (props.getProperty(PROP_CFG) != null)
-                LOG.warning(PROP_CFG + "property is not applicable for this URL.");
+                LOG.warning(PROP_CFG + " property is not applicable for this URL.");
 
             return new JdbcConnection(url, props);
         }
@@ -335,7 +364,9 @@ public class IgniteJdbcDriver implements Driver {
             new PropertyInfo("Hostname", info.getProperty(PROP_HOST), ""),
             new PropertyInfo("Port number", info.getProperty(PROP_PORT), ""),
             new PropertyInfo("Cache name", info.getProperty(PROP_CACHE), ""),
-            new PropertyInfo("Node ID", info.getProperty(PROP_NODE_ID), "")
+            new PropertyInfo("Node ID", info.getProperty(PROP_NODE_ID), ""),
+            new PropertyInfo("Local", info.getProperty(PROP_LOCAL), ""),
+            new PropertyInfo("Collocated", info.getProperty(PROP_COLLOCATED), "")
         );
 
         if (info.getProperty(PROP_CFG) != null)

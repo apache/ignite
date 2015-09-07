@@ -186,7 +186,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     public void testDaemonNodeId() throws Exception {
         daemon = true;
 
-        IgniteEx daemon = (IgniteEx)startGrid();
+        IgniteEx daemon = startGrid(GRID_CNT);
 
         UUID daemonId = daemon.localNode().id();
 
@@ -202,7 +202,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
                     }
                 },
                 SQLException.class,
-                "Failed to establish connection with node " + daemonId + '.'
+                "Failed to establish connection with daemon node " + daemonId + '.'
         );
     }
 
