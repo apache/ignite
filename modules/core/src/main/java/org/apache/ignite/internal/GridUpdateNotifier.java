@@ -26,12 +26,12 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -59,20 +59,23 @@ import static java.net.URLEncoder.encode;
  * gracefully ignore any errors occurred during notification and verification process.
  */
 class GridUpdateNotifier {
+    /** Default encoding. */
+    private static final String CHARSET = "UTF-8";
+
     /** Access URL to be used to access latest version data. */
     private static final String UPD_STATUS_PARAMS = IgniteProperties.get("ignite.update.status.params");
 
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
 
+    /** Sleep milliseconds time for worker thread. */
+    public static final int WORKER_THREAD_SLEEP_TIME = 5000;
+
     /** Grid version. */
     private final String ver;
 
     /** Site. */
     private final String url;
-
-    /** Asynchronous checked. */
-    private GridWorker checker;
 
     /** Latest version. */
     private volatile String latestVer;
@@ -95,13 +98,20 @@ class GridUpdateNotifier {
     /** System properties */
     private final String vmProps;
 
-    private final Map<String, String> pluginVers;
+    /** Plugins information for request */
+    private final String pluginsVers;
 
     /** Kernal gateway */
     private final GridKernalGateway gw;
 
     /** */
     private long lastLog = -1;
+
+    /** Command for worker thread. */
+    private final AtomicReference<Runnable> cmd = new AtomicReference<>();
+
+    /** Worker thread to process http request. */
+    private final Thread workerThread;
 
     /**
      * Creates new notifier with default values.
@@ -136,17 +146,45 @@ class GridUpdateNotifier {
             this.gridName = gridName == null ? "null" : gridName;
             this.gw = gw;
 
-            pluginVers = U.newHashMap(pluginProviders.size());
+            SB pluginsBuilder = new SB();
 
             for (PluginProvider provider : pluginProviders)
-                pluginVers.put(provider.name() + "-plugin-version", provider.version());
+                pluginsBuilder.a("&").a(provider.name() + "-plugin-version").a("=").
+                    a(encode(provider.version(), CHARSET));
+
+            pluginsVers = pluginsBuilder.toString();
 
             this.reportOnlyNew = reportOnlyNew;
 
             vmProps = getSystemProperties();
+
+            workerThread = new Thread(new Runnable() {
+                @Override public void run() {
+                    try {
+                        while(!Thread.currentThread().isInterrupted()) {
+                            Runnable cmd0 = cmd.getAndSet(null);
+
+                            if (cmd0 != null)
+                                cmd0.run();
+                            else
+                                Thread.sleep(WORKER_THREAD_SLEEP_TIME);
+                        }
+                    }
+                    catch (InterruptedException ignore) {
+                        // No-op.
+                    }
+                }
+            }, "upd-ver-checker");
+
+            workerThread.setDaemon(true);
+
+            workerThread.start();
         }
         catch (ParserConfigurationException e) {
             throw new IgniteCheckedException("Failed to create xml parser.", e);
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new IgniteCheckedException("Failed to encode.", e);
         }
     }
 
@@ -197,16 +235,15 @@ class GridUpdateNotifier {
     /**
      * Starts asynchronous process for retrieving latest version data.
      *
-     * @param exec Executor service.
      * @param log Logger.
      */
-    void checkForNewVersion(Executor exec, IgniteLogger log) {
+    void checkForNewVersion(IgniteLogger log) {
         assert log != null;
 
         log = log.getLogger(getClass());
 
         try {
-            exec.execute(checker = new UpdateChecker(log));
+            cmd.set(new UpdateChecker(log));
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to schedule a thread due to execution rejection (safely ignoring): " +
@@ -223,10 +260,6 @@ class GridUpdateNotifier {
         assert log != null;
 
         log = log.getLogger(getClass());
-
-        // Don't join it to avoid any delays on update checker.
-        // Checker thread will eventually exit.
-        U.cancel(checker);
 
         String latestVer = this.latestVer;
         String downloadUrl = this.downloadUrl;
@@ -272,12 +305,16 @@ class GridUpdateNotifier {
     }
 
     /**
+     * Stops update notifier.
+     */
+    public void stop() {
+        workerThread.interrupt();
+    }
+
+    /**
      * Asynchronous checker of the latest version available.
      */
     private class UpdateChecker extends GridWorker {
-        /** Default encoding. */
-        private static final String CHARSET = "UTF-8";
-
         /** Logger. */
         private final IgniteLogger log;
 
@@ -297,18 +334,13 @@ class GridUpdateNotifier {
             try {
                 String stackTrace = gw != null ? gw.userStackTrace() : null;
 
-                SB plugins = new SB();
-
-                for (Map.Entry<String, String> p : pluginVers.entrySet())
-                    plugins.a("&").a(p.getKey()).a("=").a(encode(p.getValue(), CHARSET));
-
                 String postParams =
                     "gridName=" + encode(gridName, CHARSET) +
                     (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + UPD_STATUS_PARAMS : "") +
                     (topSize > 0 ? "&topSize=" + topSize : "") +
                     (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +
                     (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "") +
-                    plugins.toString();
+                        pluginsVers;
 
                 URLConnection conn = new URL(url).openConnection();
 
