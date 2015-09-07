@@ -306,7 +306,7 @@ namespace Apache.Ignite.Core.Tests
                 "-Xcheck:jni",
                 "-Xms4g",
                 "-Xmx4g",
-                "-DGRIDGAIN_QUIET=false",
+                "-DIGNITE_QUIET=false",
                 "-Xnoagent",
                 "-Djava.compiler=NONE",
                 "-Xdebug",
