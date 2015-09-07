@@ -104,7 +104,7 @@ class GridDhtPartitionSupplier {
         assert d != null;
         assert id != null;
 
-        if (!cctx.affinity().affinityTopologyVersion().equals(d.topologyVersion()))
+        if (cctx.affinity().affinityTopologyVersion().topologyVersion() != d.topologyVersion().topologyVersion())
             return;
 
         GridDhtPartitionSupplyMessageV2 s = new GridDhtPartitionSupplyMessageV2(d.workerId(),

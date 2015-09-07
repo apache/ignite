@@ -40,7 +40,6 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -78,7 +77,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
@@ -142,6 +140,8 @@ public class GridDhtPartitionDemander {
      *
      */
     void stop() {
+        syncFut.onCancel();
+
         lastExchangeFut = null;
 
         lastTimeoutObj.set(null);
@@ -193,7 +193,7 @@ public class GridDhtPartitionDemander {
      * @return {@code True} if topology changed.
      */
     private boolean topologyChanged(AffinityTopologyVersion topVer) {
-        return !cctx.affinity().affinityTopologyVersion().equals(topVer);
+        return cctx.affinity().affinityTopologyVersion().topologyVersion() != topVer.topologyVersion();
     }
 
     /**
@@ -334,8 +334,6 @@ public class GridDhtPartitionDemander {
                 }
             });
 
-            fut.setDemandThread(thread);
-
             thread.start();
         }
         else if (delay > 0) {
@@ -373,7 +371,7 @@ public class GridDhtPartitionDemander {
         AffinityTopologyVersion topVer = fut.topologyVersion();
 
         for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
-            if (topologyChanged(topVer) || Thread.interrupted()) {
+            if (topologyChanged(topVer)) {
                 fut.onCancel();
 
                 return;
@@ -778,8 +776,6 @@ public class GridDhtPartitionDemander {
         /** Started. */
         private ConcurrentHashMap8<UUID, Long> started = new ConcurrentHashMap8<>();
 
-        private volatile IgniteThread thread;
-
         /** Lock. */
         private Lock lock = new ReentrantLock();
 
@@ -812,24 +808,14 @@ public class GridDhtPartitionDemander {
          * @param assigns Assigns.
          */
         void init(GridDhtPreloaderAssignments assigns) {
-            final SyncFuture fut = this;
-
-            lsnr = new GridLocalEventListener() {
-                @Override public void onEvent(Event evt) {
-                    fut.onCancel();
-                }
-            };
-
-            cctx.events().addListener(lsnr, EVT_NODE_FAILED);
-
             this.assigns = assigns;
-        }
 
-        /**
-         * @param thread
-         */
-        void setDemandThread(IgniteThread thread) {
-            this.thread = thread;
+            cctx.discovery().topologyFuture(assigns.topologyVersion().topologyVersion() + 1).listen(
+                new CI1<IgniteInternalFuture<Long>>() {
+                    @Override public void apply(IgniteInternalFuture<Long> future) {
+                        SyncFuture.this.onCancel();
+                    }
+                });
         }
 
         /**
@@ -1027,9 +1013,6 @@ public class GridDhtPartitionDemander {
 
                 if (lsnr != null)
                     cctx.events().removeListener(lsnr);
-
-                if (thread != null)
-                    thread.interrupt();
 
                 onDone(completed);
             }
