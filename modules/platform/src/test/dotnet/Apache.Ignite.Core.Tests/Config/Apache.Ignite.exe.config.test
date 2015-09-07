@@ -27,15 +27,15 @@
     </runtime>
 
     <appSettings>
-        <add key="GridGain.SpringConfigUrl" value="config\compute\compute-standalone.xml" />
-        <add key="GridGain.Assembly.1" value="test-1.dll" />
-        <add key="GridGain.Assembly.2" value="test-2.dll" />
-        <add key="GridGain.JvmOption.1" value="-DOPT1" />
-        <add key="GridGain.JvmOption.2" value="-DOPT2" />
-        <add key="GridGain.JvmOption.3" value="-Xms601m" />
-        <add key="GridGain.JvmOption.4" value="-Xmx702m" />
-        <add key="GridGain.JvmInitialMemoryMB" value="601" />
-        <add key="GridGain.JvmMaxMemoryMB" value="702" />
+        <add key="Ignite.SpringConfigUrl" value="config\compute\compute-standalone.xml" />
+        <add key="Ignite.Assembly.1" value="test-1.dll" />
+        <add key="Ignite.Assembly.2" value="test-2.dll" />
+        <add key="Ignite.JvmOption.1" value="-DOPT1" />
+        <add key="Ignite.JvmOption.2" value="-DOPT2" />
+        <add key="Ignite.JvmOption.3" value="-Xms601m" />
+        <add key="Ignite.JvmOption.4" value="-Xmx702m" />
+        <add key="Ignite.JvmInitialMemoryMB" value="601" />
+        <add key="Ignite.JvmMaxMemoryMB" value="702" />
     </appSettings>
 
 </configuration>

@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Tests.Process
         private static readonly string ExeName = "Apache.Ignite.exe";
 
         /** Executable process name. */
-        private static readonly string ExeProcName = ExeName.Substring(0, ExeName.IndexOf('.'));
+        private static readonly string ExeProcName = ExeName.Substring(0, ExeName.LastIndexOf('.'));
 
         /** Executable configuration file name. */
         private static readonly string ExeCfgName = ExeName + ".config";
