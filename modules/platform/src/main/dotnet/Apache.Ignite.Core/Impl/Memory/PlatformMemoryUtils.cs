@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Utility methods for platform memory management.
     /// </summary>
+    [CLSCompliant(false)]
     public static unsafe class PlatformMemoryUtils
     {
         #region CONSTANTS
