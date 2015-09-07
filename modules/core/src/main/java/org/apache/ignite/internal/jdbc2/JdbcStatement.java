@@ -52,6 +52,9 @@ public class JdbcStatement implements Statement {
     /** Fetch size. */
     private int fetchSize = DFLT_FETCH_SIZE;
 
+    /** Fields indexes. */
+    Map<String, Integer> fieldsIdxs = new HashMap<>();
+
     /**
      * Creates new statement.
      *

@@ -17,19 +17,22 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
-import org.jetbrains.annotations.*;
-
-import java.sql.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.IgniteJdbcDriver.*;
+import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 
 /**
  * Connection test.
@@ -44,6 +47,15 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /** Ignite configuration URL. */
     private static final String CFG_URL = "modules/clients/src/test/config/jdbc-config.xml";
 
+    /** Grid count. */
+    private static final int GRID_CNT = 2;
+
+    /** Daemon node flag. */
+    private boolean daemon;
+
+    /** Client node flag. */
+    private boolean client;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -55,6 +67,10 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
+
+        cfg.setDaemon(daemon);
+
+        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -74,7 +90,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(2);
+        startGridsMultiThreaded(GRID_CNT);
 
         Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
@@ -114,6 +130,80 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(url)) {
             assertNotNull(conn);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWrongNodeId() throws Exception {
+        UUID wrongId = UUID.randomUUID();
+
+        final String url = CFG_URL_PREFIX + "nodeId=" + wrongId + '@' + CFG_URL;
+
+        GridTestUtils.assertThrows(
+                log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try (Connection conn = DriverManager.getConnection(url)) {
+                            return conn;
+                        }
+                    }
+                },
+                SQLException.class,
+                "Failed to establish connection with node " + wrongId + '.'
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientNodeId() throws Exception {
+        client = true;
+
+        IgniteEx client = (IgniteEx)startGrid();
+
+        UUID clientId = client.localNode().id();
+
+        final String url = CFG_URL_PREFIX + "nodeId=" + clientId + '@' + CFG_URL;
+
+        GridTestUtils.assertThrows(
+                log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try (Connection conn = DriverManager.getConnection(url)) {
+                            return conn;
+                        }
+                    }
+                },
+                SQLException.class,
+                "Failed to establish connection with node " + clientId + '.'
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDaemonNodeId() throws Exception {
+        daemon = true;
+
+        IgniteEx daemon = (IgniteEx)startGrid();
+
+        UUID daemonId = daemon.localNode().id();
+
+        final String url = CFG_URL_PREFIX + "nodeId=" + daemonId + '@' + CFG_URL;
+
+        GridTestUtils.assertThrows(
+                log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try (Connection conn = DriverManager.getConnection(url)) {
+                            return conn;
+                        }
+                    }
+                },
+                SQLException.class,
+                "Failed to establish connection with node " + daemonId + '.'
+        );
     }
 
     /**

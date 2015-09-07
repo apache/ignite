@@ -32,13 +32,19 @@ import java.util.concurrent.*;
 
 /**
  * Task for SQL queries execution through {@link IgniteJdbcDriver}.
+ *
+ * Not closed cursors will be removed after {@link #RMV_DELAY} milliseconds.
+ * This parameter can be configured via {@link #RMV_DELAY_PROP} system property.
  */
 class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** Remove delay system property. */
+    private static final String RMV_DELAY_PROP = "ignite.jdbc.cursor_removal_delay";
+
     /** How long to store open cursor. */
-    private static final long RMV_DELAY = 10 * 60 * 1000L;
+    private static final long RMV_DELAY = Long.parseLong(System.getProperty(RMV_DELAY_PROP, "600000"));
 
     /** Scheduler. */
     private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(1);

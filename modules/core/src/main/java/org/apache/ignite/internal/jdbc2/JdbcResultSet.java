@@ -1413,10 +1413,22 @@ public class JdbcResultSet implements ResultSet {
         ensureNotClosed();
         ensureHasCurrentRow();
 
-        int colIdx = cols.indexOf(colLb.toUpperCase()) + 1;
+        String name = colLb.toUpperCase();
 
-        if (colIdx <= 0)
-            throw new SQLException("Invalid column label: " + colLb);
+        Integer idx = stmt.fieldsIdxs.get(name);
+
+        int colIdx;
+
+        if (idx != null)
+            colIdx = idx;
+        else {
+            colIdx = cols.indexOf(name) + 1;
+
+            if (colIdx <= 0)
+                throw new SQLException("Invalid column label: " + colLb);
+
+            stmt.fieldsIdxs.put(name, colIdx);
+        }
 
         return getTypedValue(colIdx, cls);
     }

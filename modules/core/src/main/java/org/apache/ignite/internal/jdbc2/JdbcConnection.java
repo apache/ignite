@@ -17,26 +17,55 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.CallableStatement;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.NClob;
+import java.sql.PreparedStatement;
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.sql.Struct;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteJdbcDriver;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.compute.ComputeTaskTimeoutException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static java.sql.ResultSet.*;
-import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.IgniteJdbcDriver.*;
+import static java.sql.ResultSet.CONCUR_READ_ONLY;
+import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_CACHE;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_CFG;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
 
 /**
  * JDBC connection implementation.
@@ -222,6 +251,8 @@ public class JdbcConnection implements Connection {
     @Override public void close() throws SQLException {
         if (closed)
             return;
+
+        assert ignite != null;
 
         closed = true;
 
@@ -476,15 +507,28 @@ public class JdbcConnection implements Connection {
             throw new SQLException("Invalid timeout: " + timeout);
 
         try {
-            if (nodeId != null) {
-                IgniteCompute compute = ignite.compute().withAsync();
+            JdbcConnectionValidationTask task =
+                    new JdbcConnectionValidationTask(cacheName, nodeId == null ? ignite : null);
 
-                compute.call(new JdbcConnectionValidationTask(cacheName));
+            if (nodeId != null) {
+                ClusterGroup grp = ignite.cluster().forServers().forNodeId(nodeId);
+
+                if (grp.nodes().isEmpty())
+                    throw new SQLException("Failed to establish connection with node " + nodeId + '.');
+
+                assert grp.nodes().size() == 1;
+
+                if (grp.node().isDaemon())
+                    throw new SQLException("Failed to establish connection with node " + nodeId + '.');
+
+                IgniteCompute compute = ignite.compute(grp).withAsync();
+
+                compute.call(task);
 
                 return compute.<Boolean>future().get(timeout, SECONDS);
             }
             else
-                return ignite.cache(cacheName) != null;
+                return task.call();
         }
         catch (IgniteClientDisconnectedException | ComputeTaskTimeoutException e) {
             throw new SQLException("Failed to establish connection.", e);
@@ -641,20 +685,16 @@ public class JdbcConnection implements Connection {
 
         /**
          * @param cacheName Cache name.
+         * @param ignite Ignite instance.
          */
-        public JdbcConnectionValidationTask(String cacheName) {
+        public JdbcConnectionValidationTask(String cacheName, Ignite ignite) {
             this.cacheName = cacheName;
+            this.ignite = ignite;
         }
 
         /** {@inheritDoc} */
         @Override public Boolean call() {
-            GridDiscoveryManager discoMgr = ((IgniteKernal)ignite).context().discovery();
-
-            for (ClusterNode n : ignite.cluster().nodes())
-                if (discoMgr.cacheNode(n, cacheName))
-                    return true;
-
-            return false;
+            return ignite.cache(cacheName) != null;
         }
     }
 

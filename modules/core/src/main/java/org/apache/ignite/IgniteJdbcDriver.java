@@ -29,6 +29,7 @@ import java.util.Properties;
 import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.jdbc.JdbcConnection;
+import org.apache.ignite.logger.java.JavaLogger;
 
 /**
  * JDBC driver implementation for In-Memory Data Grid.
@@ -291,6 +292,8 @@ public class IgniteJdbcDriver implements Driver {
     /** Minor version. */
     private static final int MINOR_VER = 0;
 
+    private static final IgniteLogger LOG = new JavaLogger();
+
     /**
      * Register driver.
      */
@@ -308,10 +311,14 @@ public class IgniteJdbcDriver implements Driver {
         if (!parseUrl(url, props))
             throw new SQLException("URL is invalid: " + url);
 
-        if (props.getProperty(PROP_CFG) != null)
-            return new org.apache.ignite.internal.jdbc2.JdbcConnection(url, props);
-        else
+        if (url.startsWith(URL_PREFIX)) {
+            if (props.getProperty(PROP_CFG) != null)
+                LOG.warning(PROP_CFG + "property is not applicable for this URL.");
+
             return new JdbcConnection(url, props);
+        }
+        else
+            return new org.apache.ignite.internal.jdbc2.JdbcConnection(url, props);
     }
 
     /** {@inheritDoc} */
