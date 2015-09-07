@@ -186,16 +186,15 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
-        /*
         [Test]
         public void TestStartInvalidJvmOptions()
         {
-            GridGain.Impl.IgniteManager.DestroyJvm();
-
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            cfg.NativeXmlConfig = "config\\start-test-grid1.xml";
-            cfg.NativeJvmOptions = new List<string> { "invalid_option"};
+            var cfg = new IgniteConfiguration
+            {
+                SpringConfigUrl = "config\\start-test-grid1.xml",
+                JvmOptions = new List<string> {"invalid_option"},
+                JvmClasspath = TestUtils.CreateTestClasspath()
+            };
 
             try
             {
@@ -208,11 +207,10 @@ namespace Apache.Ignite.Core.Tests
                 Console.WriteLine("Expected exception: " + e);
             }
 
-            cfg.NativeJvmOptions = new List<string> { "-Xmx1g", "-Xms1g" };
+            cfg.JvmOptions = TestUtils.TestJavaOptions();
 
             Ignition.Start(cfg);
         }
-        */
 
         /// <summary>
         /// 
