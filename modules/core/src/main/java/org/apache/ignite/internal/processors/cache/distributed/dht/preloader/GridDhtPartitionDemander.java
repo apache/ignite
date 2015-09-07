@@ -258,7 +258,17 @@ public class GridDhtPartitionDemander {
                             log.debug("Waiting for marshaller cache preload [cacheName=" + cctx.name() + ']');
 
                         try {
-                            IgniteInternalFuture fut = cctx.kernalContext().cache().marshallerCache().preloader().syncFuture();
+                            IgniteInternalFuture fut;
+                            do {
+                                fut = cctx.kernalContext().cache().marshallerCache().preloader().syncFuture();
+                            }
+                            while (!((SyncFuture)fut).isInited() || ((SyncFuture)fut).topologyVersion().topologyVersion() < cSF.topologyVersion().topologyVersion());
+
+                            if (((SyncFuture)fut).topologyVersion().topologyVersion() > cSF.topologyVersion().topologyVersion()) {
+                                cSF.onCancel();
+
+                                return;
+                            }
 
                             if (!topologyChanged(topVer))
                                 fut.get();
@@ -363,7 +373,7 @@ public class GridDhtPartitionDemander {
         AffinityTopologyVersion topVer = fut.topologyVersion();
 
         for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
-            if (topologyChanged(topVer)) {
+            if (topologyChanged(topVer) || Thread.interrupted()) {
                 fut.onCancel();
 
                 return;

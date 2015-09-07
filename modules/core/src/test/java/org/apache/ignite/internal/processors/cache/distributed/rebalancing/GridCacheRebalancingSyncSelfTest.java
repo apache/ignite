@@ -17,19 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.internal.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
@@ -193,11 +198,55 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         long start = System.currentTimeMillis();
 
-        //will be started simultaneously in case of ASYNC mode
-        startGrid(1);
-        startGrid(2);
-        startGrid(3);
-        startGrid(4);
+        new Thread(){
+            @Override public void run() {
+                try {
+                    startGrid(1);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+
+        U.sleep(500);
+
+        new Thread(){
+            @Override public void run() {
+                try {
+                    startGrid(2);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();// Should cancel current rebalancing.
+
+        U.sleep(500);
+
+        new Thread(){
+            @Override public void run() {
+                try {
+                    startGrid(3);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();// Should cancel current rebalancing.
+
+        U.sleep(500);
+
+        new Thread(){
+            @Override public void run() {
+                try {
+                    startGrid(4);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();// Should cancel current rebalancing.
 
         //wait until cache rebalanced in async mode
         waitForRebalancing(1, 5);

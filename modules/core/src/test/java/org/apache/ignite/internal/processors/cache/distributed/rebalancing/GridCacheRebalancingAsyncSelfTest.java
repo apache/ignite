@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /**
  *
@@ -30,13 +31,9 @@ public class GridCacheRebalancingAsyncSelfTest extends GridCacheRebalancingSyncS
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration iCfg = super.getConfiguration(gridName);
 
-        CacheConfiguration cacheCfg = iCfg.getCacheConfiguration()[0];
-
-        cacheCfg.setRebalanceMode(CacheRebalanceMode.ASYNC);
-
-        cacheCfg = iCfg.getCacheConfiguration()[1];
-
-        cacheCfg.setRebalanceMode(CacheRebalanceMode.ASYNC);
+        for (CacheConfiguration cacheCfg : iCfg.getCacheConfiguration()) {
+            cacheCfg.setRebalanceMode(CacheRebalanceMode.ASYNC);
+        }
 
         iCfg.setDiscoverySpi(new FailableTcpDiscoverySpi());
 
