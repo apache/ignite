@@ -251,7 +251,7 @@ public class GridDhtPartitionDemander {
 
             final SyncFuture cSF = fut;
 
-            new IgniteThread(cctx.gridName(), "demand-thread-" + cctx.cache().name(), new Runnable() {
+            IgniteThread thread = new IgniteThread(cctx.gridName(), "demand-thread-" + cctx.cache().name(), new Runnable() {
                 @Override public void run() {
                     if (!CU.isMarshallerCache(cctx.name())) {
                         if (log.isDebugEnabled())
@@ -322,8 +322,11 @@ public class GridDhtPartitionDemander {
 
                     requestPartitions(cSF);
                 }
-            }).start();
+            });
 
+            fut.setDemandThread(thread);
+
+            thread.start();
         }
         else if (delay > 0) {
             GridTimeoutObject obj = lastTimeoutObj.get();
@@ -765,6 +768,8 @@ public class GridDhtPartitionDemander {
         /** Started. */
         private ConcurrentHashMap8<UUID, Long> started = new ConcurrentHashMap8<>();
 
+        private volatile IgniteThread thread;
+
         /** Lock. */
         private Lock lock = new ReentrantLock();
 
@@ -808,6 +813,13 @@ public class GridDhtPartitionDemander {
             cctx.events().addListener(lsnr, EVT_NODE_FAILED);
 
             this.assigns = assigns;
+        }
+
+        /**
+         * @param thread
+         */
+        void setDemandThread(IgniteThread thread) {
+            this.thread = thread;
         }
 
         /**
@@ -1005,6 +1017,9 @@ public class GridDhtPartitionDemander {
 
                 if (lsnr != null)
                     cctx.events().removeListener(lsnr);
+
+                if (thread != null)
+                    thread.interrupt();
 
                 onDone(completed);
             }
