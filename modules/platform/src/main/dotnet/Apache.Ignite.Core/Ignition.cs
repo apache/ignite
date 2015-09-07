@@ -19,5 +19,6 @@ namespace Apache.Ignite.Core
 {
     public class Ignition
     {
+        // Fake change, do not commit
     }
 }
