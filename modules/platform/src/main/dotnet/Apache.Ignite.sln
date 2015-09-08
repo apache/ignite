@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "common", "..\cpp\common\pro
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Core.Tests.TestDll", "..\..\test\dotnet\Apache.Ignite.Core.Tests.TestDll\Apache.Ignite.Core.Tests.TestDll.csproj", "{F4A69E2D-908E-4F0F-A794-84D508D60E5F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite", "Apache.Ignite\Apache.Ignite.csproj", "{27F7F3C6-BDDE-43A9-B565-856F8395A04B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -51,6 +53,14 @@ Global
 		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Release|x64.Build.0 = Release|x64
 		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Release|x86.ActiveCfg = Release|x86
 		{F4A69E2D-908E-4F0F-A794-84D508D60E5F}.Release|x86.Build.0 = Release|x86
+		{27F7F3C6-BDDE-43A9-B565-856F8395A04B}.Debug|x64.ActiveCfg = Debug|x64
+		{27F7F3C6-BDDE-43A9-B565-856F8395A04B}.Debug|x64.Build.0 = Debug|x64
+		{27F7F3C6-BDDE-43A9-B565-856F8395A04B}.Debug|x86.ActiveCfg = Debug|x86
+		{27F7F3C6-BDDE-43A9-B565-856F8395A04B}.Debug|x86.Build.0 = Debug|x86
+		{27F7F3C6-BDDE-43A9-B565-856F8395A04B}.Release|x64.ActiveCfg = Release|x64
+		{27F7F3C6-BDDE-43A9-B565-856F8395A04B}.Release|x64.Build.0 = Release|x64
+		{27F7F3C6-BDDE-43A9-B565-856F8395A04B}.Release|x86.ActiveCfg = Release|x86
+		{27F7F3C6-BDDE-43A9-B565-856F8395A04B}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

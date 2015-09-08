@@ -39,7 +39,6 @@ public class MessagingExamplesSelfTest extends GridAbstractExamplesTest {
     }
 
     /**
-     * TODO IGNITE-533
      * @throws Exception If failed.
      */
     public void testMessagingPingPongExample() throws Exception {

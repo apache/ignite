@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Compute.Forked
+namespace Apache.Ignite.Service
 {
-    using NUnit.Framework;
+    using System;
+    using System.Runtime.InteropServices;
 
     /// <summary>
-    /// Forked closure execution tests for serializable objects.
+    /// Service description structure.
     /// </summary>
-    [Ignore("IGNITE-1381")]
-    public class ForkedSerializableClosureTaskTest : SerializableClosureTaskTest
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct ServiceDescription
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public ForkedSerializableClosureTaskTest() : base(true) { }
+        /** Pointer to description. */
+        public IntPtr desc;
     }
 }

@@ -31,10 +31,10 @@ namespace Apache.Ignite.Core.Tests.Process
     public class IgniteProcess
     {
         /** Executable file name. */
-        private static readonly string ExeName = "Ignite.exe";
+        private static readonly string ExeName = "Apache.Ignite.exe";
 
         /** Executable process name. */
-        private static readonly string ExeProcName = ExeName.Substring(0, ExeName.IndexOf('.'));
+        private static readonly string ExeProcName = ExeName.Substring(0, ExeName.LastIndexOf('.'));
 
         /** Executable configuration file name. */
         private static readonly string ExeCfgName = ExeName + ".config";
@@ -71,17 +71,14 @@ namespace Apache.Ignite.Core.Tests.Process
             // ReSharper disable once PossibleNullReferenceException
             ExeDir = dir.FullName;
 
-            FileInfo[] exe = dir.GetFiles(ExeName);
+            var exe = dir.GetFiles(ExeName);
 
-
-            // TODO: IGNITE-1367
-            /*
             if (exe.Length == 0)
                 throw new Exception(ExeName + " is not found in test output directory: " + dir.FullName);
 
             ExePath = exe[0].FullName;
 
-            FileInfo[] exeCfg = dir.GetFiles(ExeCfgName);
+            var exeCfg = dir.GetFiles(ExeCfgName);
 
             if (exeCfg.Length == 0)
                 throw new Exception(ExeCfgName + " is not found in test output directory: " + dir.FullName);
@@ -90,7 +87,7 @@ namespace Apache.Ignite.Core.Tests.Process
 
             ExeCfgBakPath = Path.Combine(ExeDir, ExeCfgBakName);
 
-            File.Delete(ExeCfgBakPath);*/
+            File.Delete(ExeCfgBakPath);
         }
 
         /// <summary>
@@ -119,7 +116,7 @@ namespace Apache.Ignite.Core.Tests.Process
         }
 
         /// <summary>
-        /// Kill all GridGain processes.
+        /// Kill all Ignite processes.
         /// </summary>
         public static void KillAll()
         {
@@ -157,7 +154,7 @@ namespace Apache.Ignite.Core.Tests.Process
         /// Starts a grid process.
         /// </summary>
         /// <param name="exePath">Exe path.</param>
-        /// <param name="ggHome">GridGain home.</param>
+        /// <param name="ggHome">Ignite home.</param>
         /// <param name="outReader">Output reader.</param>
         /// <param name="args">Arguments.</param>
         /// <returns>Started process.</returns>
@@ -182,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Process
             if (!string.IsNullOrEmpty(ggHome))
                 procStart.EnvironmentVariables[IgniteManager.EnvIgniteHome] = ggHome;
 
-            procStart.EnvironmentVariables["GRIDGAIN_NATIVE_TEST_CLASSPATH"] = "true";
+            procStart.EnvironmentVariables[IgniteManager.EnvIgniteNativeTestClasspath] = "true";
 
             procStart.CreateNoWindow = true;
             procStart.UseShellExecute = false;
@@ -195,7 +192,7 @@ namespace Apache.Ignite.Core.Tests.Process
             if (workDir != null)
                 procStart.WorkingDirectory = workDir;
 
-            Console.WriteLine("About to run Ignite.exe process [exePath=" + exePath + ", arguments=" + sb + ']');
+            Console.WriteLine("About to run Apache.Ignite.exe process [exePath=" + exePath + ", arguments=" + sb + ']');
 
             // 2. Start.
             var proc = Process.Start(procStart);
@@ -216,10 +213,7 @@ namespace Apache.Ignite.Core.Tests.Process
         /// </summary>
         public bool Alive
         {
-            get
-            {
-                return !_proc.HasExited;
-            }
+            get { return !_proc.HasExited; }
         }
 
         /// <summary>
@@ -279,14 +273,11 @@ namespace Apache.Ignite.Core.Tests.Process
         /// <param name="err">Whether this is error stream.</param>
         private static void Attach(Process proc, StreamReader reader, IIgniteProcessOutputReader outReader, bool err)
         {
-            Thread thread = new Thread(() =>
+            new Thread(() =>
             {
                 while (!proc.HasExited)
                     outReader.OnOutput(proc, reader.ReadLine(), err);
-            }) {IsBackground = true};
-
-
-            thread.Start();
+            }) {IsBackground = true}.Start();
         }
     }
 }

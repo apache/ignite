@@ -15,19 +15,28 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Compute.Forked
+namespace Apache.Ignite.Config
 {
-    using NUnit.Framework;
+    using System;
 
     /// <summary>
-    /// Forked closure execution tests for serializable objects.
+    /// Parses Ignite config values.
     /// </summary>
-    [Ignore("IGNITE-1381")]
-    public class ForkedSerializableClosureTaskTest : SerializableClosureTaskTest
+    internal class ConfigValueParser
     {
         /// <summary>
-        /// Constructor.
+        /// Parses provided string to int. Throws a custom exception if failed.
         /// </summary>
-        public ForkedSerializableClosureTaskTest() : base(true) { }
+        public static int ParseInt(string value, string propertyName)
+        {
+            int result;
+
+            if (int.TryParse(value, out result))
+                return result;
+
+            throw new InvalidOperationException(
+                string.Format("Failed to configure Ignite: property '{0}' has value '{1}', which is not an integer.",
+                    propertyName, value));
+        }
     }
 }
