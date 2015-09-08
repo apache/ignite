@@ -374,6 +374,7 @@ namespace Apache.Ignite.Core.Tests
             var grid = Ignition.Start(cfg);
 
             // Start remote node in a separate process
+            // ReSharper disable once UnusedVariable
             var proc = new IgniteProcess(
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + Path.GetFullPath(cfg.SpringConfigUrl),
@@ -414,7 +415,6 @@ namespace Apache.Ignite.Core.Tests
             }
             finally 
             {
-                proc.Kill();
                 listenThread.Abort();  // forcefully end the thread, otherwise test can hang
             }
         }
