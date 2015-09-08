@@ -50,7 +50,7 @@ public class PlatformIgnition {
      * @param dataPtr Optional pointer to additional data required for startup.
      * @return Ignite instance.
      */
-    public static synchronized PlatformProcessor start(@Nullable String springCfgPath, @Nullable String gridName,
+    public static synchronized void start(@Nullable String springCfgPath, @Nullable String gridName,
         int factoryId, long envPtr, long dataPtr) {
         if (envPtr <= 0)
             throw new IgniteException("Environment pointer must be positive.");
@@ -74,8 +74,6 @@ public class PlatformIgnition {
             PlatformProcessor old = instances.put(gridName, proc);
 
             assert old == null;
-
-            return proc;
         }
         finally {
             Thread.currentThread().setContextClassLoader(oldClsLdr);

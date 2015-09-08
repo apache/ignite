@@ -322,7 +322,7 @@ namespace ignite
             JniMethod M_PLATFORM_UTILS_ERR_DATA = JniMethod("errorData", "(Ljava/lang/Throwable;)[B", true);
 
             const char* C_PLATFORM_IGNITION = "org/apache/ignite/internal/processors/platform/PlatformIgnition";
-            JniMethod M_PLATFORM_IGNITION_START = JniMethod("start", "(Ljava/lang/String;Ljava/lang/String;IJJ)Lorg/apache/ignite/internal/processors/platform/PlatformProcessor;", true);
+            JniMethod M_PLATFORM_IGNITION_START = JniMethod("start", "(Ljava/lang/String;Ljava/lang/String;IJJ)V", true);
             JniMethod M_PLATFORM_IGNITION_INSTANCE = JniMethod("instance", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformProcessor;", true);
             JniMethod M_PLATFORM_IGNITION_ENVIRONMENT_POINTER = JniMethod("environmentPointer", "(Ljava/lang/String;)J", true);
             JniMethod M_PLATFORM_IGNITION_STOP = JniMethod("stop", "(Ljava/lang/String;Z)Z", true);
@@ -919,11 +919,11 @@ namespace ignite
                 }
             }
 
-            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr) {
-                return IgnitionStart(cfgPath, name, factoryId, dataPtr, NULL);
+            void JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr) {
+                IgnitionStart(cfgPath, name, factoryId, dataPtr, NULL);
             }
             
-            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo)
+            void JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
@@ -941,8 +941,6 @@ namespace ignite
                 );
 
                 ExceptionCheck(env, errInfo);
-
-                return LocalToGlobal(env, interop);
             }
 
 
@@ -2186,7 +2184,7 @@ namespace ignite
             }
 
             JNIEXPORT void JNICALL JniOnStart(JNIEnv *env, jclass cls, jlong envPtr, jobject processor, jlong memPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, OnStartHandler, onStart, processor, memPtr);
+                IGNITE_SAFE_PROC(env, envPtr, OnStartHandler, onStart, env->NewGlobalRef(processor), memPtr);
             }
 
             JNIEXPORT void JNICALL JniOnStop(JNIEnv *env, jclass cls, jlong envPtr) {

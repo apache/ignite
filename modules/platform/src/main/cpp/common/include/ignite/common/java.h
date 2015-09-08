@@ -449,8 +449,8 @@ namespace ignite
                 static void Detach();
                 static void Release(jobject obj);
 
-                jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
-                jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
+                void IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
+                void IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
                 jobject IgnitionInstance(char* name);
                 jobject IgnitionInstance(char* name, JniErrorInfo* errInfo);
                 long long IgnitionEnvironmentPointer(char* name);

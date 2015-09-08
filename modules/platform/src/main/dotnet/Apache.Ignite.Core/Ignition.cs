@@ -179,11 +179,12 @@ namespace Apache.Ignite.Core
                 try
                 {
                     // 4. Initiate Ignite start.
-                    interopProc = UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl ?? DefaultCfg, 
+                    UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl ?? DefaultCfg,
                         cfgEx != null ? cfgEx.GridName : null, ClientMode);
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;
+                    interopProc = node.InteropProcessor;
 
                     // 6. On-start callback (notify lifecycle components).
                     node.OnStart();

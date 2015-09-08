@@ -527,7 +527,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region NATIVE METHODS: PROCESSOR
 
-        internal static IUnmanagedTarget IgnitionStart(UnmanagedContext ctx, string cfgPath, string gridName, 
+        internal static void IgnitionStart(UnmanagedContext ctx, string cfgPath, string gridName, 
             bool clientMode)
         {
             using (var mem = IgniteManager.Memory.Allocate().Stream())
@@ -539,10 +539,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 try
                 {
-                    void* res = IGNITION_START(ctx.NativeContext, cfgPath0, gridName0, InteropFactoryId,
-                        mem.SynchronizeOutput());
-
-                    return new UnmanagedTarget(ctx, res);
+                    IGNITION_START(ctx.NativeContext, cfgPath0, gridName0, InteropFactoryId, mem.SynchronizeOutput());
                 }
                 finally
                 {
