@@ -175,7 +175,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
 
         switch (state) {
             case ENTRY_STATE_VALUE_SET:
-                entry.setValue(reader.readObject());
+                entry.setValue(reader.readObjectDetached());
 
                 break;
 
@@ -205,7 +205,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
                 assert state == ENTRY_STATE_INTACT;
         }
 
-        return reader.readObject();
+        return reader.readObjectDetached();
     }
 
     /** {@inheritDoc} */
