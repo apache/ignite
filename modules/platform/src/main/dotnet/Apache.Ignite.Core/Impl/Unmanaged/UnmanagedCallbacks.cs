@@ -1005,7 +1005,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                var proc = new UnmanagedNonReleaseableTarget(_ctx.NativeContext, processor);
+                var proc = new UnmanagedTarget(_ctx, processor);
 
                 Ignition.OnStart(proc, IgniteManager.Memory.Get(memPtr).Stream());
             }, true);
