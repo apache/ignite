@@ -238,7 +238,7 @@ public class GridDhtPartitionDemander {
                 fut.init(assigns);
 
             if (assigns.isEmpty()) {
-                fut.onDone();
+                fut.checkIsDone();
 
                 return;
             }
@@ -401,7 +401,7 @@ public class GridDhtPartitionDemander {
 
                 fut.append(node.id(), remainings);
 
-                int lsnrCnt = Math.max(1, cctx.gridConfig().getRebalanceThreadPoolSize() / 2);
+                int lsnrCnt = Math.max(1, cctx.gridConfig().getRebalanceThreadPoolSize());
 
                 List<Set<Integer>> sParts = new ArrayList<>(lsnrCnt);
 
@@ -422,11 +422,10 @@ public class GridDhtPartitionDemander {
                         // Create copy.
                         GridDhtPartitionDemandMessage initD = new GridDhtPartitionDemandMessage(d, sParts.get(cnt));
 
-                        initD.topic(GridCachePartitionExchangeManager.demanderTopic(cnt));
-
+                        initD.topic(GridCachePartitionExchangeManager.rebalanceTopic(cnt));
                         try {
                             if (!topologyChanged(topVer))
-                                cctx.io().sendOrderedMessage(node, GridCachePartitionExchangeManager.supplierTopic(cnt), initD, cctx.ioPolicy(), d.timeout());
+                                cctx.io().sendOrderedMessage(node, GridCachePartitionExchangeManager.rebalanceTopic(cnt), initD, cctx.ioPolicy(), d.timeout());
                             else
                                 fut.onCancel();
                         }
@@ -633,11 +632,11 @@ public class GridDhtPartitionDemander {
                     GridDhtPartitionDemandMessage nextD =
                         new GridDhtPartitionDemandMessage(d, Collections.<Integer>emptySet());
 
-                    nextD.topic(GridCachePartitionExchangeManager.demanderTopic(idx));
+                    nextD.topic(GridCachePartitionExchangeManager.rebalanceTopic(idx));
 
                     if (!topologyChanged(topVer)) {
                         // Send demand message.
-                        cctx.io().sendOrderedMessage(node, GridCachePartitionExchangeManager.supplierTopic(idx),
+                        cctx.io().sendOrderedMessage(node, GridCachePartitionExchangeManager.rebalanceTopic(idx),
                             nextD, cctx.ioPolicy(), cctx.config().getRebalanceTimeout());
                     }
                     else
@@ -987,7 +986,7 @@ public class GridDhtPartitionDemander {
         /**
          *
          */
-        private void checkIsDone() {
+        public void checkIsDone() {
             if (remaining.isEmpty()) {
                 if (log.isDebugEnabled())
                     log.debug("Completed sync future.");
@@ -1008,7 +1007,7 @@ public class GridDhtPartitionDemander {
 
                 cctx.shared().exchange().scheduleResendPartitions();
 
-                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED))
+                if (!cctx.isReplicated() || cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED))
                     preloadEvent(EVT_CACHE_REBALANCE_STOPPED, assigns.exchangeFuture().discoveryEvent());
 
                 if (lsnr != null)

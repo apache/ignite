@@ -88,8 +88,8 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 
@@ -317,29 +317,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (!cctx.kernalContext().clientNode()) {
 
-            for (int cnt = 0; cnt < Math.max(1, cctx.gridConfig().getRebalanceThreadPoolSize() / 2); cnt++) {
+            for (int cnt = 0; cnt < Math.max(1, cctx.gridConfig().getRebalanceThreadPoolSize()); cnt++) {
                 final int idx = cnt;
 
-                cctx.io().addOrderedHandler(demanderTopic(cnt), new CI2<UUID, GridDhtPartitionSupplyMessageV2>() {
-                    @Override public void apply(final UUID id, final GridDhtPartitionSupplyMessageV2 m) {
+                cctx.io().addOrderedHandler(rebalanceTopic(cnt), new CI2<UUID, GridCacheMessage>() {
+                    @Override public void apply(final UUID id, final GridCacheMessage m) {
                         if (!enterBusy())
                             return;
 
                         try {
-                            cctx.cacheContext(m.cacheId).preloader().handleSupplyMessage(idx, id, m);
-                        }
-                        finally {
-                            leaveBusy();
-                        }
-                    }
-                });
-                cctx.io().addOrderedHandler(supplierTopic(cnt), new CI2<UUID, GridDhtPartitionDemandMessage>() {
-                    @Override public void apply(UUID id, GridDhtPartitionDemandMessage m) {
-                        if (!enterBusy())
-                            return;
-
-                        try {
-                            cctx.cacheContext(m.cacheId).preloader().handleDemandMessage(id, m);
+                            if (m instanceof GridDhtPartitionSupplyMessageV2)
+                                cctx.cacheContext(m.cacheId).preloader().handleSupplyMessage(
+                                    idx, id, (GridDhtPartitionSupplyMessageV2)m);
+                            else if (m instanceof GridDhtPartitionDemandMessage)
+                                cctx.cacheContext(m.cacheId).preloader().handleDemandMessage(
+                                    id, (GridDhtPartitionDemandMessage)m);
+                            else
+                                log.error("Unsupported message type " + m.getClass().getName());
                         }
                         finally {
                             leaveBusy();
@@ -415,16 +409,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param idx
      * @return topic
      */
-    public static Object demanderTopic(int idx) {
-        return TOPIC_CACHE.topic("Demander", idx);
-    }
-
-    /**
-     * @param idx
-     * @return topic
-     */
-    public static Object supplierTopic(int idx) {
-        return TOPIC_CACHE.topic("Supplier", idx);
+    public static Object rebalanceTopic(int idx) {
+        return TOPIC_CACHE.topic("Rebalance", idx);
     }
 
     /** {@inheritDoc} */
@@ -451,9 +437,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         for (AffinityReadyFuture f : readyFuts.values())
             f.onDone(err);
 
-        for (int cnt = 0; cnt < Math.max(1, cctx.gridConfig().getRebalanceThreadPoolSize() / 2); cnt++) {
-            cctx.io().removeOrderedHandler(demanderTopic(cnt));
-            cctx.io().removeOrderedHandler(supplierTopic(cnt));
+        for (int cnt = 0; cnt < Math.max(1, cctx.gridConfig().getRebalanceThreadPoolSize()); cnt++) {
+            cctx.io().removeOrderedHandler(rebalanceTopic(cnt));
         }
 
         U.cancel(exchWorker);
