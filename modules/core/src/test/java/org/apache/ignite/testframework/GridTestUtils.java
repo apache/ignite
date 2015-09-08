@@ -1383,12 +1383,28 @@ public final class GridTestUtils {
      * Creates test-purposed SSL context factory from test key store with disabled trust manager.
      *
      * @return SSL context factory used in test.
+     * @param logger
      */
-    public static Factory<SSLContext> sslFactory() {
+    public static Factory<SSLContext> sslFactory(IgniteLogger log) {
         SslContextFactory factory = new SslContextFactory();
 
-        factory.setKeyStoreFilePath(
-            U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
+        log.info(">>>>> System.getProperty(\"user.name\")=" + System.getProperty("user.name"));
+        log.info(">>>>> GridTestProperties.getProperties()=" + GridTestProperties.getProperties());
+
+        String keystorePath = GridTestProperties.getProperty("ssl.keystore.path");
+
+        log.info(">>>>> keyPath=" + keystorePath);
+
+        File file = U.resolveIgnitePath(keystorePath);
+
+        log.info(">>>>> file=" + file);
+
+        String path = file.getAbsolutePath();
+
+        log.info(">>>>> path=" + path);
+
+        factory.setKeyStoreFilePath(path);
+
         factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
 
         factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());

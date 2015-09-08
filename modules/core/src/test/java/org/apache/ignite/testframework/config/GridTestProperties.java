@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.jetbrains.annotations.Nullable;
@@ -86,6 +87,8 @@ public final class GridTestProperties {
 
         // Load default properties.
         File cfgFile = getTestConfigurationFile(null, TESTS_PROP_FILE);
+
+        U.debug(">>>>> cfgFile=" + cfgFile.getAbsolutePath());
 
         assert cfgFile.exists();
         assert !cfgFile.isDirectory();
@@ -154,6 +157,8 @@ public final class GridTestProperties {
     public static synchronized Map<String, String> getProperties() {
         String user = System.getProperty("user.name");
 
+        U.debug(">>>>> user=" + user);
+
         assert user != null;
 
         return getProperties(user);
@@ -180,9 +185,13 @@ public final class GridTestProperties {
      * @return Properties.
      */
     public static synchronized Map<String, String> getProperties(String dir) {
+        U.debug(">>>>>> pathProps=" + pathProps);
+
         Map<String, String> props = pathProps.get(dir);
 
         if (props == null) {
+            U.debug(">>>>>> loading def props=" + dfltProps);
+
             props = new HashMap<>();
 
             // Load default properties.
@@ -191,6 +200,8 @@ public final class GridTestProperties {
             // Load properties from specified folder
             // potentially overriding defaults.
             loadProperties(props, dir);
+
+            U.debug(">>>>>> Props after overriding=" + props);
 
             pathProps.put(dir, props);
         }
@@ -254,6 +265,9 @@ public final class GridTestProperties {
      */
     private static Map<String, String> loadProperties(Map<String, String> props, String dir) {
         File cfg = getTestConfigurationFile(dir, TESTS_PROP_FILE);
+
+        U.debug(">>>>> cfg=" + cfg);
+        System.out.println(">>>>> cfg=" + cfg);
 
         if (cfg != null)
             loadFromFile(props, cfg);
