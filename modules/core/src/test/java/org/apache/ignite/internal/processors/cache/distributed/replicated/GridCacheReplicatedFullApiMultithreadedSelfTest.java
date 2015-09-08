@@ -27,11 +27,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  */
 public class GridCacheReplicatedFullApiMultithreadedSelfTest extends GridCacheAbstractFullApiMultithreadedSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-805");
-    }
-
-    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 2;
     }
