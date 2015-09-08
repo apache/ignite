@@ -106,8 +106,8 @@ struct CacheTestSuiteFixture {
         cfg.jvmOptsLen = 5;
         cfg.jvmOpts = opts;
 
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
+        cfg.jvmInitMem = 256;
+        cfg.jvmMaxMem = 768;
 
         char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
 
