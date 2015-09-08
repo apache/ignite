@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
@@ -36,20 +37,17 @@ public class GridVersionSelfTest extends GridCommonAbstractTest {
         System.setProperty(IGNITE_UPDATE_NOTIFIER, "true");
 
         try {
-            IgniteEx ignite = (IgniteEx)startGrid();
+            final IgniteEx ignite = (IgniteEx)startGrid();
 
             IgniteProductVersion currVer = ignite.version();
 
-            String newVer = null;
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return ignite.latestVersion() != null;
+                }
+            }, 2 * 60_000);
 
-            for (int i = 0; i < 30; i++) {
-                newVer = ignite.latestVersion();
-
-                if (newVer != null)
-                    break;
-
-                U.sleep(100);
-            }
+            String newVer = ignite.latestVersion();
 
             info("Versions [cur=" + currVer + ", latest=" + newVer + ']');
 
