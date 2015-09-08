@@ -414,8 +414,8 @@ namespace Apache.Ignite.Core.Tests
             }
             finally 
             {
-                listenThread.Abort();  // forcefully end the thread, otherwise test can hang
                 proc.Kill();
+                listenThread.Abort();  // forcefully end the thread, otherwise test can hang
             }
         }
 
