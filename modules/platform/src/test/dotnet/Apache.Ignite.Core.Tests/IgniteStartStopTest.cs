@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Messaging;
@@ -378,21 +379,22 @@ namespace Apache.Ignite.Core.Tests
                 "-springConfigUrl=" + Path.GetFullPath(cfg.SpringConfigUrl),
                 "-J-Xms512m", "-J-Xmx512m");
 
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
             // Spam message subscriptions on a separate thread 
             // to test race conditions during processor init on remote node
-            var subscriberThread = new Thread(() =>
+            var task = Task.Factory.StartNew(() =>
             {
                 var filter = new MessageFilter();
 
-                while (true)
+                while (!token.IsCancellationRequested)
                 {
                     var listenId = grid.Message().RemoteListen(filter);
 
                     grid.Message().StopRemoteListen(listenId);
                 }
-            });
-
-            subscriberThread.Start();
+            }, token);
 
             // Wait for remote node to join
             grid.WaitTopology(2, 20000);
@@ -402,7 +404,8 @@ namespace Apache.Ignite.Core.Tests
             var remoteNodeId = remoteCluster.Compute().Call(new NodeIdFunc());
             Assert.AreEqual(remoteCluster.Node().Id, remoteNodeId);
 
-            subscriberThread.Abort();
+            cts.Cancel();
+            task.Wait();
             proc.Kill();
         }
 
