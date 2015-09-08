@@ -372,7 +372,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Start local node
             var grid = Ignition.Start(cfg);
-            
+
             // Start remote node in a separate process
             var proc = new IgniteProcess(
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
@@ -397,13 +397,17 @@ namespace Apache.Ignite.Core.Tests
             }, token);
 
             // Wait for remote node to join
-            grid.WaitTopology(2, 20000);
+            Assert.IsTrue(grid.WaitTopology(2, 20000));
 
             // Call remote node to make sure .Net has started there
             var remoteCluster = grid.Cluster.ForRemotes();
-            var remoteNodeId = remoteCluster.Compute().Call(new NodeIdFunc());
-            Assert.AreEqual(remoteCluster.Node().Id, remoteNodeId);
+            var remoteNodeIdTask = Task<Guid>.Factory.StartNew(() => remoteCluster.Compute().Call(new NodeIdFunc()));
 
+            // Wait 5 seconds for remote call to complete
+            Assert.IsTrue(remoteNodeIdTask.Wait(5000));
+
+            Assert.AreEqual(remoteCluster.Node().Id, remoteNodeIdTask.Result);
+            
             cts.Cancel();
             task.Wait();
             proc.Kill();
@@ -412,6 +416,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Noop message filter.
         /// </summary>
+        [Serializable]
         private class MessageFilter : IMessageFilter<int>
         {
             /** <inheritdoc /> */
@@ -424,6 +429,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Compute func to return local node id.
         /// </summary>
+        [Serializable]
         private class NodeIdFunc : IComputeFunc<Guid>
         {
             [InstanceResource] private readonly IIgnite _grid = null;
