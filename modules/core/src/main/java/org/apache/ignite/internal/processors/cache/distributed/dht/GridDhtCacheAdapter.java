@@ -839,9 +839,19 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                 try {
                     if (swap) {
-                        entry = cache.entryEx(keys.get(i));
+                        while (true) {
+                            try {
+                                entry = cache.entryEx(keys.get(i));
 
-                        entry.unswap(false);
+                                entry.unswap(false);
+
+                                break;
+                            }
+                            catch (GridCacheEntryRemovedException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Got removed entry: " + entry);
+                            }
+                        }
                     }
                     else
                         entry = cache.peekEx(keys.get(i));

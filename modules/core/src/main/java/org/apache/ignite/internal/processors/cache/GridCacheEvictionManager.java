@@ -994,6 +994,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                         notRemove = new HashSet<>();
 
                     notRemove.add(entry);
+
+                    continue;
                 }
 
                 if (obsoleteVer == null)

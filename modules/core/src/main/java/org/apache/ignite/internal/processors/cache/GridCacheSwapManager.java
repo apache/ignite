@@ -151,7 +151,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                         cctx.cache().metrics0().onOffHeapEvict();
                 }
                 catch (IgniteCheckedException e) {
-                    log.error("Failed to unmarshal off-heap entry [part=" + part + ", hash=" + hash + ']', e);
+                    U.error(log, "Failed to unmarshal off-heap entry [part=" + part + ", hash=" + hash + ']', e);
                 }
             }
 
