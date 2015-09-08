@@ -622,11 +622,27 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                 // First time access.
                 if (txEntry == null) {
-                    GridDhtCacheEntry cached = dhtCache.entryExx(key, topVer);
+                    GridDhtCacheEntry cached;
+
+                    if (dhtCache.context().isSwapOrOffheapEnabled()) {
+                        while (true) {
+                            try {
+                                cached = dhtCache.entryExx(key, topVer);
+
+                                cached.unswap(read);
+
+                                break;
+                            }
+                            catch (GridCacheEntryRemovedException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Get removed entry: " + key);
+                            }
+                        }
+                    }
+                    else
+                        cached = dhtCache.entryExx(key, topVer);
 
                     addActiveCache(dhtCache.context());
-
-                    cached.unswap(read);
 
                     txEntry = addEntry(NOOP,
                         null,
