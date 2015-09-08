@@ -22,7 +22,9 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Threading;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -366,23 +368,42 @@ namespace Apache.Ignite.Core.Tests
                 JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
+
+            // Start local node
             var grid = Ignition.Start(cfg);
             
+            // Start remote node in a separate process
             var proc = new IgniteProcess(
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + Path.GetFullPath(cfg.SpringConfigUrl),
                 "-J-Xms512m", "-J-Xmx512m");
 
+            // Spam message subscriptions on a separate thread 
+            // to test race conditions during processor init on remote node
             var subscriberThread = new Thread(() =>
             {
                 var filter = new MessageFilter();
 
                 while (true)
                 {
-                    grid.Message().RemoteListen(filter);
-                }
+                    var listenId = grid.Message().RemoteListen(filter);
 
+                    grid.Message().StopRemoteListen(listenId);
+                }
             });
+
+            subscriberThread.Start();
+
+            // Wait for remote node to join
+            grid.WaitTopology(2, 20000);
+
+            // Call remote node to make sure .Net has started there
+            var remoteCluster = grid.Cluster.ForRemotes();
+            var remoteNodeId = remoteCluster.Compute().Call(new NodeIdFunc());
+            Assert.AreEqual(remoteCluster.Node().Id, remoteNodeId);
+
+            subscriberThread.Abort();
+            proc.Kill();
         }
 
         /// <summary>
@@ -394,6 +415,19 @@ namespace Apache.Ignite.Core.Tests
             public bool Invoke(Guid nodeId, int message)
             {
                 return true;
+            }
+        }
+
+        /// <summary>
+        /// Compute func to return local node id.
+        /// </summary>
+        private class NodeIdFunc : IComputeFunc<Guid>
+        {
+            [InstanceResource] private readonly IIgnite _grid = null;
+
+            public Guid Invoke()
+            {
+                return _grid.Cluster.LocalNode.Id;
             }
         }
     }
