@@ -369,7 +369,6 @@ namespace Apache.Ignite.Core.Tests
                 JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
-
             // Start local node
             var grid = Ignition.Start(cfg);
 
