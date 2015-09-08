@@ -859,7 +859,11 @@ public final class GridTestUtils {
     @Nullable private static File resolvePath(@Nullable String igniteHome, String path) {
         File file = new File(path).getAbsoluteFile();
 
+        U.debug(">>>>> resolvePath file="+file);
+
         if (!file.exists()) {
+            U.debug(">>>>> resolvePath file not exists");
+
             String home = igniteHome != null ? igniteHome : U.getIgniteHome();
 
             if (home == null)
