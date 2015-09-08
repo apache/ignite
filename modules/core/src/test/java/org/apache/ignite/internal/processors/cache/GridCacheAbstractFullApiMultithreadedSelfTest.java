@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
@@ -59,7 +59,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     private static final String READ_THREAD_NAME = "read-thread";
 
     /** */
-    private static final int PUT_CNT = 100;
+    private static final int PUT_CNT = 1000;
 
     /** */
     private final AtomicInteger cnt = new AtomicInteger();
@@ -152,7 +152,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @return Range of keys.
      */
     private Set<String> rangeKeys(int fromIncl, int toExcl) {
-        return new HashSet<>(F.transform(F.range(fromIncl, toExcl), new C1<Integer, String>() {
+        return new TreeSet<>(F.transform(F.range(fromIncl, toExcl), new C1<Integer, String>() {
             @Override public String apply(Integer i) {
                 return "key" + i;
             }
