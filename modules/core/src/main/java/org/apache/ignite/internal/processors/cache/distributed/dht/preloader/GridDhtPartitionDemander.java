@@ -249,7 +249,7 @@ public class GridDhtPartitionDemander {
                 return;
             }
 
-            final SyncFuture cSF = fut;
+            final SyncFuture curFut = fut;
 
             IgniteThread thread = new IgniteThread(cctx.gridName(), "demand-thread-" + cctx.cache().name(), new Runnable() {
                 @Override public void run() {
@@ -258,22 +258,22 @@ public class GridDhtPartitionDemander {
                             log.debug("Waiting for marshaller cache preload [cacheName=" + cctx.name() + ']');
 
                         try {
-                            IgniteInternalFuture fut;
+                            IgniteInternalFuture mFut;
                             do {
-                                fut = cctx.kernalContext().cache().marshallerCache().preloader().syncFuture();
+                                mFut = cctx.kernalContext().cache().marshallerCache().preloader().syncFuture();
                             }
-                            while (!((SyncFuture)fut).isInited() || ((SyncFuture)fut).topologyVersion().topologyVersion() < cSF.topologyVersion().topologyVersion());
+                            while (!((SyncFuture)mFut).isInited() || ((SyncFuture)mFut).topologyVersion().topologyVersion() < curFut.topologyVersion().topologyVersion());
 
-                            if (((SyncFuture)fut).topologyVersion().topologyVersion() > cSF.topologyVersion().topologyVersion()) {
-                                cSF.onCancel();
+                            if (((SyncFuture)mFut).topologyVersion().topologyVersion() > curFut.topologyVersion().topologyVersion()) {
+                                curFut.onCancel();
 
                                 return;
                             }
 
                             if (!topologyChanged(topVer))
-                                fut.get();
+                                mFut.get();
                             else {
-                                cSF.onCancel();
+                                curFut.onCancel();
 
                                 return;
                             }
@@ -282,13 +282,13 @@ public class GridDhtPartitionDemander {
                             if (log.isDebugEnabled()) {
                                 log.debug("Failed to wait for marshaller cache preload future (grid is stopping): " +
                                     "[cacheName=" + cctx.name() + ']');
-                                cSF.onCancel();
+                                curFut.onCancel();
 
                                 return;
                             }
                         }
                         catch (IgniteCheckedException e) {
-                            cSF.onCancel();
+                            curFut.onCancel();
 
                             throw new Error("Ordered preload future should never fail: " + e.getMessage(), e);
                         }
@@ -297,18 +297,18 @@ public class GridDhtPartitionDemander {
                     int rebalanceOrder = cctx.config().getRebalanceOrder();
 
                     if (rebalanceOrder > 0) {
-                        IgniteInternalFuture<?> fut = cctx.kernalContext().cache().orderedPreloadFuture(rebalanceOrder);
+                        IgniteInternalFuture<?> oFut = cctx.kernalContext().cache().orderedPreloadFuture(rebalanceOrder);
 
                         try {
-                            if (fut != null) {
+                            if (oFut != null) {
                                 if (log.isDebugEnabled())
                                     log.debug("Waiting for dependant caches rebalance [cacheName=" + cctx.name() +
                                         ", rebalanceOrder=" + rebalanceOrder + ']');
 
                                 if (!topologyChanged(topVer))
-                                    fut.get();
+                                    oFut.get();
                                 else {
-                                    cSF.onCancel();
+                                    curFut.onCancel();
 
                                     return;
                                 }
@@ -318,19 +318,19 @@ public class GridDhtPartitionDemander {
                             if (log.isDebugEnabled()) {
                                 log.debug("Failed to wait for ordered rebalance future (grid is stopping): " +
                                     "[cacheName=" + cctx.name() + ", rebalanceOrder=" + rebalanceOrder + ']');
-                                cSF.onCancel();
+                                curFut.onCancel();
 
                                 return;
                             }
                         }
                         catch (IgniteCheckedException e) {
-                            cSF.onCancel();
+                            curFut.onCancel();
 
                             throw new Error("Ordered rebalance future should never fail: " + e.getMessage(), e);
                         }
                     }
 
-                    requestPartitions(cSF);
+                    requestPartitions(curFut);
                 }
             });
 
