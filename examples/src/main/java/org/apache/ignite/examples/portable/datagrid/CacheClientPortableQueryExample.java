@@ -45,8 +45,8 @@ import org.apache.ignite.portable.PortableObject;
  * This example demonstrates use of portable objects with cache queries.
  * The example populates cache with sample data and runs several SQL and full text queries over this data.
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables the portable marshaller: {@code 'ignite.{sh|bat} examples/config/portable/example-ignite-portable.xml'}.
+ * Remote nodes should always be started with {@link ExamplePortableNodeStartup} which starts a node with
+ * {@code examples/config/portable/example-ignite-portable.xml} configuration.
  */
 public class CacheClientPortableQueryExample {
     /** Organization cache name. */
