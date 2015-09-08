@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests
         private static int _seed = Environment.TickCount;
 
         /// <summary>
-        /// Kill GridGain processes.
+        /// Kill Ignite processes.
         /// </summary>
         public static void KillProcesses()
         {

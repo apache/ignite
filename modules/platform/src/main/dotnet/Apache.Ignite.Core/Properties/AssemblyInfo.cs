@@ -1,4 +1,4 @@
-﻿/*
+﻿﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -37,6 +37,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("1.5.0")]
 
 [assembly: CLSCompliant(true)]
+[assembly: InternalsVisibleTo("Apache.Ignite")]
 
 #if !EXCLUDE_TESTS
 

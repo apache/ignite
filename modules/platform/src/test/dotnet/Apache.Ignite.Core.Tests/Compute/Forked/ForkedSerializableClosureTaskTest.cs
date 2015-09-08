@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Tests.Compute.Forked
     /// <summary>
     /// Forked closure execution tests for serializable objects.
     /// </summary>
-    [Ignore("IGNITE-1367")]
+    [Ignore("IGNITE-1381")]
     public class ForkedSerializableClosureTaskTest : SerializableClosureTaskTest
     {
         /// <summary>

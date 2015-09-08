@@ -33,7 +33,6 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Tests for executable.
     /// </summary>
-    [Ignore("IGNITE-1367")]
     public class ExecutableTest
     {
         /** Spring configuration path. */
@@ -98,18 +97,18 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestConfig()
         {
-            IgniteProcess.ReplaceConfiguration("config\\Ignite.exe.config.test");
+            IgniteProcess.ReplaceConfiguration("config\\Apache.Ignite.exe.config.test");
 
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
 
-            IgniteProcess proc = new IgniteProcess(
+            var proc = new IgniteProcess(
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath()
                 );
 
             Assert.IsTrue(_grid.WaitTopology(2, 30000));
 
-            RemoteConfiguration cfg = RemoteConfig();
+            var cfg = RemoteConfig();
 
             Assert.AreEqual(SpringCfgPath, cfg.SpringConfigUrl);
             Assert.IsTrue(cfg.JvmOptions.Contains("-DOPT1") && cfg.JvmOptions.Contains("-DOPT2"));
@@ -127,7 +126,7 @@ namespace Apache.Ignite.Core.Tests
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
 
-            IgniteProcess proc = new IgniteProcess(
+            var proc = new IgniteProcess(
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-assembly=test-1.dll",
@@ -136,7 +135,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsTrue(_grid.WaitTopology(2, 30000));
 
-            RemoteConfiguration cfg = RemoteConfig();
+            var cfg = RemoteConfig();
 
             Assert.IsTrue(cfg.Assemblies.Contains("test-1.dll") && cfg.Assemblies.Contains("test-2.dll"));
         }
@@ -147,7 +146,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestJvmOptsCmd()
         {
-            IgniteProcess proc = new IgniteProcess(
+            var proc = new IgniteProcess(
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
                 "-J-DOPT1",
@@ -156,7 +155,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsTrue(_grid.WaitTopology(2, 30000));
 
-            RemoteConfiguration cfg = RemoteConfig();
+            var cfg = RemoteConfig();
 
             Assert.IsTrue(cfg.JvmOptions.Contains("-DOPT1") && cfg.JvmOptions.Contains("-DOPT2"));
         }
@@ -211,7 +210,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestJvmMemoryOptsAppConfig()
         {
-            IgniteProcess.ReplaceConfiguration("config\\Ignite.exe.config.test");
+            IgniteProcess.ReplaceConfiguration("config\\Apache.Ignite.exe.config.test");
 
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
@@ -285,10 +284,10 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>Node configuration.</returns>
         private static IgniteConfiguration Configuration(string path)
         {
-            IgniteConfiguration cfg = new IgniteConfiguration();
+            var cfg = new IgniteConfiguration();
 
 
-            PortableConfiguration portCfg = new PortableConfiguration();
+            var portCfg = new PortableConfiguration();
 
             ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
 
@@ -307,7 +306,7 @@ namespace Apache.Ignite.Core.Tests
                 "-Xcheck:jni",
                 "-Xms4g",
                 "-Xmx4g",
-                "-DGRIDGAIN_QUIET=false",
+                "-DIGNITE_QUIET=false",
                 "-Xnoagent",
                 "-Djava.compiler=NONE",
                 "-Xdebug",
@@ -326,21 +325,21 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="outputPath"></param>
         private static void GenerateDll(string outputPath)
         {
-            CSharpCodeProvider codeProvider = new CSharpCodeProvider();
+            var codeProvider = new CSharpCodeProvider();
 
 #pragma warning disable 0618
 
-            ICodeCompiler icc = codeProvider.CreateCompiler();
+            var icc = codeProvider.CreateCompiler();
 
 #pragma warning restore 0618
 
-            CompilerParameters parameters = new CompilerParameters();
+            var parameters = new CompilerParameters();
             parameters.GenerateExecutable = false;
             parameters.OutputAssembly = outputPath;
 
-            string src = "namespace GridGain.Client.Test { public class Foo {}}";
+            var src = "namespace Apache.Ignite.Client.Test { public class Foo {}}";
 
-            CompilerResults results = icc.CompileAssemblyFromSource(parameters, src);
+            var results = icc.CompileAssemblyFromSource(parameters, src);
 
             Assert.False(results.Errors.HasErrors);
         }
@@ -372,11 +371,11 @@ namespace Apache.Ignite.Core.Tests
 
             public RemoteConfiguration Invoke()
             {
-                Ignite grid0 = (Ignite) ((IgniteProxy) _grid).Target;
+                var grid0 = (Ignite) ((IgniteProxy) _grid).Target;
 
-                IgniteConfiguration cfg = grid0.Configuration;
+                var cfg = grid0.Configuration;
 
-                RemoteConfiguration res = new RemoteConfiguration
+                var res = new RemoteConfiguration
                 {
                     IgniteHome = cfg.IgniteHome,
                     SpringConfigUrl = cfg.SpringConfigUrl,

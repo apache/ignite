@@ -573,7 +573,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <returns>Handle to the job holder</returns>
         private long WriteJob(IComputeJob job, PortableWriterImpl writer)
         {
-            var jobHolder = new ComputeJobHolder(_prj.Ignite as Ignite, job);
+            var jobHolder = new ComputeJobHolder((Ignite) _prj.Ignite, job);
 
             var jobHandle = Marshaller.Ignite.HandleRegistry.Allocate(jobHolder);
 

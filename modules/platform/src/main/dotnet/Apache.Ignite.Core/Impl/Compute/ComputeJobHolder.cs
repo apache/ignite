@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Compute
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cluster;
@@ -48,6 +49,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="reader"></param>
         public ComputeJobHolder(IPortableReader reader)
         {
+            Debug.Assert(reader != null);
+
             var reader0 = (PortableReaderImpl) reader.RawReader();
 
             _ignite = reader0.Marshaller.Ignite;
@@ -62,6 +65,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="job">Job.</param>
         public ComputeJobHolder(Ignite grid, IComputeJob job)
         {
+            Debug.Assert(grid != null);
+            Debug.Assert(job != null);
+
             _ignite = grid;
             _job = job;
         }

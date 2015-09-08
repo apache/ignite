@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Memory
 {
+    using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
 
@@ -25,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = "This class instance usually lives as long as the app runs.")]
+    [CLSCompliant(false)]
     public class PlatformMemoryManager
     {
         /** Default capacity. */
