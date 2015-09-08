@@ -259,44 +259,6 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testGuardedOpsPerformance() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-823");
-
-        final GridUnsafeGuard guard = new GridUnsafeGuard();
-
-        final AtomicInteger i = new AtomicInteger();
-
-        final AtomicBoolean run = new AtomicBoolean(true);
-
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                int x = 0;
-
-                while (run.get()) {
-                    guard.begin();
-                    guard.end();
-
-                    x++;
-                }
-
-                i.addAndGet(x);
-            }
-        }, 4);
-
-        int time = 60;
-
-        Thread.sleep(time * 1000);
-
-        run.set(false);
-
-        fut.get();
-
-        X.println("Op/sec: " + (float)i.get() / time);
-    }
-
-    /**
      * @throws Exception if failed.
      */
     public void testGuardedOps() throws Exception {

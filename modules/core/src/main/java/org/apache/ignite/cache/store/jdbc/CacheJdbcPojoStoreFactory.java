@@ -72,7 +72,7 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheJdbcPojoSto
 
     /** Application context. */
     @SpringApplicationContextResource
-    private Object appContext;
+    private transient Object appContext;
 
     /** {@inheritDoc} */
     @Override public CacheJdbcPojoStore<K, V> create() {
