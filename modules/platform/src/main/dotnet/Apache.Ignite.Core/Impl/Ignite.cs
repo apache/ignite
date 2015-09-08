@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl
         private IClusterNode _locNode;
 
         /** Transactions facade. */
-        private readonly TransactionsImpl _transactions;
+        private readonly Lazy<TransactionsImpl> _transactions;
 
         /** Callbacks */
         private readonly UnmanagedCallbacks _cbs;
@@ -119,7 +119,9 @@ namespace Apache.Ignite.Core.Impl
 
             cbs.Initialize(this);
 
-            _transactions = new TransactionsImpl(UU.ProcessorTransactions(proc), marsh, LocalNode.Id);
+            // Grid is not completely started here, can't initialize interop transactions right away.
+            _transactions = new Lazy<TransactionsImpl>(
+                    () => new TransactionsImpl(UU.ProcessorTransactions(proc), marsh, LocalNode.Id));
         }
 
         /// <summary>
@@ -423,7 +425,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ITransactions Transactions
         {
-            get { return _transactions; }
+            get { return _transactions.Value; }
         }
 
         /** <inheritdoc /> */
