@@ -19,8 +19,11 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Threading;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
     /// <summary>
@@ -45,6 +48,7 @@ namespace Apache.Ignite.Core.Tests
         public void TearDown()
         {
             Ignition.StopAll(true);
+            TestUtils.KillProcesses();
         }
 
         /// <summary>
@@ -347,6 +351,50 @@ namespace Apache.Ignite.Core.Tests
             cache.GetAndPut(1, 1);
 
             Assert.AreEqual(1, cache.Get(1));
+        }
+
+        /// <summary>
+        /// Tests the processor initialization and grid usage right after topology enter.
+        /// </summary>
+        [Test]
+        public void TestProcessorInit()
+        {
+            var cfg = new IgniteConfiguration
+            {
+                SpringConfigUrl = "config\\start-test-grid1.xml",
+                JvmOptions = TestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath()
+            };
+
+            var grid = Ignition.Start(cfg);
+            
+            var proc = new IgniteProcess(
+                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
+                "-springConfigUrl=" + Path.GetFullPath(cfg.SpringConfigUrl),
+                "-J-Xms512m", "-J-Xmx512m");
+
+            var subscriberThread = new Thread(() =>
+            {
+                var filter = new MessageFilter();
+
+                while (true)
+                {
+                    grid.Message().RemoteListen(filter);
+                }
+
+            });
+        }
+
+        /// <summary>
+        /// Noop message filter.
+        /// </summary>
+        private class MessageFilter : IMessageFilter<int>
+        {
+            /** <inheritdoc /> */
+            public bool Invoke(Guid nodeId, int message)
+            {
+                return true;
+            }
         }
     }
 }
