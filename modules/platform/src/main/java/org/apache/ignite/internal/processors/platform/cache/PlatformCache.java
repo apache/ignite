@@ -984,14 +984,21 @@ public class PlatformCache extends PlatformAbstractTarget {
     private static class EntryProcessorExceptionWriter implements PlatformFutureUtils.Writer {
         /** <inheritDoc /> */
         @Override public void write(PortableRawWriterEx writer, Object obj, Throwable err) {
-            EntryProcessorException entryEx = (EntryProcessorException) err;
+            if (err == null) {
+                writer.writeBoolean(true);  // success
 
-            writeError(writer, entryEx);
+                writer.writeObjectDetached(obj);
+            }
+            else {
+                writer.writeBoolean(false);  // failure
+
+                writeError(writer, (Exception) err);
+            }
         }
 
         /** <inheritDoc /> */
         @Override public boolean canWrite(Object obj, Throwable err) {
-            return err instanceof EntryProcessorException;
+            return true;
         }
     }
 
