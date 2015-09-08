@@ -444,20 +444,15 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      * @throws Exception If failed.
      */
     public void testCrossCache() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-829");
-
-        //TODO Investigate (should be 20 results instead of 0).
         compareQueryRes0("select firstName, lastName" +
             "  from \"part\".Person, \"part\".Purchase" +
             "  where Person.id = Purchase.personId");
 
-        //TODO Investigate.
         compareQueryRes0("select concat(firstName, ' ', lastName), Product.name " +
             "  from \"part\".Person, \"part\".Purchase, \"repl\".Product " +
             "  where Person.id = Purchase.personId and Purchase.productId = Product.id" +
             "  group by Product.id");
 
-        //TODO Investigate.
         compareQueryRes0("select concat(firstName, ' ', lastName), count (Product.id) " +
             "  from \"part\".Person, \"part\".Purchase, \"repl\".Product " +
             "  where Person.id = Purchase.personId and Purchase.productId = Product.id" +
