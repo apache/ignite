@@ -50,8 +50,8 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
-            Ignition.StopAll(true);
             TestUtils.KillProcesses();
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -379,38 +379,44 @@ namespace Apache.Ignite.Core.Tests
                 "-springConfigUrl=" + Path.GetFullPath(cfg.SpringConfigUrl),
                 "-J-Xms512m", "-J-Xmx512m");
 
-            var cts = new CancellationTokenSource();
-            var token = cts.Token;
-
             // Spam message subscriptions on a separate thread 
             // to test race conditions during processor init on remote node
-            var task = Task.Factory.StartNew(() =>
+            var listenThread = new Thread(() =>
             {
                 var filter = new MessageFilter();
 
-                while (!token.IsCancellationRequested)
+                while (true)
                 {
                     var listenId = grid.Message().RemoteListen(filter);
 
                     grid.Message().StopRemoteListen(listenId);
                 }
-            }, token);
+                // ReSharper disable once FunctionNeverReturns
+            });
 
-            // Wait for remote node to join
-            Assert.IsTrue(grid.WaitTopology(2, 20000));
+            listenThread.Start();
 
-            // Call remote node to make sure .Net has started there
-            var remoteCluster = grid.Cluster.ForRemotes();
-            var remoteNodeIdTask = Task<Guid>.Factory.StartNew(() => remoteCluster.Compute().Call(new NodeIdFunc()));
+            try
+            {
+                // Wait for remote node to join
+                Assert.IsTrue(grid.WaitTopology(2, 30000));
 
-            // Wait 5 seconds for remote call to complete
-            Assert.IsTrue(remoteNodeIdTask.Wait(5000));
+                // Call remote node to make sure .Net has started there
+                var remoteCluster = grid.Cluster.ForRemotes();
+                var remoteNodeIdTask = Task<Guid>.Factory.StartNew(() => 
+                    remoteCluster.Compute().Call(new NodeIdFunc()));
 
-            Assert.AreEqual(remoteCluster.Node().Id, remoteNodeIdTask.Result);
-            
-            cts.Cancel();
-            task.Wait();
-            proc.Kill();
+                // Wait 5 seconds for remote call to complete
+                Assert.IsTrue(remoteNodeIdTask.Wait(5000));
+
+                Assert.AreEqual(remoteCluster.Node().Id, remoteNodeIdTask.Result);
+
+            }
+            finally 
+            {
+                listenThread.Abort();  // forcefully end the thread, otherwise test can hang
+                proc.Kill();
+            }
         }
 
         /// <summary>
@@ -432,8 +438,10 @@ namespace Apache.Ignite.Core.Tests
         [Serializable]
         private class NodeIdFunc : IComputeFunc<Guid>
         {
-            [InstanceResource] private readonly IIgnite _grid = null;
+            [InstanceResource] 
+            private readonly IIgnite _grid = null;
 
+            /** <inheritdoc /> */
             public Guid Invoke()
             {
                 return _grid.Cluster.LocalNode.Id;
