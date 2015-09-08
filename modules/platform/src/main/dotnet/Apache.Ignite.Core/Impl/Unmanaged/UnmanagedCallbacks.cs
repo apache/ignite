@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private delegate void NodeInfoCallbackDelegate(void* target, long memPtr);
 
-        private delegate void OnStartCallbackDelegate(void* target, long memPtr);
+        private delegate void OnStartCallbackDelegate(void* target, void* processor, long memPtr);
         private delegate void OnStopCallbackDelegate(void* target);
         
         private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, void* errData, int errDataLen);
@@ -1001,11 +1001,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }, true);
         }
 
-        private void OnStart(void* target, long memPtr)
+        private void OnStart(void* target, void* processor, long memPtr)
         {
             SafeCall(() =>
             {
-                Ignition.OnStart(IgniteManager.Memory.Get(memPtr).Stream());
+                var proc = new UnmanagedNonReleaseableTarget(_ctx.NativeContext, processor);
+
+                Ignition.OnStart(proc, IgniteManager.Memory.Get(memPtr).Stream());
             }, true);
         }
 
