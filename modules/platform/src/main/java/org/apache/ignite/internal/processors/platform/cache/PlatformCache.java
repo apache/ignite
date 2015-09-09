@@ -186,10 +186,10 @@ public class PlatformCache extends PlatformAbstractTarget {
     private static final GetAllWriter WRITER_GET_ALL = new GetAllWriter();
 
     /** */
-    private static final EntryProcessorExceptionWriter WRITER_PROC_ERR = new EntryProcessorExceptionWriter();
+    private static final EntryProcessorInvokeWriter WRITER_INVOKE = new EntryProcessorInvokeWriter();
 
     /** */
-    private static final EntryProcessorResultsWriter WRITER_INVOKE_ALL = new EntryProcessorResultsWriter();
+    private static final EntryProcessorInvokeAllWriter WRITER_INVOKE_ALL = new EntryProcessorInvokeAllWriter();
 
     /** Map with currently active locks. */
     private final ConcurrentMap<Long, Lock> lockMap = GridConcurrentFactory.newMap();
@@ -694,7 +694,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             return WRITER_GET_ALL;
 
         if (opId == OP_INVOKE)
-            return WRITER_PROC_ERR;
+            return WRITER_INVOKE;
 
         if (opId == OP_INVOKE_ALL)
             return WRITER_INVOKE_ALL;
@@ -981,24 +981,31 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Writes error with EntryProcessorException cause.
      */
-    private static class EntryProcessorExceptionWriter implements PlatformFutureUtils.Writer {
+    private static class EntryProcessorInvokeWriter implements PlatformFutureUtils.Writer {
         /** <inheritDoc /> */
         @Override public void write(PortableRawWriterEx writer, Object obj, Throwable err) {
-            EntryProcessorException entryEx = (EntryProcessorException) err;
+            if (err == null) {
+                writer.writeBoolean(false);  // No error.
 
-            writeError(writer, entryEx);
+                writer.writeObjectDetached(obj);
+            }
+            else {
+                writer.writeBoolean(true);  // Error.
+
+                writeError(writer, (Exception) err);
+            }
         }
 
         /** <inheritDoc /> */
         @Override public boolean canWrite(Object obj, Throwable err) {
-            return err instanceof EntryProcessorException;
+            return true;
         }
     }
 
     /**
      * Writes results of InvokeAll method.
      */
-    private static class EntryProcessorResultsWriter implements PlatformFutureUtils.Writer {
+    private static class EntryProcessorInvokeAllWriter implements PlatformFutureUtils.Writer {
         /** <inheritDoc /> */
         @Override public void write(PortableRawWriterEx writer, Object obj, Throwable err) {
             writeInvokeAllResult(writer, (Map)obj);

@@ -1349,13 +1349,19 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         ctx.mvcc().addNext(ctx, c1);
 
+        ctx.mvcc().contextReset();
+
         GridCacheMvccCandidate c2 = entry.addLocal(2, ver2, 0, true, false);
 
         ctx.mvcc().addNext(ctx, c2);
 
+        ctx.mvcc().contextReset();
+
         GridCacheMvccCandidate c3 = entry.addLocal(3, ver3, 0, true, true);
 
         ctx.mvcc().addNext(ctx, c3);
+
+        ctx.mvcc().contextReset();
 
         checkLocal(entry.candidate(ver1), ver1, false, false, false);
         checkLocal(entry.candidate(ver2), ver2, false, false, false);
@@ -1371,9 +1377,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         entry.removeLock(ver2);
 
         assert c3 != null;
-        assert c3.previous() == c2;
         assert c2 != null;
-        assert c2.previous() == c1;
 
         checkLocal(c2, ver2, false, false, false, true);
 
@@ -1382,9 +1386,6 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         entry.removeLock(ver1);
 
-        assert c3.previous() == c2;
-        assert c2.previous() == c1;
-
         checkLocal(entry.candidate(ver3), ver3, true, true, false);
 
         GridCacheMvccCandidate c4 = entry.addLocal(4, ver4, 0, true, true);
@@ -1392,7 +1393,6 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         ctx.mvcc().addNext(ctx, c4);
 
         assert c4 != null;
-        assert c4.previous() == c3;
     }
 
     /**
@@ -1624,6 +1624,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * Links candidates.
      *
+     * @param ctx Cache context.
      * @param cands Candidates.
      * @throws Exception If failed.
      */
@@ -1670,9 +1671,8 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         StringBuilder buf = new StringBuilder(eol);
 
-        for (Object obj : objs) {
+        for (Object obj : objs)
             buf.append(obj.toString()).append(eol);
-        }
 
         return buf.toString();
     }
@@ -1686,9 +1686,8 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         StringBuilder buf = new StringBuilder(eol);
 
-        for (Object obj : objs) {
+        for (Object obj : objs)
             buf.append(obj.toString()).append(eol);
-        }
 
         return buf.toString();
     }
@@ -1834,20 +1833,12 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Empty collection.
-     */
-    private Collection<GridCacheVersion> empty() {
-        return Collections.emptyList();
-    }
-
-    /**
      * @param cands Candidates to print.
      */
     private void info(Iterable<GridCacheMvccCandidate> cands) {
         info("Collection of candidates: ");
 
-        for (GridCacheMvccCandidate c : cands) {
+        for (GridCacheMvccCandidate c : cands)
             info(">>> " + c);
-        }
     }
 }

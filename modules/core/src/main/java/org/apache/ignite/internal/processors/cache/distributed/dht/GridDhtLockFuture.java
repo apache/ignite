@@ -872,12 +872,12 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                         for (ListIterator<GridDhtCacheEntry> it = dhtMapping.listIterator(); it.hasNext();) {
                             GridDhtCacheEntry e = it.next();
 
-                            // Must unswap entry so that isNewLocked returns correct value.
-                            e.unswap(false);
-
                             boolean needVal = false;
 
                             try {
+                                // Must unswap entry so that isNewLocked returns correct value.
+                                e.unswap(false);
+
                                 needVal = e.isNewLocked();
 
                                 if (needVal) {

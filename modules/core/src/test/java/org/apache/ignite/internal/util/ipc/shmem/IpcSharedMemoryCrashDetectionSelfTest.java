@@ -118,6 +118,8 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testIgfsClientServerInteractionsUponServerKilling() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1386");
+
         Collection<Integer> shmemIdsBeforeInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
 
         info("Shared memory IDs before starting server-client interactions: " + shmemIdsBeforeInteractions);

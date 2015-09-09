@@ -678,4 +678,11 @@ public class GridCacheSharedContext<K, V> {
 
         return mgr;
     }
+
+    /**
+     * Reset thread-local context for transactional cache.
+     */
+    public void txContextReset() {
+        mvccMgr.contextReset();
+    }
 }

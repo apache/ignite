@@ -383,7 +383,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
         isWriteThrough = cc.isWriteThrough();
-        keepPortableInStore = cc.isKeepPortableInStore();
+        keepPortableInStore = cc.isKeepPortableInStore() != null ? cc.isKeepPortableInStore() :
+            DFLT_KEEP_PORTABLE_IN_STORE;
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
