@@ -2186,7 +2186,7 @@ namespace ignite
             }
 
             JNIEXPORT void JNICALL JniOnStart(JNIEnv *env, jclass cls, jlong envPtr, jobject proc, jlong memPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, OnStartHandler, onStart, env->NewGlobalRef(proc), memPtr);
+                IGNITE_SAFE_PROC(env, envPtr, OnStartHandler, onStart, proc, memPtr);
             }
 
             JNIEXPORT void JNICALL JniOnStop(JNIEnv *env, jclass cls, jlong envPtr) {

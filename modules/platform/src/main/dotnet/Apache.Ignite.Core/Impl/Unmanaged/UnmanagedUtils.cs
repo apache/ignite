@@ -116,6 +116,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcProjectionResetMetrics = "IgniteProjectionResetMetrics";
         private const string ProcProjectionOutOpRet = "IgniteProjectionOutOpRet";
 
+        private const string ProcAcquire = "IgniteAcquire";
         private const string ProcRelease = "IgniteRelease";
 
         private const string ProcTxStart = "IgniteTransactionsStart";
@@ -236,6 +237,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void QueryCursorIteratorDelegate(void* ctx, void* target);
         private delegate void QueryCursorCloseDelegate(void* ctx, void* target);
 
+        private delegate void* AcquireDelegate(void* ctx, void* target);
         private delegate void ReleaseDelegate(void* target);
 
         private delegate long TransactionsStartDelegate(void* ctx, void* target, int concurrency, int isolation, long timeout, int txSize);
@@ -357,6 +359,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly QueryCursorIteratorDelegate QryCursorIterator;
         private static readonly QueryCursorCloseDelegate QryCursorClose;
 
+        private static readonly AcquireDelegate ACQUIRE;
         private static readonly ReleaseDelegate RELEASE;
 
         private static readonly TransactionsStartDelegate TxStart;
@@ -492,6 +495,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             QryCursorIterator = CreateDelegate<QueryCursorIteratorDelegate>(ProcQryCursorIterator);
             QryCursorClose = CreateDelegate<QueryCursorCloseDelegate>(ProcQryCursorClose);
 
+            ACQUIRE = CreateDelegate<AcquireDelegate>(ProcAcquire);
             RELEASE = CreateDelegate<ReleaseDelegate>(ProcRelease);
 
             TxStart = CreateDelegate<TransactionsStartDelegate>(ProcTxStart);
@@ -1106,6 +1110,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             if (res != 0)
                 throw new IgniteException("Failed to reallocate external memory [ptr=" + memPtr + 
                     ", capacity=" + cap + ']');
+        }
+
+        internal static IUnmanagedTarget Acquire(UnmanagedContext ctx, void* target)
+        {
+            void* target0 = ACQUIRE(ctx.NativeContext, target);
+
+            return new UnmanagedTarget(ctx, target0);
         }
 
         internal static void Release(IUnmanagedTarget target)

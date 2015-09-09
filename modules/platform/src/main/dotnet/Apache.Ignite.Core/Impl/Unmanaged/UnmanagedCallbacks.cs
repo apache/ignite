@@ -1005,7 +1005,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                var proc0 = new UnmanagedTarget(_ctx, proc);
+                var proc0 = UnmanagedUtils.Acquire(_ctx, proc);
 
                 Ignition.OnStart(proc0, IgniteManager.Memory.Get(memPtr).Stream());
             }, true);
