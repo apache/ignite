@@ -430,7 +430,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                             AffinityTopologyVersion readyVer = dht.context().shared().exchange().readyAffinityVersion();
 
-                            if (readyVer.topologyVersion() > 0 && dht.context().started()) {
+                            if (readyVer.topologyVersion() > 0 && c.context().started()) {
                                 // Must map on updated version of topology.
                                 Collection<ClusterNode> affNodes =
                                     g0.affinity(cfg.getName()).mapPartitionToPrimaryAndBackups(p);
