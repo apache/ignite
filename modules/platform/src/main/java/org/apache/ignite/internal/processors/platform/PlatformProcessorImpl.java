@@ -114,6 +114,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         platformCtx = new PlatformContextImpl(ctx, interopCfg.gate(), interopCfg.memory());
     }
+
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
@@ -145,11 +146,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         // Add Interop node attributes.
         ctx.addNodeAttribute(PlatformUtils.ATTR_PLATFORM, interopCfg.platform());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        // TODO: ??
     }
 
     /** {@inheritDoc} */
