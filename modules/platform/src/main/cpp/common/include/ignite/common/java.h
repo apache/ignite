@@ -96,7 +96,7 @@ namespace ignite
 
             typedef long long(JNICALL *NodeInfoHandler)(void* target, long long memPtr);
 
-            typedef void(JNICALL *OnStartHandler)(void* target, long long memPtr);
+            typedef void(JNICALL *OnStartHandler)(void* target, void* proc, long long memPtr);
             typedef void(JNICALL *OnStopHandler)(void* target);
             typedef void(JNICALL *ErrorHandler)(void* target, int errCode, const char* errClsChars, int errClsCharsLen, const char* errMsgChars, int errMsgCharsLen, void* errData, int errDataLen);
 
@@ -640,7 +640,7 @@ namespace ignite
 
             JNIEXPORT jlong JNICALL JniNodeInfo(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
 
-            JNIEXPORT void JNICALL JniOnStart(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
+            JNIEXPORT void JNICALL JniOnStart(JNIEnv *env, jclass cls, jlong envPtr, jobject proc, jlong memPtr);
             JNIEXPORT void JNICALL JniOnStop(JNIEnv *env, jclass cls, jlong envPtr);
 
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1);

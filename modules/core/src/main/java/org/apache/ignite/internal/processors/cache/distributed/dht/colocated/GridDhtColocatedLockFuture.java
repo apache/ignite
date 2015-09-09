@@ -635,7 +635,12 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             else {
                 fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
-                        mapOnTopology(remap, c);
+                        try {
+                            mapOnTopology(remap, c);
+                        }
+                        finally {
+                            cctx.shared().txContextReset();
+                        }
                     }
                 });
             }
@@ -1312,7 +1317,12 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     if (affFut != null && !affFut.isDone()) {
                         affFut.listen(new CI1<IgniteInternalFuture<?>>() {
                             @Override public void apply(IgniteInternalFuture<?> fut) {
-                                remap();
+                                try {
+                                    remap();
+                                }
+                                finally {
+                                    cctx.shared().txContextReset();
+                                }
                             }
                         });
                     }

@@ -384,9 +384,10 @@ public class PlatformCallbackUtils {
      * Kernal start callback.
      *
      * @param envPtr Environment pointer.
+     * @param proc Platform processor.
      * @param memPtr Memory pointer.
      */
-    static native void onStart(long envPtr, long memPtr);
+    static native void onStart(long envPtr, Object proc, long memPtr);
 
     /*
      * Kernal stop callback.

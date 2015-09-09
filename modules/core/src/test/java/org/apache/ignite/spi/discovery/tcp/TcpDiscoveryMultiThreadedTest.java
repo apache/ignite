@@ -109,6 +109,8 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
      * @throws Exception If any error occurs.
      */
     public void testMultiThreadedClientsRestart() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1123");
+
         clientFlagGlobal = false;
 
         info("Test timeout: " + (getTestTimeout() / (60 * 1000)) + " min.");

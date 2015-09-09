@@ -523,14 +523,16 @@ public class GridCacheMvccCandidate implements Externalizable,
     /**
      * @return Lock that comes before in the same thread, possibly <tt>null</tt>.
      */
-    public GridCacheMvccCandidate previous() {
+    @Nullable public GridCacheMvccCandidate previous() {
         return prev;
     }
 
     /**
-     * @param prev Lock that comes before in the same thread, possibly <tt>null</tt>.
+     * @param prev Lock that comes before in the same thread.
      */
     public void previous(GridCacheMvccCandidate prev) {
+        assert threadId == prev.threadId : "Invalid threadId [this=" + this + ", prev=" + prev + ']';
+
         this.prev = prev;
     }
 

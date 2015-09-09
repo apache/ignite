@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
@@ -490,9 +491,19 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 GridCacheEntryEx entry;
 
                 if (cctx.isSwapOrOffheapEnabled()) {
-                    entry = cctx.dht().entryEx(k, true);
+                    while (true) {
+                        try {
+                            entry = cctx.dht().entryEx(k);
 
-                    entry.unswap();
+                            entry.unswap();
+
+                            break;
+                        }
+                        catch (GridCacheEntryRemovedException ignore) {
+                            if (log.isDebugEnabled())
+                                log.debug("Got removed entry: " + k);
+                        }
+                    }
                 }
                 else
                     entry = cctx.dht().peekEx(k);
@@ -505,6 +516,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                     if (info != null && !info.isNew())
                         res.addInfo(info);
+
+                    if (cctx.isSwapOrOffheapEnabled())
+                        cctx.evicts().touch(entry, msg.topologyVersion());
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Key is not present in DHT cache: " + k);

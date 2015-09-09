@@ -324,7 +324,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
                 @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                     cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                         @Override public void run() {
-                            prepareOnTopology(remap, c);
+                            try {
+                                prepareOnTopology(remap, c);
+                            }
+                            finally {
+                                cctx.txContextReset();
+                            }
                         }
                     });
                 }

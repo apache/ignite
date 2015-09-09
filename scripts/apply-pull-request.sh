@@ -19,66 +19,139 @@
 #
 # Pull request applier.
 #
-echo 'Usage: scripts/apply-pull-request.sh <pull-request-id>'
-echo 'The script takes pull-request by given id and merges (with squash) all changes too master branch.'
-echo "Argument 'pull-request-id' is mandatory."
-echo
 
-IGNITE_HOME="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
+#
+# Start of Functions.
+#
 
-. ${IGNITE_HOME}/scripts/git-patch-functions.sh # Import patch functions.
+#
+# Prints usage.
+#
+usage () {
+    echo 'Usage: scripts/apply-pull-request.sh <pull-request-id> [-tb|--targetbranch <branch-name>]'
+    echo 'The script takes pull-request by given id and merges (with squash) all changes to target branch (master by default).'
+    echo "Argument 'pull-request-id' is mandatory."
+    echo "Target branch can be overwritten by using [-tb|--targetbranch <branch-name>] argument paramethers."
+}
 
-# Constants.
-APACHE_GIT="https://git-wip-us.apache.org/repos/asf/ignite"
-GITHUB_MIRROR="https://github.com/apache/ignite.git"
+#
+# End of Functions.
+#
 
-# Get paramethers.
+if [ "${GIT_HOME}" = "" ]; then
+    GIT_HOME="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
+fi
+
+cd ${GIT_HOME}
+
+if [ "${SCRIPTS_HOME}" = "" ]; then
+    SCRIPTS_HOME="${GIT_HOME}/scripts/"
+fi
+
+. ${SCRIPTS_HOME}/git-patch-functions.sh # Import patch functions.
+
 PR_ID=$1
 
-# Initial checks.
+#
+# Start reading of command line params.
+#
 if [ "${PR_ID}" = "" ]; then
     echo $0", ERROR:"
     echo >&2 "You have to specify 'pull-request-id'."
+    echo
+    usage
     exit 1
 fi
 
-requireCleanWorkTree ${IGNITE_HOME}
+if [ "${PR_ID}" = "-h" ]; then
+    usage
+    exit 0
+fi
+
+if [ "${PR_ID}" = "--help" ]; then
+    usage
+    exit 0
+fi
+
+
+while [[ $# > 2 ]]
+do
+    key="$2"
+
+    case $key in
+        -tb|--targetbranch)
+        TARGET_BRANCH="$3"
+        shift
+        ;;
+
+        *)
+        echo "Unknown parameter: ${key}"
+        echo
+        usage
+        ;;
+    esac
+    shift
+done
+#
+# Enf reading of command line params.
+#
+
+
+# Script variables.
+if [ "${APACHE_GIT}" = "" ]; then
+    APACHE_GIT="https://git-wip-us.apache.org/repos/asf/ignite"
+fi
+
+if [ "${GITHUB_MIRROR}" = "" ]; then
+    GITHUB_MIRROR="https://github.com/apache/ignite.git"
+fi
+
+if [ "${TARGET_BRANCH}" = "" ]; then
+    TARGET_BRANCH="master"
+fi
+
+requireCleanWorkTree ${GIT_HOME}
 
 CURRENT_BRANCH=`git rev-parse --abbrev-ref HEAD`
 
-if [ "$CURRENT_BRANCH" != "master" ]; then
+if [ "$CURRENT_BRANCH" != "${TARGET_BRANCH}" ]; then
     echo $0", ERROR:"
-    echo "You have to be on master branch."
+    echo "You have to be on ${TARGET_BRANCH} branch."
 
     exit 1
 fi
 
-# Check that master is up-to-date.
-APACHE_GIT_MASTER_BRANCH="apache-git-master-tmp"
+# Check that target branch is up-to-date.
+APACHE_GIT_TARGET_BRANCH="apache-git-target-br-tmp"
 
-git fetch ${APACHE_GIT} master:${APACHE_GIT_MASTER_BRANCH} &> /dev/null
+git fetch ${APACHE_GIT} ${TARGET_BRANCH}:${APACHE_GIT_TARGET_BRANCH} &> /dev/null
+if test $? != 0; then
+    echo $0", ERROR:"
+    echo >&2 "Couldn't fetch '${TARGET_BRANCH}' branch from ${APACHE_GIT}."
+    exit 1
+fi
 
-LOCAL_MASTER_HASH=$(git rev-parse @)
-REMOTE_MASTER_HASH=$(git rev-parse ${APACHE_GIT_MASTER_BRANCH})
-BASE_HASH=$(git merge-base @ ${APACHE_GIT_MASTER_BRANCH})
+LOCAL_TARGET_BR_HASH=$(git rev-parse @)
+REMOTE_TARGET_BR_HASH=$(git rev-parse ${APACHE_GIT_TARGET_BRANCH})
+BASE_HASH=$(git merge-base @ ${APACHE_GIT_TARGET_BRANCH})
 
-git branch -D ${APACHE_GIT_MASTER_BRANCH} &> /dev/null
+git branch -D ${APACHE_GIT_TARGET_BRANCH} &> /dev/null
 
-if [ $LOCAL_MASTER_HASH != $REMOTE_MASTER_HASH ]; then
+if [ $LOCAL_TARGET_BR_HASH != $REMOTE_TARGET_BR_HASH ]; then
     echo $0", ERROR:"
 
-    if [ $LOCAL_MASTER_HASH = $BASE_HASH ]; then
-        echo "Your local master branch is not up-to-date. You need to pull."
-    elif [ $REMOTE_MASTER_HASH = $BASE_HASH ]; then
-        echo "Your local master branch is ahead of master branch at Apache git. You need to push."
+    if [ $LOCAL_TARGET_BR_HASH = $BASE_HASH ]; then
+        echo "Your local ${TARGET_BRANCH} branch is not up-to-date. You need to pull."
+    elif [ $REMOTE_TARGET_BR_HASH = $BASE_HASH ]; then
+        echo "Your local ${TARGET_BRANCH} branch is ahead of ${TARGET_BRANCH} branch at Apache git. You need to push."
     else
-        echo "Your local master and Apache git master branches diverged. You need to pull, merge and pull."
+        echo "Your local ${TARGET_BRANCH} and Apache git ${TARGET_BRANCH} branches diverged. You need to pull, merge and pull."
     fi
 
     exit 1
 fi
 
-echo "Local master is Up-to-date."
+echo "Local ${TARGET_BRANCH} is Up-to-date."
 echo
 
 # Checkout pull-request branch.
@@ -105,8 +178,8 @@ ORIG_COMMENT="$(git log -1 --pretty=%B)"
 echo "Author of pull-request: '$AUTHOR'."
 echo
 
-# Update local master.
-git checkout master &> /dev/null
+# Update local target branch.
+git checkout ${TARGET_BRANCH} &> /dev/null
 
 # Take changes.
 git merge --squash ${PR_BRANCH_NAME} &> /dev/null
@@ -114,7 +187,7 @@ if test $? != 0; then
     git reset --hard &> /dev/null
 
     echo $0", ERROR:"
-    echo >&2 "Could not merge the pull-request to master without conflicts. All local changes have been discarded. You're on master branch."
+    echo >&2 "Could not merge the pull-request to ${TARGET_BRANCH} without conflicts. All local changes have been discarded. You're on ${TARGET_BRANCH} branch."
     exit 1
 fi
 
@@ -130,10 +203,14 @@ fi
 
 COMMENT="${COMMENT} - Fixes #${PR_ID}."
 
+if [ "${EXCLUDE_SPECIAL_FILE}" = "true" ]; then
+    git checkout HEAD ignite-pull-request-id
+fi
+
 git commit --author "${AUTHOR}" -a -s -m "${COMMENT}" &> /dev/null
 
 echo "Squash commit for pull request with id='${PR_ID}' has been added. The commit has been added with comment '${COMMENT}'."
-echo "Now you can review changes of the last commit at master and push it to Ignite Apche git after."
+echo "Now you can review changes of the last commit at ${TARGET_BRANCH} and push it into ${APACHE_GIT} git after."
 echo "If you want to decline changes, you can remove the last commit from your repo by 'git reset --hard HEAD^'."
 echo
 

@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-clients</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.4.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>

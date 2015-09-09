@@ -34,6 +34,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
@@ -717,17 +718,23 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
                 byte[] keyBytes = entry.getKey();
 
-                try {
-                    KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
+                while (true) {
+                    try {
+                        KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
 
-                    lastEntry = (GridDhtCacheEntry)cctx.cache().entryEx(key, false);
+                        lastEntry = (GridDhtCacheEntry)cctx.cache().entryEx(key, false);
 
-                    lastEntry.unswap(true);
+                        lastEntry.unswap(true);
 
-                    return lastEntry;
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e);
+                        return lastEntry;
+                    }
+                    catch (GridCacheEntryRemovedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Got removed entry: " + lastEntry);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new CacheException(e);
+                    }
                 }
             }
 

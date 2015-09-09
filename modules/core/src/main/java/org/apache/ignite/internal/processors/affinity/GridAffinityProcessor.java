@@ -296,7 +296,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("ErrorNotRethrown")
-    private AffinityInfo affinityCache(@Nullable final String cacheName, AffinityTopologyVersion topVer)
+    @Nullable private AffinityInfo affinityCache(@Nullable final String cacheName, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
         AffinityAssignmentKey key = new AffinityAssignmentKey(cacheName, topVer);
 
@@ -879,7 +879,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                return cache().assignment().get(part);
+                AffinityInfo cache = cache();
+
+                return cache != null ? cache.assignment().get(part) : Collections.<ClusterNode>emptyList();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -893,7 +895,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
          * @return Affinity info for current topology version.
          * @throws IgniteCheckedException If failed.
          */
-        private AffinityInfo cache() throws IgniteCheckedException {
+        @Nullable private AffinityInfo cache() throws IgniteCheckedException {
             return affinityCache(cacheName, new AffinityTopologyVersion(topologyVersion()));
         }
 

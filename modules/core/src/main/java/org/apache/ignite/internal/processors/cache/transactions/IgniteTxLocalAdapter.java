@@ -2159,20 +2159,20 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 // First time access.
                 if (txEntry == null) {
                     while (true) {
-                        GridCacheEntryEx entry;
-
-                        if (cached != null) {
-                            entry = cached;
-
-                            cached = null;
-                        }
-                        else {
-                            entry = entryEx(cacheCtx, txKey, topologyVersion());
-
-                            entry.unswap(false);
-                        }
+                        GridCacheEntryEx entry = null;
 
                         try {
+                            if (cached != null) {
+                                entry = cached;
+
+                                cached = null;
+                            }
+                            else {
+                                entry = entryEx(cacheCtx, txKey, topologyVersion());
+
+                                entry.unswap(false);
+                            }
+
                             // Check if lock is being explicitly acquired by the same thread.
                             if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
                                 entry.lockedByThread(threadId, xidVer))

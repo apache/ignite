@@ -172,19 +172,19 @@ namespace Apache.Ignite.Core
                 sbyte* gridName0 = IgniteUtils.StringToUtf8Unmanaged(gridName);
 
                 // 3. Create startup object which will guide us through the rest of the process.
-                _startup = new Startup(cfg) { Context = ctx };
+                _startup = new Startup(cfg, cbs) { Context = ctx };
 
                 IUnmanagedTarget interopProc = null;
 
                 try
                 {
                     // 4. Initiate Ignite start.
-                    interopProc = UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl ?? DefaultCfg, 
+                    UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl ?? DefaultCfg,
                         cfgEx != null ? cfgEx.GridName : null, ClientMode);
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
-                    Ignite node = new Ignite(cfg, _startup.Name, interopProc, _startup.Marshaller, 
-                        _startup.LifecycleBeans, cbs);
+                    var node = _startup.Ignite;
+                    interopProc = node.InteropProcessor;
 
                     // 6. On-start callback (notify lifecycle components).
                     node.OnStart();
@@ -351,8 +351,9 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Kernal start callback.
         /// </summary>
+        /// <param name="interopProc">Interop processor.</param>
         /// <param name="stream">Stream.</param>
-        internal static void OnStart(IPortableStream stream)
+        internal static void OnStart(IUnmanagedTarget interopProc, IPortableStream stream)
         {
             try
             {
@@ -368,6 +369,8 @@ namespace Apache.Ignite.Core
                 if (Nodes.ContainsKey(new NodeKey(name)))
                     throw new IgniteException("Ignite with the same name already started: " + name);
 
+                _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name, interopProc, _startup.Marshaller, 
+                    _startup.LifecycleBeans, _startup.Callbacks);
             }
             catch (Exception e)
             {
@@ -604,15 +607,21 @@ namespace Apache.Ignite.Core
             /// Constructor.
             /// </summary>
             /// <param name="cfg">Configuration.</param>
-            internal Startup(IgniteConfiguration cfg)
+            /// <param name="cbs"></param>
+            internal Startup(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
             {
                 Configuration = cfg;
+                Callbacks = cbs;
             }
-
             /// <summary>
             /// Configuration.
             /// </summary>
             internal IgniteConfiguration Configuration { get; private set; }
+
+            /// <summary>
+            /// Gets unmanaged callbacks.
+            /// </summary>
+            internal UnmanagedCallbacks Callbacks { get; private set; }
 
             /// <summary>
             /// Lifecycle beans.
@@ -638,6 +647,11 @@ namespace Apache.Ignite.Core
             /// Gets or sets the context.
             /// </summary>
             internal void* Context { get; set; }
+
+            /// <summary>
+            /// Gets or sets the ignite.
+            /// </summary>
+            internal Ignite Ignite { get; set; }
         }
     }
 }

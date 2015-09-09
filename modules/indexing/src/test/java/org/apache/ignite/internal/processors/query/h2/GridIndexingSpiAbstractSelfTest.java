@@ -428,19 +428,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
     }
 
-    public void testResultReuse() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-828");
-
-        final IgniteH2Indexing spi = getIndexing();
-
-        multithreaded(new Callable<Object>() {
-              @Override public Object call() throws Exception {
-                  return spi.queryFields(null, "SELECT sum(x) + sum(x) + sum(x) + sum(x) FROM SYSTEM_RANGE(?, ?)",
-                      F.<Object>asList(0, 7000000), null);
-              }
-          }, 5);
-    }
-
     /**
      * Index descriptor.
      */

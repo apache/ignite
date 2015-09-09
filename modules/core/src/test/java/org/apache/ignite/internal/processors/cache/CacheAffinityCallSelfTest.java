@@ -21,15 +21,13 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeTaskCancelledException;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -147,7 +145,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int i = 0; i < SERVERS_COUNT; ++i)
-                    stopGrid(i);
+                    stopGrid(i, false);
 
                 return null;
             }
@@ -157,14 +155,12 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
             while (!fut.isDone())
                 client.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key));
         }
-        catch (ComputeTaskCancelledException e) {
-            assertTrue("Unexpected error: " + e, e.getMessage().contains("stopping"));
+        catch (ClusterTopologyException ignore) {
+            log.info("Expected error: " + ignore);
         }
-        catch(ClusterGroupEmptyException e) {
-            assertTrue("Unexpected error: " + e, e.getMessage().contains("Topology projection is empty"));
+        finally {
+            stopAllGrids();
         }
-
-        stopAllGrids();
     }
 
     /**

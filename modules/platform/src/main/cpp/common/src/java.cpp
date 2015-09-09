@@ -311,7 +311,7 @@ namespace ignite
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_MEMORY_REALLOCATE = JniMethod("memoryReallocate", "(JJI)V", true);
 
-            JniMethod M_PLATFORM_CALLBACK_UTILS_ON_START = JniMethod("onStart", "(JJ)V", true);
+            JniMethod M_PLATFORM_CALLBACK_UTILS_ON_START = JniMethod("onStart", "(JLjava/lang/Object;J)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_ON_STOP = JniMethod("onStop", "(J)V", true);
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG = JniMethod("extensionCallbackInLongOutLong", "(JIJ)J", true);
@@ -2185,8 +2185,8 @@ namespace ignite
                 IGNITE_SAFE_FUNC(env, envPtr, NodeInfoHandler, nodeInfo, memPtr);
             }
 
-            JNIEXPORT void JNICALL JniOnStart(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, OnStartHandler, onStart, memPtr);
+            JNIEXPORT void JNICALL JniOnStart(JNIEnv *env, jclass cls, jlong envPtr, jobject proc, jlong memPtr) {
+                IGNITE_SAFE_PROC(env, envPtr, OnStartHandler, onStart, proc, memPtr);
             }
 
             JNIEXPORT void JNICALL JniOnStop(JNIEnv *env, jclass cls, jlong envPtr) {

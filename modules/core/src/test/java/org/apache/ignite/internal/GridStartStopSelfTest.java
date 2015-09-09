@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.util.concurrent.CountDownLatch;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -69,14 +70,9 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * TODO: IGNITE-580.
-     *
      * @throws Exception If failed.
      */
     public void testStopWhileInUse() throws Exception {
-        // Test works too long.
-        fail("https://issues.apache.org/jira/browse/IGNITE-580");
-        
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setConnectorConfiguration(null);
@@ -132,7 +128,12 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         info("Before remove.");
 
-        g1.cache(null).remove(1);
+        try {
+            g1.cache(null).remove(1);
+        }
+        catch (CacheException ignore) {
+            // No-op.
+        }
     }
 
     /**
