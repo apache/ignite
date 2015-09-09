@@ -194,7 +194,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
     private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        cfg.setAffinity(new RendezvousAffinityFunction());
+        cfg.setAffinity(new RendezvousAffinityFunction(false));
 
         cfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -254,8 +254,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         final ConcurrentLinkedQueue<String> execQueue = new ConcurrentLinkedQueue<>();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 long processed;
 
                 while ((processed = cnt.getAndIncrement()) < taskExecutionCount()) {
