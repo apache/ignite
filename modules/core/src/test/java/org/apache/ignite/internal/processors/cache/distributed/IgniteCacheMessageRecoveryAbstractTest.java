@@ -145,11 +145,15 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
         });
 
         try {
+            boolean closed = false;
+
             for (int i = 0; i < 30; i++) {
                 Thread.sleep(1000);
 
-                closeSessions();
+                closed |= closeSessions();
             }
+
+            assertTrue(closed);
         }
         finally {
             stop.set(true);
@@ -161,7 +165,7 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
-    private void closeSessions() throws Exception {
+    private boolean closeSessions() throws Exception {
         Ignite ignite = ignite(ThreadLocalRandom.current().nextInt(0, GRID_CNT));
 
         log.info("Close sessions for: " + ignite.name());
@@ -170,7 +174,7 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
 
         Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
 
-        assertTrue(clients.size() > 0);
+        boolean closed = false;
 
         for (GridCommunicationClient client : clients.values()) {
             GridTcpNioCommunicationClient client0 = (GridTcpNioCommunicationClient)client;
@@ -178,6 +182,10 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
             GridNioSession ses = client0.session();
 
             ses.close();
+
+            closed = true;
         }
+
+        return closed;
     }
 }

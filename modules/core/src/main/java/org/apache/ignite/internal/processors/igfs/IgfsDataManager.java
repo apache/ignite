@@ -68,7 +68,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
@@ -239,16 +238,15 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        igfsCtx.kernalContext().cache().getOrStartCache(igfsCtx.configuration().getDataCacheName());
-        dataCachePrj = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
-
-        igfsCtx.kernalContext().cache().getOrStartCache(igfsCtx.configuration().getDataCacheName());
-        dataCache = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
-
-        metrics = igfsCtx.igfs().localMetrics();
+        dataCachePrj = igfsCtx.kernalContext().cache().getOrStartCache(igfsCtx.configuration().getDataCacheName());
 
         assert dataCachePrj != null;
+
+        dataCache = (IgniteInternalCache)dataCachePrj;
+
+        metrics = igfsCtx.igfs().localMetrics();
 
         AffinityKeyMapper mapper = igfsCtx.kernalContext().cache()
             .internalCache(igfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
@@ -312,7 +310,7 @@ public class IgfsDataManager extends IgfsManager {
      */
     public IgniteUuid nextAffinityKey(@Nullable IgniteUuid prevAffKey) {
         // Do not generate affinity key for non-affinity nodes.
-        if (!((GridCacheAdapter)dataCache).context().affinityNode())
+        if (!dataCache.context().affinityNode())
             return null;
 
         UUID nodeId = igfsCtx.kernalContext().localNodeId();

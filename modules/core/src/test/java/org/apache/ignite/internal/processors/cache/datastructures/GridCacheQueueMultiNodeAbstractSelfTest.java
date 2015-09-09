@@ -466,8 +466,6 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
      * @throws Exception If failed.
      */
     public void testIterator() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-583");
-
         final String queueName = UUID.randomUUID().toString();
 
         info("Queue name: " + queueName);
@@ -475,35 +473,37 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
         try (IgniteQueue<Integer> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false))) {
             assertTrue(queue.isEmpty());
 
-            grid(0).compute().call(new AddAllJob(queueName, RETRIES));
+            grid(0).compute().broadcast(new AddAllJob(queueName, RETRIES));
 
             assertEquals(GRID_CNT * RETRIES, queue.size());
 
             Collection<ClusterNode> nodes = grid(0).cluster().nodes();
 
             for (ClusterNode node : nodes) {
-                Collection<Integer> queueElements = compute(grid(0).cluster().forNode(node)).call(new IgniteCallable<Collection<Integer>>() {
-                    @IgniteInstanceResource
-                    private Ignite grid;
+                Collection<Integer> queueElements = compute(grid(0).cluster().forNode(node)).call(
+                    new IgniteCallable<Collection<Integer>>() {
+                        @IgniteInstanceResource
+                        private Ignite grid;
 
-                    /** {@inheritDoc} */
-                    @Override public Collection<Integer> call() throws Exception {
-                        Collection<Integer> values = new ArrayList<>();
+                        /** {@inheritDoc} */
+                        @Override public Collection<Integer> call() throws Exception {
+                            Collection<Integer> values = new ArrayList<>();
 
-                        grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+                            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + "]");
 
-                        IgniteQueue<Integer> locQueue = grid.queue(queueName, 0, null);
+                            IgniteQueue<Integer> locQueue = grid.queue(queueName, 0, null);
 
-                        grid.log().info("Queue size " + locQueue.size());
+                            grid.log().info("Queue size " + locQueue.size());
 
-                        for (Integer element : locQueue)
-                            values.add(element);
+                            for (Integer element : locQueue)
+                                values.add(element);
 
-                        grid.log().info("Returning: " + values);
+                            grid.log().info("Returning: " + values);
 
-                        return values;
+                            return values;
+                        }
                     }
-                });
+                );
 
                 assertTrue(F.eqOrdered(queue, queueElements));
             }

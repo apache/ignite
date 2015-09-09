@@ -1839,6 +1839,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (updateNtfTimer != null)
                 updateNtfTimer.cancel();
 
+            if (verChecker != null)
+                verChecker.stop();
+
             if (starveTask != null)
                 starveTask.close();
 
@@ -3220,7 +3223,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     verChecker.topologySize(kernal.cluster().nodes().size());
             }
 
-            verChecker.checkForNewVersion(execSvc, log);
+            verChecker.checkForNewVersion(log);
 
             // Just wait for 10 secs.
             Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);

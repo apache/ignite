@@ -21,8 +21,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -43,12 +44,11 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-257");
+        fail("https://issues.apache.org/jira/browse/IGNITE-1393");
     }
 
     /** */
-    private static final String EXPECTED_MSG = "Grid is in invalid state to perform this operation. " +
-        "It either not started yet or has already being or have stopped";
+    private static final String EXPECTED_MSG = "Cache has been closed or destroyed";
 
     /** */
     private boolean atomic;
@@ -153,23 +153,31 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
                 putFuts.add(GridTestUtils.runAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        if (startTx) {
-                            try (Transaction tx = grid(0).transactions().txStart()) {
-                                cache.put(key, key);
+                        try {
+                            if (startTx) {
+                                try (Transaction tx = grid(0).transactions().txStart()) {
+                                    cache.put(key, key);
 
+                                    readyLatch.countDown();
+
+                                    stopLatch.await();
+
+                                    tx.commit();
+                                }
+                            }
+                            else {
                                 readyLatch.countDown();
 
                                 stopLatch.await();
 
-                                tx.commit();
+                                cache.put(key, key);
                             }
                         }
-                        else {
-                            readyLatch.countDown();
-
-                            stopLatch.await();
-
-                            cache.put(key, key);
+                        catch (CacheException | IgniteException e) {
+                            log.info("Ignore error: " + e);
+                        }
+                        catch (IllegalStateException e) {
+                            assertTrue(e.getMessage().startsWith(EXPECTED_MSG));
                         }
 
                         return null;
@@ -183,17 +191,8 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
             stopGrid(0);
 
-            for (IgniteInternalFuture<?> fut : putFuts) {
-                try {
-                    fut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    if (!e.getMessage().startsWith(EXPECTED_MSG))
-                        e.printStackTrace();
-
-                    assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().startsWith(EXPECTED_MSG));
-                }
-            }
+            for (IgniteInternalFuture<?> fut : putFuts)
+                fut.get();
 
             try {
                 cache.put(1, 1);

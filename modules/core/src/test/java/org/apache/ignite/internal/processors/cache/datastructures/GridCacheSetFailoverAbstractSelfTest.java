@@ -88,8 +88,6 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
      */
     @SuppressWarnings("WhileLoopReplaceableByForEach")
     public void testNodeRestart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-170");
-
         IgniteSet<Integer> set = grid(0).set(SET_NAME, config(false));
 
         final int ITEMS = 10_000;

@@ -284,6 +284,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param replaceExistingValues Replace existing values.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     protected static <K> void loadAll(Cache<K, ?> cache, final Set<K> keys, final boolean replaceExistingValues) throws Exception {
         IgniteCache<K, Object> cacheCp = (IgniteCache<K, Object>)cache;
 
@@ -425,38 +426,26 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                         long start = 0;
 
                         for (int i = 0; ; i++) {
-                            // Must map on updated version of topology.
-                            Collection<ClusterNode> affNodes =
-                                g0.affinity(cfg.getName()).mapPartitionToPrimaryAndBackups(p);
+                            boolean match = false;
 
-                            int exp = affNodes.size();
+                            AffinityTopologyVersion readyVer = dht.context().shared().exchange().readyAffinityVersion();
 
-                            GridDhtTopologyFuture topFut = top.topologyVersionFuture();
+                            if (readyVer.topologyVersion() > 0 && c.context().started()) {
+                                // Must map on updated version of topology.
+                                Collection<ClusterNode> affNodes =
+                                    g0.affinity(cfg.getName()).mapPartitionToPrimaryAndBackups(p);
 
-                            Collection<ClusterNode> owners = (topFut != null && topFut.isDone()) ?
-                                top.nodes(p, AffinityTopologyVersion.NONE) : Collections.<ClusterNode>emptyList();
+                                int exp = affNodes.size();
 
-                            int actual = owners.size();
+                                GridDhtTopologyFuture topFut = top.topologyVersionFuture();
 
-                            if (affNodes.size() != owners.size() || !affNodes.containsAll(owners)) {
-                                LT.warn(log(), null, "Waiting for topology map update [" +
-                                    "grid=" + g.name() +
-                                    ", cache=" + cfg.getName() +
-                                    ", cacheId=" + dht.context().cacheId() +
-                                    ", topVer=" + top.topologyVersion() +
-                                    ", topFut=" + topFut +
-                                    ", p=" + p +
-                                    ", affNodesCnt=" + exp +
-                                    ", ownersCnt=" + actual +
-                                    ", affNodes=" + affNodes +
-                                    ", owners=" + owners +
-                                    ", locNode=" + g.cluster().localNode() + ']');
+                                Collection<ClusterNode> owners = (topFut != null && topFut.isDone()) ?
+                                    top.nodes(p, AffinityTopologyVersion.NONE) : Collections.<ClusterNode>emptyList();
 
-                                if (i == 0)
-                                    start = System.currentTimeMillis();
+                                int actual = owners.size();
 
-                                if (System.currentTimeMillis() - start > 30_000)
-                                    throw new IgniteException("Timeout of waiting for topology map update [" +
+                                if (affNodes.size() != owners.size() || !affNodes.containsAll(owners)) {
+                                    LT.warn(log(), null, "Waiting for topology map update [" +
                                         "grid=" + g.name() +
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
@@ -467,6 +456,35 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         ", ownersCnt=" + actual +
                                         ", affNodes=" + affNodes +
                                         ", owners=" + owners +
+                                        ", locNode=" + g.cluster().localNode() + ']');
+                                }
+                                else
+                                    match = true;
+                            }
+                            else {
+                                LT.warn(log(), null, "Waiting for topology map update [" +
+                                    "grid=" + g.name() +
+                                    ", cache=" + cfg.getName() +
+                                    ", cacheId=" + dht.context().cacheId() +
+                                    ", topVer=" + top.topologyVersion() +
+                                    ", started=" + dht.context().started() +
+                                    ", p=" + p +
+                                    ", readVer=" + readyVer +
+                                    ", locNode=" + g.cluster().localNode() + ']');
+                            }
+
+                            if (!match) {
+                                if (i == 0)
+                                    start = System.currentTimeMillis();
+
+                                if (System.currentTimeMillis() - start > 30_000)
+                                    throw new IgniteException("Timeout of waiting for topology map update [" +
+                                        "grid=" + g.name() +
+                                        ", cache=" + cfg.getName() +
+                                        ", cacheId=" + dht.context().cacheId() +
+                                        ", topVer=" + top.topologyVersion() +
+                                        ", p=" + p +
+                                        ", readVer=" + readyVer +
                                         ", locNode=" + g.cluster().localNode() + ']');
 
                                 Thread.sleep(200); // Busy wait.
@@ -540,6 +558,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is primary.
      */
+    @SuppressWarnings("unchecked")
     protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
         assert cnt > 0 : cnt;
 
@@ -591,6 +610,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is backup.
      */
+    @SuppressWarnings("unchecked")
     protected List<Integer> backupKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
         assert cnt > 0 : cnt;
 
@@ -621,6 +641,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is neither primary nor backup.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
         assert cnt > 0 : cnt;

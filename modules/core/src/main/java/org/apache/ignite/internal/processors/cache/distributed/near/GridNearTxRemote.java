@@ -280,9 +280,9 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             return false;
         }
         else {
-            cached.unswap();
-
             try {
+                cached.unswap();
+
                 CacheObject val = cached.peek(true, false, false, null);
 
                 if (val == null && cached.evictInternal(false, xidVer, null)) {
@@ -313,7 +313,9 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /**
+     * @param cacheCtx Cache context.
      * @param key Key to add to read set.
+     * @param op Operation.
      * @param val Value.
      * @param drVer Data center replication version.
      * @param skipStore Skip store flag.

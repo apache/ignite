@@ -4235,6 +4235,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                                         throw e1;
                                     }
+                                    finally {
+                                        ctx.shared().txContextReset();
+                                    }
                                 }
                             });
                         }
@@ -4245,7 +4248,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return f;
             }
 
-            IgniteInternalFuture<T> f = op.op(tx).chain(new CX1<IgniteInternalFuture<T>, T>() {
+            final IgniteInternalFuture<T> f = op.op(tx).chain(new CX1<IgniteInternalFuture<T>, T>() {
                 @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
                     try {
                         return tFut.get();
@@ -4254,6 +4257,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         tx0.rollbackAsync();
 
                         throw e1;
+                    }
+                    finally {
+                        ctx.shared().txContextReset();
                     }
                 }
             });
@@ -4880,6 +4886,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         }
                                         catch (IgniteCheckedException e) {
                                             onDone(e);
+                                        }
+                                        finally {
+                                            ctx.shared().txContextReset();
                                         }
                                     }
                                 });

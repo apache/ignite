@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.CacheGetFromJobTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsFailoverAtomicTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsFailoverTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePutAllFailoverAtomicTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePutAllFailoverTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheCrossCacheTxFailoverTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicFailoverSelfTest;
@@ -57,7 +58,9 @@ public class IgniteCacheFailoverTestSuite2 {
 
         suite.addTestSuite(CacheAsyncOperationsFailoverAtomicTest.class);
         suite.addTestSuite(CacheAsyncOperationsFailoverTxTest.class);
+
         suite.addTestSuite(CachePutAllFailoverAtomicTest.class);
+        suite.addTestSuite(CachePutAllFailoverTxTest.class);
 
         return suite;
     }

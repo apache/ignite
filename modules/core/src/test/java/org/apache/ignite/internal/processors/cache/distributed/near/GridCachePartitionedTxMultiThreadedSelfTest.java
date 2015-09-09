@@ -40,7 +40,7 @@ public class GridCachePartitionedTxMultiThreadedSelfTest extends IgniteTxMultiTh
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override public void testOptimisticSerializableCommitMultithreaded() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-806");
     }
 

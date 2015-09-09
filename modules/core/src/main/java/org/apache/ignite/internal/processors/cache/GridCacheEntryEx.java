@@ -641,8 +641,10 @@ public interface GridCacheEntryEx {
      *
      * @return Versioned entry.
      * @throws IgniteCheckedException In case of error.
+     * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public <K, V> GridCacheVersionedEntryEx<K, V> versionedEntry() throws IgniteCheckedException;
+    public <K, V> GridCacheVersionedEntryEx<K, V> versionedEntry()
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Sets new value if passed in version matches the current version
@@ -867,8 +869,10 @@ public interface GridCacheEntryEx {
     /**
      * @return Value.
      * @throws IgniteCheckedException If failed to read from swap storage.
+     * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public CacheObject unswap() throws IgniteCheckedException;
+    @Nullable public CacheObject unswap()
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Unswap ignoring flags.
@@ -876,8 +880,10 @@ public interface GridCacheEntryEx {
      * @param needVal If {@code false} then do not need to deserialize value during unswap.
      * @return Value.
      * @throws IgniteCheckedException If failed.
+     * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public CacheObject unswap(boolean needVal) throws IgniteCheckedException;
+    @Nullable public CacheObject unswap(boolean needVal)
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Tests whether or not given metadata is set.
