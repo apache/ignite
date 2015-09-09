@@ -124,7 +124,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\core\include;$(ProjectDir)\..\..\..\core\os\win\include;$(ProjectDir)\..\..\include;$(BOOST_HOME)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_DEBUG;IGNITE_IMPL;BOOST_DATE_TIME_NO_LIB;BOOST_REGEX_NO_LIB;_CRT_SECURE_NO_WARNINGS;IGNITE_FRIEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;IGNITE_IMPL;BOOST_DATE_TIME_NO_LIB;BOOST_REGEX_NO_LIB;_CRT_SECURE_NO_WARNINGS;IGNITE_FRIEND;IGNITE_TESTS_32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
@@ -158,7 +158,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\core\include;$(ProjectDir)\..\..\..\core\os\win\include;$(ProjectDir)\..\..\include;$(BOOST_HOME)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NDEBUG;IGNITE_IMPL;BOOST_DATE_TIME_NO_LIB;BOOST_REGEX_NO_LIB;_CRT_SECURE_NO_WARNINGS;IGNITE_FRIEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;IGNITE_IMPL;BOOST_DATE_TIME_NO_LIB;BOOST_REGEX_NO_LIB;_CRT_SECURE_NO_WARNINGS;IGNITE_FRIEND;IGNITE_TESTS_32%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
