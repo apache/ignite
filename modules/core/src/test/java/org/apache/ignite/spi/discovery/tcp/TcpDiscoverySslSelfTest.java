@@ -35,7 +35,7 @@ public class TcpDiscoverySslSelfTest extends TcpDiscoverySelfTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setSslContextFactory(GridTestUtils.sslFactory());
+        cfg.setSslContextFactory(GridTestUtils.sslFactory(null));
 
         return cfg;
     }
