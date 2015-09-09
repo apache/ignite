@@ -921,7 +921,15 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return reader => (TResult)ReadGetAllDictionary(reader);
             
             if (lastAsyncOpId == (int)CacheOp.Invoke)
-                return reader => { throw ReadException(reader.Stream); };
+                return reader =>
+                {
+                    var hasError = reader.ReadBoolean();
+
+                    if (hasError)
+                        throw ReadException(reader.Stream);
+
+                    return reader.ReadObject<TResult>();
+                };
 
             if (lastAsyncOpId == (int) CacheOp.InvokeAll)
                 return _invokeAllConverter.Value as Func<PortableReaderImpl, TResult>;
