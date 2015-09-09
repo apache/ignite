@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT([Ingnite C++ examples],[1.5.0],[dec@ignite.apache.org],[ignite-examples],[ignite.apache.org])
+AC_INIT([Ingnite C++ examples],[1.4.0],[dec@ignite.apache.org],[ignite-examples],[ignite.apache.org])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_MACRO_DIR([m4])
 AC_LANG([C++])
