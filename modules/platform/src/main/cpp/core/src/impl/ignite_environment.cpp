@@ -33,9 +33,10 @@ namespace ignite
          * OnStart callback.
          *
          * @param target Target environment.
+         * @param proc Processor instance (not used for now).
          * @param memPtr Memory pointer.
          */
-        void IGNITE_CALL OnStart(void* target, long long memPtr)
+        void IGNITE_CALL OnStart(void* target, void* proc, long long memPtr)
         {
             SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
