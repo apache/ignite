@@ -527,7 +527,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region NATIVE METHODS: PROCESSOR
 
-        internal static IUnmanagedTarget IgnitionStart(UnmanagedContext ctx, string cfgPath, string gridName, 
+        internal static IUnmanagedTarget IgnitionStart(UnmanagedContext ctx, string cfgPath, string gridName,
             bool clientMode)
         {
             using (var mem = IgniteManager.Memory.Allocate().Stream())

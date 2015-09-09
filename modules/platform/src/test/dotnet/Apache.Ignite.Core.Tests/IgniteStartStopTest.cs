@@ -19,8 +19,12 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
     /// <summary>
@@ -44,6 +48,7 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
+            TestUtils.KillProcesses();
             Ignition.StopAll(true);
         }
 
@@ -347,6 +352,71 @@ namespace Apache.Ignite.Core.Tests
             cache.GetAndPut(1, 1);
 
             Assert.AreEqual(1, cache.Get(1));
+        }
+
+        /// <summary>
+        /// Tests the processor initialization and grid usage right after topology enter.
+        /// </summary>
+        [Test]
+        public void TestProcessorInit()
+        {
+            var cfg = new IgniteConfiguration
+            {
+                SpringConfigUrl = "config\\start-test-grid1.xml",
+                JvmOptions = TestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath()
+            };
+
+            // Start local node
+            var grid = Ignition.Start(cfg);
+
+            // Start remote node in a separate process
+            // ReSharper disable once UnusedVariable
+            var proc = new IgniteProcess(
+                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
+                "-springConfigUrl=" + Path.GetFullPath(cfg.SpringConfigUrl),
+                "-J-Xms512m", "-J-Xmx512m");
+
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            // Spam message subscriptions on a separate thread 
+            // to test race conditions during processor init on remote node
+            var listenTask = Task.Factory.StartNew(() =>
+            {
+                var filter = new MessageFilter();
+
+                while (!token.IsCancellationRequested)
+                {
+                    var listenId = grid.Message().RemoteListen(filter);
+
+                    grid.Message().StopRemoteListen(listenId);
+                }
+                // ReSharper disable once FunctionNeverReturns
+            });
+
+            // Wait for remote node to join
+            Assert.IsTrue(grid.WaitTopology(2, 30000));
+
+            // Wait some more for initialization
+            Thread.Sleep(1000);
+
+            // Cancel listen task and check that it finishes
+            cts.Cancel();
+            Assert.IsTrue(listenTask.Wait(5000));
+        }
+
+        /// <summary>
+        /// Noop message filter.
+        /// </summary>
+        [Serializable]
+        private class MessageFilter : IMessageFilter<int>
+        {
+            /** <inheritdoc /> */
+            public bool Invoke(Guid nodeId, int message)
+            {
+                return true;
+            }
         }
     }
 }

@@ -737,13 +737,14 @@ public class PlatformCallbackGateway {
     /**
      * Kernal start callback.
      *
+     * @param proc Platform processor.
      * @param memPtr Memory pointer.
      */
-    public void onStart(long memPtr) {
+    public void onStart(Object proc, long memPtr) {
         enter();
 
         try {
-            PlatformCallbackUtils.onStart(envPtr, memPtr);
+            PlatformCallbackUtils.onStart(envPtr, proc, memPtr);
         }
         finally {
             leave();
