@@ -15,15 +15,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\putgetexample.cpp">
+    <ClCompile Include="..\..\src\putgetexample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\ignite\examples\address.h">
+    <ClInclude Include="..\..\include\ignite\examples\address.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\ignite\examples\organization.h">
+    <ClInclude Include="..\..\include\ignite\examples\organization.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
