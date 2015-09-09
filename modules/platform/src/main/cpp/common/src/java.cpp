@@ -919,11 +919,11 @@ namespace ignite
                 }
             }
 
-            void JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr) {
-                IgnitionStart(cfgPath, name, factoryId, dataPtr, NULL);
+            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr) {
+                return IgnitionStart(cfgPath, name, factoryId, dataPtr, NULL);
             }
             
-            void JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo)
+            jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
@@ -941,6 +941,8 @@ namespace ignite
                 );
 
                 ExceptionCheck(env, errInfo);
+
+                return LocalToGlobal(env, interop);
             }
 
 
@@ -2183,8 +2185,8 @@ namespace ignite
                 IGNITE_SAFE_FUNC(env, envPtr, NodeInfoHandler, nodeInfo, memPtr);
             }
 
-            JNIEXPORT void JNICALL JniOnStart(JNIEnv *env, jclass cls, jlong envPtr, jobject processor, jlong memPtr) {
-                IGNITE_SAFE_PROC(env, envPtr, OnStartHandler, onStart, env->NewGlobalRef(processor), memPtr);
+            JNIEXPORT void JNICALL JniOnStart(JNIEnv *env, jclass cls, jlong envPtr, jobject proc, jlong memPtr) {
+                IGNITE_SAFE_PROC(env, envPtr, OnStartHandler, onStart, env->NewGlobalRef(proc), memPtr);
             }
 
             JNIEXPORT void JNICALL JniOnStop(JNIEnv *env, jclass cls, jlong envPtr) {
