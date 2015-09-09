@@ -316,7 +316,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
                 IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");
 
                 IgniteConfiguration cfg = ignite.configuration()
-                    .setSslContextFactory(GridTestUtils.sslFactory());
+                    .setSslContextFactory(GridTestUtils.sslFactory(null));
 
                 ignite.setStaticCfg(cfg);
             }
