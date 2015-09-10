@@ -105,6 +105,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Exclude neighbors flag. */
     private boolean exclNeighbors;
 
+    /** Exclude neighbors warning. */
+    private transient boolean exclNeighborsWarn;
+
     /** Optional backup filter. First node is primary, second node is a node being tested. */
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
@@ -408,8 +411,12 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
                     res.add(next.get2());
             }
 
-            LT.warn(log, null, "Affinity function excludeNeighbors property is ignored " +
-                "because topology has no enough nodes to assign backups.");
+            if (!exclNeighborsWarn) {
+                LT.warn(log, null, "Affinity function excludeNeighbors property is ignored " +
+                    "because topology has no enough nodes to assign backups.");
+
+                exclNeighborsWarn = true;
+            }
         }
 
         assert res.size() <= primaryAndBackups;

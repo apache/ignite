@@ -92,6 +92,9 @@ public class FairAffinityFunction implements AffinityFunction {
     /** Exclude neighbors flag. */
     private boolean exclNeighbors;
 
+    /** Exclude neighbors warning. */
+    private transient boolean exclNeighborsWarn;
+
     /** Logger instance. */
     @LoggerResource
     private transient IgniteLogger log;
@@ -260,7 +263,9 @@ public class FairAffinityFunction implements AffinityFunction {
 
         List<List<ClusterNode>> assignment = createCopy(ctx, neighborhoodMap);
 
-        int tiers = Math.min(ctx.backups() + 1, topSnapshot.size());
+        int backups = ctx.backups();
+
+        int tiers = backups == Integer.MAX_VALUE ? topSnapshot.size() : Math.min(backups + 1, topSnapshot.size());
 
         // Per tier pending partitions.
         Map<Integer, Queue<Integer>> pendingParts = new HashMap<>();
@@ -292,8 +297,12 @@ public class FairAffinityFunction implements AffinityFunction {
 
                 balance(tier, pendingParts, fullMap, topSnapshot, true);
 
-                LT.warn(log, null, "Affinity function excludeNeighbors property is ignored " +
-                    "because topology has no enough nodes to assign backups.");
+                if (!exclNeighborsWarn) {
+                    LT.warn(log, null, "Affinity function excludeNeighbors property is ignored " +
+                        "because topology has no enough nodes to assign backups.");
+
+                    exclNeighborsWarn = true;
+                }
             }
         }
 
