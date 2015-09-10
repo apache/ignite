@@ -17,7 +17,7 @@
 
 package org.apache.ignite.platform.dotnet;
 
-import org.apache.ignite.configuration.PlatformConfiguration;
+import org.apache.ignite.internal.processors.platform.PlatformConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableMarshalAware;

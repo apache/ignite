@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
@@ -98,7 +97,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         log = ctx.log(PlatformProcessorImpl.class);
 
-        PlatformConfiguration interopCfg0 = ctx.config().getPlatformConfiguration();
+        PlatformConfiguration interopCfg0 = null; //ctx.config().getPlatformConfiguration();
 
         assert interopCfg0 != null : "Must be checked earlier during component creation.";
 
