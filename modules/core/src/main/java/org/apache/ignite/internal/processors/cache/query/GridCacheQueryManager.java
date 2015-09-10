@@ -1875,11 +1875,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * @param fail {@code true} if execution failed.
+     */
+    public void onExecuted(boolean fail) {
+        metrics.onQueryExecute(fail);
+    }
+
+    /**
      * @param duration Execution duration.
      * @param fail {@code true} if execution failed.
      */
-    public void onMetricsUpdate(long duration, boolean fail) {
-        metrics.onQueryExecute(duration, fail);
+    public void onCompleted(long duration, boolean fail) {
+        metrics.onQueryCompleted(duration, fail);
     }
 
     /**

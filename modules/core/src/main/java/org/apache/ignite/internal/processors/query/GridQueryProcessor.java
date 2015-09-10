@@ -56,8 +56,8 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMetricsAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -581,7 +581,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     return idx.query(space, clause, params, type, filters);
                 }
-            });
+            }, false);
         }
         finally {
             busyLock.leaveBusy();
@@ -609,7 +609,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         qry,
                         cctx.keepPortable());
                 }
-            });
+            }, false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -635,7 +635,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
                     return idx.queryTwoStep(cctx, qry);
                 }
-            });
+            }, true);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -661,7 +661,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
                     return idx.queryTwoStep(cctx, qry);
                 }
-            });
+            }, false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -731,7 +731,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             }
                         };
                     }
-                });
+                }, false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -803,7 +803,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     return cursor;
                 }
-            });
+            }, true);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -818,7 +818,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key Key.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings("unchecked")
     public void remove(String space, CacheObject key, CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
@@ -904,7 +903,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         type,
                         filters);
                 }
-            });
+            }, false);
         }
         finally {
             busyLock.leaveBusy();
@@ -933,7 +932,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 @Override public GridQueryFieldsResult applyx() throws IgniteCheckedException {
                     return idx.queryFields(space, clause, params, filters);
                 }
-            });
+            }, false);
         }
         finally {
             busyLock.leaveBusy();
@@ -1479,10 +1478,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param cctx Cache context.
      * @param clo Closure.
+     * @param complete Complete.
      */
-    private <R> R executeQuery(GridCacheContext<?,?> cctx, IgniteOutClosureX<R> clo)
+    public <R> R executeQuery(GridCacheContext<?, ?> cctx, IgniteOutClosureX<R> clo, boolean complete)
         throws IgniteCheckedException {
-        final long start = U.currentTimeMillis();
+        final long startTime = U.currentTimeMillis();
 
         Throwable err = null;
 
@@ -1490,6 +1490,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             res = clo.apply();
+
+            if (res instanceof CacheQueryFuture) {
+                CacheQueryFuture fut = (CacheQueryFuture) res;
+
+                err = fut.error();
+            }
 
             return res;
         }
@@ -1504,34 +1510,30 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException(e);
         }
         finally {
-            GridCacheQueryMetricsAdapter metrics = (GridCacheQueryMetricsAdapter)cctx.queries().metrics();
+            cctx.queries().onExecuted(err != null);
 
-            onExecuted(cctx, metrics, res, err, start, U.currentTimeMillis() - start, log);
+            if (complete && err == null)
+                onCompleted(cctx, res, null, startTime, U.currentTimeMillis() - startTime, log);
         }
     }
 
     /**
      * @param cctx Cctx.
-     * @param metrics Metrics.
      * @param res Result.
      * @param err Err.
      * @param startTime Start time.
      * @param duration Duration.
      * @param log Logger.
      */
-    public static void onExecuted(GridCacheContext<?, ?> cctx, GridCacheQueryMetricsAdapter metrics,
-        Object res, Throwable err, long startTime, long duration, IgniteLogger log) {
+    public static void onCompleted(GridCacheContext<?, ?> cctx, Object res, Throwable err,
+        long startTime, long duration, IgniteLogger log) {
         boolean fail = err != null;
 
-        // Update own metrics.
-        metrics.onQueryExecute(duration, fail);
-
-        // Update metrics in query manager.
-        cctx.queries().onMetricsUpdate(duration, fail);
+        cctx.queries().onCompleted(duration, fail);
 
         if (log.isTraceEnabled())
-            log.trace("Query execution finished [startTime=" + startTime +
-                    ", duration=" + duration + ", fail=" + (err != null) + ", res=" + res + ']');
+            log.trace("Query execution completed [startTime=" + startTime +
+                ", duration=" + duration + ", fail=" + fail + ", res=" + res + ']');
     }
 
     /**

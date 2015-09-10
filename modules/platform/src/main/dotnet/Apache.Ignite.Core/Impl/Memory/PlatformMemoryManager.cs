@@ -20,12 +20,13 @@ namespace Apache.Ignite.Core.Impl.Memory
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
-    
+
     /// <summary>
     /// Memory manager implementation.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = "This class instance usually lives as long as the app runs.")]
+    [CLSCompliant(false)]
     public class PlatformMemoryManager
     {
         /** Default capacity. */
@@ -100,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns>Memory.</returns>
         protected virtual IPlatformMemory GetExternalMemory(long memPtr)
         {
-            throw new NotSupportedException("Not supported in Ignite yet");
+            return new InteropExternalMemory(memPtr);
         }
     }
 }
