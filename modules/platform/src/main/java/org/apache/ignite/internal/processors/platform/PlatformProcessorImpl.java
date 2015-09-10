@@ -98,7 +98,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         log = ctx.log(PlatformProcessorImpl.class);
 
-        PlatformConfiguration interopCfg0 = null; //ctx.config().getPlatformConfiguration();
+        PlatformConfiguration interopCfg0 = ctx.config().getPlatformConfiguration();
 
         assert interopCfg0 != null : "Must be checked earlier during component creation.";
 

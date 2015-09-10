@@ -50,7 +50,7 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
     @SuppressWarnings("deprecation")
     @Override protected void apply0(IgniteConfiguration igniteCfg) {
         // 3. Validate and copy Interop configuration setting environment pointer along the way.
-        PlatformConfiguration interopCfg = null;//igniteCfg.getPlatformConfiguration();
+        PlatformConfiguration interopCfg = igniteCfg.getPlatformConfiguration();
 
         if (interopCfg != null && !(interopCfg instanceof PlatformCppConfiguration))
             throw new IgniteException("Illegal interop configuration (must be of type " +
@@ -65,7 +65,7 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
 
         PlatformCppConfigurationEx cppCfg0 = new PlatformCppConfigurationEx(cppCfg, gate, memMgr);
 
-        //igniteCfg.setPlatformConfiguration(cppCfg0);
+        igniteCfg.setPlatformConfiguration(cppCfg0);
 
         // Check marshaller
         Marshaller marsh = igniteCfg.getMarshaller();

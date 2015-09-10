@@ -1256,7 +1256,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Warn about loopback.
         if (ips.isEmpty() && macs.isEmpty())
             U.warn(log, "Ignite is starting on loopback address... Only nodes on the same physical " +
-                "computer can participate in topology.",
+                    "computer can participate in topology.",
                 "Ignite is starting on loopback address...");
 
         // Stick in network context into attributes.
@@ -3085,11 +3085,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             String clsName;
 
             // Handle special case for PlatformProcessor
-            if (cls.equals(PlatformProcessor.class)) {
-                clsName = PlatformNoopProcessor.class.getName();
-//                clsName = ctx.config().getPlatformConfiguration() == null ?
-//                    PlatformNoopProcessor.class.getName() : cls.getName() + "Impl";
-            }
+            if (cls.equals(PlatformProcessor.class))
+                clsName = ctx.config().getPlatformConfiguration() == null ?
+                    PlatformNoopProcessor.class.getName() : cls.getName() + "Impl";
             else
                 clsName = componentClassName(cls);
 
