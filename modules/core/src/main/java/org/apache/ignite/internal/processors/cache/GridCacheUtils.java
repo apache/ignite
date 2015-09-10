@@ -1029,8 +1029,15 @@ public class GridCacheUtils {
 
         ctx.evicts().unwind();
 
-        if (ctx.isNear())
-            ctx.near().dht().context().evicts().unwind();
+        ctx.swap().unwindOffheapEvicts();
+
+        if (ctx.isNear()) {
+            GridCacheContext dhtCtx = ctx.near().dht().context();
+
+            dhtCtx.evicts().unwind();
+
+            dhtCtx.swap().unwindOffheapEvicts();
+        }
 
         ctx.ttl().expire();
     }
@@ -1041,14 +1048,8 @@ public class GridCacheUtils {
     public static <K, V> void unwindEvicts(GridCacheSharedContext<K, V> ctx) {
         assert ctx != null;
 
-        for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts()) {
-            cacheCtx.evicts().unwind();
-
-            if (cacheCtx.isNear())
-                cacheCtx.near().dht().context().evicts().unwind();
-
-            cacheCtx.ttl().expire();
-        }
+        for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts())
+            unwindEvicts(cacheCtx);
     }
 
     /**

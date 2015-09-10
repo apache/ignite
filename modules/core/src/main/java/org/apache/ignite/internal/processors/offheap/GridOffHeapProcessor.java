@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapPartitionedMap;
 import org.apache.ignite.internal.util.typedef.CX2;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
@@ -261,10 +262,32 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return {@code true} If succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean removex(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes) throws IgniteCheckedException {
+    public boolean removex(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes)
+        throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
         return m != null && m.removex(part, U.hash(key), keyBytes(key, keyBytes));
+    }
+
+    /**
+     * Removes value from offheap space for the given key.
+     *
+     * @param spaceName Space name.
+     * @param part Partition.
+     * @param key Key.
+     * @param keyBytes Key bytes.
+     * @param p Value predicate (arguments are value address and value length).
+     * @return {@code true} If succeeded.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean removex(@Nullable String spaceName,
+        int part,
+        KeyCacheObject key,
+        byte[] keyBytes,
+        IgniteBiPredicate<Long, Integer> p) throws IgniteCheckedException {
+        GridOffHeapPartitionedMap m = offheap(spaceName);
+
+        return m != null && m.removex(part, U.hash(key), keyBytes(key, keyBytes), p);
     }
 
     /**

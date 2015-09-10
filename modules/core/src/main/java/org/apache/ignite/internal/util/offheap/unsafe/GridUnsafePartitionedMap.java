@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapMap;
 import org.apache.ignite.internal.util.offheap.GridOffHeapPartitionedMap;
 import org.apache.ignite.internal.util.typedef.CX2;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.LongAdder8;
@@ -195,6 +196,14 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     /** {@inheritDoc} */
     @Override public boolean removex(int p, int hash, byte[] keyBytes) {
         return mapFor(p).removex(hash, keyBytes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removex(int part,
+        int hash,
+        byte[] keyBytes,
+        IgniteBiPredicate<Long, Integer> p) {
+        return mapFor(part).removex(hash, keyBytes, p);
     }
 
     /** {@inheritDoc} */
