@@ -94,7 +94,7 @@ public class FairAffinityFunction implements AffinityFunction {
 
     /** Logger instance. */
     @LoggerResource
-    private IgniteLogger log;
+    private transient IgniteLogger log;
 
     /** Optional backup filter. First node is primary, second node is a node being tested. */
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;

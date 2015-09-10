@@ -117,7 +117,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
     /** Logger instance. */
     @LoggerResource
-    private IgniteLogger log;
+    private transient IgniteLogger log;
 
     /**
      * Empty constructor with all defaults.
