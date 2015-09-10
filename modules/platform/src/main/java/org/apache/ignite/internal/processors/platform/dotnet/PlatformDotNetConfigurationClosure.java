@@ -139,7 +139,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
                 PortableRawWriterEx writer = marshaller().writer(out);
 
-                writer.writeObject(interopCfg.unwrap());
+                PlatformUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 
                 List<PlatformDotNetLifecycleBean> beans = beans(igniteCfg);
 

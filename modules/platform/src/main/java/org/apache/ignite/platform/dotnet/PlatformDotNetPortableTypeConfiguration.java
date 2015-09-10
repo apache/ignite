@@ -18,18 +18,12 @@
 package org.apache.ignite.platform.dotnet;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableRawReader;
-import org.apache.ignite.portable.PortableRawWriter;
-import org.apache.ignite.portable.PortableReader;
-import org.apache.ignite.portable.PortableWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Mirror of .Net class GridDotNetPortableTypeConfiguration.cs
  */
-public class PlatformDotNetPortableTypeConfiguration implements PortableMarshalAware {
+public class PlatformDotNetPortableTypeConfiguration {
     /** Assembly name. */
     private String assemblyName;
 
@@ -211,34 +205,6 @@ public class PlatformDotNetPortableTypeConfiguration implements PortableMarshalA
      */
     public void setKeepDeserialized(@Nullable Boolean keepDeserialized) {
         this.keepDeserialized = keepDeserialized;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        PortableRawWriter rawWriter = writer.rawWriter();
-
-        rawWriter.writeString(assemblyName);
-        rawWriter.writeString(typeName);
-        rawWriter.writeString(nameMapper);
-        rawWriter.writeString(idMapper);
-        rawWriter.writeString(serializer);
-        rawWriter.writeString(affinityKeyFieldName);
-        rawWriter.writeObject(metadataEnabled);
-        rawWriter.writeObject(keepDeserialized);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        PortableRawReader rawReader = reader.rawReader();
-
-        assemblyName = rawReader.readString();
-        typeName = rawReader.readString();
-        nameMapper = rawReader.readString();
-        idMapper = rawReader.readString();
-        serializer = rawReader.readString();
-        affinityKeyFieldName = rawReader.readString();
-        metadataEnabled = rawReader.readObject();
-        keepDeserialized = rawReader.readObject();
     }
 
     /** {@inheritDoc} */

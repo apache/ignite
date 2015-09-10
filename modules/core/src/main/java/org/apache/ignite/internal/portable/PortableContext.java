@@ -61,9 +61,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetPortableTypeConfiguration;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableIdMapper;
 import org.apache.ignite.portable.PortableInvalidClassException;
@@ -242,10 +239,6 @@ public class PortableContext implements Externalizable {
 
         registerPredefinedType(PortableObjectImpl.class, 200);
         registerPredefinedType(PortableMetaDataImpl.class, 201);
-
-        registerPredefinedType(PlatformDotNetConfiguration.class, 202);
-        registerPredefinedType(PlatformDotNetPortableConfiguration.class, 203);
-        registerPredefinedType(PlatformDotNetPortableTypeConfiguration.class, 204);
     }
 
     /**

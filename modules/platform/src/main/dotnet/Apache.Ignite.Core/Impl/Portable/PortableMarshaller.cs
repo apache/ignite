@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Datastream;
-    using Apache.Ignite.Core.Impl.Interop;
     using Apache.Ignite.Core.Impl.Messaging;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Portable.Metadata;
@@ -565,9 +564,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             AddSystemType(PortableUtils.TypeNativeJobHolder, w => new ComputeJobHolder(w));
             AddSystemType(PortableUtils.TypeComputeJobWrapper, w => new ComputeJobWrapper(w));
             AddSystemType(PortableUtils.TypePortableJobResHolder, w => new PortableResultWrapper(w));
-            AddSystemType(PortableUtils.TypeDotNetCfg, w => new InteropDotNetConfiguration(w));
-            AddSystemType(PortableUtils.TypeDotNetPortableCfg, w => new InteropDotNetPortableConfiguration(w));
-            AddSystemType(PortableUtils.TypeDotNetPortableTypCfg, w => new InteropDotNetPortableTypeConfiguration(w));
             AddSystemType(PortableUtils.TypeIgniteProxy, w => new IgniteProxy());
             AddSystemType(PortableUtils.TypeComputeOutFuncJob, w => new ComputeOutFuncJob(w));
             AddSystemType(PortableUtils.TypeComputeOutFuncWrapper, w => new ComputeOutFuncWrapper(w));

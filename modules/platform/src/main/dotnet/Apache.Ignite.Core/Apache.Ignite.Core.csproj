@@ -220,9 +220,6 @@
     <Compile Include="Impl\Handle\IHandle.cs" />
     <Compile Include="Impl\IInteropCallback.cs" />
     <Compile Include="Impl\InteropExceptionHolder.cs" />
-    <Compile Include="Impl\Interop\InteropDotNetConfiguration.cs" />
-    <Compile Include="Impl\Interop\InteropDotNetPortableConfiguration.cs" />
-    <Compile Include="Impl\Interop\InteropDotNetPortableTypeConfiguration.cs" />
     <Compile Include="Impl\LifecycleBeanHolder.cs" />
     <Compile Include="Impl\Memory\InteropExternalMemory.cs" />
     <Compile Include="Impl\Memory\InteropMemoryUtils.cs" />

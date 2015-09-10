@@ -17,14 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.cache.CacheException;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -46,7 +38,19 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration;
+import org.apache.ignite.platform.dotnet.PlatformDotNetPortableTypeConfiguration;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.CacheException;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 
@@ -757,6 +761,46 @@ public class PlatformUtils {
                 throw new IgniteCheckedException(errMsg);
             }
         }
+    }
+
+    /**
+     * Write .Net configuration to the stream.
+     *
+     * @param writer Writer.
+     * @param cfg Configuration.
+     */
+    public static void writeDotNetConfiguration(PortableRawWriterEx writer, PlatformDotNetConfiguration cfg) {
+        // 1. Write assemblies.
+        writeNullableCollection(writer, cfg.getAssemblies());
+
+        PlatformDotNetPortableConfiguration portableCfg = cfg.getPortableConfiguration();
+
+        if (portableCfg != null) {
+            writer.writeBoolean(true);
+
+            writeNullableCollection(writer, portableCfg.getTypesConfiguration(),
+                new PlatformWriterClosure<PlatformDotNetPortableTypeConfiguration>() {
+                @Override public void write(PortableRawWriterEx writer, PlatformDotNetPortableTypeConfiguration typ) {
+                    writer.writeString(typ.getAssemblyName());
+                    writer.writeString(typ.getTypeName());
+                    writer.writeString(typ.getNameMapper());
+                    writer.writeString(typ.getIdMapper());
+                    writer.writeString(typ.getSerializer());
+                    writer.writeString(typ.getAffinityKeyFieldName());
+                    writer.writeObject(typ.getMetadataEnabled());
+                    writer.writeObject(typ.getKeepDeserialized());
+                }
+            });
+
+            writeNullableCollection(writer, portableCfg.getTypes());
+            writer.writeString(portableCfg.getDefaultNameMapper());
+            writer.writeString(portableCfg.getDefaultIdMapper());
+            writer.writeString(portableCfg.getDefaultSerializer());
+            writer.writeBoolean(portableCfg.isDefaultMetadataEnabled());
+            writer.writeBoolean(portableCfg.isDefaultKeepDeserialized());
+        }
+        else
+            writer.writeBoolean(false);
     }
 
     /**

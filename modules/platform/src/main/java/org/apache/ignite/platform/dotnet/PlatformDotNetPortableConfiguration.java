@@ -18,12 +18,6 @@
 package org.apache.ignite.platform.dotnet;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableRawReader;
-import org.apache.ignite.portable.PortableRawWriter;
-import org.apache.ignite.portable.PortableReader;
-import org.apache.ignite.portable.PortableWriter;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,7 +25,7 @@ import java.util.Collection;
 /**
  * Mirror of .Net class PortableConfiguration.cs
  */
-public class PlatformDotNetPortableConfiguration implements PortableMarshalAware {
+public class PlatformDotNetPortableConfiguration {
     /** Type cfgs. */
     private Collection<PlatformDotNetPortableTypeConfiguration> typesCfg;
 
@@ -193,32 +187,6 @@ public class PlatformDotNetPortableConfiguration implements PortableMarshalAware
      */
     public void setDefaultKeepDeserialized(boolean keepDeserialized) {
         this.dfltKeepDeserialized = keepDeserialized;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        PortableRawWriter rawWriter = writer.rawWriter();
-
-        rawWriter.writeCollection(typesCfg);
-        rawWriter.writeCollection(types);
-        rawWriter.writeString(dfltNameMapper);
-        rawWriter.writeString(dfltIdMapper);
-        rawWriter.writeString(dfltSerializer);
-        rawWriter.writeBoolean(dfltMetadataEnabled);
-        rawWriter.writeBoolean(dfltKeepDeserialized);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        PortableRawReader rawReader = reader.rawReader();
-
-        typesCfg = rawReader.readCollection();
-        types = rawReader.readCollection();
-        dfltNameMapper = rawReader.readString();
-        dfltIdMapper = rawReader.readString();
-        dfltSerializer = rawReader.readString();
-        dfltMetadataEnabled = rawReader.readBoolean();
-        dfltKeepDeserialized = rawReader.readBoolean();
     }
 
     /** {@inheritDoc} */

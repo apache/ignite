@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+using Apache.Ignite.Core.Portable;
+
 namespace Apache.Ignite.Core 
 {
     using System;
@@ -29,7 +31,6 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
-    using Apache.Ignite.Core.Impl.Interop;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -256,7 +257,7 @@ namespace Apache.Ignite.Core
             {
                 PortableReaderImpl reader = PU.Marshaller.StartUnmarshal(inStream);
 
-                PrepareConfiguration(reader.ReadObject<InteropDotNetConfiguration>());
+                PrepareConfiguration(reader);
 
                 PrepareLifecycleBeans(reader, outStream, handleRegistry);
             }
@@ -271,20 +272,24 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Preapare configuration.
         /// </summary>
-        /// <param name="dotNetCfg">Dot net configuration.</param>
-        private static void PrepareConfiguration(InteropDotNetConfiguration dotNetCfg)
+        /// <param name="reader">Reader.</param>
+        private static void PrepareConfiguration(PortableReaderImpl reader)
         {
             // 1. Load assemblies.
             IgniteConfiguration cfg = _startup.Configuration;
 
             LoadAssemblies(cfg.Assemblies);
 
-            if (dotNetCfg != null)
-                LoadAssemblies(dotNetCfg.Assemblies);
+            ICollection<string> cfgAssembllies;
+            PortableConfiguration portableCfg;
+
+            PortableUtils.ReadConfiguration(reader, out cfgAssembllies, out portableCfg);
+
+            LoadAssemblies(cfgAssembllies);
 
             // 2. Create marshaller only after assemblies are loaded.
-            if (cfg.PortableConfiguration == null && dotNetCfg != null && dotNetCfg.PortableCfg != null)
-                cfg.PortableConfiguration = dotNetCfg.PortableCfg.ToPortableConfiguration();
+            if (cfg.PortableConfiguration == null)
+                cfg.PortableConfiguration = portableCfg;
 
             _startup.Marshaller = new PortableMarshaller(cfg.PortableConfiguration);
         }

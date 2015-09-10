@@ -19,12 +19,6 @@ package org.apache.ignite.platform.dotnet;
 
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableRawReader;
-import org.apache.ignite.portable.PortableRawWriter;
-import org.apache.ignite.portable.PortableReader;
-import org.apache.ignite.portable.PortableWriter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +26,7 @@ import java.util.List;
 /**
  * Mirror of .Net class Configuration.cs
  */
-public class PlatformDotNetConfiguration implements PlatformConfiguration, PortableMarshalAware {
+public class PlatformDotNetConfiguration implements PlatformConfiguration {
     /** */
     private PlatformDotNetPortableConfiguration portableCfg;
 
@@ -94,22 +88,6 @@ public class PlatformDotNetConfiguration implements PlatformConfiguration, Porta
     @SuppressWarnings("UnusedDeclaration")
     private PlatformDotNetConfiguration copy() {
         return new PlatformDotNetConfiguration(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        PortableRawWriter rawWriter = writer.rawWriter();
-
-        rawWriter.writeObject(portableCfg);
-        rawWriter.writeCollection(assemblies);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        PortableRawReader rawReader = reader.rawReader();
-
-        portableCfg = rawReader.readObject();
-        assemblies = (List<String>)rawReader.<String>readCollection();
     }
 
     /** {@inheritDoc} */

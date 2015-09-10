@@ -2035,5 +2035,96 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             return local ? res.ToLocalTime() : res;
         }
+
+        /// <summary>
+        /// Read additional configuration from the stream.
+        /// </summary>
+        /// <param name="reader">Reader.</param>
+        /// <param name="assemblies">Assemblies.</param>
+        /// <param name="cfg">Portable configuration.</param>
+        public static void ReadConfiguration(PortableReaderImpl reader, out ICollection<string> assemblies, out PortableConfiguration cfg)
+        {
+            if (reader.ReadBoolean())
+            {
+                int assemblyCnt = reader.ReadInt();
+
+                assemblies = new List<string>(assemblyCnt);
+
+                for (int i = 0; i < assemblyCnt; i++)
+                    assemblies.Add(reader.ReadObject<string>());
+            }
+            else
+                assemblies = null;
+
+            if (reader.ReadBoolean())
+            {
+                cfg = new PortableConfiguration();
+
+                // Read portable types in full form.
+                if (reader.ReadBoolean())
+                {
+                    int typesCnt = reader.ReadInt();
+
+                    cfg.TypeConfigurations = new List<PortableTypeConfiguration>();
+
+                    for (int i = 0; i < typesCnt; i++)
+                    {
+                        PortableTypeConfiguration typCfg = new PortableTypeConfiguration();
+
+                        typCfg.AssemblyName = reader.ReadString();
+                        typCfg.TypeName = reader.ReadString();
+                        typCfg.NameMapper = (IPortableNameMapper)CreateInstance(reader.ReadString());
+                        typCfg.IdMapper = (IPortableIdMapper)CreateInstance(reader.ReadString());
+                        typCfg.Serializer = (IPortableSerializer)CreateInstance(reader.ReadString());
+                        typCfg.AffinityKeyFieldName = reader.ReadString();
+                        typCfg.MetadataEnabled = reader.ReadObject<bool?>();
+                        typCfg.KeepDeserialized = reader.ReadObject<bool?>();
+
+                        cfg.TypeConfigurations.Add(typCfg);
+                    }
+                }
+
+                // Read portable types in compact form.
+                if (reader.ReadBoolean())
+                {
+                    int typesCnt = reader.ReadInt();
+
+                    cfg.Types = new List<string>(typesCnt);
+
+                    for (int i = 0; i < typesCnt; i++)
+                        cfg.Types.Add(reader.ReadString());
+                }
+
+                // Read the rest.
+                cfg.DefaultNameMapper = (IPortableNameMapper)CreateInstance(reader.ReadString());
+                cfg.DefaultIdMapper = (IPortableIdMapper)CreateInstance(reader.ReadString());
+                cfg.DefaultSerializer = (IPortableSerializer)CreateInstance(reader.ReadString());
+                cfg.DefaultMetadataEnabled = reader.ReadBoolean();
+                cfg.DefaultKeepDeserialized = reader.ReadBoolean();
+            }
+            else
+                cfg = null;
+        }
+
+        /// <summary>
+        /// Create new instance of specified class.
+        /// </summary>
+        /// <param name="typeName">Name of the type.</param>
+        /// <returns>New Instance.</returns>
+        public static object CreateInstance(string typeName)
+        {
+            if (typeName == null)
+                return null;
+
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                object instance = assembly.CreateInstance(typeName);
+
+                if (instance != null)
+                    return instance;
+            }
+
+            throw new PortableException("Failed to find class: " + typeName);
+        }
     }
 }
