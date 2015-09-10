@@ -1022,12 +1022,26 @@ public class GridUnsafeMap implements GridOffHeapMap {
                         }
 
                         if (cur != 0) {
-                            long a;
+                            long qAddr0 = Entry.queueAddress(cur, mem);
 
-                            assert qAddr == (a = Entry.queueAddress(cur, mem)) : "Queue node address mismatch " +
-                                "[qAddr=" + qAddr + ", entryQueueAddr=" + a + ']';
+                            assert qAddr == qAddr0 : "Queue node address mismatch " +
+                                "[qAddr=" + qAddr + ", entryQueueAddr=" + qAddr + ']';
+
+                            if (evictLsnr != null) {
+                                keyBytes = Entry.readKeyBytes(cur, mem);
+
+                                int keyLen = Entry.readKeyLength(cur, mem);
+                                int valLen = Entry.readValueLength(cur, mem);
+
+                                valBytes = mem.readBytes(cur + HEADER + keyLen, valLen);
+                            }
 
                             if (rmvEvicted) {
+                                long a;
+
+                                assert qAddr == (a = Entry.queueAddress(cur, mem)) : "Queue node address mismatch " +
+                                    "[qAddr=" + qAddr + ", entryQueueAddr=" + a + ']';
+
                                 long next = Entry.nextAddress(cur, mem);
 
                                 if (prev != 0)
@@ -1047,18 +1061,11 @@ public class GridUnsafeMap implements GridOffHeapMap {
                                 totalCnt.decrement();
                             }
                             else {
-                                if (qAddr != 0) {
-                                    boolean clear = Entry.clearQueueAddress(cur, qAddr, mem);
+                                boolean clear = Entry.clearQueueAddress(cur, qAddr, mem);
 
-                                    assert clear;
-                                }
+                                assert clear;
 
-                                keyBytes = Entry.readKeyBytes(cur, mem);
-
-                                int keyLen = Entry.readKeyLength(cur, mem);
-                                int valLen = Entry.readValueLength(cur, mem);
-
-                                valBytes = mem.readBytes(cur + HEADER + keyLen, valLen);
+                                relSize = Entry.size(cur, mem);
                             }
                         }
                     }

@@ -1059,7 +1059,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         checkIteratorQueue();
 
-        boolean rmv = offheap.removex(spaceName, part, key, key.valueBytes(cctx.cacheObjectContext()),
+        return offheap.removex(spaceName, part, key, key.valueBytes(cctx.cacheObjectContext()),
             new IgniteBiPredicate<Long, Integer>() {
                 @Override public boolean apply(Long ptr, Integer len) {
                     GridCacheVersion ver0 = GridCacheOffheapSwapEntry.version(ptr);
@@ -1068,11 +1068,6 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                 }
             }
         );
-
-        if (rmv && cctx.config().isStatisticsEnabled())
-            cctx.cache().metrics0().onOffHeapRemove();
-
-        return rmv;
     }
 
     /**
@@ -1355,7 +1350,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      */
     public void clearOffHeap() {
         if (offheapEnabled)
-            clearOffHeap();
+            initOffHeap();
     }
 
     /**

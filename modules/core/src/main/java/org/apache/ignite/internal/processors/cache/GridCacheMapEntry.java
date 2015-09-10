@@ -3681,7 +3681,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (F.isEmptyOrNulls(filter)) {
                 synchronized (this) {
                     if (obsoleteVersionExtras() != null)
-                        return false;
+                        return true;
 
                     CacheObject prev = saveValueForIndexUnlocked();
 
@@ -3725,7 +3725,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     synchronized (this) {
                         if (obsoleteVersionExtras() != null)
-                            return false;
+                            return true;
 
                         if (!v.equals(ver))
                             // Version has changed since entry passed the filter. Do it again.

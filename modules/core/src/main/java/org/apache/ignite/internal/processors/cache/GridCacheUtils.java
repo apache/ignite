@@ -1032,9 +1032,11 @@ public class GridCacheUtils {
         ctx.swap().unwindOffheapEvicts();
 
         if (ctx.isNear()) {
-            ctx.near().dht().context().evicts().unwind();
+            GridCacheContext dhtCtx = ctx.near().dht().context();
 
-            ctx.swap().unwindOffheapEvicts();
+            dhtCtx.evicts().unwind();
+
+            dhtCtx.swap().unwindOffheapEvicts();
         }
 
         ctx.ttl().expire();
