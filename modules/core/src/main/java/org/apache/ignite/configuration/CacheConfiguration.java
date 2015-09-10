@@ -1785,26 +1785,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Gets topology validator.
      * <p>
-     * Topology validator checks whether the new topology is valid for specific cache at each topology change.
-     * Topology is always valid in case no topology validator used.
-     * <p>
-     * In case topology is valid for specific cache all operations on this cache are allowed.
-     * <p>
-     * In case topology is not valid for specific cache all update operations on this cache are restricted:
-     * <p>{@link CacheException} will be thrown at update operations (put, remove, etc) attempt.
-     * <p>{@link IgniteException} will be thrown at transaction commit attempt.
+     * See {@link TopologyValidator} for details.
      *
-     * <p>
-     * Usage example
-     * <p>
-     * Following validator allows to put data only in case topology contains exactly 2 nodes:
-     * <pre>{@code
-     * new TopologyValidator() {
-     *    public boolean validate(Collection<ClusterNode> nodes) {
-     *       return nodes.size() == 2;
-     *    }
-     * }
-     * }</pre>
      * @return validator.
      */
     public TopologyValidator getTopologyValidator() {
@@ -1814,26 +1796,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets topology validator.
      * <p>
-     * Topology validator checks whether the new topology is valid for specific cache at each topology change.
-     * Topology is always valid in case no topology validator used.
-     * <p>
-     * In case topology is valid for specific cache all operations on this cache are allowed.
-     * <p>
-     * In case topology is not valid for specific cache all update operations on this cache are restricted:
-     * <p>{@link CacheException} will be thrown at update operations (put, remove, etc) attempt.
-     * <p>{@link IgniteException} will be thrown at transaction commit attempt.
-     *
-     * <p>
-     * Usage example
-     * <p>
-     * Following validator allows to put data only in case topology contains exactly 2 nodes:
-     * <pre>{@code
-     * new TopologyValidator() {
-     *    public boolean validate(Collection<ClusterNode> nodes) {
-     *       return nodes.size() == 2;
-     *    }
-     * }
-     * }</pre>
+     * See {@link TopologyValidator} for details.
      *
      * @param topValidator validator.
      * @return {@code this} for chaining.
