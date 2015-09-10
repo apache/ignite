@@ -17,12 +17,12 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 
-import javax.cache.*;
-import java.io.*;
-import java.util.*;
+import javax.cache.CacheException;
+import java.io.Serializable;
+import java.util.Collection;
 
 /**
  * Topology validator is used to verify that cluster topology is valid for further cache operations.
