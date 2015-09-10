@@ -30,9 +30,9 @@
         <property name="connectorConfiguration"><null/></property>
 
         <property name="platformConfiguration">
-            <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
+            <bean class="org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetConfiguration">
                 <property name="portableConfiguration">
-                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
+                    <bean class="org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetPortableConfiguration">
                         <property name="types">
                             <list>
                                 <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64]</value>

@@ -54,9 +54,9 @@
         </property>
 
         <property name="platformConfiguration">
-            <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
+            <bean class="org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetConfiguration">
                 <property name="portableConfiguration">
-                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
+                    <bean class="org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetPortableConfiguration">
                         <property name="types">
                             <list>
                                 <value>Apache.Ignite.Core.Tests.ExecutableTest+RemoteConfiguration</value>
@@ -70,10 +70,10 @@
                         </property>
                         <property name="typesConfiguration">
                             <list>
-                                <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableTypeConfiguration">
+                                <bean class="org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetPortableTypeConfiguration">
                                     <property name="typeName" value="org.apache.ignite.platform.PlatformComputePortable"/>
                                 </bean>
-                                <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableTypeConfiguration">
+                                <bean class="org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetPortableTypeConfiguration">
                                     <property name="typeName" value="org.apache.ignite.platform.PlatformComputeJavaPortable"/>
                                 </bean>
                             </list>
