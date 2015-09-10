@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.swapspace.SwapKey;
@@ -101,8 +102,13 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     private final ReferenceQueue<Iterator<Map.Entry>> itQ = new ReferenceQueue<>();
 
     /** Soft iterator set. */
-    private final Collection<GridWeakIterator<Map.Entry>> itSet =
-        new GridConcurrentHashSet<>();
+    private final Collection<GridWeakIterator<Map.Entry>> itSet = new GridConcurrentHashSet<>();
+
+    /** {@code True} if offheap to swap eviction is possible. */
+    private boolean offheapToSwapEvicts;
+
+    /** Values to be evicted from offheap to swap. */
+    private ThreadLocal<Collection<IgniteBiTuple<byte[], byte[]>>> offheapEvicts = new ThreadLocal<>();
 
     /**
      * @param enabled Flag to indicate if swap is enabled.
@@ -127,9 +133,58 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     }
 
     /**
+     *
+     */
+    public void unwindOffheapEvicts() {
+        if (!offheapToSwapEvicts)
+            return;
+
+        Collection<IgniteBiTuple<byte[], byte[]>> evicts = offheapEvicts.get();
+
+        if (evicts != null) {
+            GridCacheVersion obsoleteVer = cctx.versions().next();
+
+            for (IgniteBiTuple<byte[], byte[]> t : evicts) {
+                try {
+                    byte[] kb = t.get1();
+                    byte[] vb = t.get2();
+
+                    GridCacheVersion evictVer = GridCacheSwapEntryImpl.version(vb);
+
+                    KeyCacheObject key = cctx.toCacheKeyObject(kb);
+
+                    while (true) {
+                        GridCacheEntryEx entry = cctx.cache().entryEx(key);
+
+                        try {
+                            if (entry.offheapSwapEvict(vb, evictVer, obsoleteVer))
+                                cctx.cache().removeEntry(entry);
+
+                            break;
+                        }
+                        catch (GridCacheEntryRemovedException ignore) {
+                            // Retry.
+                        }
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to unmarshal off-heap entry", e);
+                }
+            }
+
+            offheapEvicts.set(null);
+        }
+    }
+
+    /** First offheap eviction warning flag. */
+    private volatile boolean firstEvictWarn;
+
+    /**
      * Initializes off-heap space.
      */
     private void initOffHeap() {
+        assert offheapEnabled;
+
         // Register big data usage.
         long max = cctx.config().getOffHeapMaxMemory();
 
@@ -137,40 +192,66 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         int parts = cctx.config().getAffinity().partitions();
 
-        GridOffHeapEvictListener lsnr = !swapEnabled && !offheapEnabled ? null : new GridOffHeapEvictListener() {
-            private volatile boolean firstEvictWarn;
+        GridOffHeapEvictListener lsnr;
 
-            @Override public void onEvict(int part, int hash, byte[] kb, byte[] vb) {
-                try {
-                    if (!firstEvictWarn)
-                        warnFirstEvict();
+        if (swapEnabled) {
+            offheapToSwapEvicts = true;
 
-                    writeToSwap(part, cctx.toCacheKeyObject(kb), vb);
+            lsnr = new GridOffHeapEvictListener() {
+                @Override public void onEvict(int part, int hash, byte[] kb, byte[] vb) {
+                    assert offheapToSwapEvicts;
 
-                    if (cctx.config().isStatisticsEnabled())
-                        cctx.cache().metrics0().onOffHeapEvict();
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to unmarshal off-heap entry [part=" + part + ", hash=" + hash + ']', e);
-                }
-            }
+                    onOffheapEvict();
 
-            private void warnFirstEvict() {
-                synchronized (this) {
-                    if (firstEvictWarn)
-                        return;
+                    Collection<IgniteBiTuple<byte[], byte[]>> evicts = offheapEvicts.get();
 
-                    firstEvictWarn = true;
+                    if (evicts == null)
+                        offheapEvicts.set(evicts = new ArrayList<>());
+
+                    evicts.add(new IgniteBiTuple<>(kb, vb));
                 }
 
-                U.warn(log, "Off-heap evictions started. You may wish to increase 'offHeapMaxMemory' in " +
-                    "cache configuration [cache=" + cctx.name() +
-                    ", offHeapMaxMemory=" + cctx.config().getOffHeapMaxMemory() + ']',
-                    "Off-heap evictions started: " + cctx.name());
-            }
-        };
+                @Override public boolean removedEvicted() {
+                    return false;
+                }
+            };
+        }
+        else {
+            lsnr = new GridOffHeapEvictListener() {
+                @Override public void onEvict(int part, int hash, byte[] kb, byte[] vb) {
+                    onOffheapEvict();
+                }
+
+                @Override public boolean removedEvicted() {
+                    return true;
+                }
+            };
+        }
 
         offheap.create(spaceName, parts, init, max, lsnr);
+    }
+
+    /**
+     * Warns on first evict from off-heap.
+     */
+    private void onOffheapEvict() {
+        if (cctx.config().isStatisticsEnabled())
+            cctx.cache().metrics0().onOffHeapEvict();
+
+        if (!firstEvictWarn)
+            return;
+
+        synchronized (this) {
+            if (firstEvictWarn)
+                return;
+
+            firstEvictWarn = true;
+        }
+
+        U.warn(log, "Off-heap evictions started. You may wish to increase 'offHeapMaxMemory' in " +
+            "cache configuration [cache=" + cctx.name() +
+            ", offHeapMaxMemory=" + cctx.config().getOffHeapMaxMemory() + ']',
+            "Off-heap evictions started: " + cctx.name());
     }
 
     /**
@@ -966,6 +1047,30 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param key Key to remove.
+     * @param part Partition.
+     * @param ver Expected version.
+     * @return {@code True} if removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    boolean removeOffheap(final KeyCacheObject key, int part, final GridCacheVersion ver)
+        throws IgniteCheckedException {
+        assert offheapEnabled;
+
+        checkIteratorQueue();
+
+        return offheap.removex(spaceName, part, key, key.valueBytes(cctx.cacheObjectContext()),
+            new IgniteBiPredicate<Long, Integer>() {
+                @Override public boolean apply(Long ptr, Integer len) {
+                    GridCacheVersion ver0 = GridCacheOffheapSwapEntry.version(ptr);
+
+                    return ver.equals(ver0);
+                }
+            }
+        );
+    }
+
+    /**
      * @return {@code True} if offheap eviction is enabled.
      */
     boolean offheapEvictionEnabled() {
@@ -976,15 +1081,14 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * Enables eviction for offheap entry after {@link #readOffheapPointer} was called.
      *
      * @param key Key.
+     * @param part Partition.
      * @throws IgniteCheckedException If failed.
      */
-    void enableOffheapEviction(final KeyCacheObject key) throws IgniteCheckedException {
+    void enableOffheapEviction(final KeyCacheObject key, int part) throws IgniteCheckedException {
         if (!offheapEnabled)
             return;
 
         checkIteratorQueue();
-
-        int part = cctx.affinity().partition(key);
 
         offheap.enableEviction(spaceName, part, key, key.valueBytes(cctx.cacheObjectContext()));
     }
@@ -1224,7 +1328,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param entry Entry bytes.
      * @throws IgniteCheckedException If failed.
      */
-    private void writeToSwap(int part, KeyCacheObject key, byte[] entry) throws IgniteCheckedException {
+    public void writeToSwap(int part, KeyCacheObject key, byte[] entry) throws IgniteCheckedException {
+        assert swapEnabled;
+
         checkIteratorQueue();
 
         swapMgr.write(spaceName,

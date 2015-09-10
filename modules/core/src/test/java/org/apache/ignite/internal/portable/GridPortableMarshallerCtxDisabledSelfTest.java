@@ -17,11 +17,20 @@
 
 package org.apache.ignite.internal.portable;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallerContextAdapter;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableMarshalAware;
 import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableReader;
+import org.apache.ignite.portable.PortableWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -50,36 +59,42 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
 
         IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", context);
 
-        SimpleObject obj0 = new SimpleObject();
+        SimpleObject simpleObj = new SimpleObject();
 
-        obj0.b = 2;
-        obj0.bArr = new byte[] {2, 3, 4, 5, 5};
-        obj0.c = 'A';
-        obj0.enumVal = TestEnum.D;
-        obj0.objArr = new Object[] {"hello", "world", "from", "me"};
-        obj0.enumArr = new TestEnum[] {TestEnum.C, TestEnum.B};
+        simpleObj.b = 2;
+        simpleObj.bArr = new byte[] {2, 3, 4, 5, 5};
+        simpleObj.c = 'A';
+        simpleObj.enumVal = TestEnum.D;
+        simpleObj.objArr = new Object[] {"hello", "world", "from", "me"};
+        simpleObj.enumArr = new TestEnum[] {TestEnum.C, TestEnum.B};
 
-        byte[] arr = marsh.marshal(obj0);
+        SimpleObject otherObj = new SimpleObject();
 
-        SimpleObject obj2 = marsh.unmarshal(arr, null);
+        otherObj.b = 3;
+        otherObj.bArr = new byte[] {5, 3, 4};
 
-        assertEquals(obj0.b, obj2.b);
-        assertEquals(obj0.c, obj2.c);
-        assertEquals(obj0.enumVal, obj2.enumVal);
+        simpleObj.otherObj = otherObj;
 
-        for (int i = 0; i < obj0.bArr.length; i++)
-            assertEquals(obj0.bArr[i], obj2.bArr[i]);
+        assertEquals(simpleObj, marsh.unmarshal(marsh.marshal(simpleObj), null));
 
-        for (int i = 0; i < obj0.objArr.length; i++)
-            assertEquals(obj0.objArr[i], obj2.objArr[i]);
+        SimplePortable simplePortable = new SimplePortable();
 
-        for (int i = 0; i < obj0.enumArr.length; i++)
-            assertEquals(obj0.enumArr[i], obj2.enumArr[i]);
+        simplePortable.str = "portable";
+        simplePortable.arr = new long[] {100, 200, 300};
+
+        assertEquals(simplePortable, marsh.unmarshal(marsh.marshal(simplePortable), null));
+
+        SimpleExternalizable simpleExtr = new SimpleExternalizable();
+
+        simpleExtr.str = "externalizable";
+        simpleExtr.arr = new long[] {20000, 300000, 400000};
+
+        assertEquals(simpleExtr, marsh.unmarshal(marsh.marshal(simpleExtr), null));
     }
 
     /**
-     * Marshaller context with no storage. Platform has to work in such environment as well by marshalling class name
-     * of a portable object.
+     * Marshaller context with no storage. Platform has to work in such environment as well by marshalling class name of
+     * a portable object.
      */
     private static class MarshallerContextWithNoStorage extends MarshallerContextAdapter {
         /** */
@@ -124,5 +139,118 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
 
         /** */
         private TestEnum[] enumArr;
+
+        private SimpleObject otherObj;
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SimpleObject object = (SimpleObject)o;
+
+            if (b != object.b)
+                return false;
+
+            if (c != object.c)
+                return false;
+
+            if (!Arrays.equals(bArr, object.bArr))
+                return false;
+
+            // Probably incorrect - comparing Object[] arrays with Arrays.equals
+            if (!Arrays.equals(objArr, object.objArr))
+                return false;
+
+            if (enumVal != object.enumVal)
+                return false;
+
+            // Probably incorrect - comparing Object[] arrays with Arrays.equals
+            if (!Arrays.equals(enumArr, object.enumArr))
+                return false;
+
+            return !(otherObj != null ? !otherObj.equals(object.otherObj) : object.otherObj != null);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SimplePortable implements PortableMarshalAware {
+        /** */
+        private String str;
+
+        /** */
+        private long[] arr;
+
+        /** {@inheritDoc} */
+        @Override public void writePortable(PortableWriter writer) throws PortableException {
+            writer.writeString("str", str);
+            writer.writeLongArray("longArr", arr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readPortable(PortableReader reader) throws PortableException {
+            str = reader.readString("str");
+            arr = reader.readLongArray("longArr");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SimplePortable that = (SimplePortable)o;
+
+            if (str != null ? !str.equals(that.str) : that.str != null)
+                return false;
+
+            return Arrays.equals(arr, that.arr);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SimpleExternalizable implements Externalizable {
+        /** */
+        private String str;
+
+        /** */
+        private long[] arr;
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeUTF(str);
+            out.writeObject(arr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            str = in.readUTF();
+            arr = (long[])in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SimpleExternalizable that = (SimpleExternalizable)o;
+
+            if (str != null ? !str.equals(that.str) : that.str != null)
+                return false;
+
+            return Arrays.equals(arr, that.arr);
+        }
     }
 }
