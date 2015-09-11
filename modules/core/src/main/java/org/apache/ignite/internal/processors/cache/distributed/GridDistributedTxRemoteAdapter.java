@@ -458,17 +458,17 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 assert txEntry != null : "Missing transaction entry for tx: " + this;
 
                 while (true) {
-                    GridCacheEntryEx Entry = txEntry.cached();
+                    GridCacheEntryEx entry = txEntry.cached();
 
-                    assert Entry != null : "Missing cached entry for transaction entry: " + txEntry;
+                    assert entry != null : "Missing cached entry for transaction entry: " + txEntry;
 
                     try {
                         GridCacheVersion ver = txEntry.explicitVersion() != null ? txEntry.explicitVersion() : xidVer;
 
                         // If locks haven't been acquired yet, keep waiting.
-                        if (!Entry.lockedBy(ver)) {
+                        if (!entry.lockedBy(ver)) {
                             if (log.isDebugEnabled())
-                                log.debug("Transaction does not own lock for entry (will wait) [entry=" + Entry +
+                                log.debug("Transaction does not own lock for entry (will wait) [entry=" + entry +
                                     ", tx=" + this + ']');
 
                             return;

@@ -196,12 +196,29 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
+        boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(cctx, xidVer, implicit, implicitSingle, /*local*/true, sys, plc, concurrency, isolation, timeout,
-            invalidate, storeEnabled, txSize, subjId, taskNameHash);
+        super(
+            cctx, 
+            xidVer, 
+            implicit, 
+            implicitSingle, 
+            /*local*/true, 
+            sys, 
+            plc,
+            concurrency, 
+            isolation, 
+            timeout,
+            invalidate,
+            storeEnabled, 
+            onePhaseCommit, 
+            txSize, 
+            subjId, 
+            taskNameHash
+        );
 
         minVer = xidVer;
     }
@@ -986,6 +1003,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             log.debug("Ignoring READ entry when committing: " + txEntry);
                                     }
                                     else {
+                                        assert ownsLock(txEntry.cached()):
+                                            "Transaction does not own lock for group lock entry during  commit [tx=" +
+                                                this + ", txEntry=" + txEntry + ']';
+
                                         if (conflictCtx == null || !conflictCtx.isUseOld()) {
                                             if (txEntry.ttl() != CU.TTL_NOT_CHANGED)
                                                 cached.updateTtl(null, txEntry.ttl());
@@ -1085,14 +1106,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     /**
      * Commits transaction to transaction manager. Used for one-phase commit transactions only.
      */
-    public void tmCommit() {
+    public void tmFinish(boolean commit) {
         assert onePhaseCommit();
 
         if (doneFlag.compareAndSet(false, true)) {
             // Unlock all locks.
-            cctx.tm().commitTx(this);
+            if (commit)
+                cctx.tm().commitTx(this);
+            else
+                cctx.tm().rollbackTx(this);
 
-            state(COMMITTED);
+            state(commit ? COMMITTED : ROLLED_BACK);
 
             boolean needsCompletedVersions = needsCompletedVersions();
 
@@ -1385,7 +1409,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 -1L,
                                 null,
                                 skipStore);
-
 
                             // As optimization, mark as checked immediately
                             // for non-pessimistic if value is not null.

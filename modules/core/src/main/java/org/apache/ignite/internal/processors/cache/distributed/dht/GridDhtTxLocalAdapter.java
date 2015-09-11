@@ -98,6 +98,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Versions of pending locks for entries of this tx. */
     private Collection<GridCacheVersion> pendingVers;
 
+    /** Flag indicating that originating node has near cache. */
+    private boolean nearOnOriginatingNode;
+
     /** Nodes where transactions were started on lock step. */
     private Set<ClusterNode> lockTxNodes;
 
@@ -132,12 +135,28 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
+        boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(cctx, xidVer, implicit, implicitSingle, sys, plc, concurrency, isolation, timeout, invalidate,
-            storeEnabled, txSize, subjId, taskNameHash);
+        super(
+            cctx, 
+            xidVer, 
+            implicit, 
+            implicitSingle, 
+            sys, 
+            plc, 
+            concurrency, 
+            isolation, 
+            timeout, 
+            invalidate,
+            storeEnabled,
+            onePhaseCommit,
+            txSize, 
+            subjId, 
+            taskNameHash
+        );
 
         assert cctx != null;
 
@@ -158,6 +177,29 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             lockTxNodes = new HashSet<>();
 
         lockTxNodes.add(node);
+    }
+
+    /**
+     * Sets flag that indicates that originating node has a near cache that participates in this transaction.
+     *
+     * @param hasNear Has near cache flag.
+     */
+    public void nearOnOriginatingNode(boolean hasNear) {
+        nearOnOriginatingNode = hasNear;
+    }
+
+    /**
+     * @return {@code True} if explicit lock transaction.
+     */
+    public boolean explicitLock() {
+        return explicitLock;
+    }
+
+    /**
+     * @param explicitLock Explicit lock flag.
+     */
+    public void explicitLock(boolean explicitLock) {
+        this.explicitLock = explicitLock;
     }
 
     /**
@@ -226,20 +268,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      */
     public void pendingVersions(Collection<GridCacheVersion> pendingVers) {
         this.pendingVers = pendingVers;
-    }
-
-    /**
-     * @return Explicit lock flag.
-     */
-    public boolean explicitLock() {
-        return explicitLock;
-    }
-
-    /**
-     * @param explicitLock Explicit lock flag.
-     */
-    public void explicitLock(boolean explicitLock) {
-        this.explicitLock = explicitLock;
     }
 
     /**
@@ -570,7 +598,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /**
      * @param cacheCtx Cache context.
      * @param entries Entries to lock.
-     * @param onePhaseCommit One phase commit flag.
      * @param msgId Message ID.
      * @param read Read flag.
      * @param accessTtl TTL for read operation.
@@ -582,7 +609,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     IgniteInternalFuture<GridCacheReturn> lockAllAsync(
         GridCacheContext cacheCtx,
         List<GridCacheEntryEx> entries,
-        boolean onePhaseCommit,
         long msgId,
         final boolean read,
         final boolean needRetVal,
@@ -864,13 +890,14 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @return {@code True} if transaction is finished on prepare step.
      */
     protected final boolean commitOnPrepare() {
-        return onePhaseCommit() && !near();
+        return onePhaseCommit() && !near() && !nearOnOriginatingNode;
     }
 
     /**
      * @param prepFut Prepare future.
      * @return If transaction if finished on prepare step returns future which is completed after transaction finish.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     protected final IgniteInternalFuture<GridNearTxPrepareResponse> chainOnePhasePrepare(
         final GridDhtTxPrepareFuture prepFut) {
         if (commitOnPrepare()) {
