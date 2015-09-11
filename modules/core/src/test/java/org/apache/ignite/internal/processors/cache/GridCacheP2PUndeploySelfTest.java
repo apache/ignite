@@ -81,7 +81,11 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new JdkMarshaller());
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
+        FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
+
+        swap.setWriteBufferSize(1);
+
+        cfg.setSwapSpaceSpi(swap);
 
         CacheConfiguration repCacheCfg = defaultCacheConfiguration();
 
@@ -232,6 +236,8 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
             assert v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader");
 
             cache2.localEvict(ImmutableSet.of(2, 3, 4));
+
+            U.sleep(100); //Time to store entries to disk.
 
             long swapSize = size(cacheName, grid2);
 
