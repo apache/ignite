@@ -17,12 +17,15 @@
 
 package org.apache.ignite.examples.migration6_7;
 
+import java.util.Collections;
 import org.gridgain.grid.Grid;
 import org.gridgain.grid.GridConfiguration;
 import org.gridgain.grid.GridGain;
 import org.gridgain.grid.cache.GridCache;
 import org.gridgain.grid.cache.GridCacheConfiguration;
 import org.gridgain.grid.spi.GridSpiException;
+import org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi;
+import org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder;
 
 /**
  */
@@ -37,8 +40,8 @@ public class Gg6Starter {
             for (int i = 0; i < 50; i++)
                 cache.put(i, "str_" + i);
 
-            for (int i = 0; i < 50; i++)
-                System.out.println(">>>>> Gg6 client got [i="+i+", val="+cache.get(i)+"]");
+//            for (int i = 0; i < 50; i++)
+//                System.out.println(">>>>> Gg6 client got [i="+i+", val="+cache.get(i)+"]");
 
             Thread.sleep(Migration6_7.SLEEP);
         }
@@ -47,16 +50,16 @@ public class Gg6Starter {
     private static GridConfiguration configuration() throws GridSpiException {
         GridConfiguration c = new GridConfiguration();
 
-//        c.setLocalHost("127.0.0.1");
+        c.setLocalHost("127.0.0.1");
 
-//        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
+        GridTcpDiscoverySpi discoSpi = new GridTcpDiscoverySpi();
 //        discoSpi.setLocalAddress("127.0.0.1");
-//        discoSpi.setLocalPort(47500);
+        discoSpi.setLocalPort(47500);
 
-//        GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
-//        ipFinder.setAddresses(Collections.singleton("127.0.0.1:47500"));
-//        discoSpi.setIpFinder(ipFinder);
-//        c.setDiscoverySpi(discoSpi);
+        GridTcpDiscoveryVmIpFinder ipFinder = new GridTcpDiscoveryVmIpFinder();
+        ipFinder.setAddresses(Collections.singleton("127.0.0.1:47500"));
+        discoSpi.setIpFinder(ipFinder);
+        c.setDiscoverySpi(discoSpi);
 
         GridCacheConfiguration cc = new GridCacheConfiguration();
         cc.setName(PARTITIONED);
