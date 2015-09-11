@@ -57,6 +57,9 @@ public class GridCacheUpdateAtomicResult {
     /** Whether update should be propagated to DHT node. */
     private final boolean sndToDht;
 
+    /** */
+    private final Long updateIdx;
+
     /** Value computed by entry processor. */
     private IgniteBiTuple<Object, Exception> res;
 
@@ -72,6 +75,7 @@ public class GridCacheUpdateAtomicResult {
      * @param rmvVer Version for deferred delete.
      * @param conflictRes DR resolution result.
      * @param sndToDht Whether update should be propagated to DHT node.
+     * @param updateIdx Partition update counter.
      */
     public GridCacheUpdateAtomicResult(boolean success,
         @Nullable CacheObject oldVal,
@@ -81,7 +85,8 @@ public class GridCacheUpdateAtomicResult {
         long conflictExpireTime,
         @Nullable GridCacheVersion rmvVer,
         @Nullable GridCacheVersionConflictContext<?, ?> conflictRes,
-        boolean sndToDht) {
+        boolean sndToDht,
+        long updateIdx) {
         this.success = success;
         this.oldVal = oldVal;
         this.newVal = newVal;
@@ -91,6 +96,7 @@ public class GridCacheUpdateAtomicResult {
         this.rmvVer = rmvVer;
         this.conflictRes = conflictRes;
         this.sndToDht = sndToDht;
+        this.updateIdx = updateIdx;
     }
 
     /**
@@ -126,6 +132,13 @@ public class GridCacheUpdateAtomicResult {
      */
     public long newTtl() {
         return newTtl;
+    }
+
+    /**
+     * @return Partition update index.
+     */
+    public Long updateIdx() {
+        return updateIdx;
     }
 
     /**

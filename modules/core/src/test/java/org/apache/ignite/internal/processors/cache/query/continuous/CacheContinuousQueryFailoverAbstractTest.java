@@ -25,23 +25,28 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
@@ -59,12 +64,17 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -254,11 +264,312 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    public void testLeftPrimaryAndBackupNodes() throws Exception {
+        this.backups = 1;
+
+        final int SRV_NODES = 3;
+
+        startGridsMultiThreaded(SRV_NODES);
+
+        client = true;
+
+        final Ignite qryClient = startGrid(SRV_NODES);
+
+        client = false;
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+        final TestLocalListener lsnr = new TestLocalListener();
+
+        qry.setLocalListener(lsnr);
+
+        qry.setRemoteFilter(lsnr);
+
+        IgniteCache<Object, Object> clnCache = qryClient.cache(null);
+
+        QueryCursor<Cache.Entry<Object, Object>> query = clnCache.query(qry);
+
+        Ignite igniteSrv = ignite(0);
+
+        IgniteCache<Object, Object> srvCache = igniteSrv.cache(null);
+
+        Affinity<Object> aff = affinity(srvCache);
+
+        List<Integer> keys = testKeys(srvCache, 1);
+
+        Collection<ClusterNode> nodes = aff.mapPartitionToPrimaryAndBackups(keys.get(0));
+
+        Collection<UUID> ids = F.transform(nodes, new C1<ClusterNode, UUID>() {
+            @Override public UUID apply(ClusterNode node) {
+                return node.id();
+            }
+        });
+
+        int keyIter = 0;
+
+        boolean filtered = false;
+
+        Map<Object, T2<Object, Object>> updates = new HashMap<>();
+
+        final List<T3<Object, Object, Object>> expEvts = new ArrayList<>();
+
+        for (; keyIter < keys.size() / 2; keyIter++) {
+            int key = keys.get(keyIter);
+
+            log.info("Put [key=" + key + ", part=" + aff.partition(key)
+                + ", filtered=" + filtered + ']');
+
+            T2<Object, Object> t = updates.get(key);
+
+            Integer val = filtered ?
+                (key % 2 == 0 ? key + 1 : key) :
+                key * 2;
+
+            if (t == null) {
+                updates.put(key, new T2<>((Object)val, null));
+
+                if (!filtered)
+                    expEvts.add(new T3<>((Object)key, (Object)val, null));
+            }
+            else {
+                updates.put(key, new T2<>((Object)val, (Object)key));
+
+                if (!filtered)
+                    expEvts.add(new T3<>((Object)key, (Object)val, (Object)key));
+            }
+
+            srvCache.put(key, val);
+
+            filtered = !filtered;
+        }
+
+        checkEvents(expEvts, lsnr);
+
+        List<Thread> stopThreads = new ArrayList<>(3);
+
+        // Stop nodes which owning this partition.
+        for (int i = 0; i < SRV_NODES; i++) {
+            Ignite ignite = ignite(i);
+
+            if (ids.contains(ignite.cluster().localNode().id())) {
+                final int i0 = i;
+
+                TestCommunicationSpi spi = (TestCommunicationSpi)ignite.configuration().getCommunicationSpi();
+
+                spi.skipAllMsg = true;
+
+                stopThreads.add(new Thread() {
+                    @Override public void run() {
+                        stopGrid(i0, true);
+                    }
+                });
+            }
+        }
+
+        // Stop and join threads.
+        for (Thread t : stopThreads)
+            t.start();
+
+        for (Thread t : stopThreads)
+            t.join();
+
+        assert GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                // (SRV_NODES + 1 client node) - 1 primary - backup nodes.
+                return qryClient.cluster().nodes().size() == (SRV_NODES + 1 /** client node */)
+                    - 1 /** Primary node */ - backups;
+            }
+        }, 10000L);
+
+        for (; keyIter < keys.size(); keyIter++) {
+            int key = keys.get(keyIter);
+
+            log.info("Put [key=" + key + ", filtered=" + filtered + ']');
+
+            T2<Object, Object> t = updates.get(key);
+
+            Integer val = filtered ?
+                (key % 2 == 0 ? key + 1 : key) :
+                key * 2;
+
+            if (t == null) {
+                updates.put(key, new T2<>((Object)val, null));
+
+                if (!filtered)
+                    expEvts.add(new T3<>((Object)key, (Object)val, null));
+            }
+            else {
+                updates.put(key, new T2<>((Object)val, (Object)key));
+
+                if (!filtered)
+                    expEvts.add(new T3<>((Object)key, (Object)val, (Object)key));
+            }
+
+            clnCache.put(key, val);
+
+            filtered = !filtered;
+        }
+
+        checkEvents(expEvts, lsnr);
+
+        query.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoteFilter() throws Exception {
+        this.backups = 2;
+
+        final int SRV_NODES = 4;
+
+        startGridsMultiThreaded(SRV_NODES);
+
+        client = true;
+
+        Ignite qryClient = startGrid(SRV_NODES);
+
+        client = false;
+
+        IgniteCache<Object, Object> qryClientCache = qryClient.cache(null);
+
+        if (cacheMode() != REPLICATED)
+            assertEquals(backups, qryClientCache.getConfiguration(CacheConfiguration.class).getBackups());
+
+        Affinity<Object> aff = qryClient.affinity(null);
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+        final TestLocalListener lsnr = new TestLocalListener();
+
+        qry.setLocalListener(lsnr);
+
+        qry.setRemoteFilter(lsnr);
+
+        int PARTS = 10;
+
+        QueryCursor<?> cur = qryClientCache.query(qry);
+
+        Map<Object, T2<Object, Object>> updates = new HashMap<>();
+
+        final List<T3<Object, Object, Object>> expEvts = new ArrayList<>();
+
+        for (int i = 0; i < SRV_NODES - 1; i++) {
+            log.info("Stop iteration: " + i);
+
+            TestCommunicationSpi spi = (TestCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+
+            Ignite ignite = ignite(i);
+
+            IgniteCache<Object, Object> cache = ignite.cache(null);
+
+            List<Integer> keys = testKeys(cache, PARTS);
+
+            boolean first = true;
+
+            boolean filtered = false;
+
+            for (Integer key : keys) {
+                log.info("Put [node=" + ignite.name() + ", key=" + key + ", part=" + aff.partition(key)
+                    + ", filtered=" + filtered + ']');
+
+                T2<Object, Object> t = updates.get(key);
+
+                Integer val = filtered ?
+                    (key % 2 == 0 ? key + 1 : key) :
+                    key * 2;
+
+                if (t == null) {
+                    updates.put(key, new T2<>((Object)val, null));
+
+                    if (!filtered)
+                        expEvts.add(new T3<>((Object)key, (Object)val, null));
+                }
+                else {
+                    updates.put(key, new T2<>((Object)val, (Object)key));
+
+                    if (!filtered)
+                        expEvts.add(new T3<>((Object)key, (Object)val, (Object)key));
+                }
+
+                cache.put(key, val);
+
+                if (first) {
+                    spi.skipMsg = true;
+
+                    first = false;
+                }
+
+                filtered = !filtered;
+            }
+
+            stopGrid(i);
+
+            boolean check = GridTestUtils.waitForCondition(new PAX() {
+                @Override public boolean applyx() throws IgniteCheckedException {
+                    return expEvts.size() == lsnr.keys.size();
+                }
+            }, 5000L);
+
+            if (!check) {
+                Set<Integer> keys0 = new HashSet<>(keys);
+
+                keys0.removeAll(lsnr.keys);
+
+                log.info("Missed events for keys: " + keys0);
+
+                fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + keys0.size() + ']');
+            }
+
+            checkEvents(expEvts, lsnr);
+        }
+
+        cur.close();
+    }
+
+    /**
+     *
+     */
+    public static class TestLocalListener implements CacheEntryUpdatedListener<Object, Object>,
+        CacheEntryEventSerializableFilter<Object, Object> {
+        /** Keys. */
+        GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
+
+        /** Events. */
+        private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
+
+        /** {@inheritDoc} */
+        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> events) throws CacheEntryListenerException {
+            for (CacheEntryEvent<?, ?> e : events) {
+                System.err.println("Update entry: " + e);
+
+                Integer key = (Integer)e.getKey();
+
+                keys.add(key);
+
+                evts.put(key, e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean evaluate(CacheEntryEvent<?, ?> e) throws CacheEntryListenerException {
+            return (Integer)e.getValue() % 2 == 0;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testThreeBackups() throws Exception {
         if (cacheMode() == REPLICATED)
             return;
 
         checkBackupQueue(3, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isDebug() {
+        return true;
     }
 
     /**
@@ -423,12 +734,31 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
             assertNotNull("No event for key: " + exp.get1(), e);
             assertEquals("Unexpected value: " + e, exp.get2(), e.getValue());
-            assertEquals("Unexpected old value: " + e, exp.get3(), e.getOldValue());
         }
 
         expEvts.clear();
 
         lsnr.evts.clear();
+    }
+
+    /**
+     * @param expEvts Expected events.
+     * @param lsnr Listener.
+     */
+    private void checkEvents(List<T3<Object, Object, Object>> expEvts, TestLocalListener lsnr) {
+        assert lsnr.evts.size() == expEvts.size();
+
+        for (T3<Object, Object, Object> exp : expEvts) {
+            CacheEntryEvent<?, ?> e = lsnr.evts.get(exp.get1());
+
+            assertNotNull("No event for key: " + exp.get1(), e);
+            assertEquals("Unexpected value: " + e, exp.get2(), e.getValue());
+        }
+
+        expEvts.clear();
+
+        lsnr.evts.clear();
+        lsnr.keys.clear();
     }
 
     /**
@@ -447,7 +777,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         int[] nodeParts = aff.primaryPartitions(node);
 
-        final int KEYS_PER_PART = 3;
+        final int KEYS_PER_PART = 50;
 
         for (int i = 0; i < parts; i++) {
             int part = nodeParts[i];
@@ -919,7 +1249,6 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                         assertEquals(key, rcvdEvt.getKey());
                         assertEquals(expEvt.get1(), rcvdEvt.getValue());
-                        assertEquals(expEvt.get2(), rcvdEvt.getOldValue());
                     }
                 }
             }
@@ -1012,7 +1341,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         private final ConcurrentHashMap<Integer, List<CacheEntryEvent<?, ?>>> evts = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
-        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts)
+        @Override public synchronized void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts)
             throws CacheEntryListenerException  {
             try {
                 for (CacheEntryEvent<?, ?> evt : evts) {
@@ -1026,18 +1355,8 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                     boolean dup = false;
 
-                    if (prevVal != null) {
-                        if (prevVal.equals(val)) // Can get this event with automatic put retry.
-                            dup = true;
-                        else {
-                            assertEquals("Unexpected event: " + evt, (Integer)(prevVal + 1), val);
-                            assertEquals("Unexpected event: " + evt, prevVal, evt.getOldValue());
-                        }
-                    }
-                    else {
-                        assertEquals("Unexpected event: " + evt, (Object)0, val);
-                        assertNull("Unexpected event: " + evt, evt.getOldValue());
-                    }
+                    if (prevVal != null && prevVal.equals(val))
+                        dup = true;
 
                     if (!dup) {
                         vals.put(key, val);
@@ -1074,12 +1393,18 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         private volatile boolean skipMsg;
 
         /** */
+        private volatile boolean skipAllMsg;
+
+        /** */
         private volatile AtomicBoolean sndFirstOnly;
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
             Object msg0 = ((GridIoMessage)msg).message();
+
+            if (skipAllMsg)
+                return;
 
             if (msg0 instanceof GridContinuousMessage) {
                 if (skipMsg) {

@@ -46,6 +46,10 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.events.CacheRebalancingEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -65,6 +69,7 @@ import static javax.cache.event.EventType.EXPIRED;
 import static javax.cache.event.EventType.REMOVED;
 import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 
 /**
@@ -132,6 +137,20 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     lsnr.acknowledgeBackupOnTimeout(cctx.kernalContext());
             }
         }, BACKUP_ACK_FREQ, BACKUP_ACK_FREQ);
+
+        cctx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof CacheRebalancingEvent;
+
+                CacheRebalancingEvent evt0 = (CacheRebalancingEvent)evt;
+
+                for (CacheContinuousQueryListener lsnr : lsnrs.values())
+                    lsnr.partitionLost(evt0.cacheName(), evt0.partition());
+
+                for (CacheContinuousQueryListener lsnr : intLsnrs.values())
+                    lsnr.partitionLost(evt0.cacheName(), evt0.partition());
+            }
+        }, EVT_CACHE_REBALANCE_PART_DATA_LOST);
     }
 
     /** {@inheritDoc} */
@@ -664,7 +683,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 fltr = (CacheEntryEventFilter) cfg.getCacheEntryEventFilterFactory().create();
 
                 if (!(fltr instanceof Serializable))
-                    throw new IgniteCheckedException("Cache entry event filter must implement java.io.Serializable: " + fltr);
+                    throw new IgniteCheckedException("Cache entry event filter must implement java.io.Serializable: "
+                        + fltr);
             }
 
             CacheEntryEventSerializableFilter rmtFilter = new JCacheQueryRemoteFilter(fltr, types);

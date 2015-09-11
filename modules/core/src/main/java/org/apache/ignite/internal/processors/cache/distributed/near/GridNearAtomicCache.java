@@ -249,7 +249,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         /*write-through*/false,
                         /*read-through*/false,
                         /*retval*/false,
-                        /**expiry policy*/null,
+                        /*expiry policy*/null,
                         /*event*/true,
                         /*metrics*/true,
                         /*primary*/false,
@@ -263,7 +263,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         false,
                         false,
                         subjId,
-                        taskName);
+                        taskName,
+                        null,
+                        null);
 
                     if (updRes.removeVersion() != null)
                         ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -351,7 +353,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
-                            /*check version*/!req.forceTransformBackups(),
+                            /*check version*/op != TRANSFORM || !req.forceTransformBackups(),
                             req.topologyVersion(),
                             CU.empty0(),
                             DR_NONE,
@@ -359,9 +361,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             expireTime,
                             null,
                             false,
-                            intercept,
+                            /*intercept*/false,
                             req.subjectId(),
-                            taskName);
+                            taskName,
+                            null,
+                            null);
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());

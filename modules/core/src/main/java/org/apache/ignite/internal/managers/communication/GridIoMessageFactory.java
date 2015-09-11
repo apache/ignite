@@ -90,7 +90,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlo
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBatchAck;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFilteredEntry;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryLostPartition;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder;
@@ -681,6 +684,21 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 113:
                 msg = new PortableObjectImpl();
+
+                break;
+
+            case 114:
+                msg = new CacheContinuousQueryBatchAck();
+
+                break;
+
+            case 115:
+                msg = new CacheContinuousQueryFilteredEntry();
+
+                break;
+
+            case 116:
+                msg = new CacheContinuousQueryLostPartition();
 
                 break;
 

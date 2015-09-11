@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
@@ -45,6 +46,14 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** Serialized partitions. */
     private byte[] partsBytes;
+
+    /** Partitions update counters. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private Map<Integer, Map<Integer, Long>> partCntrs = new HashMap<>();
+
+    /** Serialized partitions counters. */
+    private byte[] partCntrsBytes;
 
     /** */
     private boolean client;
@@ -90,6 +99,24 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /**
+     * @param cacheId Cache ID.
+     * @param cntrMap Partition update counters.
+     */
+    public void partitionUpdateCounters(int cacheId, Map<Integer, Long> cntrMap) {
+        partCntrs.put(cacheId, cntrMap);
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @return Partition update counters.
+     */
+    public Map<Integer, Long> partitionUpdateCounters(int cacheId) {
+        Map<Integer, Long> res = partCntrs.get(cacheId);
+
+        return res != null ? res : Collections.<Integer, Long>emptyMap();
+    }
+
+    /**
      * @return Local partitions.
      */
     public Map<Integer, GridDhtPartitionMap> partitions() {
@@ -103,6 +130,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         if (partsBytes == null && parts != null)
             partsBytes = ctx.marshaller().marshal(parts);
+
+        if (partCntrs != null)
+            partCntrsBytes = ctx.marshaller().marshal(partCntrs);
     }
 
     /** {@inheritDoc} */
@@ -111,6 +141,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         if (partsBytes != null && parts == null)
             parts = ctx.marshaller().unmarshal(partsBytes, ldr);
+
+        if (partCntrsBytes != null)
+            partCntrs = ctx.marshaller().unmarshal(partCntrsBytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -135,6 +168,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 writer.incrementState();
 
             case 6:
+                if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
                 if (!writer.writeByteArray("partsBytes", partsBytes))
                     return false;
 
@@ -165,6 +204,14 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 reader.incrementState();
 
             case 6:
+                partCntrsBytes = reader.readByteArray("partCntrsBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
                 partsBytes = reader.readByteArray("partsBytes");
 
                 if (!reader.isLastRead())
@@ -184,7 +231,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /** {@inheritDoc} */

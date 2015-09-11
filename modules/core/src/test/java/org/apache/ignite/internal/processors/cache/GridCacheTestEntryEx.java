@@ -529,7 +529,9 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean conflictResolve,
         boolean intercept,
         UUID subjId,
-        String taskName) throws IgniteCheckedException,
+        String taskName,
+        @Nullable CacheObject prevVal,
+        @Nullable Long updateIdx) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
         assert false;
 

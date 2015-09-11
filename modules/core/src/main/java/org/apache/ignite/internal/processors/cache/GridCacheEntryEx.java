@@ -480,7 +480,9 @@ public interface GridCacheEntryEx {
         boolean conflictResolve,
         boolean intercept,
         @Nullable UUID subjId,
-        String taskName
+        String taskName,
+        @Nullable CacheObject prevVal,
+        @Nullable Long updateIdx
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
