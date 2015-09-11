@@ -17,18 +17,57 @@
 
 package org.apache.ignite.examples.migration6_7;
 
+import java.util.Collections;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 /**
- * TODO: Add class description.
  */
 public class IgniteStarter {
-    public static void main(String[] args) {
-        Ignition.start(configuration());
+    /** */
+    public static final String PARTITIONED = "partitioned";
+
+    /**
+     * @param args Args.
+     */
+    public static void main(String[] args) throws Exception{
+        try(Ignite ignite = Ignition.start(configuration())) {
+            IgniteCache<Integer, String> cache = ignite.cache(PARTITIONED);
+
+            for (int i = 51; i < 100; i++)
+                cache.put(i, "str_" + i);
+
+            for (int i = 51; i < 100; i++)
+                System.out.println(">>>>> Gg6 client got [i="+i+", val="+cache.get(i)+"]");
+
+
+            Thread.sleep(Migration6_7.SLEEP);
+        }
     }
 
-    private static IgniteConfiguration configuration() {
-        return new IgniteConfiguration();
+    /**
+     */
+    public static IgniteConfiguration configuration() {
+        CacheConfiguration cc = new CacheConfiguration()
+            .setName(PARTITIONED);
+
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
+        ipFinder.setAddresses(Collections.singleton("127.0.0.1:47600"));
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi().setIpFinder(ipFinder);
+        disco.setLocalPort(47600);
+
+        IgniteConfiguration c = new IgniteConfiguration()
+            .setCacheConfiguration(cc)
+            .setDiscoverySpi(disco)
+            .setLocalHost("127.0.0.1")
+            ;
+
+        return c;
     }
 }

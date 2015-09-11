@@ -20,6 +20,10 @@ package org.apache.ignite.examples.migration6_7;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.gridgain.client.GridClient;
 import org.gridgain.client.GridClientConfiguration;
 import org.gridgain.client.GridClientData;
@@ -31,18 +35,40 @@ import org.gridgain.client.GridClientPartitionAffinity;
  *
  */
 public class Migration6_7 {
-
+    /** Partitioned. */
     public static final String PARTITIONED = "partitioned";
 
+    /** Sleep. */
+    public static final long SLEEP = 10 * 60 * 1000; // 10 min.
+
+    /**
+     * @param args Args.
+     */
     public static void main(String[] args) throws Exception {
-        try(GridClient ggClient = GridClientFactory.start(gg6ClientConfiguration())) {
+        try(
+            GridClient ggClient = GridClientFactory.start(gg6ClientConfiguration());
+            Ignite ignite = Ignition.start(igniteClientConfiguration())
+        ) {
             GridClientData data = ggClient.data(PARTITIONED);
 
             for (int i = 0; i < 100; i++)
                 System.out.println(">>>>> Gg6 client got [i="+i+", val="+data.get(i)+"]");
+
+            IgniteCache<Integer, String> cache = ignite.cache(PARTITIONED);
+
+            for (int i = 0; i < 100; i++)
+                System.out.println(">>>>> Ignite client got [i="+i+", val="+cache.get(i)+"]");
         }
     }
 
+    /**
+     */
+    private static IgniteConfiguration igniteClientConfiguration() {
+        return IgniteStarter.configuration().setClientMode(true);
+    }
+
+    /**
+     */
     private static GridClientConfiguration gg6ClientConfiguration() {
         GridClientConfiguration c = new GridClientConfiguration();
 
