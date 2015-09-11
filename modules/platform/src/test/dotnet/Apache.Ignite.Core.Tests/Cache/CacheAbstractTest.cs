@@ -2467,76 +2467,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.IsNull(err);
         }
-
-        //// TODO [Test]
-        //public void TestCacheEntryGetSetRemove()
-        //{
-        //    TestCacheEntryGetSetRemove(false);
-        //}
-
-        //// TODO [Test]
-        //public void TestCacheEntryGetSetRemoveAsync()
-        //{
-        //    TestCacheEntryGetSetRemove(true);
-        //}
-
-        //private void TestCacheEntryGetSetRemove(bool async)
-        //{
-        //    IGridCache cache = Cache();
-
-        //    int key = PrimaryKeyForCache(cache);
-
-        //    IGridCacheEntry<int, int> e = cache.Entry(key);
-
-        //    Assert.IsNotNull(e);
-
-        //    if (async)
-        //    {
-        //        IGridFuture<int> fut = e.GetAsync();
-
-        //        Assert.IsNull(fut.Result);
-
-        //        Assert.IsTrue(fut.IsDone);
-
-        //        fut = e.SetAsync(10);
-
-        //        Assert.IsNull(fut.Result);
-
-        //        Assert.IsTrue(fut.IsDone);
-
-        //        fut = e.GetAsync();
-
-        //        Assert.AreEqual(10, fut.Result);
-
-        //        Assert.IsTrue(fut.IsDone);
-        //    }
-        //    else
-        //    {
-        //        Assert.IsNull(e.Get());
-
-        //        Assert.IsNull(e.Set(10));
-
-        //        Assert.AreEqual(10, e.Get());
-        //    }
-
-        //    Assert.AreEqual(10, cache.Get(key));
-
-        //    if (async)
-        //    {
-        //        IGridFuture<int> fut = e.RemoveAsync();
-
-        //        Assert.AreEqual(10, fut.Result);
-
-        //        Assert.IsTrue(fut.IsDone);
-        //    }
-        //    else
-        //        Assert.AreEqual(10, e.Remove());
-
-        //    Assert.IsNull(e.Get());
-
-        //    Assert.IsNull(cache.Get(key));
-        //}
-
+        
         /**
          * Test tries to provoke garbage collection for .Net future before it was completed to verify
          * futures pinning works.
