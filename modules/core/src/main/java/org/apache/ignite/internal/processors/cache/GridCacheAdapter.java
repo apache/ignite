@@ -318,7 +318,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         this.map = map;
 
-        log = ctx.gridConfig().getGridLogger().getLogger(getClass());
+        log = ctx.logger(getClass());
 
         metrics = new CacheMetricsImpl(ctx);
 

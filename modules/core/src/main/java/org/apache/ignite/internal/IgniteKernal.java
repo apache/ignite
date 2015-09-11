@@ -716,8 +716,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         this.cfg = cfg;
 
-        log = (GridLoggerProxy)cfg.getGridLogger().getLogger(getClass().getName() +
-            (gridName != null ? '%' + gridName : ""));
+        log = (GridLoggerProxy)cfg.getGridLogger().getLogger(
+            getClass().getName() + (gridName != null ? '%' + gridName : ""));
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
@@ -2251,7 +2251,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public IgniteLogger log() {
-        return log;
+        return cfg.getGridLogger();
     }
 
     /** {@inheritDoc} */

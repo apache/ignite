@@ -57,7 +57,7 @@ abstract class GridDeploymentStoreAdapter implements GridDeploymentStore {
         this.ctx = ctx;
         this.comm = comm;
 
-        log = ctx.config().getGridLogger().getLogger(getClass());
+        log = ctx.log(getClass());
     }
 
     /**
