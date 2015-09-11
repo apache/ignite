@@ -3085,9 +3085,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             String clsName;
 
             // Handle special case for PlatformProcessor
-            if (cls.equals(PlatformProcessor.class))
-                clsName = ctx.config().getPlatformConfiguration() == null ?
-                    PlatformNoopProcessor.class.getName() : cls.getName() + "Impl";
+            if (cls.equals(PlatformProcessor.class)) {
+                clsName = PlatformNoopProcessor.class.getName();
+//                clsName = ctx.config().getPlatformConfiguration() == null ?
+//                    PlatformNoopProcessor.class.getName() : cls.getName() + "Impl";
+            }
             else
                 clsName = componentClassName(cls);
 

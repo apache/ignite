@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -439,7 +440,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    private QueryCursor<Cache.Entry<K,V>> query(Query filter, @Nullable ClusterGroup grp) {
+    private QueryCursor<Cache.Entry<K,V>> query(final Query filter, @Nullable ClusterGroup grp)
+        throws IgniteCheckedException {
         final CacheQuery<Map.Entry<K,V>> qry;
         final CacheQueryFuture<Map.Entry<K,V>> fut;
 
@@ -454,7 +456,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             if (grp != null)
                 qry.projection(grp);
 
-            fut = qry.execute();
+            fut = ctx.kernalContext().query().executeQuery(ctx,
+                new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
+                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
+                        return qry.execute();
+                    }
+                }, false);
         }
         else if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
@@ -464,7 +471,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             if (grp != null)
                 qry.projection(grp);
 
-            fut = qry.execute();
+            fut = ctx.kernalContext().query().executeQuery(ctx,
+                new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
+                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
+                        return qry.execute();
+                    }
+                }, false);
         }
         else if (filter instanceof SpiQuery) {
             qry = ctx.queries().createSpiQuery(isKeepPortable);
@@ -472,7 +484,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             if (grp != null)
                 qry.projection(grp);
 
-            fut = qry.execute(((SpiQuery)filter).getArgs());
+            fut = ctx.kernalContext().query().executeQuery(ctx,
+                new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
+                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
+                        return qry.execute(((SpiQuery)filter).getArgs());
+                    }
+                }, false);
         }
         else {
             if (filter instanceof SqlFieldsQuery)
@@ -619,7 +636,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
         catch (Exception e) {
             if (e instanceof CacheException)
-                throw e;
+                throw (CacheException)e;
 
             throw new CacheException(e);
         }

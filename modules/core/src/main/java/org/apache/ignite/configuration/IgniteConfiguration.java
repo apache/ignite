@@ -424,9 +424,6 @@ public class IgniteConfiguration {
     /** SSL connection factory. */
     private Factory<SSLContext> sslCtxFactory;
 
-    /** Platform configuration. */
-    private PlatformConfiguration platformCfg;
-
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -501,7 +498,6 @@ public class IgniteConfiguration {
         p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude();
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
-        platformCfg = cfg.getPlatformConfiguration();
         pluginCfgs = cfg.getPluginConfigurations();
         pubPoolSize = cfg.getPublicThreadPoolSize();
         segChkFreq = cfg.getSegmentCheckFrequency();
@@ -2381,24 +2377,6 @@ public class IgniteConfiguration {
         this.storeSesLsnrs = storeSesLsnrs;
 
         return this;
-    }
-
-    /**
-     * Gets platform configuration.
-     *
-     * @return Platform configuration.
-     */
-    public PlatformConfiguration getPlatformConfiguration() {
-        return platformCfg;
-    }
-
-    /**
-     * Sets platform configuration.
-     *
-     * @param platformCfg Platform configuration.
-     */
-    public void setPlatformConfiguration(PlatformConfiguration platformCfg) {
-        this.platformCfg = platformCfg;
     }
 
     /** {@inheritDoc} */

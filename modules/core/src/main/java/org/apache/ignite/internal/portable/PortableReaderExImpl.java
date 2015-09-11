@@ -2157,9 +2157,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 if (desc == null)
                     throw new PortableInvalidClassException("Unknown type ID: " + typeId);
 
-                // Skip clsName field if any.
-                rawOff += clsNameLen;
-
                 obj = desc.read(this);
 
                 break;

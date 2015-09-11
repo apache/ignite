@@ -155,7 +155,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     @Override public boolean onDone(Collection<R> res, Throwable err) {
         cctx.time().removeTimeoutObject(this);
 
-        qry.query().onExecuted(res, err, startTime(), duration());
+        qry.query().onCompleted(res, err, startTime(), duration());
 
         return super.onDone(res, err);
     }
@@ -413,11 +413,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 }
             }
         }
-        catch (Error e) {
-            onPageError(nodeId, e);
-
-            throw e;
-        }
         catch (Throwable e) {
             onPageError(nodeId, e);
 
@@ -446,6 +441,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param col Collection.
      * @return Collection with masked {@code null} values.
      */
+    @SuppressWarnings("unchecked")
     private Collection<Object> maskNulls(Collection<Object> col) {
         assert col != null;
 
@@ -460,6 +456,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param col Collection.
      * @return Collection with unmasked {@code null} values.
      */
+    @SuppressWarnings("unchecked")
     private Collection<Object> unmaskNulls(Collection<Object> col) {
         assert col != null;
 

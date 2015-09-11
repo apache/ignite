@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PlatformConfiguration;
+import org.apache.ignite.internal.processors.platform.PlatformConfiguration;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
@@ -37,7 +37,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableMetadata;
@@ -73,7 +72,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     @SuppressWarnings("deprecation")
     @Override protected void apply0(IgniteConfiguration igniteCfg) {
         // 3. Validate and copy Interop configuration setting environment pointer along the way.
-        PlatformConfiguration interopCfg = igniteCfg.getPlatformConfiguration();
+        PlatformConfiguration interopCfg = null; //igniteCfg.getPlatformConfiguration();
 
         if (interopCfg != null && !(interopCfg instanceof PlatformDotNetConfiguration))
             throw new IgniteException("Illegal platform configuration (must be of type " +
@@ -88,7 +87,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr);
 
-        igniteCfg.setPlatformConfiguration(dotNetCfg0);
+        //igniteCfg.setPlatformConfiguration(dotNetCfg0);
 
         // Check marshaller
         Marshaller marsh = igniteCfg.getMarshaller();
