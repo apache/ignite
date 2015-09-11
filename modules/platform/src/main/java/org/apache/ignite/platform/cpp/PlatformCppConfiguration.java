@@ -17,7 +17,7 @@
 
 package org.apache.ignite.platform.cpp;
 
-import org.apache.ignite.configuration.PlatformConfiguration;
+import org.apache.ignite.internal.processors.platform.PlatformConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**

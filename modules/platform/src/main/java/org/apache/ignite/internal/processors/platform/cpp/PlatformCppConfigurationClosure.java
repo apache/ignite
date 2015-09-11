@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.cpp;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PlatformConfiguration;
+import org.apache.ignite.internal.processors.platform.PlatformConfiguration;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -50,7 +50,7 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
     @SuppressWarnings("deprecation")
     @Override protected void apply0(IgniteConfiguration igniteCfg) {
         // 3. Validate and copy Interop configuration setting environment pointer along the way.
-        PlatformConfiguration interopCfg = igniteCfg.getPlatformConfiguration();
+        PlatformConfiguration interopCfg = null;//igniteCfg.getPlatformConfiguration();
 
         if (interopCfg != null && !(interopCfg instanceof PlatformCppConfiguration))
             throw new IgniteException("Illegal interop configuration (must be of type " +
@@ -65,7 +65,7 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
 
         PlatformCppConfigurationEx cppCfg0 = new PlatformCppConfigurationEx(cppCfg, gate, memMgr);
 
-        igniteCfg.setPlatformConfiguration(cppCfg0);
+        //igniteCfg.setPlatformConfiguration(cppCfg0);
 
         // Check marshaller
         Marshaller marsh = igniteCfg.getMarshaller();

@@ -867,6 +867,19 @@ public interface GridCacheEntryEx {
     public void updateTtl(@Nullable GridCacheVersion ver, long ttl);
 
     /**
+     * Tries to do offheap -> swap eviction.
+     *
+     * @param entry Serialized swap entry.
+     * @param evictVer Version when entry was selected for eviction.
+     * @param obsoleteVer Obsolete version.
+     * @throws IgniteCheckedException If failed.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     * @return {@code True} if entry was obsoleted and written to swap.
+     */
+    public boolean offheapSwapEvict(byte[] entry, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
      * @return Value.
      * @throws IgniteCheckedException If failed to read from swap storage.
      * @throws GridCacheEntryRemovedException If entry was removed.

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform.dotnet;
+package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.portable.PortableException;
