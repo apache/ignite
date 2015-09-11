@@ -28,6 +28,11 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class GridCacheColocatedTxExceptionSelfTest extends IgniteTxExceptionAbstractSelfTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-257");
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
@@ -35,20 +40,5 @@ public class GridCacheColocatedTxExceptionSelfTest extends IgniteTxExceptionAbst
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testRemovePrimary() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-257");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testPutPrimary() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-257");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testTransformPrimary() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-257");
     }
 }
