@@ -15,37 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc;
+package org.apache.ignite.internal.jdbc2;
 
-import java.io.InputStream;
-import java.io.Reader;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.Clob;
+import java.io.*;
+import java.math.*;
+import java.net.*;
+import java.sql.*;
 import java.sql.Date;
-import java.sql.NClob;
-import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
-import java.sql.Ref;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.RowId;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLXML;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Calendar;
+import java.util.*;
 
 /**
  * JDBC prepared statement implementation.
- *
- * @deprecated Using Ignite client node based JDBC driver is preferable.
- * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
-@Deprecated
 public class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
     /** SQL query. */
     private final String sql;
@@ -154,21 +135,21 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     }
 
     /** {@inheritDoc} */
-    @Override public void setAsciiStream(int paramIdx, InputStream x, int length) throws SQLException {
+    @Override public void setAsciiStream(int paramIdx, InputStream x, int len) throws SQLException {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
-    @Override public void setUnicodeStream(int paramIdx, InputStream x, int length) throws SQLException {
+    @Override public void setUnicodeStream(int paramIdx, InputStream x, int len) throws SQLException {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
-    @Override public void setBinaryStream(int paramIdx, InputStream x, int length) throws SQLException {
+    @Override public void setBinaryStream(int paramIdx, InputStream x, int len) throws SQLException {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
@@ -204,7 +185,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     }
 
     /** {@inheritDoc} */
-    @Override public void setCharacterStream(int paramIdx, Reader x, int length) throws SQLException {
+    @Override public void setCharacterStream(int paramIdx, Reader x, int len) throws SQLException {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
@@ -292,7 +273,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     }
 
     /** {@inheritDoc} */
-    @Override public void setNCharacterStream(int paramIdx, Reader val, long length) throws SQLException {
+    @Override public void setNCharacterStream(int paramIdx, Reader val, long len) throws SQLException {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
@@ -306,21 +287,21 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     }
 
     /** {@inheritDoc} */
-    @Override public void setClob(int paramIdx, Reader reader, long length) throws SQLException {
+    @Override public void setClob(int paramIdx, Reader reader, long len) throws SQLException {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
-    @Override public void setBlob(int paramIdx, InputStream inputStream, long length) throws SQLException {
+    @Override public void setBlob(int paramIdx, InputStream inputStream, long len) throws SQLException {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
-    @Override public void setNClob(int paramIdx, Reader reader, long length) throws SQLException {
+    @Override public void setNClob(int paramIdx, Reader reader, long len) throws SQLException {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
@@ -335,26 +316,26 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public void setObject(int paramIdx, Object x, int targetSqlType,
-        int scaleOrLength) throws SQLException {
+        int scaleOrLen) throws SQLException {
         setArgument(paramIdx, x);
     }
 
     /** {@inheritDoc} */
-    @Override public void setAsciiStream(int paramIdx, InputStream x, long length) throws SQLException {
+    @Override public void setAsciiStream(int paramIdx, InputStream x, long len) throws SQLException {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
-    @Override public void setBinaryStream(int paramIdx, InputStream x, long length) throws SQLException {
+    @Override public void setBinaryStream(int paramIdx, InputStream x, long len) throws SQLException {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
-    @Override public void setCharacterStream(int paramIdx, Reader x, long length) throws SQLException {
+    @Override public void setCharacterStream(int paramIdx, Reader x, long len) throws SQLException {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");

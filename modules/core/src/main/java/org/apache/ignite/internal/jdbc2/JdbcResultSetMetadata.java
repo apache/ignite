@@ -15,19 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc;
+package org.apache.ignite.internal.jdbc2;
 
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.List;
+import java.sql.*;
+import java.util.*;
 
 /**
  * JDBC result set metadata implementation.
- *
- * @deprecated Using Ignite client node based JDBC driver is preferable.
- * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
-@Deprecated
 public class JdbcResultSetMetadata implements ResultSetMetaData {
     /** Column width. */
     private static final int COL_WIDTH = 30;
@@ -161,6 +156,7 @@ public class JdbcResultSetMetadata implements ResultSetMetaData {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Result set meta data is not a wrapper for " + iface.getName());
