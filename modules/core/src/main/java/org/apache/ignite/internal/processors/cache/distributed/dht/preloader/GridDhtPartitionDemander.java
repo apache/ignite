@@ -123,7 +123,7 @@ public class GridDhtPartitionDemander {
 
         boolean enabled = cctx.rebalanceEnabled() && !cctx.kernalContext().clientNode();
 
-        syncFut = new SyncFuture(null, cctx, log);
+        syncFut = new SyncFuture(null, cctx, log, true);
 
         if (!enabled)
             // Calling onDone() immediately since preloading is disabled.
@@ -230,7 +230,7 @@ public class GridDhtPartitionDemander {
                 if (!fut.isDone())
                     fut.onCancel();
 
-                fut = new SyncFuture(assigns, cctx, log);
+                fut = new SyncFuture(assigns, cctx, log, false);
 
                 syncFut = fut;
             }
@@ -787,13 +787,17 @@ public class GridDhtPartitionDemander {
         /** Completed. */
         private volatile boolean completed = true;
 
+        private volatile boolean sendStopEvnt = false;
+
         /**
          * @param assigns Assigns.
          */
-        SyncFuture(GridDhtPreloaderAssignments assigns, GridCacheContext<?, ?> cctx, IgniteLogger log) {
+        SyncFuture(GridDhtPreloaderAssignments assigns, GridCacheContext<?, ?> cctx, IgniteLogger log,
+            boolean sentStopEvnt) {
             this.assigns = assigns;
             this.cctx = cctx;
             this.log = log;
+            this.sendStopEvnt = sentStopEvnt;
         }
 
         /**
@@ -1007,7 +1011,7 @@ public class GridDhtPartitionDemander {
 
                 cctx.shared().exchange().scheduleResendPartitions();
 
-                if (!cctx.isReplicated() || cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED))
+                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED) && (!cctx.isReplicated() || sendStopEvnt))
                     preloadEvent(EVT_CACHE_REBALANCE_STOPPED, assigns.exchangeFuture().discoveryEvent());
 
                 if (lsnr != null)
