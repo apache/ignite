@@ -37,10 +37,10 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("1.4.0")]
 
 [assembly: CLSCompliant(true)]
+
+#if !EXCLUDE_INTERNALS_VISIBLE_TO
+
 [assembly: InternalsVisibleTo("Apache.Ignite")]
-
-#if !EXCLUDE_TESTS
-
 [assembly: InternalsVisibleTo("Apache.Ignite.Core.Tests")]
 
 #endif
