@@ -17,17 +17,19 @@
 
 package org.apache.ignite;
 
-
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.jdbc.JdbcConnection;
+import org.apache.ignite.logger.java.JavaLogger;
 
 /**
  * JDBC driver implementation for In-Memory Data Grid.
@@ -66,8 +68,47 @@ import org.apache.ignite.internal.jdbc.JdbcConnection;
  * {@code IGNITE_HOME/libs} folder. So if you are using JDBC driver in any external tool,
  * you have to add main Ignite JAR will all dependencies to its classpath.
  * <h1 class="header">Configuration</h1>
- * Internally JDBC driver <b>is based on Ignite Java client</b>. Therefore, all client
- * configuration properties can be applied to JDBC connection.
+ *
+ * JDBC driver can return two different types of connection: Ignite Java client based connection and
+ * Ignite client node based connection. Java client best connection is deprecated and left only for
+ * compatibility with previous version, so you should always use Ignite client node based mode.
+ * It is also preferable because it has much better performance.
+ *
+ * The type of returned connection depends on provided JDBC connection URL.
+ *
+ * <h2 class="header">Configuration of Ignite client node based connection</h2>
+ *
+ * JDBC connection URL has the following pattern: {@code jdbc:ignite:cfg://[<params>@]<config_url>}.<br>
+ *
+ * {@code <config_url>} represents any valid URL which points to Ignite configuration file. It is required.<br>
+ *
+ * {@code <params>} are optional and have the following format: {@code param1=value1:param2=value2:...:paramN=valueN}.<br>
+ *
+ * The following parameters are supported:
+ * <ul>
+ *     <li>{@code cache} - cache name. If it is not defined than default cache will be used.</li>
+ *     <li>
+ *         {@code nodeId} - ID of node where query will be executed.
+ *         It can be useful for querying through local caches.
+ *         If node with provided ID doesn't exist, exception is thrown.
+ *     </li>
+ *     <li>
+ *         {@code local} - query will be executed only on local node. Use this parameter with {@code nodeId} parameter.
+ *         Default value is {@code false}.
+ *     </li>
+ *     <li>
+ *          {@code collocated} - flag that used for optimization purposes. Whenever Ignite executes
+ *          a distributed query, it sends sub-queries to individual cluster members.
+ *          If you know in advance that the elements of your query selection are collocated
+ *          together on the same node, usually based on some <b>affinity-key</b>, Ignite
+ *          can make significant performance and network optimizations.
+ *          Default value is {@code false}.
+ *     </li>
+ * </ul>
+ *
+ * <h2 class="header">Configuration of Ignite Java client based connection</h2>
+ *
+ * All Ignite Java client configuration properties can be applied to JDBC connection of this type.
  * <p>
  * JDBC connection URL has the following pattern:
  * {@code jdbc:ignite://<hostname>:<port>/<cache_name>?nodeId=<UUID>}<br>
@@ -197,10 +238,10 @@ import org.apache.ignite.internal.jdbc.JdbcConnection;
  * <h1 class="header">Example</h1>
  * <pre name="code" class="java">
  * // Register JDBC driver.
- * Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
+ * Class.forName("org.apache.ignite.IgniteJdbcDriver");
  *
  * // Open JDBC connection.
- * Connection conn = DriverManager.getConnection("jdbc:ignite://localhost/cache");
+ * Connection conn = DriverManager.getConnection("jdbc:ignite:cfg//cache=persons@file:///etc/configs/ignite-jdbc.xml");
  *
  * // Query persons' names
  * ResultSet rs = conn.createStatement().executeQuery("select name from Person");
@@ -231,6 +272,18 @@ public class IgniteJdbcDriver implements Driver {
     /** Prefix for property names. */
     private static final String PROP_PREFIX = "ignite.jdbc.";
 
+    /** Node ID parameter name. */
+    private static final String PARAM_NODE_ID = "nodeId";
+
+    /** Cache parameter name. */
+    private static final String PARAM_CACHE = "cache";
+
+    /** Local parameter name. */
+    private static final String PARAM_LOCAL = "local";
+
+    /** Collocated parameter name. */
+    private static final String PARAM_COLLOCATED = "collocated";
+
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -238,13 +291,25 @@ public class IgniteJdbcDriver implements Driver {
     public static final String PROP_PORT = PROP_PREFIX + "port";
 
     /** Cache name property name. */
-    public static final String PROP_CACHE = PROP_PREFIX + "cache";
+    public static final String PROP_CACHE = PROP_PREFIX + PARAM_CACHE;
 
     /** Node ID property name. */
-    public static final String PROP_NODE_ID = PROP_PREFIX + "nodeId";
+    public static final String PROP_NODE_ID = PROP_PREFIX + PARAM_NODE_ID;
+
+    /** Local property name. */
+    public static final String PROP_LOCAL = PROP_PREFIX + PARAM_LOCAL;
+
+    /** Collocated property name. */
+    public static final String PROP_COLLOCATED = PROP_PREFIX + PARAM_COLLOCATED;
+
+    /** Cache name property name. */
+    public static final String PROP_CFG = PROP_PREFIX + "cfg";
 
     /** URL prefix. */
     public static final String URL_PREFIX = "jdbc:ignite://";
+
+    /** Config URL prefix. */
+    public static final String CFG_URL_PREFIX = "jdbc:ignite:cfg://";
 
     /** Default port. */
     public static final int DFLT_PORT = 11211;
@@ -254,6 +319,9 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Minor version. */
     private static final int MINOR_VER = 0;
+
+    /** Logger. */
+    private static final IgniteLogger LOG = new JavaLogger();
 
     /**
      * Register driver.
@@ -272,12 +340,19 @@ public class IgniteJdbcDriver implements Driver {
         if (!parseUrl(url, props))
             throw new SQLException("URL is invalid: " + url);
 
-        return new JdbcConnection(url, props);
+        if (url.startsWith(URL_PREFIX)) {
+            if (props.getProperty(PROP_CFG) != null)
+                LOG.warning(PROP_CFG + " property is not applicable for this URL.");
+
+            return new JdbcConnection(url, props);
+        }
+        else
+            return new org.apache.ignite.internal.jdbc2.JdbcConnection(url, props);
     }
 
     /** {@inheritDoc} */
     @Override public boolean acceptsURL(String url) throws SQLException {
-        return url.startsWith(URL_PREFIX);
+        return url.startsWith(URL_PREFIX) || url.startsWith(CFG_URL_PREFIX);
     }
 
     /** {@inheritDoc} */
@@ -285,49 +360,72 @@ public class IgniteJdbcDriver implements Driver {
         if (!parseUrl(url, info))
             throw new SQLException("URL is invalid: " + url);
 
-        DriverPropertyInfo[] props = new DriverPropertyInfo[20];
+        List<DriverPropertyInfo> props = Arrays.<DriverPropertyInfo>asList(
+            new PropertyInfo("Hostname", info.getProperty(PROP_HOST), ""),
+            new PropertyInfo("Port number", info.getProperty(PROP_PORT), ""),
+            new PropertyInfo("Cache name", info.getProperty(PROP_CACHE), ""),
+            new PropertyInfo("Node ID", info.getProperty(PROP_NODE_ID), ""),
+            new PropertyInfo("Local", info.getProperty(PROP_LOCAL), ""),
+            new PropertyInfo("Collocated", info.getProperty(PROP_COLLOCATED), "")
+        );
 
-        props[0] = new PropertyInfo("Hostname", info.getProperty(PROP_HOST), true);
-        props[1] = new PropertyInfo("Port number", info.getProperty(PROP_PORT), "");
-        props[2] = new PropertyInfo("Cache name", info.getProperty(PROP_CACHE), "");
-        props[3] = new PropertyInfo("Node ID", info.getProperty(PROP_NODE_ID, ""));
-        props[4] = new PropertyInfo("ignite.client.protocol", info.getProperty("ignite.client.protocol", "TCP"),
-            "Communication protocol (TCP or HTTP).");
-        props[5] = new PropertyInfo("ignite.client.connectTimeout", info.getProperty("ignite.client.connectTimeout", "0"),
-            "Socket connection timeout.");
-        props[6] = new PropertyInfo("ignite.client.tcp.noDelay", info.getProperty("ignite.client.tcp.noDelay", "true"),
-            "Flag indicating whether TCP_NODELAY flag should be enabled for outgoing connections.");
-        props[7] = new PropertyInfo("ignite.client.ssl.enabled", info.getProperty("ignite.client.ssl.enabled", "false"),
-            "Flag indicating that SSL is needed for connection.");
-        props[8] = new PropertyInfo("ignite.client.ssl.protocol", info.getProperty("ignite.client.ssl.protocol", "TLS"),
-            "SSL protocol.");
-        props[9] = new PropertyInfo("ignite.client.ssl.key.algorithm", info.getProperty("ignite.client.ssl.key.algorithm",
-            "SunX509"), "Key manager algorithm.");
-        props[10] = new PropertyInfo("ignite.client.ssl.keystore.location",
-            info.getProperty("ignite.client.ssl.keystore.location", ""),
-            "Key store to be used by client to connect with Ignite topology.");
-        props[11] = new PropertyInfo("ignite.client.ssl.keystore.password",
-            info.getProperty("ignite.client.ssl.keystore.password", ""), "Key store password.");
-        props[12] = new PropertyInfo("ignite.client.ssl.keystore.type", info.getProperty("ignite.client.ssl.keystore.type",
-            "jks"), "Key store type.");
-        props[13] = new PropertyInfo("ignite.client.ssl.truststore.location",
-            info.getProperty("ignite.client.ssl.truststore.location", ""),
-            "Trust store to be used by client to connect with Ignite topology.");
-        props[14] = new PropertyInfo("ignite.client.ssl.keystore.password",
-            info.getProperty("ignite.client.ssl.truststore.password", ""), "Trust store password.");
-        props[15] = new PropertyInfo("ignite.client.ssl.truststore.type", info.getProperty("ignite.client.ssl.truststore.type",
-            "jks"), "Trust store type.");
-        props[16] = new PropertyInfo("ignite.client.credentials", info.getProperty("ignite.client.credentials", ""),
-            "Client credentials used in authentication process.");
-        props[17] = new PropertyInfo("ignite.client.cache.top", info.getProperty("ignite.client.cache.top", "false"),
-            "Flag indicating that topology is cached internally. Cache will be refreshed in the background with " +
-                "interval defined by topologyRefreshFrequency property (see below).");
-        props[18] = new PropertyInfo("ignite.client.topology.refresh", info.getProperty("ignite.client.topology.refresh",
-            "2000"), "Topology cache refresh frequency (ms).");
-        props[19] = new PropertyInfo("ignite.client.idleTimeout", info.getProperty("ignite.client.idleTimeout", "30000"),
-            "Maximum amount of time that connection can be idle before it is closed (ms).");
+        if (info.getProperty(PROP_CFG) != null)
+            props.add(new PropertyInfo("Configuration path", info.getProperty(PROP_CFG), ""));
+        else
+            props.addAll(Arrays.<DriverPropertyInfo>asList(
+                new PropertyInfo("ignite.client.protocol",
+                    info.getProperty("ignite.client.protocol", "TCP"),
+                    "Communication protocol (TCP or HTTP)."),
+                new PropertyInfo("ignite.client.connectTimeout",
+                    info.getProperty("ignite.client.connectTimeout", "0"),
+                    "Socket connection timeout."),
+                new PropertyInfo("ignite.client.tcp.noDelay",
+                    info.getProperty("ignite.client.tcp.noDelay", "true"),
+                    "Flag indicating whether TCP_NODELAY flag should be enabled for outgoing connections."),
+                new PropertyInfo("ignite.client.ssl.enabled",
+                    info.getProperty("ignite.client.ssl.enabled", "false"),
+                    "Flag indicating that SSL is needed for connection."),
+                new PropertyInfo("ignite.client.ssl.protocol",
+                    info.getProperty("ignite.client.ssl.protocol", "TLS"),
+                    "SSL protocol."),
+                new PropertyInfo("ignite.client.ssl.key.algorithm",
+                    info.getProperty("ignite.client.ssl.key.algorithm", "SunX509"),
+                    "Key manager algorithm."),
+                new PropertyInfo("ignite.client.ssl.keystore.location",
+                    info.getProperty("ignite.client.ssl.keystore.location", ""),
+                    "Key store to be used by client to connect with Ignite topology."),
+                new PropertyInfo("ignite.client.ssl.keystore.password",
+                    info.getProperty("ignite.client.ssl.keystore.password", ""),
+                    "Key store password."),
+                new PropertyInfo("ignite.client.ssl.keystore.type",
+                    info.getProperty("ignite.client.ssl.keystore.type", "jks"),
+                    "Key store type."),
+                new PropertyInfo("ignite.client.ssl.truststore.location",
+                    info.getProperty("ignite.client.ssl.truststore.location", ""),
+                    "Trust store to be used by client to connect with Ignite topology."),
+                new PropertyInfo("ignite.client.ssl.keystore.password",
+                    info.getProperty("ignite.client.ssl.truststore.password", ""),
+                    "Trust store password."),
+                new PropertyInfo("ignite.client.ssl.truststore.type",
+                    info.getProperty("ignite.client.ssl.truststore.type", "jks"),
+                    "Trust store type."),
+                new PropertyInfo("ignite.client.credentials",
+                    info.getProperty("ignite.client.credentials", ""),
+                    "Client credentials used in authentication process."),
+                new PropertyInfo("ignite.client.cache.top",
+                    info.getProperty("ignite.client.cache.top", "false"),
+                    "Flag indicating that topology is cached internally. Cache will be refreshed in the " +
+                        "background with interval defined by topologyRefreshFrequency property (see below)."),
+                new PropertyInfo("ignite.client.topology.refresh",
+                    info.getProperty("ignite.client.topology.refresh", "2000"),
+                    "Topology cache refresh frequency (ms)."),
+                new PropertyInfo("ignite.client.idleTimeout",
+                    info.getProperty("ignite.client.idleTimeout", "30000"),
+                    "Maximum amount of time that connection can be idle before it is closed (ms).")
+                )
+            );
 
-        return props;
+        return props.toArray(new DriverPropertyInfo[0]);
     }
 
     /** {@inheritDoc} */
@@ -358,9 +456,44 @@ public class IgniteJdbcDriver implements Driver {
      * @return Whether URL is valid.
      */
     private boolean parseUrl(String url, Properties props) {
-        if (url == null || !url.startsWith(URL_PREFIX) || url.length() == URL_PREFIX.length())
+        if (url == null)
             return false;
 
+        if (url.startsWith(URL_PREFIX) && url.length() > URL_PREFIX.length())
+            return parseJdbcUrl(url, props);
+        else if (url.startsWith(CFG_URL_PREFIX) && url.length() > CFG_URL_PREFIX.length())
+            return parseJdbcConfigUrl(url, props);
+
+        return false;
+    }
+
+    /**
+     * @param url Url.
+     * @param props Properties.
+     */
+    private boolean parseJdbcConfigUrl(String url, Properties props) {
+        url = url.substring(CFG_URL_PREFIX.length());
+
+        String[] parts = url.split("@");
+
+        if (parts.length > 2)
+            return false;
+
+        if (parts.length == 2) {
+            if (!parseParameters(parts[0], ":", props))
+                return false;
+        }
+
+        props.setProperty(PROP_CFG, parts[parts.length - 1]);
+
+        return true;
+    }
+
+    /**
+     * @param url Url.
+     * @param props Properties.
+     */
+    private boolean parseJdbcUrl(String url, Properties props) {
         url = url.substring(URL_PREFIX.length());
 
         String[] parts = url.split("\\?");
@@ -369,7 +502,7 @@ public class IgniteJdbcDriver implements Driver {
             return false;
 
         if (parts.length == 2)
-            if (!parseUrlParameters(parts[1], props))
+            if (!parseParameters(parts[1], "&", props))
                 return false;
 
         parts = parts[0].split("/");
@@ -406,12 +539,13 @@ public class IgniteJdbcDriver implements Driver {
     /**
      * Validates and parses URL parameters.
      *
-     * @param urlParams URL parameters string.
+     * @param val Parameters string.
+     * @param delim Delimiter.
      * @param props Properties.
      * @return Whether URL parameters string is valid.
      */
-    private boolean parseUrlParameters(String urlParams, Properties props) {
-        String[] params = urlParams.split("&");
+    private boolean parseParameters(String val, String delim, Properties props) {
+        String[] params = val.split(delim);
 
         for (String param : params) {
             String[] pair = param.split("=");
@@ -430,13 +564,6 @@ public class IgniteJdbcDriver implements Driver {
      * convenient constructors.
      */
     private static class PropertyInfo extends DriverPropertyInfo {
-        /**
-         * @param name Name.
-         * @param val Value.
-         */
-        private PropertyInfo(String name, String val) {
-            super(name, val);
-        }
 
         /**
          * @param name Name.
@@ -447,30 +574,6 @@ public class IgniteJdbcDriver implements Driver {
             super(name, val);
 
             description = desc;
-        }
-
-        /**
-         * @param name Name.
-         * @param val Value.
-         * @param required Required flag.
-         */
-        private PropertyInfo(String name, String val, boolean required) {
-            super(name, val);
-
-            this.required = required;
-        }
-
-        /**
-         * @param name Name.
-         * @param val Value.
-         * @param desc Description.
-         * @param required Required flag.
-         */
-        private PropertyInfo(String name, String val, String desc, boolean required) {
-            super(name, val);
-
-            description = desc;
-            this.required = required;
         }
     }
 }
