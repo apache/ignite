@@ -363,20 +363,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         Collections.sort(lst, COMPARATOR);
 
-        int primaryAndBackups;
+        int primaryAndBackups = backups == Integer.MAX_VALUE ? nodes.size() : Math.min(backups + 1, nodes.size());
 
-        List<ClusterNode> res;
-
-        if (backups == Integer.MAX_VALUE) {
-            primaryAndBackups = Integer.MAX_VALUE;
-
-            res = new ArrayList<>();
-        }
-        else {
-            primaryAndBackups = backups + 1;
-
-            res = new ArrayList<>(primaryAndBackups);
-        }
+        List<ClusterNode> res = new ArrayList<>(primaryAndBackups);
 
         ClusterNode primary = lst.get(0).get2();
 

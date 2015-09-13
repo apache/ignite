@@ -124,7 +124,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testCrossCacheTxOperationsFairAffinity() throws Exception {
+    public void testCrossCacheTxOperationsFairAffinity() throws Exception {
         txOperations(PARTITIONED, FULL_SYNC, true, true);
     }
 
@@ -163,7 +163,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(1);
 
-        ccfg.setAffinity(fairAff ? new FairAffinityFunction(false) : new RendezvousAffinityFunction(false));
+        ccfg.setAffinity(fairAff ? new FairAffinityFunction() : new RendezvousAffinityFunction());
 
         return ccfg;
     }

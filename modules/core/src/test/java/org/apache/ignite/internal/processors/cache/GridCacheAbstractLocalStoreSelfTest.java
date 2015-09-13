@@ -97,11 +97,11 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         CacheConfiguration cacheCfg = cache(gridName, null, 0);
 
-        cacheCfg.setAffinity(new RendezvousAffinityFunction(false));
+        cacheCfg.setAffinity(new RendezvousAffinityFunction());
 
         CacheConfiguration cacheBackupCfg = cache(gridName, BACKUP_CACHE, 2);
 
-        cacheBackupCfg.setAffinity(new RendezvousAffinityFunction(false));
+        cacheBackupCfg.setAffinity(new RendezvousAffinityFunction());
 
         cfg.setCacheConfiguration(cacheCfg, cacheBackupCfg);
 

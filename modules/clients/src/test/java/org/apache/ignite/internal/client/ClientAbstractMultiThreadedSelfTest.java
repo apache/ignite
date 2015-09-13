@@ -194,7 +194,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
     private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        cfg.setAffinity(new RendezvousAffinityFunction(false));
+        cfg.setAffinity(new RendezvousAffinityFunction());
 
         cfg.setAtomicityMode(TRANSACTIONAL);
 

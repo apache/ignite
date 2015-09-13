@@ -77,7 +77,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
         cacheCfg.setRebalanceMode(preloadMode);
         cacheCfg.setBackups(backups);
 
-        cacheCfg.setAffinity(new RendezvousAffinityFunction(false));
+        cacheCfg.setAffinity(new RendezvousAffinityFunction());
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
