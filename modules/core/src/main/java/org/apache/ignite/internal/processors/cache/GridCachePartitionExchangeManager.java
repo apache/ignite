@@ -1251,8 +1251,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         return;
 
                     try {
-                        if (started.compareAndSet(false, true))
-                            refreshPartitions();
+                        if (started.compareAndSet(false, true)) {
+						
+						// refreshPartitions();
+						
+						}
                     }
                     finally {
                         busyLock.readLock().unlock();

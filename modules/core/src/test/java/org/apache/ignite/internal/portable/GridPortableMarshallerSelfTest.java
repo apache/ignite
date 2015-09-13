@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import com.sun.tools.jdi.*;
-import com.sun.tools.jdi.LinkedHashMap;
+import java.util.LinkedHashMap;
 import org.jsr166.*;
 import sun.misc.*;
 
