@@ -107,6 +107,17 @@ namespace Apache.Ignite.Core.Cluster
         bool IsDaemon { get; }
 
         /// <summary>
+        /// Gets a value indicating whether or not this node is connected to cluster as a client.
+        /// <para />
+        /// Do not confuse client in terms of discovery and client in terms of cache. 
+        /// Cache clients cannot carry data, while topology clients connect to the topology in a different way.
+        /// </summary>
+        /// <value>   
+        /// <c>true</c> if this node is a client node; otherwise, <c>false</c>.
+        /// </value>
+        bool IsClient { get; }
+
+        /// <summary>
         /// Gets metrics snapshot for this node. Note that node metrics are constantly updated
         /// and provide up to date information about nodes. For example, you can get
         /// an idea about CPU load on remote node via <see cref="IClusterMetrics.CurrentCpuLoad"/>.
@@ -117,16 +128,5 @@ namespace Apache.Ignite.Core.Cluster
         /// </summary>
         /// <returns>Runtime metrics snapshot for this node.</returns>
         IClusterMetrics GetMetrics();
-
-        /// <summary>
-        /// Gets a value indicating whether or not this node is connected to cluster as a client.
-        /// <para />
-        /// Do not confuse client in terms of discovery and client in terms of cache. 
-        /// Cache clients cannot carry data, while topology clients connect to the topology in a different way.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if this node is a client node; otherwise, <c>false</c>.
-        /// </value>
-        bool IsClient { get; }
     }
 }
