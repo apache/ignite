@@ -37,8 +37,9 @@ import org.apache.ignite.IgniteDataStreamer;
  * </ol>
  */
 public abstract class StreamAdapter<T, K, V> {
-    /** Tuple extractor. */
-    private StreamTupleExtractor<T, K, V> extractor;
+
+    /** Tuple extractor extracting a single tuple from an event */
+    private StreamSingleTupleExtractor<T, K, V> singleTupleExtractor;
 
     /** Tuple extractor that supports extracting N tuples from a single event (1:n cardinality). */
     private StreamMultipleTupleExtractor<T, K, V> multipleTupleExtractor;
@@ -60,11 +61,22 @@ public abstract class StreamAdapter<T, K, V> {
      * Stream adapter.
      *
      * @param stmr Streamer.
-     * @param extractor Tuple extractor.
+     * @param extractor Tuple extractor (1:1).
      */
-    protected StreamAdapter(IgniteDataStreamer<K, V> stmr, StreamTupleExtractor<T, K, V> extractor) {
+    protected StreamAdapter(IgniteDataStreamer<K, V> stmr, StreamSingleTupleExtractor<T, K, V> extractor) {
         this.stmr = stmr;
-        this.extractor = extractor;
+        this.singleTupleExtractor = extractor;
+    }
+
+    /**
+     * Stream adapter.
+     *
+     * @param stmr Streamer.
+     * @param extractor Tuple extractor (1:n).
+     */
+    protected StreamAdapter(IgniteDataStreamer<K, V> stmr, StreamMultipleTupleExtractor<T, K, V> extractor) {
+        this.stmr = stmr;
+        this.multipleTupleExtractor = extractor;
     }
 
     /**
@@ -83,16 +95,44 @@ public abstract class StreamAdapter<T, K, V> {
 
     /**
      * @return Provided tuple extractor.
+     * @see #getSingleTupleExtractor()
      */
+    @Deprecated
     public StreamTupleExtractor<T, K, V> getTupleExtractor() {
-        return extractor;
+        if (singleTupleExtractor instanceof StreamTupleExtractor) {
+            return (StreamTupleExtractor) singleTupleExtractor;
+        }
+        throw new IllegalArgumentException("This method is deprecated and only relevant if using an old " +
+            "StreamTupleExtractor; use getSingleTupleExtractor instead");
     }
 
     /**
-     * @param extractor Extractor for key-value tuples from messages.
+     * @param extractor Extractor for a single key-value tuple from the message.
+     * @see #setSingleTupleExtractor(StreamSingleTupleExtractor)
      */
+    @Deprecated
     public void setTupleExtractor(StreamTupleExtractor<T, K, V> extractor) {
-        this.extractor = extractor;
+        if (multipleTupleExtractor != null) {
+            throw new IllegalArgumentException("Multiple tuple extractor already set; cannot set both types at once.");
+        }
+        this.singleTupleExtractor = extractor;
+    }
+
+    /**
+     * @return Provided single tuple extractor.
+     */
+    public StreamSingleTupleExtractor<T, K, V> getSingleTupleExtractor() {
+        return singleTupleExtractor;
+    }
+
+    /**
+     * @param singleTupleExtractor Extractor for key-value tuples from messages.
+     */
+    public void setSingleTupleExtractor(StreamSingleTupleExtractor<T, K, V> singleTupleExtractor) {
+        if (multipleTupleExtractor != null) {
+            throw new IllegalArgumentException("Multiple tuple extractor already set; cannot set both types at once.");
+        }
+        this.singleTupleExtractor = singleTupleExtractor;
     }
 
     /**
@@ -106,6 +146,9 @@ public abstract class StreamAdapter<T, K, V> {
      * @param multipleTupleExtractor Extractor for 1:n tuple extraction.
      */
     public void setMultipleTupleExtractor(StreamMultipleTupleExtractor<T, K, V> multipleTupleExtractor) {
+        if (singleTupleExtractor != null) {
+            throw new IllegalArgumentException("Single tuple extractor already set; cannot set both types at once.");
+        }
         this.multipleTupleExtractor = multipleTupleExtractor;
     }
 
@@ -126,15 +169,12 @@ public abstract class StreamAdapter<T, K, V> {
     /**
      * Converts given message to 1 or many tuples (depending on the type of extractor) and adds it/them to the
      * underlying streamer.
-     * <p>
-     * If both a {@link #multipleTupleExtractor} and a {@link #extractor} have been set, the former will take precedence
-     * and the latter will be ignored.
      *
      * @param msg Message to convert.
      */
     protected void addMessage(T msg) {
         if (multipleTupleExtractor == null) {
-            Map.Entry<K, V> e = extractor.extract(msg);
+            Map.Entry<K, V> e = singleTupleExtractor.extract(msg);
 
             if (e != null)
                 stmr.addData(e);

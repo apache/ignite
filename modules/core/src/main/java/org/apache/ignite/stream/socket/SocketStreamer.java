@@ -141,7 +141,7 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
      * @throws IgniteException If failed.
      */
     public void start() {
-        A.ensure(getTupleExtractor() != null || getMultipleTupleExtractor() != null,
+        A.ensure(getSingleTupleExtractor() != null || getMultipleTupleExtractor() != null,
             "tupleExtractor (single or multiple)");
         A.notNull(getStreamer(), "streamer");
         A.notNull(getIgnite(), "ignite");

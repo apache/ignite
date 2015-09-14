@@ -17,13 +17,24 @@
 
 package org.apache.ignite.stream;
 
-/**
- * This interface is provided for backwards compatibility with {@link StreamSingleTupleExtractor}.
- *
- * @deprecated Will be removed in 2.0.0.
- * @see StreamSingleTupleExtractor
- */
-@Deprecated
-public interface StreamTupleExtractor<T, K, V> extends StreamSingleTupleExtractor<T, K, V> {
+import java.util.Map;
 
+/**
+ * Stream tuple extractor to convert a message to a single Ignite key-value tuple.
+ * <p>
+ * Alternatively, {@link StreamMultipleTupleExtractor} can be used in cases where a single message/event may
+ * produce more than one tuple.
+ * <p>
+ * NOTE: This interface supersedes the former {@link StreamTupleExtractor} which is now deprecated.
+ *
+ * @see StreamMultipleTupleExtractor
+ */
+public interface StreamSingleTupleExtractor<T, K, V> {
+    /**
+     * Extracts a key-value tuple from a message.
+     *
+     * @param msg Message.
+     * @return Key-value tuple.
+     */
+    public Map.Entry<K, V> extract(T msg);
 }
