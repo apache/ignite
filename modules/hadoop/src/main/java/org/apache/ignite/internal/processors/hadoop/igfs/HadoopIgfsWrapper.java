@@ -18,8 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.igfs;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.logging.Log;
@@ -33,9 +32,9 @@ import org.apache.ignite.igfs.IgfsPathSummary;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint.LOCALHOST;
@@ -339,127 +338,51 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      * @return Delegate.
      */
     private Delegate delegate() throws HadoopIgfsCommunicationException {
-        Exception err = null;
-
         // 1. If delegate is set, return it immediately.
         Delegate curDelegate = delegateRef.get();
 
         if (curDelegate != null)
             return curDelegate;
 
+        final List<IgniteBiTuple<String,Exception>> errors = new ArrayList<>(5);
+
         // 2. Guess that we are in the same VM.
-        if (!parameter(conf, PARAM_IGFS_ENDPOINT_NO_EMBED, authority, false)) {
-            IgfsEx igfs = null;
-
-            if (endpoint.grid() == null) {
-                try {
-                    Ignite ignite = G.ignite();
-
-                    igfs = (IgfsEx)ignite.fileSystem(endpoint.igfs());
-                }
-                catch (Exception e) {
-                    err = e;
-                }
-            }
-            else {
-                for (Ignite ignite : G.allGrids()) {
-                    try {
-                        igfs = (IgfsEx)ignite.fileSystem(endpoint.igfs());
-
-                        break;
-                    }
-                    catch (Exception e) {
-                        err = e;
-                    }
-                }
-            }
-
-            if (igfs != null) {
-                HadoopIgfsEx hadoop = null;
-
-                try {
-                    hadoop = new HadoopIgfsInProc(igfs, log, userName);
-
-                    curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    if (e instanceof HadoopIgfsCommunicationException)
-                        if (hadoop != null)
-                            hadoop.close(true);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to connect to in-proc IGFS, fallback to IPC mode.", e);
-
-                    err = e;
-                }
-            }
+        try {
+            curDelegate = inproc();
+        }
+        catch (Exception e) {
+            errors.add(new IgniteBiTuple<>("in-proc", e));
         }
 
         // 3. Try connecting using shmem.
-        if (!parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM, authority, false)) {
-            if (curDelegate == null && !U.isWindows()) {
-                HadoopIgfsEx hadoop = null;
-
-                try {
-                    hadoop = new HadoopIgfsOutProc(endpoint.port(), endpoint.grid(), endpoint.igfs(), log, userName);
-
-                    curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    if (e instanceof HadoopIgfsCommunicationException)
-                        hadoop.close(true);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to connect to out-proc local IGFS using shmem.", e);
-
-                    err = e;
-                }
+        if (curDelegate == null) {
+            try {
+                curDelegate = shmem();
+            }
+            catch (Exception e) {
+                errors.add(new IgniteBiTuple<>("shmem", e));
             }
         }
 
-        // 4. Try local TCP connection.
         boolean skipLocTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP, authority, false);
 
-        if (!skipLocTcp) {
-            if (curDelegate == null) {
-                HadoopIgfsEx hadoop = null;
-
-                try {
-                    hadoop = new HadoopIgfsOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.igfs(),
-                        log, userName);
-
-                    curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    if (e instanceof HadoopIgfsCommunicationException)
-                        hadoop.close(true);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to connect to out-proc local IGFS using TCP.", e);
-
-                    err = e;
-                }
+        // 4. Try local TCP connection.
+        if (curDelegate == null) {
+            try {
+                curDelegate = localTcp(skipLocTcp);
+            }
+            catch (Exception e) {
+                errors.add(new IgniteBiTuple<>("local TCP", e));
             }
         }
 
         // 5. Try remote TCP connection.
-        if (curDelegate == null && (skipLocTcp || !F.eq(LOCALHOST, endpoint.host()))) {
-            HadoopIgfsEx hadoop = null;
-
+        if (curDelegate == null) {
             try {
-                hadoop = new HadoopIgfsOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.igfs(),
-                    log, userName);
-
-                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
+                curDelegate = remoteTcp(skipLocTcp);
             }
-            catch (IOException | IgniteCheckedException e) {
-                if (e instanceof HadoopIgfsCommunicationException)
-                    hadoop.close(true);
-
-                if (log.isDebugEnabled())
-                    log.debug("Failed to connect to out-proc remote IGFS using TCP.", e);
-
-                err = e;
+            catch (Exception e) {
+                errors.add(new IgniteBiTuple<>("remote TCP", e));
             }
         }
 
@@ -469,8 +392,166 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
             return curDelegate;
         }
-        else
-            throw new HadoopIgfsCommunicationException("Failed to connect to IGFS: " + endpoint, err);
+        else {
+            StringBuilder sb = new StringBuilder("Failed to connect to IGFS: ")
+                .append(endpoint);
+
+            Exception err = null;
+
+            if (errors.isEmpty())
+                sb.append("No communication method enabled to communicate with IGFS.");
+            else {
+                for (IgniteBiTuple<String, Exception> t2 : errors) {
+                    sb.append("Communication method ")
+                        .append(t2.get1())
+                        .append(" failed: ")
+                        .append(t2.get2())
+                        .append("\n");
+                }
+
+                err = errors.get(errors.size() - 1).get2();
+            }
+
+            throw new HadoopIgfsCommunicationException(sb.toString(), err);
+        }
+    }
+
+    /**
+     * In-proc method.
+     *
+     * @return The delegate
+     * @throws Exception On error.
+     */
+    private Delegate inproc() throws Exception {
+        if (!parameter(conf, PARAM_IGFS_ENDPOINT_NO_EMBED, authority, false)) {
+            IgfsEx igfs = null;
+
+            if (endpoint.grid() == null) {
+                Ignite ignite = G.ignite();
+
+                igfs = (IgfsEx)ignite.fileSystem(endpoint.igfs());
+            }
+            else {
+                for (Ignite ignite : G.allGrids()) {
+                    igfs = (IgfsEx)ignite.fileSystem(endpoint.igfs());
+
+                    break;
+                }
+            }
+
+            if (igfs != null) {
+                HadoopIgfsEx hadoop = null;
+
+                try {
+                    hadoop = new HadoopIgfsInProc(igfs, log, userName);
+
+                    return new Delegate(hadoop, hadoop.handshake(logDir));
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    if (e instanceof HadoopIgfsCommunicationException)
+                        if (hadoop != null)
+                            hadoop.close(true);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to connect to in-proc IGFS, fallback to IPC mode.", e);
+
+                    throw e;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Shmem method
+     *
+     * @return The delegate
+     * @throws Exception On error.
+     */
+    private Delegate shmem() throws Exception {
+        if (!parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM, authority, false)) {
+            if (!U.isWindows()) {
+                HadoopIgfsEx hadoop = null;
+
+                try {
+                    hadoop = new HadoopIgfsOutProc(endpoint.port(), endpoint.grid(), endpoint.igfs(), log, userName);
+
+                    return new Delegate(hadoop, hadoop.handshake(logDir));
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    if (e instanceof HadoopIgfsCommunicationException)
+                        hadoop.close(true);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to connect to out-proc local IGFS using shmem.", e);
+
+                    throw e;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Local TCP method
+     *
+     * @return The delegate
+     * @throws Exception On error.
+     */
+    private Delegate localTcp(boolean skipLocTcp) throws Exception {
+        if (!skipLocTcp) {
+                HadoopIgfsEx hadoop = null;
+
+                try {
+                    hadoop = new HadoopIgfsOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.igfs(),
+                        log, userName);
+
+                    return new Delegate(hadoop, hadoop.handshake(logDir));
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    if (e instanceof HadoopIgfsCommunicationException)
+                        hadoop.close(true);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to connect to out-proc local IGFS using TCP.", e);
+
+                    throw e;
+                }
+        }
+
+        return null;
+    }
+
+    /**
+     * Remote TCP method.
+     *
+     * @return The delegate
+     * @throws Exception On error.
+     */
+    private Delegate remoteTcp(boolean skipLocTcp)  throws Exception {
+        if (skipLocTcp || !F.eq(LOCALHOST, endpoint.host())) {
+            HadoopIgfsEx hadoop = null;
+
+            try {
+                hadoop = new HadoopIgfsOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.igfs(),
+                    log, userName);
+
+                return new Delegate(hadoop, hadoop.handshake(logDir));
+            }
+            catch (IOException | IgniteCheckedException e) {
+                if (e instanceof HadoopIgfsCommunicationException)
+                    hadoop.close(true);
+
+                if (log.isDebugEnabled())
+                    log.debug("Failed to connect to out-proc remote IGFS using TCP.", e);
+
+                throw e;
+            }
+        }
+
+        return null;
     }
 
     /**
