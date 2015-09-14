@@ -119,46 +119,31 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public ICollection<string> Addresses
         {
-            get
-            {
-                return _addrs;
-            }
+            get { return _addrs; }
         }
 
         /** <inheritDoc /> */
         public ICollection<string> HostNames
         {
-            get
-            {
-                return _hosts;
-            }
+            get { return _hosts; }
         }
 
         /** <inheritDoc /> */
         public long Order
         {
-            get
-            {
-                return _order;
-            }
+            get { return _order; }
         }
 
         /** <inheritDoc /> */
         public bool IsLocal
         {
-            get
-            {
-                return _isLocal;
-            }
+            get { return _isLocal; }
         }
 
         /** <inheritDoc /> */
         public bool IsDaemon
         {
-            get
-            {
-                return _isDaemon;
-            }
+            get { return _isDaemon; }
         }
 
         /** <inheritDoc /> */
