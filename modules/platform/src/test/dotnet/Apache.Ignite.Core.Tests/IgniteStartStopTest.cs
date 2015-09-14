@@ -311,12 +311,16 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                using (Ignition.Start(servCfg))  // start server-mode ignite first
+                using (var serv = Ignition.Start(servCfg))  // start server-mode ignite first
                 {
+                    Assert.IsFalse(serv.Cluster.LocalNode.IsClient);
+
                     Ignition.ClientMode = true;
 
                     using (var grid = Ignition.Start(clientCfg))
                     {
+                        Assert.IsTrue(grid.Cluster.LocalNode.IsClient);
+
                         UseIgnite(grid);
                     }
                 }
