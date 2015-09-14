@@ -36,8 +36,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -59,6 +61,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @SuppressWarnings("unchecked")
 public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /**
      * @return Grid count.
      */
@@ -69,6 +74,8 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 
@@ -202,9 +209,8 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch commitLatch = new CountDownLatch(1);
 
-            if (!commit) {
+            if (!commit)
                 communication(1).bannedClasses(Collections.<Class>singletonList(GridDhtTxPrepareRequest.class));
-            }
             else {
                 if (!backup) {
                     communication(2).bannedClasses(Collections.<Class>singletonList(GridDhtTxPrepareResponse.class));
@@ -389,12 +395,11 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure) throws IgniteSpiException {
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
             GridIoMessage ioMsg = (GridIoMessage)msg;
 
-            if (!bannedClasses.contains(ioMsg.message().getClass())) {
-                super.sendMessage(node, msg, ackClosure);
-            }
+            if (!bannedClasses.contains(ioMsg.message().getClass()))
+                super.sendMessage(node, msg, ackC);
         }
     }
 }
