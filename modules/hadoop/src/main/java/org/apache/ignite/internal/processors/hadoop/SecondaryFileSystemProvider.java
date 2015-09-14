@@ -46,7 +46,8 @@ public class SecondaryFileSystemProvider {
      *
      * @param secUri the secondary Fs URI (optional). If not given explicitly, it must be specified as "fs.defaultFS"
      * property in the provided configuration.
-     * @param secConfPath the secondary Fs path (file path on the local file system, optional).
+     * @param secConfPath the secondary Fs configuration file path (file path on the local file system, e.g.
+     * core-site.xml, optional).
      * See {@link IgniteUtils#resolveIgniteUrl(String)} on how the path resolved.
      * @throws IOException If failed.
      */
