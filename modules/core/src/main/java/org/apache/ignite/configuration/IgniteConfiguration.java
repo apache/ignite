@@ -1336,20 +1336,17 @@ public class IgniteConfiguration {
         return this;
     }
 
-
     /**
-     * Gets count of available rebalancing threads.
-     * Half will be used for supplying and half for demanding of partitions.
+     * Gets Max count of threads can be used at rebalancing.
      * Minimum is 1.
      * @return count.
      */
     public int getRebalanceThreadPoolSize(){
-        return rebalanceThreadPoolSize;
+        return Math.max(1, rebalanceThreadPoolSize);
     }
 
     /**
-     * Sets count of available rebalancing threads.
-     * Half will be used for supplying and half for demanding of partitions.
+     * Sets Max count of threads can be used at rebalancing.
      * Minimum is 1.
      * @param size Size.
      * @return {@code this} for chaining.

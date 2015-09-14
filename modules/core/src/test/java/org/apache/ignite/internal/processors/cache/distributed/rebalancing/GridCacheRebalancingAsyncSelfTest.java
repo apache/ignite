@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /**
  *
@@ -35,48 +33,6 @@ public class GridCacheRebalancingAsyncSelfTest extends GridCacheRebalancingSyncS
             cacheCfg.setRebalanceMode(CacheRebalanceMode.ASYNC);
         }
 
-        iCfg.setDiscoverySpi(new FailableTcpDiscoverySpi());
-
-        ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setIpFinder(ipFinder);
-        ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setForceServerMode(true);
-
-        if (getTestGridName(20).equals(gridName))
-            spi = (FailableTcpDiscoverySpi)iCfg.getDiscoverySpi();
-
         return iCfg;
-    }
-
-    public static class FailableTcpDiscoverySpi extends TcpDiscoverySpi {
-        public void fail() {
-            simulateNodeFailure();
-        }
-    }
-
-    private volatile FailableTcpDiscoverySpi spi;
-
-    /**
-     * @throws Exception
-     */
-    public void testNodeFailedAtRebalancing() throws Exception {
-        Ignite ignite = startGrid(0);
-
-        generateData(ignite);
-
-        log.info("Preloading started.");
-
-        startGrid(1);
-
-        waitForRebalancing(1, 2);
-
-        startGrid(20);
-
-        waitForRebalancing(20, 3);
-
-        spi.fail();
-
-        waitForRebalancing(0, 4);
-        waitForRebalancing(1, 4);
-
-        stopAllGrids();
     }
 }

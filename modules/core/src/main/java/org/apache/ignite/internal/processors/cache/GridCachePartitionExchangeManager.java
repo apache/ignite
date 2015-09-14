@@ -317,7 +317,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (!cctx.kernalContext().clientNode()) {
 
-            for (int cnt = 0; cnt < Math.max(1, cctx.gridConfig().getRebalanceThreadPoolSize()); cnt++) {
+            for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++) {
                 final int idx = cnt;
 
                 cctx.io().addOrderedHandler(rebalanceTopic(cnt), new CI2<UUID, GridCacheMessage>() {
@@ -333,7 +333,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 cctx.cacheContext(m.cacheId).preloader().handleDemandMessage(
                                     id, (GridDhtPartitionDemandMessage)m);
                             else
-                                log.error("Unsupported message type " + m.getClass().getName());
+                                log.error("Unsupported message type: " + m.getClass().getName());
                         }
                         finally {
                             leaveBusy();
@@ -437,7 +437,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         for (AffinityReadyFuture f : readyFuts.values())
             f.onDone(err);
 
-        for (int cnt = 0; cnt < Math.max(1, cctx.gridConfig().getRebalanceThreadPoolSize()); cnt++) {
+        for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++) {
             cctx.io().removeOrderedHandler(rebalanceTopic(cnt));
         }
 

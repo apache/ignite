@@ -63,6 +63,14 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean concurrentStartFinished2 = false;
 
+    private volatile FailableTcpDiscoverySpi spi;
+
+    public static class FailableTcpDiscoverySpi extends TcpDiscoverySpi {
+        public void fail() {
+            simulateNodeFailure();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return Long.MAX_VALUE;
@@ -71,6 +79,11 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration iCfg = super.getConfiguration(gridName);
+
+        iCfg.setDiscoverySpi(new FailableTcpDiscoverySpi());
+
+        if (getTestGridName(20).equals(gridName))
+            spi = (FailableTcpDiscoverySpi)iCfg.getDiscoverySpi();
 
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setForceServerMode(true);
@@ -316,6 +329,32 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         stopGrid(0);
 
         checkData(grid(1));
+
+        stopAllGrids();
+    }
+
+    /**
+     * @throws Exception
+     */
+    public void testNodeFailedAtRebalancing() throws Exception {
+        Ignite ignite = startGrid(0);
+
+        generateData(ignite);
+
+        log.info("Preloading started.");
+
+        startGrid(1);
+
+        waitForRebalancing(1, 2);
+
+        startGrid(20);
+
+        waitForRebalancing(20, 3);
+
+        spi.fail();
+
+        waitForRebalancing(0, 4);
+        waitForRebalancing(1, 4);
 
         stopAllGrids();
     }

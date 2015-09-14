@@ -159,9 +159,9 @@
             </list>
         </property>
 
-        <property name="failureDetectionTimeout" value="1000"/>
+        <property name="failureDetectionTimeout" value="200"/>
 
-        <property name="metricsLogFrequency" value="200"/>
+        <property name="metricsLogFrequency" value="5000"/>
 
         <property name="warmupClosure" ref="warmupClosure"/>
 

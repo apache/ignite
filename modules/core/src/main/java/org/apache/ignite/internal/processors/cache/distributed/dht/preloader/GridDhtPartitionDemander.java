@@ -401,7 +401,7 @@ public class GridDhtPartitionDemander {
 
                 fut.append(node.id(), remainings);
 
-                int lsnrCnt = Math.max(1, cctx.gridConfig().getRebalanceThreadPoolSize());
+                int lsnrCnt = cctx.gridConfig().getRebalanceThreadPoolSize();
 
                 List<Set<Integer>> sParts = new ArrayList<>(lsnrCnt);
 
