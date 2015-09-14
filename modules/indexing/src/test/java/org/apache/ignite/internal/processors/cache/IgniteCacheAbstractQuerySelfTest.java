@@ -179,7 +179,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 UUID.class, Person.class,
                 IgniteCacheReplicatedQuerySelfTest.CacheKey.class, IgniteCacheReplicatedQuerySelfTest.CacheValue.class
             );
-            cc.setAffinity(new RendezvousAffinityFunction());
+
+            if (cacheMode() != CacheMode.LOCAL)
+                cc.setAffinity(new RendezvousAffinityFunction());
 
             // Explicitly set number of backups equal to number of grids.
             if (cacheMode() == CacheMode.PARTITIONED)
