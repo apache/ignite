@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -707,38 +708,62 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         return new Iterator<GridDhtCacheEntry>() {
             /** */
-            GridDhtCacheEntry lastEntry;
+            private GridDhtCacheEntry lastEntry;
+
+            {
+                lastEntry = advance();
+            }
+
+            private GridDhtCacheEntry advance() {
+                if (it.hasNext()) {
+                    Map.Entry<byte[], GridCacheSwapEntry> entry = it.next();
+
+                    byte[] keyBytes = entry.getKey();
+
+                    while (true) {
+                        try {
+                            KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
+
+                            lastEntry = (GridDhtCacheEntry)cctx.cache().entryEx(key, false);
+
+                            lastEntry.unswap(true);
+
+                            return lastEntry;
+                        }
+                        catch (GridCacheEntryRemovedException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Got removed entry: " + lastEntry);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new CacheException(e);
+                        }
+                        catch (GridDhtInvalidPartitionException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Got invalid partition exception: " + e);
+
+                            return null;
+                        }
+                    }
+                }
+
+                return null;
+            }
 
             @Override public boolean hasNext() {
-                return it.hasNext();
+                return lastEntry != null;
             }
 
             @Override public GridDhtCacheEntry next() {
-                Map.Entry<byte[], GridCacheSwapEntry> entry = it.next();
+                if (lastEntry == null)
+                    throw new NoSuchElementException();
 
-                byte[] keyBytes = entry.getKey();
-
-                while (true) {
-                    try {
-                        KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
-
-                        lastEntry = (GridDhtCacheEntry)cctx.cache().entryEx(key, false);
-
-                        lastEntry.unswap(true);
-
-                        return lastEntry;
-                    }
-                    catch (GridCacheEntryRemovedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Got removed entry: " + lastEntry);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new CacheException(e);
-                    }
-                }
+                return lastEntry;
             }
 
             @Override public void remove() {
+                if (lastEntry == null)
+                    throw new NoSuchElementException();
+
                 map.remove(lastEntry.key(), lastEntry);
             }
         };
