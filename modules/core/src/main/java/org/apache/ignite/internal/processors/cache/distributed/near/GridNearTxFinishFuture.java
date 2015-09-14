@@ -396,20 +396,24 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                 ClusterNode backup = cctx.discovery().node(backupId);
 
-                // Nothing to do if backup has left the grid.
-                if (backup == null)
-                    return;
-
                 MiniFuture mini = new MiniFuture(backup, mapping);
 
                 add(mini);
 
-                if (backup.isLocal()) {
-                    if (cctx.tm().txHandler().checkDhtRemoteTxCommitted(tx.xidVersion())) {
-                        readyNearMappingFromBackup(mapping);
+                // Nothing to do if backup has left the grid.
+                if (backup == null) {
+                    readyNearMappingFromBackup(mapping);
 
+                    mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
+                        "(backup has left grid): " + tx.xidVersion()));
+                }
+                else if (backup.isLocal()) {
+                    boolean committed = cctx.tm().txHandler().checkDhtRemoteTxCommitted(tx.xidVersion());
+
+                    readyNearMappingFromBackup(mapping);
+
+                    if (committed)
                         mini.onDone(tx);
-                    }
                     else
                         mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
                             "(transaction has been rolled back on backup node): " + tx.xidVersion()));
