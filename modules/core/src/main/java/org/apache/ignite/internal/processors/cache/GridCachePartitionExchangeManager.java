@@ -1271,12 +1271,37 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
 
                     if (assignsMap != null) {
+                        //Marshaller cache first.
+                        int mId = CU.cacheId(GridCacheUtils.MARSH_CACHE_NAME);
+
+                        GridDhtPreloaderAssignments mA = assignsMap.get(mId);
+
+                        assert mA != null;
+
+                        GridCacheContext<K, V> mCacheCtx = cctx.cacheContext(mId);
+
+                        mCacheCtx.preloader().addAssignments(mA, forcePreload);
+
+                        //Utility cache second.
+                        int uId = CU.cacheId(GridCacheUtils.UTILITY_CACHE_NAME);
+
+                        GridDhtPreloaderAssignments uA = assignsMap.get(uId);
+
+                        assert uA != null;
+
+                        GridCacheContext<K, V> uCacheCtx = cctx.cacheContext(uId);
+
+                        uCacheCtx.preloader().addAssignments(uA, forcePreload);
+
+                        //Others.
                         for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
                             int cacheId = e.getKey();
 
-                            GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+                            if (cacheId != uId && cacheId != mId) {
+                                GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-                            cacheCtx.preloader().addAssignments(e.getValue(), forcePreload);
+                                cacheCtx.preloader().addAssignments(e.getValue(), forcePreload);
+                            }
                         }
                     }
                 }

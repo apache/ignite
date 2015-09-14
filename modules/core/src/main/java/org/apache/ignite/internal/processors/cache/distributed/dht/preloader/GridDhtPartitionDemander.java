@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
@@ -208,6 +209,41 @@ public class GridDhtPartitionDemander {
     }
 
     /**
+     * @param name Name.
+     * @param fut Future.
+     */
+    private void waitForCacheRebalancing(String name, SyncFuture fut) {
+        if (log.isDebugEnabled())
+            log.debug("Waiting for " + name + " cache rebalancing [cacheName=" + cctx.name() + ']');
+
+        try {
+            SyncFuture wFut = (SyncFuture)cctx.kernalContext().cache().internalCache(name).preloader().syncFuture();
+
+            if (!topologyChanged(fut.assigns.topologyVersion()))
+                wFut.get();
+            else {
+                fut.onCancel();
+
+                return;
+            }
+        }
+        catch (IgniteInterruptedCheckedException ignored) {
+            if (log.isDebugEnabled()) {
+                log.debug("Failed to wait for " + name + " cache rebalancing future (grid is stopping): " +
+                    "[cacheName=" + cctx.name() + ']');
+                fut.onCancel();
+
+                return;
+            }
+        }
+        catch (IgniteCheckedException e) {
+            fut.onCancel();
+
+            throw new Error("Ordered rebalancing future should never fail: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * @param assigns Assignments.
      * @param force {@code True} if dummy reassign.
      * @throws IgniteCheckedException
@@ -240,6 +276,10 @@ public class GridDhtPartitionDemander {
             if (assigns.isEmpty()) {
                 fut.checkIsDone();
 
+                if (fut.assigns.topologyVersion().topologyVersion() > 1)// First node.
+                    U.log(log, "Rebalancing is not required [cache=" + cctx.name() +
+                        ", topology=" + fut.assigns.topologyVersion() + "]");
+
                 return;
             }
 
@@ -254,43 +294,10 @@ public class GridDhtPartitionDemander {
             IgniteThread thread = new IgniteThread(cctx.gridName(), "demand-thread-" + cctx.cache().name(), new Runnable() {
                 @Override public void run() {
                     if (!CU.isMarshallerCache(cctx.name())) {
-                        if (log.isDebugEnabled())
-                            log.debug("Waiting for marshaller cache preload [cacheName=" + cctx.name() + ']');
+                        waitForCacheRebalancing(GridCacheUtils.MARSH_CACHE_NAME, curFut);
 
-                        try {
-                            IgniteInternalFuture mFut;
-                            do {
-                                mFut = cctx.kernalContext().cache().marshallerCache().preloader().syncFuture();
-                            }
-                            while (!((SyncFuture)mFut).isInited() || ((SyncFuture)mFut).topologyVersion().topologyVersion() < curFut.topologyVersion().topologyVersion());
-
-                            if (((SyncFuture)mFut).topologyVersion().topologyVersion() > curFut.topologyVersion().topologyVersion()) {
-                                curFut.onCancel();
-
-                                return;
-                            }
-
-                            if (!topologyChanged(topVer))
-                                mFut.get();
-                            else {
-                                curFut.onCancel();
-
-                                return;
-                            }
-                        }
-                        catch (IgniteInterruptedCheckedException ignored) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Failed to wait for marshaller cache preload future (grid is stopping): " +
-                                    "[cacheName=" + cctx.name() + ']');
-                                curFut.onCancel();
-
-                                return;
-                            }
-                        }
-                        catch (IgniteCheckedException e) {
-                            curFut.onCancel();
-
-                            throw new Error("Ordered preload future should never fail: " + e.getMessage(), e);
+                        if (!CU.isUtilityCache(cctx.name())) {
+                            waitForCacheRebalancing(GridCacheUtils.UTILITY_CACHE_NAME, curFut);
                         }
                     }
 
