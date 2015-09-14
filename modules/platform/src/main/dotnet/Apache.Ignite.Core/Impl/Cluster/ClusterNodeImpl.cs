@@ -73,6 +73,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             _order = reader.ReadLong();
             _isLocal = reader.ReadBoolean();
             _isDaemon = reader.ReadBoolean();
+            _isClient = reader.ReadBoolean();
 
             _metrics = reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
         }
