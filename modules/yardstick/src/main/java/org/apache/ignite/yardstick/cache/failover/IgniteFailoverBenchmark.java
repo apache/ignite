@@ -20,13 +20,46 @@ package org.apache.ignite.yardstick.cache.failover;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
+import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Ignite benchmark that performs get operations.
  */
 public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        if (cfg.memberId() == 0) {
+            Thread thread = new Thread(new Runnable() {
+                @Override public void run() {
+                    try {
+                        Thread.sleep(20_000);
+
+                        while (!Thread.currentThread().isInterrupted()) {
+                            RestartUtils.kill9("${REMOTE_USER}", "localhost");
+
+                            RestartUtils.start();
+
+                            Thread.sleep(10_000);
+                        }
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, "restarter");
+
+            thread.setDaemon(true);
+
+            thread.start();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        if (cfg.memberId() == 0)
+            return true;
+
         ignite().log().info(">>>>>>>> client mode = " + ignite().configuration().isClientMode());
 
         int key = nextRandom(args.range());
