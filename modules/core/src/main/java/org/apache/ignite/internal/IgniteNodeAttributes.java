@@ -138,6 +138,9 @@ public final class IgniteNodeAttributes {
     /** Portable protocol version. */
     public static final String ATTR_PORTABLE_PROTO_VER = ATTR_PREFIX + ".portable.proto.ver";
 
+    /** Rebalancing version id. */
+    public static final String REBALANCING_VERSION = ATTR_PREFIX + ".rebalancing.version";
+
     /**
      * Enforces singleton.
      */

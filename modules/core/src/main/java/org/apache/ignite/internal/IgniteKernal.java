@@ -217,6 +217,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
+import static org.apache.ignite.internal.IgniteNodeAttributes.REBALANCING_VERSION;
 
 /**
  * Ignite kernal.
@@ -1270,6 +1271,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         add(ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
         add(ATTR_USER_NAME, System.getProperty("user.name"));
         add(ATTR_GRID_NAME, gridName);
+        add(REBALANCING_VERSION, 1);
         add(ATTR_PORTABLE_PROTO_VER, cfg.getMarshaller() instanceof PortableMarshaller ?
             ((PortableMarshaller)cfg.getMarshaller()).getProtocolVersion().toString() :
             PortableMarshaller.DFLT_PORTABLE_PROTO_VER.toString());

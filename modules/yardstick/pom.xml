@@ -35,7 +35,7 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <yardstick.version>0.7.0</yardstick.version>
+        <yardstick.version>0.7.1</yardstick.version>
     </properties>
 
 
@@ -98,6 +98,12 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-aop</artifactId>
             <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-log4j</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
