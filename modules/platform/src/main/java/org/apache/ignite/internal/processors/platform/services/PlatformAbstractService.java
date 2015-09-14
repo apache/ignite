@@ -212,7 +212,9 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     @SuppressWarnings("UnusedDeclaration")
     @IgniteInstanceResource
     public void setIgniteInstance(Ignite ignite) {
-        platformCtx = PlatformUtils.platformContext(ignite);
+        platformCtx = ignite != null
+            ? PlatformUtils.platformContext(ignite)
+            : null;
     }
 
     /** {@inheritDoc} */
