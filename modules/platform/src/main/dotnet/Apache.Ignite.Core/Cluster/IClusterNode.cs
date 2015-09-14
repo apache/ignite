@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Cluster
 
     /// <summary>
     /// Interface representing a single cluster node. Use <see cref="IClusterNode.Attribute{T}(string)"/> or
-    /// <see cref="IClusterNode.Metrics()"/> to get static and dynamic information about remote nodes.
+    /// <see cref="GetMetrics"/> to get static and dynamic information about remote nodes.
     /// You can get a list of all nodes in grid by calling <see cref="IClusterGroup.Nodes()"/> 
     /// on <see cref="IIgnite"/> instance.
     /// <para />
@@ -32,14 +32,12 @@ namespace Apache.Ignite.Core.Cluster
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
-    public interface IClusterNode {
+    public interface IClusterNode
+    {
         /// <summary>
         /// Globally unique node ID. A new ID is generated every time a node restarts.
         /// </summary>
-        Guid Id 
-        {
-            get;
-        }
+        Guid Id { get; }
 
         /// <summary>
         /// Gets node's attribute. Attributes are assigned to nodes at startup.
@@ -49,7 +47,7 @@ namespace Apache.Ignite.Core.Cluster
         /// <param name="name">Attribute name.</param>
         /// <returns>Attribute value.</returns>
         T Attribute<T>(string name);
-        
+
         /// <summary>
         /// Try getting node's attribute. Attributes are assigned to nodes at startup.
         /// <para />
@@ -66,25 +64,19 @@ namespace Apache.Ignite.Core.Cluster
         /// Note that attributes cannot be changed at runtime.
         /// </summary>
         /// <returns>All node attributes.</returns>
-        IDictionary<string, object> Attributes();
+        IDictionary<string, object> Attributes { get; }
 
         /// <summary>
         /// Collection of addresses this node is known by. 
         /// </summary>
         /// <returns>Collection of addresses.</returns>
-        ICollection<string> Addresses
-        {
-            get;
-        }
+        ICollection<string> Addresses { get; }
 
         /// <summary>
         /// Collection of host names this node is known by.
         /// </summary>
         /// <returns>Collection of host names.</returns>
-        ICollection<string> HostNames
-        {
-            get;
-        }
+        ICollection<string> HostNames { get; }
 
         /// <summary>
         /// Node order within grid topology. Discovery SPIs that support node ordering will
@@ -92,19 +84,13 @@ namespace Apache.Ignite.Core.Cluster
         /// for new nodes will come in proper order. All other SPIs not supporting ordering
         /// may choose to return node startup time here.
         /// </summary>
-        long Order
-        {
-            get;
-        }
+        long Order { get; }
 
         /// <summary>
         /// Tests whether or not this node is a local node.
         /// </summary>
-        bool IsLocal
-        {
-            get;
-        }
-        
+        bool IsLocal { get; }
+
         /// <summary>
         /// Tests whether or not this node is a daemon.
         /// <p/>
@@ -118,10 +104,7 @@ namespace Apache.Ignite.Core.Cluster
         /// <p/>
         /// Application code should never use daemon nodes.
         /// </summary>
-        bool IsDaemon
-        {
-            get;
-        }
+        bool IsDaemon { get; }
 
         /// <summary>
         /// Gets metrics snapshot for this node. Note that node metrics are constantly updated
@@ -133,7 +116,7 @@ namespace Apache.Ignite.Core.Cluster
         /// update will happen every <code>2</code> seconds.
         /// </summary>
         /// <returns>Runtime metrics snapshot for this node.</returns>
-        IClusterMetrics Metrics();
+        IClusterMetrics GetMetrics();
 
         /// <summary>
         /// Gets a value indicating whether or not this node is connected to cluster as a client.

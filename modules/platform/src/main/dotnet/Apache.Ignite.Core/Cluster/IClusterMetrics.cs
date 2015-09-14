@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Cluster
     /// in combination with fail-over SPI could check if other nodes don't have
     /// any active or waiting jobs and fail-over some jobs to those nodes.
     /// <para />
-    /// Node metrics for any node can be accessed via <see cref="IClusterNode.Metrics()"/> 
+    /// Node metrics for any node can be accessed via <see cref="IClusterNode.GetMetrics"/> 
     /// method. Keep in mind that there will be a certain network delay (usually
     /// equal to heartbeat delay) for the accuracy of node metrics. However, when accessing
     /// metrics on local node the metrics are always accurate and up to date.
@@ -36,259 +36,163 @@ namespace Apache.Ignite.Core.Cluster
         /// <summary>
         /// Last update time of this node metrics.
         /// </summary>
-        DateTime LastUpdateTime
-        {
-            get;
-        }
+        DateTime LastUpdateTime { get; }
 
         /// <summary>
         /// Maximum number of jobs that ever ran concurrently on this node.
         /// </summary>
-        int MaximumActiveJobs
-        {
-            get;
-        }
+        int MaximumActiveJobs { get; }
 
         /// <summary>
         /// Number of currently active jobs concurrently executing on the node.
         /// </summary>
-        int CurrentActiveJobs
-        {
-            get;
-        }
+        int CurrentActiveJobs { get; }
 
         /// <summary>
         /// Average number of active jobs. 
         /// </summary>
-        float AverageActiveJobs
-        {
-            get;
-        }
+        float AverageActiveJobs { get; }
 
         /// <summary>
         /// Maximum number of waiting jobs.
         /// </summary>
-        int MaximumWaitingJobs
-        {
-            get;
-        }
-        
+        int MaximumWaitingJobs { get; }
+
         /// <summary>
         /// Number of queued jobs currently waiting to be executed.
         /// </summary>
-        int CurrentWaitingJobs
-        {
-            get;
-        }
+        int CurrentWaitingJobs { get; }
 
         /// <summary>
         /// Average number of waiting jobs.
         /// </summary>
-        float AverageWaitingJobs
-        {
-            get;
-        }
+        float AverageWaitingJobs { get; }
 
         /// <summary>
         /// Maximum number of jobs rejected at once.
         /// </summary>
-        int MaximumRejectedJobs
-        {
-            get;
-        }
+        int MaximumRejectedJobs { get; }
 
         /// <summary>
         /// Number of jobs rejected after more recent collision resolution operation.
         /// </summary>
-        int CurrentRejectedJobs
-        {
-            get;
-        }
+        int CurrentRejectedJobs { get; }
 
         /// <summary>
         /// Average number of jobs this node rejects during collision resolution operations.
         /// </summary>
-        float AverageRejectedJobs
-        {
-            get;
-        }
+        float AverageRejectedJobs { get; }
 
         /// <summary>
         /// Total number of jobs this node rejects during collision resolution operations since node startup.
         /// </summary>
-        int TotalRejectedJobs
-        {
-            get;
-        }
+        int TotalRejectedJobs { get; }
 
         /// <summary>
         /// Maximum number of cancelled jobs ever had running concurrently.
         /// </summary>
-        int MaximumCancelledJobs
-        {
-            get;
-        }
+        int MaximumCancelledJobs { get; }
 
         /// <summary>
         /// Number of cancelled jobs that are still running.
         /// </summary>
-        int CurrentCancelledJobs
-        {
-            get;
-        }
+        int CurrentCancelledJobs { get; }
 
         /// <summary>
         /// Average number of cancelled jobs.
         /// </summary>
-        float AverageCancelledJobs
-        {
-            get;
-        }
+        float AverageCancelledJobs { get; }
 
         /// <summary>
         /// Total number of cancelled jobs since node startup.
         /// </summary>
-        int TotalCancelledJobs
-        {
-            get;
-        }
+        int TotalCancelledJobs { get; }
 
         /// <summary>
         /// Total number of jobs handled by the node since node startup.
         /// </summary>
-        int TotalExecutedJobs
-        {
-            get;
-        }
+        int TotalExecutedJobs { get; }
 
         /// <summary>
         /// Maximum time a job ever spent waiting in a queue to be executed.
         /// </summary>
-        long MaximumJobWaitTime
-        {
-            get;
-        }
+        long MaximumJobWaitTime { get; }
 
         /// <summary>
         /// Current time an oldest jobs has spent waiting to be executed.
         /// </summary>
-        long CurrentJobWaitTime
-        {
-            get;
-        }
+        long CurrentJobWaitTime { get; }
 
         /// <summary>
         /// Average time jobs spend waiting in the queue to be executed.
         /// </summary>
-        double AverageJobWaitTime
-        {
-            get;
-        }
+        double AverageJobWaitTime { get; }
 
         /// <summary>
         /// Time it took to execute the longest job on the node.
         /// </summary>
-        long MaximumJobExecuteTime
-        {
-            get;
-        }
+        long MaximumJobExecuteTime { get; }
 
         /// <summary>
         /// Longest time a current job has been executing for.
         /// </summary>
-        long CurrentJobExecuteTime
-        {
-            get;
-        }
+        long CurrentJobExecuteTime { get; }
 
         /// <summary>
         /// Average job execution time.
         /// </summary>
-        double AverageJobExecuteTime
-        {
-            get;
-        }
+        double AverageJobExecuteTime { get; }
 
         /// <summary>
         /// Total number of jobs handled by the node. 
         /// </summary>
-        int TotalExecutedTasks
-        {
-            get;
-        }
+        int TotalExecutedTasks { get; }
 
         /// <summary>
         /// Total time this node spent executing jobs.
         /// </summary>
-        long TotalBusyTime
-        {
-            get;
-        }
+        long TotalBusyTime { get; }
 
         /// <summary>
         /// Total time this node spent idling.
         /// </summary>
-        long TotalIdleTime
-        {
-            get;
-        }
+        long TotalIdleTime { get; }
 
         /// <summary>
         /// Time this node spend idling since executing last job.
         /// </summary>
-        long CurrentIdleTime
-        {
-            get;
-        }
+        long CurrentIdleTime { get; }
 
         /// <summary>
         /// Percentage of time this node is busy.
         /// </summary>
-        float BusyTimePercentage
-        {
-            get;
-        }
+        float BusyTimePercentage { get; }
 
         /// <summary>
         /// Percentage of time this node is idle
         /// </summary>
-        float IdleTimePercentage
-        {
-            get;
-        }
+        float IdleTimePercentage { get; }
 
         /// <summary>
         /// Returns the number of CPUs available to the Java Virtual Machine.
         /// </summary>
-        int TotalCpus
-        {
-            get;
-        }
+        int TotalCpus { get; }
 
         /// <summary>
         /// Returns the CPU usage usage in [0, 1] range.
         /// </summary>
-        double CurrentCpuLoad
-        {
-            get;
-        }
+        double CurrentCpuLoad { get; }
 
         /// <summary>
         /// Average of CPU load values in [0, 1] range over all metrics kept in the history.
         /// </summary>
-        double AverageCpuLoad
-        {
-            get;
-        }
+        double AverageCpuLoad { get; }
 
         /// <summary>
         /// Average time spent in CG since the last update.
         /// </summary>
-        double CurrentGcCpuLoad
-        {
-            get;
-        }
-        
+        double CurrentGcCpuLoad { get; }
+
         /// <summary>
         /// Amount of heap memory in bytes that the JVM
         /// initially requests from the operating system for memory management.
@@ -297,10 +201,7 @@ namespace Apache.Ignite.Core.Cluster
         /// This value represents a setting of the heap memory for Java VM and is
         /// not a sum of all initial heap values for all memory pools.
         /// </summary>
-        long HeapMemoryInitialized
-        {
-            get;
-        }
+        long HeapMemoryInitialized { get; }
 
         /// <summary>
         /// Current heap size that is used for object allocation.
@@ -311,20 +212,14 @@ namespace Apache.Ignite.Core.Cluster
         /// occupied by both live objects and garbage objects that have not
         /// been collected, if any.
         /// </summary>
-        long HeapMemoryUsed
-        {
-            get;
-        }
+        long HeapMemoryUsed { get; }
 
         /// <summary>
         /// Amount of heap memory in bytes that is committed for the JVM to use. This amount of memory is
         /// guaranteed for the JVM to use. The heap consists of one or more memory pools. This value is
         /// the sum of committed heap memory values of all heap memory pools.
         /// </summary>
-        long HeapMemoryCommitted
-        {
-            get;
-        }
+        long HeapMemoryCommitted { get; }
 
         /// <summary>
         /// Mmaximum amount of heap memory in bytes that can be used for memory management.
@@ -337,10 +232,7 @@ namespace Apache.Ignite.Core.Cluster
         /// This value represents a setting of the heap memory for Java VM and is
         /// not a sum of all initial heap values for all memory pools.
         /// </summary>
-        long HeapMemoryMaximum
-        {
-            get;
-        }
+        long HeapMemoryMaximum { get; }
 
         /// <summary>
         /// Total amount of heap memory in bytes. This method returns <code>-1</code>
@@ -353,163 +245,103 @@ namespace Apache.Ignite.Core.Cluster
         /// This value represents a setting of the heap memory for Java VM and is
         /// not a sum of all initial heap values for all memory pools.
         /// </summary>
-        long HeapMemoryTotal
-        {
-            get;
-        }
+        long HeapMemoryTotal { get; }
 
         /// <summary>
         /// Amount of non-heap memory in bytes that the JVM initially requests from the operating 
         /// system for memory management.
         /// </summary>
-        long NonHeapMemoryInitialized
-        {
-            get;
-        }
+        long NonHeapMemoryInitialized { get; }
 
         /// <summary>
         /// Current non-heap memory size that is used by Java VM.
         /// </summary>
-        long NonHeapMemoryUsed
-        {
-            get;
-        }
+        long NonHeapMemoryUsed { get; }
 
         /// <summary>
         /// Amount of non-heap memory in bytes that is committed for the JVM to use. 
         /// </summary>
-        long NonHeapMemoryCommitted
-        {
-            get;
-        }
-        
+        long NonHeapMemoryCommitted { get; }
+
         /// <summary>
         /// Maximum amount of non-heap memory in bytes that can be used for memory management.
         /// </summary>
-        long NonHeapMemoryMaximum
-        {
-            get;
-        }
+        long NonHeapMemoryMaximum { get; }
 
         /// <summary>
         /// Total amount of non-heap memory in bytes that can be used for memory management. 
         /// </summary>
-        long NonHeapMemoryTotal
-        {
-            get;
-        }
+        long NonHeapMemoryTotal { get; }
 
         /// <summary>
         /// Uptime of the JVM in milliseconds.
         /// </summary>
-        long UpTime
-        {
-            get;
-        }
+        long UpTime { get; }
 
         /// <summary>
         /// Start time of the JVM in milliseconds.
         /// </summary>
-        DateTime StartTime
-        {
-            get;
-        }
+        DateTime StartTime { get; }
 
         /// <summary>
         /// Start time of the Ignite node in milliseconds.
         /// </summary>
-        DateTime NodeStartTime
-        {
-            get;
-        }
+        DateTime NodeStartTime { get; }
 
         /// <summary>
         /// Current number of live threads.
         /// </summary>
-        int CurrentThreadCount
-        {
-            get;
-        }
+        int CurrentThreadCount { get; }
 
         /// <summary>
         /// The peak live thread count.
         /// </summary>
-        int MaximumThreadCount
-        {
-            get;
-        }
+        int MaximumThreadCount { get; }
 
         /// <summary>
         /// The total number of threads started.
         /// </summary>
-        long TotalStartedThreadCount
-        {
-            get;
-        }
+        long TotalStartedThreadCount { get; }
 
         /// <summary>
         /// Current number of live daemon threads.
         /// </summary>
-        int CurrentDaemonThreadCount
-        {
-            get;
-        }
+        int CurrentDaemonThreadCount { get; }
 
         /// <summary>
         /// Ignite assigns incremental versions to all cache operations. This property provides
         /// the latest data version on the node.
         /// </summary>
-        long LastDataVersion
-        {
-            get;
-        }
+        long LastDataVersion { get; }
 
         /// <summary>
         /// Sent messages count 
         /// </summary>
-        int SentMessagesCount
-        {
-            get;
-        }
+        int SentMessagesCount { get; }
 
         /// <summary>
         /// Sent bytes count.
         /// </summary>
-        long SentBytesCount
-        {
-            get;
-        }
+        long SentBytesCount { get; }
 
         /// <summary>
         /// Received messages count.
         /// </summary>
-        int ReceivedMessagesCount
-        {
-            get;
-        }
+        int ReceivedMessagesCount { get; }
 
         /// <summary>
         /// Received bytes count.
         /// </summary>
-        long ReceivedBytesCount
-        {
-            get;
-        }
+        long ReceivedBytesCount { get; }
 
         /// <summary>
         /// Outbound messages queue size.
         /// </summary>
-        int OutboundMessagesQueueSize
-        {
-            get;
-        }
+        int OutboundMessagesQueueSize { get; }
 
         /// <summary>
         /// Gets total number of nodes.
         /// </summary>
-        int TotalNodes
-        {
-            get;
-        }
+        int TotalNodes { get; }
     }
 }
