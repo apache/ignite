@@ -48,17 +48,39 @@ public class SecondaryFileSystemProvider {
      * property in the provided configuration.
      * @param secConfPath the secondary Fs path (file path on the local file system, optional).
      * See {@link IgniteUtils#resolveIgniteUrl(String)} on how the path resolved.
-     * @throws IOException
+     * @throws IOException If failed.
      */
     public SecondaryFileSystemProvider(final @Nullable String secUri,
         final @Nullable String secConfPath) throws IOException {
         if (secConfPath != null) {
-            URL url = U.resolveIgniteUrl(secConfPath);
+            URL url = U.resolveIgniteUrl(secConfPath, false);
 
             if (url == null) {
                 // If secConfPath is given, it should be resolvable:
-                throw new IllegalArgumentException("Failed to resolve secondary file system " +
-                    "configuration path: " + secConfPath);
+                StringBuilder sb = new StringBuilder().append("Failed to resolve secondary file system ")
+                    .append("configuration path: ").append(secConfPath)
+                    .append(". The path expected to be a local file system path")
+                    .append(" either relative to IGNITE_HOME or absolute.");
+
+                String home = IgniteUtils.getIgniteHome();
+
+                if (home != null) {
+                    File f = new File(home, secConfPath);
+
+                    assert !f.exists();
+
+                    sb.append(" IGNITE_HOME relative path \'").append(f).append("\'")
+                       .append(" does not exist.");
+                }
+
+                File abs = new File(secConfPath);
+
+                assert !abs.exists();
+
+                sb.append(" Absolute path \'").append(abs).append("\'")
+                        .append(" does not exist.");
+
+                throw new IllegalArgumentException(sb.toString());
             }
 
             cfg.addResource(url);
