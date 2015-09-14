@@ -489,21 +489,23 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         if (dataStructure != null)
             return dataStructure;
 
-        if (!create)
-            return c.applyx();
-
         while (true) {
-            try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                err = utilityCache.invoke(DATA_STRUCTURES_KEY, new AddAtomicProcessor(dsInfo)).get();
+            try {
+                if (!create)
+                    return c.applyx();
 
-                if (err != null)
-                    throw err;
+                try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                    err = utilityCache.invoke(DATA_STRUCTURES_KEY, new AddAtomicProcessor(dsInfo)).get();
 
-                dataStructure = c.applyx();
+                    if (err != null)
+                        throw err;
 
-                tx.commit();
+                    dataStructure = c.applyx();
 
-                return dataStructure;
+                    tx.commit();
+
+                    return dataStructure;
+                }
             }
             catch (ClusterTopologyCheckedException e) {
                 IgniteInternalFuture<?> fut = e.retryReadyFuture();
@@ -513,6 +515,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             catch (IgniteTxRollbackCheckedException ignore) {
                 // Safe to retry right away.
             }
+
         }
     }
 

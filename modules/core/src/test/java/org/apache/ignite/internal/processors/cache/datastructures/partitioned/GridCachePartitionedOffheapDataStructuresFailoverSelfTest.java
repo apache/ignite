@@ -34,6 +34,4 @@ public class GridCachePartitionedOffheapDataStructuresFailoverSelfTest extends G
     @Override protected CacheMemoryMode collectionMemoryMode() {
         return OFFHEAP_TIERED;
     }
-
-
 }

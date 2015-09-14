@@ -344,6 +344,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         @Override public Integer call() throws Exception {
             Integer val;
 
+            //REMOVE TR
             try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
                 GridCacheCountDownLatchValue latchVal = latchView.get(key);
 
