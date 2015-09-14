@@ -15,30 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
-
-import org.apache.ignite.internal.portable.api.PortableException;
-import org.apache.ignite.internal.portable.api.PortableMetadata;
+package org.apache.ignite.internal.portable.api;
 
 /**
- * Portable meta data handler.
+ * Interface that allows to implement custom serialization logic for portable objects.
+ * Can be used instead of {@link PortableMarshalAware} in case if the class
+ * cannot be changed directly.
+ * <p>
+ * Portable serializer can be configured for all portable objects via
+ * {@link PortableMarshaller#getSerializer()} method, or for a specific
+ * portable type via {@link PortableTypeConfiguration#getSerializer()} method.
  */
-public interface PortableMetaDataHandler {
+public interface PortableSerializer {
     /**
-     * Adds meta data.
+     * Writes fields to provided writer.
      *
-     * @param typeId Type ID.
-     * @param meta Meta data.
+     * @param obj Empty object.
+     * @param writer Portable object writer.
      * @throws PortableException In case of error.
      */
-    public void addMeta(int typeId, PortableMetadata meta) throws PortableException;
+    public void writePortable(Object obj, PortableWriter writer) throws PortableException;
 
     /**
-     * Gets meta data for provided type ID.
+     * Reads fields from provided reader.
      *
-     * @param typeId Type ID.
-     * @return Meta data.
+     * @param obj Empty object
+     * @param reader Portable object reader.
      * @throws PortableException In case of error.
      */
-    public PortableMetadata metadata(int typeId) throws PortableException;
+    public void readPortable(Object obj, PortableReader reader) throws PortableException;
 }

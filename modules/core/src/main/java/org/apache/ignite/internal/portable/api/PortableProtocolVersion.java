@@ -15,19 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
+package org.apache.ignite.internal.portable.api;
 
-import org.apache.ignite.internal.portable.api.PortableException;
-import org.apache.ignite.internal.portable.api.PortableRawReader;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Extended reader interface.
+ * Portable protocol version.
  */
-public interface PortableRawReaderEx extends PortableRawReader {
+public enum PortableProtocolVersion {
+    /** Ignite 1.4.0 release. */
+    VER_1_4_0;
+
+    /** Enumerated values. */
+    private static final PortableProtocolVersion[] VALS = values();
+
     /**
-     * @return Object.
-     * @throws PortableException In case of error.
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public Object readObjectDetached() throws PortableException;
+    @Nullable public static PortableProtocolVersion fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

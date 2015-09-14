@@ -40,11 +40,11 @@ import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableIdMapper;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableSerializer;
+import org.apache.ignite.internal.portable.api.PortableMarshaller;
+import org.apache.ignite.internal.portable.api.PortableException;
+import org.apache.ignite.internal.portable.api.PortableIdMapper;
+import org.apache.ignite.internal.portable.api.PortableMarshalAware;
+import org.apache.ignite.internal.portable.api.PortableSerializer;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.reflect.Modifier.isStatic;
