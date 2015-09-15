@@ -1049,7 +1049,7 @@ public class IgniteTxHandler {
      *
      * @param nodeId Node id that originated finish request.
      * @param req Request.
-     * @param {@code True} if transaction committed on this node.
+     * @param committed {@code True} if transaction committed on this node.
      */
     protected void sendReply(UUID nodeId, GridDhtTxFinishRequest req, boolean committed) {
         if (req.replyRequired()) {
