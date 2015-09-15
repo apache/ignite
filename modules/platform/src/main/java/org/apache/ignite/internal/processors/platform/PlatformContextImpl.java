@@ -618,4 +618,23 @@ public class PlatformContextImpl implements PlatformContext {
     @Override public PlatformClusterNodeFilter createClusterNodeFilter(Object filter) {
         return new PlatformClusterNodeFilterImpl(filter, this);
     }
-}
+
+    /** {@inheritDoc} */
+    @Override public void writeAsPortableObjectSafe(Object obj, PortableRawWriterEx writer) {
+        assert writer != null;
+
+        int pos = writer.out().position();
+
+        try {
+            writer.writeBoolean(true);  // success
+
+            writer.writeObjectDetached(ctx.grid().portables().toPortable(obj));
+        }
+        catch (Exception e) {
+            writer.out().position(pos);
+            writer.writeBoolean(false);  // failure
+
+            writer.writeString(e.getClass().getName());
+            writer.writeString(e.getMessage());
+        }
+    }}
