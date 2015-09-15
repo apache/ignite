@@ -69,16 +69,16 @@
 
         <!-- Portable marshaller configuration -->
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.portable.PortableMarshaller">
+            <bean class="org.apache.ignite.internal.portable.api.PortableMarshaller">
                 <property name="typeConfigurations">
                     <list>
-                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.internal.portable.api.PortableTypeConfiguration">
                             <property name="className" value="org.apache.ignite.platform.PlatformComputePortable"/>
                         </bean>
-                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.internal.portable.api.PortableTypeConfiguration">
                             <property name="className" value="org.apache.ignite.platform.PlatformComputeJavaPortable"/>
                         </bean>
-                        <bean class="org.apache.ignite.portable.PortableTypeConfiguration">
+                        <bean class="org.apache.ignite.internal.portable.api.PortableTypeConfiguration">
                             <property name="className" value="org.apache.ignite.platform.PlatformComputeEnum"/>
                         </bean>
                     </list>

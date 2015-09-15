@@ -114,6 +114,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     private Map<IgniteTxKey, IgniteCacheExpiryPolicy> accessMap;
 
     /** */
+    private boolean needCheckBackup;
+
+    /** */
     private boolean hasRemoteLocks;
 
     /**
@@ -164,6 +167,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             timeout,
             false,
             storeEnabled,
+            false,
             txSize,
             subjId,
             taskNameHash);
@@ -239,6 +243,20 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /** {@inheritDoc} */
     @Override public boolean syncRollback() {
         return sync();
+    }
+
+    /**
+     * Marks transaction to check if commit on backup.
+     */
+    public void markForBackupCheck() {
+        needCheckBackup = true;
+    }
+
+    /**
+     * @return If need to check tx commit on backup.
+     */
+    public boolean needCheckBackup() {
+        return needCheckBackup;
     }
 
     /**
@@ -501,8 +519,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
                 GridDistributedTxMapping m = mappings.get(n.id());
 
-                if (m == null)
+                if (m == null) {
                     m = F.addIfAbsent(mappings, n.id(), new GridDistributedTxMapping(n));
+
+                    m.near(map.near());
+
+                    if (map.explicitLock())
+                        m.markExplicitLock();
+                }
 
                 assert m != null;
 
@@ -736,7 +760,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
         cctx.mvcc().addFuture(fut);
 
-        IgniteInternalFuture<?> prepareFut = prepFut.get();
+        final IgniteInternalFuture<?> prepareFut = prepFut.get();
 
         prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> f) {
@@ -744,16 +768,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
                 try {
                     // Make sure that here are no exceptions.
-                    f.get();
+                    prepareFut.get();
 
-                    if (finish(true))
-                        fut0.finish();
-                    else
-                        fut0.onError(new IgniteCheckedException("Failed to commit transaction: " +
-                            CU.txString(GridNearTxLocal.this)));
+                    fut0.finish();
                 }
                 catch (Error | RuntimeException e) {
                     commitErr.compareAndSet(null, e);
+
+                    fut0.onError(e);
 
                     throw e;
                 }
@@ -796,15 +818,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     log.debug("Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
             }
 
-            try {
-                if (finish(false) || state() == UNKNOWN)
-                    fut.finish();
-                else
-                    fut.onError(new IgniteCheckedException("Failed to gracefully rollback transaction: " + CU.txString(this)));
-            }
-            catch (IgniteCheckedException e) {
-                fut.onError(e);
-            }
+            fut.finish();
         }
         else {
             prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -820,19 +834,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
                     GridNearTxFinishFuture fut0 = rollbackFut.get();
 
-                    try {
-                        if (finish(false) || state() == UNKNOWN)
-                            fut0.finish();
-                        else
-                            fut0.onError(new IgniteCheckedException("Failed to gracefully rollback transaction: " +
-                                CU.txString(GridNearTxLocal.this)));
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to gracefully rollback transaction: " +
-                            CU.txString(GridNearTxLocal.this), e);
-
-                        fut0.onError(e);
-                    }
+                    fut0.finish();
                 }
             });
         }

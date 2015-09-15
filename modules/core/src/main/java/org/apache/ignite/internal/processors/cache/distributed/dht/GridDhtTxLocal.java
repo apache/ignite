@@ -128,6 +128,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
+        boolean onePhaseCommit,
         int txSize,
         Map<UUID, Collection<UUID>> txNodes,
         UUID subjId,
@@ -146,6 +147,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             timeout,
             invalidate,
             storeEnabled,
+            onePhaseCommit,
             txSize,
             subjId,
             taskNameHash);

@@ -94,11 +94,12 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public String gridName();
 
     /**
-     * Gets logger.
+     * Gets logger for given category.
      *
+     * @param ctgr Category.
      * @return Logger.
      */
-    public IgniteLogger log();
+    public IgniteLogger log(String ctgr);
 
     /**
      * Gets logger for given class.

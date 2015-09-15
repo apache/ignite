@@ -459,13 +459,6 @@ public interface Ignite extends AutoCloseable {
     public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException;
 
     /**
-     * Gets an instance of {@link IgnitePortables} interface.
-     *
-     * @return Instance of {@link IgnitePortables} interface.
-     */
-    public IgnitePortables portables();
-
-    /**
      * Closes {@code this} instance of grid. This method is identical to calling
      * {@link G#stop(String, boolean) G.stop(gridName, true)}.
      * <p>

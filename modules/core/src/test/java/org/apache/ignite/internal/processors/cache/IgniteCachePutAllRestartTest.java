@@ -161,6 +161,8 @@ public class IgniteCachePutAllRestartTest extends GridCommonAbstractTest {
 
             final Ignite ignite = ignite(node);
 
+            info("Running iteration on the node [idx=" + node + ", nodeId=" + ignite.cluster().localNode().id() + ']');
+
             IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     Thread.currentThread().setName("put-thread");

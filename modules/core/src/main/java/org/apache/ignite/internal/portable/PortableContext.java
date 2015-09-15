@@ -60,16 +60,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.internal.portable.api.PortableMarshaller;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetPortableConfiguration;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetPortableTypeConfiguration;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableIdMapper;
-import org.apache.ignite.portable.PortableInvalidClassException;
-import org.apache.ignite.portable.PortableMetadata;
-import org.apache.ignite.portable.PortableSerializer;
-import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.apache.ignite.internal.portable.api.PortableException;
+import org.apache.ignite.internal.portable.api.PortableIdMapper;
+import org.apache.ignite.internal.portable.api.PortableInvalidClassException;
+import org.apache.ignite.internal.portable.api.PortableMetadata;
+import org.apache.ignite.internal.portable.api.PortableSerializer;
+import org.apache.ignite.internal.portable.api.PortableTypeConfiguration;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -440,7 +440,7 @@ public class PortableContext implements Externalizable {
         PortableClassDescriptor desc = descByCls.get(cls);
 
         if (desc == null || !desc.registered())
-            desc = registerClassDescriptor(cls);
+            desc = registerClassDescriptor(cls, true);
 
         return desc;
     }
@@ -485,7 +485,7 @@ public class PortableContext implements Externalizable {
         }
 
         if (desc == null) {
-            desc = registerClassDescriptor(cls);
+            desc = registerClassDescriptor(cls, false);
 
             assert desc.typeId() == typeId;
         }
@@ -499,7 +499,7 @@ public class PortableContext implements Externalizable {
      * @param cls Class.
      * @return Class descriptor.
      */
-    private PortableClassDescriptor registerClassDescriptor(Class<?> cls) {
+    private PortableClassDescriptor registerClassDescriptor(Class<?> cls, boolean registerMetadata) {
         PortableClassDescriptor desc;
 
         String clsName = cls.getName();
@@ -525,7 +525,7 @@ public class PortableContext implements Externalizable {
                 desc = old;
         }
         else
-            desc = registerUserClassDescriptor(cls);
+            desc = registerUserClassDescriptor(cls, registerMetadata);
 
         return desc;
     }
@@ -536,9 +536,7 @@ public class PortableContext implements Externalizable {
      * @param cls Class.
      * @return Class descriptor.
      */
-    private PortableClassDescriptor registerUserClassDescriptor(Class<?> cls) {
-        PortableClassDescriptor desc;
-
+    private PortableClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean registerMetadata) {
         boolean registered;
 
         String typeName = typeName(cls.getName());
@@ -555,7 +553,7 @@ public class PortableContext implements Externalizable {
             throw new PortableException("Failed to register class.", e);
         }
 
-        desc = new PortableClassDescriptor(this,
+        PortableClassDescriptor desc = new PortableClassDescriptor(this,
             cls,
             true,
             typeId,
@@ -572,6 +570,10 @@ public class PortableContext implements Externalizable {
         // perform put() instead of putIfAbsent() because "registered" flag may have been changed.
         userTypes.put(typeId, desc);
         descByCls.put(cls, desc);
+
+        // TODO uncomment for https://issues.apache.org/jira/browse/IGNITE-1377
+//        if (registerMetadata && isMetaDataEnabled(typeId))
+//            metaHnd.addMeta(typeId, new PortableMetaDataImpl(typeName, desc.fieldsMeta(), null));
 
         return desc;
     }

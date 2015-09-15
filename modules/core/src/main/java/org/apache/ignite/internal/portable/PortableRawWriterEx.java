@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.internal.portable.streams.PortableOutputStream;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableRawWriter;
+import org.apache.ignite.internal.portable.api.PortableException;
+import org.apache.ignite.internal.portable.api.PortableRawWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**

@@ -17,10 +17,24 @@
 
 package org.apache.ignite.configuration;
 
+import java.io.Serializable;
+import java.util.Collection;
+import javax.cache.Cache;
+import javax.cache.configuration.CompleteConfiguration;
+import javax.cache.configuration.Factory;
+import javax.cache.configuration.MutableConfiguration;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.CacheInterceptor;
+import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictionFilter;
@@ -35,15 +49,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.Cache;
-import javax.cache.CacheException;
-import javax.cache.configuration.CompleteConfiguration;
-import javax.cache.configuration.Factory;
-import javax.cache.configuration.MutableConfiguration;
-import javax.cache.expiry.ExpiryPolicy;
-import java.io.Serializable;
-import java.util.Collection;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
@@ -163,10 +168,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default size for onheap SQL row cache size. */
     public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
 
-    /** Default value for keep portable in store behavior .*/
-    @SuppressWarnings({"UnnecessaryBoxing", "BooleanConstructorCall"})
-    public static final Boolean DFLT_KEEP_PORTABLE_IN_STORE  = new Boolean(true);
-
     /** Cache name. */
     private String name;
 
@@ -217,9 +218,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** */
     private Factory storeFactory;
-
-    /** */
-    private Boolean keepPortableInStore = DFLT_KEEP_PORTABLE_IN_STORE;
 
     /** */
     private boolean loadPrevVal = DFLT_LOAD_PREV_VAL;
@@ -383,8 +381,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
         isWriteThrough = cc.isWriteThrough();
-        keepPortableInStore = cc.isKeepPortableInStore() != null ? cc.isKeepPortableInStore() :
-            DFLT_KEEP_PORTABLE_IN_STORE;
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
@@ -822,38 +818,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.storeFactory = storeFactory;
 
         return this;
-    }
-
-    /**
-     * Flag indicating that {@link CacheStore} implementation
-     * is working with portable objects instead of Java objects.
-     * Default value of this flag is {@link #DFLT_KEEP_PORTABLE_IN_STORE},
-     * because this is recommended behavior from performance standpoint.
-     * <p>
-     * If set to {@code false}, Ignite will deserialize keys and
-     * values stored in portable format before they are passed
-     * to cache store.
-     * <p>
-     * Note that setting this flag to {@code false} can simplify
-     * store implementation in some cases, but it can cause performance
-     * degradation due to additional serializations and deserializations
-     * of portable objects. You will also need to have key and value
-     * classes on all nodes since portables will be deserialized when
-     * store is called.
-     *
-     * @return Keep portables in store flag.
-     */
-    public Boolean isKeepPortableInStore() {
-        return keepPortableInStore;
-    }
-
-    /**
-     * Sets keep portables in store flag.
-     *
-     * @param keepPortableInStore Keep portables in store flag.
-     */
-    public void setKeepPortableInStore(boolean keepPortableInStore) {
-        this.keepPortableInStore = keepPortableInStore;
     }
 
     /**

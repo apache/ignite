@@ -73,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -338,15 +339,13 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 
                 if (hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM) {
-                    CacheObject val;
-
                     cached.unswap(retVal);
 
                     boolean readThrough = (retVal || hasFilters) &&
                         cacheCtx.config().isLoadPreviousValue() &&
                         !txEntry.skipStore();
 
-                    val = cached.innerGet(
+                    CacheObject val = cached.innerGet(
                         tx,
                         /*swap*/true,
                         readThrough,
@@ -561,7 +560,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (tx.optimistic())
             tx.clearPrepareFuture(this);
 
-        if (tx.onePhaseCommit()) {
+        // Do not commit one-phase commit transaction if originating node has near cache enabled.
+        if (tx.onePhaseCommit() && tx.commitOnPrepare()) {
             assert last;
 
             // Must create prepare response before transaction is committed to grab correct return value.
@@ -639,8 +639,14 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @throws IgniteCheckedException If failed to send response.
      */
     private void sendPrepareResponse(GridNearTxPrepareResponse res) throws IgniteCheckedException {
-        if (!tx.nearNodeId().equals(cctx.localNodeId()))
+        if (!tx.nearNodeId().equals(cctx.localNodeId())) {
+            Throwable err = this.err.get();
+
+            if (err != null && err instanceof IgniteFutureCancelledException)
+                return;
+
             cctx.io().send(tx.nearNodeId(), res, tx.ioPolicy());
+        }
     }
 
     /**
@@ -902,6 +908,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             // We are holding transaction-level locks for entries here, so we can get next write version.
             onEntriesLocked();
 
+            // We are holding transaction-level locks for entries here, so we can get next write version.
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
             {
@@ -978,9 +985,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             if (entry.explicitVersion() == null) {
                                 GridCacheMvccCandidate added = cached.candidate(version());
 
-                                assert added == null || added.dhtLocal() :
-                                    "Got non-dht-local candidate for prepare future " +
-                                        "[added=" + added + ", entry=" + entry + ']';
+                                assert added != null : "Null candidate for non-group-lock entry " +
+                                    "[added=" + added + ", entry=" + entry + ']';
+                                assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
+                                    "[added=" + added + ", entry=" + entry + ']';
 
                                 if (added != null && added.ownerVersion() != null)
                                     req.owned(entry.txKey(), added.ownerVersion());
@@ -1070,8 +1078,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 if (entry.explicitVersion() == null) {
                                     GridCacheMvccCandidate added = entry.cached().candidate(version());
 
-                                    assert added == null || added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
-                                        "[added=" + added + ", entry=" + entry + ']';
+                                assert added != null : "Null candidate for non-group-lock entry " +
+                                    "[added=" + added + ", entry=" + entry + ']';
+                                assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
+                                    "[added=" + added + ", entry=" + entry + ']';
 
                                     if (added != null && added.ownerVersion() != null)
                                         req.owned(entry.txKey(), added.ownerVersion());

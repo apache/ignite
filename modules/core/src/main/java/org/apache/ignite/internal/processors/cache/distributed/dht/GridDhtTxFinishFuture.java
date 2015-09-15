@@ -219,7 +219,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
         if (initialized() || err != null) {
             if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
-                this.tx.tmCommit();
+                this.tx.tmFinish(err == null);
 
             Throwable e = this.err.get();
 
@@ -255,7 +255,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     /**
      * Initializes future.
      */
-    @SuppressWarnings("SimplifiableIfStatement")
+    @SuppressWarnings({"SimplifiableIfStatement", "IfMayBeConditional"})
     public void finish() {
         boolean sync;
 
@@ -277,7 +277,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param nodes Nodes.
      * @return {@code True} in case there is at least one synchronous {@code MiniFuture} to wait for.
      */
-    private boolean rollbackLockTransactions(Set<ClusterNode> nodes) {
+    private boolean rollbackLockTransactions(Collection<ClusterNode> nodes) {
         assert !commit;
         assert !F.isEmpty(nodes);
 
@@ -399,6 +399,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.subjectId(),
                 tx.taskNameHash());
 
+            req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
+
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
 
@@ -450,8 +452,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.subjectId(),
                     tx.taskNameHash());
 
-                if (tx.onePhaseCommit())
-                    req.writeVersion(tx.writeVersion());
+                req.writeVersion(tx.writeVersion());
 
                 try {
                     cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
@@ -516,7 +517,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         /**
          * @param node Node.
          */
-        public MiniFuture(ClusterNode node) {
+        private MiniFuture(ClusterNode node) {
             this.node = node;
         }
 

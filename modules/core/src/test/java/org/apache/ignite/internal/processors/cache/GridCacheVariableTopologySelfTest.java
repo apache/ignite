@@ -36,6 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -142,8 +143,8 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
 
                         tx.commit();
                     }
-                    catch (ClusterTopologyException e) {
-                        info("Caught topology exception: " + e);
+                    catch (TransactionRollbackException | ClusterTopologyException e) {
+                        info("Caught exception: " + e);
                     }
                     catch (IgniteException e) {
                         if (X.hasCause(e, ClusterTopologyCheckedException.class))

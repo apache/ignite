@@ -46,6 +46,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -355,52 +356,36 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     }
 
     /**
-     * TODO: IGNITE-613.
-     *
      * @throws Exception If failed.
      */
     public void testNodeLeft() throws Exception {
-        // Test works long and fails after. Should be enabled after fix.
         fail("https://issues.apache.org/jira/browse/IGNITE-613");
-        
+
+        Ignite g = startGrid("client");
+
         try {
-            Ignite g = startGrid();
+            assertTrue(g.configuration().isClientMode());
 
             IgniteCache<Integer, Integer> cache = g.cache(null);
 
             for (int i = 0; i < 1000; i++)
                 cache.put(i, i);
 
+            // Client cache should be empty.
+            assertEquals(0, cache.localSize());
+
             QueryCursor<Cache.Entry<Integer, Integer>> q =
-                cache.query(new SqlQuery<Integer, Integer>(Integer.class, "_key >= 0 order by _key"));
+                cache.query(new SqlQuery<Integer, Integer>(Integer.class, "_key >= 0 order by _key").setPageSize(10));
 
-            assertEquals(0, (int) q.iterator().next().getKey());
+            assertEquals(0, (int)q.iterator().next().getKey());
 
-            final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<GridCloseableIterator<
-                IgniteBiTuple<Integer, Integer>>>>> map =
-                U.field(((IgniteKernal)grid(0)).internalCache().context().queries(), "qryIters");
+            ConcurrentMap<UUID, ConcurrentMap<Long, ?>> map = U.field(((IgniteH2Indexing)U.field(U.field(
+                grid(0).context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
 
-            // fut.nextX() does not guarantee the request has completed on remote node
-            // (we could receive page from local one), so we need to wait.
-            assertTrue(GridTestUtils.waitForCondition(new PA() {
-                @Override public boolean apply() {
-                    return map.size() == 1;
-                }
-            }, getTestTimeout()));
-
-            Map<Long, GridFutureAdapter<GridCloseableIterator<IgniteBiTuple<Integer, Integer>>>> futs =
-                map.get(g.cluster().localNode().id());
-
-            assertEquals(1, futs.size());
-
-            GridCloseableIterator<IgniteBiTuple<Integer, Integer>> iter =
-                (GridCloseableIterator<IgniteBiTuple<Integer, Integer>>)((IgniteInternalFuture)F.first(futs.values()).get()).get();
-
-            ResultSet rs = U.field(iter, "data");
-
-            assertFalse(rs.isClosed());
+            assertEquals(1, map.size());
 
             final UUID nodeId = g.cluster().localNode().id();
+
             final CountDownLatch latch = new CountDownLatch(1);
 
             grid(0).events().localListen(new IgnitePredicate<Event>() {
@@ -412,16 +397,14 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
                 }
             }, EVT_NODE_LEFT);
 
-            stopGrid();
+            stopGrid("client");
 
             latch.await();
 
             assertEquals(0, map.size());
-            assertTrue(rs.isClosed());
         }
         finally {
-            // Ensure that additional node is stopped.
-            stopGrid();
+            stopGrid("client");
         }
     }
 
