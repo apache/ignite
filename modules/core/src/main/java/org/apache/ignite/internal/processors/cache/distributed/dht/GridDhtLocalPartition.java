@@ -708,62 +708,38 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         return new Iterator<GridDhtCacheEntry>() {
             /** */
-            private GridDhtCacheEntry lastEntry;
-
-            {
-                lastEntry = advance();
-            }
-
-            private GridDhtCacheEntry advance() {
-                if (it.hasNext()) {
-                    Map.Entry<byte[], GridCacheSwapEntry> entry = it.next();
-
-                    byte[] keyBytes = entry.getKey();
-
-                    while (true) {
-                        try {
-                            KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
-
-                            lastEntry = (GridDhtCacheEntry)cctx.cache().entryEx(key, false);
-
-                            lastEntry.unswap(true);
-
-                            return lastEntry;
-                        }
-                        catch (GridCacheEntryRemovedException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Got removed entry: " + lastEntry);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new CacheException(e);
-                        }
-                        catch (GridDhtInvalidPartitionException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Got invalid partition exception: " + e);
-
-                            return null;
-                        }
-                    }
-                }
-
-                return null;
-            }
+            GridDhtCacheEntry lastEntry;
 
             @Override public boolean hasNext() {
-                return lastEntry != null;
+                return it.hasNext();
             }
 
             @Override public GridDhtCacheEntry next() {
-                if (lastEntry == null)
-                    throw new NoSuchElementException();
+                Map.Entry<byte[], GridCacheSwapEntry> entry = it.next();
 
-                return lastEntry;
+                byte[] keyBytes = entry.getKey();
+
+                while (true) {
+                    try {
+                        KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
+
+                        lastEntry = (GridDhtCacheEntry)cctx.cache().entryEx(key, false);
+
+                        lastEntry.unswap(true);
+
+                        return lastEntry;
+                    }
+                    catch (GridCacheEntryRemovedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Got removed entry: " + lastEntry);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new CacheException(e);
+                    }
+                }
             }
 
             @Override public void remove() {
-                if (lastEntry == null)
-                    throw new NoSuchElementException();
-
                 map.remove(lastEntry.key(), lastEntry);
             }
         };
