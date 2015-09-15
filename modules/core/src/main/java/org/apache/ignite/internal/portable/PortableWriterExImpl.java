@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.portable;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
@@ -28,13 +32,14 @@ import java.util.Date;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
 import org.apache.ignite.internal.portable.streams.PortableOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.portable.api.PortableException;
-import org.apache.ignite.internal.portable.api.PortableRawWriter;
-import org.apache.ignite.internal.portable.api.PortableWriter;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableRawWriter;
+import org.apache.ignite.portable.PortableWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
