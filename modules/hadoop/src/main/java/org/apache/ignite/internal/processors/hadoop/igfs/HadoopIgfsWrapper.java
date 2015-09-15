@@ -79,7 +79,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      * @param log Current logger.
      */
     public HadoopIgfsWrapper(String authority, String logDir, Configuration conf, Log log, String user)
-            throws IOException {
+        throws IOException {
         try {
             this.authority = authority;
             this.endpoint = new HadoopIgfsEndpoint(authority);
@@ -351,7 +351,9 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             return curDelegate;
 
         // 2. Guess that we are in the same VM.
-        if (!parameter(conf, PARAM_IGFS_ENDPOINT_NO_EMBED, authority, false)) {
+        boolean skipInProc = parameter(conf, PARAM_IGFS_ENDPOINT_NO_EMBED, authority, false);
+
+        if (!skipInProc) {
             IgfsEx igfs = null;
 
             if (endpoint.grid() == null) {
@@ -471,7 +473,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             return curDelegate;
         }
         else {
-            SB errMsg = new SB("Failed to connect to IGFS [endpoint=" + authority + ", attempts=[");
+            SB errMsg = new SB("Failed to connect to IGFS [endpoint=igfs://" + authority + ", attempts=[");
 
             if (errShmem != null)
                 errMsg.a("[type=SHMEM, port=" + endpoint.port() + ", err=" + errShmem + "], ");
