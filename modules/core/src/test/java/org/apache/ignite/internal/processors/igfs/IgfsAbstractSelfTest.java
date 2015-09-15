@@ -1966,13 +1966,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testDeadlocks() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
-                    checkDeadlocks(5, 2, 2, 2, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT);
-                }
-                finally {
-                    clear(igfs, igfsSecondary);
-                }
+                checkDeadlocks(5, 2, 2, 2, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT);
+            }
+            finally {
+                clear(igfs, igfsSecondary);
             }
         }
+    }
 
     /**
      * Check deadlocks by creating complex directories structure and then executing chaotic operations on it. A lot of
