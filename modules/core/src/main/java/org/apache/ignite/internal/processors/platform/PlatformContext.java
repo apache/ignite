@@ -272,4 +272,11 @@ public interface PlatformContext {
      * @return Cluster node filter.
      */
     public PlatformClusterNodeFilter createClusterNodeFilter(Object filter);
+
+    /**
+     * Writes an object as portable with error handling.
+     * @param obj Object.
+     * @param writer Writer.
+     */
+    public void writeAsPortableObjectSafe(Object obj, PortableRawWriterEx writer);
 }
