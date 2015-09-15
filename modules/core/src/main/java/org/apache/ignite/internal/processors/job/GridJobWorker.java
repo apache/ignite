@@ -179,7 +179,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         boolean internal,
         GridJobEventListener evtLsnr,
         GridJobHoldListener holdLsnr) {
-        super(ctx.gridName(), "grid-job-worker", ctx.log());
+        super(ctx.gridName(), "grid-job-worker", ctx.log(GridJobWorker.class));
 
         assert ctx != null;
         assert ses != null;

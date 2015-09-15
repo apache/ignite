@@ -135,7 +135,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
         this.prj = prj;
         this.ctx = ctx;
-        this.log = ctx.log().getLogger(GridExecutorService.class);
+        this.log = ctx.log(GridExecutorService.class);
     }
 
     /** {@inheritDoc} */
