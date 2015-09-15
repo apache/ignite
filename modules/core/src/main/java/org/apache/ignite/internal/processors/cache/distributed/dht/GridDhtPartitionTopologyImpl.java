@@ -546,10 +546,13 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param updateSeq Update sequence.
      * @return Local partition.
      */
-    private GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create, boolean updateSeq) {
-        while (true) {
-            boolean belongs = cctx.affinity().localNode(p, topVer);
+    private GridDhtLocalPartition localPartition(int p,
+        AffinityTopologyVersion topVer,
+        boolean create,
+        boolean updateSeq) {
+        boolean belongs = create && cctx.affinity().localNode(p, topVer);
 
+        while (true) {
             GridDhtLocalPartition loc = locParts.get(p);
 
             if (loc != null && loc.state() == EVICTED) {

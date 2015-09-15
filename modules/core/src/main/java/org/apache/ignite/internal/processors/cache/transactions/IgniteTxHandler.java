@@ -1049,6 +1049,7 @@ public class IgniteTxHandler {
      *
      * @param nodeId Node id that originated finish request.
      * @param req Request.
+     * @param {@code True} if transaction committed on this node.
      */
     protected void sendReply(UUID nodeId, GridDhtTxFinishRequest req, boolean committed) {
         if (req.replyRequired()) {
@@ -1057,9 +1058,13 @@ public class IgniteTxHandler {
             if (req.checkCommitted()) {
                 res.checkCommitted(true);
 
-                if (!committed)
+                if (!committed) {
+                    ClusterTopologyCheckedException cause =
+                        new ClusterTopologyCheckedException("Primary node left grid.");
+
                     res.checkCommittedError(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
-                        "(transaction has been rolled back on backup node): " + req.version()));
+                        "(transaction has been rolled back on backup node): " + req.version(), cause));
+                }
             }
 
             try {

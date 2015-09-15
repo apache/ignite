@@ -4096,21 +4096,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                     return t;
                 }
-                catch (IgniteInterruptedCheckedException | IgniteTxHeuristicCheckedException |
-                    IgniteTxRollbackCheckedException e) {
+                catch (IgniteInterruptedCheckedException | IgniteTxHeuristicCheckedException e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {
-                    try {
-                        tx.rollback();
+                    if (!(e instanceof IgniteTxRollbackCheckedException)) {
+                        try {
+                            tx.rollback();
 
-                        e = new IgniteTxRollbackCheckedException("Transaction has been rolled back: " +
-                            tx.xid(), e);
-                    }
-                    catch (IgniteCheckedException | AssertionError | RuntimeException e1) {
-                        U.error(log, "Failed to rollback transaction (cache may contain stale locks): " + tx, e1);
+                            e = new IgniteTxRollbackCheckedException("Transaction has been rolled back: " +
+                                tx.xid(), e);
+                        }
+                        catch (IgniteCheckedException | AssertionError | RuntimeException e1) {
+                            U.error(log, "Failed to rollback transaction (cache may contain stale locks): " + tx, e1);
 
-                        U.addLastCause(e, e1, log);
+                            U.addLastCause(e, e1, log);
+                        }
                     }
 
                     if (X.hasCause(e, ClusterTopologyCheckedException.class) && i != retries - 1) {

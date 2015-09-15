@@ -51,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  * (assuming that class definitions are present in the classpath).
  * <p>
  * To work with the portable format directly, user should create a special cache projection
- * using {@link IgniteCache#withKeepPortable()} method and then retrieve individual fields as needed:
+ * using IgniteCache.withKeepPortable() method and then retrieve individual fields as needed:
  * <pre name=code class=java>
  * IgniteCache&lt;PortableObject, PortableObject&gt; prj = cache.withKeepPortable();
  *

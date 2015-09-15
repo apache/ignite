@@ -842,7 +842,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         IgniteTxEntry e,
         Map<Integer, Collection<KeyCacheObject>> map
     ) {
-        if (retVal || !F.isEmpty(e.entryProcessors())) {
+        if (retVal || !F.isEmpty(e.entryProcessors()) || !F.isEmpty(e.filters())) {
             if (map == null)
                 map = new HashMap<>();
 

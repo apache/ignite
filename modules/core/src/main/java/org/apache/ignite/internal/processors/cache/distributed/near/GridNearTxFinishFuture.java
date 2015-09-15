@@ -404,8 +404,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (backup == null) {
                     readyNearMappingFromBackup(mapping);
 
+                    ClusterTopologyCheckedException cause =
+                        new ClusterTopologyCheckedException("Backup node left grid: " + backupId);
+
+                    cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+
                     mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
-                        "(backup has left grid): " + tx.xidVersion()));
+                        "(backup has left grid): " + tx.xidVersion(), cause));
                 }
                 else if (backup.isLocal()) {
                     boolean committed = cctx.tm().txHandler().checkDhtRemoteTxCommitted(tx.xidVersion());
@@ -414,9 +419,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                     if (committed)
                         mini.onDone(tx);
-                    else
+                    else {
+                        ClusterTopologyCheckedException cause =
+                            new ClusterTopologyCheckedException("Primary node left grid: " + nodeId);
+
+                        cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+
                         mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
-                            "(transaction has been rolled back on backup node): " + tx.xidVersion()));
+                            "(transaction has been rolled back on backup node): " + tx.xidVersion(), cause));
+                    }
                 }
                 else {
                     GridDhtTxFinishRequest finishReq = new GridDhtTxFinishRequest(
@@ -731,8 +742,19 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
             readyNearMappingFromBackup(m);
 
-            if (res.checkCommittedError() != null)
-                onDone(res.checkCommittedError());
+            Throwable err = res.checkCommittedError();
+
+            if (err != null) {
+                if (err instanceof IgniteCheckedException) {
+                    ClusterTopologyCheckedException cause =
+                        ((IgniteCheckedException)err).getCause(ClusterTopologyCheckedException.class);
+
+                    if (cause != null)
+                        cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                }
+
+                onDone(err);
+            }
             else
                 onDone(tx);
         }

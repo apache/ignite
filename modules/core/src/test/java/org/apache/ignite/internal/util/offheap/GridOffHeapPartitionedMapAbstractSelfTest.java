@@ -883,7 +883,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
                 evictCnt.incrementAndGet();
             }
 
-            @Override public boolean removedEvicted() {
+            @Override public boolean removeEvicted() {
                 return true;
             }
         };
@@ -926,7 +926,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
                     evictCnt.incrementAndGet();
                 }
 
-                @Override public boolean removedEvicted() {
+                @Override public boolean removeEvicted() {
                     return true;
                 }
             };
@@ -966,7 +966,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
                 evictCnt.incrementAndGet();
             }
 
-            @Override public boolean removedEvicted() {
+            @Override public boolean removeEvicted() {
                 return true;
             }
         };
@@ -1022,7 +1022,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
                 evicted.set(key);
             }
 
-            @Override public boolean removedEvicted() {
+            @Override public boolean removeEvicted() {
                 return true;
             }
         };
@@ -1089,7 +1089,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
                 evicted.set(key);
             }
 
-            @Override public boolean removedEvicted() {
+            @Override public boolean removeEvicted() {
                 return true;
             }
         };
