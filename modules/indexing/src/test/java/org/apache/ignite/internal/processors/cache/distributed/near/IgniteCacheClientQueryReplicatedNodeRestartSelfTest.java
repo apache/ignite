@@ -315,7 +315,7 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
                         info("Executed queries: " + c);
                 }
             }
-        }, qryThreadNum);
+        }, qryThreadNum, "query-thread");
 
         final AtomicInteger restartCnt = new AtomicInteger();
 
@@ -334,9 +334,13 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
                     }
                     while (!locks.compareAndSet(g, 0, -1));
 
+                    log.info("Stop node: " + g);
+
                     stopGrid(g);
 
                     Thread.sleep(rnd.nextInt(nodeLifeTime));
+
+                    log.info("Start node: " + g);
 
                     startGrid(g);
 
@@ -352,7 +356,7 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
 
                 return true;
             }
-        }, restartThreadsNum);
+        }, restartThreadsNum, "restart-thread");
 
         Thread.sleep(duration);
 

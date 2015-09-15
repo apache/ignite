@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapMapFactory;
  */
 public class GridUnsafeMapSelfTest extends GridOffHeapMapAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected <K> GridOffHeapMap<K> newMap() {
+    @Override protected GridOffHeapMap newMap() {
         return GridOffHeapMapFactory.unsafeMap(concurrency, load, initCap, mem, lruStripes, evictLsnr);
     }
 }

@@ -149,7 +149,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
                         info("Executed queries: " + c);
                 }
             }
-        }, qryThreadNum);
+        }, qryThreadNum, "query-thread");
 
         final AtomicInteger restartCnt = new AtomicInteger();
 
@@ -178,7 +178,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
 
                 return true;
             }
-        }, 1);
+        }, 1, "restart-thread");
 
         Thread.sleep(duration);
 
