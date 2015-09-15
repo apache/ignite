@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionAware;
@@ -110,6 +111,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /** Values to be evicted from offheap to swap. */
     private ThreadLocal<Collection<IgniteBiTuple<byte[], byte[]>>> offheapEvicts = new ThreadLocal<>();
 
+    /** First offheap eviction warning flag. */
+    private volatile boolean firstEvictWarn;
+
     /**
      * @param enabled Flag to indicate if swap is enabled.
      */
@@ -167,6 +171,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                         }
                     }
                 }
+                catch (GridDhtInvalidPartitionException e) {
+                    // Skip entry.
+                }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal off-heap entry", e);
                 }
@@ -175,9 +182,6 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             offheapEvicts.set(null);
         }
     }
-
-    /** First offheap eviction warning flag. */
-    private volatile boolean firstEvictWarn;
 
     /**
      * Initializes off-heap space.
@@ -211,7 +215,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                     evicts.add(new IgniteBiTuple<>(kb, vb));
                 }
 
-                @Override public boolean removedEvicted() {
+                @Override public boolean removeEvicted() {
                     return false;
                 }
             };
@@ -222,7 +226,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                     onOffheapEvict();
                 }
 
-                @Override public boolean removedEvicted() {
+                @Override public boolean removeEvicted() {
                     return true;
                 }
             };
@@ -238,7 +242,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         if (cctx.config().isStatisticsEnabled())
             cctx.cache().metrics0().onOffHeapEvict();
 
-        if (!firstEvictWarn)
+        if (firstEvictWarn)
             return;
 
         synchronized (this) {
@@ -521,16 +525,15 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
     /**
      * @param key Key to check.
+     * @param part Partition.
      * @return {@code True} if key is contained.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean containsKey(KeyCacheObject key) throws IgniteCheckedException {
+    public boolean containsKey(KeyCacheObject key, int part) throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return false;
 
         checkIteratorQueue();
-
-        int part = cctx.affinity().partition(key);
 
         // First check off-heap store.
         if (offheapEnabled) {
@@ -561,6 +564,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
     /**
      * @param key Key to read.
+     * @param keyBytes Key bytes.
      * @param part Key partition.
      * @param entryLocked {@code True} if cache entry is locked.
      * @param readOffheap Read offheap flag.
@@ -1047,19 +1051,20 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * @param key Key to remove.
+     * @param key Key to move from offheap to swap.
+     * @param entry Serialized swap entry.
      * @param part Partition.
-     * @param ver Expected version.
+     * @param ver Expected entry version.
      * @return {@code True} if removed.
      * @throws IgniteCheckedException If failed.
      */
-    boolean removeOffheap(final KeyCacheObject key, int part, final GridCacheVersion ver)
+    boolean offheapSwapEvict(final KeyCacheObject key, byte[] entry, int part, final GridCacheVersion ver)
         throws IgniteCheckedException {
         assert offheapEnabled;
 
         checkIteratorQueue();
 
-        return offheap.removex(spaceName, part, key, key.valueBytes(cctx.cacheObjectContext()),
+        boolean rmv = offheap.removex(spaceName, part, key, key.valueBytes(cctx.cacheObjectContext()),
             new IgniteBiPredicate<Long, Integer>() {
                 @Override public boolean apply(Long ptr, Integer len) {
                     GridCacheVersion ver0 = GridCacheOffheapSwapEntry.version(ptr);
@@ -1068,6 +1073,21 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                 }
             }
         );
+
+        if (rmv) {
+            Collection<GridCacheSwapListener> lsnrs = offheapLsnrs.get(part);
+
+            if (lsnrs != null) {
+                GridCacheSwapEntry e = swapEntry(GridCacheSwapEntryImpl.unmarshal(entry));
+
+                for (GridCacheSwapListener lsnr : lsnrs)
+                    lsnr.onEntryUnswapped(part, key, e);
+            }
+
+            cctx.swap().writeToSwap(part, key, entry);
+        }
+
+        return rmv;
     }
 
     /**

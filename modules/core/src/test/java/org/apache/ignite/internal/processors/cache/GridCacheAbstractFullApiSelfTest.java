@@ -2825,7 +2825,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             try {
                 cache.clear();
 
-                assertEquals(vals.get(first), cache.localPeek(first, ONHEAP));
+                GridCacheContext<String, Integer> cctx = context(0);
+
+                GridCacheEntryEx entry = cctx.isNear() ? cctx.near().dht().peekEx(first) :
+                    cctx.cache().peekEx(first);
+
+                assertNotNull(entry);
             }
             finally {
                 lock.unlock();

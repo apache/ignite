@@ -936,6 +936,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Override public void onKernalStop(boolean cancel) {
         cacheStartedLatch.countDown();
 
+        GridCachePartitionExchangeManager<Object, Object> exch = context().exchange();
+
+        // Stop exchange manager first so that we call onKernalStop on all caches.
+        // No new caches should be added after this point.
+        exch.onKernalStop(cancel);
+
         for (String cacheName : stopSeq) {
             GridCacheAdapter<?, ?> cache = caches.remove(maskNull(cacheName));
 
@@ -962,7 +968,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             it.hasPrevious();) {
             GridCacheSharedManager<?, ?> mgr = it.previous();
 
-            mgr.onKernalStop(cancel);
+            if (mgr != exch)
+                mgr.onKernalStop(cancel);
         }
     }
 
@@ -2385,7 +2392,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (ctx.localNodeId().equals(req.initiatingNodeId())) {
                 fut = (DynamicCacheStartFuture)pendingFuts.get(maskNull(req.cacheName()));
 
-                if (!req.deploymentId().equals(fut.deploymentId()))
+                if (fut != null && !req.deploymentId().equals(fut.deploymentId()))
                     fut = null;
             }
 
@@ -3107,6 +3114,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public void cancelUserOperations() {
         sharedCtx.mvcc().cancelClientFutures();
+
+        Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
+
+        for (IgniteInternalFuture fut : pendingFuts.values())
+            ((GridFutureAdapter)fut).onDone(err);
+
+        for (IgniteInternalFuture fut : pendingTemplateFuts.values())
+            ((GridFutureAdapter)fut).onDone(err);
     }
 
     /**
