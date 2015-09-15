@@ -1966,13 +1966,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testDeadlocks() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
-                checkDeadlocks(5, 2, 2, 2, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT);
-            }
-            finally {
-                clear(igfs, igfsSecondary);
+                    checkDeadlocks(5, 2, 2, 2, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT);
+                }
+                finally {
+                    clear(igfs, igfsSecondary);
+                }
             }
         }
-    }
 
     /**
      * Check deadlocks by creating complex directories structure and then executing chaotic operations on it. A lot of
@@ -2658,7 +2658,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> entry : workerMap.entrySet()) {
             entry.getValue().cancel();
-            entry.getValue().await();
+            try {
+                entry.getValue().await();
+            } catch (IgniteCheckedException ice) {
+                // Cancel will cause "Write to file was cancelled due to node stop." exception top be thrown from
+                // #await(), but we should not fail the test due to that:
+                if (ice.getMessage() == null || !ice.getMessage().contains("cancelled"))
+                    throw ice;
+            }
         }
 
         // Clear igfs.
@@ -2675,21 +2682,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public static void clear(UniversalFileSystemAdapter uni) throws Exception {
         IgfsEx igfsEx = uni.getAdapter(IgfsEx.class);
 
-        if (igfsEx != null) {
-            Field workerMapFld = IgfsImpl.class.getDeclaredField("workerMap");
-
-            workerMapFld.setAccessible(true);
-
-            // Wait for all workers to finish.
-            Map<IgfsPath, IgfsFileWorkerBatch> workerMap = (Map<IgfsPath, IgfsFileWorkerBatch>)workerMapFld.get(igfs);
-
-            for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> entry : workerMap.entrySet()) {
-                entry.getValue().cancel();
-                entry.getValue().await();
-            }
-        }
-
-        // Clear the filesystem:
-        uni.format();
+        clear(igfsEx);
     }
 }
