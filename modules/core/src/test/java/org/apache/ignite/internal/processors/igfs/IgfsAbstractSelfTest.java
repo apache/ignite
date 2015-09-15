@@ -2296,12 +2296,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * Create the file in the given IGFS and write provided data chunks to it.
      *
      * @param file File.
-     * @param overwrite Overwrite flag.
      * @param chunks Data chunks.
      * @throws IOException In case of IO exception.
      */
-    protected static void createFile(UniversalFileSystemAdapter uni, IgfsPath file, boolean overwrite,
-        @Nullable byte[]... chunks) throws IOException {
+    protected static void createFile(UniversalFileSystemAdapter uni, IgfsPath file, @Nullable byte[]... chunks)
+        throws IOException {
         OutputStream os = null;
 
         try {
@@ -2689,5 +2688,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         if (igfsEx != null)
             clear(igfsEx);
+
+        // Clear the filesystem.
+        uni.format();
     }
 }
