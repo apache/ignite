@@ -22,8 +22,13 @@ package org.apache.ignite.yardstick.cache.failover;
  */
 public class RestartUtilsTest {
     public static void main(String[] args) {
-        String kill9 = RestartUtils.kill9("ashutak", "localhost");
+//        String kill9 = RestartUtils.kill9("ashutak", "localhost");
+        RestartUtils.Result result = RestartUtils.kill9("ashutak", "localhost", 0, true);
 
-        System.out.println(kill9);
+        System.out.println(">>> Output>");
+        System.out.println(result.getOutput());
+        System.out.println(">>> Error>");
+        System.out.println(result.getErrorOutput());
+        System.out.println(">>> Exit code: " + result.getExitCode());
     }
 }

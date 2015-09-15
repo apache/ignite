@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.util.Arrays;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Restart Utils.
@@ -45,6 +47,11 @@ public final class RestartUtils {
      * @return Result of process execution.
      */
     public static Result kill9(final String remoteUser, String hostName, final int id, boolean isDebug) {
+        return executeUnderSshConnect(remoteUser, hostName, isDebug, "pkill -9 -f 'Dyardstick.server" + id + "'");
+    }
+
+    private static Result executeUnderSshConnect(String remoteUser, String hostName,
+        boolean isDebug, String cmd) {
         if (U.isWindows())
             throw new UnsupportedOperationException("Unsupported operation for windows.");
 
@@ -55,10 +62,6 @@ public final class RestartUtils {
             Process p = Runtime.getRuntime().exec("ssh -o PasswordAuthentication=no " + remoteUser + "@" + hostName);
 
             try(PrintStream out = new PrintStream(p.getOutputStream(), true)) {
-                String cmd = "pkill -9 -f 'Dyardstick.server" + id + "'";
-
-                System.out.println("cmd=" + cmd);
-
                 out.println(cmd);
 
                 if (isDebug) {
@@ -118,8 +121,36 @@ public final class RestartUtils {
     }
 
 
-    public static void start() {
-        // TODO: implement.
+    public static Result start(BenchmarkConfiguration cfg, final String remoteUser, String hostName, final int id, boolean isDebug) {
+//        ssh -o PasswordAuthentication=no ${REMOTE_USER}"@"${HOST_NAME} \
+//        "MAIN_CLASS='org.yardstickframework.BenchmarkServerStartUp'" \
+//        "JVM_OPTS='${JVM_OPTS} -Dyardstick.server${ID}-${cntr}'" "CP='${CP}'" "CUR_DIR='${CUR_DIR}'" "PROPS_ENV0='${PROPS_ENV}'" \
+//        "nohup ${SCRIPT_DIR}/benchmark-bootstrap.sh ${CONFIG} "--config" ${CONFIG_INCLUDE} > ${server_file_log} 2>& 1 &"
+
+        String jvmOpts = "JVM_OPTS";
+        String cp = "${CP}";
+        String propsEnv = "${PROPS_ENV}";
+
+        String curDir = "${CUR_DIR}";
+        String scriptDir = "${SCRIPT_DIR}";
+        String serversLogsDir = "SERVERS_LOGS_DIR";
+
+        String descriptrion = ""; // TODO extract description from cmdArgs
+        String now = "1111111"; // TODO extract
+        String logFile = serversLogsDir +"/"+ now + "_id" + cfg.memberId() + "_" + hostName + descriptrion + ".log";
+
+        String cmdArgs = Arrays.toString(cfg.commandLineArguments());
+
+        System.out.println("cmdArgs=" + cmdArgs);
+
+        String cmd = "MAIN_CLASS='org.yardstickframework.BenchmarkServerStartUp' " +
+            "JVM_OPTS='" + jvmOpts + "' " +
+            "CP='" + cp + "' " +
+            "CUR_DIR='" + curDir + "' " +
+            "PROPS_ENV0='" + propsEnv + "' " +
+            "nohup " + scriptDir + "/benchmark-bootstrap.sh " + cmdArgs + " > " + logFile + " 2>& 1 &";
+
+        return executeUnderSshConnect(remoteUser, hostName, isDebug, cmd);
     }
 
     /**
