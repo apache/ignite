@@ -126,7 +126,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * Empty constructor with all defaults.
      */
     public RendezvousAffinityFunction() {
-        this(true);
+        this(false);
     }
 
     /**

@@ -29,7 +29,7 @@ public class CacheReplicatedFairAffinityExcludeNeighborsMultiNodeFullApiSelfTest
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setAffinity(new FairAffinityFunction());
+        cfg.setAffinity(new FairAffinityFunction(true));
 
         return cfg;
     }

@@ -106,7 +106,7 @@ public class FairAffinityFunction implements AffinityFunction {
      * Empty constructor with all defaults.
      */
     public FairAffinityFunction() {
-        this(true);
+        this(false);
     }
 
     /**
@@ -126,7 +126,7 @@ public class FairAffinityFunction implements AffinityFunction {
      * @param parts Number of partitions.
      */
     public FairAffinityFunction(int parts) {
-        this(true, parts);
+        this(false, parts);
     }
 
     /**

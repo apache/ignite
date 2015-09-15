@@ -29,7 +29,7 @@ public class CacheReplicatedRendezvousAffinityExcludeNeighborsMultiNodeFullApiSe
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setAffinity(new RendezvousAffinityFunction());
+        cfg.setAffinity(new RendezvousAffinityFunction(true));
 
         return cfg;
     }
