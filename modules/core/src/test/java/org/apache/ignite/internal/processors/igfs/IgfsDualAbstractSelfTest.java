@@ -1129,7 +1129,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
 
-        createFile(igfsSecondary, FILE, chunk);
+        createFile(igfsSecondary, FILE, true, chunk);
 
         checkFileContent(igfs, FILE, chunk);
     }
@@ -1348,7 +1348,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         igfsSecondaryFileSystem.update(SUBDIR, props);
 
-        createFile(igfsSecondary, FILE, /*BLOCK_SIZE,*/ chunk);
+        createFile(igfsSecondary, FILE, true, /*BLOCK_SIZE,*/ chunk);
 
         appendFile(igfs, FILE, chunk);
 
@@ -1375,7 +1375,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         igfsSecondaryFileSystem.update(DIR, propsDir);
         igfsSecondaryFileSystem.update(SUBDIR, propsSubDir);
 
-        createFile(igfsSecondary, FILE, /*BLOCK_SIZE,*/ chunk);
+        createFile(igfsSecondary, FILE, true, /*BLOCK_SIZE,*/ chunk);
 
         appendFile(igfs, FILE, chunk);
 
