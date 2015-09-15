@@ -64,6 +64,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -2863,6 +2864,53 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert cache.localPeek("key1", ONHEAP) == null;
         assert cache.localPeek("key2", ONHEAP) == null;
+    }
+
+    /**
+     * @param keys0 Keys to check.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void checkUnlocked(final Collection<String> keys0) throws IgniteCheckedException {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    for (int i = 0; i < gridCount(); i++) {
+                        GridCacheAdapter<Object, Object> cache = ((IgniteKernal)ignite(i)).internalCache();
+
+                        for (String key : keys0) {
+                            GridCacheEntryEx entry = cache.peekEx(key);
+
+                            if (entry != null) {
+                                if (entry.lockedByAny()) {
+                                    info("Entry is still locked [i=" + i + ", entry=" + entry + ']');
+
+                                    return false;
+                                }
+                            }
+
+                            if (cache.isNear()) {
+                                entry = cache.context().near().dht().peekEx(key);
+
+                                if (entry != null) {
+                                    if (entry.lockedByAny()) {
+                                        info("Entry is still locked [i=" + i + ", entry=" + entry + ']');
+
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+                catch (GridCacheEntryRemovedException ignore) {
+                    info("Entry was removed, will retry");
+
+                    return false;
+                }
+            }
+        }, 10_000);
     }
 
     /**

@@ -26,7 +26,9 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -64,7 +66,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     private static final int NOT_PRIMARY_AND_BACKUP = 2;
 
     /** */
-    private static Integer lastKey;
+    private static volatile Integer lastKey;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -91,6 +93,8 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         ccfg.setWriteThrough(false);
         ccfg.setLoadPreviousValue(true);
 
+        ccfg.setIndexedTypes(Integer.class, Integer.class);
+
         return ccfg;
     }
 
@@ -105,8 +109,18 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     @Override protected void afterTest() throws Exception {
         idxSpi.forceFail(false);
 
-        for (int key = 0; key < lastKey; key++)
+        Transaction tx = jcache().unwrap(Ignite.class).transactions().tx();
+
+        if (tx != null) {
+            tx.close();
+
+            fail("Cache transaction remained after test completion: " + tx);
+        }
+
+        for (int key = 0; key <= lastKey; key++)
             grid(0).cache(null).remove(key);
+
+        assertEquals(0, jcache(0).size(CachePeekMode.ALL));
     }
 
     /** {@inheritDoc} */
@@ -367,7 +381,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         info("Check key: " + key);
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteKernal grid = (IgniteKernal) grid(i);
+            IgniteKernal grid = (IgniteKernal)grid(i);
 
             GridCacheAdapter cache = grid.internalCache(null);
 
@@ -383,9 +397,8 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 log.info("Dht entry: " + entry);
 
-                if (entry != null) {
+                if (entry != null)
                     assertFalse("Unexpected entry for grid [i=" + i + ", entry=" + entry + ']', entry.lockedByAny());
-                }
             }
         }
     }
@@ -459,7 +472,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
             }
         }, CacheException.class, null);
 
-        assertTrue("Unexpected cause: "  +e, e.getCause() instanceof TransactionHeuristicException);
+        assertTrue("Unexpected cause: " + e, e.getCause() instanceof TransactionHeuristicException);
 
         checkUnlocked(key);
     }
@@ -469,7 +482,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @param keys Keys.
      * @throws Exception If failed.
      */
-    private void checkPutAll(boolean putBefore, Integer ... keys) throws Exception {
+    private void checkPutAll(boolean putBefore, Integer... keys) throws Exception {
         assert keys.length > 1;
 
         if (putBefore) {
@@ -616,7 +629,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Iterator<Cache.Entry<?,?>> query(@Nullable String spaceName, Collection<Object> params,
+        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String spaceName, Collection<Object> params,
             @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
             throw new UnsupportedOperationException();
         }

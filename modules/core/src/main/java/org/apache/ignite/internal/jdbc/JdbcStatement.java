@@ -36,7 +36,11 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 /**
  * JDBC statement implementation.
+ *
+ * @deprecated Using Ignite client node based JDBC driver is preferable.
+ * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
+@Deprecated
 public class JdbcStatement implements Statement {
     /** Task name. */
     private static final String TASK_NAME =

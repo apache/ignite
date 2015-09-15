@@ -97,8 +97,22 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash) {
-        super(xidVer, futId, null, threadId, commit, invalidate, sys, plc, syncCommit, syncRollback, baseVer,
-            committedVers, rolledbackVers, txSize);
+        super(
+            xidVer,
+            futId,
+            null,
+            threadId,
+            commit,
+            invalidate,
+            sys,
+            plc,
+            syncCommit,
+            syncRollback,
+            baseVer,
+            committedVers,
+            rolledbackVers,
+            txSize
+        );
 
         this.explicitLock = explicitLock;
         this.storeEnabled = storeEnabled;

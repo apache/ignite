@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.cache.portable;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.internal.portable.api.IgnitePortables;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.portable.PortableBuilder;
-import org.apache.ignite.portable.PortableMetadata;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.internal.portable.api.PortableBuilder;
+import org.apache.ignite.internal.portable.api.PortableMetadata;
+import org.apache.ignite.internal.portable.api.PortableObject;
 import org.jetbrains.annotations.Nullable;
 
 /**

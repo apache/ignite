@@ -18,12 +18,9 @@
 package org.apache.ignite;
 
 import java.io.Serializable;
-import java.sql.Timestamp;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
@@ -55,7 +52,6 @@ import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -130,44 +126,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache with no-retries behavior enabled.
      */
     public IgniteCache<K, V> withNoRetries();
-
-    /**
-     * Returns cache that will operate with portable objects.
-     * <p>
-     * Cache returned by this method will not be forced to deserialize portable objects,
-     * so keys and values will be returned from cache API methods without changes. Therefore,
-     * signature of the cache can contain only following types:
-     * <ul>
-     *     <li><code>org.apache.ignite.portable.PortableObject</code> for portable classes</li>
-     *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
-     *     <li>Arrays of primitives (byte[], int[], ...)</li>
-     *     <li>{@link String} and array of {@link String}s</li>
-     *     <li>{@link UUID} and array of {@link UUID}s</li>
-     *     <li>{@link Date} and array of {@link Date}s</li>
-     *     <li>{@link Timestamp} and array of {@link Timestamp}s</li>
-     *     <li>Enums and array of enums</li>
-     *     <li>
-     *         Maps, collections and array of objects (but objects inside
-     *         them will still be converted if they are portable)
-     *     </li>
-     * </ul>
-     * <p>
-     * For example, if you use {@link Integer} as a key and {@code Value} class as a value
-     * (which will be stored in portable format), you should acquire following projection
-     * to avoid deserialization:
-     * <pre>
-     * IgniteCache<Integer, PortableObject> prj = cache.withKeepPortable();
-     *
-     * // Value is not deserialized and returned in portable format.
-     * PortableObject po = prj.get(1);
-     * </pre>
-     * <p>
-     * Note that this method makes sense only if cache is working in portable mode ({@link PortableMarshaller} is used).
-     * If not, this method is no-op and will return current cache.
-     *
-     * @return New cache instance for portable objects.
-     */
-    public <K1, V1> IgniteCache<K1, V1> withKeepPortable();
 
     /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.

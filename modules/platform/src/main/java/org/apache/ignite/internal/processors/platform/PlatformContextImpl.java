@@ -37,6 +37,7 @@ import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableMetaDataImpl;
 import org.apache.ignite.internal.portable.PortableRawReaderEx;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.api.PortableMetadata;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilterImpl;
@@ -70,7 +71,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.portable.PortableMetadata;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -373,7 +373,7 @@ public class PlatformContextImpl implements PlatformContext {
 
         writer.writeInt(metas.size());
 
-        for (org.apache.ignite.portable.PortableMetadata m : metas)
+        for (PortableMetadata m : metas)
             writeMetadata0(writer, cacheObjProc.typeId(m.typeName()), m);
     }
 

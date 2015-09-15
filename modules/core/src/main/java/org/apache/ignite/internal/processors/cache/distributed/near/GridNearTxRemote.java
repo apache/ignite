@@ -106,8 +106,22 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         @Nullable UUID subjId,
         int taskNameHash
     ) throws IgniteCheckedException {
-        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, plc, concurrency, isolation, invalidate, timeout,
-            txSize, subjId, taskNameHash);
+        super(
+            ctx, 
+            nodeId, 
+            rmtThreadId, 
+            xidVer, 
+            commitVer, 
+            sys, 
+            plc, 
+            concurrency, 
+            isolation, 
+            invalidate, 
+            timeout, 
+            txSize,
+            subjId, 
+            taskNameHash
+        );
 
         assert nearNodeId != null;
 
@@ -162,8 +176,22 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, plc, concurrency, isolation, invalidate, timeout,
-            txSize, subjId, taskNameHash);
+        super(
+            ctx, 
+            nodeId, 
+            rmtThreadId, 
+            xidVer, 
+            commitVer,
+            sys,
+            plc,
+            concurrency, 
+            isolation, 
+            invalidate, 
+            timeout, 
+            txSize,
+            subjId, 
+            taskNameHash
+        );
 
         assert nearNodeId != null;
 

@@ -571,7 +571,7 @@ public class CodeGenerator {
     private static boolean addQueryFields(Collection<String> src, Collection<PojoField> fields, String varName,
         String mtdName, String comment, boolean first) {
         if (fields.isEmpty())
-            return true;
+            return first;
 
         add2(src, comment);
         add2(src, (first ? "Map<String, Class<?>> " : "") + varName + " = new LinkedHashMap<>();");

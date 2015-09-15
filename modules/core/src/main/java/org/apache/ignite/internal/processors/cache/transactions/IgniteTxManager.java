@@ -415,7 +415,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         TransactionIsolation isolation,
         long timeout,
         boolean storeEnabled,
-        int txSize) {
+        int txSize
+    ) {
         assert sysCacheCtx == null || sysCacheCtx.systemTx();
 
         UUID subjId = null; // TODO GG-9141 how to get subj ID?
@@ -692,7 +693,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Any transaction associated with the current thread.
      */
-    public IgniteInternalTx anyActiveThreadTx() {
+    public IgniteInternalTx anyActiveThreadTx(IgniteInternalTx ignore) {
         long threadId = Thread.currentThread().getId();
 
         IgniteInternalTx tx = threadMap.get(threadId);
@@ -706,7 +707,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             tx = sysThreadMap.get(new TxThreadKey(threadId, cacheCtx.cacheId()));
 
-            if (tx != null && tx.topologyVersionSnapshot() != null)
+            if (tx != null && tx != ignore && tx.topologyVersionSnapshot() != null)
                 return tx;
         }
 
@@ -1067,7 +1068,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return If transaction was not already present in committed set.
      */
     public boolean addCommittedTx(IgniteInternalTx tx) {
-        return addCommittedTx(tx.xidVersion(), tx.nearXidVersion());
+        boolean res = addCommittedTx(tx.xidVersion(), tx.nearXidVersion());
+
+        if (!tx.local() && !tx.near() && tx.onePhaseCommit())
+            addCommittedTx(tx.nearXidVersion(), null);
+
+        return res;
     }
 
     /**
@@ -1261,9 +1267,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (!((committed != null && committed) || tx.writeSet().isEmpty() || tx.isSystemInvalidate())) {
             uncommitTx(tx);
 
+            GridCacheVersion first = completedVers.isEmpty() ? null : completedVers.firstKey();
+            GridCacheVersion last = completedVers.isEmpty() ? null : completedVers.lastKey();
+
             throw new IgniteException("Missing commit version (consider increasing " +
                 IGNITE_MAX_COMPLETED_TX_COUNT + " system property) [ver=" + tx.xidVersion() + ", firstVer=" +
-                completedVers.firstKey() + ", lastVer=" + completedVers.lastKey() + ", tx=" + tx.xid() + ']');
+                first + ", lastVer=" + last + ", tx=" + tx.xid() + ']');
         }
 
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
@@ -1786,13 +1795,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param ver Version.
+     * @param xidVer Version.
      * @return Future for flag indicating if transactions was committed.
      */
-    public IgniteInternalFuture<Boolean> txCommitted(GridCacheVersion ver) {
+    public IgniteInternalFuture<Boolean> txCommitted(GridCacheVersion xidVer) {
         final GridFutureAdapter<Boolean> resFut = new GridFutureAdapter<>();
 
-        final IgniteInternalTx tx = cctx.tm().tx(ver);
+        final IgniteInternalTx tx = cctx.tm().tx(xidVer);
 
         if (tx != null) {
             assert tx.near() && tx.local() : tx;
@@ -1814,7 +1823,22 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             return resFut;
         }
 
-        Boolean committed = completedVers.get(ver);
+        Boolean committed = null;
+
+        for (Map.Entry<GridCacheVersion, Boolean> entry : completedVers.entrySet()) {
+            if (entry.getValue() == null)
+                continue;
+
+            if (entry.getKey() instanceof CommittedVersion) {
+                CommittedVersion comm = (CommittedVersion)entry.getKey();
+
+                if (comm.nearVer.equals(xidVer)) {
+                    committed = entry.getValue();
+
+                    break;
+                }
+            }
+        }
 
         if (log.isDebugEnabled())
             log.debug("Near transaction committed: " + committed);
@@ -2030,9 +2054,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             try {
                 cctx.kernalContext().gateway().readLock();
             }
-            catch (IllegalStateException | IgniteClientDisconnectedException ignore) {
+            catch (IllegalStateException | IgniteClientDisconnectedException e) {
                 if (log.isDebugEnabled())
-                    log.debug("Failed to acquire kernal gateway [err=" + ignore + ']');
+                    log.debug("Failed to acquire kernal gateway [err=" + e + ']');
 
                 return;
             }

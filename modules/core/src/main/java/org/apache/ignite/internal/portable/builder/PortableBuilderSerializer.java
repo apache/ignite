@@ -21,8 +21,8 @@ import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableObjectEx;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.portable.PortableWriterExImpl;
+import org.apache.ignite.internal.portable.api.PortableObject;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.portable.*;
 
 import java.util.*;
 

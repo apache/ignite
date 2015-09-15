@@ -318,7 +318,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         this.map = map;
 
-        log = ctx.gridConfig().getGridLogger().getLogger(getClass());
+        log = ctx.logger(getClass());
 
         metrics = new CacheMetricsImpl(ctx);
 
@@ -4230,6 +4230,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     try {
                                         return tFut.get();
                                     }
+                                    catch (IgniteTxRollbackCheckedException e) {
+                                        throw e;
+                                    }
                                     catch (IgniteCheckedException e1) {
                                         tx0.rollbackAsync();
 
@@ -4252,6 +4255,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
                     try {
                         return tFut.get();
+                    }
+                    catch (IgniteTxRollbackCheckedException e) {
+                        throw e;
                     }
                     catch (IgniteCheckedException e1) {
                         tx0.rollbackAsync();
