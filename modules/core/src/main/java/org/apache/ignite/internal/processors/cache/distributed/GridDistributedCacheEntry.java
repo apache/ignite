@@ -186,8 +186,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         long timeout,
         boolean tx,
         boolean implicitSingle,
-        @Nullable GridCacheVersion owned) throws GridDistributedLockCancelledException,
-        GridCacheEntryRemovedException {
+        @Nullable GridCacheVersion owned
+    ) throws GridDistributedLockCancelledException, GridCacheEntryRemovedException {
         GridCacheMvccCandidate prev;
         GridCacheMvccCandidate owner;
 

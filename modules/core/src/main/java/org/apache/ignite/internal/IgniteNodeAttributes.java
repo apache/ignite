@@ -135,9 +135,6 @@ public final class IgniteNodeAttributes {
     /** Node consistent id. */
     public static final String ATTR_NODE_CONSISTENT_ID = ATTR_PREFIX + ".consistent.id";
 
-    /** Portable protocol version. */
-    public static final String ATTR_PORTABLE_PROTO_VER = ATTR_PREFIX + ".portable.proto.ver";
-
     /**
      * Enforces singleton.
      */

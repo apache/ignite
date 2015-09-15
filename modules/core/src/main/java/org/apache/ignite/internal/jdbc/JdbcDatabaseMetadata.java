@@ -39,8 +39,12 @@ import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
 
 /**
  * JDBC database metadata implementation.
+ *
+ * @deprecated Using Ignite client node based JDBC driver is preferable.
+ * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
 @SuppressWarnings("RedundantCast")
+@Deprecated
 public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** Task name. */
     private static final String TASK_NAME =

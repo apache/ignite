@@ -527,7 +527,8 @@ public final class GridCacheMvcc {
             /*reenter*/false,
             tx,
             implicitSingle,
-            /*near-local*/false, dhtLoc
+            /*near-local*/false,
+            dhtLoc
         );
 
         cctx.mvcc().addLocal(cand);

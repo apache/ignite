@@ -643,7 +643,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
                     throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
 
-                if (cnt == retryCnt)
+                if (cnt == retryCnt || cctx.kernalContext().isStopping())
                     throw e;
                 else if (log.isDebugEnabled())
                     log.debug("Failed to send message to node (will retry): " + node.id());

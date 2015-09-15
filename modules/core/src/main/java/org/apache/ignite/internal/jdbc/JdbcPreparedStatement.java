@@ -41,7 +41,11 @@ import java.util.Calendar;
 
 /**
  * JDBC prepared statement implementation.
+ *
+ * @deprecated Using Ignite client node based JDBC driver is preferable.
+ * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
+@Deprecated
 public class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
     /** SQL query. */
     private final String sql;

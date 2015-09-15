@@ -492,18 +492,28 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         if (!create)
             return c.applyx();
 
-        try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-            err = utilityCache.invoke(DATA_STRUCTURES_KEY, new AddAtomicProcessor(dsInfo)).get();
+        while (true) {
+            try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                err = utilityCache.invoke(DATA_STRUCTURES_KEY, new AddAtomicProcessor(dsInfo)).get();
 
-            if (err != null)
-                throw err;
+                if (err != null)
+                    throw err;
 
-            dataStructure = c.applyx();
+                dataStructure = c.applyx();
 
-            tx.commit();
+                tx.commit();
+
+                return dataStructure;
+            }
+            catch (ClusterTopologyCheckedException e) {
+                IgniteInternalFuture<?> fut = e.retryReadyFuture();
+
+                fut.get();
+            }
+            catch (IgniteTxRollbackCheckedException ignore) {
+                // Safe to retry right away.
+            }
         }
-
-        return dataStructure;
     }
 
     /**
@@ -559,31 +569,39 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         if (err != null)
             throw err;
 
-        T rmvInfo;
+        while (true) {
+            try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                T2<Boolean, IgniteCheckedException> res =
+                    utilityCache.invoke(DATA_STRUCTURES_KEY, new RemoveDataStructureProcessor(dsInfo)).get();
 
-        try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-            T2<Boolean, IgniteCheckedException> res =
-                utilityCache.invoke(DATA_STRUCTURES_KEY, new RemoveDataStructureProcessor(dsInfo)).get();
+                err = res.get2();
 
-            err = res.get2();
+                if (err != null)
+                    throw err;
 
-            if (err != null)
-                throw err;
+                assert res.get1() != null;
 
-            assert res.get1() != null;
+                boolean exists = res.get1();
 
-            boolean exists = res.get1();
+                if (!exists)
+                    return;
 
-            if (!exists)
-                return;
+                T rmvInfo = c.applyx();
 
-            rmvInfo = c.applyx();
+                tx.commit();
 
-            tx.commit();
+                if (afterRmv != null && rmvInfo != null)
+                    afterRmv.applyx(rmvInfo);
+            }
+            catch (ClusterTopologyCheckedException e) {
+                IgniteInternalFuture<?> fut = e.retryReadyFuture();
+
+                fut.get();
+            }
+            catch (IgniteTxRollbackCheckedException ignore) {
+                // Safe to retry right away.
+            }
         }
-
-        if (afterRmv != null && rmvInfo != null)
-            afterRmv.applyx(rmvInfo);
     }
 
     /**
@@ -953,27 +971,35 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             return c.applyx(cacheCtx);
         }
 
-        T col;
+        while (true) {
+            try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                T2<String, IgniteCheckedException> res =
+                    utilityCache.invoke(DATA_STRUCTURES_KEY, new AddCollectionProcessor(dsInfo)).get();
 
-        try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-            T2<String, IgniteCheckedException> res =
-                utilityCache.invoke(DATA_STRUCTURES_KEY, new AddCollectionProcessor(dsInfo)).get();
+                err = res.get2();
 
-            err = res.get2();
+                if (err != null)
+                    throw err;
 
-            if (err != null)
-                throw err;
+                String cacheName = res.get1();
 
-            String cacheName = res.get1();
+                final GridCacheContext cacheCtx = ctx.cache().internalCache(cacheName).context();
 
-            final GridCacheContext cacheCtx = ctx.cache().internalCache(cacheName).context();
+                T col = c.applyx(cacheCtx);
 
-            col = c.applyx(cacheCtx);
+                tx.commit();
 
-            tx.commit();
+                return col;
+            }
+            catch (ClusterTopologyCheckedException e) {
+                IgniteInternalFuture<?> fut = e.retryReadyFuture();
+
+                fut.get();
+            }
+            catch (IgniteTxRollbackCheckedException ignore) {
+                // Safe to retry right away.
+            }
         }
-
-        return col;
     }
 
     /**

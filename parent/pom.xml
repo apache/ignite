@@ -319,10 +319,6 @@
                                 <packages>org.apache.ignite.marshaller*</packages>
                             </group>
                             <group>
-                                <title>Portable Objects API</title>
-                                <packages>org.apache.ignite.portable*</packages>
-                            </group>
-                            <group>
                                 <title>Visor Plugins</title>
                                 <packages>org.apache.ignite.visor.plugin</packages>
                             </group>
@@ -712,10 +708,6 @@
                                         <exclude>dev-tools/.gradle/**/*</exclude>
                                         <exclude>dev-tools/gradle/wrapper/**/*</exclude>
                                         <exclude>dev-tools/gradlew</exclude>
-                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/1.1/test2-1.1.pom</exclude>
-                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/maven-metadata-local.xml</exclude>
-                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/1.1/test1-1.1.pom</exclude>
-                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/maven-metadata-local.xml</exclude>
                                         <!--shmem-->
                                         <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
                                         <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
@@ -745,8 +737,6 @@
                                         <exclude>src/main/java/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
                                         <exclude>src/main/resources/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
                                         <exclude>src/test/dotnet/Apache.Ignite.Core.Tests/Apache.Ignite.Core.Tests.csproj</exclude>
-                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/1.1/test1-1.1.jar</exclude>
-                                        <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/1.1/test2-1.1.jar</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
                                         <exclude>**/*.pc.in</exclude>

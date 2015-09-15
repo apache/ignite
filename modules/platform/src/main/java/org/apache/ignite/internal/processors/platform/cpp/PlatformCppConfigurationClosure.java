@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurat
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.internal.portable.api.PortableMarshaller;
 import org.apache.ignite.platform.cpp.PlatformCppConfiguration;
 
 import java.util.Collections;

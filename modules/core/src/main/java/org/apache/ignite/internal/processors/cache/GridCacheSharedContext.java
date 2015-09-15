@@ -520,7 +520,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Logger.
      */
     public IgniteLogger logger(String category) {
-        return kernalCtx.log().getLogger(category);
+        return kernalCtx.log(category);
     }
 
     /**

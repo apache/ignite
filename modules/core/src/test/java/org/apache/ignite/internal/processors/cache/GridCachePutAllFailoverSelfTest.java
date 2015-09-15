@@ -358,6 +358,32 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             info(">>> Absent keys: " + absentKeys);
 
+            if (!F.isEmpty(absentKeys)) {
+                for (Ignite g : runningWorkers) {
+                    IgniteKernal k = (IgniteKernal)g;
+
+                    info(">>>> Entries on node: " + k.getLocalNodeId());
+
+                    GridCacheAdapter<Object, Object> cache = k.internalCache("partitioned");
+
+                    for (Integer key : absentKeys) {
+                        GridCacheEntryEx entry = cache.peekEx(key);
+
+                        if (entry != null)
+                            info(" >>> " + entry);
+
+                        if (cache.context().isNear()) {
+                            GridCacheEntryEx entry0 = cache.context().near().dht().peekEx(key);
+
+                            if (entry0 != null)
+                                info(" >>> " + entry);
+                        }
+                    }
+
+                    info("");
+                }
+            }
+
             assertTrue(absentKeys.isEmpty());
 
             // Actual primary cache size.

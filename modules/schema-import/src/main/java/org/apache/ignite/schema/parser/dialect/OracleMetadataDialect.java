@@ -48,6 +48,7 @@ import static java.sql.Types.LONGVARCHAR;
 import static java.sql.Types.NUMERIC;
 import static java.sql.Types.OTHER;
 import static java.sql.Types.SMALLINT;
+import static java.sql.Types.SQLXML;
 import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARCHAR;
@@ -212,8 +213,10 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
                 case "CLOB":
                 case "NCLOB":
-                case "XMLTYPE":
                     return CLOB;
+
+                case "XMLTYPE":
+                    return SQLXML;
             }
         }
 

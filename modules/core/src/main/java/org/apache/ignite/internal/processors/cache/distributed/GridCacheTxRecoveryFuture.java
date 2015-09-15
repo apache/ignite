@@ -167,7 +167,7 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                 try {
                     cctx.io().send(nearNodeId, req, tx.ioPolicy());
                 }
-                catch (ClusterTopologyCheckedException e) {
+                catch (ClusterTopologyCheckedException ignore) {
                     fut.onNodeLeft();
                 }
                 catch (IgniteCheckedException e) {
@@ -374,14 +374,11 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
-                if (f.nodeId().equals(nodeId)) {
+                if (f.nodeId().equals(nodeId))
                     f.onNodeLeft();
-
-                    return true;
-                }
             }
 
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -141,7 +141,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
         throws IgniteCheckedException {
         switch (type) {
             case OP_RECORD_LOCAL:
-                // TODO: GG-10244
+                // TODO: IGNITE-1410.
                 return TRUE;
 
             case OP_ENABLE_LOCAL:
