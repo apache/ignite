@@ -274,7 +274,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         GridTaskEventListener evtLsnr,
         @Nullable Map<GridTaskThreadContextKey, Object> thCtx,
         UUID subjId) {
-        super(ctx.config().getGridName(), "grid-task-worker", ctx.config().getGridLogger());
+        super(ctx.config().getGridName(), "grid-task-worker", ctx.log(GridTaskWorker.class));
 
         assert ses != null;
         assert fut != null;
