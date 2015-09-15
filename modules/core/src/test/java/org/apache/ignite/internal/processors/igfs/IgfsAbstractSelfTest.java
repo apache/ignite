@@ -2686,6 +2686,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public static void clear(UniversalFileSystemAdapter uni) throws Exception {
         IgfsEx igfsEx = uni.getAdapter(IgfsEx.class);
 
-        clear(igfsEx);
+        if (igfsEx != null)
+            clear(igfsEx);
     }
 }
