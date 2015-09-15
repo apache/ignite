@@ -38,6 +38,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshaller;
@@ -92,7 +93,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(GRID_CNT);
+        startGridsMultiThreaded(GRID_CNT);
 
         try (ServerSocket sock = new ServerSocket(0)) {
             port = sock.getLocalPort();
@@ -267,9 +268,10 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
      * @param converter Converter.
      * @param r Runnable..
      */
-    private void test(@Nullable SocketMessageConverter<Message> converter, @Nullable byte[] delim, Runnable r,
-        boolean oneMessagePerTuple) throws Exception
-    {
+    private void test(@Nullable SocketMessageConverter<Message> converter, 
+        @Nullable byte[] delim, 
+        Runnable r,
+        boolean oneMessagePerTuple) throws Exception {
         SocketStreamer<Message, Integer, String> sockStmr = null;
 
         Ignite ignite = grid(0);
@@ -279,7 +281,6 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
         cache.clear();
 
         try (IgniteDataStreamer<Integer, String> stmr = ignite.dataStreamer(null)) {
-
             stmr.allowOverwrite(true);
             stmr.autoFlushFrequency(10);
 
@@ -317,8 +318,12 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch latch = new CountDownLatch(CNT);
 
+            final GridConcurrentHashSet<CacheEvent> evts = new GridConcurrentHashSet<>();
+
             IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {
                 @Override public boolean apply(UUID uuid, CacheEvent evt) {
+                    evts.add(evt);
+
                     latch.countDown();
 
                     return true;
@@ -333,8 +338,18 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
             latch.await();
 
-            for (int i = 0; i < CNT; i++)
-                assertEquals(Integer.toString(i), cache.get(i));
+            for (int i = 0; i < CNT; i++) {
+                Object val = cache.get(i);
+                String exp = Integer.toString(i);
+
+                if (!exp.equals(val))
+                    log.error("Unexpected cache value [key=" + i +
+                        ", exp=" + exp +
+                        ", val=" + val +
+                        ", evts=" + evts + ']');
+
+                assertEquals(exp, val);
+            }
 
             assertEquals(CNT, cache.size(CachePeekMode.PRIMARY));
         }

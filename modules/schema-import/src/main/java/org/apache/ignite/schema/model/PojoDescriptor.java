@@ -56,6 +56,7 @@ import static java.sql.Types.NUMERIC;
 import static java.sql.Types.NVARCHAR;
 import static java.sql.Types.REAL;
 import static java.sql.Types.SMALLINT;
+import static java.sql.Types.SQLXML;
 import static java.sql.Types.TIME;
 import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TINYINT;
@@ -529,6 +530,7 @@ public class PojoDescriptor {
             case LONGNVARCHAR:
             case CLOB:
             case NCLOB:
+            case SQLXML:
                 return String.class;
 
             case DATE:
@@ -541,7 +543,7 @@ public class PojoDescriptor {
                 return java.sql.Timestamp.class;
 
             // BINARY, VARBINARY, LONGVARBINARY, ARRAY, BLOB, NULL, DATALINK
-            // OTHER, JAVA_OBJECT, DISTINCT, STRUCT, REF, ROWID, SQLXML
+            // OTHER, JAVA_OBJECT, DISTINCT, STRUCT, REF, ROWID
             default:
                 return Object.class;
         }

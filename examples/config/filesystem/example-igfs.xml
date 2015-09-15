@@ -76,13 +76,6 @@
                     <property name="prefetchBlocks" value="32"/>
 
                     <!--
-                        This will disable IPC endpoint binding thus preventing Hadoop clients from connecting to IgniteFs.
-                        With this option set to false the only possible way to interact with IgniteFs is through
-                        Ignite API.
-                    -->
-                    <property name="ipcEndpointEnabled" value="false"/>
-
-                    <!--
                         Example of configured IPC loopback endpoint.
                     -->
                     <!--

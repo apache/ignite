@@ -157,7 +157,7 @@ public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
     private void checkCache(GridCacheAdapter cache) {
         assertNotNull(cache);
         assertFalse(cache.context().userCache());
-        assertFalse(cache.context().systemTx());
+        assertTrue(cache.context().systemTx());
         assertEquals(SYSTEM_POOL, cache.context().ioPolicy());
     }
 }

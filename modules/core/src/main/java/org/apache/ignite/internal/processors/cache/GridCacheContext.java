@@ -480,7 +480,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if should use system transactions which are isolated from user transactions.
      */
     public boolean systemTx() {
-        return cacheType == CacheType.UTILITY;
+        return cacheType == CacheType.UTILITY || (cacheType == CacheType.INTERNAL && transactional());
     }
 
     /**

@@ -185,6 +185,8 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testRestarts() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1452");
+
         int duration = 90 * 1000;
         int qryThreadNum = 4;
         int restartThreadsNum = 2; // 4 + 2 = 6 nodes
@@ -275,7 +277,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                         info("Executed queries: " + c);
                 }
             }
-        }, qryThreadNum);
+        }, qryThreadNum, "query-thread");
 
         final AtomicInteger restartCnt = new AtomicInteger();
 
@@ -294,9 +296,13 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                     }
                     while (!locks.compareAndSet(g, 0, -1));
 
+                    log.info("Stop node: " + g);
+
                     stopGrid(g);
 
                     Thread.sleep(rnd.nextInt(nodeLifeTime));
+
+                    log.info("Start node: " + g);
 
                     startGrid(g);
 
@@ -312,7 +318,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
 
                 return true;
             }
-        }, restartThreadsNum);
+        }, restartThreadsNum, "restart-thread");
 
         Thread.sleep(duration);
 

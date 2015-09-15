@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractRemoveFailureTest;
 
@@ -41,13 +41,12 @@ public class GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest extends GridC
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return PRIMARY;
+    }
 
-        cfg.setNearConfiguration(new NearCacheConfiguration());
-        cfg.setBackups(1);
-        cfg.setAtomicWriteOrderMode(PRIMARY);
-
-        return cfg;
+    /** {@inheritDoc} */
+    @Override protected NearCacheConfiguration nearCache() {
+        return new NearCacheConfiguration();
     }
 }

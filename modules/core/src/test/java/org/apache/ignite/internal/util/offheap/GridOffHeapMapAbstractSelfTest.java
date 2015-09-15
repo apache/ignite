@@ -552,7 +552,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
                 evictCnt.incrementAndGet();
             }
 
-            @Override public boolean removedEvicted() {
+            @Override public boolean removeEvicted() {
                 return true;
             }
         };
@@ -592,7 +592,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
                 evictCnt.incrementAndGet();
             }
 
-            @Override public boolean removedEvicted() {
+            @Override public boolean removeEvicted() {
                 return true;
             }
         };
@@ -631,7 +631,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
                 evictCnt.incrementAndGet();
             }
 
-            @Override public boolean removedEvicted() {
+            @Override public boolean removeEvicted() {
                 return true;
             }
         };

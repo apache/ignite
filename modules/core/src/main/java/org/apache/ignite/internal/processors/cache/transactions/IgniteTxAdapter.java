@@ -211,6 +211,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     private AtomicBoolean preparing = new AtomicBoolean();
 
     /** */
+    @GridToStringInclude
     private Map<Integer, Set<Integer>> invalidParts = new HashMap<>(3);
 
     /**
@@ -293,6 +294,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
+        boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash
@@ -312,6 +314,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         this.timeout = timeout;
         this.invalidate = invalidate;
         this.storeEnabled = storeEnabled;
+        this.onePhaseCommit = onePhaseCommit;
         this.txSize = txSize;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;

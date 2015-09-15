@@ -1650,7 +1650,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
      * @param vers Ordered versions.
      */
     private void checkOrder(Collection<GridCacheMvccCandidate> cands, GridCacheVersion... vers) {
-        assert cands.size() == vers.length;
+        assertEquals(vers.length, cands.size());
 
         int i = 0;
 

@@ -111,8 +111,22 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, plc, concurrency, isolation, invalidate, timeout,
-            txSize, subjId, taskNameHash);
+        super(
+            ctx, 
+            nodeId, 
+            rmtThreadId, 
+            xidVer, 
+            commitVer, 
+            sys,
+            plc,
+            concurrency, 
+            isolation, 
+            invalidate, 
+            timeout, 
+            txSize,
+            subjId, 
+            taskNameHash
+        );
 
         assert nearNodeId != null;
         assert rmtFutId != null;
@@ -168,8 +182,22 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, plc, concurrency, isolation, invalidate, timeout,
-            txSize, subjId, taskNameHash);
+        super(
+            ctx, 
+            nodeId, 
+            rmtThreadId, 
+            xidVer, 
+            commitVer, 
+            sys,
+            plc,
+            concurrency, 
+            isolation, 
+            invalidate, 
+            timeout, 
+            txSize,
+            subjId, 
+            taskNameHash
+        );
 
         assert nearNodeId != null;
         assert rmtFutId != null;
@@ -224,7 +252,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     /**
      * @return Near node ID.
      */
-    UUID nearNodeId() {
+    public UUID nearNodeId() {
         return nearNodeId;
     }
 

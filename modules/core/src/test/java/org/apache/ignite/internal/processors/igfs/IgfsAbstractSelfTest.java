@@ -188,8 +188,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Constructor.
      *
-     * @param mode
-     * @param memoryMode
+     * @param mode IGFS mode.
+     * @param memoryMode Memory mode.
      */
     protected IgfsAbstractSelfTest(IgfsMode mode, CacheMemoryMode memoryMode) {
         assert mode != null && mode != PROXY;
@@ -201,9 +201,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * Data chunk.
      *
-     * @param length
-     * @return
+     * @param length Length.
+     * @return Data chunk.
      */
     static byte[] createChunk(int length) {
         byte[] chunk = new byte[length];
@@ -255,6 +256,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @return Started grid instance.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
         @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
@@ -309,9 +311,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * Prepare cache configuration.
      *
-     * @param dataCacheCfg
-     * @param metaCacheCfg
+     * @param dataCacheCfg Data cache configuration.
+     * @param metaCacheCfg Meta cache configuration.
      */
     protected void prepareCacheConfigurations(CacheConfiguration dataCacheCfg, CacheConfiguration metaCacheCfg) {
         // Noop
@@ -782,9 +785,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             boolean ok = igfs.delete(SUBDIR, false);
 
             assertFalse(ok);
-        } catch (IgfsDirectoryNotEmptyException idnee) {
-            // ok, expected
-            U.debug("Expected: " + idnee);
+        }
+        catch (IgfsDirectoryNotEmptyException ignore) {
+            // No-op, expected.
         }
 
         checkExist(igfs, igfsSecondary, SUBDIR, SUBSUBDIR, FILE);
@@ -841,7 +844,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /**
      * Ensure that formatting is not propagated to the secondary file system.
-     * 
+     *
      * TODO: IGNITE-586.
      *
      * @throws Exception If failed.
@@ -850,7 +853,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testFormat() throws Exception {
         // Test works too long and fails.
         fail("https://issues.apache.org/jira/browse/IGNITE-586");
-        
+
         IgniteKernal grid = (IgniteKernal)G.ignite("grid");
         GridCacheAdapter cache = grid.internalCache("dataCache");
 
@@ -2249,6 +2252,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         }
     }
 
+    @SuppressWarnings("EmptyTryBlock")
     public void create(UniversalFileSystemAdapter uni, @Nullable IgfsPath[] dirs, @Nullable IgfsPath[] files) throws Exception {
         if (dirs != null) {
             for (IgfsPath dir : dirs)
@@ -2257,8 +2261,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         if (files != null) {
             for (IgfsPath file : files)
-                try (OutputStream os = uni.openOutputStream(file.toString(), false)) {
-                    // noop
+                try (OutputStream ignore = uni.openOutputStream(file.toString(), false)) {
+                    // No-op
                 }
         }
     }
@@ -2291,12 +2295,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Create the file in the given IGFS and write provided data chunks to it.
      *
+     * @param uni File system adapter.
      * @param file File.
-     * @param overwrite Overwrite flag.
      * @param chunks Data chunks.
      * @throws IOException In case of IO exception.
      */
-    protected static void createFile(UniversalFileSystemAdapter uni, IgfsPath file, boolean overwrite, @Nullable byte[]... chunks)
+    protected static void createFile(UniversalFileSystemAdapter uni, IgfsPath file, @Nullable byte[]... chunks)
         throws IOException {
         OutputStream os = null;
 
@@ -2658,7 +2662,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> entry : workerMap.entrySet()) {
             entry.getValue().cancel();
-            entry.getValue().await();
+
+            try {
+                entry.getValue().await();
+            }
+            catch (IgniteCheckedException e) {
+                if (!entry.getValue().cancelled())
+                    throw e;
+            }
         }
 
         // Clear igfs.
@@ -2675,21 +2686,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public static void clear(UniversalFileSystemAdapter uni) throws Exception {
         IgfsEx igfsEx = uni.getAdapter(IgfsEx.class);
 
-        if (igfsEx != null) {
-            Field workerMapFld = IgfsImpl.class.getDeclaredField("workerMap");
-
-            workerMapFld.setAccessible(true);
-
-            // Wait for all workers to finish.
-            Map<IgfsPath, IgfsFileWorkerBatch> workerMap = (Map<IgfsPath, IgfsFileWorkerBatch>)workerMapFld.get(igfs);
-
-            for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> entry : workerMap.entrySet()) {
-                entry.getValue().cancel();
-                entry.getValue().await();
-            }
-        }
-
-        // Clear the filesystem:
-        uni.format();
+        if (igfsEx != null)
+            clear(igfsEx);
     }
 }

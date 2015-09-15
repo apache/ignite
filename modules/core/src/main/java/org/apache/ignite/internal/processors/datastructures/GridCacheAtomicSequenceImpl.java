@@ -148,7 +148,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         this.locVal = locVal;
         this.name = name;
 
-        log = ctx.gridConfig().getGridLogger().getLogger(getClass());
+        log = ctx.logger(getClass());
     }
 
     /** {@inheritDoc} */

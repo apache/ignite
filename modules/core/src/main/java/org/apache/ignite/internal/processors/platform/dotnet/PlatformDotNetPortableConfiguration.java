@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableRawReader;
-import org.apache.ignite.portable.PortableRawWriter;
-import org.apache.ignite.portable.PortableReader;
-import org.apache.ignite.portable.PortableWriter;
+import org.apache.ignite.internal.portable.api.PortableException;
+import org.apache.ignite.internal.portable.api.PortableMarshalAware;
+import org.apache.ignite.internal.portable.api.PortableRawReader;
+import org.apache.ignite.internal.portable.api.PortableRawWriter;
+import org.apache.ignite.internal.portable.api.PortableReader;
+import org.apache.ignite.internal.portable.api.PortableWriter;
 
 import java.util.ArrayList;
 import java.util.Collection;
