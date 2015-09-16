@@ -220,7 +220,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Child builder.</returns>
         public PortableBuilderImpl Child(PortableUserObject obj)
         {
-            return _portables.ChildBuilder(_parent, obj);
+            var desc = _portables.Marshaller.Descriptor(true, obj.TypeId());
+
+            return new PortableBuilderImpl(_portables, null, obj, desc);
+            //return _portables.ChildBuilder(obj);
         }
         
         /// <summary>
