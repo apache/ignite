@@ -63,14 +63,6 @@ namespace Apache.Ignite.Core.Impl
         private static PlatformMemoryManager _mem;
 
         /// <summary>
-        /// Static initializer.
-        /// </summary>
-        static IgniteManager()
-        {
-            // No-op.
-        }
-
-        /// <summary>
         /// Create JVM.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
