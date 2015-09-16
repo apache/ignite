@@ -29,19 +29,8 @@ namespace Apache.Ignite.Core.Impl.Common
                         "to the client, and IAsyncResult is not IDisposable.")]
     public class CompletedAsyncResult : IAsyncResult
     {
-        /** Singleton instance. */
-        public static readonly IAsyncResult Instance = new CompletedAsyncResult();
-
         /** */
         private readonly WaitHandle _asyncWaitHandle = new ManualResetEvent(true);
-
-        /// <summary>
-        /// Prevents a default instance of the <see cref="CompletedAsyncResult"/> class from being created.
-        /// </summary>
-        private CompletedAsyncResult()
-        {
-            // No-op.
-        }
 
         /** <inheritdoc /> */
         public bool IsCompleted
