@@ -25,14 +25,11 @@ public class StormSpout implements IRichSpout {
     /* spout output collector */
     private SpoutOutputCollector collector;
 
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        outputFieldsDeclarer.declare(new Fields("key", "value"));
-    }
+    private HashMap<String,String> keyValMap = new HashMap<>();
 
     @Override
-    public Map<String, Object> getComponentConfiguration() {
-        return null;
+    public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
+        outputFieldsDeclarer.declare(new Fields("keyValMap"));
     }
 
     @Override
@@ -41,55 +38,48 @@ public class StormSpout implements IRichSpout {
     }
 
     @Override
-    public void close() {
-
-    }
-
-    @Override
-    public void activate() {
-
-    }
-
-    @Override
-    public void deactivate() {
-
-    }
-
-    @Override
     public void nextTuple() {
-        // Generate random subnets.
+        HashMap<String, String> keyValMap = getKeyValMap();
+        collector.emit(new Values(keyValMap));
+    }
+    public HashMap<String, String> getKeyValMap(){
         List<Integer> subnet = new ArrayList<>();
 
         for (int i = 1; i <= CNT; i++)
             subnet.add(i);
 
         Collections.shuffle(subnet);
-        List<HashMap<String,String>> messages = new ArrayList<>(CNT);
+
         HashMap<String,String> keyValMap = new HashMap<>();
 
-        for(int evt = 0; evt<CNT; evt++){
+        for(int evt = 0; evt<CNT; evt++) {
             long runtime = System.currentTimeMillis();
 
             String ip = KEY_PREFIX + subnet.get(evt);
 
             String msg = runtime + VALUE_URL + ip;
 
-            keyValMap.put(ip,msg);
-            collector.emit(new Values(ip, msg));
+            keyValMap.put(ip, msg);
         }
-
-        messages.add(keyValMap);
-        System.out.println(messages);
-        collector.emit(new Values(messages));
+        return keyValMap;
     }
+    @Override
+    public void ack(Object o) {}
 
     @Override
-    public void ack(Object o) {
-
-    }
+    public void fail(Object o) {}
 
     @Override
-    public void fail(Object o) {
+    public void close() {}
 
+    @Override
+    public void activate() {}
+
+    @Override
+    public void deactivate() {}
+
+    @Override
+    public Map<String, Object> getComponentConfiguration() {
+        return null;
     }
 }

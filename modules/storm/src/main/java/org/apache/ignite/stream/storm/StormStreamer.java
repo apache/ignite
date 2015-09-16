@@ -10,6 +10,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.stream.StreamAdapter;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -23,18 +24,23 @@ public class StormStreamer<T,K,V> extends StreamAdapter<T,K,V> implements IRichB
 
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+        System.out.println("IN bolt preapare method");
         this.collector = outputCollector;
     }
 
     @Override
     public void execute(Tuple tuple) {
-        log = getIgnite().log();
-        try{
-            getStreamer().addData((K)(String) tuple.getValueByField("key"), (V) (String) tuple.getValueByField("value"));
-        }catch (Exception e){
-            U.warn(log, "Stream data is ignored due to an error ", e);
+//        log = getIgnite().log();
+        HashMap<K,V> keyValMap = (HashMap) tuple.getValueByField("keyValMap");
+        for (K k:keyValMap.keySet()){
+            try {
+                System.out.println("ip === " + k);
+                System.out.println("message ====  " + keyValMap.get(k));
+                getStreamer().addData(k, keyValMap.get(k));
+            }catch (Exception e){
+//                U.warn(log, "Stream data is ignored due to an error ", e);
+            }
         }
-
         collector.ack(tuple);
     }
 
