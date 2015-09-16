@@ -638,9 +638,22 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
-        [SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly",
-            Justification = "There is no finalizer.")]
         public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /** <inheritdoc /> */
+        ~PlatformMemoryStream()
+        {
+            Dispose(false);
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
         {
             SynchronizeOutput();
 
