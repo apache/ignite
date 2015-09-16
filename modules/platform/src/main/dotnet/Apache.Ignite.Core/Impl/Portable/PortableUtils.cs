@@ -1495,7 +1495,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (Enum.GetUnderlyingType(val.GetType()) == TypInt)
             {
                 stream.WriteInt(ObjTypeId);
-                stream.WriteInt(Convert.ToInt32(val));
+                stream.WriteInt((int) (object) val);
             }
             else
                 throw new PortableException("Only Int32 underlying type is supported for enums: " +
