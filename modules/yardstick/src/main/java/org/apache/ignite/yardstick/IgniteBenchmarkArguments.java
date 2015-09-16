@@ -112,6 +112,14 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"-jdbc", "--jdbcUrl"}, description = "JDBC url")
     private String jdbcUrl;
 
+    /** */
+    @Parameter(names = {"-rd", "--restartdelay"}, description = "Restart delay in seconds")
+    private int restartDelay = 20;
+
+    /** */
+    @Parameter(names = {"-rs", "--restartsleep"}, description = "Restart sleep in seconds")
+    private int restartSleep = 2;
+
     /**
      * @return JDBC url.
      */
@@ -264,6 +272,20 @@ public class IgniteBenchmarkArguments {
      */
     public boolean collocated() {
         return collocated;
+    }
+
+    /**
+     * @return Delay in second which used in nodes restart algorithm.
+     */
+    public int restartDelay() {
+        return restartDelay;
+    }
+
+    /**
+     * @return Sleep in second which used in nodes restart algorithm.
+     */
+    public int restartSleep() {
+        return restartSleep;
     }
 
     /**

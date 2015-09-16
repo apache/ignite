@@ -39,39 +39,44 @@ public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
     /** */
     private final ConcurrentMap<Integer, BenchmarkConfiguration> srvsCfgs = new ConcurrentHashMap<>();
 
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+    /** {@inheritDoc} */
+    @Override public void setUp(final BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
-
-        println(">>>>>>>> is client mode = " + ignite().configuration().isClientMode());
 
         if (cfg.memberId() == 0) {
             Thread thread = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
-                        // Read servers configs from cache and destroy it.
+                        // Read servers configs from cache.
                         IgniteCache<Integer, BenchmarkConfiguration> srvsCfgsCache = ignite().
                             getOrCreateCache(new CacheConfiguration<Integer, BenchmarkConfiguration>().
                                 setName("serversConfigs"));
 
                         for (Cache.Entry<Integer, BenchmarkConfiguration> e : srvsCfgsCache) {
-                            println("Read entry from 'serversConfigs' cache =" + e);
+                            println("[RESTARTER] Read entry from 'serversConfigs' cache = " + e);
 
                             srvsCfgs.put(e.getKey(), e.getValue());
                         }
 
+                        // Destroy cache as redundant.
                         srvsCfgsCache.destroy();
 
-                        // TODO check srvsCfgs.size() == servers.size()
+                        assert ignite().cluster().nodes().size() == srvsCfgs.size();
 
-                        final int backupsCnt = 1; // TODO
+                        final int backupsCnt = args.backups();
+
                         assert backupsCnt >= 1 : "Backups=" + backupsCnt;
 
-                        ThreadLocalRandom random = ThreadLocalRandom.current();
+                        final ThreadLocalRandom random = ThreadLocalRandom.current();
 
-                        Thread.sleep(10_000); // TODO warmup
+                        final boolean isDebug = ignite().log().isDebugEnabled();
+
+                        Thread.sleep(cfg.warmup() * 1000);
 
                         while (!Thread.currentThread().isInterrupted()) {
-                            int numberNodesToRestart = random.nextInt(1, backupsCnt + 1);
+                            Thread.sleep(args.restartDelay() * 1000);
+
+                            int numNodesToRestart = random.nextInt(1, backupsCnt + 1);
 
                             List<Integer> ids = new ArrayList<>();
 
@@ -79,33 +84,31 @@ public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
 
                             Collections.shuffle(ids, random);
 
-                            println("Number nodes to restart = " + numberNodesToRestart + ", shuffled ids = " + ids);
+                            println("[RESTARTER] Number nodes to restart = " + numNodesToRestart + ", shuffled ids = " + ids);
 
-                            for (int i = 0; i < numberNodesToRestart; i++) {
+                            for (int i = 0; i < numNodesToRestart; i++) {
                                 Integer id = ids.get(i);
 
                                 BenchmarkConfiguration bc = srvsCfgs.get(id);
 
-                                RestartUtils.Result result = RestartUtils.kill9(bc, true);
+                                RestartUtils.Result res = RestartUtils.kill9(bc, isDebug);
 
-                                println(">>>>>>>>>RESULT<<<<<<<<<<\n" + result);
+                                println("[RESTARTER] Server with id " + id + " has been killed."
+                                    + (isDebug ? " Result:\n" + res : ""));
                             }
 
-                            // TODO wait for all nodes stop
+                            Thread.sleep(args.restartSleep() * 1000);
 
-                            Thread.sleep(2_000); // TODO sleep
-
-                            for (int i = 0; i < numberNodesToRestart; i++) {
+                            for (int i = 0; i < numNodesToRestart; i++) {
                                 Integer id = ids.get(i);
 
                                 BenchmarkConfiguration bc = srvsCfgs.get(id);
 
-                                RestartUtils.Result result = RestartUtils.start(bc, true);
+                                RestartUtils.Result res = RestartUtils.start(bc, isDebug);
 
-                                println(">>>>>>>>>RESULT 2<<<<<<<<<<\n" + result);
+                                println("[RESTARTER] Server with id " + id + " has been started."
+                                    + (isDebug ? " Result:\n" + res : ""));
                             }
-
-                            Thread.sleep(5_000); //TODO delay
                         }
                     }
                     catch (InterruptedException e) {
