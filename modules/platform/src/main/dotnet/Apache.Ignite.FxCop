@@ -104,7 +104,6 @@
     <Rule Name="ResourceStringCompoundWordsShouldBeCasedCorrectly" Enabled="True" />
     <Rule Name="ResourceStringsShouldBeSpelledCorrectly" Enabled="True" />
     <Rule Name="TypeNamesShouldNotMatchNamespaces" Enabled="True" />
-    <Rule Name="UsePreferredTerms" Enabled="True" />
    </RuleFile>
    <RuleFile Name="$(FxCopDir)\Rules\PerformanceRules.dll" Enabled="True" AllRulesEnabled="True" />
    <RuleFile Name="$(FxCopDir)\Rules\PortabilityRules.dll" Enabled="True" AllRulesEnabled="True" />
@@ -115,18 +114,6 @@
   <Settings />
  </Rules>
  <FxCopReport Version="1.36">
-  <Namespaces>
-   <Namespace Name="Apache.Ignite.Core.Cache.Event">
-    <Messages>
-     <Message Id="Event" TypeName="IdentifiersShouldNotMatchKeywords" Category="Microsoft.Naming" CheckId="CA1716" Created="2015-09-16 09:14:44Z">
-      <Issue Name="Namespace">
-       <Item>Apache.Ignite.Core.Cache.Event</Item>
-       <Item>Event</Item>
-      </Issue>
-     </Message>
-    </Messages>
-   </Namespace>
-  </Namespaces>
   <Targets>
    <Target Name="$(ProjectDir)/Apache.Ignite.Core/bin/x64/Debug/Apache.Ignite.Core.dll">
     <Modules>
@@ -152,44 +139,12 @@
        <Namespace Name="Apache.Ignite.Core.Cache">
         <Types>
          <Type Name="ICache`2">
-          <Messages>
-           <Message TypeName="IdentifiersShouldHaveCorrectSuffix" Category="Microsoft.Naming" CheckId="CA1710" Created="2015-09-16 09:14:44Z">
-            <Issue>
-             <Item>'ICache&lt;TK, TV&gt;'</Item>
-             <Item>Collection</Item>
-            </Issue>
-           </Message>
-          </Messages>
           <Members>
-           <Member Name="#Get(!0)">
-            <Messages>
-             <Message Id="Get" TypeName="IdentifiersShouldNotMatchKeywords" Category="Microsoft.Naming" CheckId="CA1716" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>'ICache&lt;TK, TV&gt;.Get(TK)'</Item>
-               <Item>Get</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
            <Member Name="#GetMetrics()">
             <Messages>
              <Message TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024" Created="2015-09-16 09:14:44Z">
               <Issue Certainty="50">
                <Item>'ICache&lt;TK, TV&gt;.GetMetrics()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="ICacheLock">
-          <Members>
-           <Member Name="#Exit()">
-            <Messages>
-             <Message Id="Exit" TypeName="IdentifiersShouldNotMatchKeywords" Category="Microsoft.Naming" CheckId="CA1716" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>'ICacheLock.Exit()'</Item>
-               <Item>Exit</Item>
               </Issue>
              </Message>
             </Messages>
@@ -236,14 +191,6 @@
        <Namespace Name="Apache.Ignite.Core.Cache.Query">
         <Types>
          <Type Name="IQueryCursor`1">
-          <Messages>
-           <Message TypeName="IdentifiersShouldHaveCorrectSuffix" Category="Microsoft.Naming" CheckId="CA1710" Created="2015-09-16 09:14:44Z">
-            <Issue>
-             <Item>'IQueryCursor&lt;T&gt;'</Item>
-             <Item>Collection</Item>
-            </Issue>
-           </Message>
-          </Messages>
           <Members>
            <Member Name="#GetAll()">
             <Messages>
@@ -374,30 +321,6 @@
        </Namespace>
        <Namespace Name="Apache.Ignite.Core.Common">
         <Types>
-         <Type Name="IFuture">
-          <Members>
-           <Member Name="#Get()">
-            <Messages>
-             <Message Id="Get" TypeName="IdentifiersShouldNotMatchKeywords" Category="Microsoft.Naming" CheckId="CA1716" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>'IFuture.Get()'</Item>
-               <Item>Get</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#Get(System.TimeSpan)">
-            <Messages>
-             <Message Id="Get" TypeName="IdentifiersShouldNotMatchKeywords" Category="Microsoft.Naming" CheckId="CA1716" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>'IFuture.Get(TimeSpan)'</Item>
-               <Item>Get</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
          <Type Name="IgniteGuid">
           <Members>
            <Member Name="#ToString()">
@@ -451,40 +374,6 @@
             </Issue>
            </Message>
           </Messages>
-         </Type>
-         <Type Name="ICompute">
-          <Members>
-           <Member Name="#Call`1(Apache.Ignite.Core.Compute.IComputeFunc`1&lt;!!0&gt;)">
-            <Messages>
-             <Message Id="Call" TypeName="IdentifiersShouldNotMatchKeywords" Category="Microsoft.Naming" CheckId="CA1716" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>'ICompute.Call&lt;TR&gt;(IComputeFunc&lt;TR&gt;)'</Item>
-               <Item>Call</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#Call`1(System.Collections.Generic.IEnumerable`1&lt;Apache.Ignite.Core.Compute.IComputeFunc`1&lt;!!0&gt;&gt;)">
-            <Messages>
-             <Message Id="Call" TypeName="IdentifiersShouldNotMatchKeywords" Category="Microsoft.Naming" CheckId="CA1716" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>'ICompute.Call&lt;TR&gt;(IEnumerable&lt;IComputeFunc&lt;TR&gt;&gt;)'</Item>
-               <Item>Call</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#Call`2(System.Collections.Generic.IEnumerable`1&lt;Apache.Ignite.Core.Compute.IComputeFunc`1&lt;!!0&gt;&gt;,Apache.Ignite.Core.Compute.IComputeReducer`2&lt;!!0,!!1&gt;)">
-            <Messages>
-             <Message Id="Call" TypeName="IdentifiersShouldNotMatchKeywords" Category="Microsoft.Naming" CheckId="CA1716" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>'ICompute.Call&lt;TR1, TR2&gt;(IEnumerable&lt;IComputeFunc&lt;TR1&gt;&gt;, IComputeReducer&lt;TR1, TR2&gt;)'</Item>
-               <Item>Call</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
          </Type>
          <Type Name="IComputeJobResult`1">
           <Members>
@@ -1742,13 +1631,6 @@
    </Rule>
    <Rule TypeName="DoNotInitializeUnnecessarily" Category="Microsoft.Performance" CheckId="CA1805">
     <Resolution Name="Default">{0} initializes field {1} of type {2} to {3}. Remove this initialization because it will be done automatically by the runtime.</Resolution>
-   </Rule>
-   <Rule TypeName="IdentifiersShouldHaveCorrectSuffix" Category="Microsoft.Naming" CheckId="CA1710">
-    <Resolution Name="Default">Rename {0} to end in '{1}'.</Resolution>
-   </Rule>
-   <Rule TypeName="IdentifiersShouldNotMatchKeywords" Category="Microsoft.Naming" CheckId="CA1716">
-    <Resolution Name="Member">Rename virtual/interface member {0} so that it no longer conflicts with the reserved language keyword '{1}'. Using a reserved keyword as the name of a virtual/interface member makes it harder for consumers in other languages to override/implement the member.</Resolution>
-    <Resolution Name="Namespace">Rename namespace {0} so that it no longer conflicts with the reserved language keyword '{1}'. Using a reserved keyword as the name of a namespace makes it harder for consumers in other languages to use the namespace.</Resolution>
    </Rule>
    <Rule TypeName="ImplementIDisposableCorrectly" Category="Microsoft.Design" CheckId="CA1063">
     <Resolution Name="DisposeImplementation">Modify {0} so that it calls Dispose(true), then calls GC.SuppressFinalize on the current object instance ('this' or 'Me' in Visual Basic), and then returns.</Resolution>

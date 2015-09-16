@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
 
@@ -480,6 +481,7 @@ namespace Apache.Ignite.Core.Events
         /// All events indicating an error or failure condition. It is convenient to use when fetching all events 
         /// indicating error or failure.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static int[] EvtsError
         {
             get { return CloneArray(EvtsError0); }
@@ -488,6 +490,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite events (<b>excluding</b> metric update event).
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static int[] EvtsAllMinusMetricUpdate
         {
             get { return CloneArray(EvtsAllMinusMetricUpdate0); }
@@ -496,6 +499,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All swap space events.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static int[] EvtsSwapspace
         {
             get { return CloneArray(EvtsSwapspace0); }
@@ -504,6 +508,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache query events.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static int[] EvtsCacheQuery
         {
             get { return CloneArray(EvtsCacheQuery0); }
@@ -512,6 +517,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache lifecycle events.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static int[] EvtsCacheLifecycle
         {
             get { return CloneArray(EvtsCacheLifecycle0); }
@@ -520,6 +526,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache rebalance events.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static int[] EvtsCacheRebalance
         {
             get { return CloneArray(EvtsCacheRebalance0); }
@@ -528,6 +535,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache events.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static int[] EvtsCache
         {
             get { return CloneArray(EvtsCache0); }
@@ -536,6 +544,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite task execution events.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static int[] EvtsTaskExecution
         {
             get { return CloneArray(EvtsTaskExecution0); }
@@ -544,6 +553,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite job execution events.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static int[] EvtsJobExecution
         {
             get { return CloneArray(EvtsJobExecution0); }
@@ -552,6 +562,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All discovery events.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static int[] EvtsDiscoveryAll
         {
             get { return CloneArray(EvtsDiscoveryAll0); }
@@ -563,6 +574,7 @@ namespace Apache.Ignite.Core.Events
         /// necessary. If this event is indeed required you can subscribe to it individually or use <see 
         /// cref="EvtsDiscoveryAll0" /> array.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static int[] EvtsDiscovery
         {
             get { return CloneArray(EvtsDiscovery0); }
@@ -571,6 +583,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite events.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static int[] EvtsAll
         {
             get { return CloneArray(EvtsAll0); }
