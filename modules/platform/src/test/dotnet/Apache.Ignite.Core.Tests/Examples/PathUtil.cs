@@ -18,41 +18,25 @@
 namespace Apache.Ignite.Core.Tests.Examples
 {
     using System.IO;
+    using Apache.Ignite.Core.Impl;
 
     /// <summary>
     /// Grid path resolver.
     /// </summary>
     public static class PathUtil
     {
-        /** Relative GG homa path. */
-        private const string HomePath = @"..\..\..\..\..\..\..\..\..";
-
-        /** Relative exe path. */
-        private const string ExePath = HomePath + @"\modules\clients\dotnet\bin\" + ExeName + ".exe";
-
-        /** Current bin path. */
-        private static readonly string BinPath = Path.GetDirectoryName(typeof(PathUtil).Assembly.Location);
-
-        /// <summary>
-        /// GridGain executable name.
-        /// </summary>
-        public const string ExeName = "GridGain";
+        public static readonly string IgniteHome = IgniteManager.GetIgniteHome(null);
 
         /// <summary>
         /// Full GridGain.exe path.
         /// </summary>
-        public static readonly string GridGainExePath = Path.GetFullPath(Path.Combine(BinPath, ExePath));
-
-        /// <summary>
-        /// GridGain home.
-        /// </summary>
-        public static readonly string GridGainHome = Path.GetFullPath(Path.Combine(BinPath, HomePath));
+        public static readonly string IgniteExePath = typeof(IgniteRunner).Assembly.Location;
 
         /// <summary>
         /// Examples source code path.
         /// </summary>
-        public static readonly string ExamplesSourcePath = Path.Combine(GridGainHome,
-            @"examples\clients\dotnet\GridGainExamples");
+        public static readonly string ExamplesSourcePath = Path.Combine(IgniteHome,
+            @"modules\platform\src\main\dotnet\Examples");
 
         /// <summary>
         /// Gets the full configuration path.
@@ -62,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             if (string.IsNullOrEmpty(springConfigUrl))
                 return springConfigUrl;
 
-            return Path.GetFullPath(Path.Combine(GridGainHome, springConfigUrl));
+            return Path.GetFullPath(Path.Combine(IgniteHome, springConfigUrl));
         }
     }
 }

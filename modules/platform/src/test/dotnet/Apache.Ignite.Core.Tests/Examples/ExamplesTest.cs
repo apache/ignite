@@ -110,9 +110,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            Environment.SetEnvironmentVariable("GRIDGAIN_NATIVE_TEST_CLASSPATH", "true");
+            Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
 
-            Directory.SetCurrentDirectory(PathUtil.GridGainHome);
+            Directory.SetCurrentDirectory(PathUtil.IgniteHome);
         }
 
         /// <summary>
