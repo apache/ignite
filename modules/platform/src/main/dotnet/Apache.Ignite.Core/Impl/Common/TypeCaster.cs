@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq.Expressions;
 
     /// <summary>
@@ -47,6 +48,8 @@ namespace Apache.Ignite.Core.Impl.Common
             /// <summary>
             /// Compiled caster delegate.
             /// </summary>
+            [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields", 
+                Justification = "Incorrect warning")]
             internal static readonly Func<TFrom, T> Caster = Compile();
 
             /// <summary>
