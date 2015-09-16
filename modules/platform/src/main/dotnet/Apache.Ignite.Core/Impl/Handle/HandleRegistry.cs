@@ -318,7 +318,7 @@ namespace Apache.Ignite.Core.Impl.Handle
         /// <summary>
         /// Gets a snapshot of currently referenced objects list.
         /// </summary>
-        public List<KeyValuePair<long, object>> GetItems()
+        public IList<KeyValuePair<long, object>> GetItems()
         {
             Thread.MemoryBarrier();
 
