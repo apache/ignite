@@ -35,6 +35,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <typeparam name="TFrom">Source type to cast from.</typeparam>
         /// <param name="obj">The object to cast.</param>
         /// <returns>Casted object.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes",
+            Justification = "Intended usage to leverage compiler caching.")]
         public static T Cast<TFrom>(TFrom obj)
         {
             return Casters<TFrom>.Caster(obj);

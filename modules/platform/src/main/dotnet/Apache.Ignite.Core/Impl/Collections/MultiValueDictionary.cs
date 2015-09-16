@@ -18,10 +18,12 @@
 namespace Apache.Ignite.Core.Impl.Collections
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Multiple-values-per-key dictionary.
     /// </summary>
+    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     public class MultiValueDictionary<TKey, TValue>
     {
         /** Inner dictionary */

@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// Platform memory stream.
     /// </summary>
     [CLSCompliant(false)]
+    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     public unsafe class PlatformMemoryStream : IPortableStream
     {
         /** Length: 1 byte. */
