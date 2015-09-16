@@ -22,20 +22,16 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// </summary>
     internal class PlatformPooledMemory : PlatformMemory
     {
-        /** Pool. */
-        private readonly PlatformMemoryPool _pool;
-
         /** Cached stream. */
         private PlatformMemoryStream _stream;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="pool">Pool.</param>
         /// <param name="memPtr">Memory pointer.</param>
-        public PlatformPooledMemory(PlatformMemoryPool pool, long memPtr) : base(memPtr)
+        public PlatformPooledMemory(long memPtr) : base(memPtr)
         {
-            _pool = pool;
+            // No-op.
         }
 
         /** <inheritdoc /> */
@@ -58,13 +54,13 @@ namespace Apache.Ignite.Core.Impl.Memory
             if (doubledCap > cap)
                 cap = doubledCap;
 
-            _pool.Reallocate(MemPtr, cap);
+            PlatformMemoryPool.Reallocate(MemPtr, cap);
         }
 
         /** <inheritdoc /> */
         public override void Release()
         {
-            _pool.Release(MemPtr); // Return to the pool.
+            PlatformMemoryPool.Release(MemPtr); // Return to the pool.
         }
     }
 }
