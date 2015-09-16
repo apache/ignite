@@ -97,7 +97,6 @@
     <Rule Name="IdentifiersShouldNotContainUnderscores" Enabled="True" />
     <Rule Name="IdentifiersShouldNotHaveIncorrectPrefix" Enabled="True" />
     <Rule Name="IdentifiersShouldNotHaveIncorrectSuffix" Enabled="True" />
-    <Rule Name="IdentifiersShouldNotMatchKeywords" Enabled="True" />
     <Rule Name="OnlyFlagsEnumsShouldHavePluralNames" Enabled="True" />
     <Rule Name="ParameterNamesShouldMatchBaseDeclaration" Enabled="True" />
     <Rule Name="ParameterNamesShouldNotMatchMemberNames" Enabled="True" />
