@@ -17,7 +17,6 @@
 
 package org.apache.ignite.yardstick.cache.failover;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -27,7 +26,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 
-import static org.yardstickframework.BenchmarkUtils.jcommander;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
@@ -47,29 +45,32 @@ public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
                 @Override public void run() {
                     try {
                         // Read servers configs from cache and destroy it.
-                        IgniteCache<Integer, String[]> srvsCfgsCache = ignite().
-                            getOrCreateCache(new CacheConfiguration<Integer, String[]>().setName("serversConfigs"));
+                        IgniteCache<Integer, BenchmarkConfiguration> srvsCfgsCache = ignite().
+                            getOrCreateCache(new CacheConfiguration<Integer, BenchmarkConfiguration>().
+                                setName("serversConfigs"));
 
-                        for (Cache.Entry<Integer, String[]> e : srvsCfgsCache) {
-                            Integer serverId = e.getKey();
-                            String[] cmdArgs = e.getValue();
+                        for (Cache.Entry<Integer, BenchmarkConfiguration> e : srvsCfgsCache) {
+                            println(">>>>> Cache entry=" + e);
 
-                            println("Cache entry id=" + serverId + " args=" + Arrays.toString(cmdArgs));
-
-                            final BenchmarkConfiguration cfg = new BenchmarkConfiguration();
-
-                            cfg.commandLineArguments(cmdArgs);
-
-                            jcommander(cmdArgs, cfg, "<benchmark-runner>");
-
-                            srvsCfgs.put(serverId, cfg);
+                            srvsCfgs.put(e.getKey(), e.getValue());
                         }
 
                         srvsCfgsCache.destroy();
 
-                        Thread.sleep(20_000);
 
-                        println("srvsCfg map size = " + srvsCfgs.size());
+                        println(">>>>> srvsCfg map size = " + srvsCfgs.size());
+
+                        Thread.sleep(30_000);
+
+                        BenchmarkConfiguration bc = srvsCfgs.get(0);
+
+                        RestartUtils.Result result = RestartUtils.kill9(bc, true);
+
+                        println(">>>>>>>>>RESULT<<<<<<<<<<\n" + result);
+
+                        result = RestartUtils.start(bc, true);
+
+                        println(">>>>>>>>>RESULT 2<<<<<<<<<<\n" + result);
 
 //                        while (!Thread.currentThread().isInterrupted()) {
 //                            RestartUtils.kill9("${REMOTE_USER}", "localhost");

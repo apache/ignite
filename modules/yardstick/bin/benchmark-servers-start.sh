@@ -146,7 +146,7 @@ do
     ssh -o PasswordAuthentication=no ${REMOTE_USER}"@"${host_name} \
         "MAIN_CLASS='org.yardstickframework.BenchmarkServerStartUp'" "JVM_OPTS='${JVM_OPTS} -Dyardstick.server${id}'" "CP='${CP}'" \
         "CUR_DIR='${CUR_DIR}'" "PROPS_ENV0='${PROPS_ENV}'" \
-        "nohup ${SCRIPT_DIR}/benchmark-bootstrap.sh ${CONFIG_PRM} "--config" ${CONFIG_INCLUDE} "--logsFolder" ${LOGS_DIR} "--remoteuser" ${REMOTE_USER} > ${file_log} 2>& 1 &"
+        "nohup ${SCRIPT_DIR}/benchmark-bootstrap.sh ${CONFIG_PRM} "--config" ${CONFIG_INCLUDE} "--logsFolder" ${LOGS_DIR} "--remoteuser" ${REMOTE_USER} "--remoteHostName" ${host_name} > ${file_log} 2>& 1 &"
 
     # Start a restarter if needed.
     if [[ "${RESTART_SERVERS}" != "" ]] && [[ "${RESTART_SERVERS}" != "true" ]]; then

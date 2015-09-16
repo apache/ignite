@@ -22,7 +22,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.yardstickframework.BenchmarkConfiguration;
 
@@ -46,12 +49,14 @@ public final class RestartUtils {
      * @param isDebug Is debug enabled flag.
      * @return Result of process execution.
      */
-    public static Result kill9(final String remoteUser, String hostName, final int id, boolean isDebug) {
-        return executeUnderSshConnect(remoteUser, hostName, isDebug, "pkill -9 -f 'Dyardstick.server" + id + "'");
+    // //        RestartUtils.Result result = RestartUtils.kill9("ashutak", "localhost", 0, true);
+    public static Result kill9(BenchmarkConfiguration cfg, boolean isDebug) {
+        return executeUnderSshConnect(cfg.remoteUser(), cfg.remoteHostName(), isDebug,
+            Collections.singletonList("pkill -9 -f 'Dyardstick.server" + cfg.memberId() + "'"));
     }
 
     private static Result executeUnderSshConnect(String remoteUser, String hostName,
-        boolean isDebug, String cmd) {
+        boolean isDebug, List<String> cmds) {
         if (U.isWindows())
             throw new UnsupportedOperationException("Unsupported operation for windows.");
 
@@ -59,14 +64,20 @@ public final class RestartUtils {
         Tuple<Thread, StringBuffer> t2 = null;
 
         try {
+            StringBuilder log = new StringBuilder("RemoteUser=" + remoteUser + ", hostName=" + hostName).append('\n');
+
             Process p = Runtime.getRuntime().exec("ssh -o PasswordAuthentication=no " + remoteUser + "@" + hostName);
 
             try(PrintStream out = new PrintStream(p.getOutputStream(), true)) {
-                out.println(cmd);
-
                 if (isDebug) {
                     t1 = monitorInputeStream(p.getInputStream(), "OUT");
                     t2 = monitorInputeStream(p.getErrorStream(), "ERR");
+                }
+
+                for (String cmd : cmds) {
+                    log.append("Executing cmd=").append(cmd).append('\n');
+
+                    out.println(cmd);
                 }
 
                 out.println("exit");
@@ -74,7 +85,8 @@ public final class RestartUtils {
                 p.waitFor();
             }
 
-            return new Result(p.exitValue(), t1 == null ? "" : t1.val2.toString(), t2 == null ? "" : t2.val2.toString());
+            return new Result(p.exitValue(), log.toString(),  t1 == null ? "" : t1.val2.toString(),
+                t2 == null ? "" : t2.val2.toString());
         }
         catch (Exception err) {
             return new Result(err);
@@ -121,36 +133,44 @@ public final class RestartUtils {
     }
 
 
-    public static Result start(BenchmarkConfiguration cfg, final String remoteUser, String hostName, final int id, boolean isDebug) {
-//        ssh -o PasswordAuthentication=no ${REMOTE_USER}"@"${HOST_NAME} \
-//        "MAIN_CLASS='org.yardstickframework.BenchmarkServerStartUp'" \
-//        "JVM_OPTS='${JVM_OPTS} -Dyardstick.server${ID}-${cntr}'" "CP='${CP}'" "CUR_DIR='${CUR_DIR}'" "PROPS_ENV0='${PROPS_ENV}'" \
-//        "nohup ${SCRIPT_DIR}/benchmark-bootstrap.sh ${CONFIG} "--config" ${CONFIG_INCLUDE} > ${server_file_log} 2>& 1 &"
-
-        String jvmOpts = "JVM_OPTS";
-        String cp = "${CP}";
-        String propsEnv = "${PROPS_ENV}";
-
-        String curDir = "${CUR_DIR}";
-        String scriptDir = "${SCRIPT_DIR}";
-        String serversLogsDir = "SERVERS_LOGS_DIR";
+    public static Result start(BenchmarkConfiguration cfg,
+        boolean isDebug) {
+//        String propsEnv = cfg.customProperties().get("PROPS_ENV"); // TODO Look on it
 
         String descriptrion = ""; // TODO extract description from cmdArgs
-        String now = "1111111"; // TODO extract
-        String logFile = serversLogsDir +"/"+ now + "_id" + cfg.memberId() + "_" + hostName + descriptrion + ".log";
+        String now = "111111"; // TODO extract
+        String logFile = cfg.logsFolder() +"/"+ now + "_id" + cfg.memberId() + "_" + cfg.hostName() + descriptrion + ".log";
 
-        String cmdArgs = Arrays.toString(cfg.commandLineArguments());
+        StringBuilder cmdArgs = new StringBuilder();
 
-        System.out.println("cmdArgs=" + cmdArgs);
+        for (String arg : cfg.commandLineArguments())
+            cmdArgs.append(arg).append(' ');
 
-        String cmd = "MAIN_CLASS='org.yardstickframework.BenchmarkServerStartUp' " +
-            "JVM_OPTS='" + jvmOpts + "' " +
-            "CP='" + cp + "' " +
-            "CUR_DIR='" + curDir + "' " +
-            "PROPS_ENV0='" + propsEnv + "' " +
-            "nohup " + scriptDir + "/benchmark-bootstrap.sh " + cmdArgs + " > " + logFile + " 2>& 1 &";
+        String java = cfg.customProperties().get("JAVA");
 
-        return executeUnderSshConnect(remoteUser, hostName, isDebug, cmd);
+        String cmd = "nohup "
+            + java + " " + cfg.customProperties().get("JVM_OPTS")
+            + " -cp " + cfg.customProperties().get("CLASSPATH")
+            + " org.yardstickframework.BenchmarkServerStartUp " + cmdArgs + " > " + logFile + " 2>& 1 &";
+
+        System.out.println(">>>>> cmd='" + cmd + "'");
+
+
+        List<String> cmds = new ArrayList<>();
+
+        if (!F.isEmpty(cfg.currentFolder())) {
+            cmds.add("echo PWD:");
+            cmds.add("pwd");
+
+            cmds.add("cd " + cfg.currentFolder());
+
+            cmds.add("echo PWD:");
+            cmds.add("pwd");
+        }
+
+        cmds.add(cmd);
+
+        return executeUnderSshConnect(cfg.remoteUser(), cfg.remoteHostName(), isDebug, cmds);
     }
 
     /**
@@ -158,6 +178,7 @@ public final class RestartUtils {
      */
     public static class Result {
         private final int exitCode;
+        private final String log;
         private final String out;
         private final String err;
         private final Exception e;
@@ -167,8 +188,9 @@ public final class RestartUtils {
          * @param out Out.
          * @param err Err.
          */
-        public Result(int exitCode, String out, String err) {
+        public Result(int exitCode, String log, String out, String err) {
             this.exitCode = exitCode;
+            this.log = log;
             this.out = out;
             this.err = err;
 
@@ -182,6 +204,7 @@ public final class RestartUtils {
             exitCode = -1;
             out = null;
             err = null;
+            log = null;
 
             this.e = e;
         }
@@ -194,14 +217,21 @@ public final class RestartUtils {
         }
 
         /**
-         * @return Output.
+         * @return Execution log.
+         */
+        public String getLog() {
+            return log;
+        }
+
+        /**
+         * @return Output of ssh process.
          */
         public String getOutput() {
             return out;
         }
 
         /**
-         * @return Error output.
+         * @return Error output of ssh process.
          */
         public String getErrorOutput() {
             return err;
@@ -212,6 +242,17 @@ public final class RestartUtils {
          */
         public Exception getException() {
             return e;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "Result{" +
+                "exitCode=" + exitCode +
+                ", log=\n" + log + '\n' +
+                ", out=\n'" + out + '\n' +
+                ", err=\n'" + err + '\n' +
+                ", e=" + e +
+                '}';
         }
     }
 

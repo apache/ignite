@@ -19,14 +19,12 @@ package org.apache.ignite.yardstick.cache.failover;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.yardstick.IgniteNode;
 import org.yardstickframework.BenchmarkConfiguration;
 
-import static org.yardstickframework.BenchmarkConfiguration.InstanceType.SERVER;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
@@ -38,28 +36,27 @@ public class IgniteFailoverNode extends IgniteNode {
 
         println(">>>>> at IgniteFailoverNode");
 
-        if (cfg.instanceType() == SERVER) {
-            RuntimeMXBean mxBean = ManagementFactory.getRuntimeMXBean();
+        RuntimeMXBean mxBean = ManagementFactory.getRuntimeMXBean();
 
-            List<String> jvmOpts = mxBean.getInputArguments();
+        List<String> jvmOpts = mxBean.getInputArguments();
 
-            println(">>>>>> jvmOpts=" + jvmOpts);
-            println(">>>>>> cp=" + mxBean.getClassPath());
+        StringBuilder jvmOptsStr = new StringBuilder();
 
-            println(">>>>>> CUR_DIR=" + System.getenv("CUR_DIR"));
-            println(">>>>>> SCRIPT_DIR=" + System.getenv("SCRIPT_DIR"));
-            println(">>>>>> LOGS_DIR=" + System.getenv("LOGS_DIR"));
+        for (String opt : jvmOpts)
+            jvmOptsStr.append(opt).append(' ');
 
-            IgniteCache<Integer, String[]> srvsCfgsCache = ignite().
-                getOrCreateCache(new CacheConfiguration<Integer, String[]>().setName("serversConfigs"));
+        cfg.customProperties().put("JVM_OPTS", jvmOptsStr.toString());
+        cfg.customProperties().put("PROPS_ENV", System.getenv("PROPS_ENV"));
+        cfg.customProperties().put("CLASSPATH", mxBean.getClassPath());
+        cfg.customProperties().put("JAVA", System.getenv("JAVA"));
 
-            println(">>>>> env = " + System.getenv().toString());
+        println(">>>>> CUSTOM MAP =" + cfg.customProperties());
 
-            srvsCfgsCache.put(cfg.memberId(), cfg.commandLineArguments());
+        IgniteCache<Integer, BenchmarkConfiguration> srvsCfgsCache = ignite().
+            getOrCreateCache(new CacheConfiguration<Integer, BenchmarkConfiguration>().setName("serversConfigs"));
 
-            println("Put at cache " + cfg.memberId() + "=" + Arrays.toString(cfg.commandLineArguments()));
-        }
-        else
-            println(">>>>>> Oooooaaaaiiiii CLient node here!!!");
+        srvsCfgsCache.put(cfg.memberId(), cfg);
+
+        println("Put at cache " + cfg.memberId() + "=" + cfg);
     }
 }
