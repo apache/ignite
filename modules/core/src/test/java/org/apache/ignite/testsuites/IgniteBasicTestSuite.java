@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRende
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
 import org.apache.ignite.internal.processors.cache.OffHeapTieredTransactionSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheAffEarlySelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
@@ -68,6 +69,9 @@ public class IgniteBasicTestSuite extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Basic Test Suite");
 
+        suite.addTest(new TestSuite(CacheAffEarlySelfTest.class));
+
+/*
         suite.addTest(IgniteLangSelfTestSuite.suite());
         suite.addTest(IgniteUtilSelfTestSuite.suite(ignoredTests));
         suite.addTest(IgniteMarshallerSelfTestSuite.suite(ignoredTests));
@@ -110,6 +114,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(OffHeapTieredTransactionSelfTest.class);
         suite.addTestSuite(IgniteSlowClientDetectionSelfTest.class);
         suite.addTestSuite(IgniteDaemonNodeMarshallerCacheTest.class);
+*/
 
         return suite;
     }
