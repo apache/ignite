@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
@@ -1254,8 +1255,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var procPtr = NativeMethods.GetProcAddress(Ptr, procName);
 
             if (procPtr == IntPtr.Zero)
-                throw new IgniteException(string.Format("Unable to find native function: {0} (Error code: {1}). " +
-                                                      "Make sure that module.def is up to date",
+                throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
+                    "Unable to find native function: {0} (Error code: {1}). Make sure that module.def is up to date",
                     procName, Marshal.GetLastWin32Error()));
 
             return TypeCaster<T>.Cast(Marshal.GetDelegateForFunctionPointer(procPtr, typeof (T)));
