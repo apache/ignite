@@ -1562,7 +1562,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         public static string CleanFieldName(string fieldName)
         {
-            if (fieldName.StartsWith("<") && fieldName.EndsWith(">k__BackingField"))
+            if (fieldName.StartsWith("<", StringComparison.Ordinal)
+                && fieldName.EndsWith(">k__BackingField", StringComparison.Ordinal))
                 return fieldName.Substring(1, fieldName.IndexOf(">", StringComparison.Ordinal) - 1);
             
             return fieldName;

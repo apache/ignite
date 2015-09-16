@@ -133,7 +133,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private static string TrimBrackets(string s)
         {
-            return s.StartsWith("[") && s.EndsWith("]") ? s.Substring(1, s.Length - 2) : s;
+            return s.StartsWith("[", StringComparison.Ordinal) && s.EndsWith("]", StringComparison.Ordinal) 
+                ? s.Substring(1, s.Length - 2) 
+                : s;
         }
 
         /// <summary>

@@ -320,7 +320,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 cpStr.Append(cfg.JvmClasspath);
 
-                if (!cfg.JvmClasspath.EndsWith(";"))
+                if (!cfg.JvmClasspath.EndsWith(";", StringComparison.Ordinal))
                     cpStr.Append(';');
             }
 
@@ -356,7 +356,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 foreach (string dir in Directory.EnumerateDirectories(ggLibs))
                 {
-                    if (!dir.EndsWith("optional"))
+                    if (!dir.EndsWith("optional", StringComparison.OrdinalIgnoreCase))
                         AppendJars(dir, cpStr);
                 }
             }
