@@ -58,6 +58,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// Static initializer.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static PortableAbstractStream()
         {
             Type type = typeof(Buffer);

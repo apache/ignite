@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
@@ -250,9 +251,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static readonly PortableSystemWriteDelegate WriteHndGenericDictionary =
             WriteGenericDictionary;
 
-        /**
-         * <summary>Static initializer.</summary>
-         */
+        /// <summary>
+        /// Initializes the <see cref="PortableSystemHandlers"/> class.
+        /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline", 
+            Justification = "Readability.")]
         static PortableSystemHandlers()
         {
             // 1. Primitives.
