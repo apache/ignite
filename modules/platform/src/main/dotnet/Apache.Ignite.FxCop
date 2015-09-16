@@ -41,7 +41,6 @@
     <Rule Name="DoNotDeclareVisibleInstanceFields" Enabled="True" />
     <Rule Name="DoNotExposeGenericLists" Enabled="True" />
     <Rule Name="DoNotHideBaseClassMethods" Enabled="True" />
-    <Rule Name="DoNotNestGenericTypesInMemberSignatures" Enabled="True" />
     <Rule Name="DoNotOverloadOperatorEqualsOnReferenceTypes" Enabled="True" />
     <Rule Name="DoNotPassTypesByReference" Enabled="True" />
     <Rule Name="DoNotRaiseExceptionsInUnexpectedLocations" Enabled="True" />
@@ -188,15 +187,6 @@
         <Types>
          <Type Name="IgniteConfiguration">
           <Members>
-           <Member Name="#Assemblies">
-            <Messages>
-             <Message TypeName="CollectionPropertiesShouldBeReadOnly" Category="Microsoft.Usage" CheckId="CA2227" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'IgniteConfiguration.Assemblies'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
            <Member Name="#DefaultJvmInitMem">
             <Messages>
              <Message Id="Jvm" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z">
@@ -291,24 +281,10 @@
            </Member>
            <Member Name="#JvmOptions">
             <Messages>
-             <Message TypeName="CollectionPropertiesShouldBeReadOnly" Category="Microsoft.Usage" CheckId="CA2227" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'IgniteConfiguration.JvmOptions'</Item>
-              </Issue>
-             </Message>
              <Message Id="Jvm" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z">
               <Issue Name="Member">
                <Item>Jvm</Item>
                <Item>'IgniteConfiguration.JvmOptions'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#LifecycleBeans">
-            <Messages>
-             <Message TypeName="CollectionPropertiesShouldBeReadOnly" Category="Microsoft.Usage" CheckId="CA2227" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'IgniteConfiguration.LifecycleBeans'</Item>
               </Issue>
              </Message>
             </Messages>
@@ -347,23 +323,6 @@
               </Issue>
              </Message>
             </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="Ignition+Startup">
-          <Members>
-           <Member Name="#Context">
-            <Accessors>
-             <Accessor Name="#get_Context()">
-              <Messages>
-               <Message TypeName="AvoidUncalledPrivateCode" Category="Microsoft.Performance" CheckId="CA1811" Created="2015-09-16 09:14:44Z">
-                <Issue>
-                 <Item>'Ignition.Startup.Context.get()'</Item>
-                </Issue>
-               </Message>
-              </Messages>
-             </Accessor>
-            </Accessors>
            </Member>
           </Members>
          </Type>
@@ -1556,17 +1515,6 @@
             </Issue>
            </Message>
           </Messages>
-          <Members>
-           <Member Name="#.ctor(Apache.Ignite.Core.Cache.ICacheEntryFilter`2&lt;!0,!1&gt;)">
-            <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'ScanQuery&lt;TK, TV&gt;.ScanQuery(ICacheEntryFilter&lt;TK, TV&gt;)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
          </Type>
          <Type Name="SqlFieldsQuery">
           <Members>
@@ -1997,17 +1945,6 @@
                <Item>Cancelled</Item>
                <Item>'IClusterMetrics.TotalCancelledJobs'</Item>
                <Item>Canceled</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#UpTime">
-            <Messages>
-             <Message Id="UpTime" TypeName="CompoundWordsShouldBeCasedCorrectly" Category="Microsoft.Naming" CheckId="CA1702" Created="2015-09-16 09:14:44Z">
-              <Issue Name="MemberShouldBeDiscreteTerm">
-               <Item>UpTime</Item>
-               <Item>'IClusterMetrics.UpTime'</Item>
-               <Item>Uptime</Item>
               </Issue>
              </Message>
             </Messages>
@@ -3464,6 +3401,192 @@
              </Message>
             </Messages>
            </Member>
+           <Member Name="#EvtsAll">
+            <Messages>
+             <Message Id="Evts" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:56:15Z">
+              <Issue Name="Member">
+               <Item>Evts</Item>
+               <Item>'EventType.EvtsAll'</Item>
+              </Issue>
+             </Message>
+             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
+              <Issue>
+               <Item>'EventType.EvtsAll'</Item>
+              </Issue>
+             </Message>
+            </Messages>
+           </Member>
+           <Member Name="#EvtsAllMinusMetricUpdate">
+            <Messages>
+             <Message Id="Evts" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:56:15Z">
+              <Issue Name="Member">
+               <Item>Evts</Item>
+               <Item>'EventType.EvtsAllMinusMetricUpdate'</Item>
+              </Issue>
+             </Message>
+             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
+              <Issue>
+               <Item>'EventType.EvtsAllMinusMetricUpdate'</Item>
+              </Issue>
+             </Message>
+            </Messages>
+           </Member>
+           <Member Name="#EvtsCache">
+            <Messages>
+             <Message Id="Evts" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:56:15Z">
+              <Issue Name="Member">
+               <Item>Evts</Item>
+               <Item>'EventType.EvtsCache'</Item>
+              </Issue>
+             </Message>
+             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
+              <Issue>
+               <Item>'EventType.EvtsCache'</Item>
+              </Issue>
+             </Message>
+            </Messages>
+           </Member>
+           <Member Name="#EvtsCacheLifecycle">
+            <Messages>
+             <Message Id="Evts" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:56:15Z">
+              <Issue Name="Member">
+               <Item>Evts</Item>
+               <Item>'EventType.EvtsCacheLifecycle'</Item>
+              </Issue>
+             </Message>
+             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
+              <Issue>
+               <Item>'EventType.EvtsCacheLifecycle'</Item>
+              </Issue>
+             </Message>
+            </Messages>
+           </Member>
+           <Member Name="#EvtsCacheQuery">
+            <Messages>
+             <Message Id="Evts" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:56:15Z">
+              <Issue Name="Member">
+               <Item>Evts</Item>
+               <Item>'EventType.EvtsCacheQuery'</Item>
+              </Issue>
+             </Message>
+             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
+              <Issue>
+               <Item>'EventType.EvtsCacheQuery'</Item>
+              </Issue>
+             </Message>
+            </Messages>
+           </Member>
+           <Member Name="#EvtsCacheRebalance">
+            <Messages>
+             <Message Id="Evts" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:56:15Z">
+              <Issue Name="Member">
+               <Item>Evts</Item>
+               <Item>'EventType.EvtsCacheRebalance'</Item>
+              </Issue>
+             </Message>
+             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
+              <Issue>
+               <Item>'EventType.EvtsCacheRebalance'</Item>
+              </Issue>
+             </Message>
+            </Messages>
+           </Member>
+           <Member Name="#EvtsDiscovery">
+            <Messages>
+             <Message Id="Evts" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:56:15Z">
+              <Issue Name="Member">
+               <Item>Evts</Item>
+               <Item>'EventType.EvtsDiscovery'</Item>
+              </Issue>
+             </Message>
+             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
+              <Issue>
+               <Item>'EventType.EvtsDiscovery'</Item>
+              </Issue>
+             </Message>
+            </Messages>
+           </Member>
+           <Member Name="#EvtsDiscoveryAll">
+            <Messages>
+             <Message Id="Evts" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:56:15Z">
+              <Issue Name="Member">
+               <Item>Evts</Item>
+               <Item>'EventType.EvtsDiscoveryAll'</Item>
+              </Issue>
+             </Message>
+             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
+              <Issue>
+               <Item>'EventType.EvtsDiscoveryAll'</Item>
+              </Issue>
+             </Message>
+            </Messages>
+           </Member>
+           <Member Name="#EvtsError">
+            <Messages>
+             <Message Id="Evts" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:56:15Z">
+              <Issue Name="Member">
+               <Item>Evts</Item>
+               <Item>'EventType.EvtsError'</Item>
+              </Issue>
+             </Message>
+             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
+              <Issue>
+               <Item>'EventType.EvtsError'</Item>
+              </Issue>
+             </Message>
+            </Messages>
+           </Member>
+           <Member Name="#EvtsJobExecution">
+            <Messages>
+             <Message Id="Evts" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:56:15Z">
+              <Issue Name="Member">
+               <Item>Evts</Item>
+               <Item>'EventType.EvtsJobExecution'</Item>
+              </Issue>
+             </Message>
+             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
+              <Issue>
+               <Item>'EventType.EvtsJobExecution'</Item>
+              </Issue>
+             </Message>
+            </Messages>
+           </Member>
+           <Member Name="#EvtsSwapspace">
+            <Messages>
+             <Message Id="Evts" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:56:15Z">
+              <Issue Name="Member">
+               <Item>Evts</Item>
+               <Item>'EventType.EvtsSwapspace'</Item>
+              </Issue>
+             </Message>
+             <Message Id="Swapspace" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:56:15Z">
+              <Issue Name="Member">
+               <Item>Swapspace</Item>
+               <Item>'EventType.EvtsSwapspace'</Item>
+              </Issue>
+             </Message>
+             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
+              <Issue>
+               <Item>'EventType.EvtsSwapspace'</Item>
+              </Issue>
+             </Message>
+            </Messages>
+           </Member>
+           <Member Name="#EvtsTaskExecution">
+            <Messages>
+             <Message Id="Evts" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:56:15Z">
+              <Issue Name="Member">
+               <Item>Evts</Item>
+               <Item>'EventType.EvtsTaskExecution'</Item>
+              </Issue>
+             </Message>
+             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
+              <Issue>
+               <Item>'EventType.EvtsTaskExecution'</Item>
+              </Issue>
+             </Message>
+            </Messages>
+           </Member>
            <Member Name="#EvtSwapSpaceCleared">
             <Messages>
              <Message Id="Evt" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z">
@@ -3588,21 +3711,6 @@
            </Member>
           </Members>
          </Type>
-         <Type Name="IEvent">
-          <Members>
-           <Member Name="#TimeStamp">
-            <Messages>
-             <Message Id="TimeStamp" TypeName="CompoundWordsShouldBeCasedCorrectly" Category="Microsoft.Naming" CheckId="CA1702" Created="2015-09-16 09:14:44Z">
-              <Issue Name="MemberShouldBeDiscreteTerm">
-               <Item>TimeStamp</Item>
-               <Item>'IEvent.TimeStamp'</Item>
-               <Item>Timestamp</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
          <Type Name="IEventFilter`1">
           <Members>
            <Member Name="#Invoke(System.Guid,!0)">
@@ -3633,25 +3741,11 @@
            </Member>
            <Member Name="#RemoteListen`1(System.Int32,System.Nullable`1&lt;System.TimeSpan&gt;,System.Boolean,Apache.Ignite.Core.Events.IEventFilter`1&lt;!!0&gt;,Apache.Ignite.Core.Events.IEventFilter`1&lt;!!0&gt;,System.Int32[])">
             <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'IEvents.RemoteListen&lt;T&gt;(int, TimeSpan?, bool, IEventFilter&lt;T&gt;, IEventFilter&lt;T&gt;, params int[])'</Item>
-              </Issue>
-             </Message>
              <Message Id="buf" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z">
               <Issue Name="MemberParameter">
                <Item>'IEvents.RemoteListen&lt;T&gt;(int, TimeSpan?, bool, IEventFilter&lt;T&gt;, IEventFilter&lt;T&gt;, params int[])'</Item>
                <Item>buf</Item>
                <Item>'bufSize'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#RemoteQuery`1(Apache.Ignite.Core.Events.IEventFilter`1&lt;!!0&gt;,System.Nullable`1&lt;System.TimeSpan&gt;,System.Int32[])">
-            <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'IEvents.RemoteQuery&lt;T&gt;(IEventFilter&lt;T&gt;, TimeSpan?, params int[])'</Item>
               </Issue>
              </Message>
             </Messages>
@@ -3730,27 +3824,6 @@
            </Member>
           </Members>
          </Type>
-         <Type Name="Ignite">
-          <Members>
-           <Member Name="#Dispose()">
-            <Messages>
-             <Message TypeName="CallGCSuppressFinalizeCorrectly" Category="Microsoft.Usage" CheckId="CA1816" Created="2015-09-16 09:14:44Z">
-              <Issue Name="NotCalled">
-               <Item>'Ignite.Dispose()'</Item>
-               <Item>'GC.SuppressFinalize(object)'</Item>
-              </Issue>
-             </Message>
-             <Message Id="_proxy" TypeName="DisposableFieldsShouldBeDisposed" Category="Microsoft.Usage" CheckId="CA2213" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'Ignite'</Item>
-               <Item>'Ignite._proxy'</Item>
-               <Item>'IgniteProxy'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
          <Type Name="IgniteManager">
           <Members>
            <Member Name="#.cctor()">
@@ -3814,20 +3887,6 @@
                <Item>'string.Format(string, object, object)'</Item>
                <Item>'IgniteManager.GetMergedJvmOptions(IgniteConfiguration)'</Item>
                <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="IgniteProxy">
-          <Members>
-           <Member Name="#Dispose()">
-            <Messages>
-             <Message TypeName="CallGCSuppressFinalizeCorrectly" Category="Microsoft.Usage" CheckId="CA1816" Created="2015-09-16 09:14:44Z">
-              <Issue Name="NotCalled">
-               <Item>'IgniteProxy.Dispose()'</Item>
-               <Item>'GC.SuppressFinalize(object)'</Item>
               </Issue>
              </Message>
             </Messages>
@@ -3912,20 +3971,6 @@
            </Member>
           </Members>
          </Type>
-         <Type Name="CacheEnumeratorProxy`2">
-          <Members>
-           <Member Name="#Dispose()">
-            <Messages>
-             <Message TypeName="CallGCSuppressFinalizeCorrectly" Category="Microsoft.Usage" CheckId="CA1816" Created="2015-09-16 09:14:44Z">
-              <Issue Name="NotCalled">
-               <Item>'CacheEnumeratorProxy&lt;TK, TV&gt;.Dispose()'</Item>
-               <Item>'GC.SuppressFinalize(object)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
         </Types>
        </Namespace>
        <Namespace Name="Apache.Ignite.Core.Impl.Cache.Query.Continuous">
@@ -3951,20 +3996,6 @@
                <Item>'ContinuousQueryFilterHolder.ContinuousQueryFilterHolder(Type, Type, object, bool)'</Item>
                <Item>val</Item>
                <Item>'valTyp'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="ContinuousQueryHandleImpl`2">
-          <Members>
-           <Member Name="#Dispose()">
-            <Messages>
-             <Message TypeName="CallGCSuppressFinalizeCorrectly" Category="Microsoft.Usage" CheckId="CA1816" Created="2015-09-16 09:14:44Z">
-              <Issue Name="NotCalled">
-               <Item>'ContinuousQueryHandleImpl&lt;TK, TV&gt;.Dispose()'</Item>
-               <Item>'GC.SuppressFinalize(object)'</Item>
               </Issue>
              </Message>
             </Messages>
@@ -4132,11 +4163,6 @@
           <Members>
            <Member Name="#CompileCtor`1(System.Type,System.Type[],System.Boolean)">
             <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'DelegateConverter.CompileCtor&lt;T&gt;(Type, Type[], bool)'</Item>
-              </Issue>
-             </Message>
              <Message TypeName="GenericMethodsShouldProvideTypeParameter" Category="Microsoft.Design" CheckId="CA1004" Created="2015-09-16 09:14:44Z">
               <Issue>
                <Item>'DelegateConverter.CompileCtor&lt;T&gt;(Type, Type[], bool)'</Item>
@@ -4153,11 +4179,6 @@
            </Member>
            <Member Name="#CompileFunc`1(System.Type,System.Reflection.MethodInfo,System.Type[],System.Boolean[])">
             <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'DelegateConverter.CompileFunc&lt;T&gt;(Type, MethodInfo, Type[], bool[])'</Item>
-              </Issue>
-             </Message>
              <Message TypeName="GenericMethodsShouldProvideTypeParameter" Category="Microsoft.Design" CheckId="CA1004" Created="2015-09-16 09:14:44Z">
               <Issue>
                <Item>'DelegateConverter.CompileFunc&lt;T&gt;(Type, MethodInfo, Type[], bool[])'</Item>
@@ -4168,11 +4189,6 @@
            </Member>
            <Member Name="#CompileFunc`1(System.Type,System.Type[],System.Boolean[],System.String)">
             <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'DelegateConverter.CompileFunc&lt;T&gt;(Type, Type[], bool[], string)'</Item>
-              </Issue>
-             </Message>
              <Message TypeName="GenericMethodsShouldProvideTypeParameter" Category="Microsoft.Design" CheckId="CA1004" Created="2015-09-16 09:14:44Z">
               <Issue>
                <Item>'DelegateConverter.CompileFunc&lt;T&gt;(Type, Type[], bool[], string)'</Item>
@@ -4200,15 +4216,6 @@
          </Type>
          <Type Name="Future`1">
           <Members>
-           <Member Name="#.ctor(Apache.Ignite.Core.Impl.Common.IFutureConverter`1&lt;!0&gt;)">
-            <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'Future&lt;T&gt;.Future(IFutureConverter&lt;T&gt;)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
            <Member Name="#OnResult(Apache.Ignite.Core.Impl.Portable.IO.IPortableStream)">
             <Messages>
              <Message TypeName="DoNotCatchGeneralExceptionTypes" Category="Microsoft.Design" CheckId="CA1031" Created="2015-09-16 09:14:44Z">
@@ -4281,19 +4288,6 @@
            </Member>
           </Members>
          </Type>
-         <Type Name="TypeCaster`1+Casters`1">
-          <Members>
-           <Member Name="#Caster">
-            <Messages>
-             <Message TypeName="AvoidUnusedPrivateFields" Category="Microsoft.Performance" CheckId="CA1823" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'TypeCaster&lt;T&gt;.Casters&lt;TFrom&gt;.Caster'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
         </Types>
        </Namespace>
        <Namespace Name="Apache.Ignite.Core.Impl.Compute">
@@ -4345,37 +4339,6 @@
            </Member>
           </Members>
          </Type>
-         <Type Name="DataStreamerImpl`2+Flusher`2">
-          <Members>
-           <Member Name="#_freq">
-            <Messages>
-             <Message TypeName="AvoidUnusedPrivateFields" Category="Microsoft.Performance" CheckId="CA1823" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'DataStreamerImpl&lt;TK, TV&gt;.Flusher&lt;TK1, TV1&gt;._freq'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#_ldrRef">
-            <Messages>
-             <Message TypeName="AvoidUnusedPrivateFields" Category="Microsoft.Performance" CheckId="CA1823" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'DataStreamerImpl&lt;TK, TV&gt;.Flusher&lt;TK1, TV1&gt;._ldrRef'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#_state">
-            <Messages>
-             <Message TypeName="AvoidUnusedPrivateFields" Category="Microsoft.Performance" CheckId="CA1823" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'DataStreamerImpl&lt;TK, TV&gt;.Flusher&lt;TK1, TV1&gt;._state'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
         </Types>
        </Namespace>
        <Namespace Name="Apache.Ignite.Core.Impl.Handle">
@@ -4419,15 +4382,6 @@
              <Message TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024" Created="2015-09-16 09:14:44Z">
               <Issue Certainty="50">
                <Item>'HandleRegistry.GetItems()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#Release(System.Int64,System.Boolean)">
-            <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'HandleRegistry.Release(long, bool)'</Item>
               </Issue>
              </Message>
             </Messages>
@@ -4641,12 +4595,6 @@
            </Member>
            <Member Name="#Dispose()">
             <Messages>
-             <Message TypeName="CallGCSuppressFinalizeCorrectly" Category="Microsoft.Usage" CheckId="CA1816" Created="2015-09-16 09:14:44Z">
-              <Issue Name="NotCalled">
-               <Item>'PlatformMemoryStream.Dispose()'</Item>
-               <Item>'GC.SuppressFinalize(object)'</Item>
-              </Issue>
-             </Message>
              <Message TypeName="ImplementIDisposableCorrectly" Category="Microsoft.Design" CheckId="CA1063" Created="2015-09-16 09:14:44Z">
               <Issue Name="DisposeImplementation">
                <Item>'PlatformMemoryStream.Dispose()'</Item>
@@ -6021,32 +5969,8 @@
        </Namespace>
        <Namespace Name="Apache.Ignite.Core.Impl.Transactions">
         <Types>
-         <Type Name="Transaction">
-          <Members>
-           <Member Name="#Dispose()">
-            <Messages>
-             <Message TypeName="CallGCSuppressFinalizeCorrectly" Category="Microsoft.Usage" CheckId="CA1816" Created="2015-09-16 09:14:44Z">
-              <Issue Name="NotCalled">
-               <Item>'Transaction.Dispose()'</Item>
-               <Item>'GC.SuppressFinalize(object)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
          <Type Name="TransactionImpl">
           <Members>
-           <Member Name="#Dispose()">
-            <Messages>
-             <Message TypeName="CallGCSuppressFinalizeCorrectly" Category="Microsoft.Usage" CheckId="CA1816" Created="2015-09-16 09:14:44Z">
-              <Issue Name="OutsideDispose">
-               <Item>'TransactionImpl.Dispose()'</Item>
-               <Item>'GC.SuppressFinalize(object)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
            <Member Name="#GetClosedException()">
             <Messages>
              <Message Id="System.String.Format(System.String,System.Object,System.Object)" TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305" Created="2015-09-16 09:14:44Z">
@@ -6082,20 +6006,6 @@
               <Issue>
                <Item>'UnmanagedCallbacks.SafeCall&lt;T&gt;(Func&lt;T&gt;, bool)'</Item>
                <Item>'Exception'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="UnmanagedNonReleaseableTarget">
-          <Members>
-           <Member Name="#Dispose()">
-            <Messages>
-             <Message TypeName="CallGCSuppressFinalizeCorrectly" Category="Microsoft.Usage" CheckId="CA1816" Created="2015-09-16 09:14:44Z">
-              <Issue Name="NotCalled">
-               <Item>'UnmanagedNonReleaseableTarget.Dispose()'</Item>
-               <Item>'GC.SuppressFinalize(object)'</Item>
               </Issue>
              </Message>
             </Messages>
@@ -6139,68 +6049,6 @@
                <Item>'ILifecycleBean.OnLifecycleEvent(LifecycleEventType)'</Item>
                <Item>evt</Item>
                <Item>'evt'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Messaging">
-        <Types>
-         <Type Name="IMessaging">
-          <Members>
-           <Member Name="#LocalListen`1(Apache.Ignite.Core.Messaging.IMessageFilter`1&lt;!!0&gt;,System.Object)">
-            <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'IMessaging.LocalListen&lt;T&gt;(IMessageFilter&lt;T&gt;, object)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#RemoteListen`1(Apache.Ignite.Core.Messaging.IMessageFilter`1&lt;!!0&gt;,System.Object)">
-            <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'IMessaging.RemoteListen&lt;T&gt;(IMessageFilter&lt;T&gt;, object)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#Send(System.Collections.IEnumerable,System.Object)">
-            <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'IMessaging.Send(IEnumerable, object)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#Send(System.Object,System.Object)">
-            <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'IMessaging.Send(object, object)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#SendOrdered(System.Object,System.Object,System.Nullable`1&lt;System.TimeSpan&gt;)">
-            <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'IMessaging.SendOrdered(object, object, TimeSpan?)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#StopLocalListen`1(Apache.Ignite.Core.Messaging.IMessageFilter`1&lt;!!0&gt;,System.Object)">
-            <Messages>
-             <Message TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'IMessaging.StopLocalListen&lt;T&gt;(IMessageFilter&lt;T&gt;, object)'</Item>
               </Issue>
              </Message>
             </Messages>
@@ -7345,24 +7193,6 @@
              </Message>
             </Messages>
            </Member>
-           <Member Name="#TypeConfigurations">
-            <Messages>
-             <Message TypeName="CollectionPropertiesShouldBeReadOnly" Category="Microsoft.Usage" CheckId="CA2227" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'PortableConfiguration.TypeConfigurations'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#Types">
-            <Messages>
-             <Message TypeName="CollectionPropertiesShouldBeReadOnly" Category="Microsoft.Usage" CheckId="CA2227" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'PortableConfiguration.Types'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
           </Members>
          </Type>
          <Type Name="PortableException">
@@ -7726,28 +7556,6 @@
    </Target>
   </Targets>
   <Rules>
-   <Rule TypeName="AvoidUncalledPrivateCode" Category="Microsoft.Performance" CheckId="CA1811">
-    <Resolution Name="Default">{0} appears to have no upstream public or protected callers.</Resolution>
-   </Rule>
-   <Rule TypeName="AvoidUnusedPrivateFields" Category="Microsoft.Performance" CheckId="CA1823">
-    <Resolution Name="Default">It appears that field {0} is never used or is only ever assigned to. Use this field or remove it.</Resolution>
-   </Rule>
-   <Rule TypeName="CallGCSuppressFinalizeCorrectly" Category="Microsoft.Usage" CheckId="CA1816">
-    <Resolution Name="NotCalled">Change {0} to call {1}. This will prevent unnecessary finalization of the object once it has been disposed and it has fallen out of scope.</Resolution>
-    <Resolution Name="OutsideDispose">{0} calls {1}, a method that is typically only called within an implementation of 'IDisposable.Dispose'. Refer to the IDisposable pattern for more information.</Resolution>
-   </Rule>
-   <Rule TypeName="CollectionPropertiesShouldBeReadOnly" Category="Microsoft.Usage" CheckId="CA2227">
-    <Resolution Name="Default">Change {0} to be read-only by removing the property setter.</Resolution>
-   </Rule>
-   <Rule TypeName="CompoundWordsShouldBeCasedCorrectly" Category="Microsoft.Naming" CheckId="CA1702">
-    <Resolution Name="MemberShouldBeDiscreteTerm">The compound word '{0}' in member name {1} exists as a discrete term. If your usage is intended to be single word, case it as '{2}' or strip the first token entirely if it represents any sort of Hungarian notation.</Resolution>
-   </Rule>
-   <Rule TypeName="DefaultParametersShouldNotBeUsed" Category="Microsoft.Design" CheckId="CA1026">
-    <Resolution Name="Default">Replace method {0} with an overload that supplies all default arguments.</Resolution>
-   </Rule>
-   <Rule TypeName="DisposableFieldsShouldBeDisposed" Category="Microsoft.Usage" CheckId="CA2213">
-    <Resolution Name="Default">{0} contains field {1} that is of IDisposable type: {2}. Change the Dispose method on {0} to call Dispose or Close on this field.</Resolution>
-   </Rule>
    <Rule TypeName="DoNotCatchGeneralExceptionTypes" Category="Microsoft.Design" CheckId="CA1031">
     <Resolution Name="Default">Modify {0} to catch a more specific exception than {1} or rethrow the exception.</Resolution>
    </Rule>
@@ -7820,6 +7628,9 @@
    </Rule>
    <Rule TypeName="ParameterNamesShouldNotMatchMemberNames" Category="Microsoft.Naming" CheckId="CA1719">
     <Resolution Name="Default">Change either member or parameter name {0} so that one differs from the other.</Resolution>
+   </Rule>
+   <Rule TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819">
+    <Resolution Name="Default">Change {0} to return a collection or make it a method.</Resolution>
    </Rule>
    <Rule TypeName="PropertyNamesShouldNotMatchGetMethods" Category="Microsoft.Naming" CheckId="CA1721">
     <Resolution Name="BaseType">The property name {0} is confusing given the existence of inherited method {1}. Rename or remove this property.</Resolution>

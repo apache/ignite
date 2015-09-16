@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using System.Security;
     using System.Threading;
@@ -129,6 +130,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="msg">Message.</param>
         /// <param name="reader">Reader.</param>
         /// <returns></returns>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static Exception ProcessCachePartialUpdateException(string msg, PortableReaderImpl reader)
         {
             if (reader == null)
