@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections.Generic;
+using Apache.Ignite.Core;
+using GridGain.Examples.Portable;
+
 namespace GridGain.Examples.Datagrid
 {
     /// <summary>
@@ -42,18 +47,18 @@ namespace GridGain.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            GridConfiguration cfg = new GridConfiguration
+            var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"examples\config\dotnet\example-cache-store.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
 
-            using (IGrid grid = GridFactory.Start(cfg))
+            using (var ignite = Ignition.Start(cfg))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache store example started.");
 
-                var cache = grid.Cache<int, Employee>(null);
+                var cache = ignite.Cache<int, Employee>(null);
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();

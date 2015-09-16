@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+using System;
+
 namespace GridGain.Examples.Portable
 {
     /// <summary>

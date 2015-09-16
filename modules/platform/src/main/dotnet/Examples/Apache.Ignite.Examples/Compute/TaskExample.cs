@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections.Generic;
+using Apache.Ignite.Core;
+using GridGain.Examples.Portable;
+
 namespace GridGain.Examples.Compute
 {
     /// <summary>
@@ -44,13 +49,13 @@ namespace GridGain.Examples.Compute
         [STAThread]
         public static void Main()
         {
-            GridConfiguration cfg = new GridConfiguration
+            var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"examples\config\dotnet\example-compute.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
 
-            using (IGrid grid = GridFactory.Start(cfg))
+            using (var ignite = Ignition.Start(cfg))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Task execution example started.");
@@ -65,7 +70,7 @@ namespace GridGain.Examples.Compute
                     Console.WriteLine(">>>     " + employee);
 
                 // Execute task and get average salary.
-                var avgSalary = grid.Compute().Execute(new AverageSalaryTask(), employees);
+                var avgSalary = ignite.Compute().Execute(new AverageSalaryTask(), employees);
 
                 Console.WriteLine();
                 Console.WriteLine(">>> Average salary for all employees: " + avgSalary);

@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Apache.Ignite.Core;
+
 namespace GridGain.Examples.Compute
 {
     /// <summary>
@@ -44,13 +49,13 @@ namespace GridGain.Examples.Compute
         [STAThread]
         public static void Main()
         {
-            GridConfiguration cfg = new GridConfiguration
+            var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"examples\config\dotnet\example-compute.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
             
-            using (IGrid grid = GridFactory.Start(cfg))
+            using (var ignite = Ignition.Start(cfg))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Closure execution example started.");
@@ -61,7 +66,7 @@ namespace GridGain.Examples.Compute
                 Console.WriteLine();
                 Console.WriteLine(">>> Calculating character count with manual reducing:");
 
-                var res = grid.Compute().Apply(new CharacterCountClosure(), words);
+                var res = ignite.Compute().Apply(new CharacterCountClosure(), words);
 
                 int totalLen = res.Sum();
 
@@ -69,7 +74,7 @@ namespace GridGain.Examples.Compute
                 Console.WriteLine();
                 Console.WriteLine(">>> Calculating character count with reducer:");
 
-                totalLen = grid.Compute().Apply(new CharacterCountClosure(), words, new CharacterCountReducer());
+                totalLen = ignite.Compute().Apply(new CharacterCountClosure(), words, new CharacterCountReducer());
 
                 Console.WriteLine(">>> Total character count: " + totalLen);
                 Console.WriteLine();

@@ -8,9 +8,10 @@
  */
 
 using System;
-using GridGain.Cache;
-using GridGain.Resource;
-using GridGain.Services;
+using Apache.Ignite.Core;
+using Apache.Ignite.Core.Cache;
+using Apache.Ignite.Core.Resource;
+using Apache.Ignite.Core.Services;
 
 namespace GridGain.Examples.Services
 {
@@ -21,7 +22,7 @@ namespace GridGain.Examples.Services
     public class MapService<TK, TV> : IService
     {
         /** Injected grid instance. */
-        [InstanceResource] private readonly IGrid _grid;
+        [InstanceResource] private readonly IIgnite _ignite;
 
         /** Cache. */
         private ICache<TK, TV> _cache;
@@ -35,7 +36,7 @@ namespace GridGain.Examples.Services
             // Create a new cache for every service deployment.
             // Note that we use service name as cache name, which allows
             // for each service deployment to use its own isolated cache.
-            _cache = _grid.GetOrCreateCache<TK, TV>("MapService_" + context.Name);
+            _cache = _ignite.GetOrCreateCache<TK, TV>("MapService_" + context.Name);
 
             Console.WriteLine("Service initialized: " + context.Name);
         }

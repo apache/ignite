@@ -15,6 +15,14 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using Apache.Ignite.Core;
+using Apache.Ignite.Core.Cache;
+using Apache.Ignite.Core.Cache.Query;
+using GridGain.Examples.Portable;
+
 namespace GridGain.Examples.Datagrid
 {
     /// <summary>
@@ -37,18 +45,18 @@ namespace GridGain.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            GridConfiguration cfg = new GridConfiguration
+            var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"examples\config\dotnet\example-cache-query.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
 
-            using (IGrid grid = GridFactory.Start(cfg))
+            using (var ignite = Ignition.Start(cfg))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache query example started.");
 
-                var cache = grid.Cache<object, object>(null);
+                var cache = ignite.Cache<object, object>(null);
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();
@@ -57,7 +65,7 @@ namespace GridGain.Examples.Datagrid
                 PopulateCache(cache);
 
                 // Create cache that will work with specific types.
-                var employeeCache = grid.Cache<EmployeeKey, Employee>(null);
+                var employeeCache = ignite.Cache<EmployeeKey, Employee>(null);
 
                 // Run SQL query example.
                 SqlQueryExample(employeeCache);

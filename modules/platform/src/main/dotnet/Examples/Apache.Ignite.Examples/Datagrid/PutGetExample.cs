@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections.Generic;
+using Apache.Ignite.Core;
+using Apache.Ignite.Core.Portable;
+using GridGain.Examples.Portable;
+
 namespace GridGain.Examples.Datagrid
 {
     /// <summary>
@@ -45,24 +51,24 @@ namespace GridGain.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            GridConfiguration cfg = new GridConfiguration
+            var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"examples\config\dotnet\example-cache.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
 
-            using (IGrid grid = GridFactory.Start(cfg))
+            using (var ignite = Ignition.Start(cfg))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache put-get example started.");
 
                 // Clean up caches on all nodes before run.
-                grid.GetOrCreateCache<object, object>(CacheName).Clear();
+                ignite.GetOrCreateCache<object, object>(CacheName).Clear();
 
-                PutGet(grid);
-                PutGetPortable(grid);
-                PutAllGetAll(grid);
-                PutAllGetAllPortable(grid);
+                PutGet(ignite);
+                PutGetPortable(ignite);
+                PutAllGetAll(ignite);
+                PutAllGetAllPortable(ignite);
 
                 Console.WriteLine();
             }
@@ -75,10 +81,10 @@ namespace GridGain.Examples.Datagrid
         /// <summary>
         /// Execute individual Put and Get.
         /// </summary>
-        /// <param name="grid">Grid instance.</param>
-        private static void PutGet(IGrid grid)
+        /// <param name="ignite">Grid instance.</param>
+        private static void PutGet(IIgnite ignite)
         {
-            var cache = grid.Cache<int, Organization>(CacheName);
+            var cache = ignite.Cache<int, Organization>(CacheName);
 
             // Create new Organization to store in cache.
             Organization org = new Organization(
@@ -101,10 +107,10 @@ namespace GridGain.Examples.Datagrid
         /// <summary>
         /// Execute individual Put and Get, getting value in portable format, without de-serializing it.
         /// </summary>
-        /// <param name="grid">Grid instance.</param>
-        private static void PutGetPortable(IGrid grid)
+        /// <param name="ignite">Grid instance.</param>
+        private static void PutGetPortable(IIgnite ignite)
         {
-            var cache = grid.Cache<int, Organization>(CacheName);
+            var cache = ignite.Cache<int, Organization>(CacheName);
 
             // Create new Organization to store in cache.
             Organization org = new Organization(
@@ -133,10 +139,10 @@ namespace GridGain.Examples.Datagrid
         /// <summary>
         /// Execute bulk Put and Get operations.
         /// </summary>
-        /// <param name="grid">Grid instance.</param>
-        private static void PutAllGetAll(IGrid grid)
+        /// <param name="ignite">Grid instance.</param>
+        private static void PutAllGetAll(IIgnite ignite)
         {
-            var cache = grid.Cache<int, Organization>(CacheName);
+            var cache = ignite.Cache<int, Organization>(CacheName);
 
             // Create new Organizations to store in cache.
             Organization org1 = new Organization(
@@ -171,10 +177,10 @@ namespace GridGain.Examples.Datagrid
         /// <summary>
         /// Execute bulk Put and Get operations getting values in portable format, without de-serializing it.
         /// </summary>
-        /// <param name="grid">Grid instance.</param>
-        private static void PutAllGetAllPortable(IGrid grid)
+        /// <param name="ignite">Grid instance.</param>
+        private static void PutAllGetAllPortable(IIgnite ignite)
         {
-            var cache = grid.Cache<int, Organization>(CacheName);
+            var cache = ignite.Cache<int, Organization>(CacheName);
 
             // Create new Organizations to store in cache.
             Organization org1 = new Organization(

@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections.Generic;
+using Apache.Ignite.Core;
+using Apache.Ignite.Core.Lifecycle;
+using Apache.Ignite.Core.Resource;
+
 namespace GridGain.Examples.Misc
 {
     /// <summary>
@@ -44,7 +50,7 @@ namespace GridGain.Examples.Misc
             // Create new configuration.
             var lifecycleExampleBean = new LifecycleExampleBean();
 
-            var cfg = new GridConfiguration
+            var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"examples\config\dotnet\example-compute.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" },
@@ -52,7 +58,7 @@ namespace GridGain.Examples.Misc
             };
 
             // Provide lifecycle bean to configuration.
-            using (GridFactory.Start(cfg))
+            using (Ignition.Start(cfg))
             {
                 // Make sure that lifecycle bean was notified about grid startup.
                 Console.WriteLine();
@@ -75,9 +81,7 @@ namespace GridGain.Examples.Misc
         {
             /** Auto-inject grid instance. */
             [InstanceResource]
-#pragma warning disable 649
-            private IGrid _grid;
-#pragma warning restore 649
+            private IIgnite _grid;
 
             /** <inheritDoc /> */
             public void OnLifecycleEvent(LifecycleEventType evt)
@@ -86,9 +90,9 @@ namespace GridGain.Examples.Misc
                 Console.WriteLine(">>> Grid lifecycle event occurred: " + evt);
                 Console.WriteLine(">>> Grid name: " + (_grid != null ? _grid.Name : "not available"));
 
-                if (evt == LifecycleEventType.AFTER_GRID_START)
+                if (evt == LifecycleEventType.AfterNodeStart)
                     Started = true;
-                else if (evt == LifecycleEventType.AFTER_GRID_STOP)
+                else if (evt == LifecycleEventType.AfterNodeStop)
                     Started = false;          
             }
 

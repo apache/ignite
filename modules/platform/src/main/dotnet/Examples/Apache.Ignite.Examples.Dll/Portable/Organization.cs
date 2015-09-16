@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+using System;
+
 namespace GridGain.Examples.Portable
 {
     /// <summary>
@@ -49,39 +51,23 @@ namespace GridGain.Examples.Portable
         /// <summary>
         /// Name.
         /// </summary>
-        public string Name
-        {
-            get;
-            set;
-        }
+        public string Name { get; set; }
 
         /// <summary>
         /// Address.
         /// </summary>
-        public Address Address
-        {
-            get;
-            set;
-        }
+        public Address Address { get; set; }
 
         /// <summary>
         /// Type.
         /// </summary>
-        public OrganizationType Type
-        {
-            get;
-            set;
-        }
+        public OrganizationType Type { get; set; }
 
         /// <summary>
         /// Last update time.
         /// </summary>
-        public DateTime LastUpdated
-        {
-            get;
-            set;
-        }
-        
+        public DateTime LastUpdated { get; set; }
+
         /// <summary>
         /// Returns a string that represents the current object.
         /// </summary>
@@ -91,7 +77,7 @@ namespace GridGain.Examples.Portable
         /// <filterpriority>2</filterpriority>
         public override string ToString()
         {
-            return string.Format("{0} [name={1}, address={2}, type={3}, lastUpdated={4}]", typeof(Organization).Name,
+            return string.Format("{0} [name={1}, address={2}, type={3}, lastUpdated={4}]", typeof (Organization).Name,
                 Name, Address, Type, LastUpdated);
         }
     }

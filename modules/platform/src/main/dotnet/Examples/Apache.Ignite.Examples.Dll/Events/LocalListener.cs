@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+using System;
+using System.Threading;
+using Apache.Ignite.Core.Events;
+
 namespace GridGain.Examples.Events
 {
     /// <summary>

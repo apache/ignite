@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+using System;
+using Apache.Ignite.Core;
+using Apache.Ignite.Core.Messaging;
+using Apache.Ignite.Core.Resource;
+
 namespace GridGain.Examples.Messaging
 {
     /// <summary>
@@ -25,7 +30,7 @@ namespace GridGain.Examples.Messaging
     {
         /** Injected grid instance. */
         [InstanceResource]
-        private readonly IGrid _grid;
+        private readonly IIgnite _ignite;
 
         /// <summary>
         /// Receives a message and returns a value 
@@ -39,7 +44,7 @@ namespace GridGain.Examples.Messaging
         {
             Console.WriteLine("Received unordered message [msg={0}, fromNodeId={1}]", message, nodeId);
 
-            _grid.Cluster.ForNodeIds(nodeId).Message().Send(message, Topic.Unordered);
+            _ignite.Cluster.ForNodeIds(nodeId).Message().Send(message, Topic.Unordered);
 
             return true;
         }

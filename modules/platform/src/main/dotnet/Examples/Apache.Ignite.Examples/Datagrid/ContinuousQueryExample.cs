@@ -15,6 +15,13 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using Apache.Ignite.Core;
+using Apache.Ignite.Core.Cache.Event;
+using Apache.Ignite.Core.Cache.Query.Continuous;
+
 namespace GridGain.Examples.Datagrid
 {
     /// <summary>
@@ -42,18 +49,18 @@ namespace GridGain.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            GridConfiguration cfg = new GridConfiguration
+            var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"examples\config\dotnet\example-cache.xml",
                 JvmOptions = new List<string> {"-Xms512m", "-Xmx1024m"}
             };
 
-            using (IGrid grid = GridFactory.Start(cfg))
+            using (var ignite = Ignition.Start(cfg))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache continuous query example started.");
 
-                var cache = grid.GetOrCreateCache<int, string>("cache_continuous_query");
+                var cache = ignite.GetOrCreateCache<int, string>("cache_continuous_query");
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();

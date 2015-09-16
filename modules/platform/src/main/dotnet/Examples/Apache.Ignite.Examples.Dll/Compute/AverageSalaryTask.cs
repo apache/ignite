@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Apache.Ignite.Core.Compute;
+using GridGain.Examples.Portable;
+
 namespace GridGain.Examples.Compute
 {
     /// <summary>

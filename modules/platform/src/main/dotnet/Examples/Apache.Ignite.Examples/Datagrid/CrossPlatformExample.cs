@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections.Generic;
+using Apache.Ignite.Core;
+using Apache.Ignite.Core.Portable;
+using GridGain.Examples.Portable;
+
 namespace GridGain.Examples.Datagrid
 {
     /// <summary>
@@ -53,18 +59,18 @@ namespace GridGain.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            GridConfiguration cfg = new GridConfiguration
+            var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"examples\config\dotnet\example-cache.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
 
-            using (IGrid grid = GridFactory.Start(cfg))
+            using (var ignite = Ignition.Start(cfg))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cross-platform example started.");
 
-                if (grid.Cluster.ForRemotes().Nodes().Count == 0)
+                if (ignite.Cluster.ForRemotes().Nodes().Count == 0)
                 {
                     Console.WriteLine();
                     Console.WriteLine(">>> This example requires remote nodes to be started.");
@@ -74,7 +80,7 @@ namespace GridGain.Examples.Datagrid
                 }
                 else
                 {
-                    var cache = grid.GetOrCreateCache<int, Organization>(CacheName);
+                    var cache = ignite.GetOrCreateCache<int, Organization>(CacheName);
 
                     // Create new Organization object to store in cache.
                     Organization org = new Organization(
@@ -88,16 +94,16 @@ namespace GridGain.Examples.Datagrid
                     cache.Put(KeyDotnet, org);
 
                     // Retrieve value stored by Java client.
-                    GetFromJava(grid);
+                    GetFromJava(ignite);
 
                     // Retrieve value stored by C++ client.
-                    GetFromCpp(grid);
+                    GetFromCpp(ignite);
 
                     // Gets portable value from cache in portable format, without de-serializing it.
-                    GetDotNetPortableInstance(grid);
+                    GetDotNetPortableInstance(ignite);
 
                     // Gets portable value form cache as a strongly-typed fully de-serialized instance.
-                    GetDotNetTypedInstance(grid);
+                    GetDotNetTypedInstance(ignite);
 
                     Console.WriteLine();
                 }
@@ -113,7 +119,7 @@ namespace GridGain.Examples.Datagrid
         /// must be run before this example.
         /// </summary>
         /// <param name="grid">Grid instance.</param>
-        private static void GetFromJava(IGrid grid)
+        private static void GetFromJava(IIgnite grid)
         {
             var cache = grid.GetOrCreateCache<int, IPortableObject>(CacheName)
                 .WithKeepPortable<int, IPortableObject>().WithAsync();
@@ -139,10 +145,10 @@ namespace GridGain.Examples.Datagrid
         /// Gets entry put by C++ client. In order for entry to be in cache, C++ client example
         /// must be run before this example.
         /// </summary>
-        /// <param name="grid">Grid instance.</param>
-        private static void GetFromCpp(IGrid grid)
+        /// <param name="ignite">Ignite instance.</param>
+        private static void GetFromCpp(IIgnite ignite)
         {
-            var cache = grid.GetOrCreateCache<int, IPortableObject>(CacheName)
+            var cache = ignite.GetOrCreateCache<int, IPortableObject>(CacheName)
                 .WithKeepPortable<int, IPortableObject>().WithAsync();
 
             cache.Get(KeyCpp);
@@ -167,11 +173,11 @@ namespace GridGain.Examples.Datagrid
         /// <summary>
         /// Gets portable value from cache in portable format, without de-serializing it.
         /// </summary>
-        /// <param name="grid">Grid instance.</param>
-        private static void GetDotNetPortableInstance(IGrid grid)
+        /// <param name="ignite">Ignite instance.</param>
+        private static void GetDotNetPortableInstance(IIgnite ignite)
         {
             // Apply "KeepPortable" flag on data projection.
-            var cache = grid.GetOrCreateCache<int, IPortableObject>(CacheName)
+            var cache = ignite.GetOrCreateCache<int, IPortableObject>(CacheName)
                 .WithKeepPortable<int, IPortableObject>();
 
             var org = cache.Get(KeyDotnet);
@@ -185,10 +191,10 @@ namespace GridGain.Examples.Datagrid
         /// <summary>
         /// Gets portable value form cache as a strongly-typed fully de-serialized instance.
         /// </summary>
-        /// <param name="grid">Grid instance.</param>
-        private static void GetDotNetTypedInstance(IGrid grid)
+        /// <param name="ignite">Ignite instance.</param>
+        private static void GetDotNetTypedInstance(IIgnite ignite)
         {
-            var cache = grid.GetOrCreateCache<int, Organization>(CacheName);
+            var cache = ignite.GetOrCreateCache<int, Organization>(CacheName);
 
             // Get recently created employee as a strongly-typed fully de-serialized instance.
             Organization emp = cache.Get(KeyDotnet);

@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+using System;
+using Apache.Ignite.Core.Cache;
+using GridGain.Examples.Portable;
+
 namespace GridGain.Examples.Datagrid
 {
     /// <summary>

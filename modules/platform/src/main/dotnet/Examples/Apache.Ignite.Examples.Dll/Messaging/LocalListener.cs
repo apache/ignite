@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+using System;
+using System.Threading;
+using Apache.Ignite.Core.Messaging;
+
 namespace GridGain.Examples.Messaging
 {
     /// <summary>

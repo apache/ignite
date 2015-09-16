@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections.Generic;
+using Apache.Ignite.Core;
+using Apache.Ignite.Core.Transactions;
+using GridGain.Examples.Portable;
+
 namespace GridGain.Examples.Datagrid
 {
     /// <summary>
@@ -39,18 +45,18 @@ namespace GridGain.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            GridConfiguration cfg = new GridConfiguration
+            var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"examples\config\dotnet\example-cache.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
 
-            using (IGrid grid = GridFactory.Start(cfg))
+            using (var ignite = Ignition.Start(cfg))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Transaction example started.");
 
-                var cache = grid.Cache<int, Account>("tx");
+                var cache = ignite.Cache<int, Account>("tx");
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();
@@ -66,8 +72,8 @@ namespace GridGain.Examples.Datagrid
                 Console.WriteLine();
 
                 // Transfer money between accounts in a single transaction.
-                using (var tx = cache.Grid.Transactions.TxStart(TransactionConcurrency.PESSIMISTIC,
-                    TransactionIsolation.REPEATABLE_READ))
+                using (var tx = cache.Ignite.Transactions.TxStart(TransactionConcurrency.Pessimistic,
+                    TransactionIsolation.RepeatableRead))
                 {
                     Account acc1 = cache.Get(1);
                     Account acc2 = cache.Get(2);

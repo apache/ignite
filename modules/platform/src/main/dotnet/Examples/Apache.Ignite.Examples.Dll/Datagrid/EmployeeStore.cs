@@ -15,6 +15,14 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using Apache.Ignite.Core.Cache;
+using Apache.Ignite.Core.Cache.Store;
+using GridGain.Examples.Portable;
+
 namespace GridGain.Examples.Datagrid
 {
     /// <summary>
@@ -45,7 +53,7 @@ namespace GridGain.Examples.Datagrid
 
         /// <summary>
         /// Loads all values from underlying persistent storage.
-        /// This method gets called as a result of <see cref="ICache{K,V}.LoadCache"/> call.
+        /// This method gets called as a result of <see cref="ICache{TK,TV}.LoadCache"/> call.
         /// </summary>
         /// <param name="act">Action that loads a cache entry.</param>
         /// <param name="args">Optional arguments.</param>

@@ -18,6 +18,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Apache.Ignite.Core;
+using Apache.Ignite.Core.Events;
 using GridGain.Examples.Compute;
 using GridGain.Examples.Portable;
 
@@ -50,13 +52,13 @@ namespace GridGain.Examples.Events
         [STAThread]
         public static void Main()
         {
-            var cfg = new GridConfiguration
+            var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"examples\config\dotnet\example-compute.xml",
                 JvmOptions = new List<string> {"-Xms512m", "-Xmx1024m"}
             };
 
-            using (var grid = GridFactory.Start(cfg))
+            using (var grid = Ignition.Start(cfg))
             {
                 Console.WriteLine(">>> Events example started.");
                 Console.WriteLine();
@@ -65,7 +67,7 @@ namespace GridGain.Examples.Events
                 Console.WriteLine(">>> Listening for a local event...");
 
                 var listener = new LocalListener();
-                grid.Events().LocalListen(listener, EventType.EVTS_TASK_EXECUTION);
+                grid.Events().LocalListen(listener, EventType.EvtsTaskExecution);
 
                 ExecuteTask(grid);
 
@@ -81,7 +83,7 @@ namespace GridGain.Examples.Events
                 var remoteFilter = new RemoteFilter();
 
                 var listenId = grid.Events().RemoteListen(localListener: localListener, remoteFilter: remoteFilter,
-                        types: EventType.EVTS_JOB_EXECUTION);
+                        types: EventType.EvtsJobExecution);
 
                 ExecuteTask(grid);
 
@@ -98,8 +100,8 @@ namespace GridGain.Examples.Events
         /// <summary>
         /// Executes a task to generate events.
         /// </summary>
-        /// <param name="grid">The grid.</param>
-        private static void ExecuteTask(IGrid grid)
+        /// <param name="ignite">The grid.</param>
+        private static void ExecuteTask(IIgnite ignite)
         {
             var employees = Enumerable.Range(1, 10).SelectMany(x => new[]
             {
@@ -114,7 +116,7 @@ namespace GridGain.Examples.Events
                     new[] {"Sales"})
             }).ToArray();
 
-            grid.Compute().Execute(new AverageSalaryTask(), employees);
+            ignite.Compute().Execute(new AverageSalaryTask(), employees);
         }
     }
 }

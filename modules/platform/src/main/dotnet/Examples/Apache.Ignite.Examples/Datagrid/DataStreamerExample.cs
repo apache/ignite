@@ -15,10 +15,17 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using Apache.Ignite.Core;
+using Apache.Ignite.Core.Datastream;
+using GridGain.Examples.Portable;
+
 namespace GridGain.Examples.Datagrid
 {
     /// <summary>
-    /// Demonstrates how cache can be populated with data utilizing <see cref="IDataStreamer{K,V}"/>.
+    /// Demonstrates how cache can be populated with data utilizing <see cref="IDataStreamer{TK,TV}"/>.
     /// Data streamer is a lot more efficient to use than standard cache put operation 
     /// as it properly buffers cache requests together and properly manages load on remote nodes.
     /// <para />
@@ -47,25 +54,25 @@ namespace GridGain.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            GridConfiguration cfg = new GridConfiguration
+            var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"examples\config\dotnet\example-cache.xml",
                 JvmOptions = new List<string> {"-Xms512m", "-Xmx1024m"}
             };
 
-            using (IGrid grid = GridFactory.Start(cfg))
+            using (var ignite = Ignition.Start(cfg))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache data streamer example started.");
 
                 // Clean up caches on all nodes before run.
-                grid.GetOrCreateCache<int, Account>(CacheName).Clear();
+                ignite.GetOrCreateCache<int, Account>(CacheName).Clear();
 
                 Stopwatch timer = new Stopwatch();
 
                 timer.Start();
 
-                using (var ldr = grid.DataStreamer<int, Account>(CacheName))
+                using (var ldr = ignite.DataStreamer<int, Account>(CacheName))
                 {
                     ldr.PerNodeBufferSize = 1024;
 

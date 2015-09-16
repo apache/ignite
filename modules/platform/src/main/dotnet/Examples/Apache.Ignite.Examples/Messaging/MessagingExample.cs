@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using Apache.Ignite.Core;
+
 namespace GridGain.Examples.Messaging
 {
     /// <summary>
@@ -44,13 +49,13 @@ namespace GridGain.Examples.Messaging
         [STAThread]
         public static void Main()
         {
-            var cfg = new GridConfiguration
+            var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"examples\config\dotnet\example-compute.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
 
-            using (var grid = GridFactory.Start(cfg))
+            using (var grid = Ignition.Start(cfg))
             {
                 var remotes = grid.Cluster.ForRemotes();
 
