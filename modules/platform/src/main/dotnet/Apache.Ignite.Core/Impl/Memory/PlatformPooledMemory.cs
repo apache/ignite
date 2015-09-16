@@ -49,18 +49,18 @@ namespace Apache.Ignite.Core.Impl.Memory
         public override void Reallocate(int cap)
         {
             // Try doubling capacity to avoid excessive allocations.
-            int doubledCap = PlatformMemoryUtils.Capacity(MemPtr) << 1;
+            int doubledCap = PlatformMemoryUtils.Capacity(Pointer) << 1;
 
             if (doubledCap > cap)
                 cap = doubledCap;
 
-            PlatformMemoryPool.Reallocate(MemPtr, cap);
+            PlatformMemoryPool.Reallocate(Pointer, cap);
         }
 
         /** <inheritdoc /> */
         public override void Release()
         {
-            PlatformMemoryPool.Release(MemPtr); // Return to the pool.
+            PlatformMemoryPool.Release(Pointer); // Return to the pool.
         }
     }
 }
