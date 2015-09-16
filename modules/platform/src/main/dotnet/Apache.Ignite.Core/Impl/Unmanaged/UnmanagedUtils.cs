@@ -1255,9 +1255,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var procPtr = NativeMethods.GetProcAddress(Ptr, procName);
 
             if (procPtr == IntPtr.Zero)
+            {
+                var error = Marshal.GetLastWin32Error();
+
                 throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
                     "Unable to find native function: {0} (Error code: {1}). Make sure that module.def is up to date",
-                    procName, Marshal.GetLastWin32Error()));
+                    procName, error));
+            }
 
             return TypeCaster<T>.Cast(Marshal.GetDelegateForFunctionPointer(procPtr, typeof (T)));
         }
