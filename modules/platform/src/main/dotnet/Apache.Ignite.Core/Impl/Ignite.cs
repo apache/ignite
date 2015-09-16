@@ -308,6 +308,8 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         [SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly",
             Justification = "There is no finalizer.")]
+        [SuppressMessage("Microsoft.Usage", "CA2213:DisposableFieldsShouldBeDisposed", MessageId = "_proxy",
+            Justification = "Proxy does not need to be disposed.")]
         public void Dispose()
         {
             Ignition.Stop(Name, true);
