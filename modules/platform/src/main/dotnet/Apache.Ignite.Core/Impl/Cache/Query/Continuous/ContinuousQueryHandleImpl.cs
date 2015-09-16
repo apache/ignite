@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query;
@@ -191,6 +192,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly",
+            Justification = "There is no finalizer.")]
         public void Dispose()
         {
             lock (this)

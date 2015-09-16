@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Memory
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Text;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -636,6 +637,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly",
+            Justification = "There is no finalizer.")]
         public void Dispose()
         {
             SynchronizeOutput();
