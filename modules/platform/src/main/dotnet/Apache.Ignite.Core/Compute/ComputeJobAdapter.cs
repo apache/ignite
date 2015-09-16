@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Compute
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Convenience adapter for <see cref="IComputeJob{T}"/> implementations. It provides the following functionality:
@@ -40,7 +41,8 @@ namespace Apache.Ignite.Core.Compute
         private volatile bool _cancelled;
 
         /** Arguments. */
-        private object[] _args;
+        [SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
+        protected object[] Args;
 
         /// <summary>
         /// No-arg constructor.
@@ -56,15 +58,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="args">Optional job arguments.</param>
         protected ComputeJobAdapter(params object[] args)
         {
-            _args = args;
-        }
-
-        /// <summary>
-        /// Gets the arguments.
-        /// </summary>
-        public object[] Args
-        {
-            get { return _args; }
+            Args = args;
         }
 
         /// <summary>
@@ -86,7 +80,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="args">Optional job arguments to set.</param>
         public void SetArguments(params object[] args)
         {
-            _args = args;
+            Args = args;
         }
 
         /// <summary>
@@ -95,10 +89,10 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="idx">Index of the argument.</param>
         public TArg Argument<TArg>(int idx)
         {
-            if (idx < 0 || idx >= _args.Length)
+            if (idx < 0 || idx >= Args.Length)
                 throw new ArgumentException("Invalid argument index: " + idx);
 
-            return (TArg)_args[idx];
+            return (TArg)Args[idx];
         }
 
         /// <summary>
