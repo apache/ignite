@@ -25,7 +25,66 @@
  </Targets>
  <Rules>
   <RuleFiles>
-   <RuleFile Name="$(FxCopDir)\Rules\DesignRules.dll" Enabled="True" AllRulesEnabled="True" />
+   <RuleFile Name="$(FxCopDir)\Rules\DesignRules.dll" Enabled="True" AllRulesEnabled="False">
+    <Rule Name="AbstractTypesShouldNotHaveConstructors" Enabled="True" />
+    <Rule Name="AvoidEmptyInterfaces" Enabled="True" />
+    <Rule Name="AvoidOutParameters" Enabled="True" />
+    <Rule Name="CollectionsShouldImplementGenericInterface" Enabled="True" />
+    <Rule Name="ConsiderPassingBaseTypesAsParameters" Enabled="True" />
+    <Rule Name="DeclareEventHandlersCorrectly" Enabled="True" />
+    <Rule Name="DeclareTypesInNamespaces" Enabled="True" />
+    <Rule Name="DefaultParametersShouldNotBeUsed" Enabled="True" />
+    <Rule Name="DefineAccessorsForAttributeArguments" Enabled="True" />
+    <Rule Name="DoNotCatchGeneralExceptionTypes" Enabled="True" />
+    <Rule Name="DoNotDeclareProtectedMembersInSealedTypes" Enabled="True" />
+    <Rule Name="DoNotDeclareStaticMembersOnGenericTypes" Enabled="True" />
+    <Rule Name="DoNotDeclareVirtualMembersInSealedTypes" Enabled="True" />
+    <Rule Name="DoNotDeclareVisibleInstanceFields" Enabled="True" />
+    <Rule Name="DoNotExposeGenericLists" Enabled="True" />
+    <Rule Name="DoNotHideBaseClassMethods" Enabled="True" />
+    <Rule Name="DoNotNestGenericTypesInMemberSignatures" Enabled="True" />
+    <Rule Name="DoNotOverloadOperatorEqualsOnReferenceTypes" Enabled="True" />
+    <Rule Name="DoNotPassTypesByReference" Enabled="True" />
+    <Rule Name="DoNotRaiseExceptionsInUnexpectedLocations" Enabled="True" />
+    <Rule Name="EnumeratorsShouldBeStronglyTyped" Enabled="True" />
+    <Rule Name="EnumsShouldHaveZeroValue" Enabled="True" />
+    <Rule Name="EnumStorageShouldBeInt32" Enabled="True" />
+    <Rule Name="ExceptionsShouldBePublic" Enabled="True" />
+    <Rule Name="GenericMethodsShouldProvideTypeParameter" Enabled="True" />
+    <Rule Name="ICollectionImplementationsHaveStronglyTypedMembers" Enabled="True" />
+    <Rule Name="ImplementIDisposableCorrectly" Enabled="True" />
+    <Rule Name="ImplementStandardExceptionConstructors" Enabled="True" />
+    <Rule Name="IndexersShouldNotBeMultidimensional" Enabled="True" />
+    <Rule Name="InterfaceMethodsShouldBeCallableByChildTypes" Enabled="True" />
+    <Rule Name="ListsAreStronglyTyped" Enabled="True" />
+    <Rule Name="MarkAssembliesWithAssemblyVersion" Enabled="True" />
+    <Rule Name="MarkAssembliesWithClsCompliant" Enabled="True" />
+    <Rule Name="MarkAssembliesWithComVisible" Enabled="True" />
+    <Rule Name="MarkAttributesWithAttributeUsage" Enabled="True" />
+    <Rule Name="MarkEnumsWithFlags" Enabled="True" />
+    <Rule Name="MembersShouldNotExposeCertainConcreteTypes" Enabled="True" />
+    <Rule Name="MovePInvokesToNativeMethodsClass" Enabled="True" />
+    <Rule Name="NestedTypesShouldNotBeVisible" Enabled="True" />
+    <Rule Name="OverloadOperatorEqualsOnOverloadingAddAndSubtract" Enabled="True" />
+    <Rule Name="OverrideMethodsOnComparableTypes" Enabled="True" />
+    <Rule Name="PropertiesShouldNotBeWriteOnly" Enabled="True" />
+    <Rule Name="ProvideObsoleteAttributeMessage" Enabled="True" />
+    <Rule Name="ReplaceRepetitiveArgumentsWithParamsArray" Enabled="True" />
+    <Rule Name="StaticHolderTypesShouldBeSealed" Enabled="True" />
+    <Rule Name="StaticHolderTypesShouldNotHaveConstructors" Enabled="True" />
+    <Rule Name="StringUriOverloadsCallSystemUriOverloads" Enabled="True" />
+    <Rule Name="TypesShouldNotExtendCertainBaseTypes" Enabled="True" />
+    <Rule Name="TypesThatOwnDisposableFieldsShouldBeDisposable" Enabled="True" />
+    <Rule Name="TypesThatOwnNativeResourcesShouldBeDisposable" Enabled="True" />
+    <Rule Name="UriParametersShouldNotBeStrings" Enabled="True" />
+    <Rule Name="UriPropertiesShouldNotBeStrings" Enabled="True" />
+    <Rule Name="UriReturnValuesShouldNotBeStrings" Enabled="True" />
+    <Rule Name="UseEventsWhereAppropriate" Enabled="True" />
+    <Rule Name="UseGenericEventHandlerInstances" Enabled="True" />
+    <Rule Name="UseGenericsWhereAppropriate" Enabled="True" />
+    <Rule Name="UseIntegralOrStringArgumentForIndexers" Enabled="True" />
+    <Rule Name="UsePropertiesWhereAppropriate" Enabled="True" />
+   </RuleFile>
    <RuleFile Name="$(FxCopDir)\Rules\GlobalizationRules.dll" Enabled="True" AllRulesEnabled="True" />
    <RuleFile Name="$(FxCopDir)\Rules\InteroperabilityRules.dll" Enabled="True" AllRulesEnabled="True" />
    <RuleFile Name="$(FxCopDir)\Rules\MobilityRules.dll" Enabled="True" AllRulesEnabled="True" />
@@ -40,22 +99,8 @@
  </Rules>
  <FxCopReport Version="1.36">
   <Namespaces>
-   <Namespace Name="Apache.Ignite.Core">
-    <Messages>
-     <Message TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020" Created="2015-09-16 09:14:44Z">
-      <Issue>
-       <Item>Apache.Ignite.Core</Item>
-      </Issue>
-     </Message>
-    </Messages>
-   </Namespace>
    <Namespace Name="Apache.Ignite.Core.Cache.Event">
     <Messages>
-     <Message TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020" Created="2015-09-16 09:14:44Z">
-      <Issue>
-       <Item>Apache.Ignite.Core.Cache.Event</Item>
-      </Issue>
-     </Message>
      <Message Id="Event" TypeName="IdentifiersShouldNotMatchKeywords" Category="Microsoft.Naming" CheckId="CA1716" Created="2015-09-16 09:14:44Z">
       <Issue Name="Namespace">
        <Item>Apache.Ignite.Core.Cache.Event</Item>
@@ -64,40 +109,8 @@
      </Message>
     </Messages>
    </Namespace>
-   <Namespace Name="Apache.Ignite.Core.Cache.Expiry">
-    <Messages>
-     <Message TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020" Created="2015-09-16 09:14:44Z">
-      <Issue>
-       <Item>Apache.Ignite.Core.Cache.Expiry</Item>
-      </Issue>
-     </Message>
-    </Messages>
-   </Namespace>
-   <Namespace Name="Apache.Ignite.Core.Cache.Query.Continuous">
-    <Messages>
-     <Message TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020" Created="2015-09-16 09:14:44Z">
-      <Issue>
-       <Item>Apache.Ignite.Core.Cache.Query.Continuous</Item>
-      </Issue>
-     </Message>
-    </Messages>
-   </Namespace>
-   <Namespace Name="Apache.Ignite.Core.Datastream">
-    <Messages>
-     <Message TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020" Created="2015-09-16 09:14:44Z">
-      <Issue>
-       <Item>Apache.Ignite.Core.Datastream</Item>
-      </Issue>
-     </Message>
-    </Messages>
-   </Namespace>
    <Namespace Name="Apache.Ignite.Core.Impl.Cache.Query.Continuous">
     <Messages>
-     <Message TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020" Created="2015-09-16 09:14:44Z">
-      <Issue>
-       <Item>Apache.Ignite.Core.Impl.Cache.Query.Continuous</Item>
-      </Issue>
-     </Message>
      <Message Id="Impl" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z">
       <Issue Name="Namespace">
        <Item>Impl</Item>
@@ -108,11 +121,6 @@
    </Namespace>
    <Namespace Name="Apache.Ignite.Core.Impl.Collections">
     <Messages>
-     <Message TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020" Created="2015-09-16 09:14:44Z">
-      <Issue>
-       <Item>Apache.Ignite.Core.Impl.Collections</Item>
-      </Issue>
-     </Message>
      <Message Id="Impl" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z">
       <Issue Name="Namespace">
        <Item>Impl</Item>
@@ -133,11 +141,6 @@
    </Namespace>
    <Namespace Name="Apache.Ignite.Core.Impl.Handle">
     <Messages>
-     <Message TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020" Created="2015-09-16 09:14:44Z">
-      <Issue>
-       <Item>Apache.Ignite.Core.Impl.Handle</Item>
-      </Issue>
-     </Message>
      <Message Id="Impl" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z">
       <Issue Name="Namespace">
        <Item>Impl</Item>
@@ -158,11 +161,6 @@
    </Namespace>
    <Namespace Name="Apache.Ignite.Core.Impl.Portable.IO">
     <Messages>
-     <Message TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020" Created="2015-09-16 09:14:44Z">
-      <Issue>
-       <Item>Apache.Ignite.Core.Impl.Portable.IO</Item>
-      </Issue>
-     </Message>
      <Message Id="Impl" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z">
       <Issue Name="Namespace">
        <Item>Impl</Item>
@@ -173,42 +171,10 @@
    </Namespace>
    <Namespace Name="Apache.Ignite.Core.Impl.Portable.Metadata">
     <Messages>
-     <Message TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020" Created="2015-09-16 09:14:44Z">
-      <Issue>
-       <Item>Apache.Ignite.Core.Impl.Portable.Metadata</Item>
-      </Issue>
-     </Message>
      <Message Id="Impl" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z">
       <Issue Name="Namespace">
        <Item>Impl</Item>
        <Item>Apache.Ignite.Core.Impl.Portable.Metadata</Item>
-      </Issue>
-     </Message>
-    </Messages>
-   </Namespace>
-   <Namespace Name="Apache.Ignite.Core.Lifecycle">
-    <Messages>
-     <Message TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020" Created="2015-09-16 09:14:44Z">
-      <Issue>
-       <Item>Apache.Ignite.Core.Lifecycle</Item>
-      </Issue>
-     </Message>
-    </Messages>
-   </Namespace>
-   <Namespace Name="Apache.Ignite.Core.Messaging">
-    <Messages>
-     <Message TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020" Created="2015-09-16 09:14:44Z">
-      <Issue>
-       <Item>Apache.Ignite.Core.Messaging</Item>
-      </Issue>
-     </Message>
-    </Messages>
-   </Namespace>
-   <Namespace Name="Apache.Ignite.Core.Resource">
-    <Messages>
-     <Message TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020" Created="2015-09-16 09:14:44Z">
-      <Issue>
-       <Item>Apache.Ignite.Core.Resource</Item>
       </Issue>
      </Message>
     </Messages>
@@ -218,13 +184,6 @@
    <Target Name="$(ProjectDir)/Apache.Ignite.Core/bin/x64/Debug/Apache.Ignite.Core.dll">
     <Modules>
      <Module Name="apache.ignite.core.dll">
-      <Messages>
-       <Message TypeName="AssembliesShouldHaveValidStrongNames" Category="Microsoft.Design" CheckId="CA2210" Created="2015-09-16 09:14:44Z">
-        <Issue Name="NoStrongName">
-         <Item>'Apache.Ignite.Core.dll'</Item>
-        </Issue>
-       </Message>
-      </Messages>
       <Namespaces>
        <Namespace Name="Apache.Ignite.Core">
         <Types>
@@ -1107,11 +1066,6 @@
          </Type>
          <Type Name="ICacheEntryProcessor`4">
           <Messages>
-           <Message TypeName="AvoidExcessiveParametersOnGenericTypes" Category="Microsoft.Design" CheckId="CA1005" Created="2015-09-16 09:14:44Z">
-            <Issue>
-             <Item>'ICacheEntryProcessor&lt;TK, TV, TA, TR&gt;'</Item>
-            </Issue>
-           </Message>
            <Message Id="A" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
             <Issue Name="TypeTypeParameterMoreMeaningfulName">
              <Item>'ICacheEntryProcessor&lt;TK, TV, TA, TR&gt;'</Item>
@@ -2362,11 +2316,6 @@
          </Type>
          <Type Name="ComputeTaskAdapter`3">
           <Messages>
-           <Message TypeName="AvoidExcessiveParametersOnGenericTypes" Category="Microsoft.Design" CheckId="CA1005" Created="2015-09-16 09:14:44Z">
-            <Issue>
-             <Item>'ComputeTaskAdapter&lt;TA, T, TR&gt;'</Item>
-            </Issue>
-           </Message>
            <Message Id="A" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
             <Issue Name="TypeTypeParameterMoreMeaningfulName">
              <Item>'ComputeTaskAdapter&lt;TA, T, TR&gt;'</Item>
@@ -2407,11 +2356,6 @@
          </Type>
          <Type Name="ComputeTaskSplitAdapter`3">
           <Messages>
-           <Message TypeName="AvoidExcessiveParametersOnGenericTypes" Category="Microsoft.Design" CheckId="CA1005" Created="2015-09-16 09:14:44Z">
-            <Issue>
-             <Item>'ComputeTaskSplitAdapter&lt;TA, T, TR&gt;'</Item>
-            </Issue>
-           </Message>
            <Message Id="A" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
             <Issue Name="TypeTypeParameterMoreMeaningfulName">
              <Item>'ComputeTaskSplitAdapter&lt;TA, T, TR&gt;'</Item>
@@ -2781,11 +2725,6 @@
          </Type>
          <Type Name="IComputeTask`3">
           <Messages>
-           <Message TypeName="AvoidExcessiveParametersOnGenericTypes" Category="Microsoft.Design" CheckId="CA1005" Created="2015-09-16 09:14:44Z">
-            <Issue>
-             <Item>'IComputeTask&lt;TA, T, TR&gt;'</Item>
-            </Issue>
-           </Message>
            <Message Id="A" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
             <Issue Name="TypeTypeParameterMoreMeaningfulName">
              <Item>'IComputeTask&lt;TA, T, TR&gt;'</Item>
@@ -2926,11 +2865,6 @@
          </Type>
          <Type Name="StreamTransformer`4">
           <Messages>
-           <Message TypeName="AvoidExcessiveParametersOnGenericTypes" Category="Microsoft.Design" CheckId="CA1005" Created="2015-09-16 09:14:44Z">
-            <Issue>
-             <Item>'StreamTransformer&lt;TK, TV, TA, TR&gt;'</Item>
-            </Issue>
-           </Message>
            <Message Id="A" TypeName="IdentifiersShouldBeSpelledCorrectly" Category="Microsoft.Naming" CheckId="CA1704" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
             <Issue Name="TypeTypeParameterMoreMeaningfulName">
              <Item>'StreamTransformer&lt;TK, TV, TA, TR&gt;'</Item>
@@ -8315,17 +8249,8 @@
    <Rule TypeName="ArrayFieldsShouldNotBeReadOnly" Category="Microsoft.Security" CheckId="CA2105">
     <Resolution Name="Default">Either replace {0} with a strongly typed collection that cannot be changed, or replace the public field with a method that returns a clone of a private array.</Resolution>
    </Rule>
-   <Rule TypeName="AssembliesShouldHaveValidStrongNames" Category="Microsoft.Design" CheckId="CA2210">
-    <Resolution Name="NoStrongName">Sign {0} with a strong name key.</Resolution>
-   </Rule>
    <Rule TypeName="AvoidEmptyInterfaces" Category="Microsoft.Design" CheckId="CA1040">
     <Resolution Name="Default">Define a custom attribute to replace {0}.</Resolution>
-   </Rule>
-   <Rule TypeName="AvoidExcessiveParametersOnGenericTypes" Category="Microsoft.Design" CheckId="CA1005">
-    <Resolution Name="Default">Consider a design where {0} has no more than 2 type parameters.</Resolution>
-   </Rule>
-   <Rule TypeName="AvoidNamespacesWithFewTypes" Category="Microsoft.Design" CheckId="CA1020">
-    <Resolution Name="Default">Consider merging the types defined in '{0}' with another namespace.</Resolution>
    </Rule>
    <Rule TypeName="AvoidUncalledPrivateCode" Category="Microsoft.Performance" CheckId="CA1811">
     <Resolution Name="Default">{0} appears to have no upstream public or protected callers.</Resolution>

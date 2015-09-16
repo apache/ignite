@@ -17,9 +17,10 @@
 
 namespace Apache.Ignite.Core.Events
 {
-    using System.Diagnostics.CodeAnalysis;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using Apache.Ignite.Core.Impl.Collections;
 
     /// <summary>
     /// Contains event type constants. The decision to use class and not enumeration is dictated 
@@ -330,9 +331,7 @@ namespace Apache.Ignite.Core.Events
         /// All events indicating an error or failure condition. It is convenient to use when fetching all events 
         /// indicating error or failure.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
-        public static readonly int[] EvtsError =
+        public static readonly ICollection<int> EvtsError = new[]
         {
             EvtJobTimedout,
             EvtJobFailed,
@@ -343,7 +342,7 @@ namespace Apache.Ignite.Core.Events
             EvtTaskFailed,
             EvtCacheRebalanceStarted,
             EvtCacheRebalanceStopped
-        };
+        }.AsReadOnly();
 
         /// <summary>
         /// All discovery events except for <see cref="EvtNodeMetricsUpdated" />. Subscription to <see 
@@ -351,8 +350,6 @@ namespace Apache.Ignite.Core.Events
         /// necessary. If this event is indeed required you can subscribe to it individually or use <see 
         /// cref="EvtsDiscoveryAll" /> array.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
         public static readonly int[] EvtsDiscovery =
         {
             EvtNodeJoined,
@@ -366,8 +363,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All discovery events.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
         public static readonly int[] EvtsDiscoveryAll =
         {
             EvtNodeJoined,
@@ -382,8 +377,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite job execution events.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
         public static readonly int[] EvtsJobExecution =
         {
             EvtJobMapped,
@@ -401,8 +394,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite task execution events.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
         public static readonly int[] EvtsTaskExecution =
         {
             EvtTaskStarted,
@@ -416,8 +407,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache events.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
         public static readonly int[] EvtsCache =
         {
             EvtCacheEntryCreated,
@@ -435,8 +424,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache rebalance events.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
         public static readonly int[] EvtsCacheRebalance =
         {
             EvtCacheRebalanceStarted,
@@ -451,8 +438,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache lifecycle events.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
         public static readonly int[] EvtsCacheLifecycle =
         {
             EvtCacheStarted,
@@ -463,8 +448,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache query events.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
         public static readonly int[] EvtsCacheQuery =
         {
             EvtCacheQueryExecuted,
@@ -474,8 +457,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All swap space events.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
         public static readonly int[] EvtsSwapspace =
         {
             EvtSwapSpaceCleared,
@@ -488,15 +469,11 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite events.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
         public static readonly int[] EvtsAll = GetAllEvents();
 
         /// <summary>
         /// All Ignite events (<b>excluding</b> metric update event).
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly",
-            Justification = "Breaking change. Should be fixed in the next non-compatible release.")]
         public static readonly int[] EvtsAllMinusMetricUpdate =
             EvtsAll.Where(x => x != EvtNodeMetricsUpdated).ToArray();
 
