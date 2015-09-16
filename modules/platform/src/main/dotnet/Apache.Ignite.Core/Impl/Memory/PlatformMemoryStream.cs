@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         private readonly IPlatformMemory _mem;
 
         /** Actual data. */
-        protected byte* Data;
+        private byte* _data;
 
         /** CalculateCapacity. */
         private int _cap;
@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             _mem = mem;
 
-            Data = (byte*)mem.Data;
+            _data = (byte*)mem.Data;
             _cap = mem.Capacity;
             _len = mem.Length;
         }
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureWriteCapacityAndShift(Len1);
 
-            *(Data + curPos) = val;
+            *(_data + curPos) = val;
         }
 
         /** <inheritdoc /> */
@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureWriteCapacityAndShift(Len2);
 
-            *((short*)(Data + curPos)) = val;
+            *((short*)(_data + curPos)) = val;
         }
 
         /** <inheritdoc /> */
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureWriteCapacityAndShift(Len2);
 
-            *((char*)(Data + curPos)) = val;
+            *((char*)(_data + curPos)) = val;
         }
 
         /** <inheritdoc /> */
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureWriteCapacityAndShift(Len4);
 
-            *((int*)(Data + curPos)) = val;
+            *((int*)(_data + curPos)) = val;
         }
 
         /** <inheritdoc /> */
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             EnsureWriteCapacity(writePos + 4);
 
-            *((int*)(Data + writePos)) = val;
+            *((int*)(_data + writePos)) = val;
         }
 
         /** <inheritdoc /> */
@@ -177,7 +177,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureWriteCapacityAndShift(Len8);
 
-            *((long*)(Data + curPos)) = val;
+            *((long*)(_data + curPos)) = val;
         }
 
         /** <inheritdoc /> */
@@ -194,7 +194,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureWriteCapacityAndShift(Len4);
 
-            *((float*)(Data + curPos)) = val;
+            *((float*)(_data + curPos)) = val;
         }
 
         /** <inheritdoc /> */
@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureWriteCapacityAndShift(Len8);
 
-            *((double*)(Data + curPos)) = val;
+            *((double*)(_data + curPos)) = val;
         }
 
         /** <inheritdoc /> */
@@ -228,7 +228,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureWriteCapacityAndShift(byteCnt);
 
-            return enc.GetBytes(chars, charCnt, Data + curPos, byteCnt);
+            return enc.GetBytes(chars, charCnt, _data + curPos, byteCnt);
         }
 
         /** <inheritdoc /> */
@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureReadCapacityAndShift(Len1);
 
-            return *(Data + curPos);
+            return *(_data + curPos);
         }
 
         /** <inheritdoc /> */
@@ -268,7 +268,7 @@ namespace Apache.Ignite.Core.Impl.Memory
 
             fixed (byte* res0 = res)
             {
-                PlatformMemoryUtils.CopyMemory(Data + curPos, res0, cnt);
+                PlatformMemoryUtils.CopyMemory(_data + curPos, res0, cnt);
             }
 
             return res;
@@ -298,7 +298,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureReadCapacityAndShift(Len2);
 
-            return *((short*)(Data + curPos));
+            return *((short*)(_data + curPos));
         }
 
         /** <inheritdoc /> */
@@ -319,7 +319,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureReadCapacityAndShift(Len2);
 
-            return *((char*)(Data + curPos));
+            return *((char*)(_data + curPos));
         }
 
         /** <inheritdoc /> */
@@ -340,7 +340,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureReadCapacityAndShift(Len4);
 
-            return *((int*)(Data + curPos));
+            return *((int*)(_data + curPos));
         }
         
         /** <inheritdoc /> */
@@ -361,7 +361,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureReadCapacityAndShift(Len8);
 
-            return *((long*)(Data + curPos));
+            return *((long*)(_data + curPos));
         }
         
         /** <inheritdoc /> */
@@ -382,7 +382,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureReadCapacityAndShift(Len4);
 
-            return *((float*)(Data + curPos));
+            return *((float*)(_data + curPos));
         }
 
         /** <inheritdoc /> */
@@ -403,7 +403,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureReadCapacityAndShift(Len8);
 
-            return *((double*)(Data + curPos));
+            return *((double*)(_data + curPos));
         }
 
         /** <inheritdoc /> */
@@ -466,7 +466,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         public void SynchronizeInput()
         {
-            Data = (byte*)_mem.Data;
+            _data = (byte*)_mem.Data;
             _cap = _mem.Capacity;
             _len = _mem.Length;
         }
@@ -484,7 +484,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         public void Reuse()
         {
-            Data = (byte*)_mem.Data;
+            _data = (byte*)_mem.Data;
             _cap = _mem.Capacity;
             _len = _mem.Length;
             _pos = 0;
@@ -555,7 +555,7 @@ namespace Apache.Ignite.Core.Impl.Memory
 
                 _mem.Reallocate(reqCap);
 
-                Data = (byte*)_mem.Data;
+                _data = (byte*)_mem.Data;
                 _cap = _mem.Capacity;
             }
         }
@@ -587,7 +587,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureReadCapacityAndShift(cnt);
 
-            PlatformMemoryUtils.CopyMemory(Data + curPos, dest, cnt);
+            PlatformMemoryUtils.CopyMemory(_data + curPos, dest, cnt);
         }
 
         /// <summary>
@@ -599,7 +599,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             int curPos = EnsureWriteCapacityAndShift(cnt);
 
-            PlatformMemoryUtils.CopyMemory(src, Data + curPos, cnt);
+            PlatformMemoryUtils.CopyMemory(src, _data + curPos, cnt);
         }
 
         /// <summary>
@@ -646,7 +646,15 @@ namespace Apache.Ignite.Core.Impl.Memory
 
             _mem.Release();
         }
-        
+
+        /// <summary>
+        /// Gets the data.
+        /// </summary>
+        protected byte* Data
+        {
+            get { return _data; }
+        }
+
         #endregion
 
         #region ARRAYS
@@ -664,7 +672,7 @@ namespace Apache.Ignite.Core.Impl.Memory
 
             fixed (byte* res0 = res)
             {
-                PlatformMemoryUtils.CopyMemory(Data, res0, res.Length);
+                PlatformMemoryUtils.CopyMemory(_data, res0, res.Length);
             }
 
             return res;
