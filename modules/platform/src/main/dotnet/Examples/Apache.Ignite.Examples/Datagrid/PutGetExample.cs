@@ -1,0 +1,210 @@
+﻿/*
+ *  Copyright (C) GridGain Systems. All Rights Reserved.
+ *  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+using System;
+using System.Collections.Generic;
+using GridGain.Examples.Portable;
+using GridGain.Portable;
+
+namespace GridGain.Examples.Datagrid
+{
+    /// <summary>
+    /// This example demonstrates several put-get operations on GridGain cache
+    /// with portable values. Note that portable object can be retrieved in
+    /// fully-deserialized form or in portable object format using special
+    /// cache projection.
+    /// <para />
+    /// To run the example please do the following:
+    /// 1) Build the project GridGainExamplesDll (select it -> right-click -> Build);
+    /// 2) Set this class as startup object (GridGainExamples project -> right-click -> Properties ->
+    ///     Application -> Startup object);
+    /// 3) Start application (F5 or Ctrl+F5).
+    /// <para />
+    /// This example can be run in conjunction with standalone GridGain .Net node.
+    /// To start standalone node please do the following:
+    /// 1) Go to .Net binaries folder [GRIDGAIN_HOME]\platforms\dotnet and run GridGain.exe as follows:
+    /// GridGain.exe -gridGainHome=[path_to_GRIDGAIN_HOME] -springConfigUrl=examples\config\dotnet\example-cache.xml
+    /// </summary>
+    public class PutGetExample
+    {
+        /// <summary>Cache name.</summary>
+        private const string CacheName = "cache_put_get";
+
+        /// <summary>
+        /// Runs the example.
+        /// </summary>
+        [STAThread]
+        public static void Main()
+        {
+            GridConfiguration cfg = new GridConfiguration
+            {
+                SpringConfigUrl = @"examples\config\dotnet\example-cache.xml",
+                JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
+            };
+
+            using (IGrid grid = GridFactory.Start(cfg))
+            {
+                Console.WriteLine();
+                Console.WriteLine(">>> Cache put-get example started.");
+
+                // Clean up caches on all nodes before run.
+                grid.GetOrCreateCache<object, object>(CacheName).Clear();
+
+                PutGet(grid);
+                PutGetPortable(grid);
+                PutAllGetAll(grid);
+                PutAllGetAllPortable(grid);
+
+                Console.WriteLine();
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Example finished, press any key to exit ...");
+            Console.ReadKey();
+        }
+
+        /// <summary>
+        /// Execute individual Put and Get.
+        /// </summary>
+        /// <param name="grid">Grid instance.</param>
+        private static void PutGet(IGrid grid)
+        {
+            var cache = grid.Cache<int, Organization>(CacheName);
+
+            // Create new Organization to store in cache.
+            Organization org = new Organization(
+                "Microsoft",
+                new Address("1096 Eddy Street, San Francisco, CA", 94109),
+                OrganizationType.Private,
+                DateTime.Now
+            );
+
+            // Put created data entry to cache.
+            cache.Put(1, org);
+
+            // Get recently created employee as a strongly-typed fully de-serialized instance.
+            Organization orgFromCache = cache.Get(1);
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Retrieved organization instance from cache: " + orgFromCache);
+        }
+
+        /// <summary>
+        /// Execute individual Put and Get, getting value in portable format, without de-serializing it.
+        /// </summary>
+        /// <param name="grid">Grid instance.</param>
+        private static void PutGetPortable(IGrid grid)
+        {
+            var cache = grid.Cache<int, Organization>(CacheName);
+
+            // Create new Organization to store in cache.
+            Organization org = new Organization(
+                "Microsoft",
+                new Address("1096 Eddy Street, San Francisco, CA", 94109),
+                OrganizationType.Private,
+                DateTime.Now
+            );
+
+            // Put created data entry to cache.
+            cache.Put(1, org);
+
+            // Create projection that will get values as portable objects.
+            var portableCache = cache.WithKeepPortable<int, IPortableObject>();
+
+            // Get recently created organization as a portable object.
+            var portableOrg = portableCache.Get(1);
+
+            // Get organization's name from portable object (note that  object doesn't need to be fully deserialized).
+            string name = portableOrg.Field<string>("name");
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Retrieved organization name from portable object: " + name);
+        }
+
+        /// <summary>
+        /// Execute bulk Put and Get operations.
+        /// </summary>
+        /// <param name="grid">Grid instance.</param>
+        private static void PutAllGetAll(IGrid grid)
+        {
+            var cache = grid.Cache<int, Organization>(CacheName);
+
+            // Create new Organizations to store in cache.
+            Organization org1 = new Organization(
+                "Microsoft",
+                new Address("1096 Eddy Street, San Francisco, CA", 94109),
+                OrganizationType.Private,
+                DateTime.Now
+            );
+
+            Organization org2 = new Organization(
+                "Red Cross",
+                new Address("184 Fidler Drive, San Antonio, TX", 78205),
+                OrganizationType.NonProfit,
+                DateTime.Now
+            );
+
+            var map = new Dictionary<int, Organization> { { 1, org1 }, { 2, org2 } };
+
+            // Put created data entries to cache.
+            cache.PutAll(map);
+
+            // Get recently created organizations as a strongly-typed fully de-serialized instances.
+            IDictionary<int, Organization> mapFromCache = cache.GetAll(new List<int> { 1, 2 });
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Retrieved organization instances from cache:");
+
+            foreach (Organization org in mapFromCache.Values)
+                Console.WriteLine(">>>     " + org);
+        }
+
+        /// <summary>
+        /// Execute bulk Put and Get operations getting values in portable format, without de-serializing it.
+        /// </summary>
+        /// <param name="grid">Grid instance.</param>
+        private static void PutAllGetAllPortable(IGrid grid)
+        {
+            var cache = grid.Cache<int, Organization>(CacheName);
+
+            // Create new Organizations to store in cache.
+            Organization org1 = new Organization(
+                "Microsoft",
+                new Address("1096 Eddy Street, San Francisco, CA", 94109),
+                OrganizationType.Private,
+                DateTime.Now
+            );
+
+            Organization org2 = new Organization(
+                "Red Cross",
+                new Address("184 Fidler Drive, San Antonio, TX", 78205),
+                OrganizationType.NonProfit,
+                DateTime.Now
+            );
+
+            var map = new Dictionary<int, Organization> { { 1, org1 }, { 2, org2 } };
+
+            // Put created data entries to cache.
+            cache.PutAll(map);
+
+            // Create projection that will get values as portable objects.
+            var portableCache = cache.WithKeepPortable<int, IPortableObject>();
+
+            // Get recently created organizations as portable objects.
+            IDictionary<int, IPortableObject> portableMap =
+                portableCache.GetAll(new List<int> { 1, 2 });
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Retrieved organization names from portable objects:");
+
+            foreach (IPortableObject poratbleOrg in portableMap.Values)
+                Console.WriteLine(">>>     " + poratbleOrg.Field<string>("name"));
+        }
+    }
+}

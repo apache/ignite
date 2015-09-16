@@ -1,0 +1,108 @@
+﻿/*
+ *  Copyright (C) GridGain Systems. All Rights Reserved.
+ *  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+using System;
+using GridGain.Cache;
+using GridGain.Resource;
+using GridGain.Services;
+
+namespace GridGain.Examples.Services
+{
+    /// <summary>
+    /// Service implementation.
+    /// </summary>
+    [Serializable]
+    public class MapService<TK, TV> : IService
+    {
+        /** Injected grid instance. */
+        [InstanceResource] private readonly IGrid _grid;
+
+        /** Cache. */
+        private ICache<TK, TV> _cache;
+
+        /// <summary>
+        /// Initializes this instance before execution.
+        /// </summary>
+        /// <param name="context">Service execution context.</param>
+        public void Init(IServiceContext context)
+        {
+            // Create a new cache for every service deployment.
+            // Note that we use service name as cache name, which allows
+            // for each service deployment to use its own isolated cache.
+            _cache = _grid.GetOrCreateCache<TK, TV>("MapService_" + context.Name);
+
+            Console.WriteLine("Service initialized: " + context.Name);
+        }
+
+        /// <summary>
+        /// Starts execution of this service. This method is automatically invoked whenever an instance of the service
+        /// is deployed on a grid node. Note that service is considered deployed even after it exits the Execute
+        /// method and can be cancelled (or undeployed) only by calling any of the Cancel methods on 
+        /// <see cref="IServices"/> API. Also note that service is not required to exit from Execute method until
+        /// Cancel method was called.
+        /// </summary>
+        /// <param name="context">Service execution context.</param>
+        public void Execute(IServiceContext context)
+        {
+            Console.WriteLine("Service started: " + context.Name);
+        }
+
+        /// <summary>
+        /// Cancels this instance.
+        /// <para/>
+        /// Note that grid cannot guarantee that the service exits from <see cref="IService.Execute"/>
+        /// method whenever <see cref="IService.Cancel"/> is called. It is up to the user to
+        /// make sure that the service code properly reacts to cancellations.
+        /// </summary>
+        /// <param name="context">Service execution context.</param>
+        public void Cancel(IServiceContext context)
+        {
+            Console.WriteLine("Service cancelled: " + context.Name);
+        }
+
+        /// <summary>
+        /// Puts an entry to the map.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
+        public void Put(TK key, TV value)
+        {
+            _cache.Put(key, value);
+        }
+
+        /// <summary>
+        /// Gets an entry from the map.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns>Entry value.</returns>
+        public TV Get(TK key)
+        {
+            return _cache.Get(key);
+        }
+
+        /// <summary>
+        /// Clears the map.
+        /// </summary>
+        public void Clear()
+        {
+            _cache.Clear();
+        }
+
+        /// <summary>
+        /// Gets the size of the map.
+        /// </summary>
+        /// <value>
+        /// The size.
+        /// </value>
+        public int Size
+        {
+            get { return _cache.Size(); }
+        }
+    }
+}
