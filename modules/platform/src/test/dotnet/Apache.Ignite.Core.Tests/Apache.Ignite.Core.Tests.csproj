@@ -96,6 +96,10 @@
     <Compile Include="Compute\TaskResultTest.cs" />
     <Compile Include="Dataload\DataStreamerTest.cs" />
     <Compile Include="EventsTest.cs" />
+    <Compile Include="Examples\Example.cs" />
+    <Compile Include="Examples\ExamplesTest.cs" />
+    <Compile Include="Examples\PathUtil.cs" />
+    <Compile Include="Examples\ProjectFilesTest.cs" />
     <Compile Include="ExceptionsTest.cs" />
     <Compile Include="ExecutableTest.cs" />
     <Compile Include="FutureTest.cs" />
@@ -129,6 +133,14 @@
     <ProjectReference Include="..\..\..\main\dotnet\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
       <Project>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</Project>
       <Name>Apache.Ignite.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\main\dotnet\Examples\Apache.Ignite.Examples.Dll\Apache.Ignite.Examples.Dll.csproj">
+      <Project>{DFB08363-202E-412D-8812-349EF10A8702}</Project>
+      <Name>Apache.Ignite.Examples.Dll</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\main\dotnet\Examples\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj">
+      <Project>{069FA680-3C4D-43A9-B84F-E67513B87827}</Project>
+      <Name>Apache.Ignite.Examples</Name>
     </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite.Core.Tests.TestDll\Apache.Ignite.Core.Tests.TestDll.csproj">
       <Project>{F4A69E2D-908E-4F0F-A794-84D508D60E5F}</Project>
