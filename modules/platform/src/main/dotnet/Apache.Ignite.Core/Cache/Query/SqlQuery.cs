@@ -79,6 +79,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Type.
         /// </summary>
+        [SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
         public string Type { get; set; }
 
         /// <summary>

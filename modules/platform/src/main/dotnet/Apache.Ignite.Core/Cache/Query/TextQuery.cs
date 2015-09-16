@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Cache.Query
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Portable;
 
@@ -73,6 +74,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Type.
         /// </summary>
+        [SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
         public string Type { get; set; }
 
         /// <summary>
