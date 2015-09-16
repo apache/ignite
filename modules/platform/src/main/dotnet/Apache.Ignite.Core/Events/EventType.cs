@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Events
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
@@ -331,7 +332,7 @@ namespace Apache.Ignite.Core.Events
         /// All events indicating an error or failure condition. It is convenient to use when fetching all events 
         /// indicating error or failure.
         /// </summary>
-        public static readonly ICollection<int> EvtsError = new[]
+        private static readonly int[] _evtsError =
         {
             EvtJobTimedout,
             EvtJobFailed,
@@ -342,7 +343,7 @@ namespace Apache.Ignite.Core.Events
             EvtTaskFailed,
             EvtCacheRebalanceStarted,
             EvtCacheRebalanceStopped
-        }.AsReadOnly();
+        };
 
         /// <summary>
         /// All discovery events except for <see cref="EvtNodeMetricsUpdated" />. Subscription to <see 
@@ -350,7 +351,7 @@ namespace Apache.Ignite.Core.Events
         /// necessary. If this event is indeed required you can subscribe to it individually or use <see 
         /// cref="EvtsDiscoveryAll" /> array.
         /// </summary>
-        public static readonly int[] EvtsDiscovery =
+        private static readonly int[] EvtsDiscovery =
         {
             EvtNodeJoined,
             EvtNodeLeft,
@@ -363,7 +364,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All discovery events.
         /// </summary>
-        public static readonly int[] EvtsDiscoveryAll =
+        private static readonly int[] EvtsDiscoveryAll =
         {
             EvtNodeJoined,
             EvtNodeLeft,
@@ -377,7 +378,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite job execution events.
         /// </summary>
-        public static readonly int[] EvtsJobExecution =
+        private static readonly int[] EvtsJobExecution =
         {
             EvtJobMapped,
             EvtJobResulted,
@@ -394,7 +395,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite task execution events.
         /// </summary>
-        public static readonly int[] EvtsTaskExecution =
+        private static readonly int[] EvtsTaskExecution =
         {
             EvtTaskStarted,
             EvtTaskFinished,
@@ -407,7 +408,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache events.
         /// </summary>
-        public static readonly int[] EvtsCache =
+        private static readonly int[] EvtsCache =
         {
             EvtCacheEntryCreated,
             EvtCacheEntryDestroyed,
@@ -424,7 +425,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache rebalance events.
         /// </summary>
-        public static readonly int[] EvtsCacheRebalance =
+        private static readonly int[] EvtsCacheRebalance =
         {
             EvtCacheRebalanceStarted,
             EvtCacheRebalanceStopped,
@@ -438,7 +439,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache lifecycle events.
         /// </summary>
-        public static readonly int[] EvtsCacheLifecycle =
+        private static readonly int[] EvtsCacheLifecycle =
         {
             EvtCacheStarted,
             EvtCacheStopped,
@@ -448,7 +449,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache query events.
         /// </summary>
-        public static readonly int[] EvtsCacheQuery =
+        private static readonly int[] EvtsCacheQuery =
         {
             EvtCacheQueryExecuted,
             EvtCacheQueryObjectRead
@@ -457,7 +458,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All swap space events.
         /// </summary>
-        public static readonly int[] EvtsSwapspace =
+        private static readonly int[] EvtsSwapspace =
         {
             EvtSwapSpaceCleared,
             EvtSwapSpaceDataRemoved,
@@ -469,13 +470,22 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite events.
         /// </summary>
-        public static readonly int[] EvtsAll = GetAllEvents();
+        private static readonly int[] EvtsAll = GetAllEvents();
 
         /// <summary>
         /// All Ignite events (<b>excluding</b> metric update event).
         /// </summary>
-        public static readonly int[] EvtsAllMinusMetricUpdate =
+        private static readonly int[] EvtsAllMinusMetricUpdate =
             EvtsAll.Where(x => x != EvtNodeMetricsUpdated).ToArray();
+
+        /// <summary>
+        /// All events indicating an error or failure condition. It is convenient to use when fetching all events 
+        /// indicating error or failure.
+        /// </summary>
+        public static int[] EvtsError
+        {
+            get { return CloneArray(_evtsError); }
+        }
 
         /// <summary>
         /// Gets all the events.
@@ -486,6 +496,20 @@ namespace Apache.Ignite.Core.Events
             return typeof (EventType).GetFields(BindingFlags.Public | BindingFlags.Static)
                 .Where(x => x.FieldType == typeof (int))
                 .Select(x => (int) x.GetValue(null)).ToArray();
+        }
+
+        /// <summary>
+        /// Clones an array to return to the user.
+        /// </summary>
+        /// <param name="array">The array.</param>
+        /// <returns>Shallow copy of the array.</returns>
+        private static int[] CloneArray(int[] array)
+        {
+            var res = new int[array.Length];
+
+            Array.Copy(array, res, array.Length);
+
+            return res;
         }
     }
 }
