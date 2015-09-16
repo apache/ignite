@@ -403,6 +403,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// Initializer.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static UnmanagedUtils()
         {
             var path = IgniteUtils.UnpackEmbeddedResource(IgniteUtils.FileIgniteJniDll);
