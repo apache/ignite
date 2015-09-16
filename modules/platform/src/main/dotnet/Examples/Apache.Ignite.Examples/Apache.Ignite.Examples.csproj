@@ -37,11 +37,6 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compute\ClosureExample.cs" />
@@ -65,9 +60,9 @@
       <Project>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</Project>
       <Name>Apache.Ignite.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\GridGainExamplesDll\GridGainExamplesDll.csproj">
+    <ProjectReference Include="..\Apache.Ignite.Examples.Dll\Apache.Ignite.Examples.Dll.csproj">
       <Project>{dfb08363-202e-412d-8812-349ef10a8702}</Project>
-      <Name>GridGainExamplesDll</Name>
+      <Name>Apache.Ignite.Examples.Dll</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
