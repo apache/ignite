@@ -225,11 +225,11 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
-        public int WriteString(char* chars, int charCnt, int byteCnt, Encoding enc)
+        public int WriteString(char* chars, int charCnt, int byteCnt, Encoding encoding)
         {
             int curPos = EnsureWriteCapacityAndShift(byteCnt);
 
-            return enc.GetBytes(chars, charCnt, _data + curPos, byteCnt);
+            return encoding.GetBytes(chars, charCnt, _data + curPos, byteCnt);
         }
 
         /** <inheritdoc /> */
