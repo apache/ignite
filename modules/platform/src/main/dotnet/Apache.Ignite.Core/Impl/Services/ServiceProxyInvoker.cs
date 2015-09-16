@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
 
@@ -36,6 +37,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="methodName">Name of the method.</param>
         /// <param name="arguments">Arguments.</param>
         /// <returns>Pair of method return value and invocation exception.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public static KeyValuePair<object, Exception> InvokeServiceMethod(object svc, string methodName, 
             object[] arguments)
         {
