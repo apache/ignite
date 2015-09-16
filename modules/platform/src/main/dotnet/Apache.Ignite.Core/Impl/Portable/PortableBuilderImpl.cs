@@ -112,18 +112,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Constructor.
         /// </summary>
         /// <param name="portables">Portables.</param>
-        /// <param name="obj">Initial portable object.</param>
-        /// <param name="desc">Type descriptor.</param>
-        public PortableBuilderImpl(PortablesImpl portables, PortableUserObject obj,
-            IPortableTypeDescriptor desc) : this(portables, null, obj, desc) 
-        { 
-            // No-op.
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="portables">Portables.</param>
         /// <param name="parent">Parent builder.</param>
         /// <param name="obj">Initial portable object.</param>
         /// <param name="desc">Type descriptor.</param>
