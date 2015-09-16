@@ -249,6 +249,10 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
             assertEquals(ENTRY_CNT - i - 1, cache.localSize(CachePeekMode.ONHEAP));
         }
 
+        log.info("Cache size [onheap=" + cache.localSize(CachePeekMode.ONHEAP) +
+            ", offheap=" + cache.localSize(CachePeekMode.OFFHEAP) +
+            ", swap=" + cache.localSize(CachePeekMode.SWAP) + ']');
+
         // Ensure that part of entries located in off-heap memory and part is swapped.
         assertEquals(0, cache.localSize(CachePeekMode.ONHEAP));
         assertTrue(cache.localSize(CachePeekMode.OFFHEAP) > 0);

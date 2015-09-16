@@ -28,7 +28,7 @@ import org.apache.ignite.internal.portable.PortablePrimitives;
 import org.apache.ignite.internal.portable.PortableReaderExImpl;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.portable.PortableWriterExImpl;
-import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.internal.portable.api.PortableException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;

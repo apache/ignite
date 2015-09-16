@@ -223,7 +223,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
         this.atomicView = atomicView;
         this.name = name;
 
-        log = ctx.gridConfig().getGridLogger().getLogger(getClass());
+        log = ctx.logger(getClass());
     }
 
     /** {@inheritDoc} */

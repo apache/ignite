@@ -232,9 +232,15 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         //putAll
         doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> c) throws IgniteCheckedException {
+                putAll(c, 0, all / 2);
+
+                putAll(c, all / 2 + 1, all - 1);
+            }
+
+            private void putAll(IgniteCache<String, Integer> c, int k1, int k2) {
                 Map<String, Integer> m = new HashMap<>();
 
-                for (int i = 0; i < all; i++)
+                for (int i = k1; i <= k2; i++)
                     m.put(valueOf(i), i);
 
                 c.putAll(m);
@@ -264,6 +270,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         assertEquals(offheapSwap, c.localSize(CachePeekMode.OFFHEAP) + c.localSize(CachePeekMode.SWAP));
 
         info("size: " + c.size());
+        info("heap: " + c.localSize(CachePeekMode.ONHEAP));
         info("offheap: " + c.localSize(CachePeekMode.OFFHEAP));
         info("swap: " + c.localSize(CachePeekMode.SWAP));
 

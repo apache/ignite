@@ -70,7 +70,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
         this.totalCnt = totalCnt;
 
         ctx = cache.context();
-        log = ctx.gridConfig().getGridLogger().getLogger(getClass());
+        log = ctx.logger(getClass());
     }
 
     /** {@inheritDoc} */

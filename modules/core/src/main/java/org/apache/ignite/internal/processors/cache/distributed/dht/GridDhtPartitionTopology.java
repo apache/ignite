@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -50,13 +51,14 @@ public interface GridDhtPartitionTopology {
      *
      * @param exchId Exchange ID.
      * @param exchFut Exchange future.
+     * @throws IgniteInterruptedCheckedException If interrupted.
      */
     public void updateTopologyVersion(
         GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsExchangeFuture exchFut,
         long updateSeq,
         boolean stopping
-    );
+    ) throws IgniteInterruptedCheckedException;
 
     /**
      * Topology version.

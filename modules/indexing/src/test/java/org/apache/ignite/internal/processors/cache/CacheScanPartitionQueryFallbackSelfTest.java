@@ -26,13 +26,19 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -48,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -67,7 +74,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     private static final int GRID_CNT = 3;
 
     /** Keys count. */
-    private static final int KEYS_CNT = 5000;
+    private static final int KEYS_CNT = 50 * RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
 
     /** Ip finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -139,7 +146,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             CacheQuery<Map.Entry<Integer, Integer>> qry = cache.context().queries().createScanQuery(null, part, false);
 
-            doTestScanQuery(qry);
+            doTestScanQuery(qry, part);
         }
         finally {
             stopAllGrids();
@@ -169,7 +176,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             CacheQuery<Map.Entry<Integer, Integer>> qry = cache.context().queries().createScanQuery(null, part, false);
 
-            doTestScanQuery(qry);
+            doTestScanQuery(qry, part);
         }
         finally {
             stopAllGrids();
@@ -191,7 +198,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
         try {
             Ignite ignite = startGrids(GRID_CNT);
 
-            final IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
+            fillCache(ignite);
 
             final AtomicBoolean done = new AtomicBoolean(false);
 
@@ -204,6 +211,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
                         while (!done.get()) {
                             startGrid(id);
+
                             Thread.sleep(3000);
 
                             stopGrid(id);
@@ -233,15 +241,10 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
                             int part = tup.get1();
 
-                            try {
-                                CacheQuery<Map.Entry<Integer, Integer>> qry = cache.context().queries().createScanQuery(
-                                    null, part, false);
+                            CacheQuery<Map.Entry<Integer, Integer>> qry = cache.context().queries().createScanQuery(
+                                null, part, false);
 
-                                doTestScanQuery(qry);
-                            }
-                            catch (ClusterGroupEmptyCheckedException e) {
-                                log.warning("Invalid partition: " + part, e);
-                            }
+                            doTestScanQuery(qry, part);
                         }
 
                         return null;
@@ -254,6 +257,74 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             fut2.get();
             fut1.get();
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Scan should activate fallback mechanism when new nodes join topology and rebalancing happens in parallel with
+     * scan query.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testScanFallbackOnRebalancingCursor() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1239");
+
+        cacheMode = CacheMode.PARTITIONED;
+        clientMode = false;
+        backups = 1;
+        commSpiFactory = new TestFallbackOnRebalancingCommunicationSpiFactory();
+
+        try {
+            Ignite ignite = startGrids(GRID_CNT);
+
+            fillCache(ignite);
+
+            final AtomicBoolean done = new AtomicBoolean(false);
+
+            IgniteInternalFuture fut1 = multithreadedAsync(
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        for (int i = 0; i < 5; i++) {
+                            startGrid(GRID_CNT + i);
+
+                            U.sleep(500);
+                        }
+
+                        done.set(true);
+
+                        return null;
+                    }
+                }, 1);
+
+            final AtomicInteger nodeIdx = new AtomicInteger();
+
+            IgniteInternalFuture fut2 = multithreadedAsync(
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        int nodeId = nodeIdx.getAndIncrement();
+
+                        IgniteCache<Integer, Integer> cache = grid(nodeId).cache(null);
+
+                        while (!done.get()) {
+                            int part = ThreadLocalRandom.current().nextInt(ignite(nodeId).affinity(null).partitions());
+
+                            QueryCursor<Cache.Entry<Integer, Integer>> cur =
+                                cache.query(new ScanQuery<Integer, Integer>(part));
+
+                            U.debug(log, "Running query [node=" + nodeId + ", part=" + part + ']');
+
+                            doTestScanQueryCursor(cur, part);
+                        }
+
+                        return null;
+                    }
+                }, GRID_CNT);
+
+            fut1.get();
+            fut2.get();
         }
         finally {
             stopAllGrids();
@@ -324,7 +395,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
                     }
                 };
 
-                int part;
+                Integer part = null;
                 CacheQuery<Map.Entry<Integer, Integer>> qry = null;
 
                 if (test.get()) {
@@ -336,7 +407,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
                 new Thread(run).start();
 
                 if (test.get())
-                    doTestScanQuery(qry);
+                    doTestScanQuery(qry, part);
                 else
                     latch.await();
             }
@@ -374,20 +445,40 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     /**
      * @param qry Query.
      */
-    protected void doTestScanQuery(
-        CacheQuery<Map.Entry<Integer, Integer>> qry) throws IgniteCheckedException {
+    protected void doTestScanQuery(CacheQuery<Map.Entry<Integer, Integer>> qry, int part)
+        throws IgniteCheckedException {
         CacheQueryFuture<Map.Entry<Integer, Integer>> fut = qry.execute();
 
-        Collection<Map.Entry<Integer, Integer>> expEntries = fut.get();
+        Collection<Map.Entry<Integer, Integer>> qryEntries = fut.get();
 
-        for (Map.Entry<Integer, Integer> e : expEntries) {
-            Map<Integer, Integer> map = entries.get(((GridCacheQueryAdapter)qry).partition());
+        Map<Integer, Integer> map = entries.get(part);
 
-            if (map == null)
-                assertTrue(expEntries.isEmpty());
-            else
-                assertEquals(map.get(e.getKey()), e.getValue());
+        for (Map.Entry<Integer, Integer> e : qryEntries)
+            assertEquals(map.get(e.getKey()), e.getValue());
+
+        assertEquals("Invalid number of entries for partition: " + part, map.size(), qryEntries.size());
+    }
+
+    /**
+     * @param cur Query cursor.
+     * @param part Partition number.
+     */
+    protected void doTestScanQueryCursor(
+        QueryCursor<Cache.Entry<Integer, Integer>> cur, int part) throws IgniteCheckedException {
+
+        Map<Integer, Integer> map = entries.get(part);
+
+        assert map != null;
+
+        int cnt = 0;
+
+        for (Cache.Entry<Integer, Integer> e : cur) {
+            assertEquals(map.get(e.getKey()), e.getValue());
+
+            cnt++;
         }
+
+        assertEquals("Invalid number of entries for partition: " + part, map.size(), cnt);
     }
 
     /**
