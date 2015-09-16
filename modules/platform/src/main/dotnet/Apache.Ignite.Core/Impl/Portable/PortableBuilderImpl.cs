@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -66,6 +67,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Static initializer.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static PortableBuilderImpl()
         {
             TypeIds = new Dictionary<Type, int>();

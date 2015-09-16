@@ -407,6 +407,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Static initializer.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static PlatformMemoryUtils()
         {
             Type type = typeof(Buffer);
