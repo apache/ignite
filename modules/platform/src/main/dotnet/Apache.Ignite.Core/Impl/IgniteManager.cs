@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -185,10 +186,10 @@ namespace Apache.Ignite.Core.Impl
 
             // JvmInitialMemoryMB / JvmMaxMemoryMB have lower priority than CMD_JVM_OPT
             if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMinMemJava, StringComparison.OrdinalIgnoreCase)))
-                jvmOpts.Add(string.Format("{0}{1}m", CmdJvmMinMemJava, cfg.JvmInitialMemoryMb));
+                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMinMemJava, cfg.JvmInitialMemoryMb));
 
             if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMaxMemJava, StringComparison.OrdinalIgnoreCase)))
-                jvmOpts.Add(string.Format("{0}{1}m", CmdJvmMaxMemJava, cfg.JvmMaxMemoryMb));
+                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMaxMemJava, cfg.JvmMaxMemoryMb));
 
             return jvmOpts;
         }
@@ -238,12 +239,14 @@ namespace Apache.Ignite.Core.Impl
             if (string.IsNullOrWhiteSpace(home))
                 home = Environment.GetEnvironmentVariable(EnvIgniteHome);
             else if (!IsIgniteHome(new DirectoryInfo(home)))
-                throw new IgniteException(string.Format("IgniteConfiguration.IgniteHome is not valid: '{0}'", home));
+                throw new IgniteException(string.Format(CultureInfo.InvariantCulture, 
+                    "IgniteConfiguration.IgniteHome is not valid: '{0}'", home));
 
             if (string.IsNullOrWhiteSpace(home))
                 home = ResolveIgniteHome();
             else if (!IsIgniteHome(new DirectoryInfo(home)))
-                throw new IgniteException(string.Format("{0} is not valid: '{1}'", EnvIgniteHome, home));
+                throw new IgniteException(string.Format(CultureInfo.InvariantCulture, 
+                    "{0} is not valid: '{1}'", EnvIgniteHome, home));
 
             return home;
         }
