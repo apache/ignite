@@ -17,9 +17,12 @@
 
 namespace Apache.Ignite.Core.Impl.Common
 {
+    using System.Diagnostics.CodeAnalysis;
+
     /// <summary>
     /// Future types.
     /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1008:EnumsShouldHaveZeroValue", Justification = "Interoperability")]
     public enum FutureType
     {
         /** Future type: byte. */
