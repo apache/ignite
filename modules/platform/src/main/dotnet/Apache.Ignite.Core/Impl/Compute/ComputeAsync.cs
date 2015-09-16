@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Threading;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
@@ -76,8 +77,9 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             if (fut0 == null)
                 throw new InvalidOperationException(
-                    string.Format("Requested future type {0} is incompatible with current future type {1}",
-                        typeof(IFuture<TResult>), fut.GetType()));
+                    string.Format(CultureInfo.InvariantCulture,
+                        "Requested future type {0} is incompatible with current future type {1}",
+                        typeof (IFuture<TResult>), fut.GetType()));
 
             _curFut.Value = null;
 
