@@ -7,8 +7,8 @@
     <ProjectGuid>{DFB08363-202E-412D-8812-349EF10A8702}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>GridGain.Examples</RootNamespace>
-    <AssemblyName>GridGainExamplesDll</AssemblyName>
+    <RootNamespace>Apache.Ignite.Examples.Dll</RootNamespace>
+    <AssemblyName>Apache.Ignite.Examples.Dll</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
