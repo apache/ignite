@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
@@ -111,13 +112,13 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 if (Error == null)
                 {
-                    writer.WriteString(string.Format(
+                    writer.WriteString(string.Format(CultureInfo.InvariantCulture,
                     "CacheEntryProcessor completed with error, but result serialization failed [errType={0}, " +
                     "err={1}, serializationErrMsg={2}]", marshErr.GetType().Name, marshErr, marshErr.Message));
                 }
                 else
                 {
-                    writer.WriteString(string.Format(
+                    writer.WriteString(string.Format(CultureInfo.InvariantCulture,
                     "CacheEntryProcessor completed with error, and error serialization failed [errType={0}, " +
                     "err={1}, serializationErrMsg={2}]", marshErr.GetType().Name, marshErr, marshErr.Message));
                 }
