@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Linq;
     using System.Reflection;
 
@@ -77,8 +78,8 @@ namespace Apache.Ignite.Core.Impl.Services
 
             if (methods.Length == 0)
                 throw new InvalidOperationException(
-                    string.Format("Failed to invoke proxy: there is no method '{0}' in type '{1}'", 
-                    methodName, svcType));
+                    string.Format(CultureInfo.InvariantCulture,
+                        "Failed to invoke proxy: there is no method '{0}' in type '{1}'", methodName, svcType));
 
             // 2) There is more than 1 method with specified name - resolve with argument types.
             methods = methods.Where(m => AreMethodArgsCompatible(arguments, m.GetParameters())).ToArray();
@@ -95,12 +96,14 @@ namespace Apache.Ignite.Core.Impl.Services
 
             if (methods.Length == 0)
                 throw new InvalidOperationException(
-                    string.Format("Failed to invoke proxy: there is no method '{0}' in type '{1}' with {2} arguments",
-                    methodName, svcType, argsString));
+                    string.Format(CultureInfo.InvariantCulture,
+                        "Failed to invoke proxy: there is no method '{0}' in type '{1}' with {2} arguments",
+                        methodName, svcType, argsString));
 
             throw new InvalidOperationException(
-                string.Format("Failed to invoke proxy: there are {2} methods '{0}' in type '{1}' with {3} " +
-                              "arguments, can't resolve ambiguity.", methodName, svcType, methods.Length, argsString));
+                string.Format(CultureInfo.InvariantCulture,
+                    "Failed to invoke proxy: there are {2} methods '{0}' in type '{1}' with {3} " +
+                    "arguments, can't resolve ambiguity.", methodName, svcType, methods.Length, argsString));
         }
         
         /// <summary>
