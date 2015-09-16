@@ -119,154 +119,6 @@
     <Modules>
      <Module Name="apache.ignite.core.dll">
       <Namespaces>
-       <Namespace Name="Apache.Ignite.Core">
-        <Types>
-         <Type Name="Ignition">
-          <Members>
-           <Member Name="#.cctor()">
-            <Messages>
-             <Message TypeName="InitializeReferenceTypeStaticFieldsInline" Category="Microsoft.Performance" CheckId="CA1810" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'Ignition'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Cache">
-        <Types>
-         <Type Name="ICache`2">
-          <Members>
-           <Member Name="#GetMetrics()">
-            <Messages>
-             <Message TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024" Created="2015-09-16 09:14:44Z">
-              <Issue Certainty="50">
-               <Item>'ICache&lt;TK, TV&gt;.GetMetrics()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Cache.Expiry">
-        <Types>
-         <Type Name="IExpiryPolicy">
-          <Members>
-           <Member Name="#GetExpiryForAccess()">
-            <Messages>
-             <Message TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024" Created="2015-09-16 09:14:44Z">
-              <Issue Certainty="50">
-               <Item>'IExpiryPolicy.GetExpiryForAccess()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#GetExpiryForCreate()">
-            <Messages>
-             <Message TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024" Created="2015-09-16 09:14:44Z">
-              <Issue Certainty="50">
-               <Item>'IExpiryPolicy.GetExpiryForCreate()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#GetExpiryForUpdate()">
-            <Messages>
-             <Message TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024" Created="2015-09-16 09:14:44Z">
-              <Issue Certainty="50">
-               <Item>'IExpiryPolicy.GetExpiryForUpdate()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Cache.Query">
-        <Types>
-         <Type Name="IQueryCursor`1">
-          <Members>
-           <Member Name="#GetAll()">
-            <Messages>
-             <Message TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024" Created="2015-09-16 09:14:44Z">
-              <Issue Certainty="50">
-               <Item>'IQueryCursor&lt;T&gt;.GetAll()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="SqlQuery">
-          <Members>
-           <Member Name="#Type">
-            <Messages>
-             <Message TypeName="PropertyNamesShouldNotMatchGetMethods" Category="Microsoft.Naming" CheckId="CA1721" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue Name="BaseType">
-               <Item>'SqlQuery.Type'</Item>
-               <Item>'object.GetType()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="TextQuery">
-          <Members>
-           <Member Name="#Type">
-            <Messages>
-             <Message TypeName="PropertyNamesShouldNotMatchGetMethods" Category="Microsoft.Naming" CheckId="CA1721" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue Name="BaseType">
-               <Item>'TextQuery.Type'</Item>
-               <Item>'object.GetType()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Cache.Query.Continuous">
-        <Types>
-         <Type Name="IContinuousQueryHandle`1">
-          <Members>
-           <Member Name="#GetInitialQueryCursor()">
-            <Messages>
-             <Message TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024" Created="2015-09-16 09:14:44Z">
-              <Issue Certainty="50">
-               <Item>'IContinuousQueryHandle&lt;T&gt;.GetInitialQueryCursor()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Cache.Store">
-        <Types>
-         <Type Name="CacheParallelLoadStoreAdapter">
-          <Members>
-           <Member Name="#GetInputData()">
-            <Messages>
-             <Message TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024" Created="2015-09-16 09:14:44Z">
-              <Issue Certainty="50">
-               <Item>'CacheParallelLoadStoreAdapter.GetInputData()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
        <Namespace Name="Apache.Ignite.Core.Common">
         <Types>
          <Type Name="IgniteGuid">
@@ -442,30 +294,8 @@
        </Namespace>
        <Namespace Name="Apache.Ignite.Core.Impl">
         <Types>
-         <Type Name="ExceptionUtils">
-          <Members>
-           <Member Name="#.cctor()">
-            <Messages>
-             <Message TypeName="InitializeReferenceTypeStaticFieldsInline" Category="Microsoft.Performance" CheckId="CA1810" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'ExceptionUtils'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
          <Type Name="IgniteManager">
           <Members>
-           <Member Name="#.cctor()">
-            <Messages>
-             <Message TypeName="InitializeReferenceTypeStaticFieldsInline" Category="Microsoft.Performance" CheckId="CA1810" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'IgniteManager'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
            <Member Name="#AppendHomeClasspath(System.String,System.Boolean,System.Text.StringBuilder)">
             <Messages>
              <Message Id="System.String.EndsWith(System.String)" TypeName="SpecifyStringComparison" Category="Microsoft.Globalization" CheckId="CA1307" Created="2015-09-16 09:14:44Z">
@@ -484,79 +314,6 @@
                <Item>'IgniteManager.CreateClasspath(string, IgniteConfiguration, bool)'</Item>
                <Item>'string.EndsWith(string)'</Item>
                <Item>'string.EndsWith(string, StringComparison)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#GetIgniteHome(Apache.Ignite.Core.IgniteConfiguration)">
-            <Messages>
-             <Message Id="System.String.Format(System.String,System.Object)" TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'string.Format(string, object)'</Item>
-               <Item>'IgniteManager.GetIgniteHome(IgniteConfiguration)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-             <Message Id="System.String.Format(System.String,System.Object,System.Object)" TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'string.Format(string, object, object)'</Item>
-               <Item>'IgniteManager.GetIgniteHome(IgniteConfiguration)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#GetMergedJvmOptions(Apache.Ignite.Core.IgniteConfiguration)">
-            <Messages>
-             <Message Id="System.String.Format(System.String,System.Object,System.Object)" TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'string.Format(string, object, object)'</Item>
-               <Item>'IgniteManager.GetMergedJvmOptions(IgniteConfiguration)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-              <Issue>
-               <Item>'string.Format(string, object, object)'</Item>
-               <Item>'IgniteManager.GetMergedJvmOptions(IgniteConfiguration)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="IgniteUtils">
-          <Members>
-           <Member Name="#LoadJvmDll(System.String)">
-            <Messages>
-             <Message Id="System.String.Format(System.String,System.Object)" TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'string.Format(string, object)'</Item>
-               <Item>'IgniteUtils.LoadJvmDll(string)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-             <Message Id="System.String.Format(System.String,System.Object,System.Object)" TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'string.Format(string, object, object)'</Item>
-               <Item>'IgniteUtils.LoadJvmDll(string)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-              <Issue>
-               <Item>'string.Format(string, object, object)'</Item>
-               <Item>'IgniteUtils.LoadJvmDll(string)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-              <Issue>
-               <Item>'string.Format(string, object, object)'</Item>
-               <Item>'IgniteUtils.LoadJvmDll(string)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-             <Message Id="System.String.Format(System.String,System.Object,System.Object,System.Object)" TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'string.Format(string, object, object, object)'</Item>
-               <Item>'IgniteUtils.LoadJvmDll(string)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
               </Issue>
              </Message>
             </Messages>
@@ -604,62 +361,6 @@
          </Type>
         </Types>
        </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Impl.Common">
-        <Types>
-         <Type Name="DelegateTypeDescriptor">
-          <Members>
-           <Member Name="#ThrowIfMultipleInterfaces(System.Object,System.Type,System.Type)">
-            <Messages>
-             <Message Id="System.String.Format(System.String,System.Object,System.Object)" TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'string.Format(string, object, object)'</Item>
-               <Item>'DelegateTypeDescriptor.ThrowIfMultipleInterfaces(object, Type, Type)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="IgniteArgumentCheck">
-          <Members>
-           <Member Name="#Ensure(System.Boolean,System.String,System.String)">
-            <Messages>
-             <Message Id="System.String.Format(System.String,System.Object,System.Object)" TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'string.Format(string, object, object)'</Item>
-               <Item>'IgniteArgumentCheck.Ensure(bool, string, string)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#NotNullOrEmpty(System.String,System.String)">
-            <Messages>
-             <Message Id="System.String.Format(System.String,System.Object)" TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'string.Format(string, object)'</Item>
-               <Item>'IgniteArgumentCheck.NotNullOrEmpty(string, string)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#NotNullOrEmpty`1(System.Collections.Generic.ICollection`1&lt;!!0&gt;,System.String)">
-            <Messages>
-             <Message Id="System.String.Format(System.String,System.Object)" TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'string.Format(string, object)'</Item>
-               <Item>'IgniteArgumentCheck.NotNullOrEmpty&lt;T&gt;(ICollection&lt;T&gt;, string)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
        <Namespace Name="Apache.Ignite.Core.Impl.Compute">
         <Types>
          <Type Name="ComputeAsync">
@@ -679,100 +380,8 @@
          </Type>
         </Types>
        </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Impl.Handle">
-        <Types>
-         <Type Name="HandleRegistry">
-          <Members>
-           <Member Name="#GetItems()">
-            <Messages>
-             <Message TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024" Created="2015-09-16 09:14:44Z">
-              <Issue Certainty="50">
-               <Item>'HandleRegistry.GetItems()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Impl.Memory">
-        <Types>
-         <Type Name="PlatformMemoryStream">
-          <Members>
-           <Member Name="#WriteInt(System.Int32,System.Int32)">
-            <Messages>
-             <Message Id="writePos+4" TypeName="OperationsShouldNotOverflow" Category="Microsoft.Usage" CheckId="CA2233" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>writePos+4</Item>
-               <Item>'PlatformMemoryStream.WriteInt(int, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#WriteString(System.Char*,System.Int32,System.Int32,System.Text.Encoding)">
-            <Messages>
-             <Message Id="3#" TypeName="ParameterNamesShouldMatchBaseDeclaration" Category="Microsoft.Naming" CheckId="CA1725" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'PlatformMemoryStream.WriteString(char*, int, int, Encoding)'</Item>
-               <Item>'enc'</Item>
-               <Item>'encoding'</Item>
-               <Item>'IPortableStream.WriteString(char*, int, int, Encoding)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="PlatformMemoryUtils">
-          <Members>
-           <Member Name="#.cctor()">
-            <Messages>
-             <Message TypeName="InitializeReferenceTypeStaticFieldsInline" Category="Microsoft.Performance" CheckId="CA1810" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'PlatformMemoryUtils'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#Flags(System.Int64,System.Int32)">
-            <Messages>
-             <Message Id="1#" TypeName="ParameterNamesShouldNotMatchMemberNames" Category="Microsoft.Naming" CheckId="CA1719" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'flags'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#MemcpyInverted">
-            <Messages>
-             <Message TypeName="UseLiteralsWhereAppropriate" Category="Microsoft.Performance" CheckId="CA1802" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'PlatformMemoryUtils.MemcpyInverted'</Item>
-               <Item>1</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
        <Namespace Name="Apache.Ignite.Core.Impl.Portable">
         <Types>
-         <Type Name="PortableBuilderImpl">
-          <Members>
-           <Member Name="#.cctor()">
-            <Messages>
-             <Message TypeName="InitializeReferenceTypeStaticFieldsInline" Category="Microsoft.Performance" CheckId="CA1810" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'PortableBuilderImpl'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
          <Type Name="PortableMarshaller">
           <Members>
            <Member Name="#GetTypeName(System.Type)">
@@ -782,19 +391,6 @@
                <Item>'string.Format(string, object, object)'</Item>
                <Item>'PortableMarshaller.GetTypeName(Type)'</Item>
                <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="PortableSystemHandlers">
-          <Members>
-           <Member Name="#.cctor()">
-            <Messages>
-             <Message TypeName="InitializeReferenceTypeStaticFieldsInline" Category="Microsoft.Performance" CheckId="CA1810" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'PortableSystemHandlers'</Item>
               </Issue>
              </Message>
             </Messages>
@@ -836,17 +432,6 @@
          </Type>
          <Type Name="TypeResolver">
           <Members>
-           <Member Name="#ResolveGenericType(System.String,System.String,System.Collections.Generic.ICollection`1&lt;System.Reflection.Assembly&gt;)">
-            <Messages>
-             <Message Id="System.String.Format(System.String,System.Object,System.Object)" TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'string.Format(string, object, object)'</Item>
-               <Item>'TypeResolver.ResolveGenericType(string, string, ICollection&lt;Assembly&gt;)'</Item>
-               <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
            <Member Name="#TrimBrackets(System.String)">
             <Messages>
              <Message Id="System.String.EndsWith(System.String)" TypeName="SpecifyStringComparison" Category="Microsoft.Globalization" CheckId="CA1307" Created="2015-09-16 09:14:44Z">
@@ -861,33 +446,6 @@
                <Item>'TypeResolver.TrimBrackets(string)'</Item>
                <Item>'string.StartsWith(string)'</Item>
                <Item>'string.StartsWith(string, StringComparison)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Impl.Portable.IO">
-        <Types>
-         <Type Name="PortableAbstractStream">
-          <Members>
-           <Member Name="#.cctor()">
-            <Messages>
-             <Message TypeName="InitializeReferenceTypeStaticFieldsInline" Category="Microsoft.Performance" CheckId="CA1810" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'PortableAbstractStream'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#MemcpyInverted">
-            <Messages>
-             <Message TypeName="UseLiteralsWhereAppropriate" Category="Microsoft.Performance" CheckId="CA1802" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'PortableAbstractStream.MemcpyInverted'</Item>
-               <Item>1</Item>
               </Issue>
              </Message>
             </Messages>
@@ -952,15 +510,6 @@
         <Types>
          <Type Name="UnmanagedUtils">
           <Members>
-           <Member Name="#.cctor()">
-            <Messages>
-             <Message TypeName="InitializeReferenceTypeStaticFieldsInline" Category="Microsoft.Performance" CheckId="CA1810" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'UnmanagedUtils'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
            <Member Name="#CreateDelegate`1(System.String)">
             <Messages>
              <Message Id="System.String.Format(System.String,System.Object,System.Object)" TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305" Created="2015-09-16 09:14:44Z">
@@ -976,72 +525,17 @@
          </Type>
         </Types>
        </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Services">
-        <Types>
-         <Type Name="IServices">
-          <Members>
-           <Member Name="#GetServiceDescriptors()">
-            <Messages>
-             <Message TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024" Created="2015-09-16 09:14:44Z">
-              <Issue Certainty="50">
-               <Item>'IServices.GetServiceDescriptors()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Transactions">
-        <Types>
-         <Type Name="ITransactions">
-          <Members>
-           <Member Name="#GetMetrics()">
-            <Messages>
-             <Message TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024" Created="2015-09-16 09:14:44Z">
-              <Issue Certainty="50">
-               <Item>'ITransactions.GetMetrics()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
       </Namespaces>
      </Module>
     </Modules>
    </Target>
   </Targets>
   <Rules>
-   <Rule TypeName="InitializeReferenceTypeStaticFieldsInline" Category="Microsoft.Performance" CheckId="CA1810">
-    <Resolution Name="Default">Initialize all static fields in {0} when those fields are declared and remove the explicit static constructor.</Resolution>
-   </Rule>
-   <Rule TypeName="OperationsShouldNotOverflow" Category="Microsoft.Usage" CheckId="CA2233">
-    <Resolution Name="Default">Correct the potential overflow in the operation '{0}' in {1}.</Resolution>
-   </Rule>
-   <Rule TypeName="ParameterNamesShouldMatchBaseDeclaration" Category="Microsoft.Naming" CheckId="CA1725">
-    <Resolution Name="Default">In member {0}, change parameter name {1} to {2} in order to match the identifier as it has been declared in {3}.</Resolution>
-   </Rule>
-   <Rule TypeName="ParameterNamesShouldNotMatchMemberNames" Category="Microsoft.Naming" CheckId="CA1719">
-    <Resolution Name="Default">Change either member or parameter name {0} so that one differs from the other.</Resolution>
-   </Rule>
-   <Rule TypeName="PropertyNamesShouldNotMatchGetMethods" Category="Microsoft.Naming" CheckId="CA1721">
-    <Resolution Name="BaseType">The property name {0} is confusing given the existence of inherited method {1}. Rename or remove this property.</Resolution>
-   </Rule>
    <Rule TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305">
     <Resolution Name="Default">Because the behavior of {0} could vary based on the current user's locale settings, replace this call in {1} with a call to {2}. If the result of {2} will be displayed to the user, specify 'CultureInfo.CurrentCulture' as the 'IFormatProvider' parameter. Otherwise, if the result will be stored and accessed by software, such as when it is persisted to disk or to a database, specify 'CultureInfo.InvariantCulture'.</Resolution>
    </Rule>
    <Rule TypeName="SpecifyStringComparison" Category="Microsoft.Globalization" CheckId="CA1307">
     <Resolution Name="Default">{0} makes a call to {1} that does not explicitly provide a StringComparison. This should be replaced with a call to {2}.</Resolution>
-   </Rule>
-   <Rule TypeName="UseLiteralsWhereAppropriate" Category="Microsoft.Performance" CheckId="CA1802">
-    <Resolution Name="Default">Field {0} is declared as 'static readonly' but is initialized with a constant value '{1}'. Mark this field as 'const' instead.</Resolution>
-   </Rule>
-   <Rule TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024">
-    <Resolution Name="Default">Change {0} to a property if appropriate.</Resolution>
    </Rule>
   </Rules>
  </FxCopReport>
