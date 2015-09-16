@@ -21,7 +21,8 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Threading;
+    using Apache.Ignite.Core.Tests.Process;
+    using Apache.Ignite.Examples.Dll.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -76,23 +77,29 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             Assert.IsTrue(File.Exists(example.SpringConfigUrl));
 
-            var gridConfig = new GridConfiguration {SpringConfigUrl = example.SpringConfigUrl};
+            var gridConfig = new IgniteConfiguration {SpringConfigUrl = example.SpringConfigUrl};
 
             // Try with multiple standalone nodes
             for (var i = 0; i < 2; i++)
             {
                 // Start a grid to monitor topology
                 // Stop it after topology check so we don't interfere with example
-                GridFactory.ClientMode = false;
+                Ignition.ClientMode = false;
 
-                using (var grid = GridFactory.Start(gridConfig))
+                using (var ignite = Ignition.Start(gridConfig))
                 {
-                    GridProcess.Start(example.SpringConfigUrl, example.NeedsTestDll);
+                    var args = new List<string> {"-springConfigUrl=" + example.SpringConfigUrl};
 
-                    Assert.IsTrue(WaitTopology(grid, i + 2, 30000));
+                    if (example.NeedsTestDll)
+                        args.Add(" -assembly=" + typeof(AverageSalaryJob).Assembly.Location);
+
+                    // ReSharper disable once UnusedVariable
+                    var proc = new IgniteProcess(args.ToArray());
+
+                    Assert.IsTrue(ignite.WaitTopology(i + 2, 30000));
                 }
 
-                GridFactory.ClientMode = clientMode;
+                Ignition.ClientMode = clientMode;
                 example.Run();
             }
         }
@@ -114,8 +121,8 @@ namespace Apache.Ignite.Core.Tests.Examples
         [TearDown]
         public void TearDown()
         {
-            GridFactory.ClientMode = false;
-            GridProcess.KillAll();
+            Ignition.ClientMode = false;
+            IgniteProcess.KillAll();
         }
 
         /// <summary>
@@ -124,24 +131,6 @@ namespace Apache.Ignite.Core.Tests.Examples
         public IEnumerable<Example> TestCases
         {
             get { return Example.All; }
-        }
-
-        /// <summary>
-        /// Wait for particular topology size.
-        /// </summary>
-        private static bool WaitTopology(IGrid grid, int size, int timeout)
-        {
-            while (grid.Cluster.Nodes().Count != size)
-            {
-                if (timeout <= 0)
-                    return false;
-                
-                Thread.Sleep(100);
-
-                timeout -= 100;
-            }
-
-            return true;
         }
     }
 }
