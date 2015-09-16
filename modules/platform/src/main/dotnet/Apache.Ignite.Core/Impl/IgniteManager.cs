@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="cfg">Configuration.</param>
         /// <param name="cbs">Callbacks.</param>
         /// <returns>Context.</returns>
-        internal static void* GetContext(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
+        internal static void CreateJvmContext(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
         {
             lock (SyncRoot)
             {
@@ -106,8 +106,6 @@ namespace Apache.Ignite.Core.Impl
                     _jvmCfg = jvmCfg;
                     _mem = new PlatformMemoryManager(1024);
                 }
-
-                return ctx;
             }
         }
         
