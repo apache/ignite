@@ -37,6 +37,8 @@ namespace Apache.Ignite.Core.Cache.Query
         /// result is relatively small and will not cause memory utilization issues.
         /// </summary>
         /// <returns>List containing all query results.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", 
+            Justification = "Expensive operation.")]
         IList<T> GetAll();
     }
 }
