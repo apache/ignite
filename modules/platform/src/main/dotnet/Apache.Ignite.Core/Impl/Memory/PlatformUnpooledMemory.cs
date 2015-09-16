@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         public override void Reallocate(int cap)
         {
             // Try doubling capacity to avoid excessive allocations.
-            int doubledCap = ((PlatformMemoryUtils.Capacity(Pointer) + 16) << 1) - 16;
+            int doubledCap = ((PlatformMemoryUtils.GetCapacity(Pointer) + 16) << 1) - 16;
 
             if (doubledCap > cap)
                 cap = doubledCap;

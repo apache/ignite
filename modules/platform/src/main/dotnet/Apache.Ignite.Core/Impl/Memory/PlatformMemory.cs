@@ -53,20 +53,20 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public long Data
         {
-            get { return PlatformMemoryUtils.Data(_memPtr); }
+            get { return PlatformMemoryUtils.GetData(_memPtr); }
         }
 
         /** <inheritdoc /> */
         public int Capacity
         {
-            get { return PlatformMemoryUtils.Capacity(_memPtr); }
+            get { return PlatformMemoryUtils.GetCapacity(_memPtr); }
         }
 
         /** <inheritdoc /> */
         public int Length
         {
-            get { return PlatformMemoryUtils.Length(_memPtr); }
-            set { PlatformMemoryUtils.Length(_memPtr, value); }
+            get { return PlatformMemoryUtils.GetLength(_memPtr); }
+            set { PlatformMemoryUtils.SetLength(_memPtr, value); }
         }
 
         /** <inheritdoc /> */

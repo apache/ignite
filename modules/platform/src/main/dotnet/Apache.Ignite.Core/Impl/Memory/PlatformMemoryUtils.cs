@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>Data pointer.</returns>
-        public static long Data(long memPtr)
+        public static long GetData(long memPtr)
         {
             return *((long*)memPtr);
         }
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>CalculateCapacity.</returns>
-        public static int Capacity(long memPtr) 
+        public static int GetCapacity(long memPtr) 
         {
             return *((int*)(memPtr + MemHdrOffCap));
         }
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="cap">CalculateCapacity.</param>
-        public static void Capacity(long memPtr, int cap) 
+        public static void SetCapacity(long memPtr, int cap) 
         {
             *((int*)(memPtr + MemHdrOffCap)) = cap;
         }
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>Length.</returns>
-        public static int Length(long memPtr) 
+        public static int GetLength(long memPtr) 
         {
             return *((int*)(memPtr + MemHdrOffLen));
         }
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="len">Length.</param>
-        public static void Length(long memPtr, int len) 
+        public static void SetLength(long memPtr, int len) 
         {
             *((int*)(memPtr + MemHdrOffLen)) = len;
         }
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>Flags.</returns>
-        public static int Flags(long memPtr) 
+        public static int GetFlags(long memPtr) 
         {
             return *((int*)(memPtr + MemHdrOffFlags));
         }
@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="flags">Flags.</param>
-        public static void Flags(long memPtr, int flags) 
+        public static void SetFlags(long memPtr, int flags) 
         {
             *((int*)(memPtr + MemHdrOffFlags)) = flags;
         }
@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns><c>True</c> if owned by Java.</returns>
         public static bool IsExternal(long memPtr) 
         {
-            return IsExternal(Flags(memPtr));
+            return IsExternal(GetFlags(memPtr));
         }
 
         /// <summary>
@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns><c>True</c> if pooled.</returns>
         public static bool IsPooled(long memPtr) 
         {
-            return IsPooled(Flags(memPtr));
+            return IsPooled(GetFlags(memPtr));
         }
 
         /// <summary>
@@ -184,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns><c>True</c> if acquired.</returns>
         public static bool IsAcquired(long memPtr)
         {
-            return IsAcquired(Flags(memPtr));
+            return IsAcquired(GetFlags(memPtr));
         }
 
         /// <summary>
@@ -228,7 +228,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns></returns>
         public static void ReallocateUnpooled(long memPtr, int cap)
         {
-            long dataPtr = Data(memPtr);
+            long dataPtr = GetData(memPtr);
 
             long newDataPtr = Marshal.ReAllocHGlobal((IntPtr)dataPtr, (IntPtr)cap).ToInt64();
 
@@ -244,7 +244,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="memPtr">Memory pointer.</param>
         public static void ReleaseUnpooled(long memPtr) 
         {
-            Marshal.FreeHGlobal((IntPtr)Data(memPtr));
+            Marshal.FreeHGlobal((IntPtr)GetData(memPtr));
             Marshal.FreeHGlobal((IntPtr)memPtr);
         }
 
@@ -266,9 +266,9 @@ namespace Apache.Ignite.Core.Impl.Memory
                 *((long*)(poolPtr + i)) = 0;
 
             // 3. Set flags for memory chunks.
-            Flags(poolPtr + PoolHdrOffMem1, FlagExt | FlagPooled);
-            Flags(poolPtr + PoolHdrOffMem2, FlagExt | FlagPooled);
-            Flags(poolPtr + PoolHdrOffMem3, FlagExt | FlagPooled);
+            SetFlags(poolPtr + PoolHdrOffMem1, FlagExt | FlagPooled);
+            SetFlags(poolPtr + PoolHdrOffMem2, FlagExt | FlagPooled);
+            SetFlags(poolPtr + PoolHdrOffMem3, FlagExt | FlagPooled);
 
             return poolPtr;
         }
@@ -349,7 +349,7 @@ namespace Apache.Ignite.Core.Impl.Memory
             }
             else {
                 // Ensure that we have enough capacity.
-                int curCap = Capacity(memPtr);
+                int curCap = GetCapacity(memPtr);
 
                 if (cap > curCap) {
                     data = Marshal.ReAllocHGlobal((IntPtr)data, (IntPtr)cap).ToInt64();
@@ -359,7 +359,7 @@ namespace Apache.Ignite.Core.Impl.Memory
                 }
             }
 
-            Flags(memPtr, FlagExt | FlagPooled | FlagAcquired);
+            SetFlags(memPtr, FlagExt | FlagPooled | FlagAcquired);
         }
 
         /// <summary>
@@ -371,7 +371,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         {
             long data = *((long*)memPtr);
 
-            int curCap = Capacity(memPtr);
+            int curCap = GetCapacity(memPtr);
 
             if (cap > curCap) {
                 data = Marshal.ReAllocHGlobal((IntPtr)data, (IntPtr)cap).ToInt64();
@@ -387,7 +387,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="memPtr">Memory pointer.</param>
         public static void ReleasePooled(long memPtr) 
         {
-            Flags(memPtr, Flags(memPtr) ^ FlagAcquired);
+            SetFlags(memPtr, GetFlags(memPtr) ^ FlagAcquired);
         }
 
         #endregion
