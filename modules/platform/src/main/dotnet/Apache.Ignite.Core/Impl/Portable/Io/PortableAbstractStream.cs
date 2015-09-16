@@ -40,13 +40,13 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         private static readonly bool MemcpyInverted;
 
         /** Byte: zero. */
-        protected const byte ByteZero = 0;
+        private const byte ByteZero = 0;
 
         /** Byte: one. */
-        protected const byte ByteOne = 1;
+        private const byte ByteOne = 1;
 
         /** LITTLE_ENDIAN flag. */
-        protected static readonly bool LittleEndian = BitConverter.IsLittleEndian;
+        private static readonly bool LittleEndian = BitConverter.IsLittleEndian;
 
         /** Position. */
         protected int Pos;
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// </summary>
         /// <param name="val">Byte array.</param>
         /// <param name="data">Data pointer.</param>
-        protected void WriteByteArray0(byte[] val, byte* data)
+        protected static void WriteByteArray0(byte[] val, byte* data)
         {
             fixed (byte* val0 = val)
             {
@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="len">Array length.</param>
         /// <param name="data">Data pointer.</param>
         /// <returns>Byte array</returns>
-        protected byte[] ReadByteArray0(int len, byte* data)
+        protected static byte[] ReadByteArray0(int len, byte* data)
         {
             byte[] res = new byte[len];
 
@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// </summary>
         /// <param name="val">Bool array.</param>
         /// <param name="data">Data pointer.</param>
-        protected void WriteBoolArray0(bool[] val, byte* data)
+        protected static void WriteBoolArray0(bool[] val, byte* data)
         {
             fixed (bool* val0 = val)
             {
@@ -198,7 +198,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="len">Array length.</param>
         /// <param name="data">Data pointer.</param>
         /// <returns>Bool array</returns>
-        protected bool[] ReadBoolArray0(int len, byte* data)
+        protected static bool[] ReadBoolArray0(int len, byte* data)
         {
             bool[] res = new bool[len];
 
@@ -221,7 +221,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// </summary>
         /// <param name="val">Short value.</param>
         /// <param name="data">Data pointer.</param>
-        protected void WriteShort0(short val, byte* data)
+        protected static void WriteShort0(short val, byte* data)
         {
             if (LittleEndian)
                 *((short*)data) = val;
@@ -247,7 +247,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// </summary>
         /// <param name="data">Data pointer.</param>
         /// <returns>Short value</returns>
-        protected short ReadShort0(byte* data)
+        protected static short ReadShort0(byte* data)
         {
             short val;
 
@@ -276,7 +276,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="val">Short array.</param>
         /// <param name="data">Data pointer.</param>
         /// <param name="cnt">Bytes count.</param>
-        protected void WriteShortArray0(short[] val, byte* data, int cnt)
+        protected static void WriteShortArray0(short[] val, byte* data, int cnt)
         {
             if (LittleEndian)
             {
@@ -317,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data pointer.</param>
         /// <param name="cnt">Bytes count.</param>
         /// <returns>Short array</returns>
-        protected short[] ReadShortArray0(int len, byte* data, int cnt)
+        protected static short[] ReadShortArray0(int len, byte* data, int cnt)
         {
             short[] res = new short[len];
 
@@ -380,7 +380,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="val">Char array.</param>
         /// <param name="data">Data pointer.</param>
         /// <param name="cnt">Bytes count.</param>
-        protected void WriteCharArray0(char[] val, byte* data, int cnt)
+        protected static void WriteCharArray0(char[] val, byte* data, int cnt)
         {
             if (LittleEndian)
             {
@@ -421,7 +421,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data pointer.</param>
         /// <param name="cnt">Bytes count.</param>
         /// <returns>Char array</returns>
-        protected char[] ReadCharArray0(int len, byte* data, int cnt)
+        protected static char[] ReadCharArray0(int len, byte* data, int cnt)
         {
             char[] res = new char[len];
 
@@ -468,7 +468,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// </summary>
         /// <param name="val">Int value.</param>
         /// <param name="data">Data pointer.</param>
-        protected void WriteInt0(int val, byte* data)
+        protected static void WriteInt0(int val, byte* data)
         {
             if (LittleEndian)
                 *((int*)data) = val;
@@ -496,7 +496,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// </summary>
         /// <param name="data">Data pointer.</param>
         /// <returns>Int value</returns>
-        protected int ReadInt0(byte* data) {
+        protected static int ReadInt0(byte* data) {
             int val;
 
             if (LittleEndian)
@@ -526,7 +526,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="val">Int array.</param>
         /// <param name="data">Data pointer.</param>
         /// <param name="cnt">Bytes count.</param>
-        protected void WriteIntArray0(int[] val, byte* data, int cnt)
+        protected static void WriteIntArray0(int[] val, byte* data, int cnt)
         {
             if (LittleEndian)
             {
@@ -569,7 +569,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data pointer.</param>
         /// <param name="cnt">Bytes count.</param>
         /// <returns>Int array</returns>
-        protected int[] ReadIntArray0(int len, byte* data, int cnt)
+        protected static int[] ReadIntArray0(int len, byte* data, int cnt)
         {
             int[] res = new int[len];
 
@@ -636,7 +636,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="val">Int array.</param>
         /// <param name="data">Data pointer.</param>
         /// <param name="cnt">Bytes count.</param>
-        protected void WriteFloatArray0(float[] val, byte* data, int cnt)
+        protected static void WriteFloatArray0(float[] val, byte* data, int cnt)
         {
             if (LittleEndian)
             {
@@ -679,7 +679,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data pointer.</param>
         /// <param name="cnt">Bytes count.</param>
         /// <returns>Float array</returns>
-        protected float[] ReadFloatArray0(int len, byte* data, int cnt)
+        protected static float[] ReadFloatArray0(int len, byte* data, int cnt)
         {
             float[] res = new float[len];
 
@@ -721,7 +721,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// </summary>
         /// <param name="val">Long value.</param>
         /// <param name="data">Data pointer.</param>
-        protected void WriteLong0(long val, byte* data)
+        protected static void WriteLong0(long val, byte* data)
         {
             if (LittleEndian)
                 *((long*)data) = val;
@@ -753,7 +753,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// </summary>
         /// <param name="data">Data pointer.</param>
         /// <returns>Long value</returns>
-        protected long ReadLong0(byte* data)
+        protected static long ReadLong0(byte* data)
         {
             long val;
 
@@ -788,7 +788,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="val">Long array.</param>
         /// <param name="data">Data pointer.</param>
         /// <param name="cnt">Bytes count.</param>
-        protected void WriteLongArray0(long[] val, byte* data, int cnt)
+        protected static void WriteLongArray0(long[] val, byte* data, int cnt)
         {
             if (LittleEndian)
             {
@@ -835,7 +835,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data pointer.</param>
         /// <param name="cnt">Bytes count.</param>
         /// <returns>Long array</returns>
-        protected long[] ReadLongArray0(int len, byte* data, int cnt)
+        protected static long[] ReadLongArray0(int len, byte* data, int cnt)
         {
             long[] res = new long[len];
 
@@ -906,7 +906,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="val">Double array.</param>
         /// <param name="data">Data pointer.</param>
         /// <param name="cnt">Bytes count.</param>
-        protected void WriteDoubleArray0(double[] val, byte* data, int cnt)
+        protected static void WriteDoubleArray0(double[] val, byte* data, int cnt)
         {
             if (LittleEndian)
             {
@@ -953,7 +953,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data pointer.</param>
         /// <param name="cnt">Bytes count.</param>
         /// <returns>Double array</returns>
-        protected double[] ReadDoubleArray0(int len, byte* data, int cnt)
+        protected static double[] ReadDoubleArray0(int len, byte* data, int cnt)
         {
             double[] res = new double[len];
 
@@ -1009,7 +1009,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="enc">Encoding.</param>
         /// <param name="data">Data.</param>
         /// <returns>Amount of bytes written.</returns>
-        protected int WriteString0(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
+        protected static int WriteString0(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
         {
             return enc.GetBytes(chars, charCnt, data, byteCnt);
         }
@@ -1253,7 +1253,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// Shift position due to read.
         /// </summary>
         /// <param name="cnt">Bytes count.</param>
-        protected void ShiftRead(int cnt)
+        private void ShiftRead(int cnt)
         {
             Pos += cnt;
         }
@@ -1287,7 +1287,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="src">Source.</param>
         /// <param name="dest">Destination.</param>
         /// <param name="len">Length.</param>
-        public static void CopyMemory(byte* src, byte* dest, int len)
+        private static void CopyMemory(byte* src, byte* dest, int len)
         {
             if (MemcpyInverted)
                 Memcpy.Invoke(dest, src, len);
