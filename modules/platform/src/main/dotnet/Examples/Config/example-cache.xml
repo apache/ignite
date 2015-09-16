@@ -29,47 +29,33 @@
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
-        <property name="pluginConfigurations">
-            <list>
-                <bean class="org.gridgain.grid.configuration.GridGainConfiguration">
-                    <property name="interopConfiguration">
-                        <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetConfiguration">
-                            <property name="portableConfiguration">
-                                <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetPortableConfiguration">
-                                    <property name="types">
-                                        <list>
-                                            <value>Apache.Ignite.Examples.Dll.Portable.Account</value>
-                                            <value>Apache.Ignite.Examples.Dll.Portable.Address</value>
-                                            <value>Apache.Ignite.Examples.Dll.Portable.Employee</value>
-                                            <value>Apache.Ignite.Examples.Dll.Portable.EmployeeKey</value>
-                                            <value>Apache.Ignite.Examples.Dll.Portable.Organization</value>
-                                            <value>Apache.Ignite.Examples.Dll.Portable.OrganizationType</value>
-                                        </list>
-                                    </property>
-                                </bean>
-                            </property>
-                        </bean>
-                    </property>
-                </bean>
-            </list>
+        <property name="platformConfiguration">
+            <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
+                <property name="portableConfiguration">
+                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
+                        <property name="types">
+                            <list>
+                                <value>Apache.Ignite.Examples.Dll.Portable.Account</value>
+                                <value>Apache.Ignite.Examples.Dll.Portable.Address</value>
+                                <value>Apache.Ignite.Examples.Dll.Portable.Employee</value>
+                                <value>Apache.Ignite.Examples.Dll.Portable.EmployeeKey</value>
+                                <value>Apache.Ignite.Examples.Dll.Portable.Organization</value>
+                                <value>Apache.Ignite.Examples.Dll.Portable.OrganizationType</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
         </property>
 
         <property name="cacheConfiguration">
             <list>
-                <!--
-                    Partitioned cache example configuration with portable objects enabled.
-                    Used in .NET example that is available only in enterprise edition.
-                -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache*"/>
                     <property name="atomicityMode" value="ATOMIC"/>
                     <property name="backups" value="1"/>
                 </bean>
 
-                <!--
-                    Partitioned cache example configuration.
-                    Used in .NET cache store example that is available only in enterprise edition.
-                -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="tx"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
@@ -82,13 +68,6 @@
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <!--
-                        GridGain provides several options for automatic discovery that can be used
-                        instead os static IP based discovery. For information on all options refer
-                        to our documentation: http://doc.gridgain.org/latest/Automatic+Node+Discovery
-                    -->
-                    <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
-                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
                         <property name="addresses">
                             <list>
