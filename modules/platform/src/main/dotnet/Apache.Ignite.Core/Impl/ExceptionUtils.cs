@@ -56,6 +56,8 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Static initializer.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline", 
+            Justification = "Readability")]
         static ExceptionUtils()
         {
             // Common Java exceptions mapped to common .Net exceptions.

@@ -267,58 +267,6 @@
          </Type>
         </Types>
        </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Cluster">
-        <Types>
-         <Type Name="IClusterMetrics">
-          <Members>
-           <Member Name="#AverageCancelledJobs">
-            <Messages>
-             <Message Id="Cancelled" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>Cancelled</Item>
-               <Item>'IClusterMetrics.AverageCancelledJobs'</Item>
-               <Item>Canceled</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#CurrentCancelledJobs">
-            <Messages>
-             <Message Id="Cancelled" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>Cancelled</Item>
-               <Item>'IClusterMetrics.CurrentCancelledJobs'</Item>
-               <Item>Canceled</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#MaximumCancelledJobs">
-            <Messages>
-             <Message Id="Cancelled" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>Cancelled</Item>
-               <Item>'IClusterMetrics.MaximumCancelledJobs'</Item>
-               <Item>Canceled</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#TotalCancelledJobs">
-            <Messages>
-             <Message Id="Cancelled" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>Cancelled</Item>
-               <Item>'IClusterMetrics.TotalCancelledJobs'</Item>
-               <Item>Canceled</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
        <Namespace Name="Apache.Ignite.Core.Common">
         <Types>
          <Type Name="IgniteGuid">
@@ -330,60 +278,6 @@
                <Item>'string.Format(string, object, object)'</Item>
                <Item>'IgniteGuid.ToString()'</Item>
                <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Compute">
-        <Types>
-         <Type Name="ComputeJobAdapter`1">
-          <Members>
-           <Member Name="#Args">
-            <Messages>
-             <Message TypeName="DoNotDeclareVisibleInstanceFields" Category="Microsoft.Design" CheckId="CA1051" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'ComputeJobAdapter&lt;T&gt;.Args'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#IsCancelled()">
-            <Messages>
-             <Message Id="Cancelled" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>Cancelled</Item>
-               <Item>'ComputeJobAdapter&lt;T&gt;.IsCancelled()'</Item>
-               <Item>Canceled</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="ComputeTaskCancelledException">
-          <Messages>
-           <Message Id="Cancelled" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-            <Issue Name="Type">
-             <Item>Cancelled</Item>
-             <Item>'ComputeTaskCancelledException'</Item>
-             <Item>Canceled</Item>
-            </Issue>
-           </Message>
-          </Messages>
-         </Type>
-         <Type Name="IComputeJobResult`1">
-          <Members>
-           <Member Name="#Cancelled">
-            <Messages>
-             <Message Id="Cancelled" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>Cancelled</Item>
-               <Item>'IComputeJobResult&lt;T&gt;.Cancelled'</Item>
-               <Item>Canceled</Item>
               </Issue>
              </Message>
             </Messages>
@@ -493,129 +387,6 @@
                <Item>'string.Format(string, params object[])'</Item>
                <Item>'EventBase.ToString()'</Item>
                <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="EventType">
-          <Members>
-           <Member Name="#EvtJobCancelled">
-            <Messages>
-             <Message Id="Cancelled" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>Cancelled</Item>
-               <Item>'EventType.EvtJobCancelled'</Item>
-               <Item>Canceled</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#EvtsAll">
-            <Messages>
-             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
-              <Issue>
-               <Item>'EventType.EvtsAll'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#EvtsAllMinusMetricUpdate">
-            <Messages>
-             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
-              <Issue>
-               <Item>'EventType.EvtsAllMinusMetricUpdate'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#EvtsCache">
-            <Messages>
-             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
-              <Issue>
-               <Item>'EventType.EvtsCache'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#EvtsCacheLifecycle">
-            <Messages>
-             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
-              <Issue>
-               <Item>'EventType.EvtsCacheLifecycle'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#EvtsCacheQuery">
-            <Messages>
-             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
-              <Issue>
-               <Item>'EventType.EvtsCacheQuery'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#EvtsCacheRebalance">
-            <Messages>
-             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
-              <Issue>
-               <Item>'EventType.EvtsCacheRebalance'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#EvtsDiscovery">
-            <Messages>
-             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
-              <Issue>
-               <Item>'EventType.EvtsDiscovery'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#EvtsDiscoveryAll">
-            <Messages>
-             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
-              <Issue>
-               <Item>'EventType.EvtsDiscoveryAll'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#EvtsError">
-            <Messages>
-             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
-              <Issue>
-               <Item>'EventType.EvtsError'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#EvtsJobExecution">
-            <Messages>
-             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
-              <Issue>
-               <Item>'EventType.EvtsJobExecution'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#EvtsSwapspace">
-            <Messages>
-             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
-              <Issue>
-               <Item>'EventType.EvtsSwapspace'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#EvtsTaskExecution">
-            <Messages>
-             <Message TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819" Created="2015-09-16 09:56:15Z">
-              <Issue>
-               <Item>'EventType.EvtsTaskExecution'</Item>
               </Issue>
              </Message>
             </Messages>
@@ -833,26 +604,6 @@
          </Type>
         </Types>
        </Namespace>
-       <Namespace Name="Apache.Ignite.Core.Impl.Cluster">
-        <Types>
-         <Type Name="ClusterGroupImpl">
-          <Members>
-           <Member Name="#.ctor(Apache.Ignite.Core.Impl.Unmanaged.IUnmanagedTarget,Apache.Ignite.Core.Impl.Unmanaged.IUnmanagedTarget,Apache.Ignite.Core.Impl.Portable.PortableMarshaller,Apache.Ignite.Core.Impl.Ignite,System.Func`2&lt;Apache.Ignite.Core.Cluster.IClusterNode,System.Boolean&gt;)">
-            <Messages>
-             <Message TypeName="DoNotInitializeUnnecessarily" Category="Microsoft.Performance" CheckId="CA1805" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'ClusterGroupImpl.ClusterGroupImpl(IUnmanagedTarget, IUnmanagedTarget, PortableMarshaller, Ignite, Func&lt;IClusterNode, bool&gt;)'</Item>
-               <Item>'ClusterGroupImpl._topVer'</Item>
-               <Item>'long'</Item>
-               <Item>0</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-        </Types>
-       </Namespace>
        <Namespace Name="Apache.Ignite.Core.Impl.Common">
         <Types>
          <Type Name="DelegateTypeDescriptor">
@@ -934,12 +685,6 @@
           <Members>
            <Member Name="#GetItems()">
             <Messages>
-             <Message TypeName="DoNotExposeGenericLists" Category="Microsoft.Design" CheckId="CA1002" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'List&lt;KeyValuePair&lt;long, object&gt;&gt;'</Item>
-               <Item>'HandleRegistry.GetItems()'</Item>
-              </Issue>
-             </Message>
              <Message TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024" Created="2015-09-16 09:14:44Z">
               <Issue Certainty="50">
                <Item>'HandleRegistry.GetItems()'</Item>
@@ -953,68 +698,8 @@
        </Namespace>
        <Namespace Name="Apache.Ignite.Core.Impl.Memory">
         <Types>
-         <Type Name="PlatformMemory">
-          <Members>
-           <Member Name="#MemPtr">
-            <Messages>
-             <Message TypeName="DoNotDeclareVisibleInstanceFields" Category="Microsoft.Design" CheckId="CA1051" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'PlatformMemory.MemPtr'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="PlatformMemoryPool">
-          <Members>
-           <Member Name="#Reallocate(System.Int64,System.Int32)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="DependsOnFix">
-              <Issue>
-               <Item>'PlatformMemoryPool.Reallocate(long, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#Release(System.Int64)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="DependsOnFix">
-              <Issue>
-               <Item>'PlatformMemoryPool.Release(long)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
          <Type Name="PlatformMemoryStream">
-          <Messages>
-           <Message TypeName="ImplementIDisposableCorrectly" Category="Microsoft.Design" CheckId="CA1063" Created="2015-09-16 09:14:44Z">
-            <Issue Name="ProvideDisposeBool">
-             <Item>'PlatformMemoryStream'</Item>
-            </Issue>
-           </Message>
-          </Messages>
           <Members>
-           <Member Name="#Data">
-            <Messages>
-             <Message TypeName="DoNotDeclareVisibleInstanceFields" Category="Microsoft.Design" CheckId="CA1051" Created="2015-09-16 09:14:44Z">
-              <Issue>
-               <Item>'PlatformMemoryStream.Data'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#Dispose()">
-            <Messages>
-             <Message TypeName="ImplementIDisposableCorrectly" Category="Microsoft.Design" CheckId="CA1063" Created="2015-09-16 09:14:44Z">
-              <Issue Name="DisposeImplementation">
-               <Item>'PlatformMemoryStream.Dispose()'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
            <Member Name="#WriteInt(System.Int32,System.Int32)">
             <Messages>
              <Message Id="writePos+4" TypeName="OperationsShouldNotOverflow" Category="Microsoft.Usage" CheckId="CA2233" Created="2015-09-16 09:14:44Z">
@@ -1050,66 +735,10 @@
              </Message>
             </Messages>
            </Member>
-           <Member Name="#Flags(System.Int64)">
-            <Messages>
-             <Message Id="Flags" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="MemberNoAlternate">
-               <Item>Flags</Item>
-               <Item>'PlatformMemoryUtils.Flags(long)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
            <Member Name="#Flags(System.Int64,System.Int32)">
             <Messages>
              <Message Id="1#" TypeName="ParameterNamesShouldNotMatchMemberNames" Category="Microsoft.Naming" CheckId="CA1719" Created="2015-09-16 09:14:44Z">
               <Issue>
-               <Item>'flags'</Item>
-              </Issue>
-             </Message>
-             <Message Id="Flags" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="MemberNoAlternate">
-               <Item>Flags</Item>
-               <Item>'PlatformMemoryUtils.Flags(long, int)'</Item>
-              </Issue>
-             </Message>
-             <Message Id="flags" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="MemberParameterNoAlternate">
-               <Item>'PlatformMemoryUtils.Flags(long, int)'</Item>
-               <Item>flags</Item>
-               <Item>'flags'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#IsAcquired(System.Int32)">
-            <Messages>
-             <Message Id="flags" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="MemberParameterNoAlternate">
-               <Item>'PlatformMemoryUtils.IsAcquired(int)'</Item>
-               <Item>flags</Item>
-               <Item>'flags'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#IsExternal(System.Int32)">
-            <Messages>
-             <Message Id="flags" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="MemberParameterNoAlternate">
-               <Item>'PlatformMemoryUtils.IsExternal(int)'</Item>
-               <Item>flags</Item>
-               <Item>'flags'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#IsPooled(System.Int32)">
-            <Messages>
-             <Message Id="flags" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="MemberParameterNoAlternate">
-               <Item>'PlatformMemoryUtils.IsPooled(int)'</Item>
-               <Item>flags</Item>
                <Item>'flags'</Item>
               </Issue>
              </Message>
@@ -1153,20 +782,6 @@
                <Item>'string.Format(string, object, object)'</Item>
                <Item>'PortableMarshaller.GetTypeName(Type)'</Item>
                <Item>'string.Format(IFormatProvider, string, params object[])'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
-         <Type Name="PortablesImpl">
-          <Members>
-           <Member Name="#ChildBuilder(Apache.Ignite.Core.Impl.Portable.PortableBuilderImpl,Apache.Ignite.Core.Impl.Portable.PortableUserObject)">
-            <Messages>
-             <Message Id="parent" TypeName="ReviewUnusedParameters" Category="Microsoft.Usage" CheckId="CA1801" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'parent'</Item>
-               <Item>'PortablesImpl.ChildBuilder(PortableBuilderImpl, PortableUserObject)'</Item>
               </Issue>
              </Message>
             </Messages>
@@ -1277,213 +892,6 @@
              </Message>
             </Messages>
            </Member>
-           <Member Name="#ReadBoolArray0(System.Int32,System.Byte*)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.ReadBoolArray0(int, byte*)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#ReadByteArray0(System.Int32,System.Byte*)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.ReadByteArray0(int, byte*)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#ReadCharArray0(System.Int32,System.Byte*,System.Int32)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.ReadCharArray0(int, byte*, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#ReadDoubleArray0(System.Int32,System.Byte*,System.Int32)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.ReadDoubleArray0(int, byte*, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#ReadFloatArray0(System.Int32,System.Byte*,System.Int32)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.ReadFloatArray0(int, byte*, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#ReadInt0(System.Byte*)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.ReadInt0(byte*)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#ReadIntArray0(System.Int32,System.Byte*,System.Int32)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.ReadIntArray0(int, byte*, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#ReadLong0(System.Byte*)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.ReadLong0(byte*)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#ReadLongArray0(System.Int32,System.Byte*,System.Int32)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.ReadLongArray0(int, byte*, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#ReadShort0(System.Byte*)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.ReadShort0(byte*)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#ReadShortArray0(System.Int32,System.Byte*,System.Int32)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.ReadShortArray0(int, byte*, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#WriteBoolArray0(System.Boolean[],System.Byte*)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.WriteBoolArray0(bool[], byte*)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#WriteByteArray0(System.Byte[],System.Byte*)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.WriteByteArray0(byte[], byte*)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#WriteCharArray0(System.Char[],System.Byte*,System.Int32)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.WriteCharArray0(char[], byte*, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#WriteDoubleArray0(System.Double[],System.Byte*,System.Int32)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.WriteDoubleArray0(double[], byte*, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#WriteFloatArray0(System.Single[],System.Byte*,System.Int32)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.WriteFloatArray0(float[], byte*, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#WriteInt0(System.Int32,System.Byte*)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.WriteInt0(int, byte*)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#WriteIntArray0(System.Int32[],System.Byte*,System.Int32)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.WriteIntArray0(int[], byte*, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#WriteLong0(System.Int64,System.Byte*)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.WriteLong0(long, byte*)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#WriteLongArray0(System.Int64[],System.Byte*,System.Int32)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.WriteLongArray0(long[], byte*, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#WriteShort0(System.Int16,System.Byte*)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.WriteShort0(short, byte*)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#WriteShortArray0(System.Int16[],System.Byte*,System.Int32)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.WriteShortArray0(short[], byte*, int)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-           <Member Name="#WriteString0(System.Char*,System.Int32,System.Int32,System.Text.Encoding,System.Byte*)">
-            <Messages>
-             <Message TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822" Created="2015-09-16 09:14:44Z" FixCategory="NonBreaking">
-              <Issue>
-               <Item>'PortableAbstractStream.WriteString0(char*, int, int, Encoding, byte*)'</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
           </Members>
          </Type>
         </Types>
@@ -1570,21 +978,6 @@
        </Namespace>
        <Namespace Name="Apache.Ignite.Core.Services">
         <Types>
-         <Type Name="IServiceContext">
-          <Members>
-           <Member Name="#IsCancelled">
-            <Messages>
-             <Message Id="Cancelled" TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726" Created="2015-09-16 09:14:44Z">
-              <Issue Name="Member">
-               <Item>Cancelled</Item>
-               <Item>'IServiceContext.IsCancelled'</Item>
-               <Item>Canceled</Item>
-              </Issue>
-             </Message>
-            </Messages>
-           </Member>
-          </Members>
-         </Type>
          <Type Name="IServices">
           <Members>
            <Member Name="#GetServiceDescriptors()">
@@ -1623,24 +1016,8 @@
    </Target>
   </Targets>
   <Rules>
-   <Rule TypeName="DoNotDeclareVisibleInstanceFields" Category="Microsoft.Design" CheckId="CA1051">
-    <Resolution Name="Default">Because field {0} is visible outside of its declaring type, change its accessibility to private and add a property, with the same accessibility as the field has currently, to provide access to it.</Resolution>
-   </Rule>
-   <Rule TypeName="DoNotExposeGenericLists" Category="Microsoft.Design" CheckId="CA1002">
-    <Resolution Name="Default">Change {0} in {1} to use Collection&lt;T&gt;, ReadOnlyCollection&lt;T&gt; or KeyedCollection&lt;K,V&gt;</Resolution>
-   </Rule>
-   <Rule TypeName="DoNotInitializeUnnecessarily" Category="Microsoft.Performance" CheckId="CA1805">
-    <Resolution Name="Default">{0} initializes field {1} of type {2} to {3}. Remove this initialization because it will be done automatically by the runtime.</Resolution>
-   </Rule>
-   <Rule TypeName="ImplementIDisposableCorrectly" Category="Microsoft.Design" CheckId="CA1063">
-    <Resolution Name="DisposeImplementation">Modify {0} so that it calls Dispose(true), then calls GC.SuppressFinalize on the current object instance ('this' or 'Me' in Visual Basic), and then returns.</Resolution>
-    <Resolution Name="ProvideDisposeBool">Provide an overridable implementation of Dispose(bool) on {0} or mark the type as sealed. A call to Dispose(false) should only clean up native resources. A call to Dispose(true) should clean up both managed and native resources.</Resolution>
-   </Rule>
    <Rule TypeName="InitializeReferenceTypeStaticFieldsInline" Category="Microsoft.Performance" CheckId="CA1810">
     <Resolution Name="Default">Initialize all static fields in {0} when those fields are declared and remove the explicit static constructor.</Resolution>
-   </Rule>
-   <Rule TypeName="MarkMembersAsStatic" Category="Microsoft.Performance" CheckId="CA1822">
-    <Resolution Name="Default">The 'this' parameter (or 'Me' in Visual Basic) of {0} is never used. Mark the member as static (or Shared in Visual Basic) or use 'this'/'Me' in the method body or at least one property accessor, if appropriate.</Resolution>
    </Rule>
    <Rule TypeName="OperationsShouldNotOverflow" Category="Microsoft.Usage" CheckId="CA2233">
     <Resolution Name="Default">Correct the potential overflow in the operation '{0}' in {1}.</Resolution>
@@ -1651,14 +1028,8 @@
    <Rule TypeName="ParameterNamesShouldNotMatchMemberNames" Category="Microsoft.Naming" CheckId="CA1719">
     <Resolution Name="Default">Change either member or parameter name {0} so that one differs from the other.</Resolution>
    </Rule>
-   <Rule TypeName="PropertiesShouldNotReturnArrays" Category="Microsoft.Performance" CheckId="CA1819">
-    <Resolution Name="Default">Change {0} to return a collection or make it a method.</Resolution>
-   </Rule>
    <Rule TypeName="PropertyNamesShouldNotMatchGetMethods" Category="Microsoft.Naming" CheckId="CA1721">
     <Resolution Name="BaseType">The property name {0} is confusing given the existence of inherited method {1}. Rename or remove this property.</Resolution>
-   </Rule>
-   <Rule TypeName="ReviewUnusedParameters" Category="Microsoft.Usage" CheckId="CA1801">
-    <Resolution Name="Default">Parameter {0} of {1} is never used. Remove the parameter or use it in the method body.</Resolution>
    </Rule>
    <Rule TypeName="SpecifyIFormatProvider" Category="Microsoft.Globalization" CheckId="CA1305">
     <Resolution Name="Default">Because the behavior of {0} could vary based on the current user's locale settings, replace this call in {1} with a call to {2}. If the result of {2} will be displayed to the user, specify 'CultureInfo.CurrentCulture' as the 'IFormatProvider' parameter. Otherwise, if the result will be stored and accessed by software, such as when it is persisted to disk or to a database, specify 'CultureInfo.InvariantCulture'.</Resolution>
@@ -1668,12 +1039,6 @@
    </Rule>
    <Rule TypeName="UseLiteralsWhereAppropriate" Category="Microsoft.Performance" CheckId="CA1802">
     <Resolution Name="Default">Field {0} is declared as 'static readonly' but is initialized with a constant value '{1}'. Mark this field as 'const' instead.</Resolution>
-   </Rule>
-   <Rule TypeName="UsePreferredTerms" Category="Microsoft.Naming" CheckId="CA1726">
-    <Resolution Name="Member">Replace the term '{0}' in member name {1} with the preferred alternate '{2}'.</Resolution>
-    <Resolution Name="MemberNoAlternate">Replace the term '{0}' in member name {1} with an appropriate alternate or remove it entirely.</Resolution>
-    <Resolution Name="MemberParameterNoAlternate">In member {0}, replace the term '{1}' in parameter name {2} with an appropriate alternate or remove it entirely.</Resolution>
-    <Resolution Name="Type">Replace the term '{0}' in type name {1} with the preferred alternate '{2}'.</Resolution>
    </Rule>
    <Rule TypeName="UsePropertiesWhereAppropriate" Category="Microsoft.Design" CheckId="CA1024">
     <Resolution Name="Default">Change {0} to a property if appropriate.</Resolution>
