@@ -17,9 +17,13 @@
 
 package org.apache.ignite.yardstick.cache.failover;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -50,37 +54,59 @@ public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
                                 setName("serversConfigs"));
 
                         for (Cache.Entry<Integer, BenchmarkConfiguration> e : srvsCfgsCache) {
-                            println(">>>>> Cache entry=" + e);
+                            println("Read entry from 'serversConfigs' cache =" + e);
 
                             srvsCfgs.put(e.getKey(), e.getValue());
                         }
 
                         srvsCfgsCache.destroy();
 
+                        // TODO check srvsCfgs.size() == servers.size()
 
-                        println(">>>>> srvsCfg map size = " + srvsCfgs.size());
+                        final int backupsCnt = 1; // TODO
+                        assert backupsCnt >= 1 : "Backups=" + backupsCnt;
 
-                        Thread.sleep(30_000);
+                        ThreadLocalRandom random = ThreadLocalRandom.current();
 
-                        BenchmarkConfiguration bc = srvsCfgs.get(0);
+                        Thread.sleep(10_000); // TODO warmup
 
-                        RestartUtils.Result result = RestartUtils.kill9(bc, true);
+                        while (!Thread.currentThread().isInterrupted()) {
+                            int numberNodesToRestart = random.nextInt(1, backupsCnt + 1);
 
-                        println(">>>>>>>>>RESULT<<<<<<<<<<\n" + result);
+                            List<Integer> ids = new ArrayList<>();
 
-                        result = RestartUtils.start(bc, true);
+                            ids.addAll(srvsCfgs.keySet());
 
-                        println(">>>>>>>>>RESULT 2<<<<<<<<<<\n" + result);
+                            Collections.shuffle(ids, random);
 
-//                        while (!Thread.currentThread().isInterrupted()) {
-//                            RestartUtils.kill9("${REMOTE_USER}", "localhost");
-//
-//                            Thread.sleep(1_000);
-//
-//                            RestartUtils.start();
-//
-//                            Thread.sleep(10_000);
-//                        }
+                            println("Number nodes to restart = " + numberNodesToRestart + ", shuffled ids = " + ids);
+
+                            for (int i = 0; i < numberNodesToRestart; i++) {
+                                Integer id = ids.get(i);
+
+                                BenchmarkConfiguration bc = srvsCfgs.get(id);
+
+                                RestartUtils.Result result = RestartUtils.kill9(bc, true);
+
+                                println(">>>>>>>>>RESULT<<<<<<<<<<\n" + result);
+                            }
+
+                            // TODO wait for all nodes stop
+
+                            Thread.sleep(2_000); // TODO sleep
+
+                            for (int i = 0; i < numberNodesToRestart; i++) {
+                                Integer id = ids.get(i);
+
+                                BenchmarkConfiguration bc = srvsCfgs.get(id);
+
+                                RestartUtils.Result result = RestartUtils.start(bc, true);
+
+                                println(">>>>>>>>>RESULT 2<<<<<<<<<<\n" + result);
+                            }
+
+                            Thread.sleep(5_000); //TODO delay
+                        }
                     }
                     catch (InterruptedException e) {
                         e.printStackTrace();
