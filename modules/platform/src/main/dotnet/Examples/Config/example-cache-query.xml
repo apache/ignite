@@ -35,12 +35,12 @@
                                 <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetPortableConfiguration">
                                     <property name="types">
                                         <list>
-                                            <value>GridGain.Examples.Portable.Account</value>
-                                            <value>GridGain.Examples.Portable.Address</value>
-                                            <value>GridGain.Examples.Portable.Employee</value>
-                                            <value>GridGain.Examples.Portable.EmployeeKey</value>
-                                            <value>GridGain.Examples.Portable.Organization</value>
-                                            <value>GridGain.Examples.Portable.OrganizationType</value>
+                                            <value>Apache.Ignite.Examples.Dll.Portable.Account</value>
+                                            <value>Apache.Ignite.Examples.Dll.Portable.Address</value>
+                                            <value>Apache.Ignite.Examples.Dll.Portable.Employee</value>
+                                            <value>Apache.Ignite.Examples.Dll.Portable.EmployeeKey</value>
+                                            <value>Apache.Ignite.Examples.Dll.Portable.Organization</value>
+                                            <value>Apache.Ignite.Examples.Dll.Portable.OrganizationType</value>
                                         </list>
                                     </property>
                                 </bean>
