@@ -401,6 +401,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         private static readonly MemCopy Memcpy;
 
         /** Whether src and dest arguments are inverted. */
+        [SuppressMessage("Microsoft.Performance", "CA1802:UseLiteralsWhereAppropriate")]
         private static readonly bool MemcpyInverted;
 
         /// <summary>
