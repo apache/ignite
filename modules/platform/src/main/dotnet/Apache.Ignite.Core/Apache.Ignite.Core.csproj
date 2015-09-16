@@ -128,6 +128,7 @@
     <Compile Include="Events\JobEvent.cs" />
     <Compile Include="Events\SwapSpaceEvent.cs" />
     <Compile Include="Events\TaskEvent.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="IgniteConfiguration.cs" />
     <Compile Include="Ignition.cs" />
     <Compile Include="Common\AsyncSupportedAttribute.cs" />
