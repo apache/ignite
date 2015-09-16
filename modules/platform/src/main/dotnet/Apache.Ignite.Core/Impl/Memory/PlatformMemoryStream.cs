@@ -156,6 +156,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Usage", "CA2233:OperationsShouldNotOverflow", MessageId = "writePos+4")]
         public virtual void WriteInt(int writePos, int val)
         {
             EnsureWriteCapacity(writePos + 4);
