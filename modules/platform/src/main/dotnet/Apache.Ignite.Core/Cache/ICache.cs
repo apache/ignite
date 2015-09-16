@@ -520,6 +520,8 @@ namespace Apache.Ignite.Core.Cache
         /// Gets snapshot metrics (statistics) for this cache.
         /// </summary>
         /// <returns>Cache metrics.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
+            Justification = "Expensive operation.")]
         ICacheMetrics GetMetrics();
 
         /// <summary>

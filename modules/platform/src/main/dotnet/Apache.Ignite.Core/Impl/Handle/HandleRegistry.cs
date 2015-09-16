@@ -318,6 +318,7 @@ namespace Apache.Ignite.Core.Impl.Handle
         /// <summary>
         /// Gets a snapshot of currently referenced objects list.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         public IList<KeyValuePair<long, object>> GetItems()
         {
             Thread.MemoryBarrier();
