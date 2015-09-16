@@ -50,6 +50,8 @@ namespace Apache.Ignite.Core.Impl.Common
             /// </summary>
             [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields", 
                 Justification = "Incorrect warning")]
+            [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes",
+                Justification = "Intended usage to leverage compiler caching.")]
             internal static readonly Func<TFrom, T> Caster = Compile();
 
             /// <summary>
