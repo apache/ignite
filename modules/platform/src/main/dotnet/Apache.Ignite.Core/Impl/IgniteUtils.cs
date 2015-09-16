@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Impl
                 if (errCode == 0)
                     return;
 
-                messages.Add(string.Format("[option={0}, path={1}, errorCode={2}]", 
+                messages.Add(string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, errorCode={2}]", 
                     dllPath.Key, dllPath.Value, errCode));
 
                 if (dllPath.Value == configJvmDllPath)
