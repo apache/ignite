@@ -19,7 +19,7 @@ using System;
 using System.Threading;
 using Apache.Ignite.Core.Events;
 
-namespace GridGain.Examples.Events
+namespace Apache.Ignite.Examples.Dll.Events
 {
     /// <summary>
     /// Local event listener.

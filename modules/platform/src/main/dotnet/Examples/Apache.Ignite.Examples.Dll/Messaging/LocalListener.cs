@@ -19,7 +19,7 @@ using System;
 using System.Threading;
 using Apache.Ignite.Core.Messaging;
 
-namespace GridGain.Examples.Messaging
+namespace Apache.Ignite.Examples.Dll.Messaging
 {
     /// <summary>
     /// Local message listener which signals countdown event on each received message.

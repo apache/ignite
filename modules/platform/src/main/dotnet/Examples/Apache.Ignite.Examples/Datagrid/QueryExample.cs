@@ -21,9 +21,9 @@ using System.Collections.Generic;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Cache;
 using Apache.Ignite.Core.Cache.Query;
-using GridGain.Examples.Portable;
+using Apache.Ignite.Examples.Dll.Portable;
 
-namespace GridGain.Examples.Datagrid
+namespace Apache.Ignite.Examples.Datagrid
 {
     /// <summary>
     /// This example populates cache with sample data and runs several SQL and

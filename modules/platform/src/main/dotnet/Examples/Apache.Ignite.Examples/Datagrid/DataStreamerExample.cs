@@ -20,9 +20,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Datastream;
-using GridGain.Examples.Portable;
+using Apache.Ignite.Examples.Dll.Portable;
 
-namespace GridGain.Examples.Datagrid
+namespace Apache.Ignite.Examples.Datagrid
 {
     /// <summary>
     /// Demonstrates how cache can be populated with data utilizing <see cref="IDataStreamer{TK,TV}"/>.

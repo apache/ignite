@@ -18,7 +18,7 @@
 using System;
 using Apache.Ignite.Core.Portable;
 
-namespace GridGain.Examples.Portable
+namespace Apache.Ignite.Examples.Dll.Portable
 {
     /// <summary>
     /// Address.

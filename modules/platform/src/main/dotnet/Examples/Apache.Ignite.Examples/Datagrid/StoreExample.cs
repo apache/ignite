@@ -18,9 +18,10 @@
 using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
-using GridGain.Examples.Portable;
+using Apache.Ignite.Examples.Dll.Datagrid;
+using Apache.Ignite.Examples.Dll.Portable;
 
-namespace GridGain.Examples.Datagrid
+namespace Apache.Ignite.Examples.Datagrid
 {
     /// <summary>
     /// Example demonstrating cache store.

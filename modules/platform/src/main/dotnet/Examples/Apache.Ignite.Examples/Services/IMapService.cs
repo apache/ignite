@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
-namespace GridGain.Examples.Services
+using Apache.Ignite.Examples.Dll.Services;
+
+namespace Apache.Ignite.Examples.Services
 {
     /// <summary>
     /// Interface for service proxy interaction.
-    /// Actual service class (<see cref="MapService{TK, TV}"/>) does not have to implement this interface. 
+    /// Actual service class (<see cref="MapService{TK,TV}"/>) does not have to implement this interface. 
     /// Target method/property will be searched by signature (name, arguments).
     /// </summary>
     public interface IMapService<TK, TV>

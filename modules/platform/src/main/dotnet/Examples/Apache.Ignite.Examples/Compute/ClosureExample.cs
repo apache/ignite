@@ -19,8 +19,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Apache.Ignite.Core;
+using Apache.Ignite.Examples.Dll.Compute;
 
-namespace GridGain.Examples.Compute
+namespace Apache.Ignite.Examples.Compute
 {
     /// <summary>
     /// Example demonstrating closure execution.

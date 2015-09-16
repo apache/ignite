@@ -18,8 +18,9 @@
 using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
+using Apache.Ignite.Examples.Dll.Services;
 
-namespace GridGain.Examples.Services
+namespace Apache.Ignite.Examples.Services
 {
     /// <summary>
     /// Example demonstrating grid services.

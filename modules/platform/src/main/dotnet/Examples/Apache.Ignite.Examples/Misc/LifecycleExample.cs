@@ -21,7 +21,7 @@ using Apache.Ignite.Core;
 using Apache.Ignite.Core.Lifecycle;
 using Apache.Ignite.Core.Resource;
 
-namespace GridGain.Examples.Misc
+namespace Apache.Ignite.Examples.Misc
 {
     /// <summary>
     /// This example shows how to provide your own <see cref="ILifecycleBean"/> implementation

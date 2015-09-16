@@ -18,9 +18,10 @@
 using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
-using GridGain.Examples.Portable;
+using Apache.Ignite.Examples.Dll.Compute;
+using Apache.Ignite.Examples.Dll.Portable;
 
-namespace GridGain.Examples.Compute
+namespace Apache.Ignite.Examples.Compute
 {
     /// <summary>
     /// Example demonstrating task execution.

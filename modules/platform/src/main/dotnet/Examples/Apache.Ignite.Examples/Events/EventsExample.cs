@@ -20,10 +20,11 @@ using System.Collections.Generic;
 using System.Linq;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Events;
-using GridGain.Examples.Compute;
-using GridGain.Examples.Portable;
+using Apache.Ignite.Examples.Dll.Compute;
+using Apache.Ignite.Examples.Dll.Events;
+using Apache.Ignite.Examples.Dll.Portable;
 
-namespace GridGain.Examples.Events
+namespace Apache.Ignite.Examples.Events
 {
     /// <summary>
     /// Example demonstrating grid events.

@@ -18,7 +18,7 @@
 using System;
 using Apache.Ignite.Core.Compute;
 
-namespace GridGain.Examples.Compute
+namespace Apache.Ignite.Examples.Dll.Compute
 {
     /// <summary>
     /// Closure counting characters in a string.

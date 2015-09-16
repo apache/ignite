@@ -19,8 +19,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Apache.Ignite.Core;
+using Apache.Ignite.Examples.Dll.Messaging;
 
-namespace GridGain.Examples.Messaging
+namespace Apache.Ignite.Examples.Messaging
 {
     /// <summary>
     /// Example demonstrating grid messaging.

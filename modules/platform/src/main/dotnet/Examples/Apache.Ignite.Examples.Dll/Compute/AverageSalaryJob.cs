@@ -18,9 +18,9 @@
 using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core.Compute;
-using GridGain.Examples.Portable;
+using Apache.Ignite.Examples.Dll.Portable;
 
-namespace GridGain.Examples.Compute
+namespace Apache.Ignite.Examples.Dll.Compute
 {
     /// <summary>
     /// Average salary job.

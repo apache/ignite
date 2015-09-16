@@ -21,9 +21,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Apache.Ignite.Core.Cache;
 using Apache.Ignite.Core.Cache.Store;
-using GridGain.Examples.Portable;
+using Apache.Ignite.Examples.Dll.Portable;
 
-namespace GridGain.Examples.Datagrid
+namespace Apache.Ignite.Examples.Dll.Datagrid
 {
     /// <summary>
     /// Example cache store implementation.

@@ -18,7 +18,7 @@
 using System;
 using Apache.Ignite.Core.Cache.Event;
 
-namespace GridGain.Examples.Datagrid
+namespace Apache.Ignite.Examples.Dll.Datagrid
 {
     /// <summary>
     /// Filter for continuous query example.

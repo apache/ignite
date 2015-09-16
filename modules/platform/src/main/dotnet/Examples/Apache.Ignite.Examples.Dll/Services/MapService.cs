@@ -13,7 +13,7 @@ using Apache.Ignite.Core.Cache;
 using Apache.Ignite.Core.Resource;
 using Apache.Ignite.Core.Services;
 
-namespace GridGain.Examples.Services
+namespace Apache.Ignite.Examples.Dll.Services
 {
     /// <summary>
     /// Service implementation.

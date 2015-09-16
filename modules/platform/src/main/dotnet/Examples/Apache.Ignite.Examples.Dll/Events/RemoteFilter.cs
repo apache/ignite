@@ -18,7 +18,7 @@
 using System;
 using Apache.Ignite.Core.Events;
 
-namespace GridGain.Examples.Events
+namespace Apache.Ignite.Examples.Dll.Events
 {
     /// <summary>
     /// Remote event filter.

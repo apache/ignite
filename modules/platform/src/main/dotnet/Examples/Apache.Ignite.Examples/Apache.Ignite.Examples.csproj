@@ -21,7 +21,7 @@
     <OutputPath>bin\x64\Release\</OutputPath>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>GridGain.Examples.Compute.TaskExample</StartupObject>
+    <StartupObject>Apache.Ignite.Examples.Compute.TaskExample</StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>

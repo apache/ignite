@@ -21,8 +21,9 @@ using System.Threading;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Cache.Event;
 using Apache.Ignite.Core.Cache.Query.Continuous;
+using Apache.Ignite.Examples.Dll.Datagrid;
 
-namespace GridGain.Examples.Datagrid
+namespace Apache.Ignite.Examples.Datagrid
 {
     /// <summary>
     /// This example demonstrates continuous query API.

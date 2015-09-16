@@ -19,9 +19,9 @@ using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Portable;
-using GridGain.Examples.Portable;
+using Apache.Ignite.Examples.Dll.Portable;
 
-namespace GridGain.Examples.Datagrid
+namespace Apache.Ignite.Examples.Datagrid
 {
     /// <summary>
     /// This example demonstrates use of portable objects between different platforms.

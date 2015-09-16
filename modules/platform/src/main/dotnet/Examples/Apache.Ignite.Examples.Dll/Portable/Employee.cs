@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace GridGain.Examples.Portable
+namespace Apache.Ignite.Examples.Dll.Portable
 {
     /// <summary>
     /// Employee.

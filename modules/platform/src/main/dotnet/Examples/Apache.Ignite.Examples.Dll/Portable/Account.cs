@@ -17,7 +17,7 @@
 
 using System;
 
-namespace GridGain.Examples.Portable
+namespace Apache.Ignite.Examples.Dll.Portable
 {
     /// <summary>
     /// Account object. Used in transaction example.

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace GridGain.Examples.Messaging
+namespace Apache.Ignite.Examples.Dll.Messaging
 {
     /// <summary>
     /// Message topics.

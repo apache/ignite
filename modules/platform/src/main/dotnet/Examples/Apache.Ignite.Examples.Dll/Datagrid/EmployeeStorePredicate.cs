@@ -17,9 +17,9 @@
 
 using System;
 using Apache.Ignite.Core.Cache;
-using GridGain.Examples.Portable;
+using Apache.Ignite.Examples.Dll.Portable;
 
-namespace GridGain.Examples.Datagrid
+namespace Apache.Ignite.Examples.Dll.Datagrid
 {
     /// <summary>
     /// Example cache entry predicate.
