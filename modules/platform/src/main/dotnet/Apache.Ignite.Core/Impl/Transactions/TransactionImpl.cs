@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     /// <summary>
     /// Grid cache transaction implementation.
     /// </summary>
-    internal sealed class TransactionImpl
+    internal sealed class TransactionImpl : IDisposable
     {
         /** Metadatas. */
         private object[] _metas;
