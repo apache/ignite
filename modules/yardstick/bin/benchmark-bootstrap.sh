@@ -104,7 +104,8 @@ if [ -z "$PROPS_ENV" ]; then
     fi
 fi
 
-export CUR_DIR
-export SCRIPT_DIR
+ARGS=${ARGS}" --currentFolder ${CUR_DIR} --scriptsFolder ${SCRIPT_DIR}"
+
+export JAVA
 
 "$JAVA" ${JVM_OPTS} -cp ${CP} ${MAIN_CLASS} ${ARGS}
