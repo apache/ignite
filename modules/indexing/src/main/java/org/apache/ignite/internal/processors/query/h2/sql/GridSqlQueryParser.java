@@ -19,11 +19,10 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Set;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.command.Command;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Explain;
