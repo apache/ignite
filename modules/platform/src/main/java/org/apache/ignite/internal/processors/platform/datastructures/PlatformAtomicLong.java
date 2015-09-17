@@ -24,7 +24,8 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 /**
  * Platform atomic long wrapper.
  */
-public class PlatformAtomicLong extends PlatformAbstractTarget    {
+public class PlatformAtomicLong extends PlatformAbstractTarget {
+    /** */
     private final IgniteAtomicLong atomicLong;
 
     /**
@@ -38,5 +39,13 @@ public class PlatformAtomicLong extends PlatformAbstractTarget    {
         assert atomicLong != null;
 
         this.atomicLong = atomicLong;
+    }
+
+    public long get() {
+        return atomicLong.get();
+    }
+
+    public void close() {
+        atomicLong.close();
     }
 }
