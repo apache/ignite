@@ -33,8 +33,8 @@
                     <property name="readThrough" value="true"/>
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
-                            <property name="assemblyName" value="Apache.Ignite.Examples.Dll"/>
-                            <property name="className" value="Apache.Ignite.Examples.Dll.Datagrid.EmployeeStore"/>
+                            <property name="assemblyName" value="Apache.Ignite.ExamplesDll"/>
+                            <property name="className" value="Apache.Ignite.ExamplesDll.Datagrid.EmployeeStore"/>
                         </bean>
                     </property>
                 </bean>
