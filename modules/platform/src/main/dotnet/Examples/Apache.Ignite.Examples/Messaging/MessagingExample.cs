@@ -32,7 +32,7 @@ namespace Apache.Ignite.Examples.Messaging
     /// 2) Locate created Apache.Ignite.ExamplesDll.dll file (Apache.Ignite.ExamplesDll project -> right-click ->
     ///     Properties -> Build -> Output path);
     /// 3) Go to .Net binaries folder [IGNITE_HOME]\platforms\dotnet and run Apache.Ignite.exe as follows:
-    /// Apache.Ignite.exe -gridGainHome=[path_to_IGNITE_HOME] -springConfigUrl=modules\platform\src\main\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -IgniteHome=[path_to_IGNITE_HOME] -springConfigUrl=modules\platform\src\main\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// <para />
     /// To run the example please do the following:
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build);
