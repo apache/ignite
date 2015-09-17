@@ -1010,7 +1010,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 var primaryKey = Enumerable.Range(1, int.MaxValue).First(x => aff.IsPrimary(node, x));
 
-                var affinityKey = _grid1.GetAffinity(cacheName).AffinityKey<int, int>(primaryKey);
+                var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
 
                 _grid1.GetCompute().AffinityRun(cacheName, affinityKey, new ComputeAction());
 
@@ -1035,7 +1035,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 var primaryKey = Enumerable.Range(1, int.MaxValue).First(x => aff.IsPrimary(node, x));
 
-                var affinityKey = _grid1.GetAffinity(cacheName).AffinityKey<int, int>(primaryKey);
+                var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
 
                 var result = _grid1.GetCompute().AffinityCall(cacheName, affinityKey, new ComputeFunc());
 

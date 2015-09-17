@@ -662,7 +662,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 //var exp0 = new HashSet<int>(exp.Where(x => aff.Partition(x) == part)); // filter expected keys
                 var exp0 = new HashSet<int>();
                 foreach (var x in exp)
-                    if (aff.Partition(x) == part)
+                    if (aff.GetPartition(x) == part)
                         exp0.Add(x);
 
                 var qry = new ScanQuery<int, TV> { Partition = part };
@@ -679,7 +679,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 //var exp0 = new HashSet<int>(exp.Where(x => aff.Partition(x) == part)); // filter expected keys
                 var exp0 = new HashSet<int>();
                 foreach (var x in exp)
-                    if (aff.Partition(x) == part)
+                    if (aff.GetPartition(x) == part)
                         exp0.Add(x);
 
                 var qry = new ScanQuery<int, TV>(new ScanQueryFilter<TV>()) { Partition = part };
@@ -794,7 +794,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             foreach (var key in exp)
             {
-                var part = aff.Partition(key);
+                var part = aff.GetPartition(key);
                 sb.AppendFormat(
                     "Query did not return expected key '{0}' (exists: {1}), partition '{2}', partition nodes: ", 
                     key, cache.Get(key) != null, part);

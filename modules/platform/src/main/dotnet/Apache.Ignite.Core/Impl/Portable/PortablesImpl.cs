@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder Builder(Type type)
+        public IPortableBuilder GetBuilder(Type type)
         {
             IgniteArgumentCheck.NotNull(type, "type");
 
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder Builder(string typeName)
+        public IPortableBuilder GetBuilder(string typeName)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder Builder(IPortableObject obj)
+        public IPortableBuilder GetBuilder(IPortableObject obj)
         {
             IgniteArgumentCheck.NotNull(obj, "obj");
 

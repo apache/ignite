@@ -2515,7 +2515,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 ISet<int> parts = new HashSet<int>();
 
                 for (int i = 0; i < 1000; i++)
-                    parts.Add(aff.Partition(i));
+                    parts.Add(aff.GetPartition(i));
 
                 if (LocalCache())
                     Assert.AreEqual(1, parts.Count);
@@ -2527,7 +2527,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 ISet<int> parts = new HashSet<int>();
 
                 for (int i = 0; i < 1000; i++)
-                    parts.Add(aff.Partition("key" + i));
+                    parts.Add(aff.GetPartition("key" + i));
 
                 if (LocalCache())
                     Assert.AreEqual(1, parts.Count);
@@ -2601,11 +2601,11 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 IClusterNode node = nodes.First();
 
-                int[] parts = aff.BackupPartitions(node);
+                int[] parts = aff.GetBackupPartitions(node);
 
                 Assert.AreEqual(0, parts.Length);
 
-                parts = aff.AllPartitions(node);
+                parts = aff.GetAllPartitions(node);
 
                 Assert.AreEqual(CachePartitions(), parts.Length);
             }
@@ -2616,17 +2616,17 @@ namespace Apache.Ignite.Core.Tests.Cache
                 IList<int> allParts = new List<int>();
 
                 foreach(IClusterNode node in nodes) {
-                    int[] parts = aff.PrimaryPartitions(node);
+                    int[] parts = aff.GetPrimaryPartitions(node);
 
                     foreach (int part in parts)
                         allPrimaryParts.Add(part);
 
-                    parts = aff.BackupPartitions(node);
+                    parts = aff.GetBackupPartitions(node);
 
                     foreach (int part in parts)
                         allBackupParts.Add(part);
 
-                    parts = aff.AllPartitions(node);
+                    parts = aff.GetAllPartitions(node);
 
                     foreach (int part in parts)
                         allParts.Add(part);
@@ -2643,9 +2643,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             ICacheAffinity aff = Affinity();
 
-            Assert.AreEqual(10, aff.AffinityKey<int, int>(10));
+            Assert.AreEqual(10, aff.GetAffinityKey<int, int>(10));
 
-            Assert.AreEqual("string", aff.AffinityKey<string, string>("string"));
+            Assert.AreEqual("string", aff.GetAffinityKey<string, string>("string"));
         }
 
         [Test]
@@ -2667,7 +2667,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.IsFalse(aff.IsBackup(node, key));
 
-            int part = aff.Partition(key);
+            int part = aff.GetPartition(key);
 
             IClusterNode partNode = aff.MapPartitionToNode(part);
 
@@ -2693,7 +2693,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     Assert.IsTrue(aff.IsBackup(nodes[i], key));
             }
 
-            int part = aff.Partition(key);
+            int part = aff.GetPartition(key);
 
             IList<IClusterNode> partNodes = aff.MapPartitionToPrimaryAndBackups(part);
 
