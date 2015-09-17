@@ -139,11 +139,11 @@
       <Name>Apache.Ignite</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\main\dotnet\Examples\Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj">
-      <Project>{DFB08363-202E-412D-8812-349EF10A8702}</Project>
-      <Name>Apache.Ignite.Examples.Dll</Name>
+      <Project>{dfb08363-202e-412d-8812-349ef10a8702}</Project>
+      <Name>Apache.Ignite.ExamplesDll</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\main\dotnet\Examples\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj">
-      <Project>{069FA680-3C4D-43A9-B84F-E67513B87827}</Project>
+      <Project>{069fa680-3c4d-43a9-b84f-e67513b87827}</Project>
       <Name>Apache.Ignite.Examples</Name>
     </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite.Core.Tests.TestDll\Apache.Ignite.Core.Tests.TestDll.csproj">
