@@ -319,14 +319,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var cluster = _grid1.GetCluster();
 
-            Assert.AreEqual(1, cluster.Topology(1).Count);
+            Assert.AreEqual(1, cluster.GetTopology(1).Count);
 
-            Assert.AreEqual(null, cluster.Topology(int.MaxValue));
+            Assert.AreEqual(null, cluster.GetTopology(int.MaxValue));
 
             // Check that Nodes and Topology return the same for current version
             var topVer = cluster.TopologyVersion;
 
-            var top = cluster.Topology(topVer);
+            var top = cluster.GetTopology(topVer);
 
             var nodes = cluster.GetNodes();
 
@@ -339,7 +339,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             try
             {
-                top = cluster.Topology(topVer);
+                top = cluster.GetTopology(topVer);
 
                 Assert.AreEqual(top.Count, nodes.Count);
 

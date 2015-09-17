@@ -255,9 +255,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICollection<IClusterNode> Topology(long ver)
+        public ICollection<IClusterNode> GetTopology(long ver)
         {
-            return _ignite.GetCluster().Topology(ver);
+            return _ignite.GetCluster().GetTopology(ver);
         }
 
         /** <inheritdoc /> */
