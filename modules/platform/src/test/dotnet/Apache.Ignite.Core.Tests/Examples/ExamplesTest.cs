@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// <summary>
     /// Tests all examples in various modes.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class ExamplesTest
     {
         /// <summary>
@@ -45,7 +46,6 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// </summary>
         /// <param name="example">The example to run.</param>
         [Test, TestCaseSource("TestCases")]
-        [Category(TestUtils.CategoryIntensive)]
         public void TestRemoteNodes(Example example)
         {
             TestRemoteNodes(example, false);
@@ -56,7 +56,6 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// </summary>
         /// <param name="example">The example to run.</param>
         [Test, TestCaseSource("TestCases")]
-        [Category(TestUtils.CategoryIntensive)]
         public void TestRemoteNodesClientMode(Example example)
         {
             TestRemoteNodes(example, true);
