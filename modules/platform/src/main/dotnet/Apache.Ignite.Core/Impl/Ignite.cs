@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cluster;
@@ -461,6 +462,12 @@ namespace Apache.Ignite.Core.Impl
         public IServices Services()
         {
             return _prj.Services();
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicLong GetAtomicLong(string name, long initialValue, bool create)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
