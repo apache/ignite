@@ -32,9 +32,9 @@
                     <property name="writeThrough" value="true"/>
                     <property name="readThrough" value="true"/>
                     <property name="cacheStoreFactory">
-                        <bean class="org.gridgain.grid.interop.dotnet.InteropDotNetCacheStoreFactory">
-                            <property name="assemblyName" value="GridGainExamplesDll"/>
-                            <property name="className" value="GridGain.Examples.Datagrid.EmployeeStore"/>
+                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
+                            <property name="assemblyName" value="Apache.Ignite.Examples.Dll"/>
+                            <property name="className" value="Apache.Ignite.Examples.Dll.Datagrid.EmployeeStore"/>
                         </bean>
                     </property>
                 </bean>
