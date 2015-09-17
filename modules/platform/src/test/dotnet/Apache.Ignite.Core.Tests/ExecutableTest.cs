@@ -175,10 +175,10 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsTrue(_grid.WaitTopology(2, 30000));
 
-            var minMem = _grid.Cluster.ForRemotes().Compute().ExecuteJavaTask<long>(MinMemTask, null);
+            var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
             Assert.AreEqual((long) 506*1024*1024, minMem);
 
-            var maxMem = _grid.Cluster.ForRemotes().Compute().ExecuteJavaTask<long>(MaxMemTask, null);
+            var maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
             AssertJvmMaxMemory((long) 607*1024*1024, maxMem);
         }
 
@@ -197,10 +197,10 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsTrue(_grid.WaitTopology(2, 30000));
 
-            var minMem = _grid.Cluster.ForRemotes().Compute().ExecuteJavaTask<long>(MinMemTask, null);
+            var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
             Assert.AreEqual((long) 615*1024*1024, minMem);
 
-            var maxMem = _grid.Cluster.ForRemotes().Compute().ExecuteJavaTask<long>(MaxMemTask, null);
+            var maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
             AssertJvmMaxMemory((long) 863*1024*1024, maxMem);
         }
 
@@ -219,10 +219,10 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsTrue(_grid.WaitTopology(2, 30000));
 
-            var minMem = _grid.Cluster.ForRemotes().Compute().ExecuteJavaTask<long>(MinMemTask, null);
+            var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
             Assert.AreEqual((long) 601*1024*1024, minMem);
 
-            var maxMem = _grid.Cluster.ForRemotes().Compute().ExecuteJavaTask<long>(MaxMemTask, null);
+            var maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
             AssertJvmMaxMemory((long) 702*1024*1024, maxMem);
 
             proc.Kill();
@@ -236,10 +236,10 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsTrue(_grid.WaitTopology(2, 30000));
 
-            minMem = _grid.Cluster.ForRemotes().Compute().ExecuteJavaTask<long>(MinMemTask, null);
+            minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
             Assert.AreEqual((long) 605*1024*1024, minMem);
 
-            maxMem = _grid.Cluster.ForRemotes().Compute().ExecuteJavaTask<long>(MaxMemTask, null);
+            maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
             AssertJvmMaxMemory((long) 706*1024*1024, maxMem);
         }
 
@@ -261,10 +261,10 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(_grid.WaitTopology(2, 30000));
 
             // Raw JVM options (Xms/Xmx) should override custom options
-            var minMem = _grid.Cluster.ForRemotes().Compute().ExecuteJavaTask<long>(MinMemTask, null);
+            var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
             Assert.AreEqual((long) 555*1024*1024, minMem);
 
-            var maxMem = _grid.Cluster.ForRemotes().Compute().ExecuteJavaTask<long>(MaxMemTask, null);
+            var maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
             AssertJvmMaxMemory((long) 666*1024*1024, maxMem);
         }
 
@@ -274,7 +274,7 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>Configuration.</returns>
         private RemoteConfiguration RemoteConfig()
         {
-            return _grid.Cluster.ForRemotes().Compute().Call(new RemoteConfigurationClosure());
+            return _grid.GetCluster().ForRemotes().GetCompute().Call(new RemoteConfigurationClosure());
         }
 
         /// <summary>

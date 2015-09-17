@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExecuteSingle()
         {
-            var res = Grid1.Compute().Call(OutFunc(false));
+            var res = Grid1.GetCompute().Call(OutFunc(false));
 
             CheckResult(res);
         }
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             try
             {
-                Grid1.Compute().Call(OutFunc(true));
+                Grid1.GetCompute().Call(OutFunc(true));
 
                 Assert.Fail();
             }
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             for (int i = 0; i < MultiCloCnt; i++)
                 clos.Add(OutFunc(false));
 
-            ICollection<object> ress = Grid1.Compute().Call(clos);
+            ICollection<object> ress = Grid1.GetCompute().Call(clos);
 
             foreach (object res in ress)
                 CheckResult(res);
@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             for (int i = 0; i < MultiCloCnt; i++)
                 clos.Add(OutFunc(false));
 
-            ICollection<object> ress = Grid1.Compute().Call(clos, new Reducer(false));
+            ICollection<object> ress = Grid1.GetCompute().Call(clos, new Reducer(false));
 
             foreach (object res in ress)
                 CheckResult(res);
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             try
             {
-                Grid1.Compute().Call(clos);
+                Grid1.GetCompute().Call(clos);
 
                 Assert.Fail();
             }
@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastOut()
         {
-            ICollection<object> ress = Grid1.Compute().Broadcast(OutFunc(false));
+            ICollection<object> ress = Grid1.GetCompute().Broadcast(OutFunc(false));
 
             foreach (object res in ress)
                 CheckResult(res);
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             try
             {
-                Grid1.Compute().Broadcast(OutFunc(true));
+                Grid1.GetCompute().Broadcast(OutFunc(true));
 
                 Assert.Fail();
             }
@@ -161,7 +161,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastInOut()
         {
-            ICollection<object> ress = Grid1.Compute().Broadcast(Func(false), 1);
+            ICollection<object> ress = Grid1.GetCompute().Broadcast(Func(false), 1);
 
             foreach (object res in ress)
                 CheckResult(res);
@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             try
             {
-                Grid1.Compute().Broadcast(Func(true), 1);
+                Grid1.GetCompute().Broadcast(Func(true), 1);
 
                 Assert.Fail();
             }
@@ -191,7 +191,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApply()
         {
-            object res = Grid1.Compute().Apply(Func(false), 1);
+            object res = Grid1.GetCompute().Apply(Func(false), 1);
 
             CheckResult(res);
         }
@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             try
             {
-                Grid1.Compute().Apply(Func(true), 1);
+                Grid1.GetCompute().Apply(Func(true), 1);
 
                 Assert.Fail();
             }
@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Console.WriteLine("START TASK");
 
-            var ress = Grid1.Compute().Apply(Func(false), args);
+            var ress = Grid1.GetCompute().Apply(Func(false), args);
 
             Console.WriteLine("END TASK.");
 
@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             try
             {
-                Grid1.Compute().Apply(Func(true), args);
+                Grid1.GetCompute().Apply(Func(true), args);
 
                 Assert.Fail();
             }
@@ -270,7 +270,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 args.Add(1);
 
             ICollection<object> ress =
-                Grid1.Compute().Apply(Func(false), args, new Reducer(false));
+                Grid1.GetCompute().Apply(Func(false), args, new Reducer(false));
 
             foreach (object res in ress)
                 CheckResult(res);
@@ -289,7 +289,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             try
             {
-                Grid1.Compute().Apply(Func(true), args, new Reducer(false));
+                Grid1.GetCompute().Apply(Func(true), args, new Reducer(false));
 
                 Assert.Fail();
             }
@@ -312,7 +312,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             try
             {
-                Grid1.Compute().Apply(Func(false), args, new Reducer(true));
+                Grid1.GetCompute().Apply(Func(false), args, new Reducer(true));
 
                 Assert.Fail();
             }
