@@ -47,12 +47,21 @@ namespace Apache.Ignite.Core.DataStructures
         /// <summary>
         /// Adds specified value to the current value and returns result.
         /// </summary>
-        /// <param name="value">The value.</param>
+        /// <param name="value">The value to add.</param>
         /// <returns>Current value of the atomic long.</returns>
         long Add(long value);
-        
+
+        /// <summary>
+        /// Decrements current value and returns result.
+        /// </summary>
+        /// <returns>Current value of the atomic long.</returns>
         long Decrement();
 
+        /// <summary>
+        /// Sets current value to a specified value and returns the original value.
+        /// </summary>
+        /// <param name="value">The value to set.</param>
+        /// <returns>Original value of the atomic long.</returns>
         long Exchange(long value);
 
         long CompareExchange(long value, long comparand);
