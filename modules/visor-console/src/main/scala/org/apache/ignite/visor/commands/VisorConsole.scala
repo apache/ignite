@@ -105,6 +105,12 @@ class VisorConsole {
         val batchCommand = argValue("e", argLst)
 
         cfgFile.foreach(cfg => {
+            if (cfg.trim.isEmpty) {
+                visor.warn("Expected path to configuration after \"-cfg\" option.")
+
+                visor.quit()
+            }
+
             if (batchFile.isDefined || batchCommand.isDefined) {
                 visor.warn("Options can't contains both -cfg and one of -b or -e options.")
 
