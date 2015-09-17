@@ -85,7 +85,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFailover() throws Exception {
-        int cnt = 10;
+        int cnt = 50;
 
         for (int i = 0; i < cnt; i++) {
             try {
@@ -146,9 +146,8 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                             String id = ids[idx];
 
                             if (id != null /*&& grids[gridIdx] != null*/) {
-                                //U.debug("!!! Grid containsKey start " + gridIdx);
-                                cache.containsKey(id);
-                                //U.debug("!!! Grid containsKey finished " + gridIdx);
+                                boolean res = cache.containsKey(id);
+                                System.out.println("!!! RES: " + res);
                             }
 
                             try {
@@ -170,11 +169,8 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
 
                             String id = ids[idx];
 
-                            if (id != null /*&& grids[gridIdx] != null*/) {
-                                //U.debug("!!! Grid put start " + gridIdx);
+                            if (id != null /*&& grids[gridIdx] != null*/)
                                 cache.put(id, UUID.randomUUID());
-                                //U.debug("!!! Grid put finished " + gridIdx);
-                            }
 
                             try {
                                 Thread.sleep(ThreadLocalRandom.current().nextLong(50));
@@ -193,29 +189,33 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                 if (gridToKill > 0 && grids[gridToKill] != null) {
                     U.debug("!!! Trying to kill grid " + gridToKill);
 
-                    //synchronized (mons[gridToKill]) {
-                        U.debug("!!! Grid stop start " + gridToKill);
+                    U.debug("!!! Grid stop start " + gridToKill);
 
-                        grids[gridToKill].close();
+                    grids[gridToKill].close();
 
-                        aliveGrids.remove(gridToKill);
+                    aliveGrids.remove(gridToKill);
 
-                        grids[gridToKill] = null;
+                    grids[gridToKill] = null;
 
-                        flags[gridToKill].set(true);
+                    flags[gridToKill].set(true);
 
-                        U.debug("!!! Grid stop finished " + gridToKill);
-                    //}
+                    U.debug("!!! Grid stop finished " + gridToKill);
                 }
             }
 
-            Thread.sleep(ThreadLocalRandom.current().nextLong(100));
+            Thread.sleep(500);
         }
         finally {
             flags[0].set(true);
 
-            for (IgniteInternalFuture fut : futs)
-                fut.get();
+            for (IgniteInternalFuture fut : futs) {
+                try {
+                    fut.get();
+                }
+                catch (Throwable e) {
+                    // No-op.
+                }
+            }
         }
     }
 }

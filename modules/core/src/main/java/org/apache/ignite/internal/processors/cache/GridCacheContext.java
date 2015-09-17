@@ -1848,7 +1848,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean deserializePortable,
         boolean cpy) {
         assert key != null;
-        assert val != null;
+        assert skipVals || val != null;
 
         if (!keepCacheObjects) {
             Object key0 = key.value(cacheObjCtx, false);
