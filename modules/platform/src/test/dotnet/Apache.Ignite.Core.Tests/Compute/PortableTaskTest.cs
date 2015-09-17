@@ -50,11 +50,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             TestTask task = new TestTask(Grid1, taskArg);
 
-            IPortableObject res = Grid1.Compute().Execute(task, taskArg);
+            IPortableObject res = Grid1.GetCompute().Execute(task, taskArg);
 
             Assert.NotNull(res);
 
-            Assert.AreEqual(400, res.Field<int>("val"));
+            Assert.AreEqual(400, res.GetField<int>("val"));
 
             PortableTaskResult resObj = res.Deserialize<PortableTaskResult>();
 
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         private static IPortableObject ToPortable(IIgnite grid, object obj)
         {
-            var cache = grid.Cache<object, object>(Cache1Name).WithKeepPortable<object, object>();
+            var cache = grid.GetCache<object, object>(Cache1Name).WithKeepPortable<object, object>();
 
             cache.Put(1, obj);
 
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 foreach (IClusterNode node in subgrid)
                 {
-                    if (!Grid3Name.Equals(node.Attribute<string>("org.apache.ignite.ignite.name"))) // Grid3 does not have cache.
+                    if (!Grid3Name.Equals(node.GetAttribute<string>("org.apache.ignite.ignite.name"))) // Grid3 does not have cache.
                     {
                         PortableJob job = new PortableJob();
 
@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 Assert.IsNotNull(taskArg);
 
-                Assert.AreEqual(100, taskArg.Field<int>("val"));
+                Assert.AreEqual(100, taskArg.GetField<int>("val"));
 
                 PortableTaskArgument taskArgObj = taskArg.Deserialize<PortableTaskArgument>();
 
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                     Assert.NotNull(jobRes);
 
-                    Assert.AreEqual(300, jobRes.Field<int>("val"));
+                    Assert.AreEqual(300, jobRes.GetField<int>("val"));
 
                     PortableJobResult jobResObj = jobRes.Deserialize<PortableJobResult>();
 
@@ -235,7 +235,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 Assert.IsNotNull(Arg);
 
-                Assert.AreEqual(200, Arg.Field<int>("val"));
+                Assert.AreEqual(200, Arg.GetField<int>("val"));
 
                 PortableJobArgument argObj = Arg.Deserialize<PortableJobArgument>();
 

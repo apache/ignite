@@ -48,9 +48,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestTaskInjection()
         {
-            int res = Grid1.Compute().Execute(new InjectionTask(), 0);
+            int res = Grid1.GetCompute().Execute(new InjectionTask(), 0);
 
-            Assert.AreEqual(Grid1.Cluster.Nodes().Count, res);
+            Assert.AreEqual(Grid1.GetCluster().GetNodes().Count, res);
         }
 
         /// <summary>
@@ -59,9 +59,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestClosureInjection()
         {
-            var res = Grid1.Compute().Broadcast(new InjectionClosure(), 1);
+            var res = Grid1.GetCompute().Broadcast(new InjectionClosure(), 1);
 
-            Assert.AreEqual(Grid1.Cluster.Nodes().Count, res.Sum());
+            Assert.AreEqual(Grid1.GetCluster().GetNodes().Count, res.Sum());
         }
 
         /// <summary>
@@ -70,9 +70,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestReducerInjection()
         {
-            int res = Grid1.Compute().Apply(new InjectionClosure(), new List<int> { 1, 1, 1 }, new InjectionReducer());
+            int res = Grid1.GetCompute().Apply(new InjectionClosure(), new List<int> { 1, 1, 1 }, new InjectionReducer());
 
-            Assert.AreEqual(Grid1.Cluster.Nodes().Count, res);
+            Assert.AreEqual(Grid1.GetCluster().GetNodes().Count, res);
         }
 
         /// <summary>
@@ -81,9 +81,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestNoResultCache()
         {
-            int res = Grid1.Compute().Execute(new NoResultCacheTask(), 0);
+            int res = Grid1.GetCompute().Execute(new NoResultCacheTask(), 0);
 
-            Assert.AreEqual(Grid1.Cluster.Nodes().Count, res);
+            Assert.AreEqual(Grid1.GetCluster().GetNodes().Count, res);
         }
 
         /// <summary>

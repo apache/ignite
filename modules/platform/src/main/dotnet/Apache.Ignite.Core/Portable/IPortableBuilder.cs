@@ -66,8 +66,7 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="hashCode">Hash code.</param>
         /// <returns>Current builder instance.</returns>
-        [SuppressMessage("Microsoft.Naming", "CA1719:ParameterNamesShouldNotMatchMemberNames", MessageId = "0#")]
-        IPortableBuilder HashCode(int hashCode);
+        IPortableBuilder SetHashCode(int hashCode);
 
         /// <summary>
         /// Build the object.

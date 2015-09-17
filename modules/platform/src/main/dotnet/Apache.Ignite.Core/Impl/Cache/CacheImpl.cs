@@ -149,9 +149,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public bool IsEmpty
+
+        public bool IsEmpty()
         {
-            get { return Size() == 0; }
+            return GetSize() == 0;
         }
 
         /** <inheritDoc /> */
@@ -230,7 +231,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public bool KeepPortable
+        public bool IsKeepPortable
         {
             get { return _flagKeepPortable; }
         }
@@ -257,7 +258,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 if (p != null)
                 {
                     var p0 = new CacheEntryFilterHolder(p, (k, v) => p.Invoke(new CacheEntry<TK, TV>((TK)k, (TV)v)),
-                        Marshaller, KeepPortable);
+                        Marshaller, IsKeepPortable);
                     writer.WriteObject(p0);
                     writer.WriteLong(p0.Handle);
                 }
@@ -486,13 +487,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public int LocalSize(params CachePeekMode[] modes)
+        public int GetLocalSize(params CachePeekMode[] modes)
         {
             return Size0(true, modes);
         }
 
         /** <inheritDoc /> */
-        public int Size(params CachePeekMode[] modes)
+        public int GetSize(params CachePeekMode[] modes)
         {
             return Size0(false, modes);
         }
@@ -672,7 +673,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 var writer = Marshaller.StartMarshal(stream);
 
-                qry.Write(writer, KeepPortable);
+                qry.Write(writer, IsKeepPortable);
 
                 FinishMarshal(writer);
 
@@ -737,7 +738,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                     {
                         writer.WriteInt((int) initialQry.OpId);
 
-                        initialQry.Write(writer, KeepPortable);
+                        initialQry.Write(writer, IsKeepPortable);
                     }
                     else
                         writer.WriteInt(-1); // no initial query

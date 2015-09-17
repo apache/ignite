@@ -38,10 +38,7 @@ namespace Apache.Ignite.Core.Cluster
         /// Gets local Ignite node.
         /// </summary>
         /// <returns>Local Ignite node.</returns>
-        IClusterNode LocalNode
-        {
-            get;
-        }
+        IClusterNode GetLocalNode();
 
         /// <summary>
         /// Pings a remote node.
@@ -70,7 +67,7 @@ namespace Apache.Ignite.Core.Cluster
         /// <exception cref="IgniteException">If underlying SPI implementation does not support 
         /// topology history. Currently only <code>org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi</code>
         /// supports topology history.</exception>
-        ICollection<IClusterNode> Topology(long ver);
+        ICollection<IClusterNode> GetTopology(long ver);
 
         /// <summary>
         /// Resets local I/O, job, and task execution metrics.

@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="typeName">Full type name.</param>
         /// <returns>ID of the class or 0 in case hash code is to be used.</returns>
-        int TypeId(string typeName);
+        int GetTypeId(string typeName);
 
         /// <summary>
         /// Gets field ID for the given field of the given class.
@@ -35,6 +35,6 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="typeId">Type ID.</param>
         /// <param name="fieldName">Field name.</param>
         /// <returns>ID of the field or null in case hash code is to be used.</returns>
-        int FieldId(int typeId, string fieldName);
+        int GetFieldId(int typeId, string fieldName);
     }
 }

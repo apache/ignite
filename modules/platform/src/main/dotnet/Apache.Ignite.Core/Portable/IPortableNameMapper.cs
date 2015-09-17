@@ -27,13 +27,13 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="name">The name.</param>
         /// <returns>Type name.</returns>
-        string TypeName(string name);
+        string GetTypeName(string name);
 
         /// <summary>
         /// Gets the field name.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <returns>Field name.</returns>
-        string FieldName(string name);
+        string GetFieldName(string name);
     }
 }

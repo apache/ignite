@@ -1626,7 +1626,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             try
             {
                 if (converter != null)
-                    typeName = converter.TypeName(typeName);
+                    typeName = converter.GetTypeName(typeName);
             }
             catch (Exception e)
             {
@@ -1654,7 +1654,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             try
             {
                 if (converter != null)
-                    fieldName = converter.FieldName(fieldName);
+                    fieldName = converter.GetFieldName(fieldName);
             }
             catch (Exception e)
             {
@@ -1700,7 +1700,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 try
                 {
-                    id = idMapper.TypeId(typeName);
+                    id = idMapper.GetTypeId(typeName);
                 }
                 catch (Exception e)
                 {
@@ -1736,7 +1736,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 try
                 {
-                    id = idMapper.FieldId(typeId, fieldName);
+                    id = idMapper.GetFieldId(typeId, fieldName);
                 }
                 catch (Exception e)
                 {

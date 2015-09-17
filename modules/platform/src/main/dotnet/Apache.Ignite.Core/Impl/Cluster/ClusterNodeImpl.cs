@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritDoc /> */
-        public T Attribute<T>(string name)
+        public T GetAttribute<T>(string name)
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritDoc /> */
-        public IDictionary<string, object> Attributes()
+        public IDictionary<string, object> GetAttributes()
         {
             return _attrs;
         }
@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritDoc /> */
-        public IClusterMetrics Metrics()
+        public IClusterMetrics GetMetrics()
         {
             var ignite = (Ignite)_igniteRef.Target;
 
