@@ -1176,7 +1176,12 @@ namespace ignite
             {
                 JNIEnv* env = Attach();
 
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_atomicLong);
+                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
+
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_atomicLong, name0, initVal, create);
+
+                if (name0)
+                    env->DeleteLocalRef(name0);
 
                 ExceptionCheck(env);
 
