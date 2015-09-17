@@ -29,8 +29,8 @@ namespace Apache.Ignite.Examples.Misc
     /// events to the console.
     /// <para />
     /// To run the example please do the following:
-    /// 1) Build the project GridGainExamplesDll (select it -> right-click -> Build);
-    /// 2) Set this class as startup object (GridGainExamples project -> right-click -> Properties ->
+    /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build);
+    /// 2) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
     /// 3) Start application (F5 or Ctrl+F5).
     /// <para />

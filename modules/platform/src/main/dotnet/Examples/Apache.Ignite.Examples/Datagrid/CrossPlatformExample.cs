@@ -26,13 +26,13 @@ namespace Apache.Ignite.Examples.Datagrid
     /// <summary>
     /// This example demonstrates use of portable objects between different platforms.
     /// <para/>
-    /// This example must be run with standalone Java node. To achieve this start a node from GRIDGAIN_HOME 
+    /// This example must be run with standalone Java node. To achieve this start a node from IGNITE_HOME 
     /// using "ignite.bat" with proper configuration:
     /// <example>'bin\ignite.bat examples\config\example-server.xml'</example>.
     /// <para />
     /// Once remote node is started, launch this example as follows:
-    /// 1) Build the project GridGainExamplesDll (select it -> right-click -> Build);
-    /// 2) Set this class as startup object (GridGainExamples project -> right-click -> Properties -> 
+    /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build);
+    /// 2) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties -> 
     ///     Application -> Startup object); 
     /// 3) Start application (F5 or Ctrl+F5).
     /// <para />

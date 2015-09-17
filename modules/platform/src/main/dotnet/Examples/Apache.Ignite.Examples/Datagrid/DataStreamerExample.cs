@@ -30,15 +30,15 @@ namespace Apache.Ignite.Examples.Datagrid
     /// as it properly buffers cache requests together and properly manages load on remote nodes.
     /// <para />
     /// To run the example please do the following:
-    /// 1) Build the project GridGainExamplesDll (select it -> right-click -> Build);
-    /// 2) Set this class as startup object (GridGainExamples project -> right-click -> Properties ->
+    /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build);
+    /// 2) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
     /// 3) Start application (F5 or Ctrl+F5).
     /// <para />
     /// This example can be run in conjunction with standalone GridGain .Net node.
     /// To start standalone node please do the following:
-    /// 1) Go to .Net binaries folder [GRIDGAIN_HOME]\platforms\dotnet and run GridGain.exe as follows:
-    /// GridGain.exe -gridGainHome=[path_to_GRIDGAIN_HOME] -springConfigUrl=examples\config\dotnet\example-cache.xml
+    /// 1) Go to .Net binaries folder [IGNITE_HOME]\platforms\dotnet and run Apache.Ignite.exe as follows:
+    /// Apache.Ignite.exe -gridGainHome=[path_to_IGNITE_HOME] -springConfigUrl=modules\platform\src\main\dotnet\examples\config\example-cache.xml
     /// </summary>
     public class DataStreamerExample
     {
