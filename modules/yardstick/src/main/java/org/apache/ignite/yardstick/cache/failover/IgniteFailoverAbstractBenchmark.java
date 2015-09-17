@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,7 +33,7 @@ import static org.yardstickframework.BenchmarkUtils.println;
 /**
  * Ignite benchmark that performs long running failover tasks.
  */
-public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
+public abstract class IgniteFailoverAbstractBenchmark extends IgniteCacheAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public void setUp(final BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
@@ -65,8 +64,6 @@ public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
 
                         assert backupsCnt >= 1 : "Backups=" + backupsCnt;
 
-                        final ThreadLocalRandom random = ThreadLocalRandom.current();
-
                         final boolean isDebug = ignite().log().isDebugEnabled();
 
                         // Main logic.
@@ -75,13 +72,13 @@ public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
                         while (!Thread.currentThread().isInterrupted()) {
                             Thread.sleep(args.restartDelay() * 1000);
 
-                            int numNodesToRestart = random.nextInt(1, backupsCnt + 1);
+                            int numNodesToRestart = nextRandom(1, backupsCnt + 1);
 
                             List<Integer> ids = new ArrayList<>();
 
                             ids.addAll(srvsCfgs.keySet());
 
-                            Collections.shuffle(ids, random);
+                            Collections.shuffle(ids);
 
                             println("[RESTARTER] Number nodes to restart = " + numNodesToRestart + ", shuffled ids = " + ids);
 
@@ -110,7 +107,8 @@ public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
                             }
                         }
                     }
-                    catch (InterruptedException e) {
+                    catch (Exception e) {
+                        println("[RESTARTER] Got exception: " + e);
                         e.printStackTrace();
                     }
                 }
@@ -120,19 +118,5 @@ public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
 
             thread.start();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int key = nextRandom(args.range());
-
-        cache.get(key);
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("atomic");
     }
 }
