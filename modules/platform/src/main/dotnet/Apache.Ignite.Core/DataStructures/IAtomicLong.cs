@@ -27,25 +27,31 @@ namespace Apache.Ignite.Core.DataStructures
         /// <summary>
         /// Gets the name of this atomic long.
         /// </summary>
+        /// <value>
+        /// Name of this atomic long.
+        /// </value>
         string Name { get; }
 
         /// <summary>
-        /// Gets the value of this atomic long.
+        /// Returns current value.
         /// </summary>
-        /// <returns>Current value of atomic long.</returns>
+        /// <returns>Current value of the atomic long.</returns>
         long Read();
 
+        /// <summary>
+        /// Increments current value and returns result.
+        /// </summary>
+        /// <returns>Current value of the atomic long.</returns>
         long Increment();
 
-        long ReadAndIncrement();
-
+        /// <summary>
+        /// Adds specified value to the current value and returns result.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>Current value of the atomic long.</returns>
         long Add(long value);
         
-        long ReadAndAdd(long value);
-
         long Decrement();
-
-        long ReadAndDecrement();
 
         long Exchange(long value);
 
