@@ -173,14 +173,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICompute Compute(IClusterGroup clusterGroup)
-        {
-            IgniteArgumentCheck.NotNull(clusterGroup, "clusterGroup");
-
-            return clusterGroup.Compute();
-        }
-
-        /** <inheritdoc /> */
         public IClusterGroup ForNodes(IEnumerable<IClusterNode> nodes)
         {
             return ((IClusterGroup) _prj).ForNodes(nodes);
@@ -435,26 +427,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IMessaging Message(IClusterGroup clusterGroup)
-        {
-            IgniteArgumentCheck.NotNull(clusterGroup, "clusterGroup");
-
-            return clusterGroup.Message();
-        }
-
-        /** <inheritdoc /> */
         public IEvents Events()
         {
             return _prj.Events();
-        }
-
-        /** <inheritdoc /> */
-        public IEvents Events(IClusterGroup clusterGroup)
-        {
-            if (clusterGroup == null)
-                throw new ArgumentNullException("clusterGroup");
-
-            return clusterGroup.Events();
         }
 
         /** <inheritdoc /> */

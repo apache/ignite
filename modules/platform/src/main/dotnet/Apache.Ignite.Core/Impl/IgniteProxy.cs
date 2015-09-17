@@ -89,12 +89,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICompute Compute(IClusterGroup clusterGroup)
-        {
-            return clusterGroup.Compute();
-        }
-
-        /** <inheritdoc /> */
         public IClusterGroup ForNodes(IEnumerable<IClusterNode> nodes)
         {
             return _ignite.Cluster.ForNodes(nodes);
@@ -302,21 +296,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IMessaging Message(IClusterGroup clusterGroup)
-        {
-            return _ignite.Message(clusterGroup);
-        }
-
-        /** <inheritdoc /> */
         public IEvents Events()
         {
             return _ignite.Events();
-        }
-
-        /** <inheritdoc /> */
-        public IEvents Events(IClusterGroup clusterGroup)
-        {
-            return _ignite.Events(clusterGroup);
         }
 
         /** <inheritdoc /> */

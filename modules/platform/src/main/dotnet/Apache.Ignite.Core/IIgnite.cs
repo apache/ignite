@@ -65,14 +65,6 @@ namespace Apache.Ignite.Core
         ICompute Compute();
 
         /// <summary>
-        /// Gets compute functionality over specified grid projection. All operations
-        /// on the returned ICompute instance will only include nodes from
-        /// that projection.
-        /// </summary>
-        /// <returns>Compute instance over specified grid projection.</returns>
-        ICompute Compute(IClusterGroup clusterGroup);
-
-        /// <summary>
         /// Gets the cache instance for the given name to work with keys and values of specified types.
         /// <para/>
         /// You can get instances of ICache of the same name, but with different key/value types.
@@ -138,26 +130,10 @@ namespace Apache.Ignite.Core
         IMessaging Message();
 
         /// <summary>
-        /// Gets messaging facade over nodes within the cluster group.  All operations on the returned 
-        /// <see cref="IMessaging"/>> instance will only include nodes from the specified cluster group.
-        /// </summary>
-        /// <param name="clusterGroup">Cluster group.</param>
-        /// <returns>Messaging instance over given cluster group.</returns>
-        IMessaging Message(IClusterGroup clusterGroup);
-
-        /// <summary>
         /// Gets events facade over all cluster nodes.
         /// </summary>
         /// <returns>Events facade over all cluster nodes.</returns>
         IEvents Events();
-
-        /// <summary>
-        /// Gets events facade over nodes within the cluster group.  All operations on the returned 
-        /// <see cref="IEvents"/>> instance will only include nodes from the specified cluster group.
-        /// </summary>
-        /// <param name="clusterGroup">Cluster group.</param>
-        /// <returns>Events instance over given cluster group.</returns>
-        IEvents Events(IClusterGroup clusterGroup);
 
         /// <summary>
         /// Gets services facade over all cluster nodes.
