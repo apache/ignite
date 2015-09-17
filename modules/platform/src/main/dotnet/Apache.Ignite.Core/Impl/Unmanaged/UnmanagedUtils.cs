@@ -709,6 +709,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
+        internal static IUnmanagedTarget ProcessorAtomicLong(IUnmanagedTarget target, string name, long initialValue, 
+            bool create)
+        {
+            // TODO
+        }
+
         #endregion
 
         #region NATIVE METHODS: TARGET

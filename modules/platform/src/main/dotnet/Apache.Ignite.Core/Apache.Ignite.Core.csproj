@@ -206,6 +206,7 @@
     <Compile Include="Impl\Datastream\DataStreamerImpl.cs" />
     <Compile Include="Impl\Datastream\DataStreamerRemoveEntry.cs" />
     <Compile Include="Impl\Datastream\StreamReceiverHolder.cs" />
+    <Compile Include="Impl\DataStructures\AtomicLong.cs" />
     <Compile Include="Impl\Events\Events.cs" />
     <Compile Include="Impl\Events\EventsAsync.cs" />
     <Compile Include="Impl\Events\RemoteListenEventFilter.cs" />

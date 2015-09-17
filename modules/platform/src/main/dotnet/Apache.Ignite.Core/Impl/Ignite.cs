@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Datastream;
+    using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Transactions;
@@ -429,8 +430,9 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IAtomicLong GetAtomicLong(string name, long initialValue, bool create)
         {
-            // TODO: UU.ProcessorAtomicLong
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            return new AtomicLong(UU.ProcessorAtomicLong(_proc, name, initialValue, create), Marshaller, name);
         }
 
         /// <summary>
