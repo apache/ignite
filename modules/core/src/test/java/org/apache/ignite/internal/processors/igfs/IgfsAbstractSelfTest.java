@@ -82,10 +82,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
 
     /** Default repeat count. */
-    protected static final int REPEAT_CNT = 1;
+    protected static final int REPEAT_CNT = 100;
 
     /** Concurrent operations count. */
-    protected static final int OPS_CNT = 16;
+    protected static final int OPS_CNT = 1116;
+
+    /** Seed. */
+    protected static final long SEED = 0L; // System.currentTimeMillis();
 
     /** Amount of blocks to prefetch. */
     protected static final int PREFETCH_BLOCKS = 1;
@@ -2015,14 +2018,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testDeadlocksRename() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
+                info(">>>>>> Start deadlock test.");
+
                 checkDeadlocks(2, 2, 2, 2, OPS_CNT, 0, 0, 0, 0);
+
+                info(">>>>>> End deadlock test.");
             }
             finally {
-                info(">>>>>> Start deadlock test");
+                info(">>>>>> Start cleanup.");
 
                 clear(igfs, igfsSecondary);
 
-                info(">>>>>> End deadlock test");
+                info(">>>>>> End cleanup.");
             }
         }
     }
@@ -2170,7 +2177,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         }
 
         // Now as we have all paths defined, plan operations on them.
-        final Random rand = new Random(0/*U.currentTimeMillis()*/);
+        final Random rand = new Random(SEED);
 
         int totalOpCnt = renCnt + delCnt + updateCnt + mkdirsCnt + createCnt;
 
@@ -2205,13 +2212,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                         U.awaitQuiet(barrier);
 
-                        if (!fromPath.equals(toPath) && igfs.info(toPath).isDirectory()) {
+                        IgfsFile dst = igfs.info(toPath);
+
+                        if (!fromPath.equals(toPath) && dst != null && dst.isDirectory()) {
                             igfs.rename(fromPath, toPath);
-                            System.out.println("Move: " + fromPath + " -> " + toPath);
+
+                            boolean quasiOkay = igfs.exists(new IgfsPath(toPath + "/" + fromPath.name()));
+
+                            System.out.println("Move: " + fromPath + " -> " + toPath + ": " + quasiOkay);
                         }
                     }
                     catch (IgniteException ignore) {
-                        ignore.printStackTrace();
+                        //ignore.printStackTrace();
                     }
                 }
             };
@@ -2219,115 +2231,115 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             threads.add(new Thread(r));
         }
 
-//        // Deletes.
-//        for (int i = 0; i < delCnt; i++) {
-//            Runnable r = new Runnable() {
-//                @Override public void run() {
-//                    try {
-//                        int lvl = rand.nextInt(lvlCnt) + 1;
-//
-//                        IgfsPath path = rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl ?
-//                            dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size())) :
-//                            filePaths.get(lvl).get(rand.nextInt(filePaths.get(lvl).size()));
-//
-//                        U.awaitQuiet(barrier);
-//
-//                        igfs.delete(path, true);
-//                    }
-//                    catch (IgniteException ignore) {
-//                        // No-op.
-//                    }
-//                }
-//            };
-//
-//            threads.add(new Thread(r));
-//        }
+        // Deletes.
+        for (int i = 0; i < delCnt; i++) {
+            Runnable r = new Runnable() {
+                @Override public void run() {
+                    try {
+                        int lvl = rand.nextInt(lvlCnt) + 1;
 
-//        // Updates.
-//        for (int i = 0; i < updateCnt; i++) {
-//            Runnable r = new Runnable() {
-//                @Override public void run() {
-//                    try {
-//                        int lvl = rand.nextInt(lvlCnt) + 1;
-//
-//                        IgfsPath path = rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl ?
-//                            dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size())) :
-//                            filePaths.get(lvl).get(rand.nextInt(filePaths.get(lvl).size()));
-//
-//                        U.awaitQuiet(barrier);
-//
-//                        igfs.update(path, properties("owner", "group", null));
-//                    }
-//                    catch (IgniteException ignore) {
-//                        // No-op.
-//                    }
-//                }
-//            };
-//
-//            threads.add(new Thread(r));
-//        }
+                        IgfsPath path = rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl ?
+                            dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size())) :
+                            filePaths.get(lvl).get(rand.nextInt(filePaths.get(lvl).size()));
 
-//        // Directory creations.
-//        final AtomicInteger dirCtr = new AtomicInteger();
-//
-//        for (int i = 0; i < mkdirsCnt; i++) {
-//            Runnable r = new Runnable() {
-//                @Override public void run() {
-//                    try {
-//                        int lvl = rand.nextInt(lvlCnt) + 1;
-//
-//                        IgfsPath parentPath = dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size()));
-//
-//                        IgfsPath path = new IgfsPath(parentPath, "newDir-" + dirCtr.incrementAndGet());
-//
-//                        U.awaitQuiet(barrier);
-//
-//                        igfs.mkdirs(path);
-//
-//                    }
-//                    catch (IgniteException ignore) {
-//                        // No-op.
-//                    }
-//                }
-//            };
-//
-//            threads.add(new Thread(r));
-//        }
+                        U.awaitQuiet(barrier);
 
-//        // File creations.
-//        final AtomicInteger fileCtr = new AtomicInteger();
-//
-//        for (int i = 0; i < createCnt; i++) {
-//            Runnable r = new Runnable() {
-//                @Override public void run() {
-//                    try {
-//                        int lvl = rand.nextInt(lvlCnt) + 1;
-//
-//                        IgfsPath parentPath = dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size()));
-//
-//                        IgfsPath path = new IgfsPath(parentPath, "newFile-" + fileCtr.incrementAndGet());
-//
-//                        U.awaitQuiet(barrier);
-//
-//                        IgfsOutputStream os = null;
-//
-//                        try {
-//                            os = igfs.create(path, true);
-//
-//                            os.write(chunk);
-//                        }
-//                        finally {
-//                            U.closeQuiet(os);
-//                        }
-//                    }
-//                    catch (IOException | IgniteException ignore) {
-//                        // No-op.
-//                    }
-//                }
-//            };
-//
-//            threads.add(new Thread(r));
-//        }
+                        igfs.delete(path, true);
+                    }
+                    catch (IgniteException ignore) {
+                        // No-op.
+                    }
+                }
+            };
+
+            threads.add(new Thread(r));
+        }
+
+        // Updates.
+        for (int i = 0; i < updateCnt; i++) {
+            Runnable r = new Runnable() {
+                @Override public void run() {
+                    try {
+                        int lvl = rand.nextInt(lvlCnt) + 1;
+
+                        IgfsPath path = rand.nextInt(childrenDirPerLvl + childrenFilePerLvl) < childrenDirPerLvl ?
+                            dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size())) :
+                            filePaths.get(lvl).get(rand.nextInt(filePaths.get(lvl).size()));
+
+                        U.awaitQuiet(barrier);
+
+                        igfs.update(path, properties("owner", "group", null));
+                    }
+                    catch (IgniteException ignore) {
+                        // No-op.
+                    }
+                }
+            };
+
+            threads.add(new Thread(r));
+        }
+
+        // Directory creations.
+        final AtomicInteger dirCtr = new AtomicInteger();
+
+        for (int i = 0; i < mkdirsCnt; i++) {
+            Runnable r = new Runnable() {
+                @Override public void run() {
+                    try {
+                        int lvl = rand.nextInt(lvlCnt) + 1;
+
+                        IgfsPath parentPath = dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size()));
+
+                        IgfsPath path = new IgfsPath(parentPath, "newDir-" + dirCtr.incrementAndGet());
+
+                        U.awaitQuiet(barrier);
+
+                        igfs.mkdirs(path);
+
+                    }
+                    catch (IgniteException ignore) {
+                        // No-op.
+                    }
+                }
+            };
+
+            threads.add(new Thread(r));
+        }
+
+        // File creations.
+        final AtomicInteger fileCtr = new AtomicInteger();
+
+        for (int i = 0; i < createCnt; i++) {
+            Runnable r = new Runnable() {
+                @Override public void run() {
+                    try {
+                        int lvl = rand.nextInt(lvlCnt) + 1;
+
+                        IgfsPath parentPath = dirPaths.get(lvl).get(rand.nextInt(dirPaths.get(lvl).size()));
+
+                        IgfsPath path = new IgfsPath(parentPath, "newFile-" + fileCtr.incrementAndGet());
+
+                        U.awaitQuiet(barrier);
+
+                        IgfsOutputStream os = null;
+
+                        try {
+                            os = igfs.create(path, true);
+
+                            os.write(chunk);
+                        }
+                        finally {
+                            U.closeQuiet(os);
+                        }
+                    }
+                    catch (IOException | IgniteException ignore) {
+                        // No-op.
+                    }
+                }
+            };
+
+            threads.add(new Thread(r));
+        }
 
         // Create directory/folder structure.
         for (int i = 0; i < lvlCnt; i++) {
@@ -2354,28 +2366,32 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         U.joinThreads(threads, null);
 
         System.out.println("==================== After:");
-        Map<IgniteUuid, String> map1 = checkIgfsConsistent(igfs);
 
+        Map<IgniteUuid, String> map1 = checkIgfsConsistent(igfs);
 
         // Compare maps:
         Map<IgniteUuid, String> map0minusMap1 = subtract(map0, map1);
         if (!map0minusMap1.isEmpty()) {
             System.out.println("### Only in initial map: ");
-            for (Map.Entry e: map0minusMap1.entrySet()) {
+
+            for (Map.Entry e: map0minusMap1.entrySet())
                 System.out.println(e.getKey() + " = " + e.getValue());
-            }
+
+            assert false;
         }
 
         Map<IgniteUuid, String> map1minusMap0 = subtract(map1, map0);
         if (!map1minusMap0.isEmpty()) {
             System.out.println("### Only in resultant map: ");
-            for (Map.Entry e: map1minusMap0.entrySet()) {
+
+            for (Map.Entry e: map1minusMap0.entrySet())
                 System.out.println(e.getKey() + " = " + e.getValue());
-            }
+
+            assert false;
         }
     }
 
-    <K,V> Map<K,V> subtract(Map<K,V> x, Map<K,V> y) {
+    static <K,V> Map<K,V> subtract(Map<K,V> x, Map<K,V> y) {
         Map<K,V> x1 = new TreeMap(x);
         for (K k: y.keySet()) {
             x1.remove(k);
@@ -2858,67 +2874,43 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         // Clear igfs.
         igfs.format();
 
-//        GridCacheAdapter dataCache = getDataCache(igfs);
-//        assert dataCache != null;
-//        int size1 = dataCache.size();
-//
-//        if (size1 > 0) {
-//            GridCacheAdapter metaCache = getMetaCache(igfs);
-//
-//            Set<GridCacheEntryEx> set = metaCache.entries();
-//
-//            for (GridCacheEntryEx e: set)
-//                System.out.println("Data entry = " + e);
-//        }
-//
-//        assert size1 == 0 : "################# Data cache size = " + size1;
-//
-//        GridCacheAdapter metaCache = getMetaCache(igfs);
-//        assert metaCache != null;
-//        int size2 = metaCache.size();
-//
-//        if (size2 > 0) {
-//            Set<GridCacheEntryEx> set = metaCache.entries();
-//
-//            for (GridCacheEntryEx e: set)
-//                System.out.println("Meta entry = " + e);
-//        }
-//        assert size2 <= 2 : "################# Meta cache size = " + size2;
         final IgniteFileSystem igfs0 = igfs;
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return isEmpty(igfs0);
             }
-        }, 5_000L)) {
-            System.out.println("=============================== Meta cache dump: ");
+        }, 1_000L)) {
+            dumpCache("MetaCache" , getMetaCache(igfs));
 
-            GridCacheAdapter metaCache = getMetaCache(igfs);
-
-            Set<GridCacheEntryEx> set = metaCache.entries();
-
-            for (GridCacheEntryEx e: set)
-                System.out.println("Lost Meta entry = " + e);
+            dumpCache("DataCache" , getDataCache(igfs));
 
             assert false;
         }
     }
 
+    /**
+     * Dumps given cache for diagnostic purposes.
+     *
+     * @param cacheName Name.
+     * @param cache The cache.
+     */
+    private static void dumpCache(String cacheName, GridCacheAdapter cache) {
+        System.out.println("=============================== " + cacheName + " cache dump: ");
+
+        Set<GridCacheEntryEx> set = cache.entries();
+
+        for (GridCacheEntryEx e: set)
+            System.out.println("Lost " + cacheName + " entry = " + e);
+    }
+
     private static boolean isEmpty(IgniteFileSystem igfs) {
         GridCacheAdapter dataCache = getDataCache(igfs);
+
         assert dataCache != null;
+
         int size1 = dataCache.size();
 
-//        if (size1 > 0) {
-//            GridCacheAdapter metaCache = getMetaCache(igfs);
-//
-//            Set<GridCacheEntryEx> set = metaCache.entries();
-//
-//            for (GridCacheEntryEx e: set)
-//                System.out.println("Data entry = " + e);
-//        }
-//
-//        assert size1 == 0 : "################# Data cache size = " + size1;
         if (size1 > 0) {
             System.out.println("Data cache size = " + size1);
 
@@ -2926,16 +2918,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         }
 
         GridCacheAdapter metaCache = getMetaCache(igfs);
+
         assert metaCache != null;
+
         int size2 = metaCache.size();
 
-//        if (size2 > 0) {
-//            Set<GridCacheEntryEx> set = metaCache.entries();
-//
-//            for (GridCacheEntryEx e: set)
-//                System.out.println("Meta entry = " + e);
-//        }
-//        assert size2 <= 2 : "################# Meta cache size = " + size2;
         if (size2 > 2) {
             System.out.println("Meta cache size = " + size2);
 
