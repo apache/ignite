@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.jetbrains.annotations.Nullable;
 
@@ -172,8 +172,8 @@ public class GridSqlQuerySplitter {
      * @return {@code true} If there is at least one partitioned table in FROM clause.
      */
     private static boolean hasPartitionedTableInFrom(GridSqlSelect qry) {
-        return findTablesInFrom(qry.from(), new IgniteClosure<GridSqlElement,Boolean>() {
-            @Override public Boolean apply(GridSqlElement el) {
+        return findTablesInFrom(qry.from(), new IgnitePredicate<GridSqlElement>() {
+            @Override public boolean apply(GridSqlElement el) {
                 if (el instanceof GridSqlTable) {
                     GridCacheContext<?,?> cctx = ((GridSqlTable)el).table().rowDescriptor().context();
 
@@ -204,8 +204,8 @@ public class GridSqlQuerySplitter {
             }
         }
 
-        if (findTablesInFrom(mapQry.from(), new IgniteClosure<GridSqlElement,Boolean>() {
-            @Override public Boolean apply(GridSqlElement gridSqlElement) {
+        if (findTablesInFrom(mapQry.from(), new IgnitePredicate<GridSqlElement>() {
+            @Override public boolean apply(GridSqlElement gridSqlElement) {
                 // TODO split child subqueries.
 
                 return false;
@@ -380,8 +380,8 @@ public class GridSqlQuerySplitter {
      * @param spaces Space names.
      */
     private static void collectAllSpacesInFrom(GridSqlElement from, final Set<String> spaces) {
-        findTablesInFrom(from, new IgniteClosure<GridSqlElement,Boolean>() {
-            @Override public Boolean apply(GridSqlElement el) {
+        findTablesInFrom(from, new IgnitePredicate<GridSqlElement>() {
+            @Override public boolean apply(GridSqlElement el) {
                 if (el instanceof GridSqlTable) {
                     String schema = ((GridSqlTable)el).schema();
 
@@ -403,7 +403,7 @@ public class GridSqlQuerySplitter {
      * @param c Closure each found table and subquery will be passed to. If returns {@code true} the we need to stop.
      * @return {@code true} If we have found.
      */
-    private static boolean findTablesInFrom(GridSqlElement from, IgniteClosure<GridSqlElement,Boolean> c) {
+    private static boolean findTablesInFrom(GridSqlElement from, IgnitePredicate<GridSqlElement> c) {
         if (from == null)
             return false;
 
