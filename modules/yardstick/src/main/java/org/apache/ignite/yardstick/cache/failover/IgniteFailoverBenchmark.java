@@ -33,7 +33,7 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Ignite benchmark that performs get operations.
+ * Ignite benchmark that performs long running failover tasks.
  */
 public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
     /** */

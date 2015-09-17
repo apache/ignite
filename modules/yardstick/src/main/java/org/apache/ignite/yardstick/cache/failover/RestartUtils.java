@@ -23,8 +23,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -43,20 +43,27 @@ public final class RestartUtils {
     /**
      * Kills 'Dyardstick.server${ID}' process with -9 option on remote host.
      *
-     * @param remoteUser Remote user.
-     * @param hostName Host name.
-     * @param id Server id.
-     * @param isDebug Is debug enabled flag.
-     * @return Result of process execution.
+     * @param cfg Benchmark configuration.
+     * @param isDebug Is debug flag. If <code>true</code> then result will contain 'out' and 'err' streams output.
+     * But it will affect a performance.
+     * @return Result of execution.
      */
-    // //        RestartUtils.Result result = RestartUtils.kill9("ashutak", "localhost", 0, true);
     public static Result kill9(BenchmarkConfiguration cfg, boolean isDebug) {
         return executeUnderSshConnect(cfg.remoteUser(), cfg.remoteHostName(), isDebug,
             Collections.singletonList("pkill -9 -f 'Dyardstick.server" + cfg.memberId() + "'"));
     }
 
+    /**
+     * Runs process with ssh connection and execute commands under ssh.
+     *
+     * @param remoteUser Remote user.
+     * @param hostName Host name.
+     * @param isDebug Is debug flag.
+     * @param cmds Commands.
+     * @return Result.
+     */
     private static Result executeUnderSshConnect(String remoteUser, String hostName,
-        boolean isDebug, List<String> cmds) {
+        boolean isDebug, Iterable<String> cmds) {
         if (U.isWindows())
             throw new UnsupportedOperationException("Unsupported operation for windows.");
 
@@ -104,6 +111,7 @@ public final class RestartUtils {
 
     /**
      * Monitors input stream at separate thread.
+     *
      * @param in Input stream.
      * @param name Name.
      * @return Tuple of started thread and output string.
@@ -132,7 +140,14 @@ public final class RestartUtils {
         return new Tuple<>(thread, sb);
     }
 
-
+    /**
+     * Starts server process on remote host.
+     *
+     * @param cfg Benchmark configuration.
+     * @param isDebug Is debug flag. If <code>true</code> then result will contain 'out' and 'err' streams output.
+     * But it will affect a performance.
+     * @return Result of execution.
+     */
     public static Result start(BenchmarkConfiguration cfg,
         boolean isDebug) {
 //        String propsEnv = cfg.customProperties().get("PROPS_ENV"); // TODO Look on it
@@ -156,17 +171,10 @@ public final class RestartUtils {
         System.out.println(">>>>> cmd='" + cmd + "'");
 
 
-        List<String> cmds = new ArrayList<>();
+        Collection<String> cmds = new ArrayList<>();
 
-        if (!F.isEmpty(cfg.currentFolder())) {
-            cmds.add("echo PWD:");
-            cmds.add("pwd");
-
+        if (!F.isEmpty(cfg.currentFolder()))
             cmds.add("cd " + cfg.currentFolder());
-
-            cmds.add("echo PWD:");
-            cmds.add("pwd");
-        }
 
         cmds.add(cmd);
 
@@ -177,10 +185,19 @@ public final class RestartUtils {
      * Result of executed command.
      */
     public static class Result {
+        /** */
         private final int exitCode;
+
+        /** */
         private final String log;
+
+        /** Contant of output stream of the process. */
         private final String out;
+
+        /** Contant of error output stream of the process. */
         private final String err;
+
+        /** */
         private final Exception e;
 
         /**
@@ -246,12 +263,12 @@ public final class RestartUtils {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "Result{" +
-                "exitCode=" + exitCode +
-                ", log=\n" + log + '\n' +
-                ", out=\n'" + out + '\n' +
-                ", err=\n'" + err + '\n' +
-                ", e=" + e +
+            return "Result{\n" +
+                "exitCode=" + exitCode + '\n' +
+                "log=\n" + log + '\n' +
+                "out=\n'" + out + '\n' +
+                "err=\n'" + err + '\n' +
+                "e=" + e +
                 '}';
         }
     }
@@ -264,10 +281,10 @@ public final class RestartUtils {
      */
     private static class Tuple<T, K> {
         /** */
-        T val1;
+        private T val1;
 
         /** */
-        K val2;
+        private K val2;
 
         /**
          * @param val1 Value 1.

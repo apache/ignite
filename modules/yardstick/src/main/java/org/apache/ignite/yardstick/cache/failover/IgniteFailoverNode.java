@@ -28,14 +28,14 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * TODO: Add class description.
+ * Ignite failover node.
  */
 public class IgniteFailoverNode extends IgniteNode {
+    /** {@inheritDoc} */
     @Override public void start(BenchmarkConfiguration cfg) throws Exception {
         super.start(cfg);
 
-        println(">>>>> at IgniteFailoverNode");
-
+        // Put server configuration at tmp cache.
         RuntimeMXBean mxBean = ManagementFactory.getRuntimeMXBean();
 
         List<String> jvmOpts = mxBean.getInputArguments();
@@ -49,8 +49,6 @@ public class IgniteFailoverNode extends IgniteNode {
         cfg.customProperties().put("PROPS_ENV", System.getenv("PROPS_ENV"));
         cfg.customProperties().put("CLASSPATH", mxBean.getClassPath());
         cfg.customProperties().put("JAVA", System.getenv("JAVA"));
-
-        println(">>>>> CUSTOM MAP =" + cfg.customProperties());
 
         IgniteCache<Integer, BenchmarkConfiguration> srvsCfgsCache = ignite().
             getOrCreateCache(new CacheConfiguration<Integer, BenchmarkConfiguration>().setName("serversConfigs"));
