@@ -84,7 +84,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
                     // Create new Organization object to store in cache.
                     Organization org = new Organization(
-                        "GridGain",
+                        "Apache",
                         new Address("1065 East Hillsdale Blvd, Foster City, CA", 94404),
                         OrganizationType.Private,
                         DateTime.Now

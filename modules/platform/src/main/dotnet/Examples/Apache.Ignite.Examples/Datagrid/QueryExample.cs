@@ -110,7 +110,7 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <param name="cache">Cache.</param>
         private static void SqlJoinQueryExample(ICache<EmployeeKey, Employee> cache)
         {
-            const string orgName = "GridGain";
+            const string orgName = "Apache";
 
             var qry = cache.Query(new SqlQuery("Employee",
                 "from Employee, Organization " +
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Examples.Datagrid
         private static void PopulateCache(ICache<object, object> cache)
         {
             cache.Put(1, new Organization(
-                "GridGain",
+                "Apache",
                 new Address("1065 East Hillsdale Blvd, Foster City, CA", 94404),
                 OrganizationType.Private,
                 DateTime.Now

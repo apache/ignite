@@ -25,7 +25,7 @@ namespace Apache.Ignite.Examples.Misc
 {
     /// <summary>
     /// This example shows how to provide your own <see cref="ILifecycleBean"/> implementation
-    /// to be able to hook into GridGain lifecycle. Example bean will output occurred lifecycle 
+    /// to be able to hook into Apache lifecycle. Example bean will output occurred lifecycle 
     /// events to the console.
     /// <para />
     /// To run the example please do the following:

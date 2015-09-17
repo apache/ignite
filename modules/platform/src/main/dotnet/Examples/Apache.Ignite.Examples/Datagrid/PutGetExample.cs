@@ -24,7 +24,7 @@ using Apache.Ignite.ExamplesDll.Portable;
 namespace Apache.Ignite.Examples.Datagrid
 {
     /// <summary>
-    /// This example demonstrates several put-get operations on GridGain cache
+    /// This example demonstrates several put-get operations on Ignite cache
     /// with portable values. Note that portable object can be retrieved in
     /// fully-deserialized form or in portable object format using special
     /// cache projection.

@@ -24,7 +24,7 @@ using Apache.Ignite.ExamplesDll.Portable;
 namespace Apache.Ignite.Examples.Datagrid
 {
     /// <summary>
-    /// This example demonstrates how to use transactions on GridGain cache.
+    /// This example demonstrates how to use transactions on Apache cache.
     /// <para />
     /// To run the example please do the following:
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build);
