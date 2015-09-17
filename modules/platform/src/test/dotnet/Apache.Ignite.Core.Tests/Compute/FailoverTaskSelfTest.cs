@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             for (int i = 0; i < 20; i++)
             {
-                int res = Grid1.Compute().Call(new TestClosure());
+                int res = Grid1.GetCompute().Call(new TestClosure());
 
                 Assert.AreEqual(2, res);
 
@@ -86,14 +86,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         private void TestTaskAdapterFailoverException(bool serializable)
         {
-            int res = Grid1.Compute().Execute(new TestTask(),
+            int res = Grid1.GetCompute().Execute(new TestTask(),
                 new Tuple<bool, bool>(serializable, true));
 
             Assert.AreEqual(2, res);
 
             Cleanup();
 
-            res = Grid1.Compute().Execute(new TestTask(),
+            res = Grid1.GetCompute().Execute(new TestTask(),
                 new Tuple<bool, bool>(serializable, false));
 
             Assert.AreEqual(2, res);

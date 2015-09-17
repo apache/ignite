@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritdoc /> */
         protected override IServices Services
         {
-            get { return new ServicesAsyncWrapper(Grid1.Services()); }
+            get { return new ServicesAsyncWrapper(Grid1.GetServices()); }
         }
     }
 }

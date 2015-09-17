@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public int Partition<TK>(TK key)
+        public int GetPartition<TK>(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public int[] PrimaryPartitions(IClusterNode n)
+        public int[] GetPrimaryPartitions(IClusterNode n)
         {
             IgniteArgumentCheck.NotNull(n, "n");
 
@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public int[] BackupPartitions(IClusterNode n)
+        public int[] GetBackupPartitions(IClusterNode n)
         {
             IgniteArgumentCheck.NotNull(n, "n");
 
@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public int[] AllPartitions(IClusterNode n)
+        public int[] GetAllPartitions(IClusterNode n)
         {
             IgniteArgumentCheck.NotNull(n, "n");
 
@@ -167,7 +167,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public TR AffinityKey<TK, TR>(TK key)
+        public TR GetAffinityKey<TK, TR>(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 

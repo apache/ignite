@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets an instance of <see cref="ICluster" /> interface.
         /// </summary>
-        ICluster Cluster { get; }
+        ICluster GetCluster();
 
         /// <summary>
         /// Gets compute functionality over this grid projection. All operations
@@ -64,15 +64,7 @@ namespace Apache.Ignite.Core
         /// this projection.
         /// </summary>
         /// <returns>Compute instance over this grid projection.</returns>
-        ICompute Compute();
-
-        /// <summary>
-        /// Gets compute functionality over specified grid projection. All operations
-        /// on the returned ICompute instance will only include nodes from
-        /// that projection.
-        /// </summary>
-        /// <returns>Compute instance over specified grid projection.</returns>
-        ICompute Compute(IClusterGroup clusterGroup);
+        ICompute GetCompute();
 
         /// <summary>
         /// Gets the cache instance for the given name to work with keys and values of specified types.
@@ -80,13 +72,13 @@ namespace Apache.Ignite.Core
         /// You can get instances of ICache of the same name, but with different key/value types.
         /// These will use the same named cache, but only allow working with entries of specified types.
         /// Attempt to retrieve an entry of incompatible type will result in <see cref="InvalidCastException"/>.
-        /// Use <see cref="Cache{Object, Object}"/> in order to work with entries of arbitrary types.
+        /// Use <see cref="GetCache{TK,TV}"/> in order to work with entries of arbitrary types.
         /// </summary>
         /// <param name="name">Cache name.</param>
         /// <returns>Cache instance for given name.</returns>
         /// <typeparam name="TK">Cache key type.</typeparam>
         /// <typeparam name="TV">Cache value type.</typeparam>
-        ICache<TK, TV> Cache<TK, TV>(string name);
+        ICache<TK, TV> GetCache<TK, TV>(string name);
 
         /// <summary>
         /// Gets existing cache with the given name or creates new one using template configuration.
@@ -113,59 +105,43 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="cacheName">Cache name (<c>null</c> for default cache).</param>
         /// <returns>Data streamer.</returns>
-        IDataStreamer<TK, TV> DataStreamer<TK, TV>(string cacheName);
+        IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName);
 
         /// <summary>
         /// Gets an instance of <see cref="IPortables"/> interface.
         /// </summary>
         /// <returns>Instance of <see cref="IPortables"/> interface</returns>
-        IPortables Portables();
+        IPortables GetPortables();
 
         /// <summary>
         /// Gets affinity service to provide information about data partitioning and distribution.
         /// </summary>
         /// <param name="name">Cache name.</param>
         /// <returns>Cache data affinity service.</returns>
-        ICacheAffinity Affinity(string name);
+        ICacheAffinity GetAffinity(string name);
 
         /// <summary>
-        /// Gets  Ignite transactions facade.
+        /// Gets Ignite transactions facade.
         /// </summary>
-        ITransactions Transactions { get; }
+        ITransactions GetTransactions();
 
         /// <summary>
         /// Gets messaging facade over all cluster nodes.
         /// </summary>
         /// <returns>Messaging instance over all cluster nodes.</returns>
-        IMessaging Message();
-
-        /// <summary>
-        /// Gets messaging facade over nodes within the cluster group.  All operations on the returned 
-        /// <see cref="IMessaging"/>> instance will only include nodes from the specified cluster group.
-        /// </summary>
-        /// <param name="clusterGroup">Cluster group.</param>
-        /// <returns>Messaging instance over given cluster group.</returns>
-        IMessaging Message(IClusterGroup clusterGroup);
+        IMessaging GetMessaging();
 
         /// <summary>
         /// Gets events facade over all cluster nodes.
         /// </summary>
         /// <returns>Events facade over all cluster nodes.</returns>
-        IEvents Events();
-
-        /// <summary>
-        /// Gets events facade over nodes within the cluster group.  All operations on the returned 
-        /// <see cref="IEvents"/>> instance will only include nodes from the specified cluster group.
-        /// </summary>
-        /// <param name="clusterGroup">Cluster group.</param>
-        /// <returns>Events instance over given cluster group.</returns>
-        IEvents Events(IClusterGroup clusterGroup);
+        IEvents GetEvents();
 
         /// <summary>
         /// Gets services facade over all cluster nodes.
         /// </summary>
         /// <returns>Services facade over all cluster nodes.</returns>
-        IServices Services();
+        IServices GetServices();
 
         /// <summary>
         /// Gets an atomic long with specified name from cache.

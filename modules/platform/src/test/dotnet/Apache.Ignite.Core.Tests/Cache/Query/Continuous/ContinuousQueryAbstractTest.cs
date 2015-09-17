@@ -114,11 +114,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             cfg.GridName = "grid-1";
             grid1 = Ignition.Start(cfg);
-            cache1 = grid1.Cache<int, PortableEntry>(cacheName);
+            cache1 = grid1.GetCache<int, PortableEntry>(cacheName);
 
             cfg.GridName = "grid-2";
             grid2 = Ignition.Start(cfg);
-            cache2 = grid2.Cache<int, PortableEntry>(cacheName);
+            cache2 = grid2.GetCache<int, PortableEntry>(cacheName);
         }
 
         /// <summary>
@@ -147,8 +147,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             cache1.Remove(PrimaryKey(cache1));
             cache1.Remove(PrimaryKey(cache2));
 
-            Assert.AreEqual(0, cache1.Size());
-            Assert.AreEqual(0, cache2.Size());
+            Assert.AreEqual(0, cache1.GetSize());
+            Assert.AreEqual(0, cache2.GetSize());
 
             Console.WriteLine("Test started: " + TestContext.CurrentContext.Test.Name);
         }
@@ -923,9 +923,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <returns></returns>
         private static List<int> PrimaryKeys<T>(ICache<int, T> cache, int cnt, int startFrom = 0)
         {
-            IClusterNode node = cache.Ignite.Cluster.LocalNode;
+            IClusterNode node = cache.Ignite.GetCluster().GetLocalNode();
 
-            ICacheAffinity aff = cache.Ignite.Affinity(cache.Name);
+            ICacheAffinity aff = cache.Ignite.GetAffinity(cache.Name);
 
             List<int> keys = new List<int>(cnt);
 
@@ -1114,7 +1114,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 {
                     IPortableObject val = evt.Value;
 
-                    IPortableMetadata meta = val.Metadata();
+                    IPortableMetadata meta = val.GetMetadata();
 
                     Assert.AreEqual(typeof(PortableEntry).Name, meta.TypeName);
                 }

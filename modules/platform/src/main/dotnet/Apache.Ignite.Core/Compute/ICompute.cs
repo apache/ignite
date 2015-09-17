@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Compute
     /// <summary>
     /// Defines Ignite functionality for executing tasks and closures over nodes
     /// in the <see cref="IClusterGroup"/>. Instance of <see cref="ICompute"/>
-    /// is obtained from grid projection using <see cref="IClusterGroup.Compute()"/> method.
+    /// is obtained from grid projection using <see cref="IClusterGroup.GetCompute"/> method.
     /// <para />
     /// Note that if attempt is made to execute a computation over an empty projection (i.e. projection that does
     /// not have any alive nodes), <c>ClusterGroupEmptyException</c> will be thrown out of result future.
@@ -50,10 +50,7 @@ namespace Apache.Ignite.Core.Compute
         /// <summary>
         /// Grid projection to which this compute instance belongs.
         /// </summary>
-        IClusterGroup ClusterGroup
-        {
-            get;
-        }
+        IClusterGroup ClusterGroup { get; }
 
         /// <summary>
         /// Sets no-failover flag for the next executed task on this projection in the current thread.

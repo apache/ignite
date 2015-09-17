@@ -108,17 +108,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.GetIgnite(GridData).Cache<CacheTestKey, PortablePerson>(CacheDummy);
+                Ignition.GetIgnite(GridData).GetCache<CacheTestKey, PortablePerson>(CacheDummy);
             });
 
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.GetIgnite(GridDataNoCfg).Cache<CacheTestKey, PortablePerson>(CacheDummy);
+                Ignition.GetIgnite(GridDataNoCfg).GetCache<CacheTestKey, PortablePerson>(CacheDummy);
             });
 
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.GetIgnite(GridClient).Cache<CacheTestKey, PortablePerson>(CacheDummy);
+                Ignition.GetIgnite(GridClient).GetCache<CacheTestKey, PortablePerson>(CacheDummy);
             });
         }
 
@@ -147,13 +147,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         private void Check(string cacheName)
         {
             ICache<DynamicTestKey, DynamicTestValue> cacheData =
-                Ignition.GetIgnite(GridData).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
+                Ignition.GetIgnite(GridData).GetCache<DynamicTestKey, DynamicTestValue>(cacheName);
 
             ICache<DynamicTestKey, DynamicTestValue> cacheDataNoCfg =
-                Ignition.GetIgnite(GridDataNoCfg).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
+                Ignition.GetIgnite(GridDataNoCfg).GetCache<DynamicTestKey, DynamicTestValue>(cacheName);
 
             ICache<DynamicTestKey, DynamicTestValue> cacheClient =
-                Ignition.GetIgnite(GridClient).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
+                Ignition.GetIgnite(GridClient).GetCache<DynamicTestKey, DynamicTestValue>(cacheName);
 
             DynamicTestKey key1 = new DynamicTestKey(1);
             DynamicTestKey key2 = new DynamicTestKey(2);
@@ -181,7 +181,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             for (int i = 0; i < 10000; i++)
                 cacheClient.Put(new DynamicTestKey(i), new DynamicTestValue(1));
 
-            int sizeClient = cacheClient.LocalSize();
+            int sizeClient = cacheClient.GetLocalSize();
 
             Assert.AreEqual(0, sizeClient);
         }

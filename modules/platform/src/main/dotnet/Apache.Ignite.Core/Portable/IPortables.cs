@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="type"></param>
         /// <returns>Builder.</returns>
-        IPortableBuilder Builder(Type type);
+        IPortableBuilder GetBuilder(Type type);
 
         /// <summary>
         /// Create builder for the given portable object type name. Note that this
@@ -77,14 +77,14 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="typeName">Type name.</param>
         /// <returns>Builder.</returns>
-        IPortableBuilder Builder(string typeName);
+        IPortableBuilder GetBuilder(string typeName);
 
         /// <summary>
         /// Create builder over existing portable object.
         /// </summary>
         /// <param name="obj"></param>
         /// <returns>Builder.</returns>
-        IPortableBuilder Builder(IPortableObject obj);
+        IPortableBuilder GetBuilder(IPortableObject obj);
 
         /// <summary>
         /// Gets type id for the given type name.
