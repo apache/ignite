@@ -60,7 +60,7 @@
       <Project>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</Project>
       <Name>Apache.Ignite.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Apache.Ignite.Examples.Dll\Apache.Ignite.ExamplesDll.csproj">
+    <ProjectReference Include="..\Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj">
       <Project>{dfb08363-202e-412d-8812-349ef10a8702}</Project>
       <Name>Apache.Ignite.ExamplesDll</Name>
     </ProjectReference>
