@@ -19,7 +19,7 @@ using System;
 using System.Threading;
 using Apache.Ignite.Core.Events;
 
-namespace Apache.Ignite.Examples.Dll.Events
+namespace Apache.Ignite.ExamplesDll.Events
 {
     /// <summary>
     /// Local event listener.

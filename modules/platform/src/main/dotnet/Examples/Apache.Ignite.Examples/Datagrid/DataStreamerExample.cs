@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Datastream;
-using Apache.Ignite.Examples.Dll.Portable;
+using Apache.Ignite.ExamplesDll.Portable;
 
 namespace Apache.Ignite.Examples.Datagrid
 {

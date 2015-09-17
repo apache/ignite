@@ -18,7 +18,7 @@
 using System;
 using Apache.Ignite.Core.Compute;
 
-namespace Apache.Ignite.Examples.Dll.Compute
+namespace Apache.Ignite.ExamplesDll.Compute
 {
     /// <summary>
     /// Closure counting characters in a string.

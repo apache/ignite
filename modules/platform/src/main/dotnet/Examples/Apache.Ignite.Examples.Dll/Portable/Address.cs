@@ -18,7 +18,7 @@
 using System;
 using Apache.Ignite.Core.Portable;
 
-namespace Apache.Ignite.Examples.Dll.Portable
+namespace Apache.Ignite.ExamplesDll.Portable
 {
     /// <summary>
     /// Address.

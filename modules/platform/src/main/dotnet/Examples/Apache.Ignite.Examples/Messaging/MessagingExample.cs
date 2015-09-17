@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Apache.Ignite.Core;
-using Apache.Ignite.Examples.Dll.Messaging;
+using Apache.Ignite.ExamplesDll.Messaging;
 
 namespace Apache.Ignite.Examples.Messaging
 {

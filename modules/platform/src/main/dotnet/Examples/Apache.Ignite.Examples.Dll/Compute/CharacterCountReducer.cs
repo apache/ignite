@@ -17,7 +17,7 @@
 
 using Apache.Ignite.Core.Compute;
 
-namespace Apache.Ignite.Examples.Dll.Compute
+namespace Apache.Ignite.ExamplesDll.Compute
 {
     /// <summary>
     /// Character count reducer which collects individual string lengths and aggregate them.

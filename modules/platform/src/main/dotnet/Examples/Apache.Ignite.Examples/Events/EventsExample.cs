@@ -20,9 +20,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Events;
-using Apache.Ignite.Examples.Dll.Compute;
-using Apache.Ignite.Examples.Dll.Events;
-using Apache.Ignite.Examples.Dll.Portable;
+using Apache.Ignite.ExamplesDll.Compute;
+using Apache.Ignite.ExamplesDll.Events;
+using Apache.Ignite.ExamplesDll.Portable;
 
 namespace Apache.Ignite.Examples.Events
 {

@@ -18,8 +18,8 @@
 using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
-using Apache.Ignite.Examples.Dll.Datagrid;
-using Apache.Ignite.Examples.Dll.Portable;
+using Apache.Ignite.ExamplesDll.Datagrid;
+using Apache.Ignite.ExamplesDll.Portable;
 
 namespace Apache.Ignite.Examples.Datagrid
 {

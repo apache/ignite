@@ -21,7 +21,7 @@ using System.Threading;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Cache.Event;
 using Apache.Ignite.Core.Cache.Query.Continuous;
-using Apache.Ignite.Examples.Dll.Datagrid;
+using Apache.Ignite.ExamplesDll.Datagrid;
 
 namespace Apache.Ignite.Examples.Datagrid
 {

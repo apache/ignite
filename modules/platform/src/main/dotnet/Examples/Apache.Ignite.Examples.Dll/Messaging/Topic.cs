@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Examples.Dll.Messaging
+namespace Apache.Ignite.ExamplesDll.Messaging
 {
     /// <summary>
     /// Message topics.

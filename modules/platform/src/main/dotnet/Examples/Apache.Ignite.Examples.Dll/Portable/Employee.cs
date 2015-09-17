@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Apache.Ignite.Examples.Dll.Portable
+namespace Apache.Ignite.ExamplesDll.Portable
 {
     /// <summary>
     /// Employee.

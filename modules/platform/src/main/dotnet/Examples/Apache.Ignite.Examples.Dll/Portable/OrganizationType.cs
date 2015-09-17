@@ -17,7 +17,7 @@
 
 using System;
 
-namespace Apache.Ignite.Examples.Dll.Portable
+namespace Apache.Ignite.ExamplesDll.Portable
 {
     /// <summary>
     /// Organization type.

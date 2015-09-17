@@ -17,7 +17,7 @@
 
 using System;
 
-namespace Apache.Ignite.Examples.Dll.Portable
+namespace Apache.Ignite.ExamplesDll.Portable
 {
     /// <summary>
     /// Employee key. Used in query example to co-locate employees with their organizations.

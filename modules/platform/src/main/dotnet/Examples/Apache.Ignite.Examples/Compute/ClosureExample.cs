@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Apache.Ignite.Core;
-using Apache.Ignite.Examples.Dll.Compute;
+using Apache.Ignite.ExamplesDll.Compute;
 
 namespace Apache.Ignite.Examples.Compute
 {

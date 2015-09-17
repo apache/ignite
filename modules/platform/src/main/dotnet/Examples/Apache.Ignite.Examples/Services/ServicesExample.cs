@@ -18,7 +18,7 @@
 using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
-using Apache.Ignite.Examples.Dll.Services;
+using Apache.Ignite.ExamplesDll.Services;
 
 namespace Apache.Ignite.Examples.Services
 {

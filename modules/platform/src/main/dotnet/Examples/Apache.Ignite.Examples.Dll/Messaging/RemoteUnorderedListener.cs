@@ -20,7 +20,7 @@ using Apache.Ignite.Core;
 using Apache.Ignite.Core.Messaging;
 using Apache.Ignite.Core.Resource;
 
-namespace Apache.Ignite.Examples.Dll.Messaging
+namespace Apache.Ignite.ExamplesDll.Messaging
 {
     /// <summary>
     /// Listener for Unordered topic.
