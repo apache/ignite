@@ -77,6 +77,11 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
         // No-op.
     }
 
+    /** {@inheritDoc} */
+    @Override public void awaitFirstPage() throws IgniteCheckedException {
+        get();
+    }
+
     /** */
     private class LocalQueryRunnable implements GridPlainRunnable {
         /** {@inheritDoc} */
