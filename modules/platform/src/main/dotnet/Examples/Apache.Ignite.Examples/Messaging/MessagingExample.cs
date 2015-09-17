@@ -57,9 +57,9 @@ namespace Apache.Ignite.Examples.Messaging
 
             using (var grid = Ignition.Start(cfg))
             {
-                var remotes = grid.Cluster.ForRemotes();
+                var remotes = grid.GetCluster().ForRemotes();
 
-                if (remotes.Nodes().Count == 0)
+                if (remotes.GetNodes().Count == 0)
                 {
                     Console.WriteLine(">>> This example requires remote nodes to be started.");
                     Console.WriteLine(">>> Please start at least 1 remote node.");
@@ -71,9 +71,9 @@ namespace Apache.Ignite.Examples.Messaging
                     Console.WriteLine();
 
                     // Set up local listeners
-                    var localMessaging = grid.Cluster.ForLocal().Message();
+                    var localMessaging = grid.GetCluster().ForLocal().GetMessaging();
 
-                    var msgCount = remotes.Nodes().Count * 10;
+                    var msgCount = remotes.GetNodes().Count * 10;
 
                     var orderedCounter = new CountdownEvent(msgCount);
                     var unorderedCounter = new CountdownEvent(msgCount);
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Examples.Messaging
                     localMessaging.LocalListen(new LocalListener(orderedCounter), Topic.Ordered);
 
                     // Set up remote listeners
-                    var remoteMessaging = remotes.Message();
+                    var remoteMessaging = remotes.GetMessaging();
 
                     remoteMessaging.RemoteListen(new RemoteUnorderedListener(), Topic.Unordered);
                     remoteMessaging.RemoteListen(new RemoteOrderedListener(), Topic.Ordered);

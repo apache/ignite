@@ -56,7 +56,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache query example started.");
 
-                var cache = ignite.Cache<object, object>(null);
+                var cache = ignite.GetCache<object, object>(null);
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 PopulateCache(cache);
 
                 // Create cache that will work with specific types.
-                var employeeCache = ignite.Cache<EmployeeKey, Employee>(null);
+                var employeeCache = ignite.GetCache<EmployeeKey, Employee>(null);
 
                 // Run SQL query example.
                 SqlQueryExample(employeeCache);

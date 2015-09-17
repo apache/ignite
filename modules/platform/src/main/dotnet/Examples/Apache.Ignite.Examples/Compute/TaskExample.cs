@@ -71,7 +71,7 @@ namespace Apache.Ignite.Examples.Compute
                     Console.WriteLine(">>>     " + employee);
 
                 // Execute task and get average salary.
-                var avgSalary = ignite.Compute().Execute(new AverageSalaryTask(), employees);
+                var avgSalary = ignite.GetCompute().Execute(new AverageSalaryTask(), employees);
 
                 Console.WriteLine();
                 Console.WriteLine(">>> Average salary for all employees: " + avgSalary);

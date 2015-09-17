@@ -58,28 +58,28 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache store example started.");
 
-                var cache = ignite.Cache<int, Employee>(null);
+                var cache = ignite.GetCache<int, Employee>(null);
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();
 
                 Console.WriteLine();
                 Console.WriteLine(">>> Cleared values from cache.");
-                Console.WriteLine(">>> Current cache size: " + cache.Size());
+                Console.WriteLine(">>> Current cache size: " + cache.GetSize());
 
                 // Load entries from store which pass provided filter.
                 cache.LoadCache(new EmployeeStorePredicate());
 
                 Console.WriteLine();
                 Console.WriteLine(">>> Loaded entry from store through ICache.LoadCache().");
-                Console.WriteLine(">>> Current cache size: " + cache.Size());
+                Console.WriteLine(">>> Current cache size: " + cache.GetSize());
                 
                 // Load entry from store calling ICache.Get() method.
                 Employee emp = cache.Get(2);
 
                 Console.WriteLine();
                 Console.WriteLine(">>> Loaded entry from store through ICache.Get(): " + emp);
-                Console.WriteLine(">>> Current cache size: " + cache.Size());
+                Console.WriteLine(">>> Current cache size: " + cache.GetSize());
 
                 // Put an entry to the cache
                 cache.Put(3, new Employee(
@@ -91,14 +91,14 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 Console.WriteLine();
                 Console.WriteLine(">>> Put entry to cache. ");
-                Console.WriteLine(">>> Current cache size: " + cache.Size());
+                Console.WriteLine(">>> Current cache size: " + cache.GetSize());
 
                 // Clear values again.
                 cache.Clear();
                 
                 Console.WriteLine();
                 Console.WriteLine(">>> Cleared values from cache again.");
-                Console.WriteLine(">>> Current cache size: " + cache.Size());
+                Console.WriteLine(">>> Current cache size: " + cache.GetSize());
 
                 // Read values from cache after clear.
                 Console.WriteLine();

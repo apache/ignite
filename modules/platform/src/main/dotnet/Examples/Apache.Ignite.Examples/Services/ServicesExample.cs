@@ -60,10 +60,10 @@ namespace Apache.Ignite.Examples.Services
                 // Deploy a service
                 var svc = new MapService<int, string>();
                 Console.WriteLine(">>> Deploying service to all nodes...");
-                grid.Services().DeployNodeSingleton("service", svc);
+                grid.GetServices().DeployNodeSingleton("service", svc);
 
                 // Get a sticky service proxy so that we will always be contacting the same remote node.
-                var prx = grid.Services().GetServiceProxy<IMapService<int, string>>("service", true);
+                var prx = grid.GetServices().GetServiceProxy<IMapService<int, string>>("service", true);
                 
                 for (var i = 0; i < 10; i++)
                     prx.Put(i, i.ToString());
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Examples.Services
 
                 Console.WriteLine(">>> Map service size: " + mapSize);
 
-                grid.Services().CancelAll();
+                grid.GetServices().CancelAll();
             }
         }
     }

@@ -44,7 +44,7 @@ namespace Apache.Ignite.ExamplesDll.Messaging
         {
             Console.WriteLine("Received ordered message [msg={0}, fromNodeId={1}]", message, nodeId);
 
-            _ignite.Cluster.ForNodeIds(nodeId).Message().Send(message, Topic.Ordered);
+            _ignite.GetCluster().ForNodeIds(nodeId).GetMessaging().Send(message, Topic.Ordered);
 
             return true;
         }

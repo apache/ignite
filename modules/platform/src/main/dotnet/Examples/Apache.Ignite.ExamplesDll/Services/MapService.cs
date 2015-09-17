@@ -111,7 +111,7 @@ namespace Apache.Ignite.ExamplesDll.Services
         /// </value>
         public int Size
         {
-            get { return _cache.Size(); }
+            get { return _cache.GetSize(); }
         }
     }
 }

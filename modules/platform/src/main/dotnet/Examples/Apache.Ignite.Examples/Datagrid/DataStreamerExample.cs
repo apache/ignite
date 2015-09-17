@@ -72,7 +72,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 timer.Start();
 
-                using (var ldr = ignite.DataStreamer<int, Account>(CacheName))
+                using (var ldr = ignite.GetDataStreamer<int, Account>(CacheName))
                 {
                     ldr.PerNodeBufferSize = 1024;
 

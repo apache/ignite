@@ -67,11 +67,11 @@ namespace Apache.Ignite.Examples.Events
                 Console.WriteLine(">>> Listening for a local event...");
 
                 var listener = new LocalListener();
-                grid.Events().LocalListen(listener, EventType.EvtsTaskExecution);
+                grid.GetEvents().LocalListen(listener, EventType.EvtsTaskExecution);
 
                 ExecuteTask(grid);
 
-                grid.Events().StopLocalListen(listener);
+                grid.GetEvents().StopLocalListen(listener);
 
                 Console.WriteLine(">>> Received events count: " + listener.EventsReceived);
                 Console.WriteLine();
@@ -82,12 +82,12 @@ namespace Apache.Ignite.Examples.Events
                 var localListener = new LocalListener();
                 var remoteFilter = new RemoteFilter();
 
-                var listenId = grid.Events().RemoteListen(localListener: localListener, remoteFilter: remoteFilter,
+                var listenId = grid.GetEvents().RemoteListen(localListener: localListener, remoteFilter: remoteFilter,
                         types: EventType.EvtsJobExecution);
 
                 ExecuteTask(grid);
 
-                grid.Events().StopRemoteListen(listenId);
+                grid.GetEvents().StopRemoteListen(listenId);
 
                 Console.WriteLine(">>> Received events count: " + localListener.EventsReceived);
             }
@@ -116,7 +116,7 @@ namespace Apache.Ignite.Examples.Events
                     new[] {"Sales"})
             }).ToArray();
 
-            ignite.Compute().Execute(new AverageSalaryTask(), employees);
+            ignite.GetCompute().Execute(new AverageSalaryTask(), employees);
         }
     }
 }

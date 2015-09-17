@@ -70,7 +70,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine();
                 Console.WriteLine(">>> Cross-platform example started.");
 
-                if (ignite.Cluster.ForRemotes().Nodes().Count == 0)
+                if (ignite.GetCluster().ForRemotes().GetNodes().Count == 0)
                 {
                     Console.WriteLine();
                     Console.WriteLine(">>> This example requires remote nodes to be started.");
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
             var org = cache.Get(KeyDotnet);
 
-            string name = org.Field<string>("name");
+            string name = org.GetField<string>("name");
 
             Console.WriteLine();
             Console.WriteLine(">>> Retrieved organization name from portable field: " + name);

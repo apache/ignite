@@ -56,7 +56,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine();
                 Console.WriteLine(">>> Transaction example started.");
 
-                var cache = ignite.Cache<int, Account>("tx");
+                var cache = ignite.GetCache<int, Account>("tx");
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine();
 
                 // Transfer money between accounts in a single transaction.
-                using (var tx = cache.Ignite.Transactions.TxStart(TransactionConcurrency.Pessimistic,
+                using (var tx = cache.Ignite.GetTransactions().TxStart(TransactionConcurrency.Pessimistic,
                     TransactionIsolation.RepeatableRead))
                 {
                     Account acc1 = cache.Get(1);

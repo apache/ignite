@@ -67,7 +67,7 @@ namespace Apache.Ignite.Examples.Compute
                 Console.WriteLine();
                 Console.WriteLine(">>> Calculating character count with manual reducing:");
 
-                var res = ignite.Compute().Apply(new CharacterCountClosure(), words);
+                var res = ignite.GetCompute().Apply(new CharacterCountClosure(), words);
 
                 int totalLen = res.Sum();
 
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Examples.Compute
                 Console.WriteLine();
                 Console.WriteLine(">>> Calculating character count with reducer:");
 
-                totalLen = ignite.Compute().Apply(new CharacterCountClosure(), words, new CharacterCountReducer());
+                totalLen = ignite.GetCompute().Apply(new CharacterCountClosure(), words, new CharacterCountReducer());
 
                 Console.WriteLine(">>> Total character count: " + totalLen);
                 Console.WriteLine();

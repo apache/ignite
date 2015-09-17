@@ -84,7 +84,7 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <param name="ignite">Grid instance.</param>
         private static void PutGet(IIgnite ignite)
         {
-            var cache = ignite.Cache<int, Organization>(CacheName);
+            var cache = ignite.GetCache<int, Organization>(CacheName);
 
             // Create new Organization to store in cache.
             Organization org = new Organization(
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <param name="ignite">Grid instance.</param>
         private static void PutGetPortable(IIgnite ignite)
         {
-            var cache = ignite.Cache<int, Organization>(CacheName);
+            var cache = ignite.GetCache<int, Organization>(CacheName);
 
             // Create new Organization to store in cache.
             Organization org = new Organization(
@@ -130,7 +130,7 @@ namespace Apache.Ignite.Examples.Datagrid
             var portableOrg = portableCache.Get(1);
 
             // Get organization's name from portable object (note that  object doesn't need to be fully deserialized).
-            string name = portableOrg.Field<string>("name");
+            string name = portableOrg.GetField<string>("name");
 
             Console.WriteLine();
             Console.WriteLine(">>> Retrieved organization name from portable object: " + name);
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <param name="ignite">Grid instance.</param>
         private static void PutAllGetAll(IIgnite ignite)
         {
-            var cache = ignite.Cache<int, Organization>(CacheName);
+            var cache = ignite.GetCache<int, Organization>(CacheName);
 
             // Create new Organizations to store in cache.
             Organization org1 = new Organization(
@@ -180,7 +180,7 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <param name="ignite">Grid instance.</param>
         private static void PutAllGetAllPortable(IIgnite ignite)
         {
-            var cache = ignite.Cache<int, Organization>(CacheName);
+            var cache = ignite.GetCache<int, Organization>(CacheName);
 
             // Create new Organizations to store in cache.
             Organization org1 = new Organization(
@@ -213,7 +213,7 @@ namespace Apache.Ignite.Examples.Datagrid
             Console.WriteLine(">>> Retrieved organization names from portable objects:");
 
             foreach (IPortableObject poratbleOrg in portableMap.Values)
-                Console.WriteLine(">>>     " + poratbleOrg.Field<string>("name"));
+                Console.WriteLine(">>>     " + poratbleOrg.GetField<string>("name"));
         }
     }
 }
