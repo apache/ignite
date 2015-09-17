@@ -22,9 +22,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -33,6 +35,9 @@ import org.yardstickframework.BenchmarkConfiguration;
  * Restart Utils.
  */
 public final class RestartUtils {
+    /** Time formatter. */
+    public static final SimpleDateFormat TIME_FORMATTER = new SimpleDateFormat("HHmmss");
+
     /**
      * Private default constructor.
      */
@@ -150,11 +155,11 @@ public final class RestartUtils {
      */
     public static Result start(BenchmarkConfiguration cfg,
         boolean isDebug) {
-//        String propsEnv = cfg.customProperties().get("PROPS_ENV"); // TODO Look on it
+        String descriptrion = F.isEmpty(cfg.descriptions()) ? "" : "_" + cfg.descriptions().get(0);
+        String now = TIME_FORMATTER.format(new Date());
 
-        String descriptrion = ""; // TODO extract description from cmdArgs
-        String now = "111111"; // TODO extract
-        String logFile = cfg.logsFolder() +"/"+ now + "_id" + cfg.memberId() + "_" + cfg.hostName() + descriptrion + ".log";
+        String logFile = cfg.logsFolder() +"/"+ now + "_id" + cfg.memberId() + "_" + cfg.remoteHostName()
+            + descriptrion + ".log";
 
         StringBuilder cmdArgs = new StringBuilder();
 
@@ -163,20 +168,15 @@ public final class RestartUtils {
 
         String java = cfg.customProperties().get("JAVA");
 
-        String cmd = "nohup "
-            + java + " " + cfg.customProperties().get("JVM_OPTS")
-            + " -cp " + cfg.customProperties().get("CLASSPATH")
-            + " org.yardstickframework.BenchmarkServerStartUp " + cmdArgs + " > " + logFile + " 2>& 1 &";
-
-        System.out.println(">>>>> cmd='" + cmd + "'");
-
-
         Collection<String> cmds = new ArrayList<>();
 
         if (!F.isEmpty(cfg.currentFolder()))
             cmds.add("cd " + cfg.currentFolder());
 
-        cmds.add(cmd);
+        cmds.add("nohup "
+            + java + " " + cfg.customProperties().get("JVM_OPTS")
+            + " -cp " + cfg.customProperties().get("CLASSPATH")
+            + " org.yardstickframework.BenchmarkServerStartUp " + cmdArgs + " > " + logFile + " 2>& 1 &");
 
         return executeUnderSshConnect(cfg.remoteUser(), cfg.remoteHostName(), isDebug, cmds);
     }

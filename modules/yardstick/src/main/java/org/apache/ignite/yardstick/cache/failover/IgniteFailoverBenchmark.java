@@ -19,10 +19,9 @@ package org.apache.ignite.yardstick.cache.failover;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
@@ -36,9 +35,6 @@ import static org.yardstickframework.BenchmarkUtils.println;
  * Ignite benchmark that performs long running failover tasks.
  */
 public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
-    /** */
-    private final ConcurrentMap<Integer, BenchmarkConfiguration> srvsCfgs = new ConcurrentHashMap<>();
-
     /** {@inheritDoc} */
     @Override public void setUp(final BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
@@ -47,10 +43,12 @@ public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
             Thread thread = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
-                        // Read servers configs from cache.
+                        // Read servers configs from cache to local map.
                         IgniteCache<Integer, BenchmarkConfiguration> srvsCfgsCache = ignite().
                             getOrCreateCache(new CacheConfiguration<Integer, BenchmarkConfiguration>().
                                 setName("serversConfigs"));
+
+                        final Map<Integer, BenchmarkConfiguration> srvsCfgs = new HashMap<>();
 
                         for (Cache.Entry<Integer, BenchmarkConfiguration> e : srvsCfgsCache) {
                             println("[RESTARTER] Read entry from 'serversConfigs' cache = " + e);
@@ -71,6 +69,7 @@ public class IgniteFailoverBenchmark extends IgniteCacheAbstractBenchmark {
 
                         final boolean isDebug = ignite().log().isDebugEnabled();
 
+                        // Main logic.
                         Thread.sleep(cfg.warmup() * 1000);
 
                         while (!Thread.currentThread().isInterrupted()) {
