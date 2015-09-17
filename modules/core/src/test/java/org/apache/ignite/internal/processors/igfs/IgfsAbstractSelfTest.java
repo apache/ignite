@@ -2295,7 +2295,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Create the file in the given IGFS and write provided data chunks to it.
      *
-     * @param uni File system adapter.
      * @param file File.
      * @param chunks Data chunks.
      * @throws IOException In case of IO exception.
@@ -2313,6 +2312,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             U.closeQuiet(os);
 
             IgfsEx igfsEx = uni.getAdapter(IgfsEx.class);
+
             if (igfsEx != null)
                 awaitFileClose(igfsEx.asSecondary(), file);
         }
@@ -2688,5 +2688,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         if (igfsEx != null)
             clear(igfsEx);
+
+        // Clear the filesystem.
+        uni.format();
     }
 }
