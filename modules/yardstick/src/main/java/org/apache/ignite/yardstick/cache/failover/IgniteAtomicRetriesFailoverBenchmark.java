@@ -42,12 +42,7 @@ public class IgniteAtomicRetriesFailoverBenchmark extends IgniteFailoverAbstract
                 cache.put(key, String.valueOf(key));
                 break;
             case 2:
-                cache.invoke(key, new CacheEntryProcessor<Integer, Object, Object>() {
-                    @Override public Object process(MutableEntry<Integer, Object> entry,
-                        Object... arguments) throws EntryProcessorException {
-                        return String.valueOf(key);
-                    }
-                });
+                cache.invoke(key, new TestCacheEntryProcessor());
                 break;
             case 3:
                 cache.remove(key);
@@ -62,5 +57,18 @@ public class IgniteAtomicRetriesFailoverBenchmark extends IgniteFailoverAbstract
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
         return ignite().cache("atomic");
+    }
+
+    /**
+     */
+    private static class TestCacheEntryProcessor implements CacheEntryProcessor<Integer, Object, Object> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0;
+
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry<Integer, Object> entry,
+            Object... arguments) throws EntryProcessorException {
+            return "key";
+        }
     }
 }

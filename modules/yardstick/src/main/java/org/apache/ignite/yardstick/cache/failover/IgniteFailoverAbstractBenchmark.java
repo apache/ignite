@@ -33,7 +33,7 @@ import static org.yardstickframework.BenchmarkUtils.println;
 /**
  * Ignite benchmark that performs long running failover tasks.
  */
-public abstract class IgniteFailoverAbstractBenchmark extends IgniteCacheAbstractBenchmark {
+public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAbstractBenchmark<K,V> {
     /** {@inheritDoc} */
     @Override public void setUp(final BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
