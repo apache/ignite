@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Portable
 {
+    using System.Diagnostics.CodeAnalysis;
+
     /// <summary>
     /// Wrapper for serialized portable objects.
     /// </summary>
@@ -34,6 +36,8 @@ namespace Apache.Ignite.Core.Portable
         /// Gets object metadata.
         /// </summary>
         /// <returns>Metadata.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
+            Justification = "Expensive operation.")]
         IPortableMetadata GetMetadata();
 
         /// <summary>
