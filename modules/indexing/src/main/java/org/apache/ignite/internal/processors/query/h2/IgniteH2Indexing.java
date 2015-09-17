@@ -2161,7 +2161,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         /** {@inheritDoc} */
         @Override public GridCacheContext<?,?> context() {
-            return null;
+            return schema.cctx;
         }
 
         /** {@inheritDoc} */
