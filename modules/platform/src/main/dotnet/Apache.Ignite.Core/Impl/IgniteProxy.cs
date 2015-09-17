@@ -66,9 +66,10 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICluster Cluster
+
+        public ICluster GetCluster()
         {
-            get { return this; }
+            return this;
         }
 
         /** <inheritdoc /> */
@@ -80,139 +81,133 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IClusterGroup ForLocal()
         {
-            return _ignite.Cluster.ForLocal();
+            return _ignite.GetCluster().ForLocal();
         }
 
         /** <inheritdoc /> */
-        public ICompute Compute()
+        public ICompute GetCompute()
         {
-            return _ignite.Compute();
-        }
-
-        /** <inheritdoc /> */
-        public ICompute Compute(IClusterGroup clusterGroup)
-        {
-            return clusterGroup.Compute();
+            return _ignite.GetCompute();
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForNodes(IEnumerable<IClusterNode> nodes)
         {
-            return _ignite.Cluster.ForNodes(nodes);
+            return _ignite.GetCluster().ForNodes(nodes);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForNodes(params IClusterNode[] nodes)
         {
-            return _ignite.Cluster.ForNodes(nodes);
+            return _ignite.GetCluster().ForNodes(nodes);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForNodeIds(IEnumerable<Guid> ids)
         {
-            return _ignite.Cluster.ForNodeIds(ids);
+            return _ignite.GetCluster().ForNodeIds(ids);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForNodeIds(ICollection<Guid> ids)
         {
-            return _ignite.Cluster.ForNodeIds(ids);
+            return _ignite.GetCluster().ForNodeIds(ids);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForNodeIds(params Guid[] ids)
         {
-            return _ignite.Cluster.ForNodeIds(ids);
+            return _ignite.GetCluster().ForNodeIds(ids);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForPredicate(Func<IClusterNode, bool> p)
         {
-            return _ignite.Cluster.ForPredicate(p);
+            return _ignite.GetCluster().ForPredicate(p);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForAttribute(string name, string val)
         {
-            return _ignite.Cluster.ForAttribute(name, val);
+            return _ignite.GetCluster().ForAttribute(name, val);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForCacheNodes(string name)
         {
-            return _ignite.Cluster.ForCacheNodes(name);
+            return _ignite.GetCluster().ForCacheNodes(name);
         }
         
         /** <inheritdoc /> */
         public IClusterGroup ForDataNodes(string name)
         {
-            return _ignite.Cluster.ForDataNodes(name);
+            return _ignite.GetCluster().ForDataNodes(name);
         }
         
         /** <inheritdoc /> */
         public IClusterGroup ForClientNodes(string name)
         {
-            return _ignite.Cluster.ForClientNodes(name);
+            return _ignite.GetCluster().ForClientNodes(name);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForRemotes()
         {
-            return _ignite.Cluster.ForRemotes();
+            return _ignite.GetCluster().ForRemotes();
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForHost(IClusterNode node)
         {
-            return _ignite.Cluster.ForHost(node);
+            return _ignite.GetCluster().ForHost(node);
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForRandom()
         {
-            return _ignite.Cluster.ForRandom();
+            return _ignite.GetCluster().ForRandom();
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForOldest()
         {
-            return _ignite.Cluster.ForOldest();
+            return _ignite.GetCluster().ForOldest();
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForYoungest()
         {
-            return _ignite.Cluster.ForYoungest();
+            return _ignite.GetCluster().ForYoungest();
         }
 
         /** <inheritdoc /> */
         public IClusterGroup ForDotNet()
         {
-            return _ignite.Cluster.ForDotNet();
+            return _ignite.GetCluster().ForDotNet();
         }
 
         /** <inheritdoc /> */
-        public ICollection<IClusterNode> Nodes()
+        public ICollection<IClusterNode> GetNodes()
         {
-            return _ignite.Cluster.Nodes();
+            return _ignite.GetCluster().GetNodes();
         }
 
         /** <inheritdoc /> */
-        public IClusterNode Node(Guid id)
+        public IClusterNode GetNode(Guid id)
         {
-            return _ignite.Cluster.Node(id);
+            return _ignite.GetCluster().GetNode(id);
         }
 
         /** <inheritdoc /> */
-        public IClusterNode Node()
+        public IClusterNode GetNode()
         {
-            return _ignite.Cluster.Node();
+            return _ignite.GetCluster().GetNode();
         }
 
         /** <inheritdoc /> */
-        public IClusterMetrics Metrics()
+        public IClusterMetrics GetMetrics()
         {
-            return _ignite.Cluster.Metrics();
+            return _ignite.GetCluster().GetMetrics();
         }
 
         /** <inheritdoc /> */
@@ -224,9 +219,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICache<TK, TV> Cache<TK, TV>(string name)
+        public ICache<TK, TV> GetCache<TK, TV>(string name)
         {
-            return _ignite.Cache<TK, TV>(name);
+            return _ignite.GetCache<TK, TV>(name);
         }
 
         /** <inheritdoc /> */
@@ -242,90 +237,77 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IClusterNode LocalNode
+
+        public IClusterNode GetLocalNode()
         {
-            get
-            {
-                return _ignite.Cluster.LocalNode;
-            }
+            return _ignite.GetCluster().GetLocalNode();
         }
 
         /** <inheritdoc /> */
         public bool PingNode(Guid nodeId)
         {
-            return _ignite.Cluster.PingNode(nodeId);
+            return _ignite.GetCluster().PingNode(nodeId);
         }
 
         /** <inheritdoc /> */
         public long TopologyVersion
         {
-            get { return _ignite.Cluster.TopologyVersion; }
+            get { return _ignite.GetCluster().TopologyVersion; }
         }
 
         /** <inheritdoc /> */
-        public ICollection<IClusterNode> Topology(long ver)
+        public ICollection<IClusterNode> GetTopology(long ver)
         {
-            return _ignite.Cluster.Topology(ver);
+            return _ignite.GetCluster().GetTopology(ver);
         }
 
         /** <inheritdoc /> */
         public void ResetMetrics()
         {
-            _ignite.Cluster.ResetMetrics();
+            _ignite.GetCluster().ResetMetrics();
         }
 
         /** <inheritdoc /> */
-        public IDataStreamer<TK, TV> DataStreamer<TK, TV>(string cacheName)
+        public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName)
         {
-            return _ignite.DataStreamer<TK, TV>(cacheName);
+            return _ignite.GetDataStreamer<TK, TV>(cacheName);
         }
 
         /** <inheritdoc /> */
-        public IPortables Portables()
+        public IPortables GetPortables()
         {
-            return _ignite.Portables();
+            return _ignite.GetPortables();
         }
 
         /** <inheritdoc /> */
-        public ICacheAffinity Affinity(string name)
+        public ICacheAffinity GetAffinity(string name)
         {
-            return _ignite.Affinity(name);
+            return _ignite.GetAffinity(name);
         }
 
         /** <inheritdoc /> */
-        public ITransactions Transactions
+
+        public ITransactions GetTransactions()
         {
-            get { return _ignite.Transactions; }
+            return _ignite.GetTransactions();
         }
 
         /** <inheritdoc /> */
-        public IMessaging Message()
+        public IMessaging GetMessaging()
         {
-            return _ignite.Message();
+            return _ignite.GetMessaging();
         }
 
         /** <inheritdoc /> */
-        public IMessaging Message(IClusterGroup clusterGroup)
+        public IEvents GetEvents()
         {
-            return _ignite.Message(clusterGroup);
+            return _ignite.GetEvents();
         }
 
         /** <inheritdoc /> */
-        public IEvents Events()
+        public IServices GetServices()
         {
-            return _ignite.Events();
-        }
-
-        /** <inheritdoc /> */
-        public IEvents Events(IClusterGroup clusterGroup)
-        {
-            return _ignite.Events(clusterGroup);
-        }
-
-        /** <inheritdoc /> */
-        public IServices Services()
-        {
-            return _ignite.Services();
+            return _ignite.GetServices();
         }
 
         /** <inheritdoc /> */

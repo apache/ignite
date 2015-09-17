@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
 
-            ICollection<IClusterNode> nodes = _prj.Predicate == null ? null : _prj.Nodes();
+            ICollection<IClusterNode> nodes = _prj.Predicate == null ? null : _prj.GetNodes();
 
             try
             {
@@ -154,7 +154,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
 
-            ICollection<IClusterNode> nodes = _prj.Predicate == null ? null : _prj.Nodes();
+            ICollection<IClusterNode> nodes = _prj.Predicate == null ? null : _prj.GetNodes();
 
             try
             {

@@ -83,15 +83,16 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public bool IsEmpty
+
+        public bool IsEmpty()
         {
-            get { return _cache.IsEmpty; }
+            return _cache.IsEmpty();
         }
 
         /** <inheritDoc /> */
-        public bool KeepPortable
+        public bool IsKeepPortable
         {
-            get { return _cache.KeepPortable; }
+            get { return _cache.IsKeepPortable; }
         }
 
         /** <inheritDoc /> */
@@ -290,15 +291,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public int LocalSize(params CachePeekMode[] modes)
+        public int GetLocalSize(params CachePeekMode[] modes)
         {
-            return _cache.LocalSize(modes);
+            return _cache.GetLocalSize(modes);
         }
 
         /** <inheritDoc /> */
-        public int Size(params CachePeekMode[] modes)
+        public int GetSize(params CachePeekMode[] modes)
         {
-            _cache.Size(modes);
+            _cache.GetSize(modes);
             return GetResult<int>();
         }
 

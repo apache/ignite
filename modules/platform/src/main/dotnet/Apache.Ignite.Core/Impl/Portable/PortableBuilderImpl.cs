@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder HashCode(int hashCode)
+        public IPortableBuilder SetHashCode(int hashCode)
         {
             _hashCode = hashCode;
 

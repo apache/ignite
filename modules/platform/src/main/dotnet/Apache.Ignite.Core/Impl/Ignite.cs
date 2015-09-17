@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
@@ -122,7 +123,7 @@ namespace Apache.Ignite.Core.Impl
 
             // Grid is not completely started here, can't initialize interop transactions right away.
             _transactions = new Lazy<TransactionsImpl>(
-                    () => new TransactionsImpl(UU.ProcessorTransactions(proc), marsh, LocalNode.Id));
+                    () => new TransactionsImpl(UU.ProcessorTransactions(proc), marsh, GetLocalNode().Id));
         }
 
         /// <summary>
@@ -150,9 +151,10 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICluster Cluster
+
+        public ICluster GetCluster()
         {
-            get { return this; }
+            return this;
         }
 
         /** <inheritdoc /> */
@@ -164,21 +166,13 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IClusterGroup ForLocal()
         {
-            return _prj.ForNodes(LocalNode);
+            return _prj.ForNodes(GetLocalNode());
         }
 
         /** <inheritdoc /> */
-        public ICompute Compute()
+        public ICompute GetCompute()
         {
-            return _prj.Compute();
-        }
-
-        /** <inheritdoc /> */
-        public ICompute Compute(IClusterGroup clusterGroup)
-        {
-            IgniteArgumentCheck.NotNull(clusterGroup, "clusterGroup");
-
-            return clusterGroup.Compute();
+            return _prj.GetCompute();
         }
 
         /** <inheritdoc /> */
@@ -282,27 +276,27 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICollection<IClusterNode> Nodes()
+        public ICollection<IClusterNode> GetNodes()
         {
-            return _prj.Nodes();
+            return _prj.GetNodes();
         }
 
         /** <inheritdoc /> */
-        public IClusterNode Node(Guid id)
+        public IClusterNode GetNode(Guid id)
         {
-            return _prj.Node(id);
+            return _prj.GetNode(id);
         }
 
         /** <inheritdoc /> */
-        public IClusterNode Node()
+        public IClusterNode GetNode()
         {
-            return _prj.Node();
+            return _prj.GetNode();
         }
 
         /** <inheritdoc /> */
-        public IClusterMetrics Metrics()
+        public IClusterMetrics GetMetrics()
         {
-            return _prj.Metrics();
+            return _prj.GetMetrics();
         }
 
         /** <inheritdoc /> */
@@ -330,7 +324,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICache<TK, TV> Cache<TK, TV>(string name)
+        public ICache<TK, TV> GetCache<TK, TV>(string name)
         {
             return Cache<TK, TV>(UU.ProcessorCache(_proc, name));
         }
@@ -363,25 +357,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IClusterNode LocalNode
+        public IClusterNode GetLocalNode()
         {
-            get
-            {
-                if (_locNode == null)
-                {
-                    foreach (IClusterNode node in Nodes())
-                    {
-                        if (node.IsLocal)
-                        {
-                            _locNode = node;
-
-                            break;
-                        }
-                    }
-                }
-
-                return _locNode;
-            }
+            return _locNode ?? (_locNode = GetNodes().FirstOrDefault(x => x.IsLocal));
         }
 
         /** <inheritdoc /> */
@@ -397,7 +375,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICollection<IClusterNode> Topology(long ver)
+        public ICollection<IClusterNode> GetTopology(long ver)
         {
             return _prj.Topology(ver);
         }
@@ -409,63 +387,47 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IDataStreamer<TK, TV> DataStreamer<TK, TV>(string cacheName)
+        public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName)
         {
             return new DataStreamerImpl<TK, TV>(UU.ProcessorDataStreamer(_proc, cacheName, false),
                 _marsh, cacheName, false);
         }
 
         /** <inheritdoc /> */
-        public IPortables Portables()
+        public IPortables GetPortables()
         {
             return _portables;
         }
 
         /** <inheritdoc /> */
-        public ICacheAffinity Affinity(string cacheName)
+        public ICacheAffinity GetAffinity(string cacheName)
         {
             return new CacheAffinityImpl(UU.ProcessorAffinity(_proc, cacheName), _marsh, false, this);
         }
 
         /** <inheritdoc /> */
-        public ITransactions Transactions
+
+        public ITransactions GetTransactions()
         {
-            get { return _transactions.Value; }
+            return _transactions.Value;
         }
 
         /** <inheritdoc /> */
-        public IMessaging Message()
+        public IMessaging GetMessaging()
         {
-            return _prj.Message();
+            return _prj.GetMessaging();
         }
 
         /** <inheritdoc /> */
-        public IMessaging Message(IClusterGroup clusterGroup)
+        public IEvents GetEvents()
         {
-            IgniteArgumentCheck.NotNull(clusterGroup, "clusterGroup");
-
-            return clusterGroup.Message();
+            return _prj.GetEvents();
         }
 
         /** <inheritdoc /> */
-        public IEvents Events()
+        public IServices GetServices()
         {
-            return _prj.Events();
-        }
-
-        /** <inheritdoc /> */
-        public IEvents Events(IClusterGroup clusterGroup)
-        {
-            if (clusterGroup == null)
-                throw new ArgumentNullException("clusterGroup");
-
-            return clusterGroup.Events();
-        }
-
-        /** <inheritdoc /> */
-        public IServices Services()
-        {
-            return _prj.Services();
+            return _prj.GetServices();
         }
 
         /// <summary>

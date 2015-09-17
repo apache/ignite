@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(grid);
 
-            Assert.AreEqual(1, grid.Cluster.Nodes().Count);
+            Assert.AreEqual(1, grid.GetCluster().GetNodes().Count);
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(grid);
 
-            Assert.AreEqual(1, grid.Cluster.Nodes().Count);
+            Assert.AreEqual(1, grid.GetCluster().GetNodes().Count);
         }
 
         /// <summary>
@@ -235,13 +235,13 @@ namespace Apache.Ignite.Core.Tests
 
             var grid = Ignition.Start(cfg);
 
-            Assert.IsNotNull(grid.Cache<int, int>("cache1"));
+            Assert.IsNotNull(grid.GetCache<int, int>("cache1"));
 
             grid.Dispose();
 
             try
             {
-                grid.Cache<int, int>("cache1");
+                grid.GetCache<int, int>("cache1");
 
                 Assert.Fail();
             }
@@ -334,18 +334,18 @@ namespace Apache.Ignite.Core.Tests
         private static void UseIgnite(IIgnite ignite)
         {
             // Create objects holding references to java objects.
-            var comp = ignite.Compute();
+            var comp = ignite.GetCompute();
 
             // ReSharper disable once RedundantAssignment
             comp = comp.WithKeepPortable();
 
-            var prj = ignite.Cluster.ForOldest();
+            var prj = ignite.GetCluster().ForOldest();
 
-            Assert.IsTrue(prj.Nodes().Count > 0);
+            Assert.IsTrue(prj.GetNodes().Count > 0);
 
-            Assert.IsNotNull(prj.Compute());
+            Assert.IsNotNull(prj.GetCompute());
 
-            var cache = ignite.Cache<int, int>("cache1");
+            var cache = ignite.GetCache<int, int>("cache1");
 
             Assert.IsNotNull(cache);
 
@@ -388,9 +388,9 @@ namespace Apache.Ignite.Core.Tests
 
                 while (!token.IsCancellationRequested)
                 {
-                    var listenId = grid.Message().RemoteListen(filter);
+                    var listenId = grid.GetMessaging().RemoteListen(filter);
 
-                    grid.Message().StopRemoteListen(listenId);
+                    grid.GetMessaging().StopRemoteListen(listenId);
                 }
                 // ReSharper disable once FunctionNeverReturns
             });

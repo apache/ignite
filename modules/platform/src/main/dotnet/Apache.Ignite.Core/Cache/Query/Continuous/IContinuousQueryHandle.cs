@@ -37,12 +37,6 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
     {
         /// <summary>
         /// Gets the cursor for initial query.
-        /// </summary>
-        [Obsolete("GetInitialQueryCursor() method should be used instead.")]
-        IQueryCursor<T> InitialQueryCursor { get; }
-
-        /// <summary>
-        /// Gets the cursor for initial query.
         /// Can be called only once, throws exception on consequent calls.
         /// </summary>
         /// <returns>Initial query cursor.</returns>

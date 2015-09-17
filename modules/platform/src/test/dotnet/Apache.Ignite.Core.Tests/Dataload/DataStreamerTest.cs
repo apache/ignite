@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
             Ignition.Start(GetIgniteConfiguration(GridName + "_1"));
 
-            _cache = _grid.Cache<int, int?>(CacheName);
+            _cache = _grid.GetCache<int, int?>(CacheName);
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestPropertyPropagation()
         {
-            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
+            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 ldr.AllowOverwrite = true;
                 Assert.IsTrue(ldr.AllowOverwrite);
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]        
         public void TestAddRemove()
         {
-            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
+            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 ldr.AllowOverwrite = true;
 
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestTryFlush()
         {
-            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
+            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 var fut = ldr.AddData(1, 1);
 
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestBufferSize()
         {
-            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
+            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 var fut = ldr.AddData(1, 1);
 
@@ -231,7 +231,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestClose()
         {
-            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
+            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 var fut = ldr.AddData(1, 1);
 
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestCancel()
         {
-            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
+            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 var fut = ldr.AddData(1, 1);
 
@@ -267,7 +267,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestFinalizer()
         {
-            var streamer = _grid.DataStreamer<int, int>(CacheName);
+            var streamer = _grid.GetDataStreamer<int, int>(CacheName);
             var streamerRef = new WeakReference(streamer);
 
             Assert.IsNotNull(streamerRef.Target);
@@ -287,7 +287,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestAutoFlush()
         {
-            using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
+            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 // Test auto flush turning on.
                 var fut = ldr.AddData(1, 1);
@@ -338,13 +338,13 @@ namespace Apache.Ignite.Core.Tests.Dataload
             {
                 _cache.Clear();
 
-                Assert.AreEqual(0, _cache.Size());
+                Assert.AreEqual(0, _cache.GetSize());
 
                 Stopwatch watch = new Stopwatch();
 
                 watch.Start();
 
-                using (IDataStreamer<int, int> ldr = _grid.DataStreamer<int, int>(CacheName))
+                using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
                 {
                     ldr.PerNodeBufferSize = 1024;
 
@@ -411,7 +411,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// </summary>
         private void TestStreamReceiver(IStreamReceiver<int, int> receiver)
         {
-            using (var ldr = _grid.DataStreamer<int, int>(CacheName))
+            using (var ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 ldr.AllowOverwrite = true;
 
@@ -438,9 +438,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
         public void TestStreamReceiverKeepPortable()
         {
             // ReSharper disable once LocalVariableHidesMember
-            var cache = _grid.Cache<int, PortableEntry>(CacheName);
+            var cache = _grid.GetCache<int, PortableEntry>(CacheName);
 
-            using (var ldr0 = _grid.DataStreamer<int, int>(CacheName))
+            using (var ldr0 = _grid.GetDataStreamer<int, int>(CacheName))
             using (var ldr = ldr0.WithKeepPortable<int, IPortableObject>())
             {
                 ldr.Receiver = new StreamReceiverKeepPortable();
@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.AllowOverwrite = true;
 
                 for (var i = 0; i < 100; i++)
-                    ldr.AddData(i, _grid.Portables().ToPortable<IPortableObject>(new PortableEntry {Val = i}));
+                    ldr.AddData(i, _grid.GetPortables().ToPortable<IPortableObject>(new PortableEntry {Val = i}));
 
                 ldr.Flush();
 
@@ -517,7 +517,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             /** <inheritdoc /> */
             public void Receive(ICache<int, IPortableObject> cache, ICollection<ICacheEntry<int, IPortableObject>> entries)
             {
-                var portables = cache.Ignite.Portables();
+                var portables = cache.Ignite.GetPortables();
 
                 cache.PutAll(entries.ToDictionary(x => x.Key, x =>
                     portables.ToPortable<IPortableObject>(new PortableEntry

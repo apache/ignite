@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder Builder(Type type)
+        public IPortableBuilder GetBuilder(Type type)
         {
             IgniteArgumentCheck.NotNull(type, "type");
 
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder Builder(string typeName)
+        public IPortableBuilder GetBuilder(string typeName)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder Builder(IPortableObject obj)
+        public IPortableBuilder GetBuilder(IPortableObject obj)
         {
             IgniteArgumentCheck.NotNull(obj, "obj");
 
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (obj0 == null)
                 throw new ArgumentException("Unsupported object type: " + obj.GetType());
 
-            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj0.TypeId());
+            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj0.TypeId);
             
             return Builder0(null, obj0, desc);
         }

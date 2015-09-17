@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.AreEqual(_actions.Count, 6);
 
-            var compute = Grid1.Compute();
+            var compute = Grid1.GetCompute();
 
             TestUtils.RunMultiThreaded(() =>
             {
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.AreEqual(_actions.Count, 6);
 
-            TestUtils.RunMultiThreaded(() => _actions[0](Grid1.Compute()), 4, 20);
+            TestUtils.RunMultiThreaded(() => _actions[0](Grid1.GetCompute()), 4, 20);
         }
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.AreEqual(_actions.Count, 6);
 
-            TestUtils.RunMultiThreaded(() => _actions[1](Grid1.Compute()), 4, 20);
+            TestUtils.RunMultiThreaded(() => _actions[1](Grid1.GetCompute()), 4, 20);
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.AreEqual(_actions.Count, 6);
 
-            TestUtils.RunMultiThreaded(() => _actions[2](Grid1.Compute()), 4, 20);
+            TestUtils.RunMultiThreaded(() => _actions[2](Grid1.GetCompute()), 4, 20);
         }
 
         /// <summary>
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.AreEqual(_actions.Count, 6);
 
-            TestUtils.RunMultiThreaded(() => _actions[3](Grid1.Compute()), 4, 20);
+            TestUtils.RunMultiThreaded(() => _actions[3](Grid1.GetCompute()), 4, 20);
         }
         /// <summary>
         ///
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.AreEqual(_actions.Count, 6);
 
-            TestUtils.RunMultiThreaded(() => _actions[4](Grid1.Compute()), 4, 20);
+            TestUtils.RunMultiThreaded(() => _actions[4](Grid1.GetCompute()), 4, 20);
         }
 
         /// <summary>
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.AreEqual(_actions.Count, 6);
 
-            TestUtils.RunMultiThreaded(() => _actions[5](Grid1.Compute()), 4, 20);
+            TestUtils.RunMultiThreaded(() => _actions[5](Grid1.GetCompute()), 4, 20);
         }
     }
 

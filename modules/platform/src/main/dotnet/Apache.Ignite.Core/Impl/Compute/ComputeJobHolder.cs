@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                 success ? res : null, 
                 success ? null : res as Exception, 
                 _job, 
-                _ignite.LocalNode.Id, 
+                _ignite.GetLocalNode().Id, 
                 cancel
             );
         }
