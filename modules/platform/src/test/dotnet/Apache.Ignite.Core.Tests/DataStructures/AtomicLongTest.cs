@@ -27,8 +27,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Initializes a new instance of the <see cref="AtomicLongTest"/> class.
         /// </summary>
-        public AtomicLongTest()
-            : base("config\\compute\\compute-grid1.xml")
+        public AtomicLongTest() : base("config\\compute\\compute-grid1.xml")
         {
             // No-op.
         }
@@ -36,7 +35,9 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         [Test]
         public void Test()
         {
-            
+            var al = Grid1.GetAtomicLong("test", 10, true);
+
+            Assert.IsNotNull(al);
         }
     }
 }
