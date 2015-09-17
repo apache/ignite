@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets an instance of <see cref="ICluster" /> interface.
         /// </summary>
-        ICluster Cluster { get; }
+        ICluster GetCluster();
 
         /// <summary>
         /// Gets compute functionality over this grid projection. All operations
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core
         /// this projection.
         /// </summary>
         /// <returns>Compute instance over this grid projection.</returns>
-        ICompute Compute();
+        ICompute GetCompute();
 
         /// <summary>
         /// Gets the cache instance for the given name to work with keys and values of specified types.

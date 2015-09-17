@@ -2206,7 +2206,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(2500, tx.Timeout.TotalMilliseconds);
             Assert.AreEqual(TransactionState.Active, tx.State);
             Assert.IsTrue(tx.StartTime.Ticks > 0);
-            Assert.AreEqual(tx.NodeId, GetIgnite(0).Cluster.LocalNode.Id);
+            Assert.AreEqual(tx.NodeId, GetIgnite(0).GetCluster().LocalNode.Id);
 
             DateTime startTime1 = tx.StartTime;
 
@@ -2541,7 +2541,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             ICacheAffinity aff = Affinity();
 
-            ICollection<IClusterNode> nodes = GetIgnite(0).Cluster.Nodes();
+            ICollection<IClusterNode> nodes = GetIgnite(0).GetCluster().Nodes();
 
             Assert.IsTrue(nodes.Count > 0);
 
@@ -2593,7 +2593,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             ICacheAffinity aff = Affinity();
 
-            ICollection<IClusterNode> nodes = GetIgnite(0).Cluster.Nodes();
+            ICollection<IClusterNode> nodes = GetIgnite(0).GetCluster().Nodes();
 
             Assert.IsTrue(nodes.Count > 0);
 
@@ -2659,7 +2659,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.IsNotNull(node);
 
-            Assert.IsTrue(GetIgnite(0).Cluster.Nodes().Contains(node));
+            Assert.IsTrue(GetIgnite(0).GetCluster().Nodes().Contains(node));
 
             Assert.IsTrue(aff.IsPrimary(node, key));
 
@@ -2738,7 +2738,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 Assert.AreEqual(parts.Count, map.Count);
 
-                Assert.AreEqual(GetIgnite(0).Cluster.LocalNode, map[0]);
+                Assert.AreEqual(GetIgnite(0).GetCluster().LocalNode, map[0]);
             }
             else
             {
@@ -2781,7 +2781,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var cache = Cache();
             var aff = cache.Ignite.Affinity(cache.Name);
-            var node = cache.Ignite.Cluster.LocalNode;
+            var node = cache.Ignite.GetCluster().LocalNode;
 
             for (int i = 0; i < count; i++)
                 cache.Put(i, -i - 1);
@@ -3164,7 +3164,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         protected static IEnumerable<int> PrimaryKeysForCache(ICache<int, int> cache, int cnt, int startFrom)
         {
-            IClusterNode node = cache.Ignite.Cluster.LocalNode;
+            IClusterNode node = cache.Ignite.GetCluster().LocalNode;
 
             ICacheAffinity aff = cache.Ignite.Affinity(cache.Name);
 
@@ -3173,7 +3173,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         protected static int NearKeyForCache(ICache<int, int> cache)
         {
-            IClusterNode node = cache.Ignite.Cluster.LocalNode;
+            IClusterNode node = cache.Ignite.GetCluster().LocalNode;
 
             ICacheAffinity aff = cache.Ignite.Affinity(cache.Name);
 
@@ -3190,10 +3190,10 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         protected static string GetKeyAffinity(ICache<int, int> cache, int key)
         {
-            if (cache.Ignite.Affinity(cache.Name).IsPrimary(cache.Ignite.Cluster.LocalNode, key))
+            if (cache.Ignite.Affinity(cache.Name).IsPrimary(cache.Ignite.GetCluster().LocalNode, key))
                 return "primary";
 
-            if (cache.Ignite.Affinity(cache.Name).IsBackup(cache.Ignite.Cluster.LocalNode, key))
+            if (cache.Ignite.Affinity(cache.Name).IsBackup(cache.Ignite.GetCluster().LocalNode, key))
                 return "backup";
 
             return "near";

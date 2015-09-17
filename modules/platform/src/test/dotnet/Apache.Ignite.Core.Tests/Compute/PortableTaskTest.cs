@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             TestTask task = new TestTask(Grid1, taskArg);
 
-            IPortableObject res = Grid1.Compute().Execute(task, taskArg);
+            IPortableObject res = Grid1.GetCompute().Execute(task, taskArg);
 
             Assert.NotNull(res);
 

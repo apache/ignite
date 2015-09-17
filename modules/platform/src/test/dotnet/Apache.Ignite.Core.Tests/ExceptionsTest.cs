@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                grid.Cluster.ForRemotes().Metrics();
+                grid.GetCluster().ForRemotes().Metrics();
 
                 Assert.Fail();
             }

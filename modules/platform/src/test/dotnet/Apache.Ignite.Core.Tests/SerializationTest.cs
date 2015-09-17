@@ -97,9 +97,9 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="arg">Task arg.</param>
         private static void CheckTask(IIgnite grid, object arg)
         {
-            var jobResult = grid.Compute().Execute(new CombineStringsTask(), arg);
+            var jobResult = grid.GetCompute().Execute(new CombineStringsTask(), arg);
 
-            var nodeCount = grid.Cluster.Nodes().Count;
+            var nodeCount = grid.GetCluster().Nodes().Count;
 
             var expectedRes =
                 CombineStringsTask.CombineStrings(Enumerable.Range(0, nodeCount).Select(x => arg.ToString()));

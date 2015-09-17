@@ -923,7 +923,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <returns></returns>
         private static List<int> PrimaryKeys<T>(ICache<int, T> cache, int cnt, int startFrom = 0)
         {
-            IClusterNode node = cache.Ignite.Cluster.LocalNode;
+            IClusterNode node = cache.Ignite.GetCluster().LocalNode;
 
             ICacheAffinity aff = cache.Ignite.Affinity(cache.Name);
 

@@ -47,18 +47,16 @@ namespace Apache.Ignite.Core.Cluster
     /// var workerNodes = g.ForAttribute("group", "worker");
     /// </code>
     /// Grid projection provides functionality for executing tasks and closures over 
-    /// nodes in this projection using <see cref="IClusterGroup.Compute()"/>.
+    /// nodes in this projection using <see cref="GetCompute"/>.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
-    public interface IClusterGroup {
+    public interface IClusterGroup 
+    {
         /// <summary>
-        /// Instance of grid.
+        /// Instance of Ignite.
         /// </summary>
-        IIgnite Ignite
-        {
-            get;
-        }
+        IIgnite Ignite { get; }
 
         /// <summary>
         /// Gets compute functionality over this grid projection. All operations
@@ -66,7 +64,7 @@ namespace Apache.Ignite.Core.Cluster
         /// this projection.
         /// </summary>
         /// <returns>Compute instance over this grid projection.</returns>
-        ICompute Compute();
+        ICompute GetCompute();
 
         /// <summary>
         /// Creates a grid projection over a given set of nodes.

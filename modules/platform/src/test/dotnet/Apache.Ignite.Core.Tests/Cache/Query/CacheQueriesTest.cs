@@ -839,7 +839,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 cache.Put(val, new QueryPerson(val.ToString(), val));
 
                 if (expectedEntryFilter(val) && (!loc || cache.Ignite.Affinity(cache.Name)
-                    .IsPrimary(cache.Ignite.Cluster.LocalNode, val)))
+                    .IsPrimary(cache.Ignite.GetCluster().LocalNode, val)))
                     exp.Add(val);
             }
 

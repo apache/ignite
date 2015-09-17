@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(grid);
 
-            Assert.AreEqual(1, grid.Cluster.Nodes().Count);
+            Assert.AreEqual(1, grid.GetCluster().Nodes().Count);
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(grid);
 
-            Assert.AreEqual(1, grid.Cluster.Nodes().Count);
+            Assert.AreEqual(1, grid.GetCluster().Nodes().Count);
         }
 
         /// <summary>
@@ -334,16 +334,16 @@ namespace Apache.Ignite.Core.Tests
         private static void UseIgnite(IIgnite ignite)
         {
             // Create objects holding references to java objects.
-            var comp = ignite.Compute();
+            var comp = ignite.GetCompute();
 
             // ReSharper disable once RedundantAssignment
             comp = comp.WithKeepPortable();
 
-            var prj = ignite.Cluster.ForOldest();
+            var prj = ignite.GetCluster().ForOldest();
 
             Assert.IsTrue(prj.Nodes().Count > 0);
 
-            Assert.IsNotNull(prj.Compute());
+            Assert.IsNotNull(prj.GetCompute());
 
             var cache = ignite.Cache<int, int>("cache1");
 

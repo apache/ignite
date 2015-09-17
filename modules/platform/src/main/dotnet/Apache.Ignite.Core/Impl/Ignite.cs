@@ -149,9 +149,10 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICluster Cluster
+
+        public ICluster GetCluster()
         {
-            get { return this; }
+            return this;
         }
 
         /** <inheritdoc /> */
@@ -167,9 +168,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICompute Compute()
+        public ICompute GetCompute()
         {
-            return _prj.Compute();
+            return _prj.GetCompute();
         }
 
         /** <inheritdoc /> */

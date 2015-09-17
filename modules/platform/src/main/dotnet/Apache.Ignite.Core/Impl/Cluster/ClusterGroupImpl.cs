@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritDoc /> */
-        public ICompute Compute()
+        public ICompute GetCompute()
         {
             return _comp.Value;
         }

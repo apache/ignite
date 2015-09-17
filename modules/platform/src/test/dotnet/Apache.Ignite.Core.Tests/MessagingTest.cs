@@ -163,7 +163,7 @@ namespace Apache.Ignite.Core.Tests
 
             _grid3.Message().LocalListen(grid3Listener, topic);
 
-            var clusterMessaging = _grid1.Cluster.ForNodes(_grid1.Cluster.LocalNode, _grid2.Cluster.LocalNode).Message();
+            var clusterMessaging = _grid1.GetCluster().ForNodes(_grid1.GetCluster().LocalNode, _grid2.GetCluster().LocalNode).Message();
             var clusterListener = MessagingTestHelper.GetListener();
             clusterMessaging.LocalListen(clusterListener, topic);
 
@@ -345,7 +345,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private void TestRemoteListenProjection(object topic)
         {
-            var clusterMessaging = _grid1.Cluster.ForNodes(_grid1.Cluster.LocalNode, _grid2.Cluster.LocalNode).Message();
+            var clusterMessaging = _grid1.GetCluster().ForNodes(_grid1.GetCluster().LocalNode, _grid2.GetCluster().LocalNode).Message();
             var clusterListener = MessagingTestHelper.GetListener();
             var listenId = clusterMessaging.RemoteListen(clusterListener, topic);
 
@@ -429,7 +429,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 grid = grid ?? _grid1;
                 msg = grid.Message();
-                cluster = grid.Cluster.ForLocal();
+                cluster = grid.GetCluster().ForLocal();
             }
 
             // Messages will repeat due to multiple nodes listening
@@ -559,7 +559,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(expectedMessages, resultFunc(ReceivedMessages));
 
             // check that all messages came from local node.
-            var localNodeId = cluster.Ignite.Cluster.LocalNode.Id;
+            var localNodeId = cluster.Ignite.GetCluster().LocalNode.Id;
             Assert.AreEqual(localNodeId, LastNodeIds.Distinct().Single());
             
             AssertFailures();

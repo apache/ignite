@@ -308,7 +308,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             JobErrs.Clear();
 
-            object res = Grid1.Compute().Execute(new Task());
+            object res = Grid1.GetCompute().Execute(new Task());
 
             return res is GoodTaskResult ? ((GoodTaskResult)res).Res : ((BadTaskResult)res).Res;
         }
@@ -325,7 +325,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             try
             {
-                Grid1.Compute().Execute(new Task());
+                Grid1.GetCompute().Execute(new Task());
 
                 Assert.Fail();
             }
@@ -429,7 +429,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 var jobs = new Dictionary<IComputeJob<object>, IClusterNode>();
 
                 foreach (IClusterNode node in subgrid)
-                    jobs.Add(new GoodJob(!_grid.Cluster.LocalNode.Id.Equals(node.Id)), node);
+                    jobs.Add(new GoodJob(!_grid.GetCluster().LocalNode.Id.Equals(node.Id)), node);
 
                 return jobs;
             }
