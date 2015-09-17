@@ -25,12 +25,9 @@ import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterTopologyException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -41,17 +38,6 @@ import static org.yardstickframework.BenchmarkUtils.println;
  * (random get, put, invoke, remove operations)
  */
 public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstractBenchmark<String, Long> {
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        CacheConfiguration<String, Long> cc = new CacheConfiguration<String, Long>()
-            .setName("transactional")
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-        cache = ignite().getOrCreateCache(cc);
-    }
-
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         final int k = nextRandom(100_000);
@@ -125,7 +111,6 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<String, Long> cache() {
-        // The value will be overriden in setUp().
-        return null;
+        return ignite().cache("tx");
     }
 }
