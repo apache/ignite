@@ -91,7 +91,7 @@ class VisorConsole {
             println("        -np                  - no pause on exit (pause by default).")
             println("        -cfg=<path>          - connect with specified configuration.")
             println("        -b=<path>            - batch mode with file.")
-            println("        -e==cmd1;cmd2;...    - batch mode with commands.")
+            println("        -e=cmd1;cmd2;...     - batch mode with commands.")
 
             visor.quit()
         }
