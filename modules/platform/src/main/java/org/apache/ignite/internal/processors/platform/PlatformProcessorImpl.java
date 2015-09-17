@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheS
 import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterGroup;
 import org.apache.ignite.internal.processors.platform.compute.PlatformCompute;
 import org.apache.ignite.internal.processors.platform.datastreamer.PlatformDataStreamer;
+import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicLong;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetCacheStore;
 import org.apache.ignite.internal.processors.platform.events.PlatformEvents;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
