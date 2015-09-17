@@ -25,7 +25,7 @@ namespace Apache.Ignite.Examples.Services
     /// <summary>
     /// Example demonstrating grid services.
     /// <para />
-    /// This example can be run in conjunction with standalone GridGain .Net node.
+    /// This example can be run in conjunction with standalone Apache Ignite .Net node.
     /// To start standalone node please do the following:
     /// 1) Build the project Apache.Ignite.ExamplesDll if you havent't done it yet (select it -> right-click -> Build);
     /// 2) Locate created Apache.Ignite.ExamplesDll.dll file (Apache.Ignite.ExamplesDll project -> right-click ->

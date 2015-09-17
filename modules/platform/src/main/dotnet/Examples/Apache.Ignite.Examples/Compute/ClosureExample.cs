@@ -32,7 +32,7 @@ namespace Apache.Ignite.Examples.Compute
     ///     Application -> Startup object);
     /// 3) Start application (F5 or Ctrl+F5).
     /// <para />
-    /// This example can be run in conjunction with standalone GridGain .Net node.
+    /// This example can be run in conjunction with standalone Apache Ignite .Net node.
     /// To start standalone node please do the following:
     /// 1) Build the project Apache.Ignite.ExamplesDll if you havent't done it yet (select it -> right-click -> Build);
     /// 2) Locate created Apache.Ignite.ExamplesDll.dll file (Apache.Ignite.ExamplesDll project -> right-click ->
