@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 foreach (IClusterNode node in subgrid)
                 {
-                    if (!Grid3Name.Equals(node.Attribute<string>("org.apache.ignite.ignite.name"))) // Grid3 does not have cache.
+                    if (!Grid3Name.Equals(node.GetAttribute<string>("org.apache.ignite.ignite.name"))) // Grid3 does not have cache.
                     {
                         PortableJob job = new PortableJob();
 

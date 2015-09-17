@@ -200,9 +200,9 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.IsTrue(node.Addresses.Count > 0);
                 Assert.Throws<NotSupportedException>(() => node.Addresses.Add("addr"));
 
-                Assert.NotNull(node.Attributes());
-                Assert.IsTrue(node.Attributes().Count > 0);
-                Assert.Throws<NotSupportedException>(() => node.Attributes().Add("key", "val"));
+                Assert.NotNull(node.GetAttributes());
+                Assert.IsTrue(node.GetAttributes().Count > 0);
+                Assert.Throws<NotSupportedException>(() => node.GetAttributes().Add("key", "val"));
 
                 Assert.NotNull(node.HostNames);
                 Assert.Throws<NotSupportedException>(() => node.HostNames.Add("h"));
@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.IsTrue(node.Order > 0);
 
-                Assert.NotNull(node.Metrics());
+                Assert.NotNull(node.GetMetrics());
             }
         }
 
@@ -245,15 +245,15 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var node = _grid1.GetCluster().GetNode();
 
-            IClusterMetrics metrics = node.Metrics();
+            IClusterMetrics metrics = node.GetMetrics();
 
             Assert.IsNotNull(metrics);
 
-            Assert.IsTrue(metrics == node.Metrics());
+            Assert.IsTrue(metrics == node.GetMetrics());
 
             Thread.Sleep(2000);
 
-            IClusterMetrics newMetrics = node.Metrics();
+            IClusterMetrics newMetrics = node.GetMetrics();
 
             Assert.IsFalse(metrics == newMetrics);
             Assert.IsTrue(metrics.LastUpdateTime < newMetrics.LastUpdateTime);
@@ -540,7 +540,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             IClusterGroup prj = _grid1.GetCluster().ForAttribute("my_attr", "value1");
             Assert.AreEqual(1, prj.GetNodes().Count);
             Assert.IsTrue(nodes.Contains(prj.GetNode()));
-            Assert.AreEqual("value1", prj.GetNodes().First().Attribute<string>("my_attr"));
+            Assert.AreEqual("value1", prj.GetNodes().First().GetAttribute<string>("my_attr"));
         }
         
         /// <summary>
