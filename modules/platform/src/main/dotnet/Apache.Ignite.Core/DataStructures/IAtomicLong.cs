@@ -64,8 +64,18 @@ namespace Apache.Ignite.Core.DataStructures
         /// <returns>Original value of the atomic long.</returns>
         long Exchange(long value);
 
+        /// <summary>
+        /// Compares current value with specified value for equality and, if they are equal, replaces current value.
+        /// </summary>
+        /// <param name="value">The value to set.</param>
+        /// <param name="comparand">The value that is compared to the current value.</param>
+        /// <returns>Original value of the atomic long.</returns>
         long CompareExchange(long value, long comparand);
 
+        /// <summary>
+        /// Determines whether this instance was removed from cache.
+        /// </summary>
+        /// <returns>True if this atomic was removed from cache; otherwise, false.</returns>
         bool IsRemoved();
     }
 }
