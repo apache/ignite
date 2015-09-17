@@ -22,17 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
@@ -807,6 +797,26 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
+     * Convenience shortcut method.
+     * @param srcPath
+     * @param dstPath
+     * @throws IgniteCheckedException
+     */
+    public void move(IgfsPath srcPath, IgfsPath dstPath) throws IgniteCheckedException {
+        move(fileIds(srcPath), srcPath, fileIds(dstPath), dstPath);
+    }
+
+    /**
+     * Yet another convenience shortcut method.
+     * @param srcPath
+     * @param dstPath
+     * @throws IgniteCheckedException
+     */
+    public void move(String srcPath, String dstPath) throws IgniteCheckedException {
+        move(new IgfsPath(srcPath), new IgfsPath(dstPath));
+    }
+
+    /**
      * Move or rename file.
      *
      * @param fileId File ID to move or rename.
@@ -816,8 +826,8 @@ public class IgfsMetaManager extends IgfsManager {
      * @param destParentId New parent directory ID.
      * @throws IgniteCheckedException If failed.
      */
-    public void move(IgniteUuid fileId, String srcFileName, IgniteUuid srcParentId, String destFileName,
-        IgniteUuid destParentId) throws IgniteCheckedException {
+    public void move(List<IgniteUuid> srcIds, IgfsPath srcPath, List<IgniteUuid> destIds, IgfsPath dstPath)
+            throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -825,7 +835,7 @@ public class IgfsMetaManager extends IgfsManager {
                 IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
-                    moveNonTx(fileId, srcFileName, srcParentId, destFileName, destParentId);
+                    moveNonTx(srcIds, srcPath, destIds, dstPath);
 
                     tx.commit();
                 }
@@ -837,13 +847,124 @@ public class IgfsMetaManager extends IgfsManager {
                 busyLock.leaveBusy();
             }
         }
-        else
+        else {
+            IgniteUuid fileId = srcIds.get(srcIds.size() - 1);
+            IgniteUuid srcParentId = srcIds.get(srcIds.size() - 2);
+            IgniteUuid destParentId = destIds.get(destIds.size() - 1);
+
+            String srcFileName = srcPath.name();
+            String destFileName = dstPath.name();
+
             throw new IllegalStateException("Failed to move file system entry because Grid is stopping [fileId=" +
                 fileId + ", srcFileName=" + srcFileName + ", srcParentId=" + srcParentId + ", destFileName=" +
                 destFileName + ", destParentId=" + destParentId + ']');
+        }
     }
 
     /**
+     * Move or rename file in existing transaction.
+     *
+     * @param fileId File ID to move or rename.
+     * @param srcFileName Original file name in the parent's listing.
+     * @param srcParentId Parent directory ID.
+     * @param destFileName New file name in the parent's listing after moving.
+     * @param destParentId New parent directory ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void moveNonTx(List<IgniteUuid> srcIds, IgfsPath srcPath, List<IgniteUuid> destIds, IgfsPath dstPath)
+            throws IgniteCheckedException {
+        assert validTxState(true);
+
+        if (srcIds.contains(null)) {
+            throw new IgfsPathNotFoundException("Source path not found: " + srcPath);
+        }
+        if (destIds.contains(null)) {
+            throw new IgfsPathNotFoundException("Destination path not found: " + dstPath);
+        }
+
+        //assert !srcIds.contains(null);
+        assert srcPath != null;
+        //assert !destIds.contains(null);
+        assert dstPath != null;
+
+        final IgniteUuid fileId = srcIds.get(srcIds.size() - 1);
+        final IgniteUuid srcParentId = srcIds.get(srcIds.size() - 2);
+        final IgniteUuid destParentId = destIds.get(destIds.size() - 1);
+
+        final String srcFileName = srcPath.name();
+        final String destFileName = dstPath.name();
+
+        if (srcParentId.equals(destParentId) && srcPath.equals(dstPath)) {
+            if (log.isDebugEnabled())
+                log.debug("File is moved to itself [fileId=" + fileId +
+                    ", fileName=" + srcPath + ", parentId=" + srcParentId + ']');
+
+            return; // File is moved to itself.
+        }
+
+        Set<IgniteUuid> allIdsSet = new HashSet<>(srcIds);
+
+        allIdsSet.addAll(destIds);
+
+        // Lock *all* ids in both source & dest paths:
+        final Map<IgniteUuid, IgfsFileInfo> infoMap = lockIds(allIdsSet.toArray(new IgniteUuid[allIdsSet.size()]));
+
+        validTxState(true);
+
+        checkPath(srcIds, srcPath, infoMap);
+        checkPath(destIds, dstPath.parent(), infoMap);
+
+        IgfsFileInfo srcInfo = infoMap.get(srcParentId);
+
+        if (srcInfo == null)
+            throw fsException(new IgfsPathNotFoundException("Failed to lock source directory (not found?)" +
+                " [srcParentId=" + srcParentId + ']'));
+
+        if (!srcInfo.isDirectory())
+            throw fsException(new IgfsPathIsNotDirectoryException("Source is not a directory: " + srcInfo));
+
+        IgfsFileInfo destInfo = infoMap.get(destParentId);
+
+        if (destInfo == null)
+            throw fsException(new IgfsPathNotFoundException("Failed to lock destination directory (not found?)" +
+                " [destParentId=" + destParentId + ']'));
+
+        if (!destInfo.isDirectory())
+            throw fsException(new IgfsPathIsNotDirectoryException("Destination is not a directory: " + destInfo));
+
+        IgfsFileInfo fileInfo = infoMap.get(fileId);
+
+        if (fileInfo == null)
+            throw fsException(new IgfsPathNotFoundException("Failed to lock target file (not found?) [fileId=" +
+                fileId + ']'));
+
+        IgfsListingEntry srcEntry = srcInfo.listing().get(srcFileName);
+        IgfsListingEntry destEntry = destInfo.listing().get(destFileName);
+
+        // If source file does not exist or was re-created.
+        if (srcEntry == null || !srcEntry.fileId().equals(fileId))
+            throw fsException(new IgfsPathNotFoundException("Failed to remove file name from the source directory" +
+                " (file not found) [fileId=" + fileId + ", srcFileName=" + srcFileName +
+                ", srcParentId=" + srcParentId + ", srcEntry=" + srcEntry + ']'));
+
+        // If stored file already exist.
+        if (destEntry != null)
+            throw fsException(new IgfsPathAlreadyExistsException("Failed to add file name into the destination " +
+                " directory (file already exists) [fileId=" + fileId + ", destFileName=" + destFileName +
+                ", destParentId=" + destParentId + ", destEntry=" + destEntry + ']'));
+
+        assert metaCache.get(srcParentId) != null;
+        assert metaCache.get(destParentId) != null;
+
+        // Remove listing entry from the source parent listing.
+        id2InfoPrj.invoke(srcParentId, new UpdateListing(srcFileName, srcEntry, true));
+
+        // Add listing entry into the destination parent listing.
+        id2InfoPrj.invoke(destParentId, new UpdateListing(destFileName, srcEntry, false));
+    }
+
+
+    /** // TODO: this is old version of the method.
      * Move or rename file in existing transaction.
      *
      * @param fileId File ID to move or rename.
@@ -922,6 +1043,36 @@ public class IgfsMetaManager extends IgfsManager {
 
         // Add listing entry into the destination parent listing.
         id2InfoPrj.invoke(destParentId, new UpdateListing(destFileName, srcEntry, false));
+    }
+
+    private void checkPath(List<IgniteUuid> ids, final IgfsPath path, Map<IgniteUuid, IgfsFileInfo> infoMap)
+            throws IgfsPathNotFoundException {
+        validTxState(true);
+
+        final List<String> pathList = path.components();
+
+        if (pathList.size() != ids.size())
+            throw new IgfsPathNotFoundException("Path was changed: ..."); // TODO
+
+        IgfsPath p = path;
+
+        for (int i = ids.size() - 1; i>=0; i--) {
+            IgniteUuid id = ids.get(i);
+            String name = pathList.get(i);
+            IgfsFileInfo ifi = infoMap.get(id);
+
+            if (ifi == null) {
+                throw new IgfsPathNotFoundException("Path for this id not found: ..."); // TODO
+            }
+
+            assert ifi.id().equals(id);
+
+            if (!p.isSame(ifi.path())) {
+                throw new IgfsPathNotFoundException("Path for this id was concurrently changed: ..."); // TODO
+            }
+
+            p = p.parent();
+        }
     }
 
     /**
@@ -1153,6 +1304,8 @@ public class IgfsMetaManager extends IgfsManager {
             if (id2InfoPrj.get(TRASH_ID) == null)
                 id2InfoPrj.getAndPut(TRASH_ID, new IgfsFileInfo(TRASH_ID));
 
+            // TODO: 1) use method moveNonTx(4).
+            // TODO: see if it is possible to relax the locking logic somehow for the case of delete.
             moveNonTx(id, name, parentId, id.toString(), TRASH_ID);
 
             resId = id;
@@ -2098,6 +2251,8 @@ public class IgfsMetaManager extends IgfsManager {
                                 "(destination path not found): " + dest));
 
                         // Delegate to the secondary file system.
+                        // TODO: it looks like the integrity checks done in #moveNonTx below
+                        // TODO: should be done *before* we rename on the 2ndary fs.
                         fs.rename(src, dest);
 
                         // Rename was successful, perform compensation in the local file system.
@@ -2105,7 +2260,7 @@ public class IgfsMetaManager extends IgfsManager {
                             // Move and rename.
                             assert destParentInfo != null;
 
-                            moveNonTx(srcInfo.id(), src.name(), srcParentInfo.id(), dest.name(), destParentInfo.id());
+                            moveNonTx(fileIds(src), src, fileIds(dest), dest);
                         }
                         else {
                             // Move.
@@ -2113,7 +2268,7 @@ public class IgfsMetaManager extends IgfsManager {
                                 throw fsException("Failed to rename the path in the local file system " +
                                     "because destination path already exists and it is a file: " + dest);
                             else
-                                moveNonTx(srcInfo.id(), src.name(), srcParentInfo.id(), src.name(), destInfo.id());
+                                moveNonTx(fileIds(src), src, fileIds(dest), dest);
                         }
 
                         // Record event if needed.

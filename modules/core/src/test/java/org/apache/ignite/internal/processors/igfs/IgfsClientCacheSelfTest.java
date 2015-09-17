@@ -42,13 +42,25 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Meta-information cache name. */
-    private static final String META_CACHE_NAME = "meta";
+    //private static final String META_CACHE_NAME = "meta";
 
     /** Data cache name. */
-    private static final String DATA_CACHE_NAME = null;
+    //private static final String DATA_CACHE_NAME = null;
 
-    /** Regular cache name. */
-    private static final String CACHE_NAME = "cache";
+    /** {@inheritDoc} */
+    @Override protected String dataCacheName() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String metaCacheName() {
+        return "meta";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String dataCacheIgnite() {
+        return getTestGridName(0);
+    }
 
     /**
      * Constructor.
@@ -61,9 +73,9 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         igfsSecondaryFileSystem = createSecondaryFileSystemStack();
 
-        Ignite ignite1 = G.start(getConfiguration(getTestGridName(1)));
+        Ignite ignitePrimary = G.start(getConfiguration(getTestGridName(1)));
 
-        igfs = (IgfsImpl) ignite1.fileSystem("igfs");
+        igfs = (IgfsImpl) ignitePrimary.fileSystem("igfs");
     }
 
     /**{@inheritDoc} */
@@ -86,8 +98,10 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
     protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME),
-            cacheConfiguration(CACHE_NAME));
+        cfg.setCacheConfiguration(
+            cacheConfiguration(metaCacheName()),
+            cacheConfiguration(dataCacheName())
+        );
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -103,8 +117,8 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
+        igfsCfg.setMetaCacheName(metaCacheName());
+        igfsCfg.setDataCacheName(dataCacheName());
         igfsCfg.setName("igfs");
 
         cfg.setFileSystemConfiguration(igfsCfg);
@@ -123,7 +137,7 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
 
         cacheCfg.setNearConfiguration(null);
 
-        if (META_CACHE_NAME.equals(cacheName))
+        if (metaCacheName().equals(cacheName))
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);

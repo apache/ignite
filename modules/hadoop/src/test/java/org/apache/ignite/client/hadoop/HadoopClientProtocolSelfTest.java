@@ -422,7 +422,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private static void dumpIgfs(IgniteFileSystem igfs, IgfsPath path) throws Exception {
+    public static void dumpIgfs(IgniteFileSystem igfs, IgfsPath path) throws Exception {
         IgfsFile file = igfs.info(path);
 
         assert file != null;
