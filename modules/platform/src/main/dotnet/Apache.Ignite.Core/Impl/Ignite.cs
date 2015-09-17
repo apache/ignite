@@ -274,27 +274,27 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICollection<IClusterNode> Nodes()
+        public ICollection<IClusterNode> GetNodes()
         {
-            return _prj.Nodes();
+            return _prj.GetNodes();
         }
 
         /** <inheritdoc /> */
-        public IClusterNode Node(Guid id)
+        public IClusterNode GetNode(Guid id)
         {
-            return _prj.Node(id);
+            return _prj.GetNode(id);
         }
 
         /** <inheritdoc /> */
-        public IClusterNode Node()
+        public IClusterNode GetNode()
         {
-            return _prj.Node();
+            return _prj.GetNode();
         }
 
         /** <inheritdoc /> */
-        public IClusterMetrics Metrics()
+        public IClusterMetrics GetMetrics()
         {
-            return _prj.Metrics();
+            return _prj.GetMetrics();
         }
 
         /** <inheritdoc /> */
@@ -318,7 +318,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICache<TK, TV> Cache<TK, TV>(string name)
+        public ICache<TK, TV> GetCache<TK, TV>(string name)
         {
             return Cache<TK, TV>(UU.ProcessorCache(_proc, name));
         }
@@ -357,7 +357,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 if (_locNode == null)
                 {
-                    foreach (IClusterNode node in Nodes())
+                    foreach (IClusterNode node in GetNodes())
                     {
                         if (node.IsLocal)
                         {
@@ -397,46 +397,47 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IDataStreamer<TK, TV> DataStreamer<TK, TV>(string cacheName)
+        public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName)
         {
             return new DataStreamerImpl<TK, TV>(UU.ProcessorDataStreamer(_proc, cacheName, false),
                 _marsh, cacheName, false);
         }
 
         /** <inheritdoc /> */
-        public IPortables Portables()
+        public IPortables GetPortables()
         {
             return _portables;
         }
 
         /** <inheritdoc /> */
-        public ICacheAffinity Affinity(string cacheName)
+        public ICacheAffinity GetAffinity(string cacheName)
         {
             return new CacheAffinityImpl(UU.ProcessorAffinity(_proc, cacheName), _marsh, false, this);
         }
 
         /** <inheritdoc /> */
-        public ITransactions Transactions
+
+        public ITransactions GetTransactions()
         {
-            get { return _transactions.Value; }
+            return _transactions.Value;
         }
 
         /** <inheritdoc /> */
-        public IMessaging Message()
+        public IMessaging GetMessaging()
         {
-            return _prj.Message();
+            return _prj.GetMessaging();
         }
 
         /** <inheritdoc /> */
-        public IEvents Events()
+        public IEvents GetEvents()
         {
-            return _prj.Events();
+            return _prj.GetEvents();
         }
 
         /** <inheritdoc /> */
-        public IServices Services()
+        public IServices GetServices()
         {
-            return _prj.Services();
+            return _prj.GetServices();
         }
 
         /// <summary>

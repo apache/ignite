@@ -108,17 +108,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.GetIgnite(GridData).Cache<CacheTestKey, PortablePerson>(CacheDummy);
+                Ignition.GetIgnite(GridData).GetCache<CacheTestKey, PortablePerson>(CacheDummy);
             });
 
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.GetIgnite(GridDataNoCfg).Cache<CacheTestKey, PortablePerson>(CacheDummy);
+                Ignition.GetIgnite(GridDataNoCfg).GetCache<CacheTestKey, PortablePerson>(CacheDummy);
             });
 
             Assert.Throws<ArgumentException>(() =>
             {
-                Ignition.GetIgnite(GridClient).Cache<CacheTestKey, PortablePerson>(CacheDummy);
+                Ignition.GetIgnite(GridClient).GetCache<CacheTestKey, PortablePerson>(CacheDummy);
             });
         }
 
@@ -147,13 +147,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         private void Check(string cacheName)
         {
             ICache<DynamicTestKey, DynamicTestValue> cacheData =
-                Ignition.GetIgnite(GridData).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
+                Ignition.GetIgnite(GridData).GetCache<DynamicTestKey, DynamicTestValue>(cacheName);
 
             ICache<DynamicTestKey, DynamicTestValue> cacheDataNoCfg =
-                Ignition.GetIgnite(GridDataNoCfg).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
+                Ignition.GetIgnite(GridDataNoCfg).GetCache<DynamicTestKey, DynamicTestValue>(cacheName);
 
             ICache<DynamicTestKey, DynamicTestValue> cacheClient =
-                Ignition.GetIgnite(GridClient).Cache<DynamicTestKey, DynamicTestValue>(cacheName);
+                Ignition.GetIgnite(GridClient).GetCache<DynamicTestKey, DynamicTestValue>(cacheName);
 
             DynamicTestKey key1 = new DynamicTestKey(1);
             DynamicTestKey key2 = new DynamicTestKey(2);

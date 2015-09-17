@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Cluster
     /// <summary>
     /// Interface representing a single cluster node. Use <see cref="IClusterNode.Attribute{T}(string)"/> or
     /// <see cref="IClusterNode.Metrics()"/> to get static and dynamic information about remote nodes.
-    /// You can get a list of all nodes in grid by calling <see cref="IClusterGroup.Nodes()"/> 
+    /// You can get a list of all nodes in grid by calling <see cref="IClusterGroup.GetNodes"/> 
     /// on <see cref="IIgnite"/> instance.
     /// <para />
     /// You can use Ignite node attributes to provide static information about a node.

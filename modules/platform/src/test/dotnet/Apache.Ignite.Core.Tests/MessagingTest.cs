@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Tests
         [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
         public void TestLocalListen(object topic)
         {
-            var messaging = _grid1.Message();
+            var messaging = _grid1.GetMessaging();
             var listener = MessagingTestHelper.GetListener();
             messaging.LocalListen(listener, topic);
 
@@ -161,9 +161,9 @@ namespace Apache.Ignite.Core.Tests
                 return true;
             });
 
-            _grid3.Message().LocalListen(grid3Listener, topic);
+            _grid3.GetMessaging().LocalListen(grid3Listener, topic);
 
-            var clusterMessaging = _grid1.GetCluster().ForNodes(_grid1.GetCluster().LocalNode, _grid2.GetCluster().LocalNode).Message();
+            var clusterMessaging = _grid1.GetCluster().ForNodes(_grid1.GetCluster().LocalNode, _grid2.GetCluster().LocalNode).GetMessaging();
             var clusterListener = MessagingTestHelper.GetListener();
             clusterMessaging.LocalListen(clusterListener, topic);
 
@@ -174,7 +174,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsFalse(grid3GotMessage, "Grid3 should not get messages");
 
             clusterMessaging.StopLocalListen(clusterListener, topic);
-            _grid3.Message().StopLocalListen(grid3Listener, topic);
+            _grid3.GetMessaging().StopLocalListen(grid3Listener, topic);
         }
 
         /// <summary>
@@ -188,7 +188,7 @@ namespace Apache.Ignite.Core.Tests
             const int threadCnt = 20;
             const int runSeconds = 20;
 
-            var messaging = _grid1.Message();
+            var messaging = _grid1.GetMessaging();
 
             var senders = Task.Factory.StartNew(() => TestUtils.RunMultiThreaded(() =>
             {
@@ -287,7 +287,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public void TestRemoteListen(object topic, bool async = false)
         {
-            var messaging = async ? _grid1.Message().WithAsync() : _grid1.Message();
+            var messaging = async ? _grid1.GetMessaging().WithAsync() : _grid1.GetMessaging();
 
             var listener = MessagingTestHelper.GetListener();
             var listenId = messaging.RemoteListen(listener, topic);
@@ -345,7 +345,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private void TestRemoteListenProjection(object topic)
         {
-            var clusterMessaging = _grid1.GetCluster().ForNodes(_grid1.GetCluster().LocalNode, _grid2.GetCluster().LocalNode).Message();
+            var clusterMessaging = _grid1.GetCluster().ForNodes(_grid1.GetCluster().LocalNode, _grid2.GetCluster().LocalNode).GetMessaging();
             var clusterListener = MessagingTestHelper.GetListener();
             var listenId = clusterMessaging.RemoteListen(clusterListener, topic);
 
@@ -366,7 +366,7 @@ namespace Apache.Ignite.Core.Tests
             const int threadCnt = 20;
             const int runSeconds = 20;
 
-            var messaging = _grid1.Message();
+            var messaging = _grid1.GetMessaging();
 
             var senders = Task.Factory.StartNew(() => TestUtils.RunMultiThreaded(() =>
             {
@@ -428,12 +428,12 @@ namespace Apache.Ignite.Core.Tests
             else
             {
                 grid = grid ?? _grid1;
-                msg = grid.Message();
+                msg = grid.GetMessaging();
                 cluster = grid.GetCluster().ForLocal();
             }
 
             // Messages will repeat due to multiple nodes listening
-            var expectedRepeat = repeatMultiplier * (remoteListen ? cluster.Nodes().Count : 1);
+            var expectedRepeat = repeatMultiplier * (remoteListen ? cluster.GetNodes().Count : 1);
 
             var messages = Enumerable.Range(1, 10).Select(x => NextMessage()).OrderBy(x => x).ToList();
 
@@ -468,7 +468,7 @@ namespace Apache.Ignite.Core.Tests
             // this will result in an exception in case of a message
             MessagingTestHelper.ClearReceived(0);
 
-            (grid ?? _grid1).Message().Send(NextMessage(), topic);
+            (grid ?? _grid1).GetMessaging().Send(NextMessage(), topic);
 
             Thread.Sleep(MessagingTestHelper.MessageTimeout);
 

@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                grid.Cache<object, object>("invalidCacheName");
+                grid.GetCache<object, object>("invalidCacheName");
 
                 Assert.Fail();
             }
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                grid.GetCluster().ForRemotes().Metrics();
+                grid.GetCluster().ForRemotes().GetMetrics();
 
                 Assert.Fail();
             }
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                grid.Cache<object, object>("cache1");
+                grid.GetCache<object, object>("cache1");
 
                 Assert.Fail();
             }
@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestPartialUpdateExceptionPortable()
         {
             // User type
-            TestPartialUpdateException(false, (x, g) => g.Portables().ToPortable<IPortableObject>(new PortableEntry(x)));
+            TestPartialUpdateException(false, (x, g) => g.GetPortables().ToPortable<IPortableObject>(new PortableEntry(x)));
         }
 
         /// <summary>
@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Tests
         [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionAsyncPortable()
         {
-            TestPartialUpdateException(true, (x, g) => g.Portables().ToPortable<IPortableObject>(new PortableEntry(x)));
+            TestPartialUpdateException(true, (x, g) => g.GetPortables().ToPortable<IPortableObject>(new PortableEntry(x)));
         }
 
         /// <summary>
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Tests
         {
             using (var grid = StartGrid())
             {
-                var cache = grid.Cache<TK, int>("partitioned_atomic").WithNoRetries();
+                var cache = grid.GetCache<TK, int>("partitioned_atomic").WithNoRetries();
 
                 if (async)
                     cache = cache.WithAsync();

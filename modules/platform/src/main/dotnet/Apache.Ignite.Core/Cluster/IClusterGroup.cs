@@ -181,7 +181,7 @@ namespace Apache.Ignite.Core.Cluster
         /// Gets read-only collections of nodes in this projection.
         /// </summary>
         /// <returns>All nodes in this projection.</returns>
-        ICollection<IClusterNode> Nodes();
+        ICollection<IClusterNode> GetNodes();
 
         /// <summary>
         /// Gets a node for given ID from this grid projection.
@@ -189,39 +189,39 @@ namespace Apache.Ignite.Core.Cluster
         /// <param name="id">Node ID.</param>
         /// <returns>Node with given ID from this projection or null if such node does not 
         /// exist in this projection.</returns>
-        IClusterNode Node(Guid id);
+        IClusterNode GetNode(Guid id);
 
         /// <summary>
         /// Gets first node from the list of nodes in this projection.
         /// </summary>
         /// <returns>Node.</returns>
-        IClusterNode Node();
+        IClusterNode GetNode();
 
         /// <summary>
         /// Gets a metrics snapshot for this projection
         /// </summary>
         /// <returns>Grid projection metrics snapshot.</returns>
-        IClusterMetrics Metrics();
+        IClusterMetrics GetMetrics();
 
         /// <summary>
         /// Gets messaging facade over nodes within this cluster group.  All operations on the returned 
         /// <see cref="IMessaging"/>> instance will only include nodes from current cluster group.
         /// </summary>
         /// <returns>Messaging instance over this cluster group.</returns>
-        IMessaging Message();
+        IMessaging GetMessaging();
 
         /// <summary>
         /// Gets events facade over nodes within this cluster group.  All operations on the returned 
         /// <see cref="IEvents"/>> instance will only include nodes from current cluster group.
         /// </summary>
         /// <returns>Events instance over this cluster group.</returns>
-        IEvents Events();
+        IEvents GetEvents();
 
         /// <summary>
         /// Gets services facade over nodes within this cluster group.  All operations on the returned 
         /// <see cref="IServices"/>> instance will only include nodes from current cluster group.
         /// </summary>
         /// <returns>Services instance over this cluster group.</returns>
-        IServices Services();
+        IServices GetServices();
     }
 }

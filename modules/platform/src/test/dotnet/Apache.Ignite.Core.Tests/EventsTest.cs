@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestEnableDisable()
         {
-            var events = _grid1.Events();
+            var events = _grid1.GetEvents();
 
             Assert.AreEqual(0, events.GetEnabledEvents().Length);
 
@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestLocalListen()
         {
-            var events = _grid1.Events();
+            var events = _grid1.GetEvents();
             var listener = EventsTestHelper.GetListener();
             var eventType = EventType.EvtsTaskExecution;
 
@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Tests
         [Ignore("IGNITE-879")]
         public void TestLocalListenRepeatedSubscription()
         {
-            var events = _grid1.Events();
+            var events = _grid1.GetEvents();
             var listener = EventsTestHelper.GetListener();
             var eventType = EventType.EvtsTaskExecution;
 
@@ -198,7 +198,7 @@ namespace Apache.Ignite.Core.Tests
         [Test, TestCaseSource("TestCases")]
         public void TestEventTypes(EventTestCase testCase)
         {
-            var events = _grid1.Events();
+            var events = _grid1.GetEvents();
 
             events.EnableLocal(testCase.EventType);
 
@@ -236,7 +236,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     EventType = EventType.EvtsCache,
                     EventObjectType = typeof (CacheEvent),
-                    GenerateEvent = g => g.Cache<int, int>(null).Put(1, 1),
+                    GenerateEvent = g => g.GetCache<int, int>(null).Put(1, 1),
                     VerifyEvents = (e, g) => VerifyCacheEvents(e, g),
                     EventCount = 1
                 };
@@ -282,7 +282,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestLocalQuery()
         {
-            var events = _grid1.Events();
+            var events = _grid1.GetEvents();
 
             var eventType = EventType.EvtsTaskExecution;
 
@@ -304,7 +304,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestWaitForLocal([Values(true, false)] bool async)
         {
-            var events = _grid1.Events();
+            var events = _grid1.GetEvents();
 
             var timeout = TimeSpan.FromSeconds(3);
 
@@ -374,11 +374,11 @@ namespace Apache.Ignite.Core.Tests
         {
             foreach (var g in _grids)
             {
-                g.Events().EnableLocal(EventType.EvtsJobExecution);
-                g.Events().EnableLocal(EventType.EvtsTaskExecution);
+                g.GetEvents().EnableLocal(EventType.EvtsJobExecution);
+                g.GetEvents().EnableLocal(EventType.EvtsTaskExecution);
             }
 
-            var events = _grid1.Events();
+            var events = _grid1.GetEvents();
 
             var expectedType = EventType.EvtJobStarted;
 
@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Tests
 
             CheckSend(3, typeof(JobEvent), expectedType);
 
-            _grid3.Events().DisableLocal(EventType.EvtsJobExecution);
+            _grid3.GetEvents().DisableLocal(EventType.EvtsJobExecution);
 
             CheckSend(2, typeof(JobEvent), expectedType);
 
@@ -433,9 +433,9 @@ namespace Apache.Ignite.Core.Tests
         public void TestRemoteQuery([Values(true, false)] bool async)
         {
             foreach (var g in _grids)
-                g.Events().EnableLocal(EventType.EvtsJobExecution);
+                g.GetEvents().EnableLocal(EventType.EvtsJobExecution);
 
-            var events = _grid1.Events();
+            var events = _grid1.GetEvents();
 
             var eventFilter = new RemoteEventFilter(EventType.EvtJobStarted);
 
@@ -540,7 +540,7 @@ namespace Apache.Ignite.Core.Tests
                 var discoEvent = EventReader.Read<DiscoveryEvent>(reader);
                 CheckEventBase(discoEvent);
                 Assert.AreEqual(grid.TopologyVersion, discoEvent.TopologyVersion);
-                Assert.AreEqual(grid.Nodes(), discoEvent.TopologyNodes);
+                Assert.AreEqual(grid.GetNodes(), discoEvent.TopologyNodes);
 
                 var jobEvent = EventReader.Read<JobEvent>(reader);
                 CheckEventBase(jobEvent);
@@ -658,7 +658,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void GenerateCacheQueryEvent(IIgnite g)
         {
-            var cache = g.Cache<int, int>(null);
+            var cache = g.GetCache<int, int>(null);
 
             cache.Clear();
 

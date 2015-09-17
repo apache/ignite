@@ -315,25 +315,25 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritDoc /> */
-        public ICollection<IClusterNode> Nodes()
+        public ICollection<IClusterNode> GetNodes()
         {
             return RefreshNodes();
         }
 
         /** <inheritDoc /> */
-        public IClusterNode Node(Guid id)
+        public IClusterNode GetNode(Guid id)
         {
-            return Nodes().FirstOrDefault(node => node.Id == id);
+            return GetNodes().FirstOrDefault(node => node.Id == id);
         }
 
         /** <inheritDoc /> */
-        public IClusterNode Node()
+        public IClusterNode GetNode()
         {
-            return Nodes().FirstOrDefault();
+            return GetNodes().FirstOrDefault();
         }
 
         /** <inheritDoc /> */
-        public IClusterMetrics Metrics()
+        public IClusterMetrics GetMetrics()
         {
             if (_pred == null)
             {
@@ -346,7 +346,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             }
             return DoOutInOp(OpMetricsFiltered, writer =>
             {
-                WriteEnumerable(writer, Nodes().Select(node => node.Id));
+                WriteEnumerable(writer, GetNodes().Select(node => node.Id));
             }, stream =>
             {
                 IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
@@ -356,19 +356,19 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritDoc /> */
-        public IMessaging Message()
+        public IMessaging GetMessaging()
         {
             return _msg.Value;
         }
 
         /** <inheritDoc /> */
-        public IEvents Events()
+        public IEvents GetEvents()
         {
             return _events.Value;
         }
 
         /** <inheritDoc /> */
-        public IServices Services()
+        public IServices GetServices()
         {
             return _services.Value;
         }

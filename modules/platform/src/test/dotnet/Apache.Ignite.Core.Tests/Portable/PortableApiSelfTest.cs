@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             string field2 = "field2";
 
             // 1. Ensure that builder works fine.
-            IPortableObject portObj1 = _grid.Portables().Builder(typeName1).SetField(field1, 1).Build();
+            IPortableObject portObj1 = _grid.GetPortables().Builder(typeName1).SetField(field1, 1).Build();
 
             Assert.AreEqual(typeName1, portObj1.Metadata().TypeName);
             Assert.AreEqual(1, portObj1.Metadata().Fields.Count);
@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             // 3. Ensure that we can nest one anonymous object inside another
             IPortableObject portObj2 =
-                _grid.Portables().Builder(typeName2).SetField(field2, portObj1).Build();
+                _grid.GetPortables().Builder(typeName2).SetField(field2, portObj1).Build();
 
             Assert.AreEqual(typeName2, portObj2.Metadata().TypeName);
             Assert.AreEqual(1, portObj2.Metadata().Fields.Count);
@@ -200,7 +200,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             DateTime date = DateTime.Now.ToUniversalTime();
             Guid guid = Guid.NewGuid();
 
-            IPortables api = _grid.Portables();
+            IPortables api = _grid.GetPortables();
 
             // 1. Primitives.
             Assert.AreEqual(1, api.ToPortable<byte>((byte)1));
@@ -270,7 +270,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestRemove()
         {
             // Create empty object.
-            IPortableObject portObj = _grid.Portables().Builder(typeof(Remove)).Build();
+            IPortableObject portObj = _grid.GetPortables().Builder(typeof(Remove)).Build();
 
             Assert.IsNull(portObj.Field<object>("val"));
             Assert.IsNull(portObj.Deserialize<Remove>().Val);
@@ -281,7 +281,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(0, meta.Fields.Count);
 
             // Populate it with field.
-            IPortableBuilder builder = _grid.Portables().Builder(portObj);
+            IPortableBuilder builder = _grid.GetPortables().Builder(portObj);
 
             Assert.IsNull(builder.GetField<object>("val"));
 
@@ -304,7 +304,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(PortableTypeNames.TypeNameObject, meta.FieldTypeName("val"));
 
             // Perform field remove.
-            builder = _grid.Portables().Builder(portObj);
+            builder = _grid.GetPortables().Builder(portObj);
 
             Assert.AreEqual(val, builder.GetField<object>("val"));
 
@@ -325,12 +325,12 @@ namespace Apache.Ignite.Core.Tests.Portable
             // Test correct removal of field being referenced by handle somewhere else.
             RemoveInner inner = new RemoveInner(2);
 
-            portObj = _grid.Portables().Builder(typeof(Remove))
+            portObj = _grid.GetPortables().Builder(typeof(Remove))
                 .SetField("val", inner)
                 .SetField("val2", inner)
                 .Build();
 
-            portObj = _grid.Portables().Builder(portObj).RemoveField("val").Build();
+            portObj = _grid.GetPortables().Builder(portObj).RemoveField("val").Build();
 
             Remove obj = portObj.Deserialize<Remove>();
 
@@ -345,8 +345,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestBuilderInBuilder()
         {
             // Test different builders assembly.
-            IPortableBuilder builderOuter = _grid.Portables().Builder(typeof(BuilderInBuilderOuter));
-            IPortableBuilder builderInner = _grid.Portables().Builder(typeof(BuilderInBuilderInner));
+            IPortableBuilder builderOuter = _grid.GetPortables().Builder(typeof(BuilderInBuilderOuter));
+            IPortableBuilder builderInner = _grid.GetPortables().Builder(typeof(BuilderInBuilderInner));
 
             builderOuter.SetField<object>("inner", builderInner);
             builderInner.SetField<object>("outer", builderOuter);
@@ -374,9 +374,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreSame(outer, outer.Inner.Outer);
 
             // Test same builders assembly.
-            innerPortObj = _grid.Portables().Builder(typeof(BuilderInBuilderInner)).Build();
+            innerPortObj = _grid.GetPortables().Builder(typeof(BuilderInBuilderInner)).Build();
 
-            outerPortObj = _grid.Portables().Builder(typeof(BuilderInBuilderOuter))
+            outerPortObj = _grid.GetPortables().Builder(typeof(BuilderInBuilderOuter))
                 .SetField("inner", innerPortObj)
                 .SetField("inner2", innerPortObj)
                 .Build();
@@ -394,7 +394,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreSame(outer.Inner, outer.Inner2);
 
-            builderOuter = _grid.Portables().Builder(outerPortObj);
+            builderOuter = _grid.GetPortables().Builder(outerPortObj);
             IPortableBuilder builderInner2 = builderOuter.GetField<IPortableBuilder>("inner2");
 
             builderInner2.SetField("outer", builderOuter);
@@ -413,7 +413,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestDecimals()
         {
-            IPortableObject portObj = _grid.Portables().Builder(typeof(DecimalHolder))
+            IPortableObject portObj = _grid.GetPortables().Builder(typeof(DecimalHolder))
                 .SetField("val", decimal.One)
                 .SetField("valArr", new[] { decimal.MinusOne })
                 .Build();
@@ -443,9 +443,9 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestBuilderCollection()
         {
             // Test collection with single element.
-            IPortableBuilder builderCol = _grid.Portables().Builder(typeof(BuilderCollection));
+            IPortableBuilder builderCol = _grid.GetPortables().Builder(typeof(BuilderCollection));
             IPortableBuilder builderItem =
-                _grid.Portables().Builder(typeof(BuilderCollectionItem)).SetField("val", 1);
+                _grid.GetPortables().Builder(typeof(BuilderCollectionItem)).SetField("val", 1);
 
             builderCol.SetField<ICollection>("col", new List<IPortableBuilder> { builderItem });
 
@@ -478,7 +478,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, col.Col.First().Val);
 
             // Add more portable objects to collection.
-            builderCol = _grid.Portables().Builder(portCol);
+            builderCol = _grid.GetPortables().Builder(portCol);
 
             IList builderColItems = builderCol.GetField<IList>("col");
 
@@ -515,7 +515,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreNotSame(item2, item3);
 
             // Test handle update inside collection.
-            builderCol = _grid.Portables().Builder(portCol);
+            builderCol = _grid.GetPortables().Builder(portCol);
 
             builderColItems = builderCol.GetField<IList>("col");
 
@@ -538,7 +538,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestEmptyDefined()
         {
-            IPortableObject portObj = _grid.Portables().Builder(typeof(Empty)).Build();
+            IPortableObject portObj = _grid.GetPortables().Builder(typeof(Empty)).Build();
 
             Assert.IsNotNull(portObj);
             Assert.AreEqual(0, portObj.GetHashCode());
@@ -560,7 +560,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestEmptyNoMeta()
         {
-            IPortableObject portObj = _grid.Portables().Builder(typeof(EmptyNoMeta)).Build();
+            IPortableObject portObj = _grid.GetPortables().Builder(typeof(EmptyNoMeta)).Build();
 
             Assert.IsNotNull(portObj);
             Assert.AreEqual(0, portObj.GetHashCode());
@@ -576,7 +576,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestEmptyUndefined()
         {
-            IPortableObject portObj = _grid.Portables().Builder(TypeEmpty).Build();
+            IPortableObject portObj = _grid.GetPortables().Builder(TypeEmpty).Build();
 
             Assert.IsNotNull(portObj);
             Assert.AreEqual(0, portObj.GetHashCode());
@@ -594,9 +594,9 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestEmptyRebuild()
         {
-            var portObj = (PortableUserObject) _grid.Portables().Builder(typeof(EmptyNoMeta)).Build();
+            var portObj = (PortableUserObject) _grid.GetPortables().Builder(typeof(EmptyNoMeta)).Build();
 
-            PortableUserObject newPortObj = (PortableUserObject) _grid.Portables().Builder(portObj).Build();
+            PortableUserObject newPortObj = (PortableUserObject) _grid.GetPortables().Builder(portObj).Build();
 
             Assert.AreEqual(portObj.Data, newPortObj.Data);
         }
@@ -607,7 +607,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestHashCodeChange()
         {
-            IPortableObject portObj = _grid.Portables().Builder(typeof(EmptyNoMeta)).HashCode(100).Build();
+            IPortableObject portObj = _grid.GetPortables().Builder(typeof(EmptyNoMeta)).HashCode(100).Build();
 
             Assert.AreEqual(100, portObj.GetHashCode());
         }
@@ -618,7 +618,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFields()
         {
-            IPortableObject portObj = _grid.Portables().Builder(typeof(Primitives))
+            IPortableObject portObj = _grid.GetPortables().Builder(typeof(Primitives))
                 .SetField<byte>("fByte", 1)
                 .SetField("fBool", true)
                 .SetField<short>("fShort", 2)
@@ -668,7 +668,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(6, obj.FDouble);
 
             // Overwrite.
-            portObj = _grid.Portables().Builder(portObj)
+            portObj = _grid.GetPortables().Builder(portObj)
                 .SetField<byte>("fByte", 7)
                 .SetField("fBool", false)
                 .SetField<short>("fShort", 8)
@@ -709,7 +709,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveArrayFields()
         {
-            IPortableObject portObj = _grid.Portables().Builder(typeof(PrimitiveArrays))
+            IPortableObject portObj = _grid.GetPortables().Builder(typeof(PrimitiveArrays))
                 .SetField("fByte", new byte[] { 1 })
                 .SetField("fBool", new[] { true })
                 .SetField("fShort", new short[] { 2 })
@@ -759,7 +759,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(new double[] { 6 }, obj.FDouble);
 
             // Overwrite.
-            portObj = _grid.Portables().Builder(portObj)
+            portObj = _grid.GetPortables().Builder(portObj)
                 .SetField("fByte", new byte[] { 7 })
                 .SetField("fBool", new[] { false })
                 .SetField("fShort", new short[] { 8 })
@@ -806,7 +806,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Guid guid = Guid.NewGuid();
             Guid? nGuid = Guid.NewGuid();
 
-            IPortableObject portObj = _grid.Portables().Builder(typeof(StringDateGuidEnum))
+            IPortableObject portObj = _grid.GetPortables().Builder(typeof(StringDateGuidEnum))
                 .SetField("fStr", "str")
                 .SetField("fDate", date)
                 .SetField("fNDate", nDate)
@@ -870,7 +870,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             guid = Guid.NewGuid();
             nGuid = Guid.NewGuid();
 
-            portObj = _grid.Portables().Builder(typeof(StringDateGuidEnum))
+            portObj = _grid.GetPortables().Builder(typeof(StringDateGuidEnum))
                 .SetField("fStr", "str2")
                 .SetField("fDate", date)
                 .SetField("fNDate", nDate)
@@ -920,7 +920,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             // 1. Test simple array.
             CompositeInner[] inArr = { new CompositeInner(1) };
 
-            IPortableObject portObj = _grid.Portables().Builder(typeof(CompositeArray)).HashCode(100)
+            IPortableObject portObj = _grid.GetPortables().Builder(typeof(CompositeArray)).HashCode(100)
                 .SetField("inArr", inArr).Build();
 
             IPortableMetadata meta = portObj.Metadata();
@@ -945,7 +945,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             // 2. Test addition to array.
             portInArr = new[] { portInArr[0], null };
 
-            portObj = _grid.Portables().Builder(portObj).HashCode(200)
+            portObj = _grid.GetPortables().Builder(portObj).HashCode(200)
                 .SetField("inArr", portInArr).Build();
 
             Assert.AreEqual(200, portObj.GetHashCode());
@@ -963,9 +963,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, arr.InArr[0].Val);
             Assert.IsNull(arr.InArr[1]);
 
-            portInArr[1] = _grid.Portables().Builder(typeof(CompositeInner)).SetField("val", 2).Build();
+            portInArr[1] = _grid.GetPortables().Builder(typeof(CompositeInner)).SetField("val", 2).Build();
 
-            portObj = _grid.Portables().Builder(portObj).HashCode(300)
+            portObj = _grid.GetPortables().Builder(portObj).HashCode(300)
                 .SetField("inArr", portInArr).Build();
 
             Assert.AreEqual(300, portObj.GetHashCode());
@@ -988,7 +988,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             inArr = new[] { inner, inner };
 
-            portObj = _grid.Portables().Builder(typeof(CompositeArray)).HashCode(100)
+            portObj = _grid.GetPortables().Builder(typeof(CompositeArray)).HashCode(100)
                 .SetField("inArr", inArr).Build();
 
             Assert.AreEqual(100, portObj.GetHashCode());
@@ -1006,9 +1006,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, arr.InArr[0].Val);
             Assert.AreEqual(1, arr.InArr[1].Val);
 
-            portInArr[0] = _grid.Portables().Builder(typeof(CompositeInner)).SetField("val", 2).Build();
+            portInArr[0] = _grid.GetPortables().Builder(typeof(CompositeInner)).SetField("val", 2).Build();
 
-            portObj = _grid.Portables().Builder(portObj).HashCode(200)
+            portObj = _grid.GetPortables().Builder(portObj).HashCode(200)
                 .SetField("inArr", portInArr).Build();
 
             Assert.AreEqual(200, portObj.GetHashCode());
@@ -1029,7 +1029,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             // 4. Test nested object handle inversion.
             CompositeOuter[] outArr = { new CompositeOuter(inner), new CompositeOuter(inner) };
 
-            portObj = _grid.Portables().Builder(typeof(CompositeArray)).HashCode(100)
+            portObj = _grid.GetPortables().Builder(typeof(CompositeArray)).HashCode(100)
                 .SetField("outArr", outArr).Build();
 
             meta = portObj.Metadata();
@@ -1054,10 +1054,10 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, arr.OutArr[0].Inner.Val);
             Assert.AreEqual(1, arr.OutArr[1].Inner.Val);
 
-            portOutArr[0] = _grid.Portables().Builder(typeof(CompositeOuter))
+            portOutArr[0] = _grid.GetPortables().Builder(typeof(CompositeOuter))
                 .SetField("inner", new CompositeInner(2)).Build();
 
-            portObj = _grid.Portables().Builder(portObj).HashCode(200)
+            portObj = _grid.GetPortables().Builder(portObj).HashCode(200)
                 .SetField("outArr", portOutArr).Build();
 
             Assert.AreEqual(200, portObj.GetHashCode());
@@ -1092,7 +1092,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             dict[3] = new CompositeInner(3);
             gDict[4] = new CompositeInner(4);
 
-            IPortableObject portObj = _grid.Portables().Builder(typeof(CompositeContainer)).HashCode(100)
+            IPortableObject portObj = _grid.GetPortables().Builder(typeof(CompositeContainer)).HashCode(100)
                 .SetField<ICollection>("col", col)
                 .SetField("gCol", gCol)
                 .SetField("dict", dict)
@@ -1158,7 +1158,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, raw.A);
             Assert.AreEqual(2, raw.B);
 
-            IPortableObject newPortObj = _grid.Portables().Builder(portObj).SetField("a", 3).Build();
+            IPortableObject newPortObj = _grid.GetPortables().Builder(portObj).SetField("a", 3).Build();
 
             raw = newPortObj.Deserialize<WithRaw>();
 
@@ -1173,7 +1173,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestNested()
         {
             // 1. Create from scratch.
-            IPortableBuilder builder = _grid.Portables().Builder(typeof(NestedOuter));
+            IPortableBuilder builder = _grid.GetPortables().Builder(typeof(NestedOuter));
 
             NestedInner inner1 = new NestedInner {Val = 1};
             builder.SetField("inner1", inner1);
@@ -1203,7 +1203,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.IsNull(outer.Inner2);
 
             // 2. Add another field over existing portable object.
-            builder = _grid.Portables().Builder(outerPortObj);
+            builder = _grid.GetPortables().Builder(outerPortObj);
 
             NestedInner inner2 = new NestedInner {Val = 2};
             builder.SetField("inner2", inner2);
@@ -1215,13 +1215,13 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(2, outer.Inner2.Val);
 
             // 3. Try setting inner object in portable form.
-            innerPortObj1 = _grid.Portables().Builder(innerPortObj1).SetField("val", 3).Build();
+            innerPortObj1 = _grid.GetPortables().Builder(innerPortObj1).SetField("val", 3).Build();
 
             inner1 = innerPortObj1.Deserialize<NestedInner>();
 
             Assert.AreEqual(3, inner1.Val);
 
-            outerPortObj = _grid.Portables().Builder(outerPortObj).SetField<object>("inner1", innerPortObj1).Build();
+            outerPortObj = _grid.GetPortables().Builder(outerPortObj).SetField<object>("inner1", innerPortObj1).Build();
 
             outer = outerPortObj.Deserialize<NestedOuter>();
             Assert.AreEqual(3, outer.Inner1.Val);
@@ -1245,7 +1245,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             byte[] outerBytes = _marsh.Marshal(outer);
 
-            IPortableBuilder builder = _grid.Portables().Builder(typeof(MigrationOuter));
+            IPortableBuilder builder = _grid.GetPortables().Builder(typeof(MigrationOuter));
 
             builder.HashCode(outer.GetHashCode());
 
@@ -1264,7 +1264,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             MigrationInner inner1 = new MigrationInner {Val = 2};
 
             IPortableObject portOuterMigrated =
-                _grid.Portables().Builder(portOuter).SetField<object>("inner1", inner1).Build();
+                _grid.GetPortables().Builder(portOuter).SetField<object>("inner1", inner1).Build();
 
             MigrationOuter outerMigrated = portOuterMigrated.Deserialize<MigrationOuter>();
 
@@ -1273,10 +1273,10 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             // 3. Change the first value using serialized form.
             IPortableObject inner1Port =
-                _grid.Portables().Builder(typeof(MigrationInner)).SetField("val", 2).Build();
+                _grid.GetPortables().Builder(typeof(MigrationInner)).SetField("val", 2).Build();
 
             portOuterMigrated =
-                _grid.Portables().Builder(portOuter).SetField<object>("inner1", inner1Port).Build();
+                _grid.GetPortables().Builder(portOuter).SetField<object>("inner1", inner1Port).Build();
 
             outerMigrated = portOuterMigrated.Deserialize<MigrationOuter>();
 
@@ -1302,7 +1302,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             IPortableObject portInner = portOuter.Field<IPortableObject>("inner");
 
             // 1. Ensure that inner object can be deserialized after build.
-            IPortableObject portInnerNew = _grid.Portables().Builder(portInner).Build();
+            IPortableObject portInnerNew = _grid.GetPortables().Builder(portInner).Build();
 
             InversionInner innerNew = portInnerNew.Deserialize<InversionInner>();
 
@@ -1310,7 +1310,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             // 2. Ensure that portable object with external dependencies could be added to builder.
             IPortableObject portOuterNew =
-                _grid.Portables().Builder(typeof(InversionOuter)).SetField<object>("inner", portInner).Build();
+                _grid.GetPortables().Builder(typeof(InversionOuter)).SetField<object>("inner", portInner).Build();
 
             InversionOuter outerNew = portOuterNew.Deserialize<InversionOuter>();
 
@@ -1324,7 +1324,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestBuildMultiple()
         {
-            IPortableBuilder builder = _grid.Portables().Builder(typeof(Primitives));
+            IPortableBuilder builder = _grid.GetPortables().Builder(typeof(Primitives));
 
             builder.SetField<byte>("fByte", 1).SetField("fBool", true);
 
@@ -1350,7 +1350,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(2, po3.Field<byte>("fByte"));
             Assert.AreEqual(true, po2.Field<bool>("fBool"));
 
-            builder = _grid.Portables().Builder(po1);
+            builder = _grid.GetPortables().Builder(po1);
 
             builder.SetField<byte>("fByte", 10);
 
@@ -1377,11 +1377,11 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestTypeId()
         {
-            Assert.Throws<ArgumentException>(() => _grid.Portables().GetTypeId(null));
+            Assert.Throws<ArgumentException>(() => _grid.GetPortables().GetTypeId(null));
 
-            Assert.AreEqual(IdMapper.TestTypeId, _grid.Portables().GetTypeId(IdMapper.TestTypeName));
+            Assert.AreEqual(IdMapper.TestTypeId, _grid.GetPortables().GetTypeId(IdMapper.TestTypeName));
             
-            Assert.AreEqual(PortableUtils.StringHashCode("someTypeName"), _grid.Portables().GetTypeId("someTypeName"));
+            Assert.AreEqual(PortableUtils.StringHashCode("someTypeName"), _grid.GetPortables().GetTypeId("someTypeName"));
         }
 
         /// <summary>
@@ -1391,7 +1391,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestMetadata()
         {
             // Populate metadata
-            var portables = _grid.Portables();
+            var portables = _grid.GetPortables();
 
             portables.ToPortable<IPortableObject>(new DecimalHolder());
 

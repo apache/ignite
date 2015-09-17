@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestCacheDefaultName()
         {
-            var cache = _grid1.Cache<int, int>(null);
+            var cache = _grid1.GetCache<int, int>(null);
 
             Assert.IsNotNull(cache);
 
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.Catch(typeof(ArgumentException), () =>
             {
-                _grid1.Cache<int, int>("bad_name");
+                _grid1.GetCache<int, int>("bad_name");
             });
         }
 
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestNodeContent()
         {
-            ICollection<IClusterNode> nodes = _grid1.GetCluster().Nodes();
+            ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
 
             foreach (IClusterNode node in nodes)
             {
@@ -223,15 +223,15 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var cluster = _grid1.GetCluster();
 
-            IClusterMetrics metrics = cluster.Metrics();
+            IClusterMetrics metrics = cluster.GetMetrics();
 
             Assert.IsNotNull(metrics);
 
-            Assert.AreEqual(cluster.Nodes().Count, metrics.TotalNodes);
+            Assert.AreEqual(cluster.GetNodes().Count, metrics.TotalNodes);
 
             Thread.Sleep(2000);
 
-            IClusterMetrics newMetrics = cluster.Metrics();
+            IClusterMetrics newMetrics = cluster.GetMetrics();
 
             Assert.IsFalse(metrics == newMetrics);
             Assert.IsTrue(metrics.LastUpdateTime < newMetrics.LastUpdateTime);
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestNodeMetrics()
         {
-            var node = _grid1.GetCluster().Node();
+            var node = _grid1.GetCluster().GetNode();
 
             IClusterMetrics metrics = node.Metrics();
 
@@ -269,11 +269,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Thread.Sleep(2000);
 
-            var metrics1 = cluster.Metrics();
+            var metrics1 = cluster.GetMetrics();
 
             cluster.ResetMetrics();
 
-            var metrics2 = cluster.Metrics();
+            var metrics2 = cluster.GetMetrics();
 
             Assert.IsNotNull(metrics1);
             Assert.IsNotNull(metrics2);
@@ -287,7 +287,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var cluster = _grid1.GetCluster();
 
-            Assert.IsTrue(cluster.Nodes().Select(node => node.Id).All(cluster.PingNode));
+            Assert.IsTrue(cluster.GetNodes().Select(node => node.Id).All(cluster.PingNode));
             
             Assert.IsFalse(cluster.PingNode(Guid.NewGuid()));
         }
@@ -328,7 +328,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             var top = cluster.Topology(topVer);
 
-            var nodes = cluster.Nodes();
+            var nodes = cluster.GetNodes();
 
             Assert.AreEqual(top.Count, nodes.Count);
 
@@ -357,31 +357,31 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestNodes()
         {
-            Assert.IsNotNull(_grid1.GetCluster().Node());
+            Assert.IsNotNull(_grid1.GetCluster().GetNode());
 
-            ICollection<IClusterNode> nodes = _grid1.GetCluster().Nodes();
+            ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
 
             Assert.IsTrue(nodes.Count == 3);
 
             // Check subsequent call on the same topology.
-            nodes = _grid1.GetCluster().Nodes();
+            nodes = _grid1.GetCluster().GetNodes();
 
             Assert.IsTrue(nodes.Count == 3);
 
             Assert.IsTrue(Ignition.Stop(_grid2.Name, true));
 
             // Check subsequent calls on updating topologies.
-            nodes = _grid1.GetCluster().Nodes();
+            nodes = _grid1.GetCluster().GetNodes();
 
             Assert.IsTrue(nodes.Count == 2);
 
-            nodes = _grid1.GetCluster().Nodes();
+            nodes = _grid1.GetCluster().GetNodes();
 
             Assert.IsTrue(nodes.Count == 2);
 
             _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
 
-            nodes = _grid1.GetCluster().Nodes();
+            nodes = _grid1.GetCluster().GetNodes();
 
             Assert.IsTrue(nodes.Count == 3);
         }
@@ -392,46 +392,46 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestForNodes()
         {
-            ICollection<IClusterNode> nodes = _grid1.GetCluster().Nodes();
+            ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
 
             IClusterNode first = nodes.ElementAt(0);
             IClusterNode second = nodes.ElementAt(1);
 
             IClusterGroup singleNodePrj = _grid1.GetCluster().ForNodeIds(first.Id);
-            Assert.AreEqual(1, singleNodePrj.Nodes().Count);
-            Assert.AreEqual(first.Id, singleNodePrj.Nodes().First().Id);
+            Assert.AreEqual(1, singleNodePrj.GetNodes().Count);
+            Assert.AreEqual(first.Id, singleNodePrj.GetNodes().First().Id);
 
             singleNodePrj = _grid1.GetCluster().ForNodeIds(new List<Guid> { first.Id });
-            Assert.AreEqual(1, singleNodePrj.Nodes().Count);
-            Assert.AreEqual(first.Id, singleNodePrj.Nodes().First().Id);
+            Assert.AreEqual(1, singleNodePrj.GetNodes().Count);
+            Assert.AreEqual(first.Id, singleNodePrj.GetNodes().First().Id);
 
             singleNodePrj = _grid1.GetCluster().ForNodes(first);
-            Assert.AreEqual(1, singleNodePrj.Nodes().Count);
-            Assert.AreEqual(first.Id, singleNodePrj.Nodes().First().Id);
+            Assert.AreEqual(1, singleNodePrj.GetNodes().Count);
+            Assert.AreEqual(first.Id, singleNodePrj.GetNodes().First().Id);
 
             singleNodePrj = _grid1.GetCluster().ForNodes(new List<IClusterNode> { first });
-            Assert.AreEqual(1, singleNodePrj.Nodes().Count);
-            Assert.AreEqual(first.Id, singleNodePrj.Nodes().First().Id);
+            Assert.AreEqual(1, singleNodePrj.GetNodes().Count);
+            Assert.AreEqual(first.Id, singleNodePrj.GetNodes().First().Id);
 
             IClusterGroup multiNodePrj = _grid1.GetCluster().ForNodeIds(first.Id, second.Id);
-            Assert.AreEqual(2, multiNodePrj.Nodes().Count);
-            Assert.IsTrue(multiNodePrj.Nodes().Contains(first));
-            Assert.IsTrue(multiNodePrj.Nodes().Contains(second));
+            Assert.AreEqual(2, multiNodePrj.GetNodes().Count);
+            Assert.IsTrue(multiNodePrj.GetNodes().Contains(first));
+            Assert.IsTrue(multiNodePrj.GetNodes().Contains(second));
 
             multiNodePrj = _grid1.GetCluster().ForNodeIds(new[] {first, second}.Select(x => x.Id));
-            Assert.AreEqual(2, multiNodePrj.Nodes().Count);
-            Assert.IsTrue(multiNodePrj.Nodes().Contains(first));
-            Assert.IsTrue(multiNodePrj.Nodes().Contains(second));
+            Assert.AreEqual(2, multiNodePrj.GetNodes().Count);
+            Assert.IsTrue(multiNodePrj.GetNodes().Contains(first));
+            Assert.IsTrue(multiNodePrj.GetNodes().Contains(second));
 
             multiNodePrj = _grid1.GetCluster().ForNodes(first, second);
-            Assert.AreEqual(2, multiNodePrj.Nodes().Count);
-            Assert.IsTrue(multiNodePrj.Nodes().Contains(first));
-            Assert.IsTrue(multiNodePrj.Nodes().Contains(second));
+            Assert.AreEqual(2, multiNodePrj.GetNodes().Count);
+            Assert.IsTrue(multiNodePrj.GetNodes().Contains(first));
+            Assert.IsTrue(multiNodePrj.GetNodes().Contains(second));
 
             multiNodePrj = _grid1.GetCluster().ForNodes(new List<IClusterNode> { first, second });
-            Assert.AreEqual(2, multiNodePrj.Nodes().Count);
-            Assert.IsTrue(multiNodePrj.Nodes().Contains(first));
-            Assert.IsTrue(multiNodePrj.Nodes().Contains(second));
+            Assert.AreEqual(2, multiNodePrj.GetNodes().Count);
+            Assert.IsTrue(multiNodePrj.GetNodes().Contains(first));
+            Assert.IsTrue(multiNodePrj.GetNodes().Contains(second));
         }
 
         /// <summary>
@@ -440,7 +440,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestForNodesLaziness()
         {
-            var nodes = _grid1.GetCluster().Nodes().Take(2).ToArray();
+            var nodes = _grid1.GetCluster().GetNodes().Take(2).ToArray();
 
             var callCount = 0;
             
@@ -457,11 +457,11 @@ namespace Apache.Ignite.Core.Tests.Compute
             };
 
             var projection = _grid1.GetCluster().ForNodes(nodes.Select(nodeSelector));
-            Assert.AreEqual(2, projection.Nodes().Count);
+            Assert.AreEqual(2, projection.GetNodes().Count);
             Assert.AreEqual(2, callCount);
             
             projection = _grid1.GetCluster().ForNodeIds(nodes.Select(idSelector));
-            Assert.AreEqual(2, projection.Nodes().Count);
+            Assert.AreEqual(2, projection.GetNodes().Count);
             Assert.AreEqual(4, callCount);
         }
 
@@ -473,8 +473,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             IClusterGroup prj = _grid1.GetCluster().ForLocal();
 
-            Assert.AreEqual(1, prj.Nodes().Count);
-            Assert.AreEqual(_grid1.GetCluster().LocalNode, prj.Nodes().First());
+            Assert.AreEqual(1, prj.GetNodes().Count);
+            Assert.AreEqual(_grid1.GetCluster().LocalNode, prj.GetNodes().First());
         }
 
         /// <summary>
@@ -483,13 +483,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestForRemotes()
         {
-            ICollection<IClusterNode> nodes = _grid1.GetCluster().Nodes();
+            ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
 
             IClusterGroup prj = _grid1.GetCluster().ForRemotes();
 
-            Assert.AreEqual(2, prj.Nodes().Count);
-            Assert.IsTrue(nodes.Contains(prj.Nodes().ElementAt(0)));
-            Assert.IsTrue(nodes.Contains(prj.Nodes().ElementAt(1)));
+            Assert.AreEqual(2, prj.GetNodes().Count);
+            Assert.IsTrue(nodes.Contains(prj.GetNodes().ElementAt(0)));
+            Assert.IsTrue(nodes.Contains(prj.GetNodes().ElementAt(1)));
         }
 
         /// <summary>
@@ -498,14 +498,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestForHost()
         {
-            ICollection<IClusterNode> nodes = _grid1.GetCluster().Nodes();
+            ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
 
             IClusterGroup prj = _grid1.GetCluster().ForHost(nodes.First());
 
-            Assert.AreEqual(3, prj.Nodes().Count);
-            Assert.IsTrue(nodes.Contains(prj.Nodes().ElementAt(0)));
-            Assert.IsTrue(nodes.Contains(prj.Nodes().ElementAt(1)));
-            Assert.IsTrue(nodes.Contains(prj.Nodes().ElementAt(2)));
+            Assert.AreEqual(3, prj.GetNodes().Count);
+            Assert.IsTrue(nodes.Contains(prj.GetNodes().ElementAt(0)));
+            Assert.IsTrue(nodes.Contains(prj.GetNodes().ElementAt(1)));
+            Assert.IsTrue(nodes.Contains(prj.GetNodes().ElementAt(2)));
         }
 
         /// <summary>
@@ -514,19 +514,19 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestForOldestYoungestRandom()
         {
-            ICollection<IClusterNode> nodes = _grid1.GetCluster().Nodes();
+            ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
 
             IClusterGroup prj = _grid1.GetCluster().ForYoungest();
-            Assert.AreEqual(1, prj.Nodes().Count);
-            Assert.IsTrue(nodes.Contains(prj.Node()));
+            Assert.AreEqual(1, prj.GetNodes().Count);
+            Assert.IsTrue(nodes.Contains(prj.GetNode()));
 
             prj = _grid1.GetCluster().ForOldest();
-            Assert.AreEqual(1, prj.Nodes().Count);
-            Assert.IsTrue(nodes.Contains(prj.Node()));
+            Assert.AreEqual(1, prj.GetNodes().Count);
+            Assert.IsTrue(nodes.Contains(prj.GetNode()));
 
             prj = _grid1.GetCluster().ForRandom();
-            Assert.AreEqual(1, prj.Nodes().Count);
-            Assert.IsTrue(nodes.Contains(prj.Node()));
+            Assert.AreEqual(1, prj.GetNodes().Count);
+            Assert.IsTrue(nodes.Contains(prj.GetNode()));
         }
 
         /// <summary>
@@ -535,12 +535,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestForAttribute()
         {
-            ICollection<IClusterNode> nodes = _grid1.GetCluster().Nodes();
+            ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
 
             IClusterGroup prj = _grid1.GetCluster().ForAttribute("my_attr", "value1");
-            Assert.AreEqual(1, prj.Nodes().Count);
-            Assert.IsTrue(nodes.Contains(prj.Node()));
-            Assert.AreEqual("value1", prj.Nodes().First().Attribute<string>("my_attr"));
+            Assert.AreEqual(1, prj.GetNodes().Count);
+            Assert.IsTrue(nodes.Contains(prj.GetNode()));
+            Assert.AreEqual("value1", prj.GetNodes().First().Attribute<string>("my_attr"));
         }
         
         /// <summary>
@@ -549,28 +549,28 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestForCacheNodes()
         {
-            ICollection<IClusterNode> nodes = _grid1.GetCluster().Nodes();
+            ICollection<IClusterNode> nodes = _grid1.GetCluster().GetNodes();
 
             // Cache nodes.
             IClusterGroup prjCache = _grid1.GetCluster().ForCacheNodes("cache1");
 
-            Assert.AreEqual(2, prjCache.Nodes().Count);
+            Assert.AreEqual(2, prjCache.GetNodes().Count);
 
-            Assert.IsTrue(nodes.Contains(prjCache.Nodes().ElementAt(0)));
-            Assert.IsTrue(nodes.Contains(prjCache.Nodes().ElementAt(1)));
+            Assert.IsTrue(nodes.Contains(prjCache.GetNodes().ElementAt(0)));
+            Assert.IsTrue(nodes.Contains(prjCache.GetNodes().ElementAt(1)));
             
             // Data nodes.
             IClusterGroup prjData = _grid1.GetCluster().ForDataNodes("cache1");
 
-            Assert.AreEqual(2, prjData.Nodes().Count);
+            Assert.AreEqual(2, prjData.GetNodes().Count);
 
-            Assert.IsTrue(prjCache.Nodes().Contains(prjData.Nodes().ElementAt(0)));
-            Assert.IsTrue(prjCache.Nodes().Contains(prjData.Nodes().ElementAt(1)));
+            Assert.IsTrue(prjCache.GetNodes().Contains(prjData.GetNodes().ElementAt(0)));
+            Assert.IsTrue(prjCache.GetNodes().Contains(prjData.GetNodes().ElementAt(1)));
 
             // Client nodes.
             IClusterGroup prjClient = _grid1.GetCluster().ForClientNodes("cache1");
 
-            Assert.AreEqual(0, prjClient.Nodes().Count);
+            Assert.AreEqual(0, prjClient.GetNodes().Count);
         }
         
         /// <summary>
@@ -580,14 +580,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestForPredicate()
         {
             IClusterGroup prj1 = _grid1.GetCluster().ForPredicate(new NotAttributePredicate("value1").Apply);
-            Assert.AreEqual(2, prj1.Nodes().Count);
+            Assert.AreEqual(2, prj1.GetNodes().Count);
 
             IClusterGroup prj2 = prj1.ForPredicate(new NotAttributePredicate("value2").Apply);
-            Assert.AreEqual(1, prj2.Nodes().Count);
+            Assert.AreEqual(1, prj2.GetNodes().Count);
 
             string val;
 
-            prj2.Nodes().First().TryGetAttribute("my_attr", out val);
+            prj2.GetNodes().First().TryGetAttribute("my_attr", out val);
 
             Assert.IsTrue(val == null || (!val.Equals("value1") && !val.Equals("value2")));
         }
@@ -909,13 +909,13 @@ namespace Apache.Ignite.Core.Tests.Compute
             ICollection<Guid> res = _grid1.GetCompute().ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
 
             Assert.AreEqual(3, res.Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).Nodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).Nodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).Nodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).GetNodes().Count);
 
             var prj = _grid1.GetCluster().ForPredicate(node => res.Take(2).Contains(node.Id));
 
-            Assert.AreEqual(2, prj.Nodes().Count);
+            Assert.AreEqual(2, prj.GetNodes().Count);
 
             ICollection<Guid> filteredRes = prj.GetCompute().ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
 
@@ -935,13 +935,13 @@ namespace Apache.Ignite.Core.Tests.Compute
             ICollection<Guid> res = gridCompute.GetFuture<ICollection<Guid>>().Get();
 
             Assert.AreEqual(3, res.Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).Nodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).Nodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).Nodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).GetNodes().Count);
 
             var prj = _grid1.GetCluster().ForPredicate(node => res.Take(2).Contains(node.Id));
 
-            Assert.AreEqual(2, prj.Nodes().Count);
+            Assert.AreEqual(2, prj.GetNodes().Count);
 
             var compute = prj.GetCompute().WithAsync();
             Assert.IsNull(compute.ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null));
@@ -962,7 +962,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             
             _grid1.GetCompute().Broadcast(new ComputeAction());
 
-            Assert.AreEqual(_grid1.GetCluster().Nodes().Count, ComputeAction.InvokeCount);
+            Assert.AreEqual(_grid1.GetCluster().GetNodes().Count, ComputeAction.InvokeCount);
         }
 
         /// <summary>
@@ -1004,13 +1004,13 @@ namespace Apache.Ignite.Core.Tests.Compute
             // Test keys for non-client nodes
             var nodes = new[] {_grid1, _grid2}.Select(x => x.GetCluster().LocalNode);
 
-            var aff = _grid1.Affinity(cacheName);
+            var aff = _grid1.GetAffinity(cacheName);
 
             foreach (var node in nodes)
             {
                 var primaryKey = Enumerable.Range(1, int.MaxValue).First(x => aff.IsPrimary(node, x));
 
-                var affinityKey = _grid1.Affinity(cacheName).AffinityKey<int, int>(primaryKey);
+                var affinityKey = _grid1.GetAffinity(cacheName).AffinityKey<int, int>(primaryKey);
 
                 _grid1.GetCompute().AffinityRun(cacheName, affinityKey, new ComputeAction());
 
@@ -1029,13 +1029,13 @@ namespace Apache.Ignite.Core.Tests.Compute
             // Test keys for non-client nodes
             var nodes = new[] { _grid1, _grid2 }.Select(x => x.GetCluster().LocalNode);
 
-            var aff = _grid1.Affinity(cacheName);
+            var aff = _grid1.GetAffinity(cacheName);
 
             foreach (var node in nodes)
             {
                 var primaryKey = Enumerable.Range(1, int.MaxValue).First(x => aff.IsPrimary(node, x));
 
-                var affinityKey = _grid1.Affinity(cacheName).AffinityKey<int, int>(primaryKey);
+                var affinityKey = _grid1.GetAffinity(cacheName).AffinityKey<int, int>(primaryKey);
 
                 var result = _grid1.GetCompute().AffinityCall(cacheName, affinityKey, new ComputeFunc());
 
@@ -1054,9 +1054,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             ICollection<Guid> res = _grid1.GetCompute().WithNoFailover().ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
 
             Assert.AreEqual(3, res.Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).Nodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).Nodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).Nodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).GetNodes().Count);
         }
 
         /// <summary>
@@ -1068,9 +1068,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             ICollection<Guid> res = _grid1.GetCompute().WithTimeout(1000).ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
 
             Assert.AreEqual(3, res.Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).Nodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).Nodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).Nodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
+            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).GetNodes().Count);
         }
 
         /// <summary>
@@ -1082,7 +1082,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             int res = _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof(NetSimpleTask), new NetSimpleJobArgument(1)).Res;
 
-            Assert.AreEqual(_grid1.GetCompute().ClusterGroup.Nodes().Count, res);
+            Assert.AreEqual(_grid1.GetCompute().ClusterGroup.GetNodes().Count, res);
         }
 
         /// <summary>

@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                     if (!_proc2.Alive)
                         throw new Exception("Process 2 died unexpectedly: " + _proc2.Join());
 
-                    if (Grid1.GetCluster().Nodes().Count < 2)
+                    if (Grid1.GetCluster().GetNodes().Count < 2)
                         Thread.Sleep(100);
                     else
                         break;
@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                     if (!_proc3.Alive)
                         throw new Exception("Process 3 died unexpectedly: " + _proc3.Join());
 
-                    if (Grid1.GetCluster().Nodes().Count < 3)
+                    if (Grid1.GetCluster().GetNodes().Count < 3)
                         Thread.Sleep(100);
                     else
                         break;

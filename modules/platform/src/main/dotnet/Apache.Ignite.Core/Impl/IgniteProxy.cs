@@ -186,27 +186,27 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICollection<IClusterNode> Nodes()
+        public ICollection<IClusterNode> GetNodes()
         {
-            return _ignite.GetCluster().Nodes();
+            return _ignite.GetCluster().GetNodes();
         }
 
         /** <inheritdoc /> */
-        public IClusterNode Node(Guid id)
+        public IClusterNode GetNode(Guid id)
         {
-            return _ignite.GetCluster().Node(id);
+            return _ignite.GetCluster().GetNode(id);
         }
 
         /** <inheritdoc /> */
-        public IClusterNode Node()
+        public IClusterNode GetNode()
         {
-            return _ignite.GetCluster().Node();
+            return _ignite.GetCluster().GetNode();
         }
 
         /** <inheritdoc /> */
-        public IClusterMetrics Metrics()
+        public IClusterMetrics GetMetrics()
         {
-            return _ignite.GetCluster().Metrics();
+            return _ignite.GetCluster().GetMetrics();
         }
 
         /** <inheritdoc /> */
@@ -216,9 +216,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICache<TK, TV> Cache<TK, TV>(string name)
+        public ICache<TK, TV> GetCache<TK, TV>(string name)
         {
-            return _ignite.Cache<TK, TV>(name);
+            return _ignite.GetCache<TK, TV>(name);
         }
 
         /** <inheritdoc /> */
@@ -267,45 +267,46 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IDataStreamer<TK, TV> DataStreamer<TK, TV>(string cacheName)
+        public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName)
         {
-            return _ignite.DataStreamer<TK, TV>(cacheName);
+            return _ignite.GetDataStreamer<TK, TV>(cacheName);
         }
 
         /** <inheritdoc /> */
-        public IPortables Portables()
+        public IPortables GetPortables()
         {
-            return _ignite.Portables();
+            return _ignite.GetPortables();
         }
 
         /** <inheritdoc /> */
-        public ICacheAffinity Affinity(string name)
+        public ICacheAffinity GetAffinity(string name)
         {
-            return _ignite.Affinity(name);
+            return _ignite.GetAffinity(name);
         }
 
         /** <inheritdoc /> */
-        public ITransactions Transactions
+
+        public ITransactions GetTransactions()
         {
-            get { return _ignite.Transactions; }
+            return _ignite.GetTransactions();
         }
 
         /** <inheritdoc /> */
-        public IMessaging Message()
+        public IMessaging GetMessaging()
         {
-            return _ignite.Message();
+            return _ignite.GetMessaging();
         }
 
         /** <inheritdoc /> */
-        public IEvents Events()
+        public IEvents GetEvents()
         {
-            return _ignite.Events();
+            return _ignite.GetEvents();
         }
 
         /** <inheritdoc /> */
-        public IServices Services()
+        public IServices GetServices()
         {
-            return _ignite.Services();
+            return _ignite.GetServices();
         }
 
         /** <inheritdoc /> */

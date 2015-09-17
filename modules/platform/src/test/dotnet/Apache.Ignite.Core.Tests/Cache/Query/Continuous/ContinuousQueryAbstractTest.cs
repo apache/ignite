@@ -114,11 +114,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             cfg.GridName = "grid-1";
             grid1 = Ignition.Start(cfg);
-            cache1 = grid1.Cache<int, PortableEntry>(cacheName);
+            cache1 = grid1.GetCache<int, PortableEntry>(cacheName);
 
             cfg.GridName = "grid-2";
             grid2 = Ignition.Start(cfg);
-            cache2 = grid2.Cache<int, PortableEntry>(cacheName);
+            cache2 = grid2.GetCache<int, PortableEntry>(cacheName);
         }
 
         /// <summary>
@@ -925,7 +925,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             IClusterNode node = cache.Ignite.GetCluster().LocalNode;
 
-            ICacheAffinity aff = cache.Ignite.Affinity(cache.Name);
+            ICacheAffinity aff = cache.Ignite.GetAffinity(cache.Name);
 
             List<int> keys = new List<int>(cnt);
 

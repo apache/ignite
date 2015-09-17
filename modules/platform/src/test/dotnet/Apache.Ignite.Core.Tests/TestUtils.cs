@@ -217,7 +217,7 @@ namespace Apache.Ignite.Core.Tests
 
             while (true)
             {
-                if (grid.GetCluster().Nodes().Count != size)
+                if (grid.GetCluster().GetNodes().Count != size)
                 {
                     if (left > 0)
                     {

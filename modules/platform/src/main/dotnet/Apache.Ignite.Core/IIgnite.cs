@@ -70,13 +70,13 @@ namespace Apache.Ignite.Core
         /// You can get instances of ICache of the same name, but with different key/value types.
         /// These will use the same named cache, but only allow working with entries of specified types.
         /// Attempt to retrieve an entry of incompatible type will result in <see cref="InvalidCastException"/>.
-        /// Use <see cref="Cache{Object, Object}"/> in order to work with entries of arbitrary types.
+        /// Use <see cref="GetCache{TK,TV}"/> in order to work with entries of arbitrary types.
         /// </summary>
         /// <param name="name">Cache name.</param>
         /// <returns>Cache instance for given name.</returns>
         /// <typeparam name="TK">Cache key type.</typeparam>
         /// <typeparam name="TV">Cache value type.</typeparam>
-        ICache<TK, TV> Cache<TK, TV>(string name);
+        ICache<TK, TV> GetCache<TK, TV>(string name);
 
         /// <summary>
         /// Gets existing cache with the given name or creates new one using template configuration.
@@ -103,42 +103,42 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="cacheName">Cache name (<c>null</c> for default cache).</param>
         /// <returns>Data streamer.</returns>
-        IDataStreamer<TK, TV> DataStreamer<TK, TV>(string cacheName);
+        IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName);
 
         /// <summary>
         /// Gets an instance of <see cref="IPortables"/> interface.
         /// </summary>
         /// <returns>Instance of <see cref="IPortables"/> interface</returns>
-        IPortables Portables();
+        IPortables GetPortables();
 
         /// <summary>
         /// Gets affinity service to provide information about data partitioning and distribution.
         /// </summary>
         /// <param name="name">Cache name.</param>
         /// <returns>Cache data affinity service.</returns>
-        ICacheAffinity Affinity(string name);
+        ICacheAffinity GetAffinity(string name);
 
         /// <summary>
-        /// Gets  Ignite transactions facade.
+        /// Gets Ignite transactions facade.
         /// </summary>
-        ITransactions Transactions { get; }
+        ITransactions GetTransactions();
 
         /// <summary>
         /// Gets messaging facade over all cluster nodes.
         /// </summary>
         /// <returns>Messaging instance over all cluster nodes.</returns>
-        IMessaging Message();
+        IMessaging GetMessaging();
 
         /// <summary>
         /// Gets events facade over all cluster nodes.
         /// </summary>
         /// <returns>Events facade over all cluster nodes.</returns>
-        IEvents Events();
+        IEvents GetEvents();
 
         /// <summary>
         /// Gets services facade over all cluster nodes.
         /// </summary>
         /// <returns>Services facade over all cluster nodes.</returns>
-        IServices Services();
+        IServices GetServices();
     }
 }

@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <returns></returns>
         public ICache<int, QueryPerson> Cache(int idx)
         {
-            return GetIgnite(idx).Cache<int, QueryPerson>(CacheName);
+            return GetIgnite(idx).GetCache<int, QueryPerson>(CacheName);
         }
 
         /// <summary>
@@ -654,7 +654,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var cache = Cache();
 
-            var aff = cache.Ignite.Affinity(CacheName);
+            var aff = cache.Ignite.GetAffinity(CacheName);
             var exp = PopulateCache(cache, loc, cnt, x => true);  // populate outside the loop (slow)
 
             for (var part = 0; part < aff.Partitions; part++)
@@ -790,7 +790,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 return;
 
             var sb = new StringBuilder();
-            var aff = cache.Ignite.Affinity(cache.Name);
+            var aff = cache.Ignite.GetAffinity(cache.Name);
 
             foreach (var key in exp)
             {
@@ -838,7 +838,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 cache.Put(val, new QueryPerson(val.ToString(), val));
 
-                if (expectedEntryFilter(val) && (!loc || cache.Ignite.Affinity(cache.Name)
+                if (expectedEntryFilter(val) && (!loc || cache.Ignite.GetAffinity(cache.Name)
                     .IsPrimary(cache.Ignite.GetCluster().LocalNode, val)))
                     exp.Add(val);
             }

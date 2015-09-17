@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Cache
 
     /// <summary>
     /// Main entry point for Ignite cache APIs. You can get a named cache by calling
-    /// <see cref="IIgnite.Cache{K, V}(string)"/> method.
+    /// <see cref="IIgnite.GetCache{TK,TV}"/> method.
     /// <para />
     /// Cache API supports distributed transactions. All <c>Get(...)</c>, <c>Put(...)</c>, <c>Replace(...)</c>,
     /// and <c>Remove(...)</c> operations are transactional and will participate in an ongoing transaction,

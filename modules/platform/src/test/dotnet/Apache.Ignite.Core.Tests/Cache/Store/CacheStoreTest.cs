@@ -397,7 +397,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             var cache = Cache();
 
-            using (var tx = cache.Ignite.Transactions.TxStart())
+            using (var tx = cache.Ignite.GetTransactions().TxStart())
             {
                 CacheTestStore.ExpCommit = true;
 
@@ -475,17 +475,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         private ICache<TK, TV> PortableStoreCache<TK, TV>()
         {
-            return Ignition.GetIgnite(GridName()).Cache<TK, TV>(PortableStoreCacheName);
+            return Ignition.GetIgnite(GridName()).GetCache<TK, TV>(PortableStoreCacheName);
         }
 
         private ICache<TK, TV> ObjectStoreCache<TK, TV>()
         {
-            return Ignition.GetIgnite(GridName()).Cache<TK, TV>(ObjectStoreCacheName);
+            return Ignition.GetIgnite(GridName()).GetCache<TK, TV>(ObjectStoreCacheName);
         }
 
         private ICache<int, string> CustomStoreCache()
         {
-            return Ignition.GetIgnite(GridName()).Cache<int, string>(CustomStoreCacheName);
+            return Ignition.GetIgnite(GridName()).GetCache<int, string>(CustomStoreCacheName);
         }
 
         private ICache<int, string> TemplateStoreCache()
