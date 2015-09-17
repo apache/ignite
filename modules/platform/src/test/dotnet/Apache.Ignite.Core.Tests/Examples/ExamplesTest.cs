@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Tests.Process;
-    using Apache.Ignite.Examples.Dll.Compute;
+    using Apache.Ignite.ExamplesDll.Compute;
     using NUnit.Framework;
 
     /// <summary>

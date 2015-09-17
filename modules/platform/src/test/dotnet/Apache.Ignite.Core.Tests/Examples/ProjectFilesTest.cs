@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories)
                 .Select(File.ReadAllText)
-                .SelectMany(src => Regex.Matches(src, @"examples[^\s]+.xml").OfType<Match>())
+                .SelectMany(src => Regex.Matches(src, @"modules\\platform[^\s]+.xml").OfType<Match>())
                 .Where(match => match.Success)
                 .Select(match => Path.Combine(PathUtil.IgniteHome, match.Value))
                 .ToList()

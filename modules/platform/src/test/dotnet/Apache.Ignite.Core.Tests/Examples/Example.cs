@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System.Linq;
     using System.Text.RegularExpressions;
     using Apache.Ignite.Examples.Compute;
-    using Apache.Ignite.Examples.Dll.Compute;
+    using Apache.Ignite.ExamplesDll.Compute;
     using NUnit.Framework;
 
     /// <summary>
