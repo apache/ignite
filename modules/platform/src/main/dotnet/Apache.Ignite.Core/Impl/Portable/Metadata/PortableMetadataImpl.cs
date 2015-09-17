@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <returns>
         /// Field type.
         /// </returns>
-        public string FieldTypeName(string fieldName)
+        public string GetFieldTypeName(string fieldName)
         {
             if (_fields != null)
             {

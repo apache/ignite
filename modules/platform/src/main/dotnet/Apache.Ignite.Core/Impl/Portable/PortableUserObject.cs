@@ -72,13 +72,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public int TypeId()
+        public int TypeId
         {
-            return _typeId;
+            get { return _typeId; }
         }
 
         /** <inheritdoc /> */
-        public T Field<T>(string fieldName)
+        public T GetField<T>(string fieldName)
         {
             return Field<T>(fieldName, null);
         }
@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public IPortableMetadata Metadata()
+        public IPortableMetadata GetMetadata()
         {
             return _marsh.Metadata(_typeId);
         }

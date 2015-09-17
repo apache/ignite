@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Cache
     /// <summary>
     /// Provides affinity information to detect which node is primary and which nodes are
     /// backups for a partitioned cache. You can get an instance of this interface by calling
-    /// <see cref="IIgnite.Affinity(string)"/> method.
+    /// <see cref="IIgnite.GetAffinity"/> method.
     /// <para />
     /// Mapping of a key to a node is a three-step operation. First step will get an affinity key for 
     /// given key using <c>CacheAffinityKeyMapper</c>. If mapper is not specified, the original key 
@@ -43,17 +43,14 @@ namespace Apache.Ignite.Core.Cache
         /// Gets number of partitions in cache according to configured affinity function.
         /// </summary>
         /// <returns>Number of cache partitions.</returns>
-        int Partitions
-        {
-            get;
-        }
+        int Partitions { get; }
 
         /// <summary>
         /// Gets partition id for the given key.
         /// </summary>
         /// <param name="key">Key to get partition id for.</param>
         /// <returns>Partition id.</returns>
-        int Partition<TK>(TK key);
+        int GetPartition<TK>(TK key);
 
         /// <summary>
         /// Returns 'true' if given node is the primary node for given key.
@@ -85,7 +82,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="n">Node.</param>
         /// <returns>Partition ids for which given projection has primary ownership.</returns>
-        int[] PrimaryPartitions(IClusterNode n);
+        int[] GetPrimaryPartitions(IClusterNode n);
 
         /// <summary>
         /// Gets partition ids for which nodes of the given projection has backup
@@ -93,7 +90,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="n">Node.</param>
         /// <returns>Partition ids for which given projection has backup ownership.</returns>
-        int[] BackupPartitions(IClusterNode n);
+        int[] GetBackupPartitions(IClusterNode n);
 
         /// <summary>
         /// Gets partition ids for which nodes of the given projection has ownership
@@ -101,14 +98,14 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="n">Node.</param>
         /// <returns>Partition ids for which given projection has ownership.</returns>
-        int[] AllPartitions(IClusterNode n);
+        int[] GetAllPartitions(IClusterNode n);
 
         /// <summary>
         /// Maps passed in key to a key which will be used for node affinity.
         /// </summary>
         /// <param name="key">Key to map.</param>
         /// <returns>Key to be used for node-to-affinity mapping (may be the same key as passed in).</returns>
-        TR AffinityKey<TK, TR>(TK key);
+        TR GetAffinityKey<TK, TR>(TK key);
 
         /// <summary>
         /// This method provides ability to detect which keys are mapped to which nodes.

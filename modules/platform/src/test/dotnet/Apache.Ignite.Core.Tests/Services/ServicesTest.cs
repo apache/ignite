@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 Name = SvcName,
                 MaxPerNodeCount = 3,
                 TotalCount = 3,
-                NodeFilter = new NodeFilter {NodeId = Grid1.Cluster.LocalNode.Id},
+                NodeFilter = new NodeFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
                 Service = portable ? new TestIgniteServicePortable() : new TestIgniteServiceSerializable()
             };
 
@@ -133,10 +133,10 @@ namespace Apache.Ignite.Core.Tests.Services
             // Check that only one node has the service.
             foreach (var grid in Grids)
             {
-                if (grid.Cluster.LocalNode.Id == svc0.NodeId)
+                if (grid.GetCluster().GetLocalNode().Id == svc0.NodeId)
                     CheckServiceStarted(grid);
                 else
-                    Assert.IsNull(grid.Services().GetService<TestIgniteServiceSerializable>(SvcName));
+                    Assert.IsNull(grid.GetServices().GetService<TestIgniteServiceSerializable>(SvcName));
             }
         }
 
@@ -150,9 +150,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Services.DeployNodeSingleton(SvcName, svc);
 
-            Assert.AreEqual(1, Grid1.Services().GetServices<ITestIgniteService>(SvcName).Count);
-            Assert.AreEqual(1, Grid2.Services().GetServices<ITestIgniteService>(SvcName).Count);
-            Assert.AreEqual(1, Grid3.Services().GetServices<ITestIgniteService>(SvcName).Count);
+            Assert.AreEqual(1, Grid1.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
+            Assert.AreEqual(1, Grid2.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
+            Assert.AreEqual(1, Grid3.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Services.DeployKeyAffinitySingleton(SvcName, svc, CacheName, AffKey);
 
-            var affNode = Grid1.Affinity(CacheName).MapKeyToNode(AffKey);
+            var affNode = Grid1.GetAffinity(CacheName).MapKeyToNode(AffKey);
 
             var prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
 
@@ -251,7 +251,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 ? new TestIgniteServicePortable {TestProperty = 17}
                 : new TestIgniteServiceSerializable {TestProperty = 17};
 
-            Grid1.Cluster.ForNodeIds(Grid2.Cluster.LocalNode.Id, Grid3.Cluster.LocalNode.Id).Services()
+            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id, Grid3.GetCluster().GetLocalNode().Id).GetServices()
                 .DeployNodeSingleton(SvcName,
                     svc);
 
@@ -275,8 +275,8 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
 
             // Check local scenario (proxy should not be created for local instance)
-            Assert.IsTrue(ReferenceEquals(Grid2.Services().GetService<ITestIgniteService>(SvcName),
-                Grid2.Services().GetServiceProxy<ITestIgniteService>(SvcName)));
+            Assert.IsTrue(ReferenceEquals(Grid2.GetServices().GetService<ITestIgniteService>(SvcName),
+                Grid2.GetServices().GetServiceProxy<ITestIgniteService>(SvcName)));
 
             // Check sticky = false: call multiple times, check that different nodes get invoked
             var invokedIds = Enumerable.Range(1, 100).Select(x => prx.NodeId).Distinct().ToList();
@@ -303,11 +303,11 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = new TestIgniteServicePortable {TestProperty = 33};
 
             // Deploy locally or to the remote node
-            var nodeId = (local ? Grid1 : Grid2).Cluster.LocalNode.Id;
+            var nodeId = (local ? Grid1 : Grid2).GetCluster().GetLocalNode().Id;
             
-            var cluster = Grid1.Cluster.ForNodeIds(nodeId);
+            var cluster = Grid1.GetCluster().ForNodeIds(nodeId);
 
-            cluster.Services().DeployNodeSingleton(SvcName, svc);
+            cluster.GetServices().DeployNodeSingleton(SvcName, svc);
 
             // Get proxy
             var prx = Services.GetServiceProxy<ITestIgniteServiceProxyInterface>(SvcName);
@@ -347,7 +347,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(1, desc.MaxPerNodeCount);
             Assert.AreEqual(1, desc.TotalCount);
             Assert.AreEqual(typeof(TestIgniteServiceSerializable), desc.Type);
-            Assert.AreEqual(Grid1.Cluster.LocalNode.Id, desc.OriginNodeId);
+            Assert.AreEqual(Grid1.GetCluster().GetLocalNode().Id, desc.OriginNodeId);
 
             var top = desc.TopologySnapshot;
             var prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
@@ -366,7 +366,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = new TestIgniteServicePortable();
 
             // Deploy to grid2
-            Grid1.Cluster.ForNodeIds(Grid2.Cluster.LocalNode.Id).Services().WithKeepPortable()
+            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithKeepPortable()
                 .DeployNodeSingleton(SvcName, svc);
 
             // Get proxy
@@ -377,7 +377,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var res = (IPortableObject) prx.Method(obj);
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
 
-            res = (IPortableObject) prx.Method(Grid1.Portables().ToPortable<IPortableObject>(obj));
+            res = (IPortableObject) prx.Method(Grid1.GetPortables().ToPortable<IPortableObject>(obj));
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
         }
         
@@ -390,7 +390,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = new TestIgniteServicePortable();
 
             // Deploy to grid2
-            Grid1.Cluster.ForNodeIds(Grid2.Cluster.LocalNode.Id).Services().WithServerKeepPortable()
+            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithServerKeepPortable()
                 .DeployNodeSingleton(SvcName, svc);
 
             // Get proxy
@@ -401,7 +401,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var res = (PortableObject) prx.Method(obj);
             Assert.AreEqual(11, res.Val);
 
-            res = (PortableObject)prx.Method(Grid1.Portables().ToPortable<IPortableObject>(obj));
+            res = (PortableObject)prx.Method(Grid1.GetPortables().ToPortable<IPortableObject>(obj));
             Assert.AreEqual(11, res.Val);
         }
 
@@ -414,7 +414,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = new TestIgniteServicePortable();
 
             // Deploy to grid2
-            Grid1.Cluster.ForNodeIds(Grid2.Cluster.LocalNode.Id).Services().WithKeepPortable().WithServerKeepPortable()
+            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithKeepPortable().WithServerKeepPortable()
                 .DeployNodeSingleton(SvcName, svc);
 
             // Get proxy
@@ -425,7 +425,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var res = (IPortableObject)prx.Method(obj);
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
 
-            res = (IPortableObject)prx.Method(Grid1.Portables().ToPortable<IPortableObject>(obj));
+            res = (IPortableObject)prx.Method(Grid1.GetPortables().ToPortable<IPortableObject>(obj));
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
         }
 
@@ -478,7 +478,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Cancellation failed, but service is removed.
             foreach (var grid in Grids)
-                Assert.IsNull(grid.Services().GetService<ITestIgniteService>(SvcName));
+                Assert.IsNull(grid.GetServices().GetService<ITestIgniteService>(SvcName));
         }
 
         [Test]
@@ -538,7 +538,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private static void CheckServiceStarted(IIgnite grid, int count = 1)
         {
-            var services = grid.Services().GetServices<TestIgniteServiceSerializable>(SvcName);
+            var services = grid.GetServices().GetServices<TestIgniteServiceSerializable>(SvcName);
 
             Assert.AreEqual(count, services.Count);
 
@@ -553,7 +553,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsTrue(svc.Executed);
             Assert.IsFalse(svc.Cancelled);
 
-            Assert.AreEqual(grid.Cluster.LocalNode.Id, svc.NodeId);
+            Assert.AreEqual(grid.GetCluster().GetLocalNode().Id, svc.NodeId);
         }
 
         /// <summary>
@@ -583,7 +583,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         protected virtual IServices Services
         {
-            get { return Grid1.Services(); }
+            get { return Grid1.GetServices(); }
         }
 
         /// <summary>
@@ -658,7 +658,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public Guid NodeId
             {
-                get { return _grid.Cluster.LocalNode.Id; }
+                get { return _grid.GetCluster().GetLocalNode().Id; }
             }
 
             /** <inheritdoc /> */

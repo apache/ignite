@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Tests
             CheckEvent(AfterStartEvts[3], grid, grid, 0, null);
 
             // 2. Test Java start events.
-            IList<int> res = grid.Compute().ExecuteJavaTask<IList<int>>(
+            IList<int> res = grid.GetCompute().ExecuteJavaTask<IList<int>>(
                 "org.apache.ignite.platform.lifecycle.PlatformJavaLifecycleTask", null);
 
             Assert.AreEqual(2, res.Count);

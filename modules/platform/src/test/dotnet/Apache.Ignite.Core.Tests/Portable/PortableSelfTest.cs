@@ -594,8 +594,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             IPortableObject portNewObj = marsh.Unmarshal<IPortableObject>(data, PortableMode.ForcePortable);
 
-            Assert.AreEqual(obj.Field1, portNewObj.Field<int>("field1"));
-            Assert.AreEqual(obj.Field2, portNewObj.Field<int>("Field2"));
+            Assert.AreEqual(obj.Field1, portNewObj.GetField<int>("field1"));
+            Assert.AreEqual(obj.Field2, portNewObj.GetField<int>("Field2"));
         }
 
         /**
@@ -711,8 +711,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             IPortableObject portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj1), PortableMode.ForcePortable);
 
-            Assert.AreEqual(obj1.Val, portObj.Field<decimal>("val"));
-            Assert.AreEqual(obj1.ValArr, portObj.Field<decimal[]>("valArr"));
+            Assert.AreEqual(obj1.Val, portObj.GetField<decimal>("val"));
+            Assert.AreEqual(obj1.ValArr, portObj.GetField<decimal[]>("valArr"));
 
             Assert.AreEqual(obj1.Val, portObj.Deserialize<DecimalReflective>().Val);
             Assert.AreEqual(obj1.ValArr, portObj.Deserialize<DecimalReflective>().ValArr);
@@ -727,8 +727,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj2), PortableMode.ForcePortable);
 
-            Assert.AreEqual(obj2.Val, portObj.Field<decimal>("val"));
-            Assert.AreEqual(obj2.ValArr, portObj.Field<decimal[]>("valArr"));
+            Assert.AreEqual(obj2.Val, portObj.GetField<decimal>("val"));
+            Assert.AreEqual(obj2.ValArr, portObj.GetField<decimal[]>("valArr"));
 
             Assert.AreEqual(obj2.Val, portObj.Deserialize<DecimalMarshalAware>().Val);
             Assert.AreEqual(obj2.ValArr, portObj.Deserialize<DecimalMarshalAware>().ValArr);
@@ -977,7 +977,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             CheckHandlesConsistency(outer, inner, newOuter, newInner);
 
             // Get inner object by field.
-            IPortableObject innerObj = outerObj.Field<IPortableObject>("inner");
+            IPortableObject innerObj = outerObj.GetField<IPortableObject>("inner");
 
             newInner = innerObj.Deserialize<HandleInner>();
             newOuter = newInner.Outer;
@@ -985,7 +985,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             CheckHandlesConsistency(outer, inner, newOuter, newInner);
 
             // Get outer object from inner object by handle.
-            outerObj = innerObj.Field<IPortableObject>("outer");
+            outerObj = innerObj.GetField<IPortableObject>("outer");
 
             newOuter = outerObj.Deserialize<HandleOuter>();
             newInner = newOuter.Inner;
@@ -1156,10 +1156,10 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
 
-            Assert.AreEqual(guidArr, portObj.Field<Guid[]>("guidArr"));
-            Assert.AreEqual(nGuidArr, portObj.Field<Guid?[]>("nGuidArr"));
-            Assert.AreEqual(dateArr, portObj.Field<DateTime[]>("dateArr"));
-            Assert.AreEqual(nDateArr, portObj.Field<DateTime?[]>("nDateArr"));
+            Assert.AreEqual(guidArr, portObj.GetField<Guid[]>("guidArr"));
+            Assert.AreEqual(nGuidArr, portObj.GetField<Guid?[]>("nGuidArr"));
+            Assert.AreEqual(dateArr, portObj.GetField<DateTime[]>("dateArr"));
+            Assert.AreEqual(nDateArr, portObj.GetField<DateTime?[]>("nDateArr"));
 
             obj1 = portObj.Deserialize<SpecialArray>();
 
@@ -1180,10 +1180,10 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
 
-            Assert.AreEqual(guidArr, portObj.Field<Guid[]>("a"));
-            Assert.AreEqual(nGuidArr, portObj.Field<Guid?[]>("b"));
-            Assert.AreEqual(dateArr, portObj.Field<DateTime[]>("c"));
-            Assert.AreEqual(nDateArr, portObj.Field<DateTime?[]>("d"));
+            Assert.AreEqual(guidArr, portObj.GetField<Guid[]>("a"));
+            Assert.AreEqual(nGuidArr, portObj.GetField<Guid?[]>("b"));
+            Assert.AreEqual(dateArr, portObj.GetField<DateTime[]>("c"));
+            Assert.AreEqual(nDateArr, portObj.GetField<DateTime?[]>("d"));
 
             obj2 = portObj.Deserialize<SpecialArrayMarshalAware>();
 

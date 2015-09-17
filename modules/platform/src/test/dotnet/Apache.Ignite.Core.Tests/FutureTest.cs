@@ -57,9 +57,9 @@ namespace Apache.Ignite.Core.Tests
                 }
             });
 
-            _cache = grid.Cache<object, object>(null).WithAsync();
+            _cache = grid.GetCache<object, object>(null).WithAsync();
 
-            _compute = grid.Compute().WithAsync();
+            _compute = grid.GetCompute().WithAsync();
         }
 
         /// <summary>

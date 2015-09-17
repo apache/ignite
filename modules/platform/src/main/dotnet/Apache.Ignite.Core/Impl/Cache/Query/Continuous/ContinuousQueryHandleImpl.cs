@@ -166,12 +166,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         }
 
         /** <inheritdoc /> */
-        public IQueryCursor<ICacheEntry<TK, TV>> InitialQueryCursor
-        {
-            get { return GetInitialQueryCursor(); }
-        }
-
-        /** <inheritdoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> GetInitialQueryCursor()
         {
             lock (this)

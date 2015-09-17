@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             IIgnite g = Ignition.GetIgnite("grid-0");
 
-            ICacheAffinity aff = g.Affinity(null);
+            ICacheAffinity aff = g.GetAffinity(null);
 
             IClusterNode node = aff.MapKeyToNode(new AffinityTestKey(0, 1));
 
@@ -84,16 +84,16 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             IIgnite g = Ignition.GetIgnite("grid-0");
 
-            ICacheAffinity aff = g.Affinity(null);  
+            ICacheAffinity aff = g.GetAffinity(null);  
 
-            IPortableObject affKey = g.Portables().ToPortable<IPortableObject>(new AffinityTestKey(0, 1));
+            IPortableObject affKey = g.GetPortables().ToPortable<IPortableObject>(new AffinityTestKey(0, 1));
 
             IClusterNode node = aff.MapKeyToNode(affKey);
 
             for (int i = 0; i < 10; i++)
             {
                 IPortableObject otherAffKey =
-                    g.Portables().ToPortable<IPortableObject>(new AffinityTestKey(i, 1));
+                    g.GetPortables().ToPortable<IPortableObject>(new AffinityTestKey(i, 1));
 
                 Assert.AreEqual(node.Id, aff.MapKeyToNode(otherAffKey).Id);
             }

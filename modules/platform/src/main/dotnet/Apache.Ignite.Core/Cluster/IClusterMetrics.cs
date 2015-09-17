@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Cluster
     /// in combination with fail-over SPI could check if other nodes don't have
     /// any active or waiting jobs and fail-over some jobs to those nodes.
     /// <para />
-    /// Node metrics for any node can be accessed via <see cref="IClusterNode.Metrics()"/> 
+    /// Node metrics for any node can be accessed via <see cref="IClusterNode.GetMetrics"/> 
     /// method. Keep in mind that there will be a certain network delay (usually
     /// equal to heartbeat delay) for the accuracy of node metrics. However, when accessing
     /// metrics on local node the metrics are always accurate and up to date.

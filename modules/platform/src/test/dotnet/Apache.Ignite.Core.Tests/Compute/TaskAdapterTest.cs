@@ -46,13 +46,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestTaskAdapter()
         {
-            Assert.AreEqual(3, Grid1.Cluster.Nodes().Count);
+            Assert.AreEqual(3, Grid1.GetCluster().GetNodes().Count);
 
             HashSet<Guid> allNodes = new HashSet<Guid>(); 
 
             for (int i = 0; i < 20 && allNodes.Count < 3; i++)
             {
-                HashSet<Guid> res = Grid1.Compute().Execute(new TestSplitTask(), 1);
+                HashSet<Guid> res = Grid1.GetCompute().Execute(new TestSplitTask(), 1);
 
                 Assert.AreEqual(1, res.Count);
 
@@ -61,11 +61,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(3, allNodes.Count);
 
-            HashSet<Guid> res2 = Grid1.Compute().Execute<int, Guid, HashSet<Guid>>(typeof(TestSplitTask), 3);
+            HashSet<Guid> res2 = Grid1.GetCompute().Execute<int, Guid, HashSet<Guid>>(typeof(TestSplitTask), 3);
 
             Assert.IsTrue(res2.Count > 0);
 
-            Grid1.Compute().Execute(new TestSplitTask(), 100);
+            Grid1.GetCompute().Execute(new TestSplitTask(), 100);
 
             Assert.AreEqual(3, allNodes.Count);
         }
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             for (int i = 0; i < 10; i++)
             {
-                bool res = Grid1.Compute().Execute(new TestJobAdapterTask(), true);
+                bool res = Grid1.GetCompute().Execute(new TestJobAdapterTask(), true);
 
                 Assert.IsTrue(res);
             }
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             for (int i = 0; i < 10; i++)
             {
-                bool res = Grid1.Compute().Execute(new TestJobAdapterTask(), false);
+                bool res = Grid1.GetCompute().Execute(new TestJobAdapterTask(), false);
 
                 Assert.IsTrue(res);
             }
@@ -188,7 +188,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 Assert.NotNull(_grid);
 
-                return _grid.Cluster.LocalNode.Id;
+                return _grid.GetCluster().GetLocalNode().Id;
             }
 
             /** <inheritDoc /> */

@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests
                 PortableConfiguration = portableConfiguration
             });
 
-            _cache = grid.Cache<int, TestGenericPortableBase>(null);
+            _cache = grid.GetCache<int, TestGenericPortableBase>(null);
         }
 
         /// <summary>

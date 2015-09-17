@@ -28,34 +28,25 @@ namespace Apache.Ignite.Core.Portable
         /// Gets type name.
         /// </summary>
         /// <returns>Type name.</returns>
-        string TypeName
-        {
-            get;
-        }
+        string TypeName { get; }
 
         /// <summary>
         /// Gets field names for that type.
         /// </summary>
         /// <returns>Field names.</returns>
-        ICollection<string> Fields
-        {
-            get;
-        }
+        ICollection<string> Fields { get; }
 
         /// <summary>
         /// Gets field type for the given field name.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Field type.</returns>
-        string FieldTypeName(string fieldName);
+        string GetFieldTypeName(string fieldName);
 
         /// <summary>
         /// Gets optional affinity key field name.
         /// </summary>
         /// <returns>Affinity key field name or null in case it is not provided.</returns>
-        string AffinityKeyFieldName
-        {
-            get;
-        }
+        string AffinityKeyFieldName { get; }
     }
 }

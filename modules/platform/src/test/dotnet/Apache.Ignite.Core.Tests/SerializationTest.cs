@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestSerializableXmlDoc()
         {
             var grid = Ignition.GetIgnite(GridName);
-            var cache = grid.Cache<int, SerializableXmlDoc>("replicated");
+            var cache = grid.GetCache<int, SerializableXmlDoc>("replicated");
 
             var doc = new SerializableXmlDoc();
 
@@ -97,9 +97,9 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="arg">Task arg.</param>
         private static void CheckTask(IIgnite grid, object arg)
         {
-            var jobResult = grid.Compute().Execute(new CombineStringsTask(), arg);
+            var jobResult = grid.GetCompute().Execute(new CombineStringsTask(), arg);
 
-            var nodeCount = grid.Cluster.Nodes().Count;
+            var nodeCount = grid.GetCluster().GetNodes().Count;
 
             var expectedRes =
                 CombineStringsTask.CombineStrings(Enumerable.Range(0, nodeCount).Select(x => arg.ToString()));
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Tests
         {
             const int count = 50;
 
-            var cache = Ignition.GetIgnite(GridName).Cache<int, object>("local");
+            var cache = Ignition.GetIgnite(GridName).GetCache<int, object>("local");
 
             // Put multiple objects from muliple same-named assemblies to cache
             for (var i = 0; i < count; i++)

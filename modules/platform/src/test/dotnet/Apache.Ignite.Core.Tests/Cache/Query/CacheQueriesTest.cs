@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 for (int j = 0; j < MaxItemCnt; j++)
                     cache.Remove(j);
 
-                Assert.IsTrue(cache.IsEmpty);
+                Assert.IsTrue(cache.IsEmpty());
             }
 
             Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <returns></returns>
         public ICache<int, QueryPerson> Cache(int idx)
         {
-            return GetIgnite(idx).Cache<int, QueryPerson>(CacheName);
+            return GetIgnite(idx).GetCache<int, QueryPerson>(CacheName);
         }
 
         /// <summary>
@@ -654,7 +654,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var cache = Cache();
 
-            var aff = cache.Ignite.Affinity(CacheName);
+            var aff = cache.Ignite.GetAffinity(CacheName);
             var exp = PopulateCache(cache, loc, cnt, x => true);  // populate outside the loop (slow)
 
             for (var part = 0; part < aff.Partitions; part++)
@@ -662,7 +662,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 //var exp0 = new HashSet<int>(exp.Where(x => aff.Partition(x) == part)); // filter expected keys
                 var exp0 = new HashSet<int>();
                 foreach (var x in exp)
-                    if (aff.Partition(x) == part)
+                    if (aff.GetPartition(x) == part)
                         exp0.Add(x);
 
                 var qry = new ScanQuery<int, TV> { Partition = part };
@@ -679,7 +679,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 //var exp0 = new HashSet<int>(exp.Where(x => aff.Partition(x) == part)); // filter expected keys
                 var exp0 = new HashSet<int>();
                 foreach (var x in exp)
-                    if (aff.Partition(x) == part)
+                    if (aff.GetPartition(x) == part)
                         exp0.Add(x);
 
                 var qry = new ScanQuery<int, TV>(new ScanQueryFilter<TV>()) { Partition = part };
@@ -713,8 +713,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     {
                         all.Add(entry);
 
-                        Assert.AreEqual(entry.Key.ToString(), entry.Value.Field<string>("name"));
-                        Assert.AreEqual(entry.Key, entry.Value.Field<int>("age"));
+                        Assert.AreEqual(entry.Key.ToString(), entry.Value.GetField<string>("name"));
+                        Assert.AreEqual(entry.Key, entry.Value.GetField<int>("age"));
 
                         exp0.Remove(entry.Key);
                     }
@@ -731,8 +731,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     {
                         all.Add(entry);
 
-                        Assert.AreEqual(entry.Key.ToString(), entry.Value.Field<string>("name"));
-                        Assert.AreEqual(entry.Key, entry.Value.Field<int>("age"));
+                        Assert.AreEqual(entry.Key.ToString(), entry.Value.GetField<string>("name"));
+                        Assert.AreEqual(entry.Key, entry.Value.GetField<int>("age"));
 
                         exp0.Remove(entry.Key);
                     }
@@ -790,11 +790,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 return;
 
             var sb = new StringBuilder();
-            var aff = cache.Ignite.Affinity(cache.Name);
+            var aff = cache.Ignite.GetAffinity(cache.Name);
 
             foreach (var key in exp)
             {
-                var part = aff.Partition(key);
+                var part = aff.GetPartition(key);
                 sb.AppendFormat(
                     "Query did not return expected key '{0}' (exists: {1}), partition '{2}', partition nodes: ", 
                     key, cache.Get(key) != null, part);
@@ -838,8 +838,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 cache.Put(val, new QueryPerson(val.ToString(), val));
 
-                if (expectedEntryFilter(val) && (!loc || cache.Ignite.Affinity(cache.Name)
-                    .IsPrimary(cache.Ignite.Cluster.LocalNode, val)))
+                if (expectedEntryFilter(val) && (!loc || cache.Ignite.GetAffinity(cache.Name)
+                    .IsPrimary(cache.Ignite.GetCluster().GetLocalNode(), val)))
                     exp.Add(val);
             }
 
