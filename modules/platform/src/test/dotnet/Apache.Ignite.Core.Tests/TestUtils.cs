@@ -243,19 +243,32 @@ namespace Apache.Ignite.Core.Tests
         public static void AssertHandleRegistryIsEmpty(int timeout, params IIgnite[] grids)
         {
             foreach (var g in grids)
-                AssertHandleRegistryIsEmpty(g, timeout);
+                AssertHandleRegistryHasItems(g, 0, timeout);
         }
 
         /// <summary>
-        /// Asserts that the handle registry is empty.
+        /// Asserts that the handle registry has specified number of entries.
+        /// </summary>
+        /// <param name="timeout">Timeout, in milliseconds.</param>
+        /// <param name="expectedCount">Expected item count.</param>
+        /// <param name="grids">Grids to check.</param>
+        public static void AssertHandleRegistryHasItems(int timeout, int expectedCount, params IIgnite[] grids)
+        {
+            foreach (var g in grids)
+                AssertHandleRegistryHasItems(g, expectedCount, timeout);
+        }
+
+        /// <summary>
+        /// Asserts that the handle registry has specified number of entries.
         /// </summary>
         /// <param name="grid">The grid to check.</param>
+        /// <param name="expectedCount">Expected item count.</param>
         /// <param name="timeout">Timeout, in milliseconds.</param>
-        public static void AssertHandleRegistryIsEmpty(IIgnite grid, int timeout)
+        public static void AssertHandleRegistryHasItems(IIgnite grid, int expectedCount, int timeout)
         {
             var handleRegistry = ((Ignite)grid).HandleRegistry;
 
-            if (WaitForCondition(() => handleRegistry.Count == 0, timeout))
+            if (WaitForCondition(() => handleRegistry.Count == expectedCount, timeout))
                 return;
 
             var items = handleRegistry.GetItems();
