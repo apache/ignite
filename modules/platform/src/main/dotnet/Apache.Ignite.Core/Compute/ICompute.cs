@@ -50,10 +50,7 @@ namespace Apache.Ignite.Core.Compute
         /// <summary>
         /// Grid projection to which this compute instance belongs.
         /// </summary>
-        IClusterGroup ClusterGroup
-        {
-            get;
-        }
+        IClusterGroup ClusterGroup { get; }
 
         /// <summary>
         /// Sets no-failover flag for the next executed task on this projection in the current thread.

@@ -181,7 +181,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             for (int i = 0; i < 10000; i++)
                 cacheClient.Put(new DynamicTestKey(i), new DynamicTestValue(1));
 
-            int sizeClient = cacheClient.LocalSize();
+            int sizeClient = cacheClient.GetLocalSize();
 
             Assert.AreEqual(0, sizeClient);
         }

@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             var cache = GetCache();
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             const int minId = 113;
             const int expectedItemCount = CacheTestParallelLoadStore.InputDataLength - minId;
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             cache.LocalLoadCache(null, minId);
 
-            Assert.AreEqual(expectedItemCount, cache.Size());
+            Assert.AreEqual(expectedItemCount, cache.GetSize());
 
             // check items presence; increment by 100 to speed up the test
             for (var i = minId; i < expectedItemCount; i += 100)

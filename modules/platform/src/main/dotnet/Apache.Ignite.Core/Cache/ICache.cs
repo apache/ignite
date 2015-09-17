@@ -68,12 +68,12 @@ namespace Apache.Ignite.Core.Cache
         /// <para />
         /// Semantically equals to <c>ICache.Size(CachePeekMode.PRIMARY) == 0</c>.
         /// </summary>
-        bool IsEmpty { get; }
+        bool IsEmpty();
 
         /// <summary>
         /// Gets a value indicating whether to keep values in portable form.
         /// </summary>
-        bool KeepPortable { get; }
+        bool IsKeepPortable { get; }
 
         /// <summary>
         /// Get another cache instance with read-through and write-through behavior disabled.
@@ -384,7 +384,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
         /// <returns>Cache size on this node.</returns>
-        int LocalSize(params CachePeekMode[] modes);
+        int GetLocalSize(params CachePeekMode[] modes);
 
         /// <summary>
         /// Gets the number of all entries cached across all nodes.
@@ -394,7 +394,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
         /// <returns>Cache size across all nodes.</returns>
         [AsyncSupported]
-        int Size(params CachePeekMode[] modes);
+        int GetSize(params CachePeekMode[] modes);
 
         /// <summary>
         /// This method unswaps cache entries by given keys, if any, from swap storage into memory.

@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             cache.Clear();
 
-            Assert.IsTrue(cache.IsEmpty, "Cache is not empty: " + cache.Size());
+            Assert.IsTrue(cache.IsEmpty(), "Cache is not empty: " + cache.GetSize());
 
             CacheTestStore.Reset();
 
@@ -174,11 +174,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             cache.LoadCache(new CacheEntryFilter(), 100, 10);
 
-            Assert.AreEqual(5, cache.Size());
+            Assert.AreEqual(5, cache.GetSize());
 
             for (int i = 105; i < 110; i++)
                 Assert.AreEqual("val_" + i, cache.Get(i));
@@ -189,11 +189,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             cache.LocalLoadCache(new CacheEntryFilter(), 100, 10);
 
-            Assert.AreEqual(5, cache.Size());
+            Assert.AreEqual(5, cache.GetSize());
 
             for (int i = 105; i < 110; i++)
                 Assert.AreEqual("val_" + i, cache.Get(i));
@@ -206,11 +206,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             cache.LocalLoadCache(null, 0, 3);
 
-            Assert.AreEqual(3, cache.Size());
+            Assert.AreEqual(3, cache.GetSize());
 
             var meta = cache.WithKeepPortable<Key, IPortableObject>().Get(new Key(0)).Metadata();
 
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             var cache = Cache().WithAsync();
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             cache.LocalLoadCache(new CacheEntryFilter(), 100, 10);
 
@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.IsTrue(fut.IsDone);
 
-            cache.Size();
+            cache.GetSize();
             Assert.AreEqual(5, cache.GetFuture<int>().ToTask().Result);
 
             for (int i = 105; i < 110; i++)
@@ -258,11 +258,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             cache.LocalEvict(new[] { 1 });
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             Assert.AreEqual("val", cache.Get(1));
 
-            Assert.AreEqual(1, cache.Size());
+            Assert.AreEqual(1, cache.GetSize());
         }
 
         [Test]
@@ -282,11 +282,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             cache.LocalEvict(new[] { 1 });
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             Assert.AreEqual(1, cache.Get(1).Index());
 
-            Assert.AreEqual(1, cache.Size());
+            Assert.AreEqual(1, cache.GetSize());
         }
 
         [Test]
@@ -306,11 +306,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             cache.LocalEvict(new[] { 1 });
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             Assert.AreEqual(1, cache.Get(1).Index());
 
-            Assert.AreEqual(1, cache.Size());
+            Assert.AreEqual(1, cache.GetSize());
         }
 
         [Test]
@@ -334,7 +334,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             cache.Clear();
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             ICollection<int> keys = new List<int>();
 
@@ -348,7 +348,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             for (int i = 0; i < 10; i++)
                 Assert.AreEqual("val_" + i, loaded[i]);
 
-            Assert.AreEqual(10, cache.Size());
+            Assert.AreEqual(10, cache.GetSize());
         }
 
         [Test]
@@ -422,11 +422,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             cache.LocalLoadCache(null, 0, null);
 
-            Assert.AreEqual(1000, cache.Size());
+            Assert.AreEqual(1000, cache.GetSize());
 
             for (int i = 0; i < 1000; i++)
                 Assert.AreEqual("val_" + i, cache.Get(i));

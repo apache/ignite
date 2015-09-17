@@ -349,7 +349,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 var cache = Cache(i);
 
-                if (!cache.IsEmpty)
+                if (!cache.IsEmpty())
                 {
                     var entries = Enumerable.Range(0, 2000)
                         .Select(x => new KeyValuePair<int, int>(x, cache.LocalPeek(x)))
@@ -431,7 +431,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 var cache = Cache(i);
 
-                Assert.IsTrue(cache.IsEmpty);
+                Assert.IsTrue(cache.IsEmpty());
             }
 
             for (int i = 0; i < GridCount(); i++)
@@ -445,7 +445,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 var cache = Cache(i);
 
-                Assert.IsFalse(cache.IsEmpty);
+                Assert.IsFalse(cache.IsEmpty());
             }
         }
 
@@ -1015,13 +1015,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalEvict(new[] {key});
 
-            Assert.AreEqual(0, cache.LocalSize(CachePeekMode.Onheap));
+            Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(0, PeekInt(cache, key));
 
             Assert.AreEqual(1, cache.Get(key));
 
-            Assert.AreEqual(1, cache.LocalSize(CachePeekMode.Onheap));
+            Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(1, PeekInt(cache, key));
         }
@@ -1043,7 +1043,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalEvict(new List<int> { -1, keys[0], keys[1] });
 
-            Assert.AreEqual(1, cache.LocalSize(CachePeekMode.Onheap));
+            Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(0, PeekInt(cache, keys[0]));
             Assert.AreEqual(0, PeekInt(cache, keys[1]));
@@ -1052,7 +1052,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache.Get(keys[0]));
             Assert.AreEqual(2, cache.Get(keys[1]));
 
-            Assert.AreEqual(3, cache.LocalSize());
+            Assert.AreEqual(3, cache.GetLocalSize());
 
             Assert.AreEqual(1, PeekInt(cache, keys[0]));
             Assert.AreEqual(2, PeekInt(cache, keys[1]));
@@ -1068,13 +1068,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 cache.Put(PrimaryKeyForCache(cache, 500), 1);
 
-                Assert.IsFalse(cache.IsEmpty);
+                Assert.IsFalse(cache.IsEmpty());
             }
 
             Cache().Clear();
 
             for (int i = 0; i < GridCount(); i++)
-                Assert.IsTrue(Cache(i).IsEmpty);
+                Assert.IsTrue(Cache(i).IsEmpty());
         }
 
         [Test]
@@ -1086,7 +1086,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             foreach (var key in keys)
                 cache.Put(key, 3);
 
-            var i = cache.Size();
+            var i = cache.GetSize();
 
             foreach (var key in keys)
             {
@@ -1094,9 +1094,9 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 Assert.AreEqual(0, cache.Get(key));
 
-                Assert.Less(cache.Size(), i);
+                Assert.Less(cache.GetSize(), i);
 
-                i = cache.Size();
+                i = cache.GetSize();
             }
         }
 
@@ -1124,7 +1124,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             foreach (var key in keys)
                 cache.Put(key, 3);
 
-            var i = cache.Size();
+            var i = cache.GetSize();
 
             foreach (var key in keys)
             {
@@ -1132,9 +1132,9 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 Assert.AreEqual(0, cache.LocalPeek(key));
 
-                Assert.Less(cache.Size(), i);
+                Assert.Less(cache.GetSize(), i);
 
-                i = cache.Size();
+                i = cache.GetSize();
             }
 
             cache.Clear();
@@ -1168,7 +1168,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(true, cache.Remove(1));
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             Assert.AreEqual(0, cache.Get(1));
 
@@ -1179,7 +1179,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.Remove(1, -1));
             Assert.IsTrue(cache.Remove(1, 1));
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             Assert.AreEqual(0, cache.Get(1));
         }
@@ -1195,7 +1195,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(1, cache.GetAndRemove(1));
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             Assert.AreEqual(0, cache.Get(1));
 
@@ -1206,7 +1206,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.Remove(1, -1));
             Assert.IsTrue(cache.Remove(1, 1));
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             Assert.AreEqual(0, cache.Get(1));
         }
@@ -1223,7 +1223,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.Remove(-1));
             Assert.IsTrue(cache.Remove(1));
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             Assert.AreEqual(0, cache.Get(1));
         }
@@ -1240,7 +1240,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache.Remove(-1));
             Assert.IsTrue(cache.Remove(1));
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             Assert.AreEqual(0, cache.Get(1));
         }
@@ -1260,7 +1260,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.RemoveAll();
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             Assert.AreEqual(0, cache.Get(keys[0]));
             Assert.AreEqual(0, cache.Get(keys[1]));
@@ -1281,7 +1281,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.RemoveAll();
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             Assert.AreEqual(0, cache.Get(keys[0]));
             Assert.AreEqual(0, cache.Get(keys[1]));
@@ -1292,7 +1292,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             cache.Put(1, 1);
             cache.Put(2, 2);
@@ -1304,7 +1304,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.RemoveAll(new List<int> { 0, 1, 2 });
 
-            Assert.AreEqual(1, cache.Size(CachePeekMode.Primary));
+            Assert.AreEqual(1, cache.GetSize(CachePeekMode.Primary));
 
             Assert.AreEqual(0, cache.Get(1));
             Assert.AreEqual(0, cache.Get(2));
@@ -1316,7 +1316,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache().WithAsync().WrapAsync();
 
-            Assert.AreEqual(0, cache.Size());
+            Assert.AreEqual(0, cache.GetSize());
 
             cache.Put(1, 1);
             cache.Put(2, 2);
@@ -1328,7 +1328,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.RemoveAll(new List<int> { 0, 1, 2 });
 
-            Assert.AreEqual(1, cache.Size(CachePeekMode.Primary));
+            Assert.AreEqual(1, cache.GetSize(CachePeekMode.Primary));
 
             Assert.AreEqual(0, cache.Get(1));
             Assert.AreEqual(0, cache.Get(2));
@@ -1347,13 +1347,13 @@ namespace Apache.Ignite.Core.Tests.Cache
                 foreach (int key in keys)
                     cache.Put(key, 1);
 
-                Assert.IsTrue(cache.Size() >= 2);
-                Assert.AreEqual(2, cache.LocalSize(CachePeekMode.Primary));
+                Assert.IsTrue(cache.GetSize() >= 2);
+                Assert.AreEqual(2, cache.GetLocalSize(CachePeekMode.Primary));
             }
 
             ICache<int, int> cache0 = Cache();
 
-            Assert.AreEqual(GridCount() * 2, cache0.Size(CachePeekMode.Primary));
+            Assert.AreEqual(GridCount() * 2, cache0.GetSize(CachePeekMode.Primary));
 
             if (!LocalCache() && !ReplicatedCache())
             {
@@ -1361,7 +1361,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 cache0.Put(nearKey, 1);
 
-                Assert.AreEqual(NearEnabled() ? 1 : 0, cache0.Size(CachePeekMode.Near));
+                Assert.AreEqual(NearEnabled() ? 1 : 0, cache0.GetSize(CachePeekMode.Near));
             }
         }
 
@@ -1374,16 +1374,16 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Put(keys[0], 1);
             cache.Put(keys[1], 2);
 
-            var localSize = cache.LocalSize();
+            var localSize = cache.GetLocalSize();
 
             cache.LocalEvict(keys.Take(2).ToArray());
 
-            Assert.AreEqual(0, cache.LocalSize(CachePeekMode.Onheap));
-            Assert.AreEqual(localSize, cache.LocalSize(CachePeekMode.All));
+            Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));
+            Assert.AreEqual(localSize, cache.GetLocalSize(CachePeekMode.All));
 
             cache.Put(keys[2], 3);
 
-            Assert.AreEqual(localSize + 1, cache.LocalSize(CachePeekMode.All));
+            Assert.AreEqual(localSize + 1, cache.GetLocalSize(CachePeekMode.All));
 
             cache.RemoveAll(keys.Take(2).ToArray());
         }
@@ -1495,13 +1495,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalEvict(new[] {key});
 
-            Assert.AreEqual(0, cache.LocalSize(CachePeekMode.Onheap));
+            Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(0, PeekInt(cache, key));
 
             cache.LocalPromote(new[] { key });
 
-            Assert.AreEqual(1, cache.LocalSize(CachePeekMode.Onheap));
+            Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(1, PeekInt(cache, key));
         }
@@ -1523,7 +1523,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalEvict(new List<int> { -1, keys[0], keys[1] });
 
-            Assert.AreEqual(1, cache.LocalSize(CachePeekMode.Onheap));
+            Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(0, PeekInt(cache, keys[0]));
             Assert.AreEqual(0, PeekInt(cache, keys[1]));
@@ -1531,7 +1531,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalPromote(new[] {keys[0], keys[1]});
 
-            Assert.AreEqual(3, cache.LocalSize(CachePeekMode.Onheap));
+            Assert.AreEqual(3, cache.GetLocalSize(CachePeekMode.Onheap));
 
             Assert.AreEqual(1, PeekInt(cache, keys[0]));
             Assert.AreEqual(2, PeekInt(cache, keys[1]));
@@ -3004,7 +3004,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreSame(cacheSkipStore1, cacheSkipStore2);
 
             // Ensure other flags are preserved.
-            Assert.IsTrue(((CacheProxyImpl<int, int>)cache.WithKeepPortable<int, int>().WithSkipStore()).KeepPortable);
+            Assert.IsTrue(((CacheProxyImpl<int, int>)cache.WithKeepPortable<int, int>().WithSkipStore()).IsKeepPortable);
             Assert.IsTrue(cache.WithAsync().WithSkipStore().IsAsync);
         }
 
@@ -3019,7 +3019,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(cache.Name, m.CacheName);
 
-            Assert.AreEqual(cache.Size(), m.Size);
+            Assert.AreEqual(cache.GetSize(), m.Size);
         }
 
         [Test]

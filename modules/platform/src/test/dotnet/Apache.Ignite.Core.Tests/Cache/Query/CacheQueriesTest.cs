@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 for (int j = 0; j < MaxItemCnt; j++)
                     cache.Remove(j);
 
-                Assert.IsTrue(cache.IsEmpty);
+                Assert.IsTrue(cache.IsEmpty());
             }
 
             Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);

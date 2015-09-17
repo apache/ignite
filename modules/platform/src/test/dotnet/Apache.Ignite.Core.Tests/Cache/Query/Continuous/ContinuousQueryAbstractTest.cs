@@ -147,8 +147,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             cache1.Remove(PrimaryKey(cache1));
             cache1.Remove(PrimaryKey(cache2));
 
-            Assert.AreEqual(0, cache1.Size());
-            Assert.AreEqual(0, cache2.Size());
+            Assert.AreEqual(0, cache1.GetSize());
+            Assert.AreEqual(0, cache2.GetSize());
 
             Console.WriteLine("Test started: " + TestContext.CurrentContext.Test.Name);
         }

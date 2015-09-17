@@ -338,7 +338,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             {
                 _cache.Clear();
 
-                Assert.AreEqual(0, _cache.Size());
+                Assert.AreEqual(0, _cache.GetSize());
 
                 Stopwatch watch = new Stopwatch();
 
