@@ -97,3 +97,4 @@ IgniteServicesCancel @94
 IgniteServicesCancelAll @95
 IgniteServicesGetServiceProxy @96
 IgniteProcessorExtensions @97
+IgniteProcessorAtomicLong @98
