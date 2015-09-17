@@ -34,10 +34,9 @@ namespace Apache.Ignite.Examples.Datagrid
     /// <para />
     /// This example can be run in conjunction with standalone Apache Ignite .Net node.
     /// To start standalone node please do the following:
-    /// 1) Build the project Apache.Ignite.ExamplesDll if you haven't done it yet (select it -> right-click -> Build);
-    /// 2) Locate created Apache.Ignite.ExamplesDll.dll file (Apache.Ignite.ExamplesDll project -> right-click ->
-    ///     Properties -> Build -> Output path);
-    /// 3) Go to .Net binaries folder [IGNITE_HOME]\platforms\dotnet and run Apache.Ignite.exe as follows:
+    /// 1) Build the project Apache.Ignite.ExamplesDll if you havent't done it yet (select it -> right-click -> Build);
+    /// 2) Locate created Apache.Ignite.ExamplesDll.dll file (Apache.Ignite.ExamplesDll project -> right-click -> Properties -> Build -> Output path);
+    /// 3) Locate Apache.Ignite.exe file (Apache.Ignite project -> right-click -> Properties -> Build -> Output path)
     /// Apache.Ignite.exe -IgniteHome=[path_to_IGNITE_HOME] -springConfigUrl=modules\platform\src\main\dotnet\examples\config\example-cache-store.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// </summary>
     class StoreExample

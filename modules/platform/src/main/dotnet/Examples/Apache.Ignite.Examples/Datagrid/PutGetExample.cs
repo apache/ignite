@@ -37,7 +37,7 @@ namespace Apache.Ignite.Examples.Datagrid
     /// <para />
     /// This example can be run in conjunction with standalone Apache Ignite .Net node.
     /// To start standalone node please do the following:
-    /// 1) Go to .Net binaries folder [IGNITE_HOME]\platforms\dotnet and run Apache.Ignite.exe as follows:
+    /// 1) Locate Apache.Ignite.exe file (Apache.Ignite project -> right-click -> Properties -> Build -> Output path)
     /// Apache.Ignite.exe -IgniteHome=[path_to_IGNITE_HOME] -springConfigUrl=modules\platform\src\main\dotnet\examples\config\example-cache.xml
     /// </summary>
     public class PutGetExample
