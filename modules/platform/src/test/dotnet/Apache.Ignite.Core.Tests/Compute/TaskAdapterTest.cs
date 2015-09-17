@@ -188,7 +188,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 Assert.NotNull(_grid);
 
-                return _grid.GetCluster().LocalNode.Id;
+                return _grid.GetCluster().GetLocalNode().Id;
             }
 
             /** <inheritDoc /> */

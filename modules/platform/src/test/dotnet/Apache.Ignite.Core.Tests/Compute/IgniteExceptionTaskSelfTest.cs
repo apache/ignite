@@ -429,7 +429,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 var jobs = new Dictionary<IComputeJob<object>, IClusterNode>();
 
                 foreach (IClusterNode node in subgrid)
-                    jobs.Add(new GoodJob(!_grid.GetCluster().LocalNode.Id.Equals(node.Id)), node);
+                    jobs.Add(new GoodJob(!_grid.GetCluster().GetLocalNode().Id.Equals(node.Id)), node);
 
                 return jobs;
             }

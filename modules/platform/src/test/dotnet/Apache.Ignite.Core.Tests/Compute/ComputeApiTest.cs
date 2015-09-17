@@ -474,7 +474,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             IClusterGroup prj = _grid1.GetCluster().ForLocal();
 
             Assert.AreEqual(1, prj.GetNodes().Count);
-            Assert.AreEqual(_grid1.GetCluster().LocalNode, prj.GetNodes().First());
+            Assert.AreEqual(_grid1.GetCluster().GetLocalNode(), prj.GetNodes().First());
         }
 
         /// <summary>
@@ -1002,7 +1002,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             const string cacheName = null;
 
             // Test keys for non-client nodes
-            var nodes = new[] {_grid1, _grid2}.Select(x => x.GetCluster().LocalNode);
+            var nodes = new[] {_grid1, _grid2}.Select(x => x.GetCluster().GetLocalNode());
 
             var aff = _grid1.GetAffinity(cacheName);
 
@@ -1027,7 +1027,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             const string cacheName = null;
 
             // Test keys for non-client nodes
-            var nodes = new[] { _grid1, _grid2 }.Select(x => x.GetCluster().LocalNode);
+            var nodes = new[] { _grid1, _grid2 }.Select(x => x.GetCluster().GetLocalNode());
 
             var aff = _grid1.GetAffinity(cacheName);
 
@@ -1228,7 +1228,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void Invoke()
         {
             Interlocked.Increment(ref InvokeCount);
-            LastNodeId = _grid.GetCluster().LocalNode.Id;
+            LastNodeId = _grid.GetCluster().GetLocalNode().Id;
         }
     }
 
@@ -1255,7 +1255,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         int IComputeFunc<int>.Invoke()
         {
             InvokeCount++;
-            LastNodeId = _grid.GetCluster().LocalNode.Id;
+            LastNodeId = _grid.GetCluster().GetLocalNode().Id;
             return InvokeCount;
         }
 

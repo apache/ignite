@@ -470,7 +470,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var grid = (Ignite) _grid1;
             var comp = (Impl.Compute.Compute) grid.GetCluster().ForLocal().GetCompute();
-            var locNode = grid.GetCluster().LocalNode;
+            var locNode = grid.GetCluster().GetLocalNode();
 
             var expectedGuid = Guid.Parse("00000000-0000-0001-0000-000000000002");
             var expectedGridGuid = new IgniteGuid(expectedGuid, 3);
@@ -571,7 +571,7 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="evt">The evt.</param>
         private void CheckEventBase(IEvent evt)
         {
-            var locNode = _grid1.GetCluster().LocalNode;
+            var locNode = _grid1.GetCluster().GetLocalNode();
 
             Assert.AreEqual(locNode, evt.Node);
             Assert.AreEqual("msg", evt.Message);
@@ -679,8 +679,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(null, cacheEvent.CacheName);
                 Assert.AreEqual(null, cacheEvent.ClosureClassName);
                 Assert.AreEqual(null, cacheEvent.TaskName);
-                Assert.AreEqual(grid.GetCluster().LocalNode, cacheEvent.EventNode);
-                Assert.AreEqual(grid.GetCluster().LocalNode, cacheEvent.Node);
+                Assert.AreEqual(grid.GetCluster().GetLocalNode(), cacheEvent.EventNode);
+                Assert.AreEqual(grid.GetCluster().GetLocalNode(), cacheEvent.Node);
 
                 Assert.AreEqual(false, cacheEvent.HasOldValue);
                 Assert.AreEqual(null, cacheEvent.OldValue);

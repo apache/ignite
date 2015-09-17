@@ -351,11 +351,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         private static Guid GridId(string gridName)
         {
             if (gridName.Equals(Grid1Name))
-                return Ignition.GetIgnite(Grid1Name).GetCluster().LocalNode.Id;
+                return Ignition.GetIgnite(Grid1Name).GetCluster().GetLocalNode().Id;
             if (gridName.Equals(Grid2Name))
-                return Ignition.GetIgnite(Grid2Name).GetCluster().LocalNode.Id;
+                return Ignition.GetIgnite(Grid2Name).GetCluster().GetLocalNode().Id;
             if (gridName.Equals(Grid3Name))
-                return Ignition.GetIgnite(Grid3Name).GetCluster().LocalNode.Id;
+                return Ignition.GetIgnite(Grid3Name).GetCluster().GetLocalNode().Id;
 
             Assert.Fail("Failed to find grid " + gridName);
 

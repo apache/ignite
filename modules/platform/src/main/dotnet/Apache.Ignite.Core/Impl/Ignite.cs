@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
@@ -121,7 +122,7 @@ namespace Apache.Ignite.Core.Impl
 
             // Grid is not completely started here, can't initialize interop transactions right away.
             _transactions = new Lazy<TransactionsImpl>(
-                    () => new TransactionsImpl(UU.ProcessorTransactions(proc), marsh, LocalNode.Id));
+                    () => new TransactionsImpl(UU.ProcessorTransactions(proc), marsh, GetLocalNode().Id));
         }
 
         /// <summary>
@@ -164,7 +165,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IClusterGroup ForLocal()
         {
-            return _prj.ForNodes(LocalNode);
+            return _prj.ForNodes(GetLocalNode());
         }
 
         /** <inheritdoc /> */
@@ -351,25 +352,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IClusterNode LocalNode
+        public IClusterNode GetLocalNode()
         {
-            get
-            {
-                if (_locNode == null)
-                {
-                    foreach (IClusterNode node in GetNodes())
-                    {
-                        if (node.IsLocal)
-                        {
-                            _locNode = node;
-
-                            break;
-                        }
-                    }
-                }
-
-                return _locNode;
-            }
+            return _locNode ?? (_locNode = GetNodes().FirstOrDefault(x => x.IsLocal));
         }
 
         /** <inheritdoc /> */

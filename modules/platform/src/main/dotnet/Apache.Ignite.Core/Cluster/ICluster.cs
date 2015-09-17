@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Cluster
         /// Gets local Ignite node.
         /// </summary>
         /// <returns>Local Ignite node.</returns>
-        IClusterNode LocalNode { get; }
+        IClusterNode GetLocalNode();
 
         /// <summary>
         /// Pings a remote node.
