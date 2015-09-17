@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.NotNull(res);
 
-            Assert.AreEqual(400, res.Field<int>("val"));
+            Assert.AreEqual(400, res.GetField<int>("val"));
 
             PortableTaskResult resObj = res.Deserialize<PortableTaskResult>();
 
@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 Assert.IsNotNull(taskArg);
 
-                Assert.AreEqual(100, taskArg.Field<int>("val"));
+                Assert.AreEqual(100, taskArg.GetField<int>("val"));
 
                 PortableTaskArgument taskArgObj = taskArg.Deserialize<PortableTaskArgument>();
 
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                     Assert.NotNull(jobRes);
 
-                    Assert.AreEqual(300, jobRes.Field<int>("val"));
+                    Assert.AreEqual(300, jobRes.GetField<int>("val"));
 
                     PortableJobResult jobResObj = jobRes.Deserialize<PortableJobResult>();
 
@@ -235,7 +235,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 Assert.IsNotNull(Arg);
 
-                Assert.AreEqual(200, Arg.Field<int>("val"));
+                Assert.AreEqual(200, Arg.GetField<int>("val"));
 
                 PortableJobArgument argObj = Arg.Deserialize<PortableJobArgument>();
 

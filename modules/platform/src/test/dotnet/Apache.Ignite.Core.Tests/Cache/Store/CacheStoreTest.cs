@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.AreEqual(3, cache.GetSize());
 
-            var meta = cache.WithKeepPortable<Key, IPortableObject>().Get(new Key(0)).Metadata();
+            var meta = cache.WithKeepPortable<Key, IPortableObject>().Get(new Key(0)).GetMetadata();
 
             Assert.NotNull(meta);
 
@@ -278,7 +278,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             IPortableObject v = (IPortableObject)map[1];
 
-            Assert.AreEqual(1, v.Field<int>("_idx"));
+            Assert.AreEqual(1, v.GetField<int>("_idx"));
 
             cache.LocalEvict(new[] { 1 });
 

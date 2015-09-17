@@ -820,7 +820,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             IPortableObject res = compute.ExecuteJavaTask<IPortableObject>(EchoTask, EchoTypePortableJava);
 
-            Assert.AreEqual(1, res.Field<int>("field"));
+            Assert.AreEqual(1, res.GetField<int>("field"));
 
             // This call must fail because "keepPortable" flag is reset.
             Assert.Catch(typeof(PortableException), () =>

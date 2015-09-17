@@ -713,8 +713,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     {
                         all.Add(entry);
 
-                        Assert.AreEqual(entry.Key.ToString(), entry.Value.Field<string>("name"));
-                        Assert.AreEqual(entry.Key, entry.Value.Field<int>("age"));
+                        Assert.AreEqual(entry.Key.ToString(), entry.Value.GetField<string>("name"));
+                        Assert.AreEqual(entry.Key, entry.Value.GetField<int>("age"));
 
                         exp0.Remove(entry.Key);
                     }
@@ -731,8 +731,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     {
                         all.Add(entry);
 
-                        Assert.AreEqual(entry.Key.ToString(), entry.Value.Field<string>("name"));
-                        Assert.AreEqual(entry.Key, entry.Value.Field<int>("age"));
+                        Assert.AreEqual(entry.Key.ToString(), entry.Value.GetField<string>("name"));
+                        Assert.AreEqual(entry.Key, entry.Value.GetField<int>("age"));
 
                         exp0.Remove(entry.Key);
                     }

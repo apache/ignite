@@ -1812,8 +1812,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     IPortableObject p = portCache.Get(new CacheTestKey(key));
 
                     Assert.IsNotNull(p);
-                    Assert.AreEqual(key, p.Field<int>("age"));
-                    Assert.AreEqual("Person-" + key, p.Field<string>("name"));
+                    Assert.AreEqual(key, p.GetField<int>("age"));
+                    Assert.AreEqual("Person-" + key, p.GetField<string>("name"));
                 }
             }
 
@@ -1843,8 +1843,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     var p = fut.Get();
 
                     Assert.IsNotNull(p);
-                    Assert.AreEqual(key, p.Field<int>("age"));
-                    Assert.AreEqual("Person-" + key, p.Field<string>("name"));
+                    Assert.AreEqual(key, p.GetField<int>("age"));
+                    Assert.AreEqual("Person-" + key, p.GetField<string>("name"));
                 }
             }, threads);
 
@@ -3138,8 +3138,8 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         private void CheckPersonData(IPortableObject obj, string expName, int expAge)
         {
-            Assert.AreEqual(expName, obj.Field<string>("name"));
-            Assert.AreEqual(expAge, obj.Field<int>("age"));
+            Assert.AreEqual(expName, obj.GetField<string>("name"));
+            Assert.AreEqual(expAge, obj.GetField<int>("age"));
 
             PortablePerson person = obj.Deserialize<PortablePerson>();
 

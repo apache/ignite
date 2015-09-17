@@ -22,23 +22,37 @@ namespace Apache.Ignite.Core.Portable
     /// </summary>
     public interface IPortableObject
     {
-        /// <summary>Gets portable object type ID.</summary>
-        /// <returns>Type ID.</returns>
-        int TypeId();
+        /// <summary>
+        /// Gets portable object type ID.
+        /// </summary>
+        /// <value>
+        /// Type ID.
+        /// </value>
+        int TypeId { get; }
 
         /// <summary>
         /// Gets object metadata.
         /// </summary>
         /// <returns>Metadata.</returns>
-        IPortableMetadata Metadata();
+        IPortableMetadata GetMetadata();
 
-        /// <summary>Gets field value.</summary>
+        /// <summary>
+        /// Gets field value.
+        /// </summary>
+        /// <typeparam name="TF">The type of the f.</typeparam>
         /// <param name="fieldName">Field name.</param>
-        /// <returns>Field value.</returns>
-        TF Field<TF>(string fieldName);
+        /// <returns>
+        /// Field value.
+        /// </returns>
+        TF GetField<TF>(string fieldName);
 
-        /// <summary>Gets fully deserialized instance of portable object.</summary>
-        /// <returns>Fully deserialized instance of portable object.</returns>
+        /// <summary>
+        /// Gets fully deserialized instance of portable object.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns>
+        /// Fully deserialized instance of portable object.
+        /// </returns>
         T Deserialize<T>();
     }
 }
