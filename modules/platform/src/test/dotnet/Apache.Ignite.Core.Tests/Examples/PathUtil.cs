@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         public static readonly string IgniteHome = IgniteManager.GetIgniteHome(null);
 
         /// <summary>
-        /// Full GridGain.exe path.
+        /// Full Apache.Ignite.exe path.
         /// </summary>
         public static readonly string IgniteExePath = typeof(IgniteRunner).Assembly.Location;
 

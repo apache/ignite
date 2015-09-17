@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         }
 
         /// <summary>
-        /// Tests the example with standalone GridGain.exe nodes.
+        /// Tests the example with standalone Apache.Ignite.exe nodes.
         /// </summary>
         /// <param name="example">The example to run.</param>
         [Test, TestCaseSource("TestCases")]
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         }
 
         /// <summary>
-        /// Tests the example with standalone GridGain.exe nodes while local node is in client mode.
+        /// Tests the example with standalone Apache.Ignite.exe nodes while local node is in client mode.
         /// </summary>
         /// <param name="example">The example to run.</param>
         [Test, TestCaseSource("TestCases")]
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         }
 
         /// <summary>
-        /// Tests the example with standalone GridGain.exe nodes.
+        /// Tests the example with standalone Apache.Ignite.exe nodes.
         /// </summary>
         /// <param name="example">The example to run.</param>
         /// <param name="clientMode">Client mode flag.</param>
