@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -317,6 +318,13 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         finally {
             storeLock.readLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException {
+        IgniteAtomicLong atomicLong = ignite().atomicLong(name, initVal, create);
+
+        return new PlatformAtomicLong(platformCtx, atomicLong);
     }
 
     /**

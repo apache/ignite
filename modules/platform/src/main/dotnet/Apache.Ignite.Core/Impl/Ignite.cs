@@ -429,6 +429,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IAtomicLong GetAtomicLong(string name, long initialValue, bool create)
         {
+            // TODO: UU.ProcessorAtomicLong
             throw new NotImplementedException();
         }
 
