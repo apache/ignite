@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Examples
 {
-    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Text.RegularExpressions;
@@ -41,14 +40,6 @@ namespace Apache.Ignite.Core.Tests.Examples
                 .Select(match => Path.Combine(PathUtil.IgniteHome, match.Value))
                 .ToList()
                 .ForEach(path => Assert.IsTrue(File.Exists(path), "Config file does not exist: " + path));
-        }
-
-        /// <summary>
-        /// Reads the file.
-        /// </summary>
-        private static IEnumerable<string> ReadFile(string path)
-        {
-            return File.ReadAllLines(path).Select(x => x.Trim());
         }
     }
 }
