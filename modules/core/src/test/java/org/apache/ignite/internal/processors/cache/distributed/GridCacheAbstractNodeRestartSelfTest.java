@@ -17,26 +17,43 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
 
-import javax.cache.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.configuration.CacheConfiguration.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.configuration.CacheConfiguration.DFLT_REBALANCE_BATCH_SIZE;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Test node restart.
@@ -95,6 +112,9 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     private int retries = DFLT_RETRIES;
 
     /** */
+    private GridTestUtils.TestMemoryMode memMode = GridTestUtils.TestMemoryMode.HEAP;
+
+    /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
@@ -114,11 +134,23 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         c.setDiscoverySpi(disco);
 
+        CacheConfiguration ccfg = cacheConfiguration();
+
+        GridTestUtils.setMemoryMode(c, ccfg, memMode, 100, 1024);
+
+        c.setCacheConfiguration(ccfg);
+
         return c;
     }
 
+    /**
+     * @return Cache configuration.
+     */
+    protected abstract CacheConfiguration cacheConfiguration();
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -265,7 +297,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         long duration = 30000;
 
-        checkRestartWithTx(duration, 1, 1);
+        checkRestartWithTx(duration, 1, 1, 3);
     }
 
     /**
@@ -295,7 +327,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         long duration = 30000;
 
-        checkRestartWithTx(duration, 1, 1);
+        checkRestartWithTx(duration, 1, 1, 3);
     }
 
     /**
@@ -325,7 +357,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         long duration = 60000;
 
-        checkRestartWithTx(duration, 2, 2);
+        checkRestartWithTx(duration, 2, 2, 3);
     }
 
     /**
@@ -346,6 +378,59 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    public void testRestartWithPutFourNodesOneBackupsSwap() throws Throwable {
+        restartWithPutFourNodesOneBackupsWithMemoryMode(GridTestUtils.TestMemoryMode.SWAP);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRestartWithPutFourNodesOneBackupsOffheapTiered() throws Throwable {
+        restartWithPutFourNodesOneBackupsWithMemoryMode(GridTestUtils.TestMemoryMode.OFFHEAP_TIERED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRestartWithPutFourNodesOneBackupsOffheapTieredSwap() throws Throwable {
+        restartWithPutFourNodesOneBackupsWithMemoryMode(GridTestUtils.TestMemoryMode.OFFHEAP_TIERED_SWAP);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRestartWithPutFourNodesOneBackupsOffheapEvict() throws Throwable {
+        restartWithPutFourNodesOneBackupsWithMemoryMode(GridTestUtils.TestMemoryMode.OFFHEAP_EVICT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRestartWithPutFourNodesOneBackupsOffheapEvictSwap() throws Throwable {
+        restartWithPutFourNodesOneBackupsWithMemoryMode(GridTestUtils.TestMemoryMode.OFFHEAP_EVICT_SWAP);
+    }
+
+    /**
+     * @param memMode Memory mode.
+     * @throws Throwable If failed.
+     */
+    private void restartWithPutFourNodesOneBackupsWithMemoryMode(GridTestUtils.TestMemoryMode memMode)
+        throws Throwable {
+        backups = 1;
+        nodeCnt = 4;
+        keyCnt = 100_000;
+        partitions = 29;
+        rebalancMode = ASYNC;
+        this.memMode = memMode;
+
+        long duration = 30_000;
+
+        checkRestartWithPut(duration, 2, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testRestartWithTxFourNodesOneBackups() throws Throwable {
         backups = 1;
         nodeCnt = 4;
@@ -355,7 +440,59 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         long duration = 60000;
 
-        checkRestartWithTx(duration, 2, 2);
+        checkRestartWithTx(duration, 2, 2, 3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRestartWithTxFourNodesOneBackupsSwap() throws Throwable {
+        restartWithTxFourNodesOneBackupsWithMemoryMode(GridTestUtils.TestMemoryMode.SWAP);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRestartWithTxFourNodesOneBackupsOffheapTiered() throws Throwable {
+        restartWithTxFourNodesOneBackupsWithMemoryMode(GridTestUtils.TestMemoryMode.OFFHEAP_TIERED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRestartWithTxFourNodesOneBackupsOffheapTieredSwap() throws Throwable {
+        restartWithTxFourNodesOneBackupsWithMemoryMode(GridTestUtils.TestMemoryMode.OFFHEAP_TIERED_SWAP);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRestartWithTxFourNodesOneBackupsOffheapEvict() throws Throwable {
+        restartWithTxFourNodesOneBackupsWithMemoryMode(GridTestUtils.TestMemoryMode.OFFHEAP_EVICT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRestartWithTxFourNodesOneBackupsOffheapEvictSwap() throws Throwable {
+        restartWithTxFourNodesOneBackupsWithMemoryMode(GridTestUtils.TestMemoryMode.OFFHEAP_EVICT_SWAP);
+    }
+
+    /**
+     * @param memMode Memory mode.
+     * @throws Throwable If failed.
+     */
+    private void restartWithTxFourNodesOneBackupsWithMemoryMode(GridTestUtils.TestMemoryMode memMode) throws Throwable {
+        backups = 1;
+        nodeCnt = 4;
+        keyCnt = 100_000;
+        partitions = 29;
+        rebalancMode = ASYNC;
+        this.memMode = memMode;
+
+        long duration = 30_000;
+
+        checkRestartWithTx(duration, 2, 2, 100);
     }
 
     /**
@@ -385,7 +522,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         long duration = 90000;
 
-        checkRestartWithTx(duration, 3, 3);
+        checkRestartWithTx(duration, 3, 3, 3);
     }
 
     /**
@@ -415,7 +552,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         long duration = 90000;
 
-        checkRestartWithTx(duration, 4, 4);
+        checkRestartWithTx(duration, 4, 4, 3);
     }
 
     /**
@@ -445,7 +582,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         long duration = 90000;
 
-        checkRestartWithTx(duration, 5, 5);
+        checkRestartWithTx(duration, 5, 5, 3);
     }
 
     /**
@@ -484,7 +621,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      * @param restartThreads Restart threads count.
      * @throws Exception If failed.
      */
-    public void checkRestartWithPut(long duration, int putThreads, int restartThreads) throws Throwable {
+    private void checkRestartWithPut(long duration, int putThreads, int restartThreads) throws Throwable {
         final long endTime = System.currentTimeMillis() + duration;
 
         final AtomicReference<Throwable> err = new AtomicReference<>();
@@ -598,9 +735,13 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      * @param duration Test duration.
      * @param putThreads Put threads count.
      * @param restartThreads Restart threads count.
+     * @param txKeys Keys per transaction.
      * @throws Exception If failed.
      */
-    public void checkRestartWithTx(long duration, int putThreads, int restartThreads) throws Throwable {
+    private void checkRestartWithTx(long duration,
+        int putThreads,
+        int restartThreads,
+        final int txKeys) throws Throwable {
         if (atomicityMode() == ATOMIC)
             return;
 
@@ -618,8 +759,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
             final AtomicInteger txCntr = new AtomicInteger();
 
             final CyclicBarrier barrier = new CyclicBarrier(putThreads + restartThreads);
-
-            final int txKeys = 3;
 
             for (int i = 0; i < putThreads; i++) {
                 final int gridIdx = i;
@@ -684,6 +823,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                 if (c % logFreq == 0) {
                                     info(">>> Tx iteration finished [cnt=" + c +
+                                        ", cacheSize=" + cache.localSize() +
                                         ", keys=" + keys +
                                         ", locNodeId=" + locNodeId + ']');
                                 }
@@ -758,7 +898,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      * @param restartThreads Restart threads count.
      * @throws Exception If failed.
      */
-    public void checkRestartWithTxPutAll(long duration, int putThreads, int restartThreads) throws Throwable {
+    private void checkRestartWithTxPutAll(long duration, int putThreads, int restartThreads) throws Throwable {
         if (atomicityMode() == ATOMIC)
             return;
 

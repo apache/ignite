@@ -17,22 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.plugin.extensions.communication.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteReducer;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
 
 /**
  * Query request.
@@ -114,6 +122,9 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     /** Partition. */
     private int part;
 
+    /** */
+    private AffinityTopologyVersion topVer;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -122,13 +133,21 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     }
 
     /**
+     * Creates cancel query request.
+     *
+     * @param cacheId Cache ID.
      * @param id Request to cancel.
      * @param fields Fields query flag.
+     * @param topVer Topology version.
      */
-    public GridCacheQueryRequest(int cacheId, long id, boolean fields) {
+    public GridCacheQueryRequest(int cacheId,
+        long id,
+        boolean fields,
+        AffinityTopologyVersion topVer) {
         this.cacheId = cacheId;
         this.id = id;
         this.fields = fields;
+        this.topVer = topVer;
 
         cancel = true;
     }
@@ -144,6 +163,9 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @param fields Fields query flag.
      * @param all Whether to load all pages.
      * @param keepPortable Whether to keep portables.
+     * @param subjId Subject ID.
+     * @param taskHash Task name hash code.
+     * @param topVer Topology version.
      */
     public GridCacheQueryRequest(
         int cacheId,
@@ -155,7 +177,8 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         boolean all,
         boolean keepPortable,
         UUID subjId,
-        int taskHash
+        int taskHash,
+        AffinityTopologyVersion topVer
     ) {
         this.cacheId = cacheId;
         this.id = id;
@@ -167,6 +190,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.keepPortable = keepPortable;
         this.subjId = subjId;
         this.taskHash = taskHash;
+        this.topVer = topVer;
     }
 
     /**
@@ -185,6 +209,10 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @param incBackups {@code true} if need to include backups.
      * @param args Query arguments.
      * @param incMeta Include meta data or not.
+     * @param keepPortable Keep portable flag.
+     * @param subjId Subject ID.
+     * @param taskHash Task name hash code.
+     * @param topVer Topology version.
      */
     public GridCacheQueryRequest(
         int cacheId,
@@ -204,7 +232,8 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         boolean incMeta,
         boolean keepPortable,
         UUID subjId,
-        int taskHash
+        int taskHash,
+        AffinityTopologyVersion topVer
     ) {
         assert type != null || fields;
         assert clause != null || (type == SCAN || type == SET || type == SPI);
@@ -228,10 +257,15 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.keepPortable = keepPortable;
         this.subjId = subjId;
         this.taskHash = taskHash;
+        this.topVer = topVer;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion topologyVersion() {
+        return topVer != null ? topVer : AffinityTopologyVersion.NONE;
+    }
+
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -547,12 +581,18 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeByteArray("transBytes", transBytes))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 21:
+                if (!writer.writeByteArray("transBytes", transBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 22:
                 if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
                     return false;
 
@@ -711,7 +751,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 reader.incrementState();
 
             case 20:
-                transBytes = reader.readByteArray("transBytes");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -719,6 +759,14 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 reader.incrementState();
 
             case 21:
+                transBytes = reader.readByteArray("transBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 22:
                 byte typeOrd;
 
                 typeOrd = reader.readByte("type");
@@ -732,7 +780,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridCacheQueryRequest.class);
     }
 
     /** {@inheritDoc} */
@@ -742,7 +790,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 22;
+        return 23;
     }
 
     /** {@inheritDoc} */

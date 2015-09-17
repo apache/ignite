@@ -17,16 +17,20 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import javax.cache.configuration.MutableConfiguration;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-import javax.cache.configuration.*;
-
-import static org.apache.ignite.configuration.CacheConfiguration.*;
+import static org.apache.ignite.configuration.CacheConfiguration.DFLT_NEAR_START_SIZE;
 
 /**
- * Client cache configuration.
+ * Client (near) cache configuration.
+ * <p>
+ * Distributed cache can also be fronted by a Near cache,
+ * which is a smaller local cache that stores most recently
+ * or most frequently accessed data. Just like with a partitioned cache,
+ * the user can control the size of the near cache and its eviction policies.
  */
 public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
@@ -46,6 +50,8 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Creates near cache configuration copying properties from passed in configuration.
+     *
      * @param ccfg Configuration to copy.
      */
     public NearCacheConfiguration(NearCacheConfiguration<K, V> ccfg) {
@@ -56,13 +62,20 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Gets near eviction policy. By default, returns {@code null}
+     * which means that evictions are disabled for near cache.
+     *
      * @return Near eviction policy.
+     * @see CacheConfiguration#getEvictionPolicy()
+     * @see CacheConfiguration#isEvictSynchronized()
      */
     public EvictionPolicy<K, V> getNearEvictionPolicy() {
         return nearEvictPlc;
     }
 
     /**
+     * Sets near eviction policy.
+     *
      * @param nearEvictPlc Near eviction policy.
      * @return {@code this} for chaining.
      */

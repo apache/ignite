@@ -17,13 +17,15 @@
 
 package org.apache.ignite.testframework.junits.logger;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.logger.*;
-import org.apache.log4j.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.LoggerNodeIdAware;
+import org.apache.log4j.Layout;
+import org.apache.log4j.RollingFileAppender;
 
 /**
  * Log4J {@link org.apache.log4j.RollingFileAppender} with added support for grid node IDs.

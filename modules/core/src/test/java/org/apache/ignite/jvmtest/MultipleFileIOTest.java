@@ -17,10 +17,11 @@
 
 package org.apache.ignite.jvmtest;
 
-import org.apache.ignite.internal.util.typedef.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.RandomAccessFile;
+import java.util.Date;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *

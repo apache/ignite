@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Fragmentizer response.
@@ -101,7 +101,7 @@ public class IgfsFragmentizerResponse extends IgfsCommunicationMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(IgfsFragmentizerResponse.class);
     }
 
     /** {@inheritDoc} */

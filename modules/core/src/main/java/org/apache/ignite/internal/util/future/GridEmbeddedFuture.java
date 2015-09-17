@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.util.future;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
 
 /**
  * Future which waits for embedded future to complete and then asynchronously executes
@@ -68,7 +72,8 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
 
     /**
      * Embeds futures. Specific change order of arguments to avoid conflicts.
-     *  @param embedded Closure.
+     *
+     * @param embedded Embedded future.
      * @param c Closure which runs upon completion of embedded closure and which returns another future.
      */
     public GridEmbeddedFuture(
@@ -190,6 +195,58 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
                     c1.apply(null, e);
 
                     onDone(e);
+                }
+                catch (Error e) {
+                    onDone(e);
+
+                    throw e;
+                }
+            }
+        });
+    }
+
+    /**
+     * @param embedded Embedded future.
+     * @param c Closure to create next future.
+     */
+    public GridEmbeddedFuture(
+        IgniteInternalFuture<B> embedded,
+        final IgniteOutClosure<IgniteInternalFuture<A>> c
+    ) {
+        assert embedded != null;
+        assert c != null;
+
+        this.embedded = embedded;
+
+        embedded.listen(new AL1() {
+            @Override public void applyx(IgniteInternalFuture<B> embedded) {
+                try {
+                    IgniteInternalFuture<A> next = c.apply();
+
+                    if (next == null) {
+                        onDone();
+
+                        return;
+                    }
+
+                    next.listen(new AL2() {
+                        @Override public void applyx(IgniteInternalFuture<A> next) {
+                            try {
+                                onDone(next.get());
+                            }
+                            catch (GridClosureException e) {
+                                onDone(e.unwrap());
+                            }
+                            catch (IgniteCheckedException | RuntimeException e) {
+                                onDone(e);
+                            }
+                            catch (Error e) {
+                                onDone(e);
+
+                                throw e;
+                            }
+                        }
+                    });
                 }
                 catch (Error e) {
                     onDone(e);

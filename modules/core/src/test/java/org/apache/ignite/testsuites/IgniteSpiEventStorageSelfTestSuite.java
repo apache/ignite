@@ -17,8 +17,11 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.spi.eventstorage.memory.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageMultiThreadedSelfTest;
+import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageSpiConfigSelfTest;
+import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageSpiSelfTest;
+import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageSpiStartStopSelfTest;
 
 /**
  * Event storage test suite.

@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
-import java.nio.*;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -64,7 +65,7 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
         if (!reader.beforeMessageRead())
             return false;
 
-        return true;
+        return reader.afterMessageRead(CacheEntryPredicateAdapter.class);
     }
 
     /** {@inheritDoc} */

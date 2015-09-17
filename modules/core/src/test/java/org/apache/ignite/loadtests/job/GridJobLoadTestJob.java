@@ -17,13 +17,20 @@
 
 package org.apache.ignite.loadtests.job;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
+import java.util.Map;
+import java.util.Random;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.JobContextResource;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.TaskSessionResource;
 
-import java.util.*;
-
-import static java.lang.Thread.*;
+import static java.lang.Thread.sleep;
 
 /**
  * Job for load test.

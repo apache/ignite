@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.AbstractMap;
 
 /**
  * Makes {@link AbstractMap} as {@link Serializable} and is

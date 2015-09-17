@@ -31,7 +31,12 @@
     </parent>
 
     <artifactId>ignite-core</artifactId>
-    <version>1.4.1-SNAPSHOT</version>
+    <version>1.5.0-SNAPSHOT</version>
+    <url>http://ignite.apache.org</url>
+
+    <properties>
+        <ignite.update.notifier.product>apache-ignite</ignite.update.notifier.product>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -289,7 +294,7 @@
 
                                         <replaceregexp file="${props.file}" byline="true">
                                             <regexp pattern="ignite.update.status.params=.*" />
-                                            <substitution expression="ignite.update.status.params=ver=${project.version}" />
+                                            <substitution expression="ignite.update.status.params=ver=${project.version}&amp;product=${ignite.update.notifier.product}" />
                                         </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">

@@ -17,15 +17,19 @@
 
 package org.apache.ignite.cache.eviction.random;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-import javax.cache.*;
-import java.io.*;
-
-import static org.apache.ignite.configuration.CacheConfiguration.*;
+import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE;
 
 /**
  * Cache eviction policy which will select random cache entry for eviction if cache

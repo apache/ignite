@@ -17,10 +17,13 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.lang.*;
-
-import java.nio.*;
-import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Communication message reader.
@@ -35,7 +38,20 @@ public interface MessageReader {
      */
     public void setBuffer(ByteBuffer buf);
 
+    /**
+     * Callback that must be invoked by a message implementation before message body started decoding.
+     *
+     * @return {@code True} if reading can proceed, {@code false} otherwise.
+     */
     public boolean beforeMessageRead();
+
+    /**
+     * Callback that must be invoked by a message implementation after message body finished decoding.
+     *
+     * @param msgCls Message class finishing read stage.
+     * @return {@code True} if reading can proceed, {@code false} otherwise.
+     */
+    public boolean afterMessageRead(Class<? extends Message> msgCls);
 
     /**
      * Reads {@code byte} value.

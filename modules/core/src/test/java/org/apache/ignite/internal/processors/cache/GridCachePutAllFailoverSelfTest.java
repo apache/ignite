@@ -17,34 +17,56 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.*;
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.spi.failover.always.*;
-import org.apache.ignite.testframework.junits.common.*;
+import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.PN;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.failover.FailoverContext;
+import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePeekMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests putAll() method along with failover and different configurations.
@@ -79,6 +101,9 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
     /** Backups count. */
     private int backups;
+
+    /** */
+    private GridTestUtils.TestMemoryMode memMode = GridTestUtils.TestMemoryMode.HEAP;
 
     /** Filter to include only worker nodes. */
     private static final IgnitePredicate<ClusterNode> workerNodesFilter = new PN() {
@@ -179,6 +204,60 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
      */
     public void testPutAllFailoverColocatedNearDisabledTwoBackups() throws Exception {
         checkPutAllFailoverColocated(false, 5, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllFailoverColocatedNearEnabledTwoBackupsSwap() throws Exception {
+        memMode = GridTestUtils.TestMemoryMode.SWAP;
+
+        checkPutAllFailoverColocated(true, 5, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllFailoverColocatedTwoBackupsSwap() throws Exception {
+        memMode = GridTestUtils.TestMemoryMode.SWAP;
+
+        checkPutAllFailoverColocated(false, 5, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapTiered() throws Exception {
+        memMode = GridTestUtils.TestMemoryMode.OFFHEAP_TIERED;
+
+        checkPutAllFailoverColocated(true, 5, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapTieredSwap() throws Exception {
+        memMode = GridTestUtils.TestMemoryMode.OFFHEAP_TIERED_SWAP;
+
+        checkPutAllFailoverColocated(true, 5, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapEvict() throws Exception {
+        memMode = GridTestUtils.TestMemoryMode.OFFHEAP_EVICT;
+
+        checkPutAllFailoverColocated(true, 5, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapEvictSwap() throws Exception {
+        memMode = GridTestUtils.TestMemoryMode.OFFHEAP_EVICT_SWAP;
+
+        checkPutAllFailoverColocated(true, 5, 2);
     }
 
     /** {@inheritDoc} */
@@ -336,6 +415,32 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             }
 
             info(">>> Absent keys: " + absentKeys);
+
+            if (!F.isEmpty(absentKeys)) {
+                for (Ignite g : runningWorkers) {
+                    IgniteKernal k = (IgniteKernal)g;
+
+                    info(">>>> Entries on node: " + k.getLocalNodeId());
+
+                    GridCacheAdapter<Object, Object> cache = k.internalCache("partitioned");
+
+                    for (Integer key : absentKeys) {
+                        GridCacheEntryEx entry = cache.peekEx(key);
+
+                        if (entry != null)
+                            info(" >>> " + entry);
+
+                        if (cache.context().isNear()) {
+                            GridCacheEntryEx entry0 = cache.context().near().dht().peekEx(key);
+
+                            if (entry0 != null)
+                                info(" >>> " + entry);
+                        }
+                    }
+
+                    info("");
+                }
+            }
 
             assertTrue(absentKeys.isEmpty());
 
@@ -648,6 +753,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
 
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+
+            GridTestUtils.setMemoryMode(cfg, cacheCfg, memMode, 1000, 10 * 1024);
 
             cfg.setCacheConfiguration(cacheCfg);
         }

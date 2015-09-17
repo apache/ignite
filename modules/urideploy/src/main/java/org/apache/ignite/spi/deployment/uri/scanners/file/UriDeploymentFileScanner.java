@@ -17,16 +17,26 @@
 
 package org.apache.ignite.spi.deployment.uri.scanners.file;
 
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.deployment.uri.scanners.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.deployment.uri.scanners.GridDeploymentFileHandler;
+import org.apache.ignite.spi.deployment.uri.scanners.GridDeploymentFolderScannerHelper;
+import org.apache.ignite.spi.deployment.uri.scanners.UriDeploymentScanner;
+import org.apache.ignite.spi.deployment.uri.scanners.UriDeploymentScannerContext;
 
 /**
  * URI deployment file scanner.

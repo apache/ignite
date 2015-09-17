@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Value descriptor which allows to extract fields from value object of given type.

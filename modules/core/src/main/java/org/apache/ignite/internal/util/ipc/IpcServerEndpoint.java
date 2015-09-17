@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.util.ipc;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.Closeable;
+import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * IPC server endpoint that is capable for client connections accepting.

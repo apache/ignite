@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.*;
+import java.util.Collection;
 
 /**
  * Describes an index to be created for a certain type. It contains all necessary

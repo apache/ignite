@@ -17,14 +17,46 @@
 
 package org.apache.ignite.internal.client.suite;
 
-import junit.framework.*;
-import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.impl.*;
-import org.apache.ignite.internal.client.integration.*;
-import org.apache.ignite.internal.client.router.*;
-import org.apache.ignite.internal.client.util.*;
-import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
+import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
+import org.apache.ignite.internal.client.ClientTcpMultiThreadedSelfTest;
+import org.apache.ignite.internal.client.ClientTcpSslAuthenticationSelfTest;
+import org.apache.ignite.internal.client.ClientTcpSslMultiThreadedSelfTest;
+import org.apache.ignite.internal.client.ClientTcpTaskExecutionAfterTopologyRestartSelfTest;
+import org.apache.ignite.internal.client.impl.ClientCacheFlagsCodecTest;
+import org.apache.ignite.internal.client.impl.ClientComputeImplSelfTest;
+import org.apache.ignite.internal.client.impl.ClientDataImplSelfTest;
+import org.apache.ignite.internal.client.impl.ClientFutureAdapterSelfTest;
+import org.apache.ignite.internal.client.impl.ClientPropertiesConfigurationSelfTest;
+import org.apache.ignite.internal.client.integration.ClientPreferDirectSelfTest;
+import org.apache.ignite.internal.client.integration.ClientTcpConnectivitySelfTest;
+import org.apache.ignite.internal.client.integration.ClientTcpDirectMultiNodeSelfTest;
+import org.apache.ignite.internal.client.integration.ClientTcpDirectSelfTest;
+import org.apache.ignite.internal.client.integration.ClientTcpMultiNodeSelfTest;
+import org.apache.ignite.internal.client.integration.ClientTcpSelfTest;
+import org.apache.ignite.internal.client.integration.ClientTcpSslDirectMultiNodeSelfTest;
+import org.apache.ignite.internal.client.integration.ClientTcpSslDirectSelfTest;
+import org.apache.ignite.internal.client.integration.ClientTcpSslMultiNodeSelfTest;
+import org.apache.ignite.internal.client.integration.ClientTcpSslSelfTest;
+import org.apache.ignite.internal.client.integration.ClientTcpUnreachableMultiNodeSelfTest;
+import org.apache.ignite.internal.client.router.ClientFailedInitSelfTest;
+import org.apache.ignite.internal.client.router.RouterFactorySelfTest;
+import org.apache.ignite.internal.client.router.TcpRouterMultiNodeSelfTest;
+import org.apache.ignite.internal.client.router.TcpRouterSelfTest;
+import org.apache.ignite.internal.client.router.TcpSslRouterSelfTest;
+import org.apache.ignite.internal.client.util.ClientByteUtilsTest;
+import org.apache.ignite.internal.client.util.ClientConsistentHashSelfTest;
+import org.apache.ignite.internal.client.util.ClientJavaHasherSelfTest;
+import org.apache.ignite.internal.processors.rest.ClientMemcachedProtocolSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorSignedSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorUnsignedSelfTest;
+import org.apache.ignite.internal.processors.rest.RestBinaryProtocolSelfTest;
+import org.apache.ignite.internal.processors.rest.RestMemcacheProtocolSelfTest;
+import org.apache.ignite.internal.processors.rest.RestProcessorMultiStartSelfTest;
+import org.apache.ignite.internal.processors.rest.RestProcessorStartSelfTest;
+import org.apache.ignite.internal.processors.rest.TaskCommandHandlerSelfTest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRestParserSelfTest;
 
 /**
  * Test suite includes all test that concern REST processors.

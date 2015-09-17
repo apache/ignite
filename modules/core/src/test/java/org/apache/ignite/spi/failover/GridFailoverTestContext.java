@@ -17,10 +17,11 @@
 
 package org.apache.ignite.spi.failover;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-
-import java.util.*;
+import java.util.List;
+import java.util.Random;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSession;
 
 /**
  * Failover test context.

@@ -17,13 +17,15 @@
 
 package org.apache.ignite.examples.datagrid.store.auto;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.store.jdbc.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.examples.datagrid.store.*;
-import org.apache.ignite.transactions.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.datagrid.store.Person;
+import org.apache.ignite.transactions.Transaction;
 
 /**
  * Demonstrates usage of cache with underlying persistent store configured.

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.yardstick.compute;
 
-import org.apache.ignite.yardstick.*;
-import org.apache.ignite.yardstick.compute.model.*;
-
-import java.util.*;
+import java.util.Map;
+import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.apache.ignite.yardstick.compute.model.NoopCallable;
 
 /**
  * Ignite benchmark that performs broadcast operations.

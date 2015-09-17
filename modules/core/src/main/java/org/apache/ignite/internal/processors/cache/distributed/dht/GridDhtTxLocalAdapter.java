@@ -17,31 +17,58 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.io.Externalizable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.GridLeanMap;
+import org.apache.ignite.internal.util.GridLeanSet;
+import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.typedef.CX1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
-import static org.apache.ignite.transactions.TransactionState.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
+import static org.apache.ignite.transactions.TransactionState.COMMITTED;
+import static org.apache.ignite.transactions.TransactionState.COMMITTING;
+import static org.apache.ignite.transactions.TransactionState.PREPARED;
+import static org.apache.ignite.transactions.TransactionState.PREPARING;
+import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
+import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
+import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
  * Replicated user transaction.
@@ -70,6 +97,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /** Versions of pending locks for entries of this tx. */
     private Collection<GridCacheVersion> pendingVers;
+
+    /** Flag indicating that originating node has near cache. */
+    private boolean nearOnOriginatingNode;
 
     /** Nodes where transactions were started on lock step. */
     private Set<ClusterNode> lockTxNodes;
@@ -105,12 +135,28 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         long timeout,
         boolean invalidate,
         boolean storeEnabled,
+        boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(cctx, xidVer, implicit, implicitSingle, sys, plc, concurrency, isolation, timeout, invalidate,
-            storeEnabled, txSize, subjId, taskNameHash);
+        super(
+            cctx, 
+            xidVer, 
+            implicit, 
+            implicitSingle, 
+            sys, 
+            plc, 
+            concurrency, 
+            isolation, 
+            timeout, 
+            invalidate,
+            storeEnabled,
+            onePhaseCommit,
+            txSize, 
+            subjId, 
+            taskNameHash
+        );
 
         assert cctx != null;
 
@@ -131,6 +177,29 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             lockTxNodes = new HashSet<>();
 
         lockTxNodes.add(node);
+    }
+
+    /**
+     * Sets flag that indicates that originating node has a near cache that participates in this transaction.
+     *
+     * @param hasNear Has near cache flag.
+     */
+    public void nearOnOriginatingNode(boolean hasNear) {
+        nearOnOriginatingNode = hasNear;
+    }
+
+    /**
+     * @return {@code True} if explicit lock transaction.
+     */
+    public boolean explicitLock() {
+        return explicitLock;
+    }
+
+    /**
+     * @param explicitLock Explicit lock flag.
+     */
+    public void explicitLock(boolean explicitLock) {
+        this.explicitLock = explicitLock;
     }
 
     /**
@@ -199,20 +268,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      */
     public void pendingVersions(Collection<GridCacheVersion> pendingVers) {
         this.pendingVers = pendingVers;
-    }
-
-    /**
-     * @return Explicit lock flag.
-     */
-    public boolean explicitLock() {
-        return explicitLock;
-    }
-
-    /**
-     * @param explicitLock Explicit lock flag.
-     */
-    public void explicitLock(boolean explicitLock) {
-        this.explicitLock = explicitLock;
     }
 
     /**
@@ -543,7 +598,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /**
      * @param cacheCtx Cache context.
      * @param entries Entries to lock.
-     * @param onePhaseCommit One phase commit flag.
      * @param msgId Message ID.
      * @param read Read flag.
      * @param accessTtl TTL for read operation.
@@ -555,7 +609,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     IgniteInternalFuture<GridCacheReturn> lockAllAsync(
         GridCacheContext cacheCtx,
         List<GridCacheEntryEx> entries,
-        boolean onePhaseCommit,
         long msgId,
         final boolean read,
         final boolean needRetVal,
@@ -595,11 +648,27 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                 // First time access.
                 if (txEntry == null) {
-                    GridDhtCacheEntry cached = dhtCache.entryExx(key, topVer);
+                    GridDhtCacheEntry cached;
+
+                    if (dhtCache.context().isSwapOrOffheapEnabled()) {
+                        while (true) {
+                            try {
+                                cached = dhtCache.entryExx(key, topVer);
+
+                                cached.unswap(read);
+
+                                break;
+                            }
+                            catch (GridCacheEntryRemovedException e) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Get removed entry: " + key);
+                            }
+                        }
+                    }
+                    else
+                        cached = dhtCache.entryExx(key, topVer);
 
                     addActiveCache(dhtCache.context());
-
-                    cached.unswap(read);
 
                     txEntry = addEntry(NOOP,
                         null,
@@ -821,13 +890,14 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @return {@code True} if transaction is finished on prepare step.
      */
     protected final boolean commitOnPrepare() {
-        return onePhaseCommit() && !near();
+        return onePhaseCommit() && !near() && !nearOnOriginatingNode;
     }
 
     /**
      * @param prepFut Prepare future.
      * @return If transaction if finished on prepare step returns future which is completed after transaction finish.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     protected final IgniteInternalFuture<GridNearTxPrepareResponse> chainOnePhasePrepare(
         final GridDhtTxPrepareFuture prepFut) {
         if (commitOnPrepare()) {

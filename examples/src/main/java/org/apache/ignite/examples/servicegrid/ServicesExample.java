@@ -17,12 +17,14 @@
 
 package org.apache.ignite.examples.servicegrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.examples.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteServices;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.ExamplesUtils;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.ServiceResource;
 
 /**
  * Example that demonstrates how to deploy distributed services in Ignite.
@@ -62,7 +64,10 @@ public class ServicesExample {
                 svcs.deployNodeSingleton("myNodeSingletonService", new SimpleMapServiceImpl());
 
                 // Deploy 2 instances, regardless of number nodes.
-                svcs.deployMultiple("myMultiService", new SimpleMapServiceImpl(), 2 /*total number*/, 0 /*0 for unlimited*/);
+                svcs.deployMultiple("myMultiService",
+                    new SimpleMapServiceImpl(),
+                    2 /*total number*/,
+                    0 /*0 for unlimited*/);
 
                 // Example for using a service proxy
                 // to access a remotely deployed service.
@@ -91,7 +96,9 @@ public class ServicesExample {
         System.out.println(">>>");
 
         // Get a sticky proxy for node-singleton map service.
-        SimpleMapService<Integer, String> mapSvc = ignite.services().serviceProxy("myNodeSingletonService", SimpleMapService.class, true);
+        SimpleMapService<Integer, String> mapSvc = ignite.services().serviceProxy("myNodeSingletonService",
+            SimpleMapService.class,
+            true);
 
         int cnt = 10;
 
@@ -121,7 +128,9 @@ public class ServicesExample {
         System.out.println(">>>");
 
         // Get a sticky proxy for cluster-singleton map service.
-        SimpleMapService<Integer, String> mapSvc = ignite.services().serviceProxy("myClusterSingletonService", SimpleMapService.class, true);
+        SimpleMapService<Integer, String> mapSvc = ignite.services().serviceProxy("myClusterSingletonService",
+            SimpleMapService.class,
+            true);
 
         int cnt = 10;
 

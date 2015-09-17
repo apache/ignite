@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.apache.ignite.internal.processors.query.h2.opt.*;
-import org.h2.command.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collections;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.h2.command.Parser;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Table with optional schema.

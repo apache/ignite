@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.closure;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Affinity mapped task.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.lifecycle;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Node lifecycle event types. These events are used to notify lifecycle beans

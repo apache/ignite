@@ -17,10 +17,10 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.hibernate.*;
-import org.hibernate.cache.spi.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.hibernate.Query;
+import org.hibernate.cache.spi.QueryResultsRegion;
 
 /**
  * Implementation of {@link QueryResultsRegion}. This region is used to store query results.

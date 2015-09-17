@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  * Configuration validation tests.

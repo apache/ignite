@@ -17,11 +17,12 @@
 
 package org.apache.ignite.spi.indexing;
 
-import org.apache.ignite.spi.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import javax.cache.Cache;
+import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Indexing SPI allows user to index cache content. Using indexing SPI user can index data in cache and run
@@ -54,7 +55,7 @@ import java.util.*;
  * &lt;/property&gt;
  * </pre>
  * <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */

@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridLuceneOutputStream.*;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridLuceneOutputStream.BUFFER_SIZE;
 
 /**
  * Lucene file.

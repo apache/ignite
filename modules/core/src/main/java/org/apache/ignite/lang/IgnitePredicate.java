@@ -17,7 +17,7 @@
 
 package org.apache.ignite.lang;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Defines a predicate which accepts a parameter and returns {@code true} or {@code false}.

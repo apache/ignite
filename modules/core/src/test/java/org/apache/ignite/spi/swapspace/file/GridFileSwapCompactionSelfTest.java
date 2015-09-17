@@ -17,12 +17,16 @@
 
 package org.apache.ignite.spi.swapspace.file;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Random;
+import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Test for {@link FileSwapSpaceSpi}.

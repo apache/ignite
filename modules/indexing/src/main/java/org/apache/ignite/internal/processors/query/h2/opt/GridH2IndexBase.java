@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
-import org.h2.engine.*;
-import org.h2.index.*;
-import org.h2.message.*;
-import org.h2.result.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Iterator;
+import org.apache.ignite.internal.util.lang.GridFilteredIterator;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.h2.engine.Session;
+import org.h2.index.BaseIndex;
+import org.h2.message.DbException;
+import org.h2.result.Row;
+import org.h2.result.SearchRow;
+import org.h2.result.SortOrder;
+import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Index base.
@@ -104,6 +106,46 @@ public abstract class GridH2IndexBase extends BaseIndex {
      */
     public void releaseSnapshot() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareRows(SearchRow rowData, SearchRow compare) {
+        if (rowData == compare)
+            return 0;
+
+        for (int i = 0, len = indexColumns.length; i < len; i++) {
+            int index = columnIds[i];
+
+            Value v1 = rowData.getValue(index);
+            Value v2 = compare.getValue(index);
+
+            if (v1 == null || v2 == null)
+                return 0;
+
+            int c = compareValues(v1, v2, indexColumns[i].sortType);
+
+            if (c != 0)
+                return c;
+        }
+        return 0;
+    }
+
+    /**
+     * @param a First value.
+     * @param b Second value.
+     * @param sortType Sort type.
+     * @return Comparison result.
+     */
+    private int compareValues(Value a, Value b, int sortType) {
+        if (a == b)
+            return 0;
+
+        int comp = table.compareTypeSave(a, b);
+
+        if ((sortType & SortOrder.DESCENDING) != 0)
+            comp = -comp;
+
+        return comp;
     }
 
     /**

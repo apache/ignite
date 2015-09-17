@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collections;
+import java.util.Properties;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Update notifier test.
@@ -73,9 +72,16 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
         GridUpdateNotifier ntf = new GridUpdateNotifier(null, nodeVer,
             TEST_GATEWAY, Collections.<PluginProvider>emptyList(), false);
 
-        ntf.checkForNewVersion(new SelfExecutor(), log);
+        ntf.checkForNewVersion(log);
 
         String ver = ntf.latestVersion();
+
+        // Wait 60 sec for response.
+        for (int i = 0; ver == null && i < 600; i++) {
+            Thread.sleep(100);
+
+            ver = ntf.latestVersion();
+        }
 
         info("Latest version: " + ver);
 
@@ -89,16 +95,6 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
             (nodeMaintenance > 0 && lastMaintenance > 0));
 
         ntf.reportStatus(log);
-    }
-
-    /**
-     * Executor that runs task in current thread.
-     */
-    private static class SelfExecutor implements Executor {
-        /** {@inheritDoc} */
-        @Override public void execute(@NotNull Runnable r) {
-            r.run();
-        }
     }
 
     /**

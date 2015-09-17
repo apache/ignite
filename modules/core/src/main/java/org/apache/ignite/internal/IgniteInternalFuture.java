@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-
-import java.util.concurrent.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Extension for standard {@link Future} interface. It adds simplified exception handling,
@@ -67,6 +68,16 @@ public interface IgniteInternalFuture<R> {
      * @throws IgniteCheckedException If computation failed.
      */
     public R get(long timeout, TimeUnit unit) throws IgniteCheckedException;
+
+    /**
+     * Synchronously waits for completion of the computation and returns computation result ignoring interrupts.
+     *
+     * @return Computation result.
+     * @throws IgniteFutureCancelledCheckedException Subclass of {@link IgniteCheckedException} throws if computation
+     *     was cancelled.
+     * @throws IgniteCheckedException If computation failed.
+     */
+    public R getUninterruptibly() throws IgniteCheckedException;
 
     /**
      * Cancels this future.

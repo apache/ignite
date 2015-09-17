@@ -17,7 +17,8 @@
 
 package org.apache.ignite.schema;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 
 /**
  * Starts demo node. You can start as many demo nodes as you like for the demo.

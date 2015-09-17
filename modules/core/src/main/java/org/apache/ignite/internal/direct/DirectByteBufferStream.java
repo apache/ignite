@@ -17,16 +17,26 @@
 
 package org.apache.ignite.internal.direct;
 
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import sun.misc.*;
-import sun.nio.ch.*;
-
-import java.lang.reflect.*;
-import java.nio.*;
-import java.util.*;
+import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.UUID;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 /**
  * Portable stream based on {@link ByteBuffer}.
@@ -945,7 +955,7 @@ public class DirectByteBufferStream {
             msg = type == Byte.MIN_VALUE ? null : msgFactory.create(type);
 
             if (msg != null)
-                reader = msgFormatter.reader(msgFactory);
+                reader = msgFormatter.reader(msgFactory, msg.getClass());
 
             msgTypeDone = true;
         }

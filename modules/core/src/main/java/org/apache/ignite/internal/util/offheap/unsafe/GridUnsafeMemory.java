@@ -17,18 +17,19 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.offheap.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import sun.misc.*;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.offheap.GridOffHeapEventListener;
+import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiTuple;
+import sun.misc.Unsafe;
 
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OFFHEAP_SAFE_RELEASE;
+import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.ALLOCATE;
+import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.RELEASE;
 
 /**
  * Unsafe memory.

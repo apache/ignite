@@ -17,9 +17,8 @@
 
 package org.apache.ignite.igfs.mapreduce.records;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Record resolver based on new line detection. This resolver can detect new lines based on '\n' or '\r\n' sequences.

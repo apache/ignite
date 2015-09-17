@@ -17,27 +17,35 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.*;
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.testframework.junits.common.*;
+import com.google.common.collect.ImmutableSet;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
 /**
  *
@@ -75,7 +83,11 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new JdkMarshaller());
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
+        FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
+
+        swap.setWriteBufferSize(1);
+
+        cfg.setSwapSpaceSpi(swap);
 
         CacheConfiguration repCacheCfg = defaultCacheConfiguration();
 
@@ -191,7 +203,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      * @throws Exception If failed.
      */
-    private void checkP2PUndeploy(String cacheName) throws Exception {
+    private void checkP2PUndeploy(final String cacheName) throws Exception {
         assert !F.isEmpty(cacheName);
 
         ClassLoader ldr = getExternalClassLoader();
@@ -200,7 +212,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
         try {
             Ignite ignite1 = startGrid(1);
-            IgniteKernal grid2 = (IgniteKernal)startGrid(2);
+            final IgniteKernal grid2 = (IgniteKernal)startGrid(2);
 
             IgniteCache<Integer, Object> cache1 = ignite1.cache(cacheName);
             IgniteCache<Integer, Object> cache2 = grid2.cache(cacheName);
@@ -227,18 +239,24 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
             cache2.localEvict(ImmutableSet.of(2, 3, 4));
 
-            long swapSize = size(cacheName, grid2);
-
-            info("Swap size: " + swapSize);
-
-            assert swapSize > 0;
+            //Wait until entries stored to disk.
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        return size(cacheName, grid2) > 0;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new AssertionError(e);
+                    }
+                }
+            }, 5000);
 
             stopGrid(1);
 
             assert waitCacheEmpty(cache2, 10000);
 
             for (int i = 0; i < 3; i++) {
-                swapSize = size(cacheName, grid2);
+                long swapSize = size(cacheName, grid2);
 
                 if (swapSize > 0) {
                     if (i < 2) {

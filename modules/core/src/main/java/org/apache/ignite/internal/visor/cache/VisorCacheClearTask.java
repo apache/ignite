@@ -17,14 +17,19 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.resources.JobContextResource;
 
 /**
  * Task that clears specified caches on specified node.
@@ -47,17 +52,17 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
         private static final long serialVersionUID = 0L;
 
         /** */
-        @JobContextResource
-        private ComputeJobContext jobCtx;
+        private final String cacheName;
 
         /** */
         private final IgniteInClosure<IgniteFuture<Integer>> lsnr;
 
         /** */
-        private final IgniteFuture<Integer>[] futs = new IgniteFuture[3];
+        private IgniteFuture<Integer>[] futs;
 
         /** */
-        private final String cacheName;
+        @JobContextResource
+        private ComputeJobContext jobCtx;
 
         /**
          * Create job.
@@ -110,6 +115,9 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
 
         /** {@inheritDoc} */
         @Override protected IgniteBiTuple<Integer, Integer> run(final String cacheName) {
+            if (futs == null)
+                futs = new IgniteFuture[3];
+
             if (futs[0] == null || futs[1] == null || futs[2] == null) {
                 IgniteCache cache = ignite.cache(cacheName);
 

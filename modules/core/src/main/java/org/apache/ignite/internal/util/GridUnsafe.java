@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.util;
 
-import sun.misc.*;
-
-import java.lang.reflect.*;
-import java.security.*;
+import java.lang.reflect.Field;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import sun.misc.Unsafe;
 
 /**
  * Provides handle on Unsafe class from SUN which cannot be instantiated directly.

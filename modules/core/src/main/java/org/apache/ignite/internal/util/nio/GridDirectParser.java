@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Parser for direct messages.
@@ -62,7 +65,7 @@ public class GridDirectParser implements GridNioParser {
         if (msg == null && buf.hasRemaining()) {
             msg = msgFactory.create(buf.get());
 
-            ses.addMeta(READER_META_KEY, reader = formatter.reader(msgFactory));
+            ses.addMeta(READER_META_KEY, reader = formatter.reader(msgFactory, msg.getClass()));
         }
 
         boolean finished = false;

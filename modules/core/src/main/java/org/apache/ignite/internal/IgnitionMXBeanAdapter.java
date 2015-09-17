@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.mxbean.*;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.mxbean.IgnitionMXBean;
 
 /**
  * Management bean that provides access to {@link org.apache.ignite.Ignition}.

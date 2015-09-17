@@ -17,18 +17,23 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Next page response.
  */
+@IgniteCodeGeneratingFail
 public class GridQueryNextPageResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
@@ -268,7 +273,7 @@ public class GridQueryNextPageResponse implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridQueryNextPageResponse.class);
     }
 
     /** {@inheritDoc} */

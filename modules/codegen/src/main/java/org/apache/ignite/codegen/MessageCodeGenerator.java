@@ -17,18 +17,41 @@
 
 package org.apache.ignite.codegen;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.lang.reflect.*;
-import java.net.*;
-import java.util.*;
-
-import static java.lang.reflect.Modifier.*;
+import static java.lang.reflect.Modifier.isStatic;
+import static java.lang.reflect.Modifier.isTransient;
 
 /**
 * Direct marshallable code generator.
@@ -142,6 +165,8 @@ public class MessageCodeGenerator {
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
 
+        gen.generateAll(true);
+
 //        gen.generateAndWrite(DataStreamerEntry.class);
 
 //        gen.generateAndWrite(GridDistributedLockRequest.class);
@@ -213,14 +238,19 @@ public class MessageCodeGenerator {
         Collection<Class<? extends Message>> classes = classes();
 
         for (Class<? extends Message> cls : classes) {
-            boolean isAbstract = Modifier.isAbstract(cls.getModifiers());
+            try {
+                boolean isAbstract = Modifier.isAbstract(cls.getModifiers());
 
-            System.out.println("Processing class: " + cls.getName() + (isAbstract ? " (abstract)" : ""));
+                System.out.println("Processing class: " + cls.getName() + (isAbstract ? " (abstract)" : ""));
 
-            if (write)
-                generateAndWrite(cls);
-            else
-                generate(cls);
+                if (write)
+                    generateAndWrite(cls);
+                else
+                    generate(cls);
+            }
+            catch (IllegalStateException e) {
+                System.out.println("Will skip class generation [cls=" + cls + ", err=" + e.getMessage() + ']');
+            }
         }
     }
 
@@ -370,8 +400,8 @@ public class MessageCodeGenerator {
 
         indent--;
 
-        finish(write);
-        finish(read);
+        finish(write, null);
+        finish(read, cls.getSimpleName());
     }
 
     /**
@@ -460,7 +490,7 @@ public class MessageCodeGenerator {
     /**
      * @param code Code lines.
      */
-    private void finish(Collection<String> code) {
+    private void finish(Collection<String> code, String readClsName) {
         assert code != null;
 
         if (!fields.isEmpty()) {
@@ -468,7 +498,10 @@ public class MessageCodeGenerator {
             code.add(EMPTY);
         }
 
-        code.add(builder().a("return true;").toString());
+        if (readClsName == null)
+            code.add(builder().a("return true;").toString());
+        else
+            code.add(builder().a("return reader.afterMessageRead(").a(readClsName).a(".class);").toString());
     }
 
     /**

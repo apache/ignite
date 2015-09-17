@@ -17,9 +17,10 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import org.apache.ignite.testframework.junits.cache.*;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+import org.apache.ignite.testframework.junits.cache.GridAbstractCacheStoreSelfTest;
 
 /**
  * Cache store test.

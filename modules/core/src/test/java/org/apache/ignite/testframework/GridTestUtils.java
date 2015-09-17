@@ -17,38 +17,81 @@
 
 package org.apache.ignite.testframework;
 
-import junit.framework.*;
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.ssl.*;
-import org.apache.ignite.testframework.config.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
-import javax.cache.configuration.*;
-import javax.net.ssl.*;
-import java.io.*;
-import java.lang.annotation.*;
-import java.lang.ref.*;
-import java.lang.reflect.*;
-import java.net.*;
-import java.nio.file.attribute.*;
-import java.security.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.nio.file.attribute.PosixFilePermission;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import junit.framework.Test;
+import junit.framework.TestSuite;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
+import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.util.GridBusyLock;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
+import org.apache.ignite.ssl.SslContextFactory;
+import org.apache.ignite.testframework.config.GridTestProperties;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility class for tests.
@@ -1543,5 +1586,117 @@ public final class GridTestUtils {
             return;
 
         suite.addTestSuite(test);
+    }
+
+    /**
+     * Sets cache configuration parameters according to test memory mode.
+     *
+     * @param cfg Ignite configuration.
+     * @param ccfg Cache configuration.
+     * @param testMode Test memory mode.
+     * @param maxHeapCnt Maximum number of entries in heap (used if test mode involves eviction from heap).
+     * @param maxOffheapSize Maximum offheap memory size (used if test mode involves eviction from offheap to swap).
+     */
+    public static void setMemoryMode(IgniteConfiguration cfg, CacheConfiguration ccfg,
+        TestMemoryMode testMode,
+        int maxHeapCnt,
+        long maxOffheapSize) {
+        assert testMode != null;
+        assert ccfg != null;
+
+        CacheMemoryMode memMode;
+        boolean swap = false;
+        boolean evictionPlc = false;
+        long offheapMaxMem = -1L;
+
+        switch (testMode) {
+            case HEAP: {
+                memMode = CacheMemoryMode.ONHEAP_TIERED;
+                swap = false;
+
+                break;
+            }
+
+            case SWAP: {
+                memMode = CacheMemoryMode.ONHEAP_TIERED;
+                evictionPlc = true;
+                swap = true;
+
+                break;
+            }
+
+            case OFFHEAP_TIERED: {
+                memMode = CacheMemoryMode.OFFHEAP_TIERED;
+                offheapMaxMem = 0;
+
+                break;
+            }
+
+            case OFFHEAP_TIERED_SWAP: {
+                assert maxOffheapSize > 0 : maxOffheapSize;
+
+                memMode = CacheMemoryMode.OFFHEAP_TIERED;
+                offheapMaxMem = maxOffheapSize;
+                swap = true;
+
+                break;
+            }
+
+            case OFFHEAP_EVICT: {
+                memMode = CacheMemoryMode.ONHEAP_TIERED;
+                evictionPlc = true;
+                offheapMaxMem = 0;
+
+                break;
+            }
+
+            case OFFHEAP_EVICT_SWAP: {
+                assert maxOffheapSize > 0 : maxOffheapSize;
+
+                memMode = CacheMemoryMode.ONHEAP_TIERED;
+                swap = true;
+                evictionPlc = true;
+                offheapMaxMem = maxOffheapSize;
+
+                break;
+            }
+
+            default:
+                throw new IllegalArgumentException("Invalid mode: " + testMode);
+        }
+
+        ccfg.setMemoryMode(memMode);
+        ccfg.setSwapEnabled(swap);
+
+        if (swap && cfg != null)
+            cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
+
+        if (evictionPlc) {
+            LruEvictionPolicy plc = new LruEvictionPolicy();
+
+            plc.setMaxSize(maxHeapCnt);
+
+            ccfg.setEvictionPolicy(plc);
+        }
+
+        ccfg.setOffHeapMaxMemory(offheapMaxMem);
+    }
+
+    /**
+     *
+     */
+    public enum TestMemoryMode {
+        /** Heap only. */
+        HEAP,
+        /** Evict from heap to swap with eviction policy. */
+        SWAP,
+        /** Always evict to offheap, no swap. */
+        OFFHEAP_TIERED,
+        /** Always evict to offheap + evict from offheap to swap when max offheap memory limit is reached. */
+        OFFHEAP_TIERED_SWAP,
+        /** Evict to offheap with eviction policy, no swap. */
+        OFFHEAP_EVICT,
+        /** Evict to offheap with eviction policy + evict from offheap to swap when max offheap memory limit is reached. */
+        OFFHEAP_EVICT_SWAP,
     }
 }

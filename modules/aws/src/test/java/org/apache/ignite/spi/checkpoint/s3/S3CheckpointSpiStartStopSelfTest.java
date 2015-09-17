@@ -17,10 +17,11 @@
 
 package org.apache.ignite.spi.checkpoint.s3;
 
-import com.amazonaws.auth.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.testframework.junits.spi.*;
-import org.apache.ignite.testsuites.*;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import org.apache.ignite.spi.GridSpiStartStopAbstractTest;
+import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.apache.ignite.testsuites.IgniteS3TestSuite;
 
 /**
  * Grid S3 checkpoint SPI start stop self test.

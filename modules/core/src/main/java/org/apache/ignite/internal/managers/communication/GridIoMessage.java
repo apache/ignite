@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.io.*;
-import java.nio.*;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Wrapper for all grid messages.
@@ -261,14 +262,10 @@ public class GridIoMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                byte plc0;
-
-                plc0 = reader.readByte("plc");
+                plc = reader.readByte("plc");
 
                 if (!reader.isLastRead())
                     return false;
-
-                plc = plc0;
 
                 reader.incrementState();
 
@@ -306,7 +303,7 @@ public class GridIoMessage implements Message {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridIoMessage.class);
     }
 
     /** {@inheritDoc} */

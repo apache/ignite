@@ -17,16 +17,21 @@
 
 package org.apache.ignite.internal.util.future;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Future adapter.
@@ -107,6 +112,43 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
 
     /** {@inheritDoc} */
     @Override public R get() throws IgniteCheckedException {
+        return get0(ignoreInterrupts);
+    }
+
+    /** {@inheritDoc} */
+    @Override public R getUninterruptibly() throws IgniteCheckedException {
+        return get0(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public R get(long timeout) throws IgniteCheckedException {
+        // Do not replace with static import, as it may not compile.
+        return get(timeout, TimeUnit.MILLISECONDS);
+    }
+
+    /** {@inheritDoc} */
+    @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException {
+        A.ensure(timeout >= 0, "timeout cannot be negative: " + timeout);
+        A.notNull(unit, "unit");
+
+        try {
+            return get0(unit.toNanos(timeout));
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedCheckedException("Got interrupted while waiting for future to complete.", e);
+        }
+    }
+
+    /**
+     * Internal get routine.
+     *
+     * @param ignoreInterrupts Whether to ignore interrupts.
+     * @return Result.
+     * @throws IgniteCheckedException If failed.
+     */
+    private R get0(boolean ignoreInterrupts) throws IgniteCheckedException {
         try {
             if (endTime == 0) {
                 if (ignoreInterrupts)
@@ -129,27 +171,6 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
             Thread.currentThread().interrupt();
 
             throw new IgniteInterruptedCheckedException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public R get(long timeout) throws IgniteCheckedException {
-        // Do not replace with static import, as it may not compile.
-        return get(timeout, TimeUnit.MILLISECONDS);
-    }
-
-    /** {@inheritDoc} */
-    @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException {
-        A.ensure(timeout >= 0, "timeout cannot be negative: " + timeout);
-        A.notNull(unit, "unit");
-
-        try {
-            return get0(unit.toNanos(timeout));
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedCheckedException("Got interrupted while waiting for future to complete.", e);
         }
     }
 

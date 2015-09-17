@@ -17,20 +17,25 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-
-import java.nio.*;
-import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Query request.
  */
+@IgniteCodeGeneratingFail
 public class GridQueryRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
@@ -222,6 +227,7 @@ public class GridQueryRequest implements Message {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -290,9 +296,10 @@ public class GridQueryRequest implements Message {
                     return false;
 
                 reader.incrementState();
+
         }
 
-        return true;
+        return reader.afterMessageRead(GridQueryRequest.class);
     }
 
     /** {@inheritDoc} */

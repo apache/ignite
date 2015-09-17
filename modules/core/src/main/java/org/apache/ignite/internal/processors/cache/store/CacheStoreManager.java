@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.store;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.internal.processors.cache.GridCacheManager;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.lang.GridInClosure3;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache store manager interface.
@@ -184,4 +186,14 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void forceFlush() throws IgniteCheckedException;
+
+    /**
+     * @return Convert-portable flag.
+     */
+    public boolean convertPortable();
+
+    /**
+     * @return Configured convert portable flag.
+     */
+    public boolean configuredConvertPortable();
 }

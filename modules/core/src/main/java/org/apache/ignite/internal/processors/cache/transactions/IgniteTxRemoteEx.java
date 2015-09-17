@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.internal.processors.cache.version.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * Local transaction API.

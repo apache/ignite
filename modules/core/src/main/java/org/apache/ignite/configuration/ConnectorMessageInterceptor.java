@@ -17,7 +17,7 @@
 
 package org.apache.ignite.configuration;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interface for user-defined object interceptors.

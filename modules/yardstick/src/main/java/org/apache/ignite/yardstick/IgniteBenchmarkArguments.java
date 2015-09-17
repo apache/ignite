@@ -17,10 +17,12 @@
 
 package org.apache.ignite.yardstick;
 
-import com.beust.jcommander.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.transactions.*;
+import com.beust.jcommander.Parameter;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
  * Input arguments for Ignite benchmarks.
@@ -51,6 +53,10 @@ public class IgniteBenchmarkArguments {
     private boolean nearCacheFlag = false;
 
     /** */
+    @Parameter(names = {"-ncs", "--nearCacheSize"}, description = "Near cache size")
+    private int nearCacheSize;
+
+    /** */
     @Parameter(names = {"-wom", "--writeOrderMode"}, description = "Write ordering mode")
     private CacheAtomicWriteOrderMode orderMode;
 
@@ -77,10 +83,6 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-rth", "--restHost"}, description = "REST TCP host")
     private String restTcpHost;
-
-    /** */
-    @Parameter(names = {"-ss", "--syncSend"}, description = "Synchronous send")
-    private boolean syncSnd;
 
     /** */
     @Parameter(names = {"-r", "--range"}, description = "Key range")
@@ -160,6 +162,13 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Near cache size ({@code 0} for unlimited).
+     */
+    public int getNearCacheSize() {
+        return nearCacheSize;
+    }
+
+    /**
      * @return Synchronization.
      */
     public CacheWriteSynchronizationMode syncMode() {
@@ -206,13 +215,6 @@ public class IgniteBenchmarkArguments {
      */
     public int nodes() {
         return nodes;
-    }
-
-    /**
-     * @return {@code True} if sending is synchronous.
-     */
-    public boolean isSyncSend() {
-        return syncSnd;
     }
 
     /**

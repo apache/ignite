@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteReducer;
+import org.apache.ignite.marshaller.Marshaller;
 
 /**
  * Local query future.
@@ -46,7 +46,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     protected GridCacheLocalQueryFuture(GridCacheContext<K, V> ctx, GridCacheQueryBean qry) {
         super(ctx, qry, true);
 
-        run = new LocalQueryRunnable<>();
+        run = new LocalQueryRunnable();
     }
 
     /**
@@ -77,8 +77,13 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
         // No-op.
     }
 
+    /** {@inheritDoc} */
+    @Override public void awaitFirstPage() throws IgniteCheckedException {
+        get();
+    }
+
     /** */
-    private class LocalQueryRunnable<K, V, R> implements GridPlainRunnable {
+    private class LocalQueryRunnable implements GridPlainRunnable {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
@@ -101,7 +106,6 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
          * @return Query info.
          * @throws IgniteCheckedException In case of error.
          */
-        @SuppressWarnings({"unchecked"})
         private GridCacheQueryInfo localQueryInfo() throws IgniteCheckedException {
             GridCacheQueryBean qry = query();
 

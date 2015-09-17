@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.util.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import org.h2.util.StatementBuilder;
+import org.h2.util.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Join of two tables or subqueries.

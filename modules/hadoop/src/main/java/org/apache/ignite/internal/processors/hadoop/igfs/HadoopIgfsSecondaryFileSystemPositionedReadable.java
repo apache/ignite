@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop.igfs;
 
-import org.apache.hadoop.fs.*;
+import java.io.IOException;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.ignite.igfs.secondary.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PositionedReadable;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Secondary file system input stream wrapper which actually opens input stream only in case it is explicitly

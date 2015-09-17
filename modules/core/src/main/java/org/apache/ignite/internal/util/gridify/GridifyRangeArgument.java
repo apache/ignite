@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.util.gridify;
 
-import org.apache.ignite.compute.gridify.aop.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import java.util.Iterator;
+import org.apache.ignite.compute.gridify.aop.GridifyArgumentAdapter;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Convenience adapter for {@link org.apache.ignite.compute.gridify.GridifyArgument} interface.

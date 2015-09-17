@@ -17,27 +17,34 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.io.Serializable;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import javax.cache.processor.*;
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests cache in-place modification logic with iterative value increment.
@@ -193,6 +200,77 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
                     cache.invoke(key, new Processor(val));
                 }
             }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReplaceNodeJoin() throws Exception {
+        final AtomicReference<Throwable> error = new AtomicReference<>();
+        final int started = 6;
+
+        try {
+            int keys = 100;
+
+            final AtomicBoolean done = new AtomicBoolean(false);
+
+            for (int i = 0; i < keys; i++)
+                ignite(0).cache(null).put(i, 0);
+
+            IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        for (int i = 0; i < started; i++) {
+                            U.sleep(1_000);
+
+                            IgniteEx grid = startGrid(GRID_CNT + i);
+
+                            info("Test started grid [idx=" + (GRID_CNT + i) + ", nodeId=" + grid.localNode().id() + ']');
+                        }
+                    }
+                    catch (Exception e) {
+                        error.compareAndSet(null, e);
+                    }
+                    finally {
+                        done.set(true);
+                    }
+                }
+            }, 1, "starter");
+
+            int updVal = 0;
+
+            try {
+                while (!done.get()) {
+                    info("Will put: " + (updVal + 1));
+
+                    for (int i = 0; i < keys; i++)
+                        assertTrue("Failed [key=" + i + ", oldVal=" + updVal+ ']',
+                            ignite(0).cache(null).replace(i, updVal, updVal + 1));
+
+                    updVal++;
+                }
+            }
+            finally {
+                fut.get(getTestTimeout());
+            }
+
+            for (int i = 0; i < keys; i++) {
+                for (int g = 0; g < GRID_CNT + started; g++) {
+                    Integer val = ignite(g).<Integer, Integer>cache(null).get(i);
+
+                    GridCacheEntryEx entry = ((IgniteKernal)grid(g)).internalCache(null).peekEx(i);
+
+                    if (updVal != val)
+                        info("Invalid value for grid [g=" + g + ", entry=" + entry + ']');
+
+                    assertEquals((Integer)updVal, val);
+                }
+            }
+        }
+        finally {
+            for (int i = 0; i < started; i++)
+                stopGrid(GRID_CNT + i);
         }
     }
 

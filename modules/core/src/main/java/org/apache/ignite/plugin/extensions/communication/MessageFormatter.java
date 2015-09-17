@@ -17,7 +17,7 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.plugin.*;
+import org.apache.ignite.plugin.Extension;
 
 /**
  * Provides a custom format for communication messages.
@@ -41,7 +41,8 @@ public interface MessageFormatter extends Extension {
      * Creates new message reader instance.
      *
      * @param factory Message factory.
+     * @param msgCls Message class to read.
      * @return Message reader.
      */
-    public MessageReader reader(MessageFactory factory);
+    public MessageReader reader(MessageFactory factory, Class<? extends Message> msgCls);
 }

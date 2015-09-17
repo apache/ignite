@@ -17,9 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.spi.swapspace.noop.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.spi.swapspace.file.GridFileSwapCompactionSelfTest;
+import org.apache.ignite.spi.swapspace.file.GridFileSwapSpaceSpiSelfTest;
+import org.apache.ignite.spi.swapspace.noop.GridNoopSwapSpaceSpiSelfTest;
 
 /**
  *

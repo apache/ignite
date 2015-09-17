@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-
-import javax.cache.*;
+import com.google.common.collect.Sets;
+import java.util.Collections;
+import javax.cache.Cache;
 import javax.cache.CacheManager;
-import java.util.*;
+import javax.cache.Caching;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachingProvider;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
 /**
  *

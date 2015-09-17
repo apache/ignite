@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Cache version conflict resolver.

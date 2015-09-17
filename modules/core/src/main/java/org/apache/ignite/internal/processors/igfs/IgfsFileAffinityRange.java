@@ -17,15 +17,22 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Affinity range.
@@ -55,6 +62,9 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
 
     /** Range end offset (endOff + 1 divisible by block size). */
     private long endOff;
+
+    /** Field kept for backward compatibility. */
+    private boolean done;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -264,8 +274,7 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
                 writer.incrementState();
 
             case 1:
-                // The field 'done' was removed, but its writing preserved for compatibility reasons.
-                if (!writer.writeBoolean("done", false))
+                if (!writer.writeBoolean("done", done))
                     return false;
 
                 writer.incrementState();
@@ -310,8 +319,7 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
                 reader.incrementState();
 
             case 1:
-                // field 'done' was removed, but reading preserved for compatibility reasons.
-                reader.readBoolean("done");
+                done = reader.readBoolean("done");
 
                 if (!reader.isLastRead())
                     return false;
@@ -344,7 +352,7 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
 
         }
 
-        return true;
+        return reader.afterMessageRead(IgfsFileAffinityRange.class);
     }
 
     /** {@inheritDoc} */

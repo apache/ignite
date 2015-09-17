@@ -17,19 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import org.apache.commons.collections.*;
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Random;
+import java.util.UUID;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMemoryMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeAbstractSelfTest.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeAbstractSelfTest.AddAllJob;
+import static org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeAbstractSelfTest.QUEUE_CAPACITY;
 
 /**
  * Consistency test for cache queue in multi node environment.
@@ -41,9 +49,6 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
     /** */
     protected static final int RETRIES = 20;
 
-    /** */
-    private static final int PRELOAD_DELAY = 200;
-
     /** Indicates whether force repartitioning is needed or not. */
     private boolean forceRepartition;
 
@@ -52,11 +57,6 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
 
     /** */
     private int backups;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-583");
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -159,9 +159,23 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
         if (stopRandomGrid)
             stopGrid(1 + new Random().nextInt(GRID_CNT));
 
-        if (forceRepartition)
-            for (int i = 0; i < GRID_CNT; i++)
-                jcache(i).rebalance();
+        if (forceRepartition) {
+            for (int i = 0; i < GRID_CNT; i++) {
+                IgniteKernal ignite = (IgniteKernal)grid(i);
+
+                boolean found = false;
+
+                for (GridCacheContext ctx : ignite.context().cache().context().cacheContexts()) {
+                    if (ctx.name() != null && ctx.name().startsWith("datastructures")) {
+                        ctx.cache().rebalance().get();
+
+                        found = true;
+                    }
+                }
+
+                assertTrue(found);
+            }
+        }
 
         Ignite newIgnite = startGrid(GRID_CNT + 1);
 
@@ -169,26 +183,28 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
         // IgniteQueue<Integer> newQueue = newGrid.cache().queue(queueName);
         // assertTrue(CollectionUtils.isEqualCollection(queue0, newQueue));
 
-        Collection<Integer> locQueueContent = compute(newIgnite.cluster().forLocal()).call(new IgniteCallable<Collection<Integer>>() {
-            @IgniteInstanceResource
-            private Ignite grid;
+        Collection<Integer> locQueueContent = compute(newIgnite.cluster().forLocal()).call(
+            new IgniteCallable<Collection<Integer>>() {
+                @IgniteInstanceResource
+                private Ignite grid;
 
-            /** {@inheritDoc} */
-            @Override public Collection<Integer> call() throws Exception {
-                Collection<Integer> values = new ArrayList<>();
+                /** {@inheritDoc} */
+                @Override public Collection<Integer> call() throws Exception {
+                    Collection<Integer> values = new ArrayList<>();
 
-                grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+                    grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
-                IgniteQueue<Integer> locQueue = grid.queue(queueName, QUEUE_CAPACITY, config(false));
+                    IgniteQueue<Integer> locQueue = grid.queue(queueName, QUEUE_CAPACITY, config(false));
 
-                grid.log().info("Queue size " + locQueue.size());
+                    grid.log().info("Queue size " + locQueue.size());
 
-                for (Integer element : locQueue)
-                    values.add(element);
+                    for (Integer element : locQueue)
+                        values.add(element);
 
-                return values;
+                    return values;
+                }
             }
-        });
+        );
 
         assertTrue(CollectionUtils.isEqualCollection(queue0, locQueueContent));
 

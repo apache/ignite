@@ -17,10 +17,9 @@
 
 package org.apache.ignite.spi;
 
-import org.apache.ignite.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Iterator;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  *  Closeable iterator.

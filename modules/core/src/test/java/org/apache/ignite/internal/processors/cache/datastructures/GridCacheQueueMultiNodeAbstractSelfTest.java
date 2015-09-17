@@ -17,20 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.testframework.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Queue multi node tests.
@@ -458,8 +466,6 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
      * @throws Exception If failed.
      */
     public void testIterator() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-583");
-
         final String queueName = UUID.randomUUID().toString();
 
         info("Queue name: " + queueName);
@@ -467,35 +473,37 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
         try (IgniteQueue<Integer> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false))) {
             assertTrue(queue.isEmpty());
 
-            grid(0).compute().call(new AddAllJob(queueName, RETRIES));
+            grid(0).compute().broadcast(new AddAllJob(queueName, RETRIES));
 
             assertEquals(GRID_CNT * RETRIES, queue.size());
 
             Collection<ClusterNode> nodes = grid(0).cluster().nodes();
 
             for (ClusterNode node : nodes) {
-                Collection<Integer> queueElements = compute(grid(0).cluster().forNode(node)).call(new IgniteCallable<Collection<Integer>>() {
-                    @IgniteInstanceResource
-                    private Ignite grid;
+                Collection<Integer> queueElements = compute(grid(0).cluster().forNode(node)).call(
+                    new IgniteCallable<Collection<Integer>>() {
+                        @IgniteInstanceResource
+                        private Ignite grid;
 
-                    /** {@inheritDoc} */
-                    @Override public Collection<Integer> call() throws Exception {
-                        Collection<Integer> values = new ArrayList<>();
+                        /** {@inheritDoc} */
+                        @Override public Collection<Integer> call() throws Exception {
+                            Collection<Integer> values = new ArrayList<>();
 
-                        grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+                            grid.log().info("Running job [node=" + grid.cluster().localNode().id() + "]");
 
-                        IgniteQueue<Integer> locQueue = grid.queue(queueName, 0, null);
+                            IgniteQueue<Integer> locQueue = grid.queue(queueName, 0, null);
 
-                        grid.log().info("Queue size " + locQueue.size());
+                            grid.log().info("Queue size " + locQueue.size());
 
-                        for (Integer element : locQueue)
-                            values.add(element);
+                            for (Integer element : locQueue)
+                                values.add(element);
 
-                        grid.log().info("Returning: " + values);
+                            grid.log().info("Returning: " + values);
 
-                        return values;
+                            return values;
+                        }
                     }
-                });
+                );
 
                 assertTrue(F.eqOrdered(queue, queueElements));
             }

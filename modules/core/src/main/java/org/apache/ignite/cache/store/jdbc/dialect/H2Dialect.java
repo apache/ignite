@@ -17,9 +17,8 @@
 
 package org.apache.ignite.cache.store.jdbc.dialect;
 
-import org.apache.ignite.internal.util.typedef.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * A dialect compatible with the H2 database.

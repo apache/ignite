@@ -17,7 +17,7 @@
 
 package org.apache.ignite.logger;
 
-import java.util.*;
+import java.util.UUID;
 
 /**
  * Interface for Ignite file appenders to attach node ID to log file names.

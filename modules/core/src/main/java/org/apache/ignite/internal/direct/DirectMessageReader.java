@@ -17,12 +17,18 @@
 
 package org.apache.ignite.internal.direct;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
-
-import java.nio.*;
-import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Message reader implementation.
@@ -52,6 +58,12 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public boolean beforeMessageRead() {
+        return true;
+    }
+
+    /** {@inheritDoc}
+     * @param msgCls*/
+    @Override public boolean afterMessageRead(Class<? extends Message> msgCls) {
         return true;
     }
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Meta keys for {@link GridNioSession}.

@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.plugin.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.plugin.CachePluginManager;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Cache start descriptor.
@@ -165,20 +167,6 @@ public class DynamicCacheDescriptor {
      */
     public CachePluginManager pluginManager() {
         return pluginMgr;
-    }
-
-    /**
-     * Sets cancelled flag.
-     */
-    public void onCancelled() {
-        cancelled = true;
-    }
-
-    /**
-     * @return Cancelled flag.
-     */
-    public boolean cancelled() {
-        return cancelled;
     }
 
     /**

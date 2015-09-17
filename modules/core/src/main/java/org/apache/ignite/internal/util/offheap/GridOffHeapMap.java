@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.util.offheap;
 
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.typedef.CX2;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Off-heap map.
  */
-public interface GridOffHeapMap<K> {
+public interface GridOffHeapMap {
     /**
      * Gets partition this map belongs to.
      *
@@ -99,6 +101,16 @@ public interface GridOffHeapMap<K> {
      * @return {@code True} if value was removed.
      */
     public boolean removex(int hash, byte[] keyBytes);
+
+    /**
+     * Removes value from off-heap map without returning it.
+     *
+     * @param hash Hash.
+     * @param keyBytes Key bytes.
+     * @param p Value predicate (arguments are value address and value length).
+     * @return {@code True} if value was removed.
+     */
+    public boolean removex(int hash, byte[] keyBytes, IgniteBiPredicate<Long, Integer> p);
 
     /**
      * Puts key and value bytes into the map potentially replacing
