@@ -182,8 +182,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             c = clsHandlers.get(new ListenerKey(cacheMsg.cacheId(), cacheMsg.getClass()));
 
         if (c == null) {
-            U.warn(log, "Received message without registered handler (will ignore) [msg=" + cacheMsg +
-                ", nodeId=" + nodeId + ']');
+            if (cctx.kernalContext().isStopping()) {
+                if (log.isDebugEnabled())
+                    log.debug("Received message without registered handler (will ignore) [msg=" + cacheMsg +
+                        ", nodeId=" + nodeId + ']');
+            }
+            else {
+                U.warn(log, "Received message without registered handler (will ignore) [msg=" + cacheMsg +
+                    ", nodeId=" + nodeId + ']');
+            }
 
             return;
         }
@@ -596,9 +603,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      *
      * @param msg Message to send.
      * @param destNodeId Destination node ID.
+     * @return {@code True} if should send message.
      * @throws IgniteCheckedException If failed.
      */
-    private void onSend(GridCacheMessage msg, @Nullable UUID destNodeId) throws IgniteCheckedException {
+    private boolean onSend(GridCacheMessage msg, @Nullable UUID destNodeId) throws IgniteCheckedException {
+        if (msg.error() != null && cctx.kernalContext().isStopping())
+            return false;
+
         if (msg.messageId() < 0)
             // Generate and set message ID.
             msg.messageId(idGen.incrementAndGet());
@@ -609,6 +620,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (depEnabled && msg instanceof GridCacheDeployable)
                 cctx.deploy().prepare((GridCacheDeployable)msg);
         }
+
+        return true;
     }
 
     /**
@@ -624,7 +637,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     public void send(ClusterNode node, GridCacheMessage msg, byte plc) throws IgniteCheckedException {
         assert !node.isLocal();
 
-        onSend(msg, node.id());
+        if (!onSend(msg, node.id()))
+            return;
 
         if (log.isDebugEnabled())
             log.debug("Sending cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
@@ -663,12 +677,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param msg Message to send.
      * @param plc IO policy.
      * @param fallback Callback for failed nodes.
-     * @return {@code True} if nodes are empty or message was sent, {@code false} if
-     *      all nodes have left topology while sending this message.
      * @throws IgniteCheckedException If send failed.
      */
     @SuppressWarnings({"BusyWait", "unchecked"})
-    public boolean safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage msg, byte plc,
+    public void safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage msg, byte plc,
         @Nullable IgnitePredicate<ClusterNode> fallback) throws IgniteCheckedException {
         assert nodes != null;
         assert msg != null;
@@ -677,10 +689,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (log.isDebugEnabled())
                 log.debug("Message will not be sent as collection of nodes is empty: " + msg);
 
-            return true;
+            return;
         }
 
-        onSend(msg, null);
+        if (!onSend(msg, null))
+            return;
 
         if (log.isDebugEnabled())
             log.debug("Sending cache message [msg=" + msg + ", nodes=" + U.toShortString(nodes) + ']');
@@ -709,7 +722,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                         if (fallback != null && !fallback.apply(n))
                             // If fallback signalled to stop.
-                            return false;
+                            return;
 
                         added = true;
                     }
@@ -721,7 +734,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                             log.debug("Message will not be sent because all nodes left topology [msg=" + msg +
                                 ", nodes=" + U.toShortString(nodes) + ']');
 
-                        return false;
+                        return;
                     }
                 }
 
@@ -737,7 +750,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                         if (fallback != null && !fallback.apply(n))
                             // If fallback signalled to stop.
-                            return false;
+                            return;
 
                         added = true;
                     }
@@ -757,7 +770,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                         log.debug("Message will not be sent because all nodes left topology [msg=" + msg + ", nodes=" +
                             U.toShortString(nodes) + ']');
 
-                    return false;
+                    return;
                 }
 
                 if (log.isDebugEnabled())
@@ -768,8 +781,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Sent cache message [msg=" + msg + ", nodes=" + U.toShortString(nodes) + ']');
-
-        return true;
     }
 
     /**
@@ -800,7 +811,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     public void sendOrderedMessage(ClusterNode node, Object topic, GridCacheMessage msg, byte plc,
         long timeout) throws IgniteCheckedException {
-        onSend(msg, node.id());
+        if (!onSend(msg, node.id()))
+            return;
 
         int cnt = 0;
 
@@ -854,7 +866,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         assert node != null;
         assert msg != null;
 
-        onSend(msg, null);
+        if (!onSend(msg, null))
+            return;
 
         try {
             cctx.gridIO().send(node, TOPIC_CACHE, msg, plc);
