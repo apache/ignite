@@ -33,14 +33,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.events.IgfsEvent;
-import org.apache.ignite.igfs.IgfsConcurrentModificationException;
-import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
-import org.apache.ignite.igfs.IgfsException;
-import org.apache.ignite.igfs.IgfsFile;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.igfs.IgfsPathIsDirectoryException;
-import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
-import org.apache.ignite.igfs.IgfsPathNotFoundException;
+import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -821,7 +814,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 // For optimization purposes do these checks outside the transaction:
                 if (allIds.remove(null))
-                    throw new IgniteCheckedException("Failed to perform move because some component of the " +
+                    throw new IgfsPathNotFoundException("Failed to perform move because some component of the " +
                         "source path was not found. [src=" + srcPath + ", dst=" + dstPath + ']');
 
                 final IgniteUuid dstLeafId = dstPathIds.get(dstPathIds.size() - 1);
@@ -834,7 +827,7 @@ public class IgfsMetaManager extends IgfsManager {
                 allIds.addAll(dstPathIds);
 
                 if (allIds.remove(null))
-                    throw new IgniteCheckedException("Failed to perform move because some component of " +
+                    throw new IgfsPathNotFoundException("Failed to perform move because some component of " +
                         "the destination directory was not found. [src=" + srcPath + ", dst=" + dstPath + ']');
 
                 // 2. Start transaction.
@@ -846,7 +839,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                     // 4. Verify integrity of source directory.
                     if (!verifyPathIntegrity(srcPath, srcPathIds, allInfos)) {
-                        throw new IgniteCheckedException("Failed to perform move because source directory " +
+                        throw new IgfsPathNotFoundException("Failed to perform move because source directory " +
                             "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
                     }
 
@@ -854,7 +847,7 @@ public class IgfsMetaManager extends IgfsManager {
                     final IgfsPath dstDirPath = dstLeafId != null ? dstPath : dstPath.parent();
 
                     if (!verifyPathIntegrity(dstDirPath, dstPathIds, allInfos)) {
-                        throw new IgniteCheckedException("Failed to perform move because destination directory " +
+                        throw new IgfsPathNotFoundException("Failed to perform move because destination directory " +
                             "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
                     }
 
@@ -881,7 +874,8 @@ public class IgfsMetaManager extends IgfsManager {
                         }
                         else {
                             // Error, destination is existing file.
-                            throw new IgniteCheckedException("Failed to perform move because destination points to " +
+                            throw new IgfsPathAlreadyExistsException("Failed to perform move " +
+                                "because destination points to " +
                                 "existing file [src=" + srcPath + ", dst=" + dstPath + ']');
                         }
                     }
@@ -897,7 +891,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                     // 7. Last check: does destination target already have listing entry with the same name?
                     if (dstTargetInfo.listing().containsKey(dstName)) {
-                        throw new IgniteCheckedException("Failed to perform move because destination already " +
+                        throw new IgfsPathAlreadyExistsException("Failed to perform move because destination already " +
                             "contains entry with the same name existing file [src=" + srcPath +
                             ", dst=" + dstPath + ']');
                     }
