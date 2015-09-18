@@ -33,11 +33,11 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         }
 
         [Test]
-        public void Test()
+        public void TestCreate()
         {
             var al = Grid1.GetAtomicLong("test", 10, true);
 
-            Assert.IsNotNull(al);
+            Assert.AreEqual(10, al.Read());
         }
     }
 }
