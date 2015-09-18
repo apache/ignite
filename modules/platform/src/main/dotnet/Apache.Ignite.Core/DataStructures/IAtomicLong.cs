@@ -17,12 +17,10 @@
 
 namespace Apache.Ignite.Core.DataStructures
 {
-    using System;
-
     /// <summary>
     /// Represents a distributed atomic long value.
     /// </summary>
-    public interface IAtomicLong : IDisposable
+    public interface IAtomicLong
     {
         /// <summary>
         /// Gets the name of this atomic long.
@@ -76,6 +74,11 @@ namespace Apache.Ignite.Core.DataStructures
         /// Determines whether this instance was removed from cache.
         /// </summary>
         /// <returns>True if this atomic was removed from cache; otherwise, false.</returns>
-        bool IsRemoved();
+        bool IsClosed();
+
+        /// <summary>
+        /// Closes this instance.
+        /// </summary>
+        void Close();
     }
 }
