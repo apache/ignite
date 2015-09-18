@@ -139,7 +139,7 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
         /** {@inheritDoc} */
         @Override public Void process(MutableEntry<String, Long> entry, Object... arguments) throws EntryProcessorException {
-            entry.setValue(entry.getValue() + 1);
+            entry.setValue(entry.getValue() == null ? 0 : entry.getValue() + 1);
 
             return null;
         }
