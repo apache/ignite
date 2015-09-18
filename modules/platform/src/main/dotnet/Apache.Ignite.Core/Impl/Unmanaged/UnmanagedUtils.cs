@@ -157,8 +157,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcAtomicLongDecrement = "IgniteAtomicLongDecrement";
         private const string ProcAtomicLongExchange = "IgniteAtomicLongExchange";
         private const string ProcAtomicLongCompareExchange = "IgniteAtomicLongCompareExchange";
-        private const string ProcAtomicLongIsRemoved = "IgniteAtomicLongIsRemoved"; 
-        
+        private const string ProcAtomicLongIsRemoved = "IgniteAtomicLongIsRemoved";
+        private const string ProcAtomicLongClose = "IgniteAtomicLongClose";
+
         #endregion
 
         #region DELEGATE DEFINITIONS
@@ -287,7 +288,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate long AtomicLongDecrementDelegate(void* ctx, void* target);
         private delegate long AtomicLongExchangeDelegate(void* ctx, void* target, long value);
         private delegate long AtomicLongCompareExchangeDelegate(void* ctx, void* target, long value, long comparand);
-        private delegate bool AtomicLongIsRemovedDelegate(void* ctx, void* target); 
+        private delegate bool AtomicLongIsRemovedDelegate(void* ctx, void* target);
+        private delegate void AtomicLongCloseDelegate(void* ctx, void* target);
 
         #endregion
 
@@ -419,6 +421,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly AtomicLongExchangeDelegate ATOMIC_LONG_EXCHANGE;
         private static readonly AtomicLongCompareExchangeDelegate ATOMIC_LONG_COMPARE_EXCHANGE;
         private static readonly AtomicLongIsRemovedDelegate ATOMIC_LONG_IS_REMOVED;
+        private static readonly AtomicLongCloseDelegate ATOMIC_LONG_CLOSE;
+
         // ReSharper restore InconsistentNaming
 
         #endregion
@@ -563,6 +567,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             ATOMIC_LONG_EXCHANGE = CreateDelegate<AtomicLongExchangeDelegate>(ProcAtomicLongExchange);
             ATOMIC_LONG_COMPARE_EXCHANGE = CreateDelegate<AtomicLongCompareExchangeDelegate>(ProcAtomicLongCompareExchange);
             ATOMIC_LONG_IS_REMOVED = CreateDelegate<AtomicLongIsRemovedDelegate>(ProcAtomicLongIsRemoved);
+            ATOMIC_LONG_CLOSE = CreateDelegate<AtomicLongCloseDelegate>(ProcAtomicLongClose);
         }
 
         #region NATIVE METHODS: PROCESSOR
@@ -1322,6 +1327,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static bool AtomicLongIsRemoved(IUnmanagedTarget target)
         {
             return ATOMIC_LONG_IS_REMOVED(target.Context, target.Target);
+        }
+
+        internal static void AtomicLongClose(IUnmanagedTarget target)
+        {
+            ATOMIC_LONG_CLOSE(target.Context, target.Target);
         }
 
         #endregion

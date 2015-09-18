@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
     /// <summary>
     /// Atomic long wrapper.
     /// </summary>
-    internal sealed class AtomicLong : PlatformTarget, IAtomicLong
+    internal sealed class AtomicLong : PlatformDisposableTarget, IAtomicLong
     {
         /** */
         private readonly string _name;
@@ -44,14 +44,6 @@ namespace Apache.Ignite.Core.Impl.DataStructures
             Debug.Assert(!string.IsNullOrEmpty(name));
 
             _name = name;
-        }
-
-        /** <inheritDoc /> */
-        public void Dispose()
-        {
-            Dispose(true);
-
-            GC.SuppressFinalize(this);
         }
 
         /** <inheritDoc /> */
@@ -102,16 +94,18 @@ namespace Apache.Ignite.Core.Impl.DataStructures
             throw new NotImplementedException();
         }
 
+        /** <inheritDoc /> */
         ~AtomicLong()
         {
-            // TODO: Think 
             Dispose(false);
         }
 
         /** <inheritDoc /> */
-        private void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
-            // TODO: Close
+            UU.AtomicLongClose(Target);
+            
+            base.Dispose(disposing);
         }
     }
 }
