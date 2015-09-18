@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.DataStructures
 {
+    using Apache.Ignite.Core.DataStructures;
     using NUnit.Framework;
 
     /// <summary>
@@ -32,14 +33,22 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             // No-op.
         }
 
+        /// <summary>
+        /// Tests lifecycle of the AtomicLong.
+        /// </summary>
         [Test]
         public void TestCreate()
         {
-            using (var al = Grid1.GetAtomicLong("test", 10, true))
+            IAtomicLong al;
+
+            using (al = Grid1.GetAtomicLong("test", 10, true))
             {
                 Assert.AreEqual("test", al.Name);
                 Assert.AreEqual(10, al.Read());
+                Assert.AreEqual(false, al.IsRemoved());
             }
+
+            Assert.AreEqual(true, al.IsRemoved());
         }
     }
 }

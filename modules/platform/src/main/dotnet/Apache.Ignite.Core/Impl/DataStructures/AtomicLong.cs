@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.DataStructures
 {
-    using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Impl.Portable;
@@ -61,37 +60,37 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public long Increment()
         {
-            throw new NotImplementedException();
+            return UU.AtomicLongIncrement(Target);
         }
 
         /** <inheritDoc /> */
         public long Add(long value)
         {
-            throw new NotImplementedException();
+            return UU.AtomicLongAdd(Target, value);
         }
 
         /** <inheritDoc /> */
         public long Decrement()
         {
-            throw new NotImplementedException();
+            return UU.AtomicLongDecrement(Target);
         }
 
         /** <inheritDoc /> */
         public long Exchange(long value)
         {
-            throw new NotImplementedException();
+            return UU.AtomicLongExchange(Target, value);
         }
 
         /** <inheritDoc /> */
         public long CompareExchange(long value, long comparand)
         {
-            throw new NotImplementedException();
+            return UU.AtomicLongCompareExchange(Target, value, comparand);
         }
 
         /** <inheritDoc /> */
         public bool IsRemoved()
         {
-            throw new NotImplementedException();
+            return UU.AtomicLongIsRemoved(Target);
         }
 
         /** <inheritDoc /> */
