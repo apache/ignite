@@ -314,25 +314,25 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         System.out.println("f3: " + mgr.directoryListing(f3.id()));
 
         //mgr.move(a.id(), "a", ROOT_ID, "a2", ROOT_ID);
-        mgr.move(path("/a"), path("/a2"));
+        mgr.move0(path("/a"), path("/a2"));
         //mgr.move(b.id(), "b", a.id(), "b2", a.id());
-        mgr.move(path("/a2/b"), path("/a2/b2"));
+        mgr.move0(path("/a2/b"), path("/a2/b2"));
 
         assertNotNull(mgr.info(b.id()));
 
         //mgr.move(f3.id(), "f3", b.id(), "f3-2", a.id());
-        mgr.move(path("/a2/b2/f3"), path("/a2/b2/f3-2"));
+        mgr.move0(path("/a2/b2/f3"), path("/a2/b2/f3-2"));
 
         assertNotNull(mgr.info(b.id()));
 
         //mgr.move(f3.id(), "f3-2", a.id(), "f3", b.id());
-        mgr.move(path("/a2/b2/f3-2"), path("/a2/b2/f3"));
+        mgr.move0(path("/a2/b2/f3-2"), path("/a2/b2/f3"));
 
         //mgr.move(b.id(), "b2", a.id(), "b", a.id());
-        mgr.move(path("/a2/b2"), path("/a2/b"));
+        mgr.move0(path("/a2/b2"), path("/a2/b"));
 
         //mgr.move(a.id(), "a2", ROOT_ID, "a", ROOT_ID);
-        mgr.move("/a2", "/a");
+        mgr.move0(path("/a2"), path("/a"));
 
         // Validate 'remove' operation.
         for (int i = 0; i < 100; i++) {

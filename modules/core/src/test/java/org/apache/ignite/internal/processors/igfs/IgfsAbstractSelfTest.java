@@ -29,8 +29,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -50,8 +49,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -82,13 +80,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
 
     /** Default repeat count. */
-    protected static final int REPEAT_CNT = 100;
+    protected static final int REPEAT_CNT = 5;
 
     /** Concurrent operations count. */
-    protected static final int OPS_CNT = 1116;
+    protected static final int OPS_CNT = 16;
 
     /** Seed. */
-    protected static final long SEED = 0L; // System.currentTimeMillis();
+    protected static final long SEED = System.currentTimeMillis();
 
     /** Amount of blocks to prefetch. */
     protected static final int PREFETCH_BLOCKS = 1;
@@ -189,67 +187,67 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         dual = mode != PRIMARY;
     }
 
-    private static Map<IgniteUuid, String> checkIgfsConsistent(IgniteFileSystem fs) throws Exception {
+    private static Map<IgniteUuid, String> checkIgfsConsistent(IgniteFileSystem fs, boolean dual) throws Exception {
         assert fs.exists(new IgfsPath("/"));
 
         final Map<IgniteUuid, String> map0 = new TreeMap<>();
 
-        dumpIgfs(fs, new IgfsPath("/"), map0);
+        dumpIgfs(fs, new IgfsPath("/"), map0, dual);
 
+        // Check there are no duplicated file Ids in meta cache:
         GridCacheAdapter metaCache = getMetaCache(fs);
-
-        Set<GridCacheEntryEx> set = metaCache.entries();
 
         final Set<IgniteUuid> cacheIdSet = new HashSet<>();
 
-        for (GridCacheEntryEx e: set) {
-            System.out.println("Data entry = " + e + " deleted = " + e.deleted());
+        for (GridCacheEntryEx e: (Set<GridCacheEntryEx>)metaCache.entries()) {
+            X.println("Data entry = " + e + " deleted = " + e.deleted());
 
             KeyCacheObject k = e.key();
 
             IgniteUuid id = k.value(null, false);
 
-            boolean a = cacheIdSet.add(id);
-            assert a;
+            assert cacheIdSet.add(id);
         }
 
         return map0;
     }
 
-    public static void dumpIgfs(IgniteFileSystem igfs, IgfsPath path, Map<IgniteUuid, String> map) throws Exception {
+    /**
+     * Prints all IGFS paths and dumps IGFS into { id, full String path } map.
+     * 
+     * @param igfs The IGFS to dump.
+     * @param path The path to start dump from.
+     * @param map The map to dump into.
+     * @throws Exception If failed.
+     */
+    static void dumpIgfs(IgniteFileSystem igfs, IgfsPath path, Map<IgniteUuid, String> map, boolean dual) throws Exception {
+        assert map != null;
+
         IgfsFile file = igfs.info(path);
 
         assert file != null;
 
         IgniteUuid id = ((IgfsFileImpl)file).fileId();
 
-        GridCacheAdapter metaCache =  getMetaCache(igfs);
+        GridCacheAdapter<IgniteUuid, IgfsFileInfo> metaCache = getMetaCache(igfs);
 
         // check the file is present in meta cache:
-        Object x = metaCache.get(id);
-        assert x != null;
+        IgfsFileInfo info = metaCache.get(id);
+
+        assert dual || info != null;
 
         String pushedOut = map.put(id, path.toString()/*full path*/);
         assert pushedOut == null;
 
         if (file.isDirectory()) {
-            System.out.println(path + "/ : " + x);
+            X.println(path + "/ : " + info);
 
+            // Recurse down into the subdirectory:
             for (IgfsPath child : igfs.listPaths(path))
-                dumpIgfs(igfs, child, map);
+                dumpIgfs(igfs, child, map, dual);
         }
-        else {
-            System.out.println(path + " : " + igfs.size(path) + " : " + x);
-//            try (BufferedReader br = new BufferedReader(new InputStreamReader(igfs.open(path)))) {
-//                String line = br.readLine();
-//
-//                while (line != null) {
-//                    System.out.println(line);
-//
-//                    line = br.readLine();
-//                }
-//            }
-        }
+        else
+            X.println(path + " : " + igfs.size(path) + " : " + info);
     }
 
     /**
@@ -915,25 +913,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testFormat() throws Exception {
         final IgniteKernal grid = (IgniteKernal)G.ignite(dataCacheIgnite());
 
-        final GridCacheAdapter cache = grid.internalCache(dataCacheName());
+        final GridCacheAdapter dataCache = grid.internalCache(dataCacheName());
 
-        assert cache != null;
+        assert dataCache != null;
 
-//        int size0;
-//        while (true) {
-//            size0 = cache.size();
-//
-//            if (size0 > 0) {
-//                System.out.println("################# Size = " + size0);
-//
-//                cache.clear();
-//            }
-//            else
-//                break;
-//        }
-
-        int size1 = cache.size();
-        assert size1 == 0 : "Data cache size = " + size1;
+        int size0 = dataCache.size(new CachePeekMode[] {CachePeekMode.ALL});
+        assert size0 == 0 : "Initial data cache size = " + size0;
 
         if (dual)
             create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE, FILE_NEW));
@@ -951,30 +936,33 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         assert igfs.info(FILE).length() == 10 * 1024 * 1024;
 
-        int size = cache.size();
-        int primarySize = cache.primarySize();
-        int primaryKeySetSize = cache.primaryKeySet().size();
+//        int primarySize = dataCache.primarySize();
+//        int primaryKeySetSize = dataCache.primaryKeySet().size();
+//        int primaryPartSize = 0;
 
-        int primaryPartSize = 0;
-
-        for (int p : cache.affinity().primaryPartitions(grid.localNode())) {
-            Set set = cache.entrySet(p);
-
-            if (set != null)
-                primaryPartSize += set.size();
-        }
+//        for (int p : dataCache.affinity().primaryPartitions(grid.localNode())) {
+//            Set set = dataCache.entrySet(p);
+//
+//            if (set != null)
+//                primaryPartSize += set.size();
+//        }
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                int s = cache.size();
-                System.out.println("(0) data cache size = " + s);
-                return s > 0;
+                try {
+                    return dataCache.size(new CachePeekMode[] {CachePeekMode.ALL}) > 0;
+//                    X.println("(0) data cache size = " + size);
+//
+//                    return size > 0;
+                } catch (IgniteCheckedException ice) {
+                    throw new IgniteException(ice);
+                }
             }
-        }, 10_000);
+        }, 1_000);
 
-        assert primarySize > 0;
-        assert primarySize == primaryKeySetSize;
-        assert primarySize == primaryPartSize;
+//        assert primarySize > 0;
+//        assert primarySize == primaryKeySetSize;
+//        assert primarySize == primaryPartSize;
 
         igfs.format();
 
@@ -991,73 +979,62 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         //int sizeNew = cache.size();
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                int s = cache.size();
-                System.out.println("(1) data cache size = " + s);
-                return s == 0;
+                try {
+                    return dataCache.size(new CachePeekMode[] {CachePeekMode.ALL}) == 0;
+                } catch (IgniteCheckedException ice) {
+                    throw new IgniteException(ice);
+                }
             }
         }, 10_000)) {
-            Set<GridCacheEntryEx> set = cache.allEntries();
+            Set<GridCacheEntryEx> set = dataCache.allEntries();
 
             for (GridCacheEntryEx e: set) {
-                System.out.println("deleted = " + e.deleted());
-                System.out.println("detached = " + e.detached());
-                System.out.println("info = " + e.info());
-                System.out.println("k = " + e.key() + ", v = " + e.valueBytes());
+                X.println("deleted = " + e.deleted());
+                X.println("detached = " + e.detached());
+                X.println("info = " + e.info());
+                X.println("k = " + e.key() + ", v = " + e.valueBytes());
             }
 
             assert false;
         }
         //assert sizeNew == 0 : "new size (1) = " + sizeNew;
 
-        int primarySizeNew = cache.primarySize();
-        int primaryKeySetSizeNew = cache.primaryKeySet().size();
+//        int primarySizeNew = dataCache.primarySize();
+//        int primaryKeySetSizeNew = dataCache.primaryKeySet().size();
+//        int primaryPartSizeNew = 0;
 
-        int primaryPartSizeNew = 0;
-
-        for (int p : cache.affinity().primaryPartitions(grid.localNode())) {
-            Set set = cache.entrySet(p);
-
-            if (set != null && !set.isEmpty()) {
-                for (Object entry : set)
-                    System.out.println(entry);
-
-                primaryPartSizeNew += set.size();
-            }
-        }
-
-//        sizeNew = cache.size();
+//        for (int p : dataCache.affinity().primaryPartitions(grid.localNode())) {
+//            Set set = dataCache.entrySet(p);
 //
-//        assert sizeNew == 0 : "new size (2) = " + sizeNew;
-        if( !GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                int s = cache.size();
-                System.out.println("(2) data cache size = " + s);
-                return s == 0;
-            }
-        }, 10_000)) {
-            Set<GridCacheEntryEx> set = cache.allEntries();
+//            if (set != null && !set.isEmpty()) {
+//                for (Object entry : set)
+//                    X.println(entry);
+//
+//                primaryPartSizeNew += set.size();
+//            }
+//        }
 
-            for (GridCacheEntryEx e: set) {
-               System.out.println("k = " + e.key() + ", v = " + e.valueBytes() );
+        if ( !GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    return dataCache.size(new CachePeekMode[] {CachePeekMode.ALL}) == 0;
+                } catch (IgniteCheckedException ice) {
+                    throw new IgniteException(ice);
+                }
             }
+        }, 1_000)) {
+            Set<GridCacheEntryEx> set = dataCache.allEntries();
+
+            for (GridCacheEntryEx e: set)
+               X.println("k = " + e.key() + ", v = " + e.valueBytes() );
 
             assert false;
         }
 
-        assert primarySizeNew == 0;
-        assert primaryKeySetSizeNew == 0;
-        assert primaryPartSizeNew == 0;
+//        assert primarySizeNew == 0;
+//        assert primaryKeySetSizeNew == 0;
+//        assert primaryPartSizeNew == 0;
     }
-
-//    public void testFormatRepeated() throws Exception  {
-//        int count = 0;
-//
-//        while (count < 1000) {
-//            testFormat();
-//
-//            count++;
-//        }
-//    }
 
     /**
      * Test regular file open.
@@ -2039,6 +2016,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    // TODO: enable when delete reliability fixed.
     public void _testDeadlocksDelete() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
@@ -2055,7 +2033,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testDeadlocksUpdate() throws Exception {
+    public void testDeadlocksUpdate() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
                 checkDeadlocks(5, 2, 2, 2, 0, 0, OPS_CNT, 0, 0);
@@ -2071,7 +2049,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testDeadlocksMkdirs() throws Exception {
+    public void testDeadlocksMkdirs() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
                 checkDeadlocks(5, 2, 2, 2, 0, 0, 0, OPS_CNT, 0);
@@ -2087,7 +2065,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testDeadlocksCreate() throws Exception {
+    public void testDeadlocksCreate() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
                 checkDeadlocks(5, 2, 2, 2, 0, 0, 0, 0, OPS_CNT);
@@ -2103,6 +2081,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    // TODO: enable when delete reliability fixed.
     public void _testDeadlocks() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
@@ -2219,7 +2198,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                             boolean quasiOkay = igfs.exists(new IgfsPath(toPath + "/" + fromPath.name()));
 
-                            System.out.println("Move: " + fromPath + " -> " + toPath + ": " + quasiOkay);
+                            X.println("Move: " + fromPath + " -> " + toPath + ": " + quasiOkay);
                         }
                     }
                     catch (IgniteException ignore) {
@@ -2341,6 +2320,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             threads.add(new Thread(r));
         }
 
+        Map<IgniteUuid, String> map00 = checkIgfsConsistent(igfs, dual);
+
+        assert map00.size() == 1; // Root only.
+
         // Create directory/folder structure.
         for (int i = 0; i < lvlCnt; i++) {
             final int lvl = i + 1;
@@ -2356,8 +2339,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 create(igfsSecondary, dirs, files);
         }
 
-        System.out.println("==================== Before:");
-        Map<IgniteUuid, String> map0 = checkIgfsConsistent(igfs);
+        X.println("==================== Before:");
+        Map<IgniteUuid, String> map0 = checkIgfsConsistent(igfs, dual);
 
         // Start all threads and wait for them to finish.
         for (Thread thread : threads)
@@ -2365,37 +2348,54 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         U.joinThreads(threads, null);
 
-        System.out.println("==================== After:");
+        X.println("==================== After:");
 
-        Map<IgniteUuid, String> map1 = checkIgfsConsistent(igfs);
+        Map<IgniteUuid, String> map1 = checkIgfsConsistent(igfs, dual);
 
-        // Compare maps:
-        Map<IgniteUuid, String> map0minusMap1 = subtract(map0, map1);
-        if (!map0minusMap1.isEmpty()) {
-            System.out.println("### Only in initial map: ");
+        // If there are no remove/create operations,
+        // we can assert that the set of file id is an invariant,so check that:
+        if (mkdirsCnt == 0
+            && delCnt == 0
+            && createCnt == 0
+            && !dual /* It looks like in dual mode this check is invalid. */) {
+            // Compare maps:
+            Map<IgniteUuid, String> map0minusMap1 = subtract(map0, map1);
+            if (!map0minusMap1.isEmpty()) {
+                X.println("### Only in initial map: ");
 
-            for (Map.Entry e: map0minusMap1.entrySet())
-                System.out.println(e.getKey() + " = " + e.getValue());
+                for (Map.Entry e : map0minusMap1.entrySet())
+                    X.println(e.getKey() + " = " + e.getValue());
 
-            assert false;
-        }
+                assert false;
+            }
 
-        Map<IgniteUuid, String> map1minusMap0 = subtract(map1, map0);
-        if (!map1minusMap0.isEmpty()) {
-            System.out.println("### Only in resultant map: ");
+            Map<IgniteUuid, String> map1minusMap0 = subtract(map1, map0);
+            if (!map1minusMap0.isEmpty()) {
+                X.println("### Only in resultant map: ");
 
-            for (Map.Entry e: map1minusMap0.entrySet())
-                System.out.println(e.getKey() + " = " + e.getValue());
+                for (Map.Entry e : map1minusMap0.entrySet())
+                    X.println(e.getKey() + " = " + e.getValue());
 
-            assert false;
+                assert false;
+            }
         }
     }
 
+    /**
+     * Subtracts one map from another by the key set.
+     *
+     * @param x The map to subtract from.
+     * @param y The map to subtract.
+     * @param <K> Key type.
+     * @param <V> Value type.
+     * @return The result of subtraction.
+     */
     static <K,V> Map<K,V> subtract(Map<K,V> x, Map<K,V> y) {
-        Map<K,V> x1 = new TreeMap(x);
-        for (K k: y.keySet()) {
+        Map<K,V> x1 = new TreeMap<>(x);
+
+        for (K k: y.keySet())
             x1.remove(k);
-        }
+
         return x1;
     }
 
@@ -2896,12 +2896,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param cache The cache.
      */
     private static void dumpCache(String cacheName, GridCacheAdapter cache) {
-        System.out.println("=============================== " + cacheName + " cache dump: ");
+        X.println("=============================== " + cacheName + " cache dump: ");
 
         Set<GridCacheEntryEx> set = cache.entries();
 
         for (GridCacheEntryEx e: set)
-            System.out.println("Lost " + cacheName + " entry = " + e);
+            X.println("Lost " + cacheName + " entry = " + e);
     }
 
     private static boolean isEmpty(IgniteFileSystem igfs) {
@@ -2912,7 +2912,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         int size1 = dataCache.size();
 
         if (size1 > 0) {
-            System.out.println("Data cache size = " + size1);
+            X.println("Data cache size = " + size1);
 
             return false;
         }
@@ -2924,7 +2924,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         int size2 = metaCache.size();
 
         if (size2 > 2) {
-            System.out.println("Meta cache size = " + size2);
+            X.println("Meta cache size = " + size2);
 
             return false;
         }
