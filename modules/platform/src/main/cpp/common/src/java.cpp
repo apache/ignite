@@ -357,7 +357,7 @@ namespace ignite
             JniMethod M_PLATFORM_ATOMIC_LONG_ADD = JniMethod("add", "(J)J", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_DECREMENT = JniMethod("decrement", "()J", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_EXCHANGE = JniMethod("exchange", "(J)J", false);
-            JniMethod M_PLATFORM_ATOMIC_LONG_COMPARE_EXCHANGE = JniMethod("compareExchange", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_COMPARE_EXCHANGE = JniMethod("compareExchange", "(JJ)J", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_IS_REMOVED = JniMethod("isRemoved", "()Z", false);
 
             /* STATIC STATE. */
