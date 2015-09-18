@@ -1289,10 +1289,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region NATIVE METHODS: DATA STRUCTURES
 
-        internal static long AtomicLongRead(IUnmanagedTarget target)
-        {
-            return ATOMIC_LONG_READ(target.Context, target.Target);
-        }
+        internal static long AtomicLongRead(IUnmanagedTarget target) { return ATOMIC_LONG_READ(target.Context, target.Target); }
+        internal static long AtomicLongIncrement(IUnmanagedTarget target) { return ATOMIC_LONG_INCREMENT(target.Context, target.Target); }
+        internal static long AtomicLongAdd(IUnmanagedTarget target, long value) { return ATOMIC_LONG_ADD(target.Context, target.Target, value); }
+        internal static long AtomicLongDecrement(IUnmanagedTarget target) { return ATOMIC_LONG_DECREMENT(target.Context, target.Target); }
+        internal static long AtomicLongExchange(IUnmanagedTarget target, long value) { return ATOMIC_LONG_EXCHANGE(target.Context, target.Target, value); }
+        internal static long AtomicLongCompareExchange(IUnmanagedTarget target, long value, long comparand) { return ATOMIC_LONG_COMPARE_EXCHANGE(target.Context, target.Target, value, comparand); }
+        internal static bool AtomicLongIsRemoved(IUnmanagedTarget target) { return ATOMIC_LONG_IS_REMOVED(target.Context, target.Target); }
 
         #endregion
 
