@@ -472,8 +472,7 @@ public final class IgfsImpl implements IgfsEx {
     @SuppressWarnings("ConstantConditions")
     @Override public IgfsStatus globalSpace() {
         return safeOp(new Callable<IgfsStatus>() {
-            @Override
-            public IgfsStatus call() throws Exception {
+            @Override public IgfsStatus call() throws Exception {
                 IgniteBiTuple<Long, Long> space = igfsCtx.kernalContext().grid().compute().execute(
                     new IgfsGlobalSpaceTask(name()), null);
 
@@ -691,81 +690,6 @@ public final class IgfsImpl implements IgfsEx {
 
                     return null;
                 }
-
-//                // Resolve source file info.
-//                final FileDescriptor srcDesc = getFileDescriptor(src);
-//
-//                // File not found.
-//                if (srcDesc == null || srcDesc.parentId == null) {
-//                    if (mode == PRIMARY)
-//                        checkConflictWithPrimary(src);
-//
-//                    throw new IgfsPathNotFoundException("Failed to perform rename (source path not found): " + src);
-//                }
-//
-//                // Resolve destination file info.
-//                FileDescriptor destDesc = getFileDescriptor(dest);
-//
-//                final String destFileName;
-//
-//                boolean newDest = destDesc == null;
-//
-//                if (newDest) {
-//                    // Case mv "/x/y/foo" -> "/a/b/foo"
-//                    IgfsPath destParent = dest.parent();
-//
-//                    assert destParent != null;
-//
-//                    // Use parent directory for destination parent and destination path name as destination name.
-//                    destDesc = getFileDescriptor(destParent);
-//
-//                    // Destination directory doesn't exist.
-//                    if (destDesc == null)
-//                        throw new IgfsPathNotFoundException("Failed to rename (destination directory does not " +
-//                            "exist): " + dest);
-//
-//                    destFileName = dest.name();
-//                }
-//                else
-//                    // Use destination directory for destination parent and source path name as destination name.
-//                    // Case mv "/x/y/foo" -> "/a/b/"
-//                    destFileName = src.name();
-//
-//                // Can move only into directory, but not into file.
-//                if (destDesc.isFile)
-//                    throw new IgfsParentNotDirectoryException("Failed to rename (destination is not a directory): "
-//                        + dest);
-//
-//                // Src path id chain, including root:
-//                final List<IgniteUuid> srcIds = meta.fileIds(src);
-//
-//                assert srcIds != null;
-//
-//                if (srcIds.contains(null))
-//                    throw new IgfsPathNotFoundException("Failed to rename (Some of the source path components " +
-//                        "was concurrently deleted): " + src);
-//
-//                // Actual destination file (that must exist):
-//                final IgfsPath destDir = newDest ? dest.parent() : dest;
-//
-//                assert destDir != null;
-//
-//                List<IgniteUuid> destIds = meta.fileIds(destDir);
-//
-//                assert destIds != null;
-//                assert destIds.size() == destDir.depth() + 1: "dest ids = " + destIds + ", dest = " + destDir;
-//
-//                if (destIds.contains(null))
-//                    throw new IgfsPathNotFoundException("Failed to rename (Some of the destination path components " +
-//                        "was concurrently deleted): " + dest);
-//
-////                    throw new IgfsPathNotFoundException("Failed to rename (Some of the destination path components " +
-////                        "was concurrently deleted): " + destDir);
-//
-////                meta.move(srcIds, src,
-////                    destIds/*tail is the target dir id, it must exist*/,
-////                    destDir/*dest directory (parent), it must exist. */,
-////                    destFileName);
 
                 IgfsFileInfo info = meta.move0(src, dest);
 
@@ -990,8 +914,7 @@ public final class IgfsImpl implements IgfsEx {
                 }
 
                 return F.viewReadOnly(files, new C1<String, IgfsPath>() {
-                    @Override
-                    public IgfsPath apply(String e) {
+                    @Override public IgfsPath apply(String e) {
                         return new IgfsPath(path, e);
                     }
                 });
@@ -1004,8 +927,7 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
 
         return safeOp(new Callable<Collection<IgfsFile>>() {
-            @Override
-            public Collection<IgfsFile> call() throws Exception {
+            @Override public Collection<IgfsFile> call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("List directory details: " + path);
 
@@ -1081,8 +1003,7 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(seqReadsBeforePrefetch >= 0, "seqReadsBeforePrefetch >= 0");
 
         return safeOp(new Callable<IgfsInputStreamAdapter>() {
-            @Override
-            public IgfsInputStreamAdapter call() throws Exception {
+            @Override public IgfsInputStreamAdapter call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Open file for reading [path=" + path + ", bufSize=" + bufSize + ']');
 
@@ -1169,8 +1090,7 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(bufSize >= 0, "bufSize >= 0");
 
         return safeOp(new Callable<IgfsOutputStream>() {
-            @Override
-            public IgfsOutputStream call() throws Exception {
+            @Override public IgfsOutputStream call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
                         overwrite + ", props=" + props + ']');
@@ -1273,8 +1193,7 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(bufSize >= 0, "bufSize >= 0");
 
         return safeOp(new Callable<IgfsOutputStream>() {
-            @Override
-            public IgfsOutputStream call() throws Exception {
+            @Override public IgfsOutputStream call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Open file for appending [path=" + path + ", bufSize=" + bufSize + ", create=" + create +
                         ", props=" + props + ']');
@@ -1396,8 +1315,7 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(len >= 0, "len >= 0");
 
         return safeOp(new Callable<Collection<IgfsBlockLocation>>() {
-            @Override
-            public Collection<IgfsBlockLocation> call() throws Exception {
+            @Override public Collection<IgfsBlockLocation> call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Get affinity for file block [path=" + path + ", start=" + start + ", len=" + len + ']');
 
@@ -1430,8 +1348,7 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @Override public IgfsMetrics metrics() {
         return safeOp(new Callable<IgfsMetrics>() {
-            @Override
-            public IgfsMetrics call() throws Exception {
+            @Override public IgfsMetrics call() throws Exception {
                 IgfsPathSummary sum = new IgfsPathSummary();
 
                 summary0(ROOT_ID, sum);
