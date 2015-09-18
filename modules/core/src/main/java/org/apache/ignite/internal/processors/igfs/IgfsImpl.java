@@ -692,95 +692,87 @@ public final class IgfsImpl implements IgfsEx {
                     return null;
                 }
 
-                // Resolve source file info.
-                final FileDescriptor srcDesc = getFileDescriptor(src);
-
-                // File not found.
-                if (srcDesc == null || srcDesc.parentId == null) {
-                    if (mode == PRIMARY)
-                        checkConflictWithPrimary(src);
-
-                    throw new IgfsPathNotFoundException("Failed to rename (source path not found): " + src);
-                }
-
-                // Resolve destination file info.
-                FileDescriptor destDesc = getFileDescriptor(dest);
-
-                final String destFileName;
-
-                boolean newDest = destDesc == null;
-
-                if (newDest) {
-                    // Case mv "/x/y/foo" -> "/a/b/foo"
-                    IgfsPath destParent = dest.parent();
-
-                    assert destParent != null;
-
-                    // Use parent directory for destination parent and destination path name as destination name.
-                    destDesc = getFileDescriptor(destParent);
-
-                    // Destination directory doesn't exist.
-                    if (destDesc == null)
-                        throw new IgfsPathNotFoundException("Failed to rename (destination directory does not " +
-                            "exist): " + dest);
-
-                    destFileName = dest.name();
-                }
-                else
-                    // Use destination directory for destination parent and source path name as destination name.
-                    // Case mv "/x/y/foo" -> "/a/b/"
-                    destFileName = src.name();
-
-                // Can move only into directory, but not into file.
-                if (destDesc.isFile)
-                    throw new IgfsParentNotDirectoryException("Failed to rename (destination is not a directory): "
-                        + dest);
-
-                // Src path id chain, including root:
-                final List<IgniteUuid> srcIds = meta.fileIds(src);
-
-                assert srcIds != null;
-
-                if (srcIds.contains(null))
-                    throw new IgfsPathNotFoundException("Failed to rename (Some of the source path components " +
-                        "was concurrently deleted): " + src);
-
-                // Actual destination file (that must exist):
-                final IgfsPath destDir = newDest ? dest.parent() : dest;
-
-                assert destDir != null;
-
-                List<IgniteUuid> destIds = meta.fileIds(destDir);
-
-                assert destIds != null;
-                assert destIds.size() == destDir.depth() + 1: "dest ids = " + destIds + ", dest = " + destDir;
-
-                if (destIds.contains(null))
-                    throw new IgfsPathNotFoundException("Failed to rename (Some of the destination path components " +
-                        "was concurrently deleted): " + dest);
-
+//                // Resolve source file info.
+//                final FileDescriptor srcDesc = getFileDescriptor(src);
+//
+//                // File not found.
+//                if (srcDesc == null || srcDesc.parentId == null) {
+//                    if (mode == PRIMARY)
+//                        checkConflictWithPrimary(src);
+//
+//                    throw new IgfsPathNotFoundException("Failed to perform rename (source path not found): " + src);
+//                }
+//
+//                // Resolve destination file info.
+//                FileDescriptor destDesc = getFileDescriptor(dest);
+//
+//                final String destFileName;
+//
+//                boolean newDest = destDesc == null;
+//
+//                if (newDest) {
+//                    // Case mv "/x/y/foo" -> "/a/b/foo"
+//                    IgfsPath destParent = dest.parent();
+//
+//                    assert destParent != null;
+//
+//                    // Use parent directory for destination parent and destination path name as destination name.
+//                    destDesc = getFileDescriptor(destParent);
+//
+//                    // Destination directory doesn't exist.
+//                    if (destDesc == null)
+//                        throw new IgfsPathNotFoundException("Failed to rename (destination directory does not " +
+//                            "exist): " + dest);
+//
+//                    destFileName = dest.name();
+//                }
+//                else
+//                    // Use destination directory for destination parent and source path name as destination name.
+//                    // Case mv "/x/y/foo" -> "/a/b/"
+//                    destFileName = src.name();
+//
+//                // Can move only into directory, but not into file.
+//                if (destDesc.isFile)
+//                    throw new IgfsParentNotDirectoryException("Failed to rename (destination is not a directory): "
+//                        + dest);
+//
+//                // Src path id chain, including root:
+//                final List<IgniteUuid> srcIds = meta.fileIds(src);
+//
+//                assert srcIds != null;
+//
+//                if (srcIds.contains(null))
+//                    throw new IgfsPathNotFoundException("Failed to rename (Some of the source path components " +
+//                        "was concurrently deleted): " + src);
+//
+//                // Actual destination file (that must exist):
+//                final IgfsPath destDir = newDest ? dest.parent() : dest;
+//
+//                assert destDir != null;
+//
+//                List<IgniteUuid> destIds = meta.fileIds(destDir);
+//
+//                assert destIds != null;
+//                assert destIds.size() == destDir.depth() + 1: "dest ids = " + destIds + ", dest = " + destDir;
+//
+//                if (destIds.contains(null))
 //                    throw new IgfsPathNotFoundException("Failed to rename (Some of the destination path components " +
-//                        "was concurrently deleted): " + destDir);
+//                        "was concurrently deleted): " + dest);
+//
+////                    throw new IgfsPathNotFoundException("Failed to rename (Some of the destination path components " +
+////                        "was concurrently deleted): " + destDir);
+//
+////                meta.move(srcIds, src,
+////                    destIds/*tail is the target dir id, it must exist*/,
+////                    destDir/*dest directory (parent), it must exist. */,
+////                    destFileName);
 
-//                meta.move(srcIds, src,
-//                    destIds/*tail is the target dir id, it must exist*/,
-//                    destDir/*dest directory (parent), it must exist. */,
-//                    destFileName);
+                IgfsFileInfo info = meta.move0(src, dest);
 
-                meta.move0(src, dest);
+                int evtTyp = info.isFile() ? EVT_IGFS_FILE_RENAMED : EVT_IGFS_DIR_RENAMED;
 
-                if (srcDesc.isFile) { // Renamed a file.
-                    if (evts.isRecordable(EVT_IGFS_FILE_RENAMED))
-                        evts.record(new IgfsEvent(
-                            src,
-                            newDest ? dest : new IgfsPath(dest, destFileName),
-                            localNode(),
-                            EVT_IGFS_FILE_RENAMED));
-                }
-                else { // Renamed a directory.
-                    if (evts.isRecordable(EVT_IGFS_DIR_RENAMED))
-                        evts.record(new IgfsEvent(src, dest, localNode(), EVT_IGFS_DIR_RENAMED));
-                }
+                if (evts.isRecordable(evtTyp))
+                    evts.record(new IgfsEvent(src, dest, localNode(), evtTyp));
 
                 return null;
             }

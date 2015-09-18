@@ -826,9 +826,10 @@ public class IgfsMetaManager extends IgfsManager {
      * Move routine.
      * @param srcPath Source path.
      * @param dstPath Destinatoin path.
+     * @return File info of renamed entry.
      * @throws IgniteCheckedException In case of exception.
      */
-    public void move0(IgfsPath srcPath, IgfsPath dstPath) throws IgniteCheckedException {
+    public IgfsFileInfo move0(IgfsPath srcPath, IgfsPath dstPath) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -863,7 +864,7 @@ public class IgfsMetaManager extends IgfsManager {
                             "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
                     }
 
-                    // 6. At this point we are safe to proceed with real move.
+                    // 6. Calculate source and destination targets which will be changed.
                     IgniteUuid srcTargetId = srcPathIds.get(srcPathIds.size() - 2);
                     IgfsFileInfo srcTargetInfo = allInfos.get(srcTargetId);
                     String srcName = srcPath.name();
@@ -872,7 +873,6 @@ public class IgfsMetaManager extends IgfsManager {
                     IgfsFileInfo dstTargetInfo;
                     String dstName;
 
-                    // 7. Calculate the target.
                     if (dstLeafId != null) {
                         // Destination leaf exists. Check if it is an empty directory.
                         IgfsFileInfo dstLeafInfo = allInfos.get(dstLeafId);
@@ -901,20 +901,22 @@ public class IgfsMetaManager extends IgfsManager {
                     assert dstTargetInfo != null;
                     assert dstTargetInfo.isDirectory();
 
-                    // 8. Last check: does destination target already have listing entry with the same name?
+                    // 7. Last check: does destination target already have listing entry with the same name?
                     if (dstTargetInfo.listing().containsKey(dstName)) {
                         throw new IgniteCheckedException("Failed to perform move because destination already " +
                             "contains entry with the same name existing file [src=" + srcPath +
                             ", dst=" + dstPath + ']');
                     }
 
-                    // 9. Actual move: remove from source parent and add to destination target.
+                    // 8. Actual move: remove from source parent and add to destination target.
                     IgfsListingEntry entry = srcTargetInfo.listing().get(srcName);
 
                     id2InfoPrj.invoke(srcTargetId, new UpdateListing(srcName, entry, true));
                     id2InfoPrj.invoke(dstTargetId, new UpdateListing(dstName, entry, false));
 
                     tx.commit();
+
+                    return allInfos.get(srcPathIds.get(srcPathIds.size() - 1));
                 }
                 finally {
                     tx.close();
