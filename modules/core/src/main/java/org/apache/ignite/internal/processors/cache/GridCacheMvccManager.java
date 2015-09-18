@@ -120,6 +120,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     @SuppressWarnings( {"FieldAccessedSynchronizedAndUnsynchronized"})
     private IgniteLogger exchLog;
 
+    /** */
+    private volatile boolean stopping;
+
     /** Lock callback. */
     @GridToStringExclude
     private final GridCacheMvccCallback cb = new GridCacheMvccCallback() {
@@ -325,8 +328,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /**
      * Cancels all client futures.
      */
-    public void cancelClientFutures() {
-        cancelClientFutures(new IgniteCheckedException("Operation has been cancelled (node is stopping)."));
+    public void onStop() {
+        stopping = true;
+
+        cancelClientFutures(stopError());
     }
 
     /** {@inheritDoc} */
@@ -362,6 +367,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Node stop exception.
+     */
+    private IgniteCheckedException stopError() {
+        return new IgniteCheckedException("Operation has been cancelled (node is stopping).");
+    }
+
+    /**
      * @param from From version.
      * @return To version.
      */
@@ -385,8 +397,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         assert old == null : "Old future is not null [futVer=" + futVer + ", fut=" + fut + ", old=" + old + ']';
 
-        if (cctx.kernalContext().clientDisconnected())
-            ((GridFutureAdapter)fut).onDone(disconnectedError(null));
+        onFutureAdded(fut);
     }
 
     /**
@@ -507,14 +518,23 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 fut.onNodeLeft(n.id());
         }
 
-        if (cctx.kernalContext().clientDisconnected())
-            ((GridFutureAdapter)fut).onDone(disconnectedError(null));
-
         // Just in case if future was completed before it was added.
         if (fut.isDone())
             removeFuture(fut);
+        else
+            onFutureAdded(fut);
 
         return true;
+    }
+
+    /**
+     * @param fut Future.
+     */
+    private void onFutureAdded(IgniteInternalFuture<?> fut) {
+        if (stopping)
+            ((GridFutureAdapter)fut).onDone(stopError());
+        else if (cctx.kernalContext().clientDisconnected())
+            ((GridFutureAdapter)fut).onDone(disconnectedError(null));
     }
 
     /**

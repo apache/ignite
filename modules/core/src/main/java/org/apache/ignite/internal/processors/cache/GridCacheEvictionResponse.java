@@ -116,7 +116,7 @@ public class GridCacheEvictionResponse extends GridCacheMessage {
     /**
      * @return {@code True} if request processing has finished with error.
      */
-    boolean error() {
+    boolean evictError() {
         return err;
     }
 
