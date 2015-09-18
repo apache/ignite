@@ -150,6 +150,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcServicesCancel = "IgniteServicesCancel";
         private const string ProcServicesCancelAll = "IgniteServicesCancelAll";
         private const string ProcServicesGetServiceProxy = "IgniteServicesGetServiceProxy";
+
+        private const string ProcAtomicLongRead = "IgniteAtomicLongRead";
+        private const string ProcAtomicLongIncrement = "IgniteAtomicLongIncrement";
+        private const string ProcAtomicLongAdd = "IgniteAtomicLongAdd";
+        private const string ProcAtomicLongDecrement = "IgniteAtomicLongDecrement";
+        private const string ProcAtomicLongExchange = "IgniteAtomicLongExchange";
+        private const string ProcAtomicLongCompareExchange = "IgniteAtomicLongCompareExchange";
+        private const string ProcAtomicLongIsRemoved = "IgniteAtomicLongIsRemoved"; 
         
         #endregion
 
@@ -403,6 +411,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ServicesCancelDelegate SERVICES_CANCEL;
         private static readonly ServicesCancelAllDelegate SERVICES_CANCEL_ALL;
         private static readonly ServicesGetServiceProxyDelegate SERVICES_GET_SERVICE_PROXY;
+
+        private static readonly AtomicLongReadDelegate ATOMIC_LONG_READ;
+        private static readonly AtomicLongIncrementDelegate ATOMIC_LONG_INCREMENT;
+        private static readonly AtomicLongAddDelegate ATOMIC_LONG_ADD;
+        private static readonly AtomicLongDecrementDelegate ATOMIC_LONG_DECREMENT;
+        private static readonly AtomicLongExchangeDelegate ATOMIC_LONG_EXCHANGE;
+        private static readonly AtomicLongCompareExchangeDelegate ATOMIC_LONG_COMPARE_EXCHANGE;
+        private static readonly AtomicLongIsRemovedDelegate ATOMIC_LONG_IS_REMOVED;
         // ReSharper restore InconsistentNaming
 
         #endregion
@@ -539,6 +555,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             SERVICES_CANCEL = CreateDelegate<ServicesCancelDelegate>(ProcServicesCancel);
             SERVICES_CANCEL_ALL = CreateDelegate<ServicesCancelAllDelegate>(ProcServicesCancelAll);
             SERVICES_GET_SERVICE_PROXY = CreateDelegate<ServicesGetServiceProxyDelegate>(ProcServicesGetServiceProxy);
+
+            ATOMIC_LONG_READ = CreateDelegate<AtomicLongReadDelegate>(ProcAtomicLongRead);
+            ATOMIC_LONG_INCREMENT = CreateDelegate<AtomicLongIncrementDelegate>(ProcAtomicLongIncrement);
+            ATOMIC_LONG_ADD = CreateDelegate<AtomicLongAddDelegate>(ProcAtomicLongAdd);
+            ATOMIC_LONG_DECREMENT = CreateDelegate<AtomicLongDecrementDelegate>(ProcAtomicLongDecrement);
+            ATOMIC_LONG_EXCHANGE = CreateDelegate<AtomicLongExchangeDelegate>(ProcAtomicLongExchange);
+            ATOMIC_LONG_COMPARE_EXCHANGE = CreateDelegate<AtomicLongCompareExchangeDelegate>(ProcAtomicLongCompareExchange);
+            ATOMIC_LONG_IS_REMOVED = CreateDelegate<AtomicLongIsRemovedDelegate>(ProcAtomicLongIsRemoved);
         }
 
         #region NATIVE METHODS: PROCESSOR
@@ -1267,7 +1291,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static long AtomicLongRead(IUnmanagedTarget target)
         {
-            return target.ChangeTarget(SERVICES_WITH_SERVER_KEEP_PORTABLE(target.Context, target.Target));
+            return ATOMIC_LONG_READ(target.Context, target.Target);
         }
 
         #endregion
