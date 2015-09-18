@@ -636,6 +636,15 @@ namespace ignite
                 m_PlatformUtils_reallocate = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_REALLOC);
                 m_PlatformUtils_errData = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_ERR_DATA);
 
+                jclass c_PlatformAtomicLong = FindClass(env, C_PLATFORM_ATOMIC_LONG);
+                m_PlatformAtomicLong_read = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_READ);
+                m_PlatformAtomicLong_increment = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_INCREMENT);
+                m_PlatformAtomicLong_add = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_ADD);
+                m_PlatformAtomicLong_decrement = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_DECREMENT);
+                m_PlatformAtomicLong_exchange = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_EXCHANGE);
+                m_PlatformAtomicLong_compareExchange = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_COMPARE_EXCHANGE);
+                m_PlatformAtomicLong_isRemoved = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_IS_REMOVED);
+
                 // Find utility classes which are not used from context, but are still required in other places.
                 CheckClass(env, C_PLATFORM_NO_CALLBACK_EXCEPTION);
             }
