@@ -414,4 +414,32 @@ extern "C" {
 	void* IGNITE_CALL IgniteServicesGetServiceProxy(gcj::JniContext* ctx, void* obj, char* name, bool sticky) {
 		return ctx->ServicesGetServiceProxy(static_cast<jobject>(obj), name, sticky);
     }
+
+    long long IGNITE_CALL IgniteAtomicLongRead(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongRead(static_cast<jobject>(obj));
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongIncrement(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongIncrement(static_cast<jobject>(obj));
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongAdd(gcj::JniContext* ctx, void* obj, long long value) {
+        return ctx->AtomicLongAdd(static_cast<jobject>(obj, value));
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongDecrement(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongDecrement(static_cast<jobject>(obj));
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongExchange(gcj::JniContext* ctx, void* obj, long long value) {
+        return ctx->AtomicLongExchange(static_cast<jobject>(obj, value));
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongCompareExchange(gcj::JniContext* ctx, void* obj, long long value, long long comparand) {
+        return ctx->AtomicLongCompareExchange(static_cast<jobject>(obj, value, comparand));
+    }
+
+    bool IGNITE_CALL IgniteAtomicLongIsRemoved(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongIsRemoved(static_cast<jobject>(obj));
+    }
 }
