@@ -274,6 +274,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void* ServicesGetServiceProxyDelegate(void* ctx, void* target, char* name, bool sticky);
 
         private delegate long AtomicLongReadDelegate(void* ctx, void* target);
+        private delegate long AtomicLongIncrementDelegate(void* ctx, void* target);
+        private delegate long AtomicLongAddDelegate(void* ctx, void* target, long value);
+        private delegate long AtomicLongDecrementDelegate(void* ctx, void* target);
+        private delegate long AtomicLongExchangeDelegate(void* ctx, void* target, long value);
+        private delegate long AtomicLongCompareExchangeDelegate(void* ctx, void* target, long value, long comparand);
+        private delegate bool AtomicLongIsRemovedDelegate(void* ctx, void* target); 
 
         #endregion
 
