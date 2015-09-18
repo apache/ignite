@@ -141,6 +141,14 @@ extern "C" {
 	void IGNITE_CALL IgniteServicesCancel(gcj::JniContext* ctx, void* obj, char* name);
 	void IGNITE_CALL IgniteServicesCancelAll(gcj::JniContext* ctx, void* obj);
 	void* IGNITE_CALL IgniteServicesGetServiceProxy(gcj::JniContext* ctx, void* obj, char* name, bool sticky);
+
+    long long IGNITE_CALL IgniteAtomicLongRead(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicLongIncrement(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicLongAdd(gcj::JniContext* ctx, void* obj, long long value);
+    long long IGNITE_CALL IgniteAtomicLongDecrement(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicLongExchange(gcj::JniContext* ctx, void* obj, long long value);
+    long long IGNITE_CALL IgniteAtomicLongCompareExchange(gcj::JniContext* ctx, void* obj, long long value, long long comparand);
+    bool IGNITE_CALL IgniteAtomicLongIsRemoved(gcj::JniContext* ctx, void* obj);
 }
 
 #endif
