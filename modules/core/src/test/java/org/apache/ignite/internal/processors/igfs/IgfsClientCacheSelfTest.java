@@ -42,25 +42,10 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Meta-information cache name. */
-    //private static final String META_CACHE_NAME = "meta";
+    private static final String META_CACHE_NAME = "meta";
 
     /** Data cache name. */
-    //private static final String DATA_CACHE_NAME = null;
-
-    /** {@inheritDoc} */
-    @Override protected String dataCacheName() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String metaCacheName() {
-        return "meta";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String dataCacheIgnite() {
-        return getTestGridName(0);
-    }
+    private static final String DATA_CACHE_NAME = null;
 
     /**
      * Constructor.
@@ -99,8 +84,8 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCacheConfiguration(
-            cacheConfiguration(metaCacheName()),
-            cacheConfiguration(dataCacheName())
+            cacheConfiguration(META_CACHE_NAME),
+            cacheConfiguration(DATA_CACHE_NAME)
         );
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -117,8 +102,8 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setMetaCacheName(metaCacheName());
-        igfsCfg.setDataCacheName(dataCacheName());
+        igfsCfg.setMetaCacheName(META_CACHE_NAME);
+        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
         igfsCfg.setName("igfs");
 
         cfg.setFileSystemConfiguration(igfsCfg);
@@ -131,13 +116,13 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration(String cacheName) {
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);
 
         cacheCfg.setNearConfiguration(null);
 
-        if (metaCacheName().equals(cacheName))
+        if (META_CACHE_NAME.equals(cacheName))
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);

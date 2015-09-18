@@ -295,14 +295,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         G.stopAll(true);
     }
 
-    protected String dataCacheName() {
-        return "dataCache";
-    }
-
-    protected String metaCacheName() {
-        return "metaCache";
-    }
-
     /**
      * Start grid with IGFS.
      *
@@ -319,8 +311,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName(dataCacheName());
-        igfsCfg.setMetaCacheName(metaCacheName());
+        igfsCfg.setDataCacheName("data");
+        igfsCfg.setMetaCacheName("meta");
         igfsCfg.setName(igfsName);
         igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         igfsCfg.setDefaultMode(mode);
@@ -331,7 +323,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName(dataCacheName());
+        dataCacheCfg.setName("data");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -343,7 +335,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName(metaCacheName());
+        metaCacheCfg.setName("meta");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -911,9 +903,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testFormat() throws Exception {
-        final IgniteKernal grid = (IgniteKernal)G.ignite(dataCacheIgnite());
-
-        final GridCacheAdapter dataCache = grid.internalCache(dataCacheName());
+        final GridCacheAdapter dataCache = getDataCache(igfs);
 
         assert dataCache != null;
 
