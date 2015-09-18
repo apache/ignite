@@ -904,7 +904,12 @@ public class IgfsMetaManager extends IgfsManager {
 
                     tx.commit();
 
-                    return allInfos.get(srcPathIds.get(srcPathIds.size() - 1));
+                    IgfsPath realNewPath = new IgfsPath(dstDirPath, dstName);
+
+                    IgfsFileInfo moved = allInfos.get(srcPathIds.get(srcPathIds.size() - 1));
+
+                    // Set the new path to the info to simplify event creation:
+                    return IgfsFileInfo.builder(moved).path(realNewPath).build();
                 }
                 finally {
                     tx.close();

@@ -696,7 +696,7 @@ public final class IgfsImpl implements IgfsEx {
                 int evtTyp = info.isFile() ? EVT_IGFS_FILE_RENAMED : EVT_IGFS_DIR_RENAMED;
 
                 if (evts.isRecordable(evtTyp))
-                    evts.record(new IgfsEvent(src, dest, localNode(), evtTyp));
+                    evts.record(new IgfsEvent(src, info.path(), localNode(), evtTyp));
 
                 return null;
             }
