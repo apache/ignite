@@ -66,16 +66,6 @@ public class IgniteIgfsTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite FS Test Suite For Platform Independent Tests");
 
-        suite.addTest(new TestSuite(IgfsPrimarySelfTest.class));
-        suite.addTest(new TestSuite(IgfsDualSyncSelfTest.class));
-        suite.addTest(new TestSuite(IgfsDualAsyncSelfTest.class));
-        suite.addTest(new TestSuite(IgfsClientCacheSelfTest.class));
-        suite.addTest(new TestSuite(IgfsBackupsDualAsyncSelfTest.class));
-        suite.addTest(new TestSuite(IgfsBackupsDualSyncSelfTest.class));
-        suite.addTest(new TestSuite(IgfsBackupsPrimarySelfTest.class));
-        suite.addTest(new TestSuite(IgfsPrimaryOffheapTieredSelfTest.class));
-        suite.addTest(new TestSuite(IgfsPrimaryOffheapValuesSelfTest.class));
-
         suite.addTest(new TestSuite(IgfsSizeSelfTest.class));
         suite.addTest(new TestSuite(IgfsAttributesSelfTest.class));
         suite.addTest(new TestSuite(IgfsFileInfoSelfTest.class));
