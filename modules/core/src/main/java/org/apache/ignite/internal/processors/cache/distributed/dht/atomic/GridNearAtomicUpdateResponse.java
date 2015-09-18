@@ -116,6 +116,8 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @param futVer Future version.
      */
     public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer) {
+        assert futVer != null;
+
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futVer = futVer;
@@ -149,16 +151,15 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
     /**
      * Sets update error.
-     * @param err
+     *
+     * @param err Error.
      */
     public void error(IgniteCheckedException err){
         this.err = err;
     }
 
-    /**
-     * @return Update error, if any.
-     */
-    public IgniteCheckedException error() {
+    /** {@inheritDoc} */
+    @Override public IgniteCheckedException error() {
         return err;
     }
 

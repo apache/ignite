@@ -703,9 +703,10 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()){
                 if (fut.topologyVersion().equals(topVer)){
-                    if (!fut.isCacheTopologyValid(cctx)) {
-                        onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
-                            cctx.name()));
+                    Throwable err = fut.validateCache(cctx);
+
+                    if (err != null) {
+                        onDone(err);
 
                         return;
                     }
@@ -749,9 +750,10 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
-                if (!fut.isCacheTopologyValid(cctx)) {
-                    onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
-                        cctx.name()));
+                Throwable err = fut.validateCache(cctx);
+
+                if (err != null) {
+                    onDone(err);
 
                     return;
                 }
@@ -777,9 +779,14 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             }
             else {
                 fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                         try {
+                            fut.get();
+
                             mapOnTopology(remap);
+                        }
+                        catch (IgniteCheckedException e) {
+                            onDone(e);
                         }
                         finally {
                             cctx.shared().txContextReset();
@@ -1435,7 +1442,12 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                         affFut.listen(new CI1<IgniteInternalFuture<?>>() {
                             @Override public void apply(IgniteInternalFuture<?> fut) {
                                 try {
+                                    fut.get();
+
                                     remap();
+                                }
+                                catch (IgniteCheckedException e) {
+                                    onDone(e);
                                 }
                                 finally {
                                     cctx.shared().txContextReset();

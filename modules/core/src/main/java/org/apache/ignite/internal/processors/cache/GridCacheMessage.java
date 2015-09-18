@@ -77,6 +77,13 @@ public abstract class GridCacheMessage implements Message {
     protected int cacheId;
 
     /**
+     * @return Error, if any.
+     */
+    @Nullable public Throwable error() {
+        return null;
+    }
+
+    /**
      * Gets next ID for indexed message ID.
      *
      * @return Message ID.
