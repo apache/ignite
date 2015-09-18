@@ -936,33 +936,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         assert igfs.info(FILE).length() == 10 * 1024 * 1024;
 
-//        int primarySize = dataCache.primarySize();
-//        int primaryKeySetSize = dataCache.primaryKeySet().size();
-//        int primaryPartSize = 0;
-
-//        for (int p : dataCache.affinity().primaryPartitions(grid.localNode())) {
-//            Set set = dataCache.entrySet(p);
-//
-//            if (set != null)
-//                primaryPartSize += set.size();
-//        }
-
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
                     return dataCache.size(new CachePeekMode[] {CachePeekMode.ALL}) > 0;
-//                    X.println("(0) data cache size = " + size);
-//
-//                    return size > 0;
                 } catch (IgniteCheckedException ice) {
                     throw new IgniteException(ice);
                 }
             }
         }, 1_000);
-
-//        assert primarySize > 0;
-//        assert primarySize == primaryKeySetSize;
-//        assert primarySize == primaryPartSize;
 
         igfs.format();
 
@@ -997,22 +979,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
             assert false;
         }
-        //assert sizeNew == 0 : "new size (1) = " + sizeNew;
-
-//        int primarySizeNew = dataCache.primarySize();
-//        int primaryKeySetSizeNew = dataCache.primaryKeySet().size();
-//        int primaryPartSizeNew = 0;
-
-//        for (int p : dataCache.affinity().primaryPartitions(grid.localNode())) {
-//            Set set = dataCache.entrySet(p);
-//
-//            if (set != null && !set.isEmpty()) {
-//                for (Object entry : set)
-//                    X.println(entry);
-//
-//                primaryPartSizeNew += set.size();
-//            }
-//        }
 
         if ( !GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -1030,10 +996,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
             assert false;
         }
-
-//        assert primarySizeNew == 0;
-//        assert primaryKeySetSizeNew == 0;
-//        assert primaryPartSizeNew == 0;
     }
 
     /**
