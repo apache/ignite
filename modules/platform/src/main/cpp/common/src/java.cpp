@@ -1866,6 +1866,83 @@ namespace ignite
 				return res;
 			}
 
+            long long JniContext::AtomicLongRead(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongIncrement(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongAdd(jobject obj, long long value)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongDecrement(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongExchange(jobject obj, long long value)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongCompareExchange(jobject obj, long long value, long long comparand)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            bool JniContext::AtomicLongIsRemoved(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                bool res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
 			jobject JniContext::Acquire(jobject obj)
             {
                 if (obj) {

@@ -334,6 +334,15 @@ namespace ignite
                 jmethodID m_PlatformUtils_reallocate;
                 jmethodID m_PlatformUtils_errData;
 
+                jclass c_PlatformAtomicLong;
+                jmethodID m_PlatformAtomicLong_read;
+                jmethodID m_PlatformAtomicLong_increment;
+                jmethodID m_PlatformAtomicLong_add;
+                jmethodID m_PlatformAtomicLong_decrement;
+                jmethodID m_PlatformAtomicLong_exchange;
+                jmethodID m_PlatformAtomicLong_compareExchange;
+                jmethodID m_PlatformAtomicLong_isRemoved;
+
                 /**
                  * Constructor.
                  */
@@ -563,6 +572,14 @@ namespace ignite
 				void ServicesCancel(jobject obj, char* name);
 				void ServicesCancelAll(jobject obj);
 				void* ServicesGetServiceProxy(jobject obj, char* name, bool sticky);
+
+                long long AtomicLongRead(jobject obj);
+                long long AtomicLongIncrement(jobject obj);
+                long long AtomicLongAdd(jobject obj, long long value);
+                long long AtomicLongDecrement(jobject obj);
+                long long AtomicLongExchange(jobject obj, long long value);
+                long long AtomicLongCompareExchange(jobject obj, long long value, long long comparand);
+                bool AtomicLongIsRemoved(jobject obj);
 
                 jobject Acquire(jobject obj);
 
