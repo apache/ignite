@@ -49,7 +49,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * JDBC result set implementation.
+ *
+ * @deprecated Using Ignite client node based JDBC driver is preferable.
+ * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
+@Deprecated
 public class JdbcResultSet implements ResultSet {
     /** Task name. */
     private static final String TASK_NAME =

@@ -129,7 +129,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         this.latchView = latchView;
         this.ctx = ctx;
 
-        log = ctx.gridConfig().getGridLogger().getLogger(getClass());
+        log = ctx.logger(getClass());
     }
 
     /** {@inheritDoc} */

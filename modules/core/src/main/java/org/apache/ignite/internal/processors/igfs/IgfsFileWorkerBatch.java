@@ -49,6 +49,9 @@ public abstract class IgfsFileWorkerBatch implements Runnable {
     /** Output stream to the file. */
     private final OutputStream out;
 
+    /** Cancel flag. */
+    private volatile boolean cancelled;
+
     /** Finishing flag. */
     private volatile boolean finishing;
 
@@ -108,6 +111,13 @@ public abstract class IgfsFileWorkerBatch implements Runnable {
     }
 
     /**
+     * @return {@code True} if batch write was terminated abruptly due to explicit cancellation.
+     */
+    boolean cancelled() {
+        return cancelled;
+    }
+
+    /**
      * Process the batch.
      */
     @SuppressWarnings("unchecked")
@@ -124,8 +134,11 @@ public abstract class IgfsFileWorkerBatch implements Runnable {
 
                         break;
                     }
-                    else if (data == CANCEL_MARKER)
+                    else if (data == CANCEL_MARKER) {
+                        cancelled = true;
+
                         throw new IgniteCheckedException("Write to file was cancelled due to node stop.");
+                    }
                     else if (data != null) {
                         try {
                             out.write(data);

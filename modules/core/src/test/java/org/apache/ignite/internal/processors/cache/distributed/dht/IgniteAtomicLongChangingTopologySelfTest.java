@@ -62,8 +62,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -84,8 +83,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected void afterTest() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         queue.clear();
@@ -129,8 +127,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             /** {@inheritDoc} */
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 IgniteAtomicLong cntr = ignite(0).atomicLong(ATOMIC_LONG_NAME, 0, true);
 
                 while (run.get())
@@ -173,8 +170,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             /** {@inheritDoc} */
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 int base = idx.getAndIncrement();
 
                 try {
@@ -261,8 +257,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     private IgniteInternalFuture<?> startNodeAndCreaterThread(final int i, final CountDownLatch startLatch, final AtomicBoolean run)
         throws Exception {
         return multithreadedAsync(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 try {
                     Ignite ignite = startGrid(i);
 

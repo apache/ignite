@@ -56,7 +56,11 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_PORT;
 
 /**
  * JDBC connection implementation.
+ *
+ * @deprecated Using Ignite client node based JDBC driver is preferable.
+ * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
+@Deprecated
 public class JdbcConnection implements Connection {
     /** Validation task name. */
     private static final String VALID_TASK_NAME =

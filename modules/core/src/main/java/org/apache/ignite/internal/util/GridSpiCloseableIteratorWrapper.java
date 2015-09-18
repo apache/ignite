@@ -54,4 +54,9 @@ public class GridSpiCloseableIteratorWrapper<T> extends GridCloseableIteratorAda
     @Override protected void onClose() throws IgniteCheckedException {
         iter.close();
     }
+
+    /** {@inheritDoc} */
+    @Override protected void onRemove() throws IgniteCheckedException {
+        iter.remove();
+    }
 }

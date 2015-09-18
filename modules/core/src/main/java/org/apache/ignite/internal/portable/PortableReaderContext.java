@@ -20,7 +20,7 @@ package org.apache.ignite.internal.portable;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.internal.portable.api.PortableObject;
 import org.jetbrains.annotations.Nullable;
 
 /**

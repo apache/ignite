@@ -311,11 +311,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> IgniteCache<K1, V1> withKeepPortable() {
-        return keepPortable();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withNoRetries() {
         GridCacheGateway<K, V> gate = this.gate;
 

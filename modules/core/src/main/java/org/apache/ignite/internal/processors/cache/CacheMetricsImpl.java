@@ -843,7 +843,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         offHeapEvicts.incrementAndGet();
 
         if (delegate != null)
-            delegate.onOffHeapRemove();
+            delegate.onOffHeapEvict();
     }
 
     /**

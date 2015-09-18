@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -52,6 +53,12 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
 
     /** */
     private static final long DURATION = 30_000;
+
+    /** */
+    private static final long OFFHEAP_MEM = 1000;
+
+    /** */
+    private static final int MAX_HEAP_SIZE = 100;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -81,7 +88,7 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
 
         if (memMode == CacheMemoryMode.ONHEAP_TIERED) {
             LruEvictionPolicy plc = new LruEvictionPolicy();
-            plc.setMaxSize(100);
+            plc.setMaxSize(MAX_HEAP_SIZE);
 
             ccfg.setEvictionPolicy(plc);
         }
@@ -89,7 +96,7 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
         if (swap) {
             ccfg.setSwapEnabled(true);
 
-            ccfg.setOffHeapMaxMemory(1000);
+            ccfg.setOffHeapMaxMemory(OFFHEAP_MEM);
         }
         else
             ccfg.setOffHeapMaxMemory(0);
@@ -133,6 +140,20 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testTxCacheOffheapSwapEvict() throws Exception {
+        swapUnswap(TRANSACTIONAL, CacheMemoryMode.ONHEAP_TIERED, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxCacheOffheapTieredSwapEvict() throws Exception {
+        swapUnswap(TRANSACTIONAL, CacheMemoryMode.OFFHEAP_TIERED, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testAtomicCacheOffheapEvict() throws Exception {
         swapUnswap(ATOMIC, CacheMemoryMode.ONHEAP_TIERED, false);
     }
@@ -142,6 +163,20 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
      */
     public void testAtomicCacheOffheapTiered() throws Exception {
         swapUnswap(ATOMIC, CacheMemoryMode.OFFHEAP_TIERED, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicCacheOffheapSwapEvict() throws Exception {
+        swapUnswap(ATOMIC, CacheMemoryMode.ONHEAP_TIERED, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicCacheOffheapTieredSwapEvict() throws Exception {
+        swapUnswap(ATOMIC, CacheMemoryMode.OFFHEAP_TIERED, true);
     }
 
     /**
@@ -220,12 +255,56 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
                 }
             });
 
-            Thread.sleep(DURATION);
+            long endTime = System.currentTimeMillis() + DURATION;
+
+            while (System.currentTimeMillis() < endTime) {
+                Thread.sleep(5000);
+
+                log.info("Cache size [heap=" + cache.localSize(CachePeekMode.ONHEAP) +
+                    ", offheap=" + cache.localSize(CachePeekMode.OFFHEAP) +
+                    ", swap=" + cache.localSize(CachePeekMode.SWAP) +
+                    ", total=" + cache.localSize() +
+                    ", offheapMem=" + cache.metrics().getOffHeapAllocatedSize() + ']');
+            }
 
             done.set(true);
 
             fut.get();
             getFut.get();
+
+            for (Integer key : keys) {
+                String val = cache.get(key);
+
+                assertNotNull(val);
+            }
+
+            int onheapSize = cache.localSize(CachePeekMode.ONHEAP);
+            int offheapSize = cache.localSize(CachePeekMode.OFFHEAP);
+            int swapSize = cache.localSize(CachePeekMode.SWAP);
+            int total = cache.localSize();
+            long offheapMem = cache.metrics().getOffHeapAllocatedSize();
+
+            log.info("Cache size [heap=" + onheapSize +
+                ", offheap=" + offheapSize +
+                ", swap=" + swapSize +
+                ", total=" + total +
+                ", offheapMem=" + offheapMem +  ']');
+
+            assertTrue(total > 0);
+
+            assertEquals(onheapSize + offheapSize + swapSize, total);
+
+            if (memMode == CacheMemoryMode.OFFHEAP_TIERED)
+                assertEquals(0, onheapSize);
+            else
+                assertEquals(MAX_HEAP_SIZE, onheapSize);
+
+            if (swap) {
+                assertTrue(swapSize > 0);
+                assertTrue(offheapMem <= OFFHEAP_MEM);
+            }
+            else
+                assertEquals(0, swapSize);
         }
         finally {
             done.set(true);

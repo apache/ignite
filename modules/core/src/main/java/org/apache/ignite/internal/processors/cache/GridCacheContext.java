@@ -283,12 +283,12 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheEvictionManager evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
         CacheContinuousQueryManager contQryMgr,
-        GridCacheAffinityManager affMgr,
         CacheDataStructuresManager dataStructuresMgr,
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
         CacheConflictResolutionManager<K, V> rslvrMgr,
-        CachePluginManager pluginMgr
+        CachePluginManager pluginMgr,
+        GridCacheAffinityManager affMgr
     ) {
         assert ctx != null;
         assert sharedCtx != null;
@@ -323,12 +323,12 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.evictMgr = add(evictMgr);
         this.qryMgr = add(qryMgr);
         this.contQryMgr = add(contQryMgr);
-        this.affMgr = add(affMgr);
         this.dataStructuresMgr = add(dataStructuresMgr);
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
         this.rslvrMgr = add(rslvrMgr);
         this.pluginMgr = add(pluginMgr);
+        this.affMgr = add(affMgr);
 
         log = ctx.log(getClass());
 

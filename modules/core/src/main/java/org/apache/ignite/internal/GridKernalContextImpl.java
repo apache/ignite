@@ -754,13 +754,13 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteLogger log() {
-        return config().getGridLogger();
+    @Override public IgniteLogger log(String ctgr) {
+        return config().getGridLogger().getLogger(ctgr);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteLogger log(Class<?> cls) {
-        return config().getGridLogger().getLogger(cls);
+        return log(cls.getName());
     }
 
     /** {@inheritDoc} */
@@ -808,7 +808,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public String userVersion(ClassLoader ldr) {
-        return spring != null ? spring.userVersion(ldr, log()) : U.DFLT_USER_VERSION;
+        return spring != null ? spring.userVersion(ldr, log(spring.getClass())) : U.DFLT_USER_VERSION;
     }
 
     /** {@inheritDoc} */

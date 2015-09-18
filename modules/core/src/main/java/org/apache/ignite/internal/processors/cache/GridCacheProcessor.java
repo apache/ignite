@@ -115,7 +115,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.internal.portable.api.PortableMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -232,16 +232,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cfg.getCacheMode() == PARTITIONED) {
                 RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
 
-                if (internalCache)
-                    aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
+                aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
 
                 cfg.setAffinity(aff);
             }
             else if (cfg.getCacheMode() == REPLICATED) {
                 RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, 512);
 
-                if (internalCache)
-                    aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
+                aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
 
                 cfg.setAffinity(aff);
 
@@ -251,11 +249,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cfg.setAffinity(new LocalAffinityFunction());
         }
         else {
-            if (cfg.getCacheMode() == PARTITIONED) {
+            if (cfg.getCacheMode() != LOCAL) {
                 if (cfg.getAffinity() instanceof RendezvousAffinityFunction) {
                     RendezvousAffinityFunction aff = (RendezvousAffinityFunction)cfg.getAffinity();
 
-                    if (internalCache && aff.getHashIdResolver() == null)
+                    if (aff.getHashIdResolver() == null)
                         aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
                 }
             }
@@ -936,6 +934,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Override public void onKernalStop(boolean cancel) {
         cacheStartedLatch.countDown();
 
+        GridCachePartitionExchangeManager<Object, Object> exch = context().exchange();
+
+        // Stop exchange manager first so that we call onKernalStop on all caches.
+        // No new caches should be added after this point.
+        exch.onKernalStop(cancel);
+
         for (String cacheName : stopSeq) {
             GridCacheAdapter<?, ?> cache = caches.remove(maskNull(cacheName));
 
@@ -956,13 +960,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
+        cancelFutures();
+
         List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();
 
         for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = sharedMgrs.listIterator(sharedMgrs.size());
             it.hasPrevious();) {
             GridCacheSharedManager<?, ?> mgr = it.previous();
 
-            mgr.onKernalStop(cancel);
+            if (mgr != exch)
+                mgr.onKernalStop(cancel);
         }
     }
 
@@ -1062,12 +1069,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.continuous().onCacheStart(cacheCtx);
 
         CacheConfiguration cfg = cacheCtx.config();
-
-        // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
-        if (cfg.isKeepPortableInStore() && cfg.isKeepPortableInStore() != CacheConfiguration.DFLT_KEEP_PORTABLE_IN_STORE
-            && !(ctx.config().getMarshaller() instanceof PortableMarshaller))
-            U.warn(log, "CacheConfiguration.isKeepPortableInStore() configuration property will be ignored because " +
-                "PortableMarshaller is not used");
 
         // Start managers.
         for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
@@ -1324,12 +1325,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             evictMgr,
             qryMgr,
             contQryMgr,
-            affMgr,
             dataStructuresMgr,
             ttlMgr,
             drMgr,
             rslvrMgr,
-            pluginMgr
+            pluginMgr,
+            affMgr
         );
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
@@ -1453,12 +1454,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 evictMgr,
                 qryMgr,
                 contQryMgr,
-                affMgr,
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
                 rslvrMgr,
-                pluginMgr
+                pluginMgr,
+                affMgr
             );
 
             cacheCtx.cacheObjectContext(cacheObjCtx);
@@ -2326,9 +2327,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             try {
                 ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs));
 
-                if (ctx.clientDisconnected())
+                if (ctx.isStopping()) {
+                    err = new IgniteCheckedException("Failed to execute dynamic cache change request, " +
+                        "node is stopping.");
+                }
+                else if (ctx.clientDisconnected()) {
                     err = new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
                         "Failed to execute dynamic cache change request, client node disconnected.");
+                }
             }
             catch (IgniteCheckedException e) {
                 err = e;
@@ -2385,7 +2391,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (ctx.localNodeId().equals(req.initiatingNodeId())) {
                 fut = (DynamicCacheStartFuture)pendingFuts.get(maskNull(req.cacheName()));
 
-                if (!req.deploymentId().equals(fut.deploymentId()))
+                if (fut != null && !req.deploymentId().equals(fut.deploymentId()))
                     fut = null;
             }
 
@@ -3037,9 +3043,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(Collections.singleton(req)));
 
-            if (ctx.clientDisconnected())
+            if (ctx.isStopping()) {
+                err = new IgniteCheckedException("Failed to execute dynamic cache change request, " +
+                    "node is stopping.");
+            }
+            else if (ctx.clientDisconnected()) {
                 err = new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
                     "Failed to execute dynamic cache change request, client node disconnected.");
+            }
         }
         catch (IgniteCheckedException e) {
             err = e;
@@ -3105,8 +3116,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Cancel all user operations.
      */
-    public void cancelUserOperations() {
-        sharedCtx.mvcc().cancelClientFutures();
+    private void cancelFutures() {
+        sharedCtx.mvcc().onStop();
+
+        Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
+
+        for (IgniteInternalFuture fut : pendingFuts.values())
+            ((GridFutureAdapter)fut).onDone(err);
+
+        for (IgniteInternalFuture fut : pendingTemplateFuts.values())
+            ((GridFutureAdapter)fut).onDone(err);
     }
 
     /**

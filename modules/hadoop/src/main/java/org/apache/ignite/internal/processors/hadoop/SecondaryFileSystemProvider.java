@@ -60,8 +60,8 @@ public class SecondaryFileSystemProvider {
 
             if (url == null) {
                 // If secConfPath is given, it should be resolvable:
-                throw new IllegalArgumentException("Failed to resolve secondary file system " +
-                    "configuration path: " + secConfPath);
+                throw new IllegalArgumentException("Failed to resolve secondary file system configuration path " +
+                    "(ensure that it exists locally and you have read access to it): " + secConfPath);
             }
 
             cfg.addResource(url);

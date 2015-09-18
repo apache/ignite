@@ -42,7 +42,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
         new HashMap<>(LOAD_CNT);
 
     /** Unsafe map. */
-    private GridOffHeapMap<String> map;
+    private GridOffHeapMap map;
 
     /** */
     protected float load = 0.75f;
@@ -94,7 +94,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
     /**
      * @return New map.
      */
-    protected abstract <K> GridOffHeapMap<K> newMap();
+    protected abstract GridOffHeapMap newMap();
 
     /**
      * @param key Key.
