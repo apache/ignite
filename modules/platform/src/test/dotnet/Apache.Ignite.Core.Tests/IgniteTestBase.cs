@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the grid1.
         /// </summary>
-        public IIgnite Grid1
+        public IIgnite Grid
         {
             get { return _grids[0]; }
         }
@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public IEvents Events
         {
-            get { return Grid1.GetEvents(); }
+            get { return Grid.GetEvents(); }
         }
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public IMessaging Messaging
         {
-            get { return Grid1.GetMessaging(); }
+            get { return Grid.GetMessaging(); }
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public ICompute Compute
         {
-            get { return Grid1.GetCompute(); }
+            get { return Grid.GetCompute(); }
         }
 
         /// <summary>
@@ -167,7 +167,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private void StartGrids()
         {
-            if (Grid1 != null)
+            if (Grid != null)
                 return;
 
             _grids = _springUrls.Select(x => Ignition.Start(GetConfiguration(x))).ToArray();

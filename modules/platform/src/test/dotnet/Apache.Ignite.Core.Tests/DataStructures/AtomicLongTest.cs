@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.DataStructures
 {
+    using System.Linq;
     using NUnit.Framework;
 
     /// <summary>
@@ -38,13 +39,13 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         [Test]
         public void TestCreateClose()
         {
-            var al = Grid1.GetAtomicLong("test", 10, true);
+            var al = Grid.GetAtomicLong("test", 10, true);
 
             Assert.AreEqual("test", al.Name);
             Assert.AreEqual(10, al.Read());
             Assert.AreEqual(false, al.IsClosed());
 
-            var al2 = Grid1.GetAtomicLong("test", 0, false);
+            var al2 = Grid.GetAtomicLong("test", 5, true);
             Assert.AreEqual("test", al2.Name);
             Assert.AreEqual(10, al2.Read());
             Assert.AreEqual(false, al2.IsClosed());
@@ -53,6 +54,31 @@ namespace Apache.Ignite.Core.Tests.DataStructures
 
             Assert.AreEqual(true, al.IsClosed());
             Assert.AreEqual(true, al2.IsClosed());
+        }
+
+        /// <summary>
+        /// Tests multithreaded scenario.
+        /// </summary>
+        [Test]
+        public void TestMultithreaded()
+        {
+            // TODO: Profile.
+
+            const int atomicCnt = 10;
+            const int threadCnt = 5;
+            const int iterations = 3000;
+
+            // 10 atomics with same name
+            var atomics = Enumerable.Range(1, atomicCnt).Select(x => Grid.GetAtomicLong("test", 0, true)).ToList();
+
+            // 5 threads increment 30000 times
+            TestUtils.RunMultiThreaded(() =>
+            {
+                for (var i = 0; i < iterations; i++)
+                    atomics.ForEach(x => x.Increment());
+            }, threadCnt);
+
+            atomics.ForEach(x => Assert.AreEqual(atomicCnt*threadCnt*iterations, x.Read()));
         }
     }
 }
