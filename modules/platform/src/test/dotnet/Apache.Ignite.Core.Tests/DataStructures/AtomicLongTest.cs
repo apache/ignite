@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.DataStructures
 {
+    using System;
     using Apache.Ignite.Core.DataStructures;
     using NUnit.Framework;
 
@@ -46,9 +47,19 @@ namespace Apache.Ignite.Core.Tests.DataStructures
                 Assert.AreEqual("test", al.Name);
                 Assert.AreEqual(10, al.Read());
                 Assert.AreEqual(false, al.IsRemoved());
+
+                using (var al2 = Grid1.GetAtomicLong("test", 0, false))
+                {
+                    Assert.AreEqual("test", al2.Name);
+                    Assert.AreEqual(10, al2.Read());
+                    Assert.AreEqual(false, al2.IsRemoved());
+                }
+
+                // TODO: This is wrong. IDisposable does not apply here.
+                Assert.AreEqual(true, al.IsRemoved());
             }
 
-            Assert.AreEqual(true, al.IsRemoved());
+            Assert.Throws<ObjectDisposedException>(() => al.IsRemoved());
         }
     }
 }
