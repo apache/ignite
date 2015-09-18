@@ -351,6 +351,15 @@ namespace ignite
 			JniMethod M_PLATFORM_SERVICES_CANCEL_ALL = JniMethod("cancelAll", "()V", false);
 			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("dotNetServiceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
 
+            const char* C_PLATFORM_ATOMIC_LONG = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicLong";
+            JniMethod M_PLATFORM_ATOMIC_LONG_READ = JniMethod("read", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_INCREMENT = JniMethod("increment", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_ADD = JniMethod("add", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_DECREMENT = JniMethod("decrement", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_EXCHANGE = JniMethod("exchange", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_COMPARE_EXCHANGE = JniMethod("compareExchange", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_IS_REMOVED = JniMethod("isRemoved", "()Z", false);
+
             /* STATIC STATE. */
             gcc::CriticalSection JVM_LOCK;
             JniJvm JVM;
