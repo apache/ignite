@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.DataStructures
 {
-    using System;
-    using Apache.Ignite.Core.DataStructures;
     using NUnit.Framework;
 
     /// <summary>
@@ -38,28 +36,23 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// Tests lifecycle of the AtomicLong.
         /// </summary>
         [Test]
-        public void TestCreate()
+        public void TestCreateClose()
         {
-            IAtomicLong al;
+            var al = Grid1.GetAtomicLong("test", 10, true);
 
-            using (al = Grid1.GetAtomicLong("test", 10, true))
-            {
-                Assert.AreEqual("test", al.Name);
-                Assert.AreEqual(10, al.Read());
-                Assert.AreEqual(false, al.IsRemoved());
+            Assert.AreEqual("test", al.Name);
+            Assert.AreEqual(10, al.Read());
+            Assert.AreEqual(false, al.IsClosed());
 
-                using (var al2 = Grid1.GetAtomicLong("test", 0, false))
-                {
-                    Assert.AreEqual("test", al2.Name);
-                    Assert.AreEqual(10, al2.Read());
-                    Assert.AreEqual(false, al2.IsRemoved());
-                }
+            var al2 = Grid1.GetAtomicLong("test", 0, false);
+            Assert.AreEqual("test", al2.Name);
+            Assert.AreEqual(10, al2.Read());
+            Assert.AreEqual(false, al2.IsClosed());
 
-                // TODO: This is wrong. IDisposable does not apply here.
-                Assert.AreEqual(true, al.IsRemoved());
-            }
+            al.Close();
 
-            Assert.Throws<ObjectDisposedException>(() => al.IsRemoved());
+            Assert.AreEqual(true, al.IsClosed());
+            Assert.AreEqual(true, al2.IsClosed());
         }
     }
 }
