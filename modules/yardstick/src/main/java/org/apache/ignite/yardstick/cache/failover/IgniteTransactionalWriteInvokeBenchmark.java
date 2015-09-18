@@ -80,7 +80,7 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
                     case 1: // Invoke scenario.
                         Long val = cache.get(masterKey);
 
-                        cache.put(masterKey, val + 1);
+                        cache.put(masterKey, val == null ? 0 : val + 1);
 
                         for (String key : keys)
                             cache.invoke(key, new IncrementCacheEntryProcessor());
