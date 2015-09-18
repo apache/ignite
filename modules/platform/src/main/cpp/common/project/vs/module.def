@@ -105,3 +105,4 @@ IgniteAtomicLongDecrement @102
 IgniteAtomicLongExchange @103 
 IgniteAtomicLongCompareExchange @104 
 IgniteAtomicLongIsRemoved @105 
+IgniteAtomicLongClose @106

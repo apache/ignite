@@ -442,4 +442,8 @@ extern "C" {
     bool IGNITE_CALL IgniteAtomicLongIsRemoved(gcj::JniContext* ctx, void* obj) {
         return ctx->AtomicLongIsRemoved(static_cast<jobject>(obj));
     }
+
+    void IGNITE_CALL IgniteAtomicLongClose(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongClose(static_cast<jobject>(obj));
+    }
 }

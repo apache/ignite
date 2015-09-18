@@ -1899,7 +1899,7 @@ namespace ignite
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_increment);
 
                 ExceptionCheck(env);
 
@@ -1910,7 +1910,7 @@ namespace ignite
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_add);
 
                 ExceptionCheck(env);
 
@@ -1921,7 +1921,7 @@ namespace ignite
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_decrement);
 
                 ExceptionCheck(env);
 
@@ -1932,7 +1932,7 @@ namespace ignite
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_exchange);
 
                 ExceptionCheck(env);
 
@@ -1943,7 +1943,7 @@ namespace ignite
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_compareExchange);
 
                 ExceptionCheck(env);
 
@@ -1954,11 +1954,20 @@ namespace ignite
             {
                 JNIEnv* env = Attach();
 
-                bool res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+                bool res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_isRemoved);
 
                 ExceptionCheck(env);
 
                 return res;
+            }
+
+            void JniContext::AtomicLongClose(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_close);
+
+                ExceptionCheck(env);
             }
 
 			jobject JniContext::Acquire(jobject obj)
