@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Cache.Query
                 throw new ArgumentException("Text cannot be null or empty");
 
             if (string.IsNullOrEmpty(QueryType))
-                throw new ArgumentException("Type cannot be null or empty");
+                throw new ArgumentException("QueryType cannot be null or empty");
 
             writer.WriteBoolean(Local);
             writer.WriteString(Text);
