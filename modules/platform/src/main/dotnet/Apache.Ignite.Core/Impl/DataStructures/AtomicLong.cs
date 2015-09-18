@@ -46,6 +46,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
             _name = name;
         }
 
+        /** <inheritDoc /> */
         public void Dispose()
         {
             Dispose(true);
@@ -53,41 +54,49 @@ namespace Apache.Ignite.Core.Impl.DataStructures
             GC.SuppressFinalize(this);
         }
 
+        /** <inheritDoc /> */
         public string Name
         {
             get { return _name; }
         }
 
+        /** <inheritDoc /> */
         public long Read()
         {
-            UU.ProcessorAtomicLong()
+            return UU.AtomicLongRead(Target);
         }
 
+        /** <inheritDoc /> */
         public long Increment()
         {
             throw new NotImplementedException();
         }
 
+        /** <inheritDoc /> */
         public long Add(long value)
         {
             throw new NotImplementedException();
         }
 
+        /** <inheritDoc /> */
         public long Decrement()
         {
             throw new NotImplementedException();
         }
 
+        /** <inheritDoc /> */
         public long Exchange(long value)
         {
             throw new NotImplementedException();
         }
 
+        /** <inheritDoc /> */
         public long CompareExchange(long value, long comparand)
         {
             throw new NotImplementedException();
         }
 
+        /** <inheritDoc /> */
         public bool IsRemoved()
         {
             throw new NotImplementedException();
@@ -95,9 +104,11 @@ namespace Apache.Ignite.Core.Impl.DataStructures
 
         ~AtomicLong()
         {
+            // TODO: Think 
             Dispose(false);
         }
 
+        /** <inheritDoc /> */
         private void Dispose(bool disposing)
         {
             // TODO: Close
