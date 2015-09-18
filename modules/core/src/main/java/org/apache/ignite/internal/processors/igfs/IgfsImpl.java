@@ -703,8 +703,6 @@ public final class IgfsImpl implements IgfsEx {
                     throw new IgfsPathNotFoundException("Failed to rename (source path not found): " + src);
                 }
 
-                final String srcFileName = src.name();
-
                 // Resolve destination file info.
                 FileDescriptor destDesc = getFileDescriptor(dest);
 
@@ -731,7 +729,7 @@ public final class IgfsImpl implements IgfsEx {
                 else
                     // Use destination directory for destination parent and source path name as destination name.
                     // Case mv "/x/y/foo" -> "/a/b/"
-                    destFileName = srcFileName;
+                    destFileName = src.name();
 
                 // Can move only into directory, but not into file.
                 if (destDesc.isFile)
@@ -742,7 +740,6 @@ public final class IgfsImpl implements IgfsEx {
                 final List<IgniteUuid> srcIds = meta.fileIds(src);
 
                 assert srcIds != null;
-                assert srcIds.size() == src.depth() + 1 : "src ids = " + srcIds + ", src = " + src;
 
                 if (srcIds.contains(null))
                     throw new IgfsPathNotFoundException("Failed to rename (Some of the source path components " +
@@ -765,10 +762,12 @@ public final class IgfsImpl implements IgfsEx {
 //                    throw new IgfsPathNotFoundException("Failed to rename (Some of the destination path components " +
 //                        "was concurrently deleted): " + destDir);
 
-                meta.move(srcIds, src,
-                    destIds/*tail is the target dir id, it must exist*/,
-                    destDir/*dest directory (parent), it must exist. */,
-                    destFileName);
+//                meta.move(srcIds, src,
+//                    destIds/*tail is the target dir id, it must exist*/,
+//                    destDir/*dest directory (parent), it must exist. */,
+//                    destFileName);
+
+                meta.move0(src, dest);
 
                 if (srcDesc.isFile) { // Renamed a file.
                     if (evts.isRecordable(EVT_IGFS_FILE_RENAMED))

@@ -574,23 +574,29 @@ public class IgfsMetaManager extends IgfsManager {
         assert validTxState(true);
         assert fileIds != null && fileIds.length > 0;
 
-        // Always sort file IDs participating in transaction to escape cache transaction deadlocks.
         Arrays.sort(fileIds);
 
-        // Wrap array as collection (1) to escape superfluous check in projection and (2) to check assertions.
-        Collection<IgniteUuid> keys = Arrays.asList(fileIds);
+        return lockIds(Arrays.asList(fileIds));
+    }
 
+    /**
+     * Lock file IDs.
+     * @param fileIds File IDs (sorted).
+     * @return Map with lock info.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Map<IgniteUuid, IgfsFileInfo> lockIds(Collection<IgniteUuid> fileIds) throws IgniteCheckedException {
         if (log.isDebugEnabled())
-            log.debug("Locking file ids: " + keys);
+            log.debug("Locking file ids: " + fileIds);
 
         // Lock files and get their infos.
-        Map<IgniteUuid, IgfsFileInfo> map = id2InfoPrj.getAll(keys);
+        Map<IgniteUuid, IgfsFileInfo> map = id2InfoPrj.getAll(fileIds);
 
         if (log.isDebugEnabled())
-            log.debug("Locked file ids: " + keys);
+            log.debug("Locked file ids: " + fileIds);
 
         // Force root ID always exist in cache.
-        if (keys.contains(ROOT_ID) && !map.containsKey(ROOT_ID)) {
+        if (fileIds.contains(ROOT_ID) && !map.containsKey(ROOT_ID)) {
             IgfsFileInfo info = new IgfsFileInfo();
 
             id2InfoPrj.putIfAbsent(ROOT_ID, info);
@@ -814,6 +820,154 @@ public class IgfsMetaManager extends IgfsManager {
      */
     public void move(String srcPath, String dstPath) throws IgniteCheckedException {
         move(new IgfsPath(srcPath), new IgfsPath(dstPath));
+    }
+
+    /**
+     * Move routine.
+     * @param srcPath Source path.
+     * @param dstPath Destinatoin path.
+     * @throws IgniteCheckedException In case of exception.
+     */
+    public void move0(IgfsPath srcPath, IgfsPath dstPath) throws IgniteCheckedException {
+        if (busyLock.enterBusy()) {
+            try {
+                assert validTxState(false);
+
+                // 1. First get source and destination path IDs.
+                List<IgniteUuid> srcPathIds = fileIds(srcPath);
+                List<IgniteUuid> dstPathIds = fileIds(dstPath);
+
+                // 2. Start transaction.
+                IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+
+                try {
+                    // 3. Obtain the locks.
+                    HashSet<IgniteUuid> allIds = new HashSet<>(srcPathIds);
+                    allIds.addAll(dstPathIds);
+
+                    allIds.remove(null);
+
+                    Map<IgniteUuid, IgfsFileInfo> allInfos = lockIds(new TreeSet<>(allIds));
+
+                    // 4. Verify integrity of source directory.
+                    if (!verifyPathIntegrity(srcPath, srcPathIds, allInfos)) {
+                        throw new IgniteCheckedException("Failed to perform move because source directory " +
+                            "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
+                    }
+
+                    // 5. Verify integrity of destination directory.
+                    IgniteUuid dstLeafId = dstPathIds.get(dstPathIds.size() - 1);
+
+                    if (!verifyPathIntegrity(dstLeafId != null ? dstPath : dstPath.parent(), dstPathIds, allInfos)) {
+                        throw new IgniteCheckedException("Failed to perform move because destination directory " +
+                            "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
+                    }
+
+                    // 6. At this point we are safe to proceed with real move.
+                    IgniteUuid srcTargetId = srcPathIds.get(srcPathIds.size() - 2);
+                    IgfsFileInfo srcTargetInfo = allInfos.get(srcTargetId);
+                    String srcName = srcPath.name();
+
+                    IgniteUuid dstTargetId;
+                    IgfsFileInfo dstTargetInfo;
+                    String dstName;
+
+                    // 7. Calculate the target.
+                    if (dstLeafId != null) {
+                        // Destination leaf exists. Check if it is an empty directory.
+                        IgfsFileInfo dstLeafInfo = allInfos.get(dstLeafId);
+
+                        assert dstLeafInfo != null;
+
+                        if (dstLeafInfo.isDirectory()) {
+                            // Destination is a directory.
+                            dstTargetId = dstLeafId;
+                            dstTargetInfo = dstLeafInfo;
+                            dstName = srcPath.name();
+                        }
+                        else {
+                            // Error, destination is existing file.
+                            throw new IgniteCheckedException("Failed to perform move because destination points to " +
+                                "existing file [src=" + srcPath + ", dst=" + dstPath + ']');
+                        }
+                    }
+                    else {
+                        // Destination leaf doesn't exist, so we operate on parent.
+                        dstTargetId = dstPathIds.get(dstPathIds.size() - 2);
+                        dstTargetInfo = allInfos.get(dstTargetId);
+                        dstName = dstPath.name();
+                    }
+
+                    assert dstTargetInfo != null;
+                    assert dstTargetInfo.isDirectory();
+
+                    // 8. Last check: does destination target already have listing entry with the same name?
+                    if (dstTargetInfo.listing().containsKey(dstName)) {
+                        throw new IgniteCheckedException("Failed to perform move because destination already " +
+                            "contains entry with the same name existing file [src=" + srcPath +
+                            ", dst=" + dstPath + ']');
+                    }
+
+                    // 9. Actual move: remove from source parent and add to destination target.
+                    IgfsListingEntry entry = srcTargetInfo.listing().get(srcName);
+
+                    id2InfoPrj.invoke(srcTargetId, new UpdateListing(srcName, entry, true));
+                    id2InfoPrj.invoke(dstTargetId, new UpdateListing(dstName, entry, false));
+
+                    tx.commit();
+                }
+                finally {
+                    tx.close();
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+        else
+            throw new IllegalStateException("Failed to perform move because Grid is stopping [srcPath=" +
+                srcPath + ", dstPath=" + dstPath + ']');
+    }
+
+    /**
+     * Verify path integrity.
+     *
+     * @param path Path to verify.
+     * @param expIds Expected IDs for this path. Might contain additional elements, e.g. because they were created
+     *     on a child path.
+     * @param infos Locked infos.
+     * @return
+     */
+    private static boolean verifyPathIntegrity(IgfsPath path, List<IgniteUuid> expIds,
+        Map<IgniteUuid, IgfsFileInfo> infos) {
+        List<String> pathParts = path.components();
+
+        assert pathParts.size() < expIds.size();
+
+        for (int i = 0; i < pathParts.size(); i++) {
+            IgniteUuid parentId = expIds.get(i);
+
+            // If parent ID is null, it doesn't exist.
+            if (parentId != null) {
+                IgfsFileInfo parentInfo = infos.get(parentId);
+
+                // If parent info is null, it doesn't exist.
+                if (parentInfo != null) {
+                    IgfsListingEntry childEntry = parentInfo.listing().get(pathParts.get(i));
+
+                    // If expected child exists.
+                    if (childEntry != null) {
+                        // If child ID matches expected ID.
+                        if (F.eq(childEntry.fileId(), expIds.get(i + 1)))
+                            continue;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
