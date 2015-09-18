@@ -91,7 +91,7 @@ class VisorConsole {
             println("        -np                  - no pause on exit (pause by default).")
             println("        -cfg=<path>          - connect with specified configuration.")
             println("        -b=<path>            - batch mode with file.")
-            println("        -e==cmd1;cmd2;...    - batch mode with commands.")
+            println("        -e=cmd1;cmd2;...     - batch mode with commands.")
 
             visor.quit()
         }
@@ -105,6 +105,12 @@ class VisorConsole {
         val batchCommand = argValue("e", argLst)
 
         cfgFile.foreach(cfg => {
+            if (cfg.trim.isEmpty) {
+                visor.warn("Expected path to configuration after \"-cfg\" option.")
+
+                visor.quit()
+            }
+
             if (batchFile.isDefined || batchCommand.isDefined) {
                 visor.warn("Options can't contains both -cfg and one of -b or -e options.")
 

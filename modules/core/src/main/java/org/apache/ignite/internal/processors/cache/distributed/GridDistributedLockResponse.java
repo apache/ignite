@@ -137,10 +137,8 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         return futId;
     }
 
-    /**
-     * @return Error.
-     */
-    public Throwable error() {
+    /** {@inheritDoc} */
+    @Override public Throwable error() {
         return err;
     }
 

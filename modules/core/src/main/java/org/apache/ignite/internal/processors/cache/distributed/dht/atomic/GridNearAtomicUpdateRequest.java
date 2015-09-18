@@ -198,6 +198,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         boolean skipStore,
         boolean clientReq
     ) {
+        assert futVer != null;
+
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futVer = futVer;

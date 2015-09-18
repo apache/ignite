@@ -1217,7 +1217,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Throwable err = res.error();
 
         // Log error before sending reply.
-        if (err != null && !(err instanceof GridCacheLockTimeoutException))
+        if (err != null && !(err instanceof GridCacheLockTimeoutException) && !ctx.kernalContext().isStopping())
             U.error(log, "Failed to acquire lock for request: " + req, err);
 
         try {

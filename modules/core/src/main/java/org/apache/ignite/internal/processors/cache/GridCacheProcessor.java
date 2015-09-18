@@ -960,6 +960,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
+        cancelFutures();
+
         List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();
 
         for (ListIterator<? extends GridCacheSharedManager<?, ?>> it = sharedMgrs.listIterator(sharedMgrs.size());
@@ -1329,12 +1331,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             evictMgr,
             qryMgr,
             contQryMgr,
-            affMgr,
             dataStructuresMgr,
             ttlMgr,
             drMgr,
             rslvrMgr,
-            pluginMgr
+            pluginMgr,
+            affMgr
         );
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
@@ -1458,12 +1460,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 evictMgr,
                 qryMgr,
                 contQryMgr,
-                affMgr,
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
                 rslvrMgr,
-                pluginMgr
+                pluginMgr,
+                affMgr
             );
 
             cacheCtx.cacheObjectContext(cacheObjCtx);
@@ -2331,9 +2333,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             try {
                 ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs));
 
-                if (ctx.clientDisconnected())
+                if (ctx.isStopping()) {
+                    err = new IgniteCheckedException("Failed to execute dynamic cache change request, " +
+                        "node is stopping.");
+                }
+                else if (ctx.clientDisconnected()) {
                     err = new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
                         "Failed to execute dynamic cache change request, client node disconnected.");
+                }
             }
             catch (IgniteCheckedException e) {
                 err = e;
@@ -3042,9 +3049,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(Collections.singleton(req)));
 
-            if (ctx.clientDisconnected())
+            if (ctx.isStopping()) {
+                err = new IgniteCheckedException("Failed to execute dynamic cache change request, " +
+                    "node is stopping.");
+            }
+            else if (ctx.clientDisconnected()) {
                 err = new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
                     "Failed to execute dynamic cache change request, client node disconnected.");
+            }
         }
         catch (IgniteCheckedException e) {
             err = e;
@@ -3110,8 +3122,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Cancel all user operations.
      */
-    public void cancelUserOperations() {
-        sharedCtx.mvcc().cancelClientFutures();
+    private void cancelFutures() {
+        sharedCtx.mvcc().onStop();
 
         Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
 
