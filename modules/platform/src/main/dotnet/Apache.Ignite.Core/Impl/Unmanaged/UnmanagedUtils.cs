@@ -273,6 +273,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate long ServicesCancelAllDelegate(void* ctx, void* target);
         private delegate void* ServicesGetServiceProxyDelegate(void* ctx, void* target, char* name, bool sticky);
 
+        private delegate long AtomicLongReadDelegate(void* ctx, void* target);
+
         #endregion
 
         #region DELEGATE MEMBERS
@@ -1251,6 +1253,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 Marshal.FreeHGlobal(new IntPtr(nameChars));
             }
+        }
+
+        #endregion
+
+        #region NATIVE METHODS: DATA STRUCTURES
+
+        internal static long AtomicLongRead(IUnmanagedTarget target)
+        {
+            return target.ChangeTarget(SERVICES_WITH_SERVER_KEEP_PORTABLE(target.Context, target.Target));
         }
 
         #endregion

@@ -23,6 +23,8 @@ namespace Apache.Ignite.Core.Impl.DataStructures
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
+    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
+
     /// <summary>
     /// Atomic long wrapper.
     /// </summary>
@@ -58,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
 
         public long Read()
         {
-            throw new NotImplementedException();
+            UU.ProcessorAtomicLong()
         }
 
         public long Increment()
