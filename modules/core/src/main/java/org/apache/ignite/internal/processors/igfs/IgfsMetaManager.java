@@ -801,27 +801,6 @@ public class IgfsMetaManager extends IgfsManager {
         return null;
     }
 
-//    /**
-//     * Convenience shortcut method.
-//     * @param srcPath
-//     * @param dstPath
-//     * @throws IgniteCheckedException
-//     */
-//    public void move(IgfsPath srcPath, IgfsPath dstPath) throws IgniteCheckedException {
-//        //move(fileIds(srcPath), srcPath, fileIds(dstPath.parent()), dstPath.parent(), dstPath.name());
-//
-//    }
-//
-//    /**
-//     * Yet another convenience shortcut method.
-//     * @param srcPath
-//     * @param dstPath
-//     * @throws IgniteCheckedException
-//     */
-//    public void move(String srcPath, String dstPath) throws IgniteCheckedException {
-//        move(new IgfsPath(srcPath), new IgfsPath(dstPath));
-//    }
-
     /**
      * Move routine.
      * @param srcPath Source path.
@@ -1036,8 +1015,6 @@ public class IgfsMetaManager extends IgfsManager {
                 " [destParentId=" + destParentId + ']'));
 
         assert destInfo.isDirectory();
-//        if (!destInfo.isDirectory())
-//            throw fsException(new IgfsPathIsNotDirectoryException("Destination is not a directory: " + destInfo));
 
         IgfsFileInfo fileInfo = infoMap.get(fileId);
 
@@ -1056,12 +1033,6 @@ public class IgfsMetaManager extends IgfsManager {
 
         assert destEntry == null;
 
-//        // If stored file already exist.
-//        if (destEntry != null)
-//            throw fsException(new IgfsPathAlreadyExistsException("Failed to add file name into the destination " +
-//                " directory (file already exists) [fileId=" + fileId + ", destFileName=" + destFileName +
-//                ", destParentId=" + destParentId + ", destEntry=" + destEntry + ']'));
-
         assert metaCache.get(srcParentId) != null;
         assert metaCache.get(destParentId) != null;
 
@@ -1071,47 +1042,6 @@ public class IgfsMetaManager extends IgfsManager {
         // Add listing entry into the destination parent listing.
         id2InfoPrj.invoke(destParentId, new UpdateListing(destFileName, srcEntry, false));
     }
-
-//    private void checkPath(List<IgniteUuid> ids, final IgfsPath path, Map<IgniteUuid, IgfsFileInfo> infoMap)
-//            throws IgfsPathNotFoundException {
-//        validTxState(true);
-//
-//        List<String> list0 = path.components();
-//        final List<String> pathComponentList = new ArrayList<>(list0.size() + 1);
-//        pathComponentList.add("/"); // add root
-//        pathComponentList.addAll(list0);
-//
-//        assert pathComponentList.size() == ids.size() : "pathCompList = " + pathComponentList + ", ids = " + ids;
-//
-//        IgfsFileInfo parentIfi = null;
-//
-//        for (int i = 0; i<ids.size(); i++) {
-//            String pathSegment = pathComponentList.get(i);
-//
-//            IgniteUuid id = ids.get(i);
-//            IgfsFileInfo ifi = infoMap.get(id);
-//
-//            assert ifi.id().equals(id);
-//
-//            if (ifi == null) {
-//                throw new IgfsPathNotFoundException("Path for this id not found: ..."); // TODO
-//            }
-//
-//            if (parentIfi != null) {
-//                IgfsListingEntry entry = parentIfi.listing().get(pathSegment);
-//
-//                if (entry == null) {
-//                    throw new IgfsPathNotFoundException("Path for this id not found: ..."); // TODO
-//                }
-//
-//                if (!entry.fileId().equals(id)) {
-//                    throw new IgfsPathNotFoundException("Id has been changed for id: ..."); // TODO
-//                }
-//            }
-//
-//            parentIfi = ifi;
-//        }
-//    }
 
     /**
      * Remove file from the file system structure.
