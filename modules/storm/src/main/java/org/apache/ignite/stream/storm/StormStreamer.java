@@ -17,27 +17,31 @@
 
 package org.apache.ignite.stream.storm;
 
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
+import backtype.storm.topology.IRichBolt;
+import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.tuple.Tuple;
 import org.apache.ignite.*;
 import org.apache.ignite.stream.*;
+
+import java.util.Map;
 import java.util.concurrent.*;
 
 /**
- * Server that subscribes to topic messages from Kafka broker and streams its to key-value pairs into
- * {@link IgniteDataStreamer} instance.
- * <p>
- * Uses Kafka's High Level Consumer API to read messages from Kafka.
- *
- * @see <a href="https://cwiki.apache.org/confluence/display/KAFKA/Consumer+Group+Example">Consumer Consumer Group
- * Example</a>
+ * Server for managing stream Apache Storm. This is a Bolt storm the interact with  Apache Ignite.
+ * For a description of the design and the way of use, see the page of the form.
+ * <a href="">Module Design</a>
+ * @author Gianfranco Murador
  */
-public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> {
+public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IRichBolt {
     /** Retry timeout. */
     private static final long DFLT_RETRY_TIMEOUT = 10000;
 
     /** Logger. */
     private IgniteLogger log;
 
-    /** Executor used to submit kafka streams. */
+    /** Executor used to submit storm streams. */
     private ExecutorService executor;
 
     /** Topic. */
@@ -54,11 +58,11 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> {
 
 
     /**
-     * Starts streamer.
-     *
+     * Starts streamer
      * @throws IgniteException If failed.
      */
     public void start() {
+
     }
 
     /**
@@ -66,5 +70,37 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> {
      */
     public void stop() {
 
+    }
+
+    /**
+     * In this point we can to a
+     * @param map the map derived from topology
+     * @param topologyContext the context topology in storm
+     * @param outputCollector the output of the collector
+     */
+    @Override
+    public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+    }
+
+    /**
+     * Exece
+     * @param tuple
+     */
+    @Override
+    public void execute(Tuple tuple) {
+    }
+
+    @Override
+    public void cleanup() {
+    }
+
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
+
+    }
+
+    @Override
+    public Map<String, Object> getComponentConfiguration() {
+        return null;
     }
 }
