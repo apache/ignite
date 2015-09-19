@@ -28,6 +28,8 @@ import org.apache.ignite.stream.*;
 import java.util.Map;
 import java.util.concurrent.*;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
+
 /**
  * Server for managing stream Apache Storm. This is a Bolt storm the interact with  Apache Ignite.
  * For a description of the design and the way of use, see the page of the form.
@@ -58,17 +60,25 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
      * Starts streamer
      * @throws IgniteException If failed.
      */
-    public void start() {
+    public void start()  throws IgniteException{
+        if (stopped)
+            throw new IgniteException("Attempted to stop an already stopped Storm  Streamer");
+        A.notNull(getStreamer(), "streamer");
+        A.notNull(getIgnite(), "ignite");
+        A.notNull(topic, "topic");
+        A.ensure(threads > 0, "threads > 0");
+        log = getIgnite().log();
 
     }
 
     /**
      * Stops streamer.
      */
-    public void stop() {
-
+    public void stop()  throws IgniteException  {
+        if (!stopped)
+            throw new IgniteException("Attempted to start an already started Storm Streamer");
+        stopped = true;
     }
-
     /**
      * In this point we declare the output collector of the bolt
      * @param map the map derived from topology
@@ -98,7 +108,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
      */
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-         declarer.declare(new Fields("IgniteGrid"));
+        declarer.declare(new Fields("IgniteGrid"));
     }
 
     @Override

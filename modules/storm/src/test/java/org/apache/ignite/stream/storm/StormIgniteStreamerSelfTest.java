@@ -19,8 +19,12 @@ package org.apache.ignite.stream.storm;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * Tests {@link KafkaStreamer}.
+ * Tests {@link StormStreamer}.
  */
 public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
+
+    public static void main(String[] args) {
+
+    }
 }
